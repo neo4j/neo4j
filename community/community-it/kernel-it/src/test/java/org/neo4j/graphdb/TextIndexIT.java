@@ -398,17 +398,19 @@ public class TextIndexIT
         createTextIndex( db, person, "idx_name" );
 
         // When a non text property is indexed
+        Node node;
         try ( var tx = db.beginTx() )
         {
-            tx.createNode( person ).setProperty( "name", 42 );
+            node = tx.createNode( person );
+            node.setProperty( "name", 42 );
             tx.commit();
         }
 
-        // Then it is not indexed
+        // Then we should still be able to find it and not search the index for it
         try ( var tx = db.beginTx() )
         {
-            assertThat( tx.findNode( person, "name", 42 ) ).isNull();
-            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
+            assertThat( tx.findNode( person, "name", 42 ) ).isEqualTo( node );
+            assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 0 );
         }
         dbms.shutdown();
     }

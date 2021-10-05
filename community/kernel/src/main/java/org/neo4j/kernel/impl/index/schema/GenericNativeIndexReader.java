@@ -72,6 +72,7 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
         PropertyIndexQuery.GeometryRangePredicate geometryRangePredicate = getGeometryRangePredicateIfAny( query );
         if ( geometryRangePredicate != null )
         {
+            context.monitor().queried( descriptor );
             validateQuery( constraints, query );
             try
             {

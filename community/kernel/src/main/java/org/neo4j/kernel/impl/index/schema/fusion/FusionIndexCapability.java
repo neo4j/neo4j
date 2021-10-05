@@ -86,7 +86,7 @@ public class FusionIndexCapability implements IndexCapability
     @Override
     public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
     {
-        return queryType != IndexQueryType.FULLTEXT_SEARCH;
+        return queryType != IndexQueryType.FULLTEXT_SEARCH && queryType != IndexQueryType.TOKEN_LOOKUP;
     }
 
     @Override

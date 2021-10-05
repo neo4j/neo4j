@@ -21,6 +21,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.schema.IndexQuery;
+import org.neo4j.values.storable.ValueCategory;
 
 public class TokenPredicate implements IndexQuery
 {
@@ -46,5 +47,11 @@ public class TokenPredicate implements IndexQuery
     public IndexQueryType type()
     {
         return IndexQueryType.TOKEN_LOOKUP;
+    }
+
+    @Override
+    public ValueCategory valueCategory()
+    {
+        return ValueCategory.NO_CATEGORY;
     }
 }

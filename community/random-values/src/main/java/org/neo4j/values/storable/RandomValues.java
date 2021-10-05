@@ -701,6 +701,17 @@ public class RandomValues
     }
 
     /**
+     * @param minLength the minimum length of the string
+     * @param maxLength the maximum length of the string
+     * @return a {@link TextValue} consisting only of characters in the Basic Multilingual Plane(BMP).
+     * @see RandomValues
+     */
+    public TextValue nextBasicMultilingualPlaneTextValue( int minLength, int maxLength )
+    {
+        return nextTextValue( minLength, maxLength, this::bmpCodePoint );
+    }
+
+    /**
      * @see RandomValues
      */
     public TextValue nextTextValue()

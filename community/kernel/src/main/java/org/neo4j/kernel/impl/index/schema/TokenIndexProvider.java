@@ -31,7 +31,6 @@ import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -216,7 +215,7 @@ public class TokenIndexProvider extends IndexProvider
         @Override
         public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
         {
-            return false;
+            return queryType == IndexQuery.IndexQueryType.TOKEN_LOOKUP && valueCategory == ValueCategory.NO_CATEGORY;
         }
 
         @Override

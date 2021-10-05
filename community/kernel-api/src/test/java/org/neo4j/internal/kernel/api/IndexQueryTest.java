@@ -30,15 +30,18 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringSuffixPredicate;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -522,6 +525,24 @@ class IndexQueryTest
         assertTrue( test( p, "less" ) );
         assertTrue( test( p, "clueless" ) );
         assertTrue( test( p, "cluelessly clueless" ) );
+    }
+
+    // TOKEN
+
+    @Test
+    void testValueCategoryOfTokenPredicate()
+    {
+        TokenPredicate query = new TokenPredicate( 1 );
+
+        assertThat( query.valueCategory() ).isEqualTo( ValueCategory.NO_CATEGORY );
+    }
+
+    @Test
+    void testIndexQueryTypeOfTokenPredicate()
+    {
+        TokenPredicate query = new TokenPredicate( 1 );
+
+        assertThat( query.type() ).isEqualTo( IndexQuery.IndexQueryType.TOKEN_LOOKUP );
     }
 
     // HELPERS

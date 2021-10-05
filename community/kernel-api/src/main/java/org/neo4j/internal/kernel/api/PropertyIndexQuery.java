@@ -260,6 +260,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
     /**
      * @return Target {@link ValueCategory} for query
      */
+    @Override
     public ValueCategory valueCategory()
     {
         return valueGroup().category();

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.schema;
 
+import org.neo4j.values.storable.ValueCategory;
+
 /**
  * Provides a minimal interface for property index queries.
  */
@@ -30,6 +32,8 @@ public interface IndexQuery
     int queriedId();
 
     IndexQueryType type();
+
+    ValueCategory valueCategory();
 
     enum IndexQueryType
     {

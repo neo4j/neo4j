@@ -126,6 +126,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
     public void query( IndexProgressor.EntityValueClient cursor, QueryContext context, AccessMode accessMode,
                        IndexQueryConstraints constraints, PropertyIndexQuery... predicates )
     {
+        context.monitor().queried( descriptor );
         validateQuery( constraints, predicates );
         context.monitor().queried( descriptor );
 

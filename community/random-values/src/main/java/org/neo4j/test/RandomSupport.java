@@ -19,6 +19,10 @@
  */
 package org.neo4j.test;
 
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.TestMethodOrder;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -38,6 +42,12 @@ import org.neo4j.values.storable.ValueType;
 /**
  * Like a {@link Random} but guarantees to include the seed with the test failure, which helps
  * greatly in debugging.
+ *
+ * To reproduce same random sequence when debugging use the seed included in the test failure.
+ * If {@link Lifecycle} is {@link Lifecycle#PER_METHOD} (default), place {@link Seed} annotation on method.
+ * If {@link Lifecycle} is {@link Lifecycle#PER_CLASS} place {@link Seed} annotation on class. Note that to
+ * reproduce the exact execution the test order must be the same since the same random instance is used across all tests.
+ * To ensure this, it's recommended to use a {@link TestMethodOrder}, for example with {@link MethodOrderer.MethodName}.
  *
  * Available methods directly on this class include those found in {@link RandomValues} and the basic ones in {@link Random}.
  */
@@ -280,7 +290,7 @@ public class RandomSupport
     }
 
     @Retention( RetentionPolicy.RUNTIME )
-    @Target( ElementType.METHOD )
+    @Target( {ElementType.METHOD, ElementType.TYPE} )
     public @interface Seed
     {
         long value();

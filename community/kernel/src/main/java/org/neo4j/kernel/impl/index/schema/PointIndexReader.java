@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -98,6 +97,7 @@ class PointIndexReader extends NativeIndexReader<PointKey>
 
         if ( predicate.type() == IndexQueryType.RANGE )
         {
+            context.monitor().queried( descriptor );
             validateQuery( constraints, predicates );
             PropertyIndexQuery.GeometryRangePredicate geometryRangePredicate = (PropertyIndexQuery.GeometryRangePredicate) predicate;
             try

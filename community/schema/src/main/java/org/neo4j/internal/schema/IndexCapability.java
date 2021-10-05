@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.schema;
 
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -63,9 +64,10 @@ public interface IndexCapability
      * Checks whether the index supports a query type for a given value category.
      * This does not take into account how query types can be combined for composite index queries.
      * <p>
-     * Even thought the method is implemented for all index types, this check is useful only for value indexes.
+     * When asking about support for Index queries that doesn't have any value category,
+     * like {@link IndexQueryType#TOKEN_LOOKUP}, use {@link ValueCategory#NO_CATEGORY}.
      */
-    boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory );
+    boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory );
 
     /**
      * The multiplier for the cost per returned row of executing a (potentially composite) index query with the given types.
@@ -75,14 +77,13 @@ public interface IndexCapability
      * <p>
      * Even thought the method is implemented for all index types, this check is useful only for value indexes.
      */
-    double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes );
+    double getCostMultiplier( IndexQueryType... queryTypes );
 
     /**
-     * Does the index support {@link org.neo4j.internal.kernel.api.PartitionedScan PartitionedScan} for a given {@code queries}.
-     * @param queries a relevant set of query for the index; such as {@link org.neo4j.internal.kernel.api.TokenPredicate TokenPredicate}, for token indexes;
-     * or {@link org.neo4j.internal.kernel.api.PropertyIndexQuery PropertyIndexQuery}, for property indexes.
-     * @return {@code true} if the index supports {@link org.neo4j.internal.kernel.api.PartitionedScan PartitionedScan} for the given {@code queries};
-     * false otherwise.
+     * Does the index support PartitionedScan for given {@code queries}.
+     *
+     * @param queries a relevant set of queries for the index; such as TokenPredicate, for token indexes; or PropertyIndexQuery, for property indexes.
+     * @return {@code true} if the index supports PartitionedScan for the given {@code queries}; false otherwise.
      */
     boolean supportPartitionedScan( IndexQuery... queries );
 
@@ -110,13 +111,13 @@ public interface IndexCapability
         }
 
         @Override
-        public boolean isQuerySupported( IndexQuery.IndexQueryType queryType, ValueCategory valueCategory )
+        public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
             return false;
         }
 
         @Override
-        public double getCostMultiplier( IndexQuery.IndexQueryType... queryTypes )
+        public double getCostMultiplier( IndexQueryType... queryTypes )
         {
             return 1.0;
         }

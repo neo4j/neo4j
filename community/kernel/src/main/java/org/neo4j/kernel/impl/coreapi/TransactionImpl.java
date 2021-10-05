@@ -75,6 +75,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -396,8 +397,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             return emptyResourceIterator();
         }
-        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forLabel( labelId, propertyId ) );
-        return nodesByLabelAndProperty( transaction, labelId, PropertyIndexQuery.exact( propertyId, Values.of( value, false ) ), index );
+        PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact( propertyId, Values.of( value, false ) );
+        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forLabel( labelId, propertyId ), query );
+        return nodesByLabelAndProperty( transaction, labelId, query, index );
     }
 
     @Override
@@ -416,7 +418,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
         PropertyIndexQuery query = getIndexQuery( value, searchMode, propertyId );
-        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forLabel( labelId, propertyId ), IndexType.TEXT );
+        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forLabel( labelId, propertyId ), IndexType.TEXT, query );
         return nodesByLabelAndProperty( transaction, labelId, query, index );
     }
 
@@ -513,7 +515,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
         PropertyIndexQuery query = getIndexQuery( template, searchMode, propertyId );
-        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forRelType( typeId, propertyId ), IndexType.TEXT );
+        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forRelType( typeId, propertyId ), IndexType.TEXT, query );
         return relationshipsByTypeAndProperty( transaction, typeId, query, index );
     }
 
@@ -593,8 +595,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             return emptyResourceIterator();
         }
-        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forRelType( typeId, propertyId ) );
-        return relationshipsByTypeAndProperty( transaction, typeId, PropertyIndexQuery.exact( propertyId, Values.of( value, false ) ), index );
+        PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact( propertyId, Values.of( value, false ) );
+        IndexDescriptor index = findUsableMatchingIndex( transaction, SchemaDescriptors.forRelType( typeId, propertyId ), query );
+        return relationshipsByTypeAndProperty( transaction, typeId, query, index );
     }
 
     @Override
@@ -890,7 +893,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutPropertyIndex( KernelTransaction ktx, int labelId, PropertyIndexQuery... queries )
     {
-        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
+        TokenPredicate tokenQuery = new TokenPredicate( labelId );
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), tokenQuery );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -898,7 +902,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             {
                 var session = ktx.dataRead().tokenReadSession( index );
                 var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
-                ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ), ktx.cursorContext() );
+                ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), tokenQuery, ktx.cursorContext() );
 
                 var nodeCursor = ktx.cursors().allocateNodeCursor( ktx.cursorContext() );
                 var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
@@ -936,7 +940,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutPropertyIndex( KernelTransaction ktx, int typeId,
             PropertyIndexQuery... queries )
     {
-        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
+        TokenPredicate tokenQuery = new TokenPredicate( typeId );
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ), tokenQuery );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -944,7 +949,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             {
                 var session = ktx.dataRead().tokenReadSession( index );
                 var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.cursorContext() );
-                ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ), ktx.cursorContext() );
+                ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), tokenQuery, ktx.cursorContext() );
 
                 var relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor( ktx.cursorContext() );
                 var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
@@ -992,7 +997,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
         int[] propertyIds = getPropertyIds( queries );
         IndexDescriptor index = findUsableMatchingCompositeIndex( transaction, SchemaDescriptors.forLabel( labelId, propertyIds ), propertyIds,
-                                                                  () -> transaction.schemaRead().indexesGetForLabel( labelId ) );
+                                                                  () -> transaction.schemaRead().indexesGetForLabel( labelId ), queries );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -1040,7 +1045,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ) );
+        TokenPredicate query = new TokenPredicate( labelId );
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), query );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -1048,7 +1054,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             {
                 var session = ktx.dataRead().tokenReadSession( index );
                 var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
-                ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ), ktx.cursorContext() );
+                ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), query, ktx.cursorContext() );
                 return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
             }
             catch ( KernelException e )
@@ -1078,7 +1084,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
+        TokenPredicate query = new TokenPredicate( typeId );
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ), query );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -1086,7 +1093,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             {
                 var session = ktx.dataRead().tokenReadSession( index );
                 var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.cursorContext() );
-                ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ), ktx.cursorContext() );
+                ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), query, ktx.cursorContext() );
                 return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference,
                         c -> newRelationshipEntity( c.relationshipReference() ), coreApiResourceTracker );
             }
@@ -1119,7 +1126,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
         int[] propertyIds = getPropertyIds( queries );
         IndexDescriptor index = findUsableMatchingCompositeIndex( tx, SchemaDescriptors.forRelType( typeId, propertyIds ), propertyIds,
-                                                                  () -> tx.schemaRead().indexesGetForRelationshipType( typeId ) );
+                                                                  () -> tx.schemaRead().indexesGetForRelationshipType( typeId ), queries );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -1155,10 +1162,10 @@ public class TransactionImpl extends EntityValidationTransactionImpl
      * Find an ONLINE index that matches the schema.
      */
     private static IndexDescriptor findUsableMatchingCompositeIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor, int[] propertyIds,
-                                                               Supplier<Iterator<IndexDescriptor>> indexesSupplier )
+            Supplier<Iterator<IndexDescriptor>> indexesSupplier, IndexQuery... query )
     {
         // Try a direct schema match first.
-        var directMatch = findUsableMatchingIndex( transaction, schemaDescriptor );
+        var directMatch = findUsableMatchingIndex( transaction, schemaDescriptor, query );
         if ( directMatch != IndexDescriptor.NO_INDEX )
         {
             return directMatch;
@@ -1175,8 +1182,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             IndexDescriptor index = indexes.next();
             int[] original = index.schema().getPropertyIds();
-            if ( index.getIndexType() == IndexType.BTREE && hasSamePropertyIds( original, workingCopy, propertyIds )
-                 && indexIsOnline( transaction.schemaRead(), index ) )
+            if ( hasSamePropertyIds( original, workingCopy, propertyIds )
+                 && indexIsOnline( transaction.schemaRead(), index ) && indexSupportQuery( index, query ) )
             {
                 // Ha! We found an index with the same properties in another order
                 return index;
@@ -1190,23 +1197,34 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     /**
      * Find an ONLINE index that matches the schema.
      */
-    private static IndexDescriptor findUsableMatchingIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor )
+    private static IndexDescriptor findUsableMatchingIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor,
+            IndexQuery... query )
     {
-        return firstOrDefault( getMatchingOnlineIndexes( transaction, schemaDescriptor ), IndexDescriptor.NO_INDEX );
+        return firstOrDefault( getMatchingOnlineIndexes( transaction, schemaDescriptor, query ), IndexDescriptor.NO_INDEX );
     }
 
-    private static IndexDescriptor findUsableMatchingIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor, IndexType preference )
+    private static IndexDescriptor findUsableMatchingIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor, IndexType preference,
+            IndexQuery... query )
     {
-        List<IndexDescriptor> indexes = asList( getMatchingOnlineIndexes( transaction, schemaDescriptor ) );
+        List<IndexDescriptor> indexes = asList( getMatchingOnlineIndexes( transaction, schemaDescriptor, query ) );
         Optional<IndexDescriptor> preferred = indexes.stream().filter( index -> index.getIndexType() == preference ).findAny();
         return preferred.orElse( firstOrDefault( indexes.iterator(), IndexDescriptor.NO_INDEX ) );
     }
 
-    private static Iterator<IndexDescriptor> getMatchingOnlineIndexes( KernelTransaction transaction, SchemaDescriptor schemaDescriptor )
+    private static Iterator<IndexDescriptor> getMatchingOnlineIndexes( KernelTransaction transaction, SchemaDescriptor schemaDescriptor,
+            IndexQuery... query )
     {
         SchemaRead schemaRead = transaction.schemaRead();
         Iterator<IndexDescriptor> iterator = schemaRead.index( schemaDescriptor );
-        return filter( index -> index.getIndexType() != IndexType.FULLTEXT && indexIsOnline( schemaRead, index ), iterator );
+        return filter( index ->
+                        indexIsOnline( schemaRead, index ) &&
+                        indexSupportQuery( index, query )
+                , iterator );
+    }
+
+    private static boolean indexSupportQuery( IndexDescriptor index, IndexQuery[] query )
+    {
+        return stream( query ).allMatch( q -> index.getCapability().isQuerySupported( q.type(), q.valueCategory() ) );
     }
 
     private static boolean invalidTokens( int... tokens )

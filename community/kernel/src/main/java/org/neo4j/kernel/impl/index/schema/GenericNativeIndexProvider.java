@@ -246,18 +246,17 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         @Override
         public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
-            return queryType != IndexQueryType.FULLTEXT_SEARCH;
+            return queryType != IndexQueryType.FULLTEXT_SEARCH && queryType != IndexQueryType.TOKEN_LOOKUP;
         }
 
         @Override
         public double getCostMultiplier( IndexQueryType... queryTypes )
         {
-            for ( int i = 0; i < queryTypes.length; i++ )
+            for ( IndexQueryType indexQueryType : queryTypes )
             {
                 // for now, just make the operations which are more efficiently supported
                 // by lucene-based indexes slightly more expensive so the planner
                 // would choose a lucene-based index instead of b-tree if there is a choice
-                IndexQueryType indexQueryType = queryTypes[i];
                 if ( indexQueryType == IndexQueryType.STRING_SUFFIX
                         || indexQueryType == IndexQueryType.STRING_CONTAINS )
                 {
