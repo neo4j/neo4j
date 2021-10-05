@@ -60,7 +60,7 @@ class QueryRestartIT
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseService database;
-    private TestTransactionVersionContextSupplier testContextSupplier;
+    private TestTransactionVersionContextSupplier.Factory testContextSupplierFactory;
     private Path storeDir;
     private DatabaseManagementService managementService;
 
@@ -68,13 +68,13 @@ class QueryRestartIT
     void setUp() throws IOException
     {
         storeDir = testDirectory.homePath();
-        testContextSupplier = new TestTransactionVersionContextSupplier();
+        testContextSupplierFactory = new TestTransactionVersionContextSupplier.Factory();
         database = startSnapshotQueryDb();
         createData();
         // Checkpoint to make the counts store flush its changes map so that it will need to read on next query
         checkpoint();
 
-        testContextSupplier.setTestVersionContextSupplier( () -> testCursorContext( managementService, DEFAULT_DATABASE_NAME ) );
+        testContextSupplierFactory.setTestVersionContextSupplier( databaseName -> testCursorContext( managementService, databaseName ) );
     }
 
     private void checkpoint() throws IOException
@@ -177,7 +177,7 @@ class QueryRestartIT
     {
         // Inject TransactionVersionContextSupplier
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( testContextSupplier );
+        dependencies.satisfyDependencies( testContextSupplierFactory );
 
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExternalDependencies( dependencies )

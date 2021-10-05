@@ -66,7 +66,7 @@ class EagerResultIT
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseService database;
-    private TestTransactionVersionContextSupplier testContextSupplier;
+    private TestTransactionVersionContextSupplier.Factory testContextSupplierFactory;
     private Path storeDir;
     private DatabaseManagementService managementService;
 
@@ -74,12 +74,12 @@ class EagerResultIT
     void setUp()
     {
         storeDir = testDirectory.homePath();
-        testContextSupplier = new TestTransactionVersionContextSupplier();
+        testContextSupplierFactory = new TestTransactionVersionContextSupplier.Factory();
         database = startRestartableDatabase();
         prepareData();
         TransactionIdStore transactionIdStore = getTransactionIdStore();
-        testContextSupplier.setTestVersionContextSupplier( () -> {
-            var context = new TestVersionContext( transactionIdStore::getLastClosedTransactionId );
+        testContextSupplierFactory.setTestVersionContextSupplier( databaseName -> {
+            var context = new TestVersionContext( transactionIdStore::getLastClosedTransactionId, databaseName );
             context.setWrongLastClosedTxId( false );
             return context;
         } );
@@ -270,7 +270,7 @@ class EagerResultIT
     private GraphDatabaseService startRestartableDatabase()
     {
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( testContextSupplier );
+        dependencies.satisfyDependencies( testContextSupplierFactory );
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExternalDependencies( dependencies )
                 .setConfig( GraphDatabaseInternalSettings.snapshot_query, true ).build();
@@ -287,9 +287,9 @@ class EagerResultIT
     {
         private boolean useCorrectLastCommittedTxId;
 
-        TestVersionContext( LongSupplier transactionIdSupplier )
+        TestVersionContext( LongSupplier transactionIdSupplier, String databaseName )
         {
-            super( transactionIdSupplier );
+            super( transactionIdSupplier, databaseName );
         }
 
         @Override

@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.SystemDbDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+import org.neo4j.io.pagecache.context.VersionContextSupplierFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -147,7 +147,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         var databaseConfig = new DatabaseConfig( databaseOptions.settings(), config, namedDatabaseId );
 
         return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors,
-                                                   editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ),
+                                                   editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig, namedDatabaseId ),
                                                    databaseConfig, LeaseService.NO_LEASES, editionDatabaseComponents.getExternalIdReuseConditionProvider() );
     }
 
@@ -208,13 +208,14 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         }
     }
 
-    protected VersionContextSupplier createVersionContextSupplier( DatabaseConfig databaseConfig )
+    protected final VersionContextSupplier createVersionContextSupplier( DatabaseConfig databaseConfig, NamedDatabaseId databaseId )
     {
-        DependencyResolver externalDependencyResolver = globalModule.getExternalDependencyResolver();
-        Class<VersionContextSupplier> klass = VersionContextSupplier.class;
+        var externalDependencyResolver = globalModule.getExternalDependencyResolver();
+        var klass = VersionContextSupplierFactory.class;
         if ( externalDependencyResolver.containsDependency( klass ) )
         {
-            return externalDependencyResolver.resolveDependency( klass );
+            var factory = externalDependencyResolver.resolveDependency( klass );
+            return factory.contextSupplierForDatabase( databaseId.name() );
         }
         else
         {

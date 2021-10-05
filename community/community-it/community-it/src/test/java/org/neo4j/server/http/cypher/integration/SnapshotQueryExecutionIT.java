@@ -49,7 +49,6 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
 {
-    private TestTransactionVersionContextSupplier testContextSupplier;
     private TestWebContainer testWebContainer;
     private LongSupplier lastTransactionIdSource;
     private final CopyOnWriteArrayList<TestVersionContext> contexts = new CopyOnWriteArrayList<>();
@@ -58,24 +57,22 @@ class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     @BeforeEach
     void setUp() throws Exception
     {
-        testContextSupplier = new TestTransactionVersionContextSupplier();
+        var testContextSupplierFactory = new TestTransactionVersionContextSupplier.Factory();
         var dependencies = new Dependencies();
-        dependencies.satisfyDependencies( testContextSupplier );
+        dependencies.satisfyDependencies( testContextSupplierFactory );
         testWebContainer = serverOnRandomPorts()
                 .withProperty( GraphDatabaseInternalSettings.snapshot_query.name(), TRUE )
                 .withDependencies( dependencies )
                 .build();
-        prepareCursorContext();
-        createData( testWebContainer.getDefaultDatabase() );
-    }
+        var db = testWebContainer.getDefaultDatabase();
 
-    private void prepareCursorContext()
-    {
-        testContextSupplier.setTestVersionContextSupplier( () -> {
-            var context = testCursorContext( idSupplier );
+        testContextSupplierFactory.setTestVersionContextSupplier( databaseName -> {
+            var context = testCursorContext( idSupplier, databaseName );
             contexts.add( context );
             return context;
         } );
+
+        createData( db );
     }
 
     private static void createData( GraphDatabaseService database )

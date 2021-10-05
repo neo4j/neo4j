@@ -41,10 +41,12 @@ public class TestVersionContext extends TransactionVersionContext
     private boolean stayDirty;
     private Exception lastMarkAsDirtyCall;
     private Exception additionalAttemptsCall;
+    private String databaseName;
 
-    public TestVersionContext( LongSupplier transactionIdSupplier )
+    public TestVersionContext( LongSupplier transactionIdSupplier, String databaseName )
     {
         super( transactionIdSupplier );
+        this.databaseName = databaseName;
     }
 
     @Override
@@ -108,6 +110,11 @@ public class TestVersionContext extends TransactionVersionContext
         return additionalAttempts;
     }
 
+    public String getDatabaseName()
+    {
+        return databaseName;
+    }
+
     public void setWrongLastClosedTxId( boolean wrongLastClosedTxId )
     {
         this.wrongLastClosedTxId = wrongLastClosedTxId;
@@ -118,15 +125,15 @@ public class TestVersionContext extends TransactionVersionContext
         this.stayDirty = stayDirty;
     }
 
-    public static TestVersionContext testCursorContext( LongSupplier idSupplier )
+    public static TestVersionContext testCursorContext( LongSupplier idSupplier, String databaseName )
     {
-        return new TestVersionContext( idSupplier );
+        return new TestVersionContext( idSupplier, databaseName );
     }
 
     public static TestVersionContext testCursorContext( DatabaseManagementService managementService, String databaseName )
     {
         TransactionIdStore transactionIdStore = getTransactionIdStore( managementService, databaseName );
-        return new TestVersionContext( transactionIdStore::getLastClosedTransactionId );
+        return new TestVersionContext( transactionIdStore::getLastClosedTransactionId, databaseName );
     }
 
     private static TransactionIdStore getTransactionIdStore( DatabaseManagementService managementService, String databaseName )

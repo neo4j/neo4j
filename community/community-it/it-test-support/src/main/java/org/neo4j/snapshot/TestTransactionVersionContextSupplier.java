@@ -19,21 +19,24 @@
  */
 package org.neo4j.snapshot;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.context.VersionContextSupplierFactory;
+import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 
 /**
- * A {@link VersionContextSupplier} that can be injected in tests to verify the behavior of {@link SnapshotExecutionEngine}.
+ * A {@link VersionContextSupplierFactory} that can be injected in tests to verify the behavior of {@link SnapshotExecutionEngine}.
  */
 public class TestTransactionVersionContextSupplier extends TransactionVersionContextSupplier
 {
     private Supplier<VersionContext> supplier;
 
-    public void setTestVersionContextSupplier( Supplier<VersionContext> supplier )
+    public TestTransactionVersionContextSupplier( Supplier<VersionContext> supplier )
     {
         this.supplier = supplier;
     }
@@ -41,6 +44,28 @@ public class TestTransactionVersionContextSupplier extends TransactionVersionCon
     @Override
     public VersionContext createVersionContext()
     {
-        return supplier == null ? super.createVersionContext() : supplier.get();
+        var suppliedContext = supplier.get();
+        return suppliedContext == null ? super.createVersionContext() : suppliedContext;
+    }
+
+    public static class Factory implements VersionContextSupplierFactory
+    {
+        private volatile Function<String,TestVersionContext> wrappedContextSupplier;
+
+        public void setTestVersionContextSupplier( Function<String,TestVersionContext> wrappedContextSupplier )
+        {
+            this.wrappedContextSupplier = wrappedContextSupplier;
+        }
+
+        TestVersionContext getVersionContext( String databaseName )
+        {
+            return wrappedContextSupplier == null ? null : wrappedContextSupplier.apply( databaseName );
+        }
+
+        @Override
+        public VersionContextSupplier contextSupplierForDatabase( String databaseName )
+        {
+            return new TestTransactionVersionContextSupplier( () -> getVersionContext( databaseName ) );
+        }
     }
 }
