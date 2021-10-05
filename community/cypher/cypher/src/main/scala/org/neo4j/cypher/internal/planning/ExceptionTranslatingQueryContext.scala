@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterat
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
+import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
@@ -342,6 +343,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def logProvider: LogProvider = translateException(tokenNameLookup, inner.logProvider)
 
   override def providedLanguageFunctions(): Seq[FunctionInformation] = translateException(tokenNameLookup, inner.providedLanguageFunctions)
+
+  override def entityTransformer: EntityTransformer = translateException(tokenNameLookup, inner.entityTransformer)
 
   override def close(): Unit = inner.close()
 

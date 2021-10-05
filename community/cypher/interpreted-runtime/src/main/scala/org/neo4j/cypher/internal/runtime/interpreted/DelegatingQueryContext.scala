@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
+import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
@@ -430,11 +431,13 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def logProvider: LogProvider = inner.logProvider
 
-  override def providedLanguageFunctions(): Seq[FunctionInformation] = inner.providedLanguageFunctions()
+  override def providedLanguageFunctions: Seq[FunctionInformation] = inner.providedLanguageFunctions
 
   override def getDatabaseManager: DatabaseManager[DatabaseContext] = inner.getDatabaseManager
 
   override def getConfig: Config = inner.getConfig
+
+  override def entityTransformer: EntityTransformer = inner.entityTransformer
 }
 
 class DelegatingReadOperations[T, CURSOR](protected val inner: ReadOperations[T, CURSOR]) extends ReadOperations[T, CURSOR] {

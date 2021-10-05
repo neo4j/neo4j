@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.CypherRowEntityTransformer
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class TransactionApplyPipe(source: Pipe,
@@ -31,7 +32,7 @@ case class TransactionApplyPipe(source: Pipe,
 
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val batchSizeLong = evaluateBatchSize(batchSize, state)
-    val entityTransformer = new EntityTransformer(state.query.entityAccessor)
+    val entityTransformer = new CypherRowEntityTransformer(state.query.entityTransformer)
 
     input.grouped(batchSizeLong).flatMap { batch =>
       val resultForBatch: Seq[CypherRow] = runInnerInTransactionKeepResult(state, batch)

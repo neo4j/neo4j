@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.KernelPredicate
@@ -427,6 +428,8 @@ object StaticEvaluation {
     override def getDatabaseManager: DatabaseManager[DatabaseContext] = notAvailable()
 
     override def getConfig: Config = notAvailable()
+
+    override def entityTransformer: EntityTransformer = notAvailable()
   }
 
 }

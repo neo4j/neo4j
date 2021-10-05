@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import java.net.URL
+import java.util.Optional
+
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -63,7 +66,6 @@ import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.api.KernelTransaction.ExecutionContext
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.database.NamedDatabaseId
-import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.logging.LogProvider
@@ -76,8 +78,6 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import java.net.URL
-import java.util.Optional
 import scala.collection.Iterator
 
 /*
@@ -242,7 +242,9 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def logProvider: LogProvider
 
-  def providedLanguageFunctions(): Seq[FunctionInformation]
+  def providedLanguageFunctions: Seq[FunctionInformation]
+
+  def entityTransformer: EntityTransformer
 
   override def nodeById(id: Long): VirtualNodeValue = nodeReadOps.getById(id)
 
@@ -600,4 +602,12 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value], read: Read) exten
   //this cursor doesn't need tracing since all values has already been read.
   override def setTracer(tracer: KernelReadTracer): Unit = {}
   override def removeTracer(): Unit = {}
+}
+
+trait EntityTransformer {
+  def rebindEntityWrappingValue(value: AnyValue): AnyValue
+}
+
+class NoopEntityTransformer extends EntityTransformer {
+  override def rebindEntityWrappingValue(value: AnyValue): AnyValue = value
 }

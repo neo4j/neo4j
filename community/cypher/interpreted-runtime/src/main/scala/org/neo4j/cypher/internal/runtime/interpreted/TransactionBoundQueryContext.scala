@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
+import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.IndexStatus
@@ -67,6 +68,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.PathExpanderBuilder
+import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.internal.helpers.collection.Iterators
@@ -114,6 +116,10 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.logging.LogProvider
 import org.neo4j.logging.internal.LogService
+import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue
+import org.neo4j.kernel.impl.util.PathWrappingPathValue
+import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
@@ -123,17 +129,19 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
-
 import java.net.URL
 import java.util.NoSuchElementException
+
 import scala.collection.Iterator
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.mutable.ArrayBuffer
 
 sealed class TransactionBoundQueryContext(transactionalContext: TransactionalContextWrapper,
@@ -1162,7 +1170,7 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[LogService]).getInternalLogProvider
   }
 
-  override def providedLanguageFunctions(): Seq[FunctionInformation] = {
+  override def providedLanguageFunctions: Seq[FunctionInformation] = {
     val dependencyResolver = transactionalContext.graph.getDependencyResolver
     dependencyResolver.resolveDependency(classOf[QueryExecutionEngine]).getProvidedLanguageFunctions.asScala
   }
@@ -1232,6 +1240,44 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
       _next = fetchNext()
       current
     }
+  }
+
+  override def entityTransformer: EntityTransformer = new TransactionBoundEntityTransformer
+
+  class TransactionBoundEntityTransformer extends EntityTransformer {
+
+    override def rebindEntityWrappingValue(value: AnyValue): AnyValue = value match {
+
+      case n: NodeEntityWrappingNodeValue =>
+        rebindNode(n.getEntity)
+
+      case r: RelationshipEntityWrappingValue =>
+        rebindRelationship(r.getEntity)
+
+      case p: PathWrappingPathValue =>
+        val nodeValues = p.path().nodes().asScala.map(rebindNode).toArray
+        val relValues = p.path().relationships().asScala.map(rebindRelationship).toArray
+        VirtualValues.pathReference(nodeValues, relValues)
+
+      case m: MapValue =>
+        val builder = new MapValueBuilder(m.size())
+        m.foreach((k, v) => builder.add(k, rebindEntityWrappingValue(v)))
+        builder.build()
+
+      case l: ListValue =>
+        val builder = ListValueBuilder.newListBuilder(l.size())
+        l.forEach(v => builder.add(rebindEntityWrappingValue(v)))
+        builder.build()
+
+      case other =>
+        other
+    }
+
+    private def rebindNode(node: Node): VirtualNodeValue =
+      ValueUtils.fromNodeEntity(entityAccessor.newNodeEntity(node.getId))
+
+    private def rebindRelationship(relationship:Relationship): VirtualRelationshipValue =
+      ValueUtils.fromRelationshipEntity(entityAccessor.newRelationshipEntity(relationship.getId))
   }
 }
 

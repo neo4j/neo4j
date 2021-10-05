@@ -21,25 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.CypherRowEntityTransformer
 import org.neo4j.exceptions.InternalException
-import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.Relationship
-import org.neo4j.kernel.impl.core.TransactionalEntityFactory
-import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue
-import org.neo4j.kernel.impl.util.PathWrappingPathValue
-import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
-import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.ListValue
-import org.neo4j.values.virtual.ListValueBuilder
-import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.MapValueBuilder
-import org.neo4j.values.virtual.VirtualNodeValue
-import org.neo4j.values.virtual.VirtualRelationshipValue
-import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.control.NonFatal
 
 trait TransactionPipe {
@@ -57,12 +43,13 @@ trait TransactionPipe {
 
   private def internalCreateResultsForOneBatch(state: QueryState, batch: Seq[CypherRow], keepResults: Boolean): Seq[CypherRow] = {
     inNewTransaction(state) { stateWithNewTransaction =>
+      val entityTransformer = new CypherRowEntityTransformer(stateWithNewTransaction.query.entityTransformer)
+
       val result: Seq[CypherRow] = batch.flatMap { outerRow =>
         // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).
         // Since we do not share the transaction state we must clear the cached properties.
         outerRow.invalidateCachedProperties()
 
-        val entityTransformer = new EntityTransformer(stateWithNewTransaction.query.entityAccessor)
         val reboundRow = entityTransformer.copyWithEntityWrappingValuesRebound(outerRow)
         val innerState = stateWithNewTransaction.withInitialContext(reboundRow)
         val result = inner.createResults(innerState)
@@ -119,49 +106,18 @@ trait TransactionPipe {
   def evaluateBatchSize(batchSize: Expression, state: QueryState): Long = {
     PipeHelper.evaluateStaticLongOrThrow(batchSize, _ > 0, state, "OF ... ROWS", " Must be a positive integer.")
   }
+}
 
+object TransactionPipe {
   /**
    * Recursively finds entity wrappers and rebinds the entities to the current transaction
    */
   // TODO: Remove rebinding here, and transform wrappers to Reference:s
   // Currently, replacing e.g. NodeEntityWrappingNodeValue with NodeReference causes failures downstream.
   // We can for example end up in PathValueBuilder, which assumes that we have NodeValue and not NodeReference.
-  class EntityTransformer(entityFactory: TransactionalEntityFactory) {
+  class CypherRowEntityTransformer(entityTransformer: EntityTransformer) {
 
     def copyWithEntityWrappingValuesRebound(row: CypherRow): CypherRow =
-      row.copyMapped(rebindEntityWrappingValues)
-
-    private def rebindEntityWrappingValues(value: AnyValue): AnyValue = value match {
-
-      case n: NodeEntityWrappingNodeValue =>
-        rebindNode(n.getEntity)
-
-      case r: RelationshipEntityWrappingValue =>
-        rebindRelationship(r.getEntity)
-
-      case p: PathWrappingPathValue =>
-        val nodeValues = p.path().nodes().asScala.map(rebindNode).toArray
-        val relValues = p.path().relationships().asScala.map(rebindRelationship).toArray
-        VirtualValues.pathReference(nodeValues, relValues)
-
-      case m: MapValue =>
-        val builder = new MapValueBuilder(m.size())
-        m.foreach((k, v) => builder.add(k, rebindEntityWrappingValues(v)))
-        builder.build()
-
-      case l: ListValue =>
-        val builder = ListValueBuilder.newListBuilder(l.size())
-        l.forEach(v => builder.add(rebindEntityWrappingValues(v)))
-        builder.build()
-
-      case other =>
-        other
-    }
-
-    private def rebindNode(node: Node): VirtualNodeValue =
-      ValueUtils.fromNodeEntity(entityFactory.newNodeEntity(node.getId))
-
-    private def rebindRelationship(relationship: Relationship): VirtualRelationshipValue =
-      ValueUtils.fromRelationshipEntity(entityFactory.newRelationshipEntity(relationship.getId))
+      row.copyMapped(entityTransformer.rebindEntityWrappingValue)
   }
 }
