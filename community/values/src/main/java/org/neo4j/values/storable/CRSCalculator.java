@@ -40,6 +40,8 @@ public abstract class CRSCalculator
 
     public abstract List<Pair<PointValue,PointValue>> boundingBox( PointValue center, double distance );
 
+    public abstract boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight );
+
     protected static double pythagoras( double[] a, double[] b )
     {
         double sqrSum = 0.0;
@@ -82,6 +84,25 @@ public abstract class CRSCalculator
             }
             CoordinateReferenceSystem crs = center.getCoordinateReferenceSystem();
             return Collections.singletonList( Pair.of( Values.pointValue( crs, min ), Values.pointValue( crs, max ) ) );
+        }
+
+        @Override
+        public boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight )
+        {
+            assert point.getCoordinateReferenceSystem().equals( lowerLeft.getCoordinateReferenceSystem() ) &&
+                   point.getCoordinateReferenceSystem().equals( upperRight.getCoordinateReferenceSystem() );
+
+            var check = point.coordinate();
+            var ll = lowerLeft.coordinate();
+            var ur = upperRight.coordinate();
+            for ( int i = 0; i < check.length; i++ )
+            {
+                if ( check[i] < ll[i] || check[i] > ur[i] )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
@@ -201,6 +222,46 @@ public abstract class CRSCalculator
                     return Collections.singletonList( boundingBoxOf( lonMin, lonMax, latMin, latMax, center, distance ) );
                 }
             }
+        }
+
+        @Override
+        public boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight )
+        {
+            assert point.getCoordinateReferenceSystem().equals( lowerLeft.getCoordinateReferenceSystem() ) &&
+                   point.getCoordinateReferenceSystem().equals( upperRight.getCoordinateReferenceSystem() );
+            double[] check = point.coordinate();
+
+            double[] ll = lowerLeft.coordinate();
+            double[] ur = upperRight.coordinate();
+
+            int i = 0;
+            //first check latitude and longitude
+            for ( ; i < 2; i++ )
+            {
+                if ( ll[i] <= ur[i] )
+                {
+                    if ( check[i] < ll[i] || check[i] > ur[i] )
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if ( check[i] > ur[i] && check[i] < ll[i] )
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            for ( ; i < check.length; i++ )
+            {
+                if ( check[i] < ll[i] || check[i] > ur[i] )
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private static Pair<PointValue,PointValue> boundingBoxOf( double minLon, double maxLon, double minLat, double maxLat, PointValue center,

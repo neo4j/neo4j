@@ -27,6 +27,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.cypher.operations.CypherFunctions.withinBBox;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
@@ -124,5 +126,253 @@ class WithinBBoxTest
         assertThat(
                 withinBBox( pointValue( Cartesian, random.nextDouble(), random.nextDouble() ), lowerLeft, TRUE ) )
                 .isEqualTo( NO_VALUE );
+    }
+
+    @Test
+    void testDifferentCRS()
+    {
+        var a = pointValue( Cartesian, 0.0, 0.0 );
+        var b = pointValue( WGS84, 1.0, 1.0 );
+        var c = pointValue( Cartesian_3D, 1.0, 1.0, 1.0 );
+
+        assertThat( withinBBox( a, a, a ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( a, a, b ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( a, a, c ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( a, b, a ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( a, b, b ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( a, b, c ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( a, c, a ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( a, c, b ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( a, c, c ) ).isEqualTo( NO_VALUE );
+
+        assertThat( withinBBox( b, a, a ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( b, a, b ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( b, a, c ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( b, b, a ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( b, b, b ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( b, b, c ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( b, c, a ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( b, c, b ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( b, c, c ) ).isEqualTo( NO_VALUE );
+
+        assertThat( withinBBox( c, a, a ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( c, a, b ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( c, a, c ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( c, b, a ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( c, b, b ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( c, b, c ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( c, c, a ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( c, c, b ) ).isEqualTo( NO_VALUE );
+        assertThat( withinBBox( c, c, c ) ).isEqualTo( TRUE );
+    }
+
+    @Test
+    void handleCrossing0thMeridian()
+    {
+        var lowerLeft = pointValue( WGS84, -1, 60 );
+        var upperRight = pointValue( WGS84, 1, 66 );
+
+        assertThat( withinBBox(  pointValue( WGS84, -1.5, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, -1, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 0.5, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 0, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 0.5, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 1, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 1.5, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleCrossing180thMeridian()
+    {
+        var lowerLeft = pointValue( WGS84, 179, 60 );
+        var upperRight = pointValue( WGS84, -179, 66 );
+
+        assertThat( withinBBox(  pointValue( WGS84, 178.5, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, 179, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 179.5, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 180, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -179.5, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -179, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -178.5, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleCrossingTheEquator()
+    {
+        var lowerLeft = pointValue( WGS84, 10, -1 );
+        var upperRight = pointValue( WGS84, 20, 1 );
+
+        assertThat( withinBBox(  pointValue( WGS84, 15, -1.5 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, 15, -1 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 15, -0.5 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 15, 0 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 15, 0.5 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 15, 1.0 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 15, 1.5 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleLowerLeftWestOfUpperRightWesternHemisphere()
+    {
+        var lowerLeft = pointValue( WGS84, 0, 60 );
+        var upperRight = pointValue( WGS84, 10, 66 );
+
+        assertThat( withinBBox(  pointValue( WGS84, 11, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, 10, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 9, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 5, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 1, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 0, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -1, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleLowerLeftEastOfUpperRightWesternHemisphere()
+    {
+        var lowerLeft = pointValue( WGS84, 10, 60 );
+        var upperRight = pointValue( WGS84, 0, 66 );
+
+        assertThat( withinBBox(  pointValue( WGS84, 11, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 10, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 9, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, 5, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, 1, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, 0, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -1, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+    }
+
+    @Test
+    void handleLowerWestOfUpperRightEasternHemisphere()
+    {
+        var lowerLeft = pointValue( WGS84, -160, 60 );
+        var upperRight = pointValue( WGS84, -150, 66 );
+
+        assertThat( withinBBox(  pointValue( WGS84, -140, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, -150, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -151, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -155, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -159, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -160, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -170, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleLowerLeftEastOfUpperRightEasternHemisphere()
+    {
+        var lowerLeft = pointValue( WGS84, -150, 60 );
+        var upperRight = pointValue( WGS84, -160, 66 );
+
+        assertThat( withinBBox(  pointValue( WGS84, -140, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -150, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -151, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, -155, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, -159, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, -160, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -170, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+    }
+
+    @Test
+    void handleLowerWestOfUpperRightCrossingHemispheres()
+    {
+        var lowerLeft = pointValue( WGS84, 175, 60 );
+        var upperRight = pointValue( WGS84, -175, 66 );
+
+        assertThat( withinBBox(  pointValue( WGS84, 170, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+        assertThat( withinBBox(  pointValue( WGS84, 175, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, 180, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -175, 63 ), lowerLeft, upperRight )).isEqualTo( TRUE );
+        assertThat( withinBBox(  pointValue( WGS84, -170, 63 ), lowerLeft, upperRight )).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleLowerLeftEastOfUpperRightCrossingHemispheres()
+    {
+        var lowerLeft = pointValue( WGS84, -175, 60 );
+        var upperRight = pointValue( WGS84, 175, 66 );
+
+        assertThat( withinBBox( pointValue( WGS84, 170, 63 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 175, 63 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 180, 63 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, -175, 63 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, -170, 63 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+    }
+
+    @Test
+    void handleLowerLeftSouthOfUpperRightNorthernHemisphere()
+    {
+        var lowerLeft = pointValue( WGS84, 30, 60 );
+        var upperRight = pointValue( WGS84, 40, 70 );
+
+        assertThat( withinBBox( pointValue( WGS84, 35, 55 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 60 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 65 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 70 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 75 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleLowerLeftNorthOfUpperNorthernHemisphere()
+    {
+        var lowerLeft = pointValue( WGS84, 30, 70 );
+        var upperRight = pointValue( WGS84, 40, 60 );
+
+        assertThat( withinBBox( pointValue( WGS84, 35, 55 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 60 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 65 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 70 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 75 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+    }
+
+    @Test
+    void handleLowerLeftSouthOfUpperRightSouthernHemisphere()
+    {
+        var lowerLeft = pointValue( WGS84, 30, -70 );
+        var upperRight = pointValue( WGS84, 40, -60 );
+
+        assertThat( withinBBox( pointValue( WGS84, 35, -55 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -60 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -65 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -70 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -75 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleLowerLeftNorthOfUpperRightSouthernHemisphere()
+    {
+        var lowerLeft = pointValue( WGS84, 30, -60 );
+        var upperRight = pointValue( WGS84, 40, -70 );
+
+        assertThat( withinBBox( pointValue( WGS84, 35, 55 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -55 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -60 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -65 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -70 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -75 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+    }
+
+    @Test
+    void handleLowerLeftSouthOfUpperRightCrossingEquator()
+    {
+        var lowerLeft = pointValue( WGS84, 30, -10 );
+        var upperRight = pointValue( WGS84, 40, 10 );
+
+        assertThat( withinBBox( pointValue( WGS84, 35, -15 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -10 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 0 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35,  10 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 15 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleLowerLeftNorthOfUpperRightCrossingEquator()
+    {
+        var lowerLeft = pointValue( WGS84, 30, 10 );
+        var upperRight = pointValue( WGS84, 40, -10 );
+
+        assertThat( withinBBox( pointValue( WGS84, 35, -15 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -10 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 0 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35,  10 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 15 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
     }
 }

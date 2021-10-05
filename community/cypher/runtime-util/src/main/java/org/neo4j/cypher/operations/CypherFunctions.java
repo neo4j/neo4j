@@ -40,6 +40,7 @@ import org.neo4j.values.Equality;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.IntegralValue;
@@ -461,20 +462,10 @@ public final class CypherFunctions
 
     public static Value withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight )
     {
-        if ( point.getCoordinateReferenceSystem().equals( lowerLeft.getCoordinateReferenceSystem() ) &&
-             lowerLeft.getCoordinateReferenceSystem().equals( upperRight.getCoordinateReferenceSystem() ) )
+        CoordinateReferenceSystem crs = point.getCoordinateReferenceSystem();
+        if ( crs.equals( lowerLeft.getCoordinateReferenceSystem() ) && crs.equals( upperRight.getCoordinateReferenceSystem() ) )
         {
-            var check = point.coordinate();
-            var ll = lowerLeft.coordinate();
-            var ur = upperRight.coordinate();
-            for ( int i = 0; i < check.length; i++ )
-            {
-                if ( check[i] < ll[i] || check[i] > ur[i] )
-                {
-                    return FALSE;
-                }
-            }
-            return TRUE;
+            return Values.booleanValue( crs.getCalculator().withinBBox( point, lowerLeft, upperRight) );
         }
         else
         {
