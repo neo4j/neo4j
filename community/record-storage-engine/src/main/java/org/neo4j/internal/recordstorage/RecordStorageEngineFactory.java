@@ -32,6 +32,7 @@ import java.util.UUID;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -63,6 +64,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator;
@@ -139,6 +141,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public StoreVersion versionInformation( StoreId storeId )
     {
         return versionInformation( StoreVersion.versionLongToString( storeId.getStoreVersion() ) );
+    }
+
+    @Override
+    public StoreVersion defaultStoreVersion()
+    {
+        return new RecordStoreVersion( Standard.LATEST_RECORD_FORMATS );
     }
 
     @Override
