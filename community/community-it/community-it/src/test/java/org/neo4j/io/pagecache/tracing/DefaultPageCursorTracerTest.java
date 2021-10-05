@@ -167,7 +167,7 @@ class DefaultPageCursorTracerTest
         {
             PageFaultEvent faultEvent = pinEvent.beginPageFault( 3, swapper );
             {
-                EvictionEvent evictionEvent = faultEvent.beginEviction(0);
+                EvictionEvent evictionEvent = faultEvent.beginEviction( 0 );
                 {
                     evictionEvent.setSwapper( swapper );
                     FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, referenceTranslator );
@@ -205,6 +205,7 @@ class DefaultPageCursorTracerTest
         assertEquals( 1, cacheTracer.unpins() );
         assertEquals( 1, cacheTracer.faults() );
         assertEquals( 1, cacheTracer.evictions() );
+        assertEquals( 1, cacheTracer.cooperativeEvictions() );
         assertEquals( 1, cacheTracer.evictionExceptions() );
         assertEquals( 1, cacheTracer.flushes() );
         assertEquals( 1, cacheTracer.merges() );
@@ -219,6 +220,7 @@ class DefaultPageCursorTracerTest
         assertEquals( 3, cacheTracer.unpins() );
         assertEquals( 3, cacheTracer.faults() );
         assertEquals( 3, cacheTracer.evictions() );
+        assertEquals( 3, cacheTracer.cooperativeEvictions() );
         assertEquals( 3, cacheTracer.evictionExceptions() );
         assertEquals( 3, cacheTracer.flushes() );
         assertEquals( 3, cacheTracer.merges() );
@@ -236,6 +238,7 @@ class DefaultPageCursorTracerTest
         assertEquals( 1, cacheTracer.unpins() );
         assertEquals( 1, cacheTracer.faults() );
         assertEquals( 1, cacheTracer.evictions() );
+        assertEquals( 1, cacheTracer.cooperativeEvictions() );
         assertEquals( 1, cacheTracer.evictionExceptions() );
         assertEquals( 1, cacheTracer.flushes() );
         assertEquals( 1, cacheTracer.merges() );
@@ -250,6 +253,7 @@ class DefaultPageCursorTracerTest
         assertEquals( 3, cacheTracer.unpins() );
         assertEquals( 3, cacheTracer.faults() );
         assertEquals( 3, cacheTracer.evictions() );
+        assertEquals( 3, cacheTracer.cooperativeEvictions() );
         assertEquals( 3, cacheTracer.evictionExceptions() );
         assertEquals( 3, cacheTracer.flushes() );
         assertEquals( 3, cacheTracer.merges() );
@@ -331,7 +335,7 @@ class DefaultPageCursorTracerTest
             PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 4, swapper );
             pageFaultEvent.addBytesRead( 150 );
             {
-                EvictionEvent evictionEvent = pageFaultEvent.beginEviction(0);
+                EvictionEvent evictionEvent = pageFaultEvent.beginEviction( 0 );
                 {
                     evictionEvent.setSwapper( swapper );
                     FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, referenceTranslator );

@@ -95,6 +95,12 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public long cooperativeEvictions()
+        {
+            return 0;
+        }
+
+        @Override
         public long pins()
         {
             return 0;
@@ -223,6 +229,11 @@ public interface PageCacheTracer extends PageCacheCounters
 
         @Override
         public void evictions( long evictions )
+        {
+        }
+
+        @Override
+        public void cooperativeEvictions( long evictions )
         {
         }
 
@@ -363,6 +374,12 @@ public interface PageCacheTracer extends PageCacheCounters
      * @param evictions number of evictions
      */
     void evictions( long evictions );
+
+    /**
+     * Report number of observed cooperative evictions
+     * @param evictions number of cooperative evictions
+     */
+    void cooperativeEvictions( long evictions );
 
     /**
      * Report number of eviction exceptions

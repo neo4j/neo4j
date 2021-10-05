@@ -36,6 +36,11 @@ public interface PageCacheCounters
     long evictions();
 
     /**
+     * @return The number of cooperative page evictions observed thus far.
+     */
+    long cooperativeEvictions();
+
+    /**
      * @return The number of page pins observed thus far.
      */
     long pins();

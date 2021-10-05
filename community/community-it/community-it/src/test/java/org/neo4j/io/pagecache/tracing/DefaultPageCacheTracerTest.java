@@ -114,19 +114,55 @@ class DefaultPageCacheTracerTest
             evictionRunEvent.beginEviction( 0 ).close();
         }
 
-        assertCounts( 0, 0, 0, 0, 4, 2, 13, 0, 0, 36, 0, 0,  0d);
+        assertCounts( 0, 0, 0, 0, 4, 2, 13, 0, 0, 36, 0, 0, 0d, 0 );
+    }
+
+    @Test
+    void mustDistinguishCooperativeEvictions()
+    {
+        try ( EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions( 2 ) )
+        {
+            try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction( 0 ) )
+            {
+                evictionEvent.setSwapper( swapper );
+                var flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
+                flushEvent.addBytesWritten( 12 );
+                flushEvent.addPagesFlushed( 10 );
+                flushEvent.done();
+            }
+
+            evictionRunEvent.beginEviction( 0 ).close();
+        }
+        try ( var pageCursorTracer = tracer.createPageCursorTracer( "tag" ) )
+        {
+            PinEvent pinEvent = pageCursorTracer.beginPin( false, 0, swapper );
+            {
+                try ( var pageFaultEvent = pinEvent.beginPageFault( 4, swapper );
+                      var evictionEvent = pageFaultEvent.beginEviction( 0 ) )
+                {
+                    evictionEvent.setSwapper( swapper );
+                    var flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
+                    flushEvent.addBytesWritten( 12 );
+                    flushEvent.addPagesFlushed( 1 );
+                    flushEvent.done();
+                }
+            }
+            pinEvent.done();
+        }
+
+        assertCounts( 1, 1, 0, 1, 3, 0, 11, 0, 0, 24, 0, 0, 0d, 1 );
     }
 
     @Test
     void mustCountFileMappingAndUnmapping()
     {
         var pagedFile = Mockito.mock( PagedFile.class );
-        when(pagedFile.path()).thenReturn( Path.of( "a" ) );
+        when( pagedFile.path() ).thenReturn( Path.of( "a" ) );
 
         tracer.mappedFile( 1, pagedFile );
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0d, 0 );
         tracer.unmappedFile( 1, pagedFile );
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0d, 0 );
     }
 
     @Test
@@ -139,7 +175,7 @@ class DefaultPageCacheTracerTest
             cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0 );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
@@ -156,7 +192,7 @@ class DefaultPageCacheTracerTest
             flushEvent3.done();
         }
 
-        assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0d, 0 );
     }
 
     @Test
@@ -168,7 +204,7 @@ class DefaultPageCacheTracerTest
             cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
             cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
         }
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0 );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
@@ -184,7 +220,7 @@ class DefaultPageCacheTracerTest
             flushEvent3.addPagesMerged( 3 );
             flushEvent3.done();
         }
-        assertCounts( 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0d );
+        assertCounts( 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0d, 0 );
     }
 
     @Test
@@ -215,7 +251,7 @@ class DefaultPageCacheTracerTest
     }
 
     private void assertCounts( long pins, long unpins, long hits, long faults, long evictions, long evictionExceptions, long flushes, long merges,
-            long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped, double hitRatio )
+                               long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped, double hitRatio, long cooperativeEvictions )
     {
         assertThat( tracer.pins() ).as( "pins" ).isEqualTo( pins );
         assertThat( tracer.unpins() ).as( "unpins" ).isEqualTo( unpins );
@@ -223,6 +259,7 @@ class DefaultPageCacheTracerTest
         assertThat( tracer.faults() ).as( "faults" ).isEqualTo( faults );
         assertThat( tracer.merges() ).as( "merges" ).isEqualTo( merges );
         assertThat( tracer.evictions() ).as( "evictions" ).isEqualTo( evictions );
+        assertThat( tracer.cooperativeEvictions() ).as( "cooperativeEvictions" ).isEqualTo( cooperativeEvictions );
         assertThat( tracer.evictionExceptions() ).as( "evictionExceptions" ).isEqualTo( evictionExceptions );
         assertThat( tracer.flushes() ).as( "flushes" ).isEqualTo( flushes );
         assertThat( tracer.bytesRead() ).as( "bytesRead" ).isEqualTo( bytesRead );

@@ -110,6 +110,12 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long cooperativeEvictions()
+    {
+        return 0;
+    }
+
+    @Override
     public long pins()
     {
         return 0;
@@ -238,6 +244,11 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
     @Override
     public void evictions( long evictions )
+    {
+    }
+
+    @Override
+    public void cooperativeEvictions( long evictions )
     {
     }
 

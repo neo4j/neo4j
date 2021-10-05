@@ -134,6 +134,12 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public long cooperativeEvictions()
+    {
+        return 0;
+    }
+
+    @Override
     public long unpins()
     {
         return 0;
@@ -260,6 +266,11 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     public void evictions( long evictions )
     {
         this.evictions.getAndAdd( evictions );
+    }
+
+    @Override
+    public void cooperativeEvictions( long evictions )
+    {
     }
 
     @Override

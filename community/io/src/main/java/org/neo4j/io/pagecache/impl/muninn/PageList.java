@@ -462,7 +462,7 @@ class PageList implements PageReferenceTranslator
         {
             if ( isLoaded( pageRef ) )
             {
-                try ( EvictionEvent evictionEvent = evictionOpportunity.beginEviction( toId( pageRef ) ) )
+                try ( var evictionEvent = evictionOpportunity.beginEviction( toId( pageRef ) ) )
                 {
                     evict( pageRef, evictionEvent );
                     return true;

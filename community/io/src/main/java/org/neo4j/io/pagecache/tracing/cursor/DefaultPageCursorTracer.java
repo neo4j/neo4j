@@ -60,7 +60,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long merges;
 
     private final DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
-    private final DefaultEvictionEvent evictionEvent = new DefaultEvictionEvent();
+    private final PageFaultEvictionEvent evictionEvent = new PageFaultEvictionEvent();
     private final DefaultPageFaultEvent pageFaultEvent = new DefaultPageFaultEvent();
     private final DefaultFlushEvent flushEvent = new DefaultFlushEvent();
 
@@ -132,6 +132,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         if ( evictions > 0 )
         {
             pageCacheTracer.evictions( evictions );
+            // all evictions counted by PageCursorTracer are cooperative
+            pageCacheTracer.cooperativeEvictions( evictions );
         }
         if ( evictionExceptions > 0 )
         {
@@ -406,7 +408,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
     }
 
-    private class DefaultEvictionEvent implements EvictionEvent
+    private class PageFaultEvictionEvent implements EvictionEvent
     {
         private PageFileSwapperTracer swapperTracer;
 

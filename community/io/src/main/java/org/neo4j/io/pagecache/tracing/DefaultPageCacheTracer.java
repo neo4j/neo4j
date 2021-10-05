@@ -36,6 +36,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
 {
     protected final LongAdder faults = new LongAdder();
     protected final LongAdder evictions = new LongAdder();
+    protected final LongAdder cooperativeEvictions = new LongAdder();
     protected final LongAdder pins = new LongAdder();
     protected final LongAdder unpins = new LongAdder();
     protected final LongAdder hits = new LongAdder();
@@ -239,6 +240,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long cooperativeEvictions()
+    {
+        return cooperativeEvictions.sum();
+    }
+
+    @Override
     public long pins()
     {
         return pins.sum();
@@ -404,6 +411,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     public void evictions( long evictions )
     {
         this.evictions.add( evictions );
+    }
+
+    @Override
+    public void cooperativeEvictions( long evictions )
+    {
+        this.cooperativeEvictions.add( evictions );
     }
 
     @Override

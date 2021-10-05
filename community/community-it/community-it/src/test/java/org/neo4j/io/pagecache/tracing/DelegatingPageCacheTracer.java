@@ -206,6 +206,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public void cooperativeEvictions( long evictions )
+    {
+        delegate.cooperativeEvictions( evictions );
+    }
+
+    @Override
     public void evictionExceptions( long evictionExceptions )
     {
         delegate.evictionExceptions( evictionExceptions );
@@ -287,5 +293,11 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public long evictions()
     {
         return delegate.evictions();
+    }
+
+    @Override
+    public long cooperativeEvictions()
+    {
+        return delegate.cooperativeEvictions();
     }
 }
