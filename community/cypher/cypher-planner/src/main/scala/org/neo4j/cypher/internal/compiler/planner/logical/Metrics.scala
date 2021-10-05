@@ -188,11 +188,11 @@ trait MetricsFactory {
                               expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def newCostModel(executionModel: ExecutionModel): CostModel
   def newQueryGraphCardinalityModel(planContext: PlanContext, calculator: SelectivityCalculator): QueryGraphCardinalityModel
-  def newSelectivityCalculator(planContext: PlanContext): SelectivityCalculator =
-    CompositeExpressionSelectivityCalculator(planContext)
+  def newSelectivityCalculator(planContext: PlanContext, planningTextIndexesEnabled: Boolean): SelectivityCalculator =
+    CompositeExpressionSelectivityCalculator(planContext, planningTextIndexesEnabled)
 
-  def newMetrics(planContext: PlanContext, expressionEvaluator: ExpressionEvaluator, executionModel: ExecutionModel): Metrics = {
-    val selectivityCalculator = newSelectivityCalculator(planContext)
+  def newMetrics(planContext: PlanContext, expressionEvaluator: ExpressionEvaluator, executionModel: ExecutionModel, planningTextIndexesEnabled: Boolean): Metrics = {
+    val selectivityCalculator = newSelectivityCalculator(planContext, planningTextIndexesEnabled)
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
     Metrics(newCostModel(executionModel), cardinality)

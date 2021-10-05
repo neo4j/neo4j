@@ -148,7 +148,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics): Metrics = {
     val planContext = notImplementedPlanContext(stats)
-    newMetricsFactory.newMetrics(planContext, newExpressionEvaluator, ExecutionModel.default)
+    newMetricsFactory.newMetrics(planContext, newExpressionEvaluator, ExecutionModel.default, CypherPlannerConfiguration.defaults().planningTextIndexesEnabled)
   }
 
   def notImplementedPlanContext(stats: GraphStatistics) = {

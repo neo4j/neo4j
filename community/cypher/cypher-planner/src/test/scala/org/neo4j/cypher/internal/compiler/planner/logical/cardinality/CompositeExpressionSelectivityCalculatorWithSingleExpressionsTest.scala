@@ -38,9 +38,9 @@ import org.neo4j.cypher.internal.util.Selectivity
  * Test that CompositeExpressionSelectivityCalculator returns the same results as ExpressionSelectivityCalculator for single expressions.
  */
 class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends ExpressionSelectivityCalculatorTest {
-  override protected def setUpCalculator(labelInfo: LabelInfo = Map.empty, relTypeInfo: RelTypeInfo = Map.empty, stats: GraphStatistics = mockStats()): Expression => Selectivity = {
+  override protected def setUpCalculator(labelInfo: LabelInfo, relTypeInfo: RelTypeInfo, stats: GraphStatistics, planningTextIndexesEnabled: Boolean): Expression => Selectivity = {
     val semanticTable = setupSemanticTable()
-    val compositeCalculator = CompositeExpressionSelectivityCalculator(mockPlanContext(stats))
+    val compositeCalculator = CompositeExpressionSelectivityCalculator(mockPlanContext(stats), planningTextIndexesEnabled)
     exp: Expression => {
       compositeCalculator(Selections.from(exp), labelInfo, relTypeInfo, semanticTable, IndexCompatiblePredicatesProviderContext.default)
     }

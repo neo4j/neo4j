@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculatorTest.IndexDescriptorHelper
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.InequalityExpression
@@ -66,7 +67,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   // NODES
 
-  protected val indexPerson: IndexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(0), Seq(PropertyKeyId(0)))
+  protected val indexPersonBtree: IndexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(0), Seq(PropertyKeyId(0)))
+  protected val indexPersonText: IndexDescriptor = indexPersonBtree.copy(indexType = IndexDescriptor.IndexType.Text)
+
   protected val indexAnimal: IndexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(1), Seq(PropertyKeyId(0)))
 
   protected val nProp: Property = prop("n", "nodeProp")
@@ -78,6 +81,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   protected val nIsPersonAndAnimalLabelInfo: Map[String, Set[LabelName]] = Map("n" -> Set(labelName("Person"), labelName("Animal")))
 
   protected val personPropIsNotNullSel: Double = 0.2
+  protected val personTextPropIsNotNullSel: Double = 0.1
   protected val indexPersonUniqueSel: Double= 1.0 / 180.0
   protected val animalPropIsNotNullSel: Double = 0.5
 
@@ -303,7 +307,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     )))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo,
-      stats = mockStats(labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 10.0)))
+      stats = mockStats(labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 10.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -326,7 +330,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     )))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo,
-      stats = mockStats(labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 10.0)))
+      stats = mockStats(labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 10.0)))
 
     val labelResult = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -348,9 +352,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     )))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0),
-      indexUniqueCardinalities = Map(indexPerson -> 180.0, indexAnimal -> 380.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0),
+      indexUniqueCardinalities = Map(indexPersonBtree -> 180.0, indexAnimal -> 380.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -380,9 +384,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     )))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0),
-      indexUniqueCardinalities = Map(indexPerson -> 180.0, indexAnimal -> 380.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0),
+      indexUniqueCardinalities = Map(indexPersonBtree -> 180.0, indexAnimal -> 380.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -417,9 +421,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     )))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0),
-      indexUniqueCardinalities = Map(indexPerson -> 180.0, indexAnimal -> 380.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0),
+      indexUniqueCardinalities = Map(indexPersonBtree -> 180.0, indexAnimal -> 380.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -450,9 +454,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     )))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0),
-      indexUniqueCardinalities = Map(indexPerson -> 180.0, indexAnimal -> 380.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0),
+      indexUniqueCardinalities = Map(indexPersonBtree -> 180.0, indexAnimal -> 380.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -516,8 +520,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("distance with two labels, two indexes") {
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -551,220 +555,399 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     )
   }
 
-  // STARTS WITH
+  // STARTS WITH, ENDS WITH, CONTAINS
 
-  test("starts with length 0, no label") {
-    val stringPredicate = nPredicate(startsWith(nProp, literalString("")))
+  private val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
+    Seq(startsWith _, endsWith _, contains _)
+      .map(mkExpr => (mkExpr, mkExpr(null, null).getClass.getSimpleName))
 
-    val calculator = setUpCalculator()
-    val stringPredicateResult = calculator(stringPredicate.expr)
-    stringPredicateResult should equal(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
+  test("starts with/ends with/contains length 0, no label") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("")))
+
+      val calculator = setUpCalculator()
+      val stringPredicateResult = calculator(stringPredicate.expr)
+      stringPredicateResult should equal(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
+    }
   }
 
-  test("starts with length 1, no label") {
-    val stringPredicate = nPredicate(startsWith(nProp, literalString("1")))
+  test("starts with/ends with/contains length 1, no label") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("1")))
 
-    val calculator = setUpCalculator()
-    val stringPredicateResult = calculator(stringPredicate.expr)
-    stringPredicateResult should equal(DEFAULT_RANGE_SELECTIVITY)
+      val calculator = setUpCalculator()
+      val stringPredicateResult = calculator(stringPredicate.expr)
+      stringPredicateResult should equal(DEFAULT_RANGE_SELECTIVITY)
+    }
   }
 
-  test("starts with length 2, no label") {
-    val stringPredicate = nPredicate(startsWith(nProp, literalString("12")))
+  test("starts with/ends with/contains length 2, no label") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("12")))
 
-    val calculator = setUpCalculator()
-    val stringPredicateResult = calculator(stringPredicate.expr)
-    stringPredicateResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
+      val calculator = setUpCalculator()
+      val stringPredicateResult = calculator(stringPredicate.expr)
+      stringPredicateResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
+    }
   }
 
-  test("starts with length unknown, no label") {
-    val stringPredicate = nPredicate(startsWith(nProp, varFor("string")))
+  test("starts with/ends with/contains length unknown, no label") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
 
-    val calculator = setUpCalculator()
-    val stringPredicateResult = calculator(stringPredicate.expr)
-    stringPredicateResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / DEFAULT_STRING_LENGTH
-      +- 0.00000001)
+      val calculator = setUpCalculator()
+      val stringPredicateResult = calculator(stringPredicate.expr)
+      stringPredicateResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / DEFAULT_STRING_LENGTH
+        +- 0.00000001)
+    }
   }
 
-  test("starts with length 0, one label") {
-    val stringPredicate = nPredicate(startsWith(nProp, literalString("")))
+  test("starts with/ends with/contains length 0, one label, text index planning disabled") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("")))
 
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningTextIndexesEnabled = false)
 
-    val labelResult = calculator(nIsPerson.expr)
-    val stringPredicateResult = calculator(stringPredicate.expr)
+      val labelResult = calculator(nIsPerson.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
 
-    labelResult.factor should equal(0.1)
-    stringPredicateResult.factor should equal(
-      personPropIsNotNullSel
-        * DEFAULT_TYPE_SELECTIVITY.factor // is string
-    )
-  }
-
-  test("starts with length 1, one label") {
-    val stringPredicate = nPredicate(startsWith(nProp, literalString("1")))
-
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
-
-    val labelResult = calculator(nIsPerson.expr)
-    val stringPredicateResult = calculator(stringPredicate.expr)
-
-    labelResult.factor should equal(0.1)
-    stringPredicateResult.factor should equal(
-      personPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR // starts with
-    )
-  }
-
-  test("starts with length 1, one relType") {
-    val stringPredicate = rPredicate(startsWith(rProp, literalString("1")))
-
-    val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo)
-
-    val stringPredicateResult = calculator(stringPredicate.expr)
-
-    stringPredicateResult.factor should equal(
-      friendsPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR // starts with
-    )
-  }
-
-  test("starts with length 2, one label") {
-    val stringPredicate = nPredicate(startsWith(nProp, literalString("12")))
-
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
-
-    val labelResult = calculator(nIsPerson.expr)
-    val stringPredicateResult = calculator(stringPredicate.expr)
-
-    labelResult.factor should equal(0.1)
-    stringPredicateResult.factor should equal(
-      personPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
-    )
-  }
-
-  test("starts with length unknown, one label") {
-    val stringPredicate = nPredicate(startsWith(nProp, varFor("string")))
-
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
-
-    val labelResult = calculator(nIsPerson.expr)
-    val stringPredicateResult = calculator(stringPredicate.expr)
-
-    labelResult.factor should equal(0.1)
-    stringPredicateResult.factor should equal(
-      personPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH // starts with
-    )
-  }
-
-  test("starts with length 0, two labels") {
-    val stringPredicate = nPredicate(startsWith(nProp, literalString("")))
-
-    val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
-
-    val labelResult1 = calculator(nIsPerson.expr)
-    val labelResult2 = calculator(nIsAnimal.expr)
-    val stringPredicateResult = calculator(stringPredicate.expr)
-
-    labelResult1.factor should equal(0.1)
-    labelResult2.factor should equal(0.08)
-
-    val personIndexSelectivity = (
-      personPropIsNotNullSel
-        * DEFAULT_TYPE_SELECTIVITY.factor // is string
+      labelResult.factor should equal(0.1)
+      stringPredicateResult.factor should equal(
+        personPropIsNotNullSel
+          * DEFAULT_TYPE_SELECTIVITY.factor // is string
       )
-    val animalIndexSelectivity = (
-      animalPropIsNotNullSel
-        * DEFAULT_TYPE_SELECTIVITY.factor // is string
-      )
-
-    stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
-      +- 0.00000001)
+    }
   }
 
-  test("starts with length 1, two labels") {
-    val stringPredicate = nPredicate(startsWith(nProp, literalString("1")))
+  test("starts with/ends with/contains length 0, one label") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("")))
 
-    val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
 
-    val labelResult1 = calculator(nIsPerson.expr)
-    val labelResult2 = calculator(nIsAnimal.expr)
-    val stringPredicateResult = calculator(stringPredicate.expr)
+      val labelResult = calculator(nIsPerson.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
 
-    labelResult1.factor should equal(0.1)
-    labelResult2.factor should equal(0.08)
-
-    val personIndexSelectivity = (
-      personPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR // starts with
-      )
-    val animalIndexSelectivity = (
-      animalPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR // starts with
-      )
-
-    stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
-      +- 0.00000001)
+      labelResult.factor should equal(0.1)
+      stringPredicateResult.factor shouldEqual personTextPropIsNotNullSel
+    }
   }
 
-  test("starts with length 2, two labels") {
-    val stringPredicate = nPredicate(startsWith(nProp, literalString("12")))
+  test("starts with/ends with/contains length 1, one label, text index planning disabled") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("1")))
 
-    val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningTextIndexesEnabled = false)
 
-    val labelResult1 = calculator(nIsPerson.expr)
-    val labelResult2 = calculator(nIsAnimal.expr)
-    val stringPredicateResult = calculator(stringPredicate.expr)
+      val labelResult = calculator(nIsPerson.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
 
-    labelResult1.factor should equal(0.1)
-    labelResult2.factor should equal(0.08)
-
-    val personIndexSelectivity = (
-      personPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
+      labelResult.factor should equal(0.1)
+      stringPredicateResult.factor should equal(
+        personPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR
       )
-    val animalIndexSelectivity = (
-      animalPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
-      )
-
-    stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
-      +- 0.00000001)
+    }
   }
 
-  test("starts with length unknown, two labels") {
-    val stringPredicate = nPredicate(startsWith(nProp, varFor("string")))
+  test("starts with/ends with/contains length 1, one label") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("1")))
 
-    val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
 
-    val labelResult1 = calculator(nIsPerson.expr)
-    val labelResult2 = calculator(nIsAnimal.expr)
-    val stringPredicateResult = calculator(stringPredicate.expr)
+      val labelResult = calculator(nIsPerson.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
 
-    labelResult1.factor should equal(0.1)
-    labelResult2.factor should equal(0.08)
-
-    val personIndexSelectivity = (
-      personPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH // starts with
+      labelResult.factor should equal(0.1)
+      stringPredicateResult.factor should equal(
+        personTextPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR
       )
-    val animalIndexSelectivity = (
-      animalPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH // starts with
-      )
+    }
+  }
 
-    stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
-      +- 0.00000001)
+  test("starts with/ends with/contains length 1, one relType") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = rPredicate(mkExpr(rProp, literalString("1")))
+
+      val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo)
+
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      stringPredicateResult.factor should equal(
+        friendsPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR
+      )
+    }
+  }
+
+  test("starts with/ends with/contains length 2, one label, text index planning disabled") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("12")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningTextIndexesEnabled = false)
+
+      val labelResult = calculator(nIsPerson.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult.factor should equal(0.1)
+      stringPredicateResult.factor should equal(
+        personPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / 2
+      )
+    }
+  }
+
+  test("starts with/ends with/contains length 2, one label") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("12")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+      val labelResult = calculator(nIsPerson.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult.factor should equal(0.1)
+      stringPredicateResult.factor should equal(
+        personTextPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / 2
+      )
+    }
+  }
+
+  test("starts with/ends with/contains length unknown, one label, text index planning disabled") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningTextIndexesEnabled = false)
+
+      val labelResult = calculator(nIsPerson.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult.factor should equal(0.1)
+      stringPredicateResult.factor should equal(
+        personPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
+      )
+    }
+  }
+
+  test("starts with/ends with/contains length unknown, one label") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+      val labelResult = calculator(nIsPerson.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult.factor should equal(0.1)
+      stringPredicateResult.factor should equal(
+        personTextPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
+      )
+    }
+  }
+
+  test("starts with/ends with/contains length 0, two labels") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
+        labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+        indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
+
+      val labelResult1 = calculator(nIsPerson.expr)
+      val labelResult2 = calculator(nIsAnimal.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult1.factor should equal(0.1)
+      labelResult2.factor should equal(0.08)
+
+      val personIndexSelectivity = (
+        personPropIsNotNullSel
+          * DEFAULT_TYPE_SELECTIVITY.factor // is string
+        )
+      val animalIndexSelectivity = (
+        animalPropIsNotNullSel
+          * DEFAULT_TYPE_SELECTIVITY.factor // is string
+        )
+
+      stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+        +- 0.00000001)
+    }
+  }
+
+  test("starts with/ends with/contains length 1, two labels") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("1")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
+        labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+        indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
+
+      val labelResult1 = calculator(nIsPerson.expr)
+      val labelResult2 = calculator(nIsAnimal.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult1.factor should equal(0.1)
+      labelResult2.factor should equal(0.08)
+
+      val personIndexSelectivity = (
+        personPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR
+        )
+      val animalIndexSelectivity = (
+        animalPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR
+        )
+
+      stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+        +- 0.00000001)
+    }
+  }
+
+  test("starts with/ends with/contains length 0, two labels, multiple index types") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
+        labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+        indexCardinalities = Map(indexPersonBtree -> 200.0, indexPersonText -> 100.0, indexAnimal -> 400.0)))
+
+      val labelResult1 = calculator(nIsPerson.expr)
+      val labelResult2 = calculator(nIsAnimal.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult1.factor should equal(0.1)
+      labelResult2.factor should equal(0.08)
+
+      val personIndexSelectivity = personTextPropIsNotNullSel
+      val animalIndexSelectivity = (
+        animalPropIsNotNullSel
+          * DEFAULT_TYPE_SELECTIVITY.factor // is string
+        )
+
+      stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+        +- 0.00000001)
+    }
+  }
+
+  test("starts with/ends with/contains length 2, two labels") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("12")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
+        labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+        indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
+
+      val labelResult1 = calculator(nIsPerson.expr)
+      val labelResult2 = calculator(nIsAnimal.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult1.factor should equal(0.1)
+      labelResult2.factor should equal(0.08)
+
+      val personIndexSelectivity = (
+        personPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / 2
+        )
+      val animalIndexSelectivity = (
+        animalPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / 2
+        )
+
+      stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+        +- 0.00000001)
+    }
+  }
+
+  test("starts with/ends with/contains length 2, two labels, multiple index types") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, literalString("12")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
+        labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+        indexCardinalities = Map(indexPersonBtree -> 200.0, indexPersonText -> 100.0, indexAnimal -> 400.0)))
+
+      val labelResult1 = calculator(nIsPerson.expr)
+      val labelResult2 = calculator(nIsAnimal.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult1.factor should equal(0.1)
+      labelResult2.factor should equal(0.08)
+
+      val personIndexSelectivity = (
+        personTextPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / 2
+        )
+      val animalIndexSelectivity = (
+        animalPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / 2
+        )
+
+      stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+        +- 0.00000001)
+    }
+  }
+
+  test("starts with/ends with/contains length unknown, two labels") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
+        labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+        indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
+
+      val labelResult1 = calculator(nIsPerson.expr)
+      val labelResult2 = calculator(nIsAnimal.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult1.factor should equal(0.1)
+      labelResult2.factor should equal(0.08)
+
+      val personIndexSelectivity = (
+        personPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
+        )
+      val animalIndexSelectivity = (
+        animalPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
+        )
+
+      stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+        +- 0.00000001)
+    }
+  }
+
+  test("starts with/ends with/contains length unknown, two labels, multiple index types") {
+    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
+      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
+
+      val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
+        labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+        indexCardinalities = Map(indexPersonBtree -> 200.0, indexPersonText -> 100.0, indexAnimal -> 400.0)))
+
+      val labelResult1 = calculator(nIsPerson.expr)
+      val labelResult2 = calculator(nIsAnimal.expr)
+      val stringPredicateResult = calculator(stringPredicate.expr)
+
+      labelResult1.factor should equal(0.1)
+      labelResult2.factor should equal(0.08)
+
+      val personIndexSelectivity = (
+        personTextPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
+        )
+      val animalIndexSelectivity = (
+        animalPropIsNotNullSel
+          * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
+        )
+
+      stringPredicateResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+        +- 0.00000001)
+    }
   }
 
   // IS NOT NULL
@@ -792,6 +975,28 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     isNotNullResult.factor should equal(personPropIsNotNullSel)
+  }
+
+  test("isNotNull with one label, text index only, greater than the default value") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(indexCardinalities = Map(indexPersonText -> 900.0 )))
+
+    val labelResult = calculator(nIsPerson.expr)
+    val isNotNullResult = calculator(nIsNotNull.expr)
+
+    labelResult.factor shouldEqual 0.1
+    isNotNullResult.factor shouldEqual 0.9
+  }
+
+  test("isNotNull with one label, text index only, less than the default value") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(indexCardinalities = Map(indexPersonText -> 100.0)))
+
+    val labelResult = calculator(nIsPerson.expr)
+    val isNotNullResult = calculator(nIsNotNull.expr)
+
+    labelResult.factor shouldEqual 0.1
+    isNotNullResult shouldEqual DEFAULT_PROPERTY_SELECTIVITY
   }
 
   test("isNotNull with one relType") {
@@ -831,7 +1036,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("isNotNull with two labels, one index") {
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo,
-      stats = mockStats(labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 10.0)))
+      stats = mockStats(labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 10.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -844,8 +1049,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("isNotNull with two labels, two indexes") {
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -1001,8 +1206,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val equals = nPredicate(in(nProp, listOf()))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexUniqueCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexUniqueCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -1017,9 +1222,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val equals = nPredicate(super.equals(nProp, literalInt(3)))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 300.0, indexAnimal -> 500.0),
-      indexUniqueCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 300.0, indexAnimal -> 500.0),
+      indexUniqueCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -1037,9 +1242,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val equals = nPredicate(in(nProp, listOfInt(3, 4)))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 300.0, indexAnimal -> 500.0),
-      indexUniqueCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 300.0, indexAnimal -> 500.0),
+      indexUniqueCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -1061,9 +1266,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val equals = nPredicate(in(nProp, varFor("someList")))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPerson -> 300.0, indexAnimal -> 500.0),
-      indexUniqueCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 300.0, indexAnimal -> 500.0),
+      indexUniqueCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
@@ -1092,8 +1297,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val stats = mock[GraphStatistics]
     when(stats.nodesAllCardinality()).thenReturn(2000.0)
-    when(stats.nodesWithLabelCardinality(Some(indexPerson.label))).thenReturn(1000.0)
-    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
+    when(stats.nodesWithLabelCardinality(Some(indexPersonBtree.label))).thenReturn(1000.0)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner, planningTextIndexesEnabled = false)
 
     val result = calculator(PartialPredicate[HasLabels](hasLabels, mock[HasLabels]), labelInfo, Map.empty)
 
@@ -1104,7 +1309,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val stats = mock[GraphStatistics]
     when(stats.nodesAllCardinality()).thenReturn(MIN_NODES_ALL_CARDINALITY)
     when(stats.nodesWithLabelCardinality(any())).thenReturn(MIN_NODES_WITH_LABEL_CARDINALITY)
-    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner, planningTextIndexesEnabled = false)
     implicit val semanticTable: SemanticTable = SemanticTable()
 
     val expr = HasLabels(null, Seq(labelName("Foo")))(pos)
@@ -1119,7 +1324,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val calculator = setUpCalculator(
       labelInfo = nIsPersonLabelInfo,
       stats = mockStats(
-        labelOrRelCardinalities = Map(indexPerson.label -> 1000.0),
+        labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0),
         indexCardinalities = Map(),
         indexUniqueCardinalities = Map()
       )
@@ -1144,9 +1349,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val calculator = setUpCalculator(
       labelInfo = nIsPersonLabelInfo,
       stats = mockStats(
-        labelOrRelCardinalities = Map(indexPerson.label -> 1000.0),
-        indexCardinalities = Map(indexPerson -> 300.0),
-        indexUniqueCardinalities = Map(indexPerson -> 2.0)
+        labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0),
+        indexCardinalities = Map(indexPersonBtree -> 300.0),
+        indexUniqueCardinalities = Map(indexPersonBtree -> 2.0)
       )
     )
 
@@ -1179,9 +1384,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   protected def setupSemanticTable(): SemanticTable = {
     val semanticTable: SemanticTable = SemanticTable()
-    semanticTable.resolvedLabelNames.put("Person", indexPerson.label)
+    semanticTable.resolvedLabelNames.put("Person", indexPersonBtree.label)
     semanticTable.resolvedLabelNames.put("Animal", indexAnimal.label)
-    semanticTable.resolvedPropertyKeyNames.put("nodeProp", indexPerson.property)
+    semanticTable.resolvedPropertyKeyNames.put("nodeProp", indexPersonBtree.property)
 
     semanticTable.resolvedRelTypeNames.put("Friends", indexFriends.relType)
     semanticTable.resolvedRelTypeNames.put("Friends", indexFriends.relType)
@@ -1193,11 +1398,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
       .addTypeInfo(literalInt(7), CTInteger)
   }
 
-  protected def setUpCalculator(labelInfo: LabelInfo = Map.empty, relTypeInfo: RelTypeInfo = Map.empty, stats: GraphStatistics = mockStats()): Expression => Selectivity = {
+  protected def setUpCalculator(labelInfo: LabelInfo = Map.empty, relTypeInfo: RelTypeInfo = Map.empty, stats: GraphStatistics = mockStats(), planningTextIndexesEnabled: Boolean = true): Expression => Selectivity = {
     implicit val semanticTable: SemanticTable = setupSemanticTable()
 
     val combiner = IndependenceCombiner
-    val calculator = ExpressionSelectivityCalculator(stats, combiner)
+    val calculator = ExpressionSelectivityCalculator(stats, combiner, planningTextIndexesEnabled)
     exp: Expression => calculator(exp, labelInfo, relTypeInfo)
   }
 
@@ -1210,9 +1415,13 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   protected case class mockStats(
                                   allNodesCardinality: Double = 10000.0,
                                   allRelCardinality: Double = 10000.0,
-                                  labelOrRelCardinalities: Map[NameId, Double] = Map(indexPerson.label -> 1000.0, indexFriends.relType -> 1000.0),
-                                  indexCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 200.0, indexFriends -> 200.0),
-                                  indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 180.0, indexFriends -> 180.0)
+                                  labelOrRelCardinalities: Map[NameId, Double] = Map(indexPersonBtree.label -> 1000.0, indexFriends.relType -> 1000.0),
+                                  indexCardinalities: Map[IndexDescriptor, Double] = Map(
+                                    indexPersonBtree -> 200.0,
+                                    indexPersonText -> 100.0,
+                                    indexFriends -> 200.0,
+                                  ),
+                                  indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(indexPersonBtree -> 180.0, indexFriends -> 180.0)
                                 ) extends GraphStatistics {
 
     // sanity check:

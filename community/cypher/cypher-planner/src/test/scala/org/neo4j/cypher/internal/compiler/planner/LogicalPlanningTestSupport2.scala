@@ -343,7 +343,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
                           debugOptions: CypherDebugOptions = CypherDebugOptions.default
                          ): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel)
+      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel, cypherConfig.planningTextIndexesEnabled)
       def context = ContextHelper.create(planContext = planContext,
         cypherExceptionFactory = exceptionFactory,
         queryGraphSolver = queryGraphSolver,
@@ -364,7 +364,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel)
+      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel, planningTextIndexesEnabled = false)
       val planningAttributes = PlanningAttributes.newAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
@@ -387,7 +387,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel)
+      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel, planningTextIndexesEnabled = false)
       val planningAttributes = newStubbedPlanningAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(

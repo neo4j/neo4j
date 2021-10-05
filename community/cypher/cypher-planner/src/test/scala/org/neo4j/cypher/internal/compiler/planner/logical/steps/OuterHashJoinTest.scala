@@ -74,7 +74,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default),
+      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default, planningTextIndexesEnabled = false),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
@@ -106,7 +106,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default),
+      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default, planningTextIndexesEnabled = false),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
@@ -142,7 +142,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default),
+      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default, planningTextIndexesEnabled = false),
       strategy = newMockedStrategyWithSortedPlan(unorderedPlan, orderedPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val io = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode))))

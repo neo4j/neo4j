@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.math.sqrt
 
@@ -649,5 +650,22 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     planShouldHaveCardinality(config, query, {
       case DirectedRelationshipByIdSeek("r", _, _, _, _) => true
     }, 1)
+  }
+
+  test("text index predicate with an empty string argument") {
+    val aNodeCount = 500
+    val textIndexSelectivity = 0.1
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", aNodeCount)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = textIndexSelectivity, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .enablePlanningTextIndexes()
+      .build()
+
+    for (op <- Seq("STARTS WITH", "ENDS WITH", "CONTAINS")) withClue(op) {
+      val q = s"MATCH (a:A) WHERE a.prop $op '' "
+      queryShouldHaveCardinality(cfg, q, aNodeCount * textIndexSelectivity)
+    }
   }
 }

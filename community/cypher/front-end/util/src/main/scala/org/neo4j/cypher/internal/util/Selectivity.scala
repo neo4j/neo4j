@@ -30,17 +30,18 @@ case class Selectivity private(factor: Double) extends Ordered[Selectivity] {
       Selectivity.CLOSEST_TO_ONE
   }
 
-  def compare(that: Selectivity) = factor.compare(that.factor)
+  def compare(that: Selectivity): Int = factor.compare(that.factor)
 }
 
 object Selectivity {
 
   def of(value: Double): Option[Selectivity] = if (value.isInfinite || value.isNaN || value < 0.0 || value > 1.0) None else Some(Selectivity(value))
 
-  val ZERO = Selectivity(0.0d)
-  val ONE = Selectivity(1.0d)
-  val CLOSEST_TO_ONE = Selectivity(1 - 5.56e-17)    // we can get closer, but this is close enough
+  def max(a: Selectivity, b: Selectivity): Selectivity = if (a > b) a else b
 
+  val ZERO: Selectivity = Selectivity(0.0d)
+  val ONE: Selectivity = Selectivity(1.0d)
+  val CLOSEST_TO_ONE: Selectivity = Selectivity(1 - 5.56e-17)    // we can get closer, but this is close enough
 
   implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]): Selectivity =
     p.reduceOption(_ * _).getOrElse(Selectivity(1))
