@@ -1501,20 +1501,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private final CursorContext context;
         private final AccessMode accessMode;
         private final ExecutionContextCursorTracer cursorTracer;
-        private final QueryContext queryContext;
 
         //---------------------------------------------------------------------
-        // TODO
-        // We (at least) need new copies/separate instances of:
-        // - DefaultPooledCursors
-        // - StoreCursors
-        // - Locks.Client
-        //
-        // We need additional methods for these interfaces that are backed by those copies/separate instances:
-        // - Read dataRead()
-        // - CursorFactory cursors()
-        // - QueryContext queryContext()
+        // TODO: TBD. This is an API suggestion of what we need from the Cypher runtime-side,
+        //            and only adds some unsafe stub implementations that maps back to the transaction.
         //---------------------------------------------------------------------
+        private final QueryContext queryContext;
 
         ThreadExecutionContext()
         {
@@ -1576,19 +1568,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public SecurityContext securityContext()
         {
-            return securityContext; // TODO: Safe?
+            return securityContext; // TODO: Is this safe?
         }
 
         @Override
         public SecurityAuthorizationHandler securityAuthorizationHandler()
         {
-            return securityAuthorizationHandler;
+            return securityAuthorizationHandler; // TODO: Is this safe (uses SecurityLog)?
         }
 
         @Override
         public MemoryTracker memoryTracker()
         {
-            return memoryTracker; // TODO: Make safe
+            return memoryTracker; // TODO: Make safe (but may not be used for a while)
         }
 
         @Override
@@ -1646,7 +1638,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             @Override
             public IndexMonitor monitor()
             {
-                return allStoreHolder.monitor();
+                return allStoreHolder.monitor(); // TODO: Is this safe?
             }
         }
     }
