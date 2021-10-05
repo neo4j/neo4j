@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.RuntimeContextManager
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.lifecycle.LifeSupport
@@ -47,13 +46,6 @@ trait RuntimeContextManagerFactory[CONTEXT <: RuntimeContext] {
 class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
                                          runtimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT],
                                          configs: (Setting[_], Object)*) {
-
-  //----------------------------------------------
-  // Specific plan or expression support helpers
-  def supportsNestedPlanExpression: Boolean = {
-    cypherConfig().operatorEngine != CypherOperatorEngineOption.compiled
-  }
-  //----------------------------------------------
 
   def newGraphManagementService(additionalConfigs: (Setting[_], Object)*): DatabaseManagementService = {
     val graphBuilder = graphBuilderFactory().impermanent

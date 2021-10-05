@@ -713,8 +713,6 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should kill nested plan collect expression") {
-    assume(edition.supportsNestedPlanExpression)
-
     // given
     val n = (MemoryManagementTestBase.maxMemory / estimateSize(E_INT)) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -735,8 +733,6 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not kill nested plan exists expression") {
-    assume(edition.supportsNestedPlanExpression)
-
     val n = (MemoryManagementTestBase.maxMemory / estimateSize(E_INT)) * 1.2 // Should fill the size of memory with n values alone + 20% extra margin
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x1")
@@ -752,28 +748,6 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // then
     consume(execute(logicalQuery, runtime, input))
   }
-
-  protected def assertHeapHighWaterMark(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
-    // TODO: Improve this to be a bit more reliable
-    val expectedRowSize = estimateSize(valueToEstimate)
-    val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
-    estimatedRowSize should be >= expectedRowSize
-    estimatedRowSize should be < expectedRowSize * 30 // in pipelined we have lot's of overhead for some operators in corner cases
-    expectedRowSize
-  }
-
-  protected def estimateRowSize(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None, nRows: Int = 8): Long = {
-    val result = execute(logicalQuery, runtime, inputColumns(1, nRows, i => sampleValue.getOrElse(i.toLong)))
-    consume(result)
-    result.runtimeResult.heapHighWaterMark() / nRows
-  }
-}
-
-/**
- * Tests for runtime with full language support
- */
-trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
-  self: MemoryManagementTestBase[CONTEXT] =>
 
   test("should kill eager query before it runs out of memory") {
     // given
@@ -867,6 +841,28 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
       consume(execute(logicalQuery, runtime, input))
     }
   }
+
+  protected def assertHeapHighWaterMark(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
+    // TODO: Improve this to be a bit more reliable
+    val expectedRowSize = estimateSize(valueToEstimate)
+    val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
+    estimatedRowSize should be >= expectedRowSize
+    estimatedRowSize should be < expectedRowSize * 30 // in pipelined we have lot's of overhead for some operators in corner cases
+    expectedRowSize
+  }
+
+  protected def estimateRowSize(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None, nRows: Int = 8): Long = {
+    val result = execute(logicalQuery, runtime, inputColumns(1, nRows, i => sampleValue.getOrElse(i.toLong)))
+    consume(result)
+    result.runtimeResult.heapHighWaterMark() / nRows
+  }
+}
+
+/**
+ * Tests for runtime with full language support
+ */
+trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
+  self: MemoryManagementTestBase[CONTEXT] =>
 
   // expandInto and optionalExpandInto _are_ supported by pipelined.
   // But since the cache is shorter lived there, it does not make sense to have this test for pipelined.
