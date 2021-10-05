@@ -79,8 +79,6 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEADER extends StoreHeader>
         implements RecordStore<RECORD>, AutoCloseable
 {
-    static final String UNKNOWN_VERSION = "Unknown";
-
     protected final Config configuration;
     protected final PageCache pageCache;
     protected final IdType idType;

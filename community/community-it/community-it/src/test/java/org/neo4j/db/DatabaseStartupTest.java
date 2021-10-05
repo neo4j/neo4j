@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -93,7 +94,7 @@ class DatabaseStartupTest
               PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
-                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ), databaseLayout.getDatabaseName(), NULL );
+                    MetaDataStore.Position.STORE_VERSION, StoreVersion.versionStringToLong( "bad" ), databaseLayout.getDatabaseName(), NULL );
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
@@ -136,7 +137,7 @@ class DatabaseStartupTest
               PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.STORE_VERSION,
-                    MetaDataStore.versionStringToLong( badStoreVersion ), databaseLayout.getDatabaseName(), NULL );
+                    StoreVersion.versionStringToLong( badStoreVersion ), databaseLayout.getDatabaseName(), NULL );
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )

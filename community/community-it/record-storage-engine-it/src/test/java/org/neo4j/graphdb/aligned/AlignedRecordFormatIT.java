@@ -40,7 +40,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
+import static org.neo4j.storageengine.api.StoreVersion.versionLongToString;
 
 @DbmsExtension( configurationCallback = "configure" )
 public class AlignedRecordFormatIT

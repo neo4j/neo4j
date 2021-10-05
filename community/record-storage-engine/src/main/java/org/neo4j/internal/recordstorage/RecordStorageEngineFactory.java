@@ -138,7 +138,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StoreVersion versionInformation( StoreId storeId )
     {
-        return versionInformation( MetaDataStore.versionLongToString( storeId.getStoreVersion() ) );
+        return versionInformation( StoreVersion.versionLongToString( storeId.getStoreVersion() ) );
     }
 
     @Override

@@ -53,14 +53,13 @@ import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.HighestTransactionId;
-import org.neo4j.util.Bits;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
-import static java.lang.String.format;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.internal.id.EmptyIdGeneratorFactory.EMPTY_ID_GENERATOR_FACTORY;
 import static org.neo4j.io.pagecache.IOController.DISABLED;
@@ -208,7 +207,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         super.initialiseNewStoreFile( cursorContext );
 
-        long storeVersionAsLong = MetaDataStore.versionStringToLong( storeVersion );
+        long storeVersionAsLong = StoreVersion.versionStringToLong( storeVersion );
         StoreId storeId = new StoreId( storeVersionAsLong );
 
         setCreationTime( storeId.getCreationTime(), cursorContext );
@@ -864,60 +863,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         checkForDecodingErrors( cursor, position.id, NORMAL );
     }
 
-    /*
-     * The following two methods encode and decode a string that is presumably
-     * the store version into a long via Latin1 encoding. This leaves room for
-     * 7 characters and 1 byte for the length. Current string is
-     * 0.A.0 which is 5 chars, so we have room for expansion.
-     */
-    public static long versionStringToLong( String storeVersion )
-    {
-        if ( CommonAbstractStore.UNKNOWN_VERSION.equals( storeVersion ) )
-        {
-            return -1;
-        }
-        Bits bits = Bits.bits( 8 );
-        int length = storeVersion.length();
-        if ( length == 0 || length > 7 )
-        {
-            throw new IllegalArgumentException( format(
-                    "The given string %s is not of proper size for a store version string", storeVersion ) );
-        }
-        bits.put( length, 8 );
-        for ( int i = 0; i < length; i++ )
-        {
-            char c = storeVersion.charAt( i );
-            if ( c >= 256 )
-            {
-                throw new IllegalArgumentException( format(
-                        "Store version strings should be encode-able as Latin1 - %s is not", storeVersion ) );
-            }
-            bits.put( c, 8 ); // Just the lower byte
-        }
-        return bits.getLong();
-    }
-
-    public static String versionLongToString( long storeVersion )
-    {
-        if ( storeVersion == -1 )
-        {
-            return CommonAbstractStore.UNKNOWN_VERSION;
-        }
-        Bits bits = Bits.bitsFromLongs( new long[]{storeVersion} );
-        int length = bits.getShort( 8 );
-        if ( length == 0 || length > 7 )
-        {
-            throw new IllegalArgumentException( format( "The read version string length %d is not proper.",
-                    length ) );
-        }
-        char[] result = new char[length];
-        for ( int i = 0; i < length; i++ )
-        {
-            result[i] = (char) bits.getShort( 8 );
-        }
-        return new String( result );
-    }
-
     @Override
     public long nextCommittingTransactionId()
     {
@@ -1088,7 +1033,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 {
                     if ( position == Position.STORE_VERSION )
                     {
-                        additionalDescription = " (" + versionLongToString( value ) + ")";
+                        additionalDescription = " (" + StoreVersion.versionLongToString( value ) + ")";
                     }
                 }
                 catch ( Exception e )

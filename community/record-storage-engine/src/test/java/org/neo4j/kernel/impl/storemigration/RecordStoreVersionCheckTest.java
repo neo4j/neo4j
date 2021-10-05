@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.StoreVersionCheck.Outcome;
 import org.neo4j.string.UTF8;
@@ -84,7 +85,7 @@ class RecordStoreVersionCheckTest
     {
         Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
-        long v1 = MetaDataStore.versionStringToLong( storeVersion );
+        long v1 = StoreVersion.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
         var pageCacheTracer = new DefaultPageCacheTracer();
@@ -105,7 +106,7 @@ class RecordStoreVersionCheckTest
         var pageCacheTracer = new DefaultPageCacheTracer();
         Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
-        long v1 = MetaDataStore.versionStringToLong( storeVersion );
+        long v1 = StoreVersion.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL );
 
         assertNotNull( newStoreVersionCheck( pageCacheTracer ) );
@@ -122,7 +123,7 @@ class RecordStoreVersionCheckTest
 
         Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
-        long v1 = MetaDataStore.versionStringToLong( storeVersion );
+        long v1 = StoreVersion.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL );
 
         var versionCheck = newStoreVersionCheck();
@@ -155,7 +156,7 @@ class RecordStoreVersionCheckTest
     {
         // given
         Path neoStore = emptyFile( fileSystem );
-        long v1 = MetaDataStore.versionStringToLong( "V1" );
+        long v1 = StoreVersion.versionStringToLong( "V1" );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
@@ -174,7 +175,7 @@ class RecordStoreVersionCheckTest
         // given
         Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
-        long v1 = MetaDataStore.versionStringToLong( storeVersion );
+        long v1 = StoreVersion.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 

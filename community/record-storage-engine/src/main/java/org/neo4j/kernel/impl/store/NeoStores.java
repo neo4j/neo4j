@@ -53,7 +53,7 @@ import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
+import static org.neo4j.storageengine.api.StoreVersion.versionLongToString;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,

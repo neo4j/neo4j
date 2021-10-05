@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.service.Services;
+import org.neo4j.storageengine.api.StoreVersion;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -170,7 +171,7 @@ public class RecordFormatSelector
                 long value = MetaDataStore.getRecord( pageCache, neoStoreFile, STORE_VERSION, databaseLayout.getDatabaseName(), cursorContext );
                 if ( value != MetaDataRecordFormat.FIELD_NOT_PRESENT )
                 {
-                    String storeVersion = MetaDataStore.versionLongToString( value );
+                    String storeVersion = StoreVersion.versionLongToString( value );
 
                     for ( RecordFormats format : allFormats() )
                     {

@@ -118,6 +118,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -777,7 +778,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 lastClosedTxLogPosition.getByteOffset(), databaseName, cursorContext );
 
         // Upgrade version in NeoStore
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, STORE_VERSION, MetaDataStore.versionStringToLong( versionToMigrateTo ), databaseName,
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, STORE_VERSION, StoreVersion.versionStringToLong( versionToMigrateTo ), databaseName,
                 cursorContext );
         if ( MetaDataStore.getRecord( pageCache, sourceDirectoryStructure.metadataStore(), KERNEL_VERSION, databaseName, cursorContext ) == FIELD_NOT_PRESENT )
         {

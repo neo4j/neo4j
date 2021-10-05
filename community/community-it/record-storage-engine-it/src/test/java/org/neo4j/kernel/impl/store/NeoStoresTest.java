@@ -93,6 +93,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -720,7 +721,7 @@ public class NeoStoresTest
 
     private static long defaultStoreVersion()
     {
-        return MetaDataStore.versionStringToLong( RecordFormatSelector.defaultFormat().storeVersion() );
+        return StoreVersion.versionStringToLong( RecordFormatSelector.defaultFormat().storeVersion() );
     }
 
     private static StoreFactory newStoreFactory( RecordDatabaseLayout databaseLayout, PageCache pageCache, FileSystemAbstraction fs )

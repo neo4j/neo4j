@@ -83,9 +83,9 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_STORE_VERSION;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.storageengine.api.StoreVersion.versionStringToLong;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.utils.PageCacheConfig.config;

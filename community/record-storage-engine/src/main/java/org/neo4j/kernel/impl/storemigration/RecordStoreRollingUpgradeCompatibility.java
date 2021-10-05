@@ -29,7 +29,7 @@ import java.util.Set;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 
-import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
+import static org.neo4j.storageengine.api.StoreVersion.versionLongToString;
 
 public class RecordStoreRollingUpgradeCompatibility implements RollingUpgradeCompatibility
 {

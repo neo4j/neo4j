@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
@@ -82,7 +83,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     @Override
     public String storeVersionToString( long storeVersion )
     {
-        return MetaDataStore.versionLongToString( storeVersion );
+        return StoreVersion.versionLongToString( storeVersion );
     }
 
     private String readVersion( CursorContext cursorContext ) throws IOException
@@ -92,7 +93,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
         {
             throw new IllegalStateException( "Uninitialized version field in " + metaDataFile );
         }
-        return MetaDataStore.versionLongToString( record );
+        return StoreVersion.versionLongToString( record );
     }
 
     @Override

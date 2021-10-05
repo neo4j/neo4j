@@ -23,9 +23,14 @@ import java.util.Optional;
 
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
+import org.neo4j.util.Bits;
+
+import static java.lang.String.format;
 
 public interface StoreVersion
 {
+    String UNKNOWN_VERSION = "Unknown";
+
     /**
      * @return store version, e.g. as in format version.
      */
@@ -52,4 +57,57 @@ public interface StoreVersion
     String latestStoreVersion();
 
     boolean isCompatibleWith( StoreVersion otherVersion );
+
+    /*
+     * The following two methods encode and decode a string that is presumably
+     * the store version into a long via Latin1 encoding. This leaves room for
+     * 7 characters and 1 byte for the length.
+     */
+    static long versionStringToLong( String storeVersion )
+    {
+        if ( UNKNOWN_VERSION.equals( storeVersion ) )
+        {
+            return -1;
+        }
+        Bits bits = Bits.bits( 8 );
+        int length = storeVersion.length();
+        if ( length == 0 || length > 7 )
+        {
+            throw new IllegalArgumentException( format(
+                    "The given string %s is not of proper size for a store version string", storeVersion ) );
+        }
+        bits.put( length, 8 );
+        for ( int i = 0; i < length; i++ )
+        {
+            char c = storeVersion.charAt( i );
+            if ( c >= 256 )
+            {
+                throw new IllegalArgumentException( format(
+                        "Store version strings should be encode-able as Latin1 - %s is not", storeVersion ) );
+            }
+            bits.put( c, 8 ); // Just the lower byte
+        }
+        return bits.getLong();
+    }
+
+    static String versionLongToString( long storeVersion )
+    {
+        if ( storeVersion == -1 )
+        {
+            return UNKNOWN_VERSION;
+        }
+        Bits bits = Bits.bitsFromLongs( new long[]{storeVersion} );
+        int length = bits.getShort( 8 );
+        if ( length == 0 || length > 7 )
+        {
+            throw new IllegalArgumentException( format( "The read version string length %d is not proper.",
+                    length ) );
+        }
+        char[] result = new char[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            result[i] = (char) bits.getShort( 8 );
+        }
+        return new String( result );
+    }
 }
