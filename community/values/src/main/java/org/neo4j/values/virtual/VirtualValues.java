@@ -53,7 +53,10 @@ public final class VirtualValues
         for ( AnyValue value : values )
         {
             payloadSize += value.estimatedHeapUsage();
-            representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
+            if ( value.valueRepresentation() != representation )
+            {
+                representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
+            }
         }
         return new ListValue.ArrayListValue( values, payloadSize, representation == null ? ValueRepresentation.UNKNOWN : representation );
     }
