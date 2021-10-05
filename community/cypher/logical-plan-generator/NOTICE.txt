@@ -42,9 +42,14 @@ Apache Software License, Version 2.0
   Jettison
   magnolia
   mercator
+  openCypher TCK API
+  openCypher TCK Features and Graphs
+  org.apiguardian:apiguardian-api
+  org.opentest4j:opentest4j
   parboiled-core
   parboiled-scala
   Scala Compiler
+  scala-collection-compat
 
 BSD - Scala License
   Scala Library
@@ -60,6 +65,22 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+Eclipse Public License v2.0
+  JUnit Jupiter API
+  JUnit Platform Commons
+
+MIT License
+  Cucumber Expressions
+  Cucumber Tag Expressions
+  Cucumber-JVM: Core
+  Cucumber-JVM: Docstring
+  Cucumber-JVM: Gherkin
+  Cucumber-JVM: Gherkin Vintage
+  Cucumber-JVM: Plugin
+  DataTable
+  fastparse_2.12
+  geny_2.12
 
 Dependencies with multiple licenses
 -----------------------------------

@@ -1278,6 +1278,12 @@
         <version>0.6.0</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>com.lihaoyi</groupId>
+        <artifactId>sourcecode_${scala.binary.version}</artifactId>
+        <version>0.2.1</version>
+        <scope>test</scope>
+      </dependency>
 
       <!-- other -->
       <dependency>

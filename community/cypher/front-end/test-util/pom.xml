@@ -59,6 +59,10 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>sourcecode_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.binary.version}</artifactId>
             <scope>compile</scope>
