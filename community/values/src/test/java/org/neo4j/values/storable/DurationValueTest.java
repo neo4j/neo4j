@@ -602,21 +602,23 @@ class DurationValueTest
     }
 
     @Test
-    void shouldNotThrowWhenInsideNegativeOverflowLimit()
-    {
-        // when
-        duration( 0, 0, Long.MIN_VALUE, -999_999_999 );
-
-        // then should not throw
-    }
-
-    @Test
     void shouldThrowOnOverflowOnNanos()
     {
         // when
         int nanos = 1_000_000_000;
         long seconds = Long.MAX_VALUE;
         assertConstructorThrows( 0, 0, seconds, nanos );
+    }
+
+    @Test
+    void shouldThrowOnOverflowFromDaysSecondsNanosCombo()
+    {
+        // when
+        assertConstructorThrows( 0, 1, Long.MAX_VALUE - TemporalUtil.SECONDS_PER_DAY, TemporalUtil.NANOS_PER_SECOND );
+        assertConstructorThrows( 0,-1, Long.MIN_VALUE + TemporalUtil.SECONDS_PER_DAY, -2 * TemporalUtil.NANOS_PER_SECOND );
+        assertConstructorThrows( 0, 0, Long.MIN_VALUE, -1L );
+        assertConstructorThrows( 0, 1, Long.MIN_VALUE, -10 * TemporalUtil.NANOS_PER_SECOND );
+        assertConstructorThrows( 0, 1, Long.MIN_VALUE, - TemporalUtil.SECONDS_PER_DAY * TemporalUtil.NANOS_PER_SECOND - 1 );
     }
 
     @Test
@@ -664,7 +666,7 @@ class DurationValueTest
         assertConstructorThrows( months, 0, seconds - 1, 0 );
     }
 
-    private void assertConstructorThrows( long months, long days, long seconds, int nanos )
+    private void assertConstructorThrows( long months, long days, long seconds, long nanos )
     {
         InvalidValuesArgumentException e = assertThrows( InvalidValuesArgumentException.class, () -> duration( months, days, seconds, nanos ) );
 
