@@ -203,6 +203,7 @@ import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
@@ -879,6 +880,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       case TransactionForeach(_, _, batchSize) =>
         val details = Details(pretty"IN TRANSACTIONS OF ${asPrettyString(batchSize)} ROWS")
         PlanDescriptionImpl(id, "TransactionForeach", children, Seq(details), variables, withRawCardinalities)
+
+      case TransactionApply(_, _, batchSize) =>
+        val details = Details(pretty"IN TRANSACTIONS OF ${asPrettyString(batchSize)} ROWS")
+        PlanDescriptionImpl(id, "TransactionApply", children, Seq(details), variables, withRawCardinalities)
 
       case TriadicSelection(_, _, positivePredicate, source, seen, target) =>
         val positivePredicateString = if (positivePredicate) pretty"" else pretty"NOT "
