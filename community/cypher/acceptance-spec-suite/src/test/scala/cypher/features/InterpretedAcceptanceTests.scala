@@ -37,10 +37,14 @@ class InterpretedAcceptanceTests extends BaseAcceptanceTest {
 
   // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
   private val cypherTransactionsSemanticFeature = SemanticFeature.CallSubqueryInTransactions.productPrefix
+  private val cypherTransactionsWithReturnSemanticFeature = SemanticFeature.CallReturningSubqueryInTransactions.productPrefix
 
   // TODO: Remove once CallSubqueryInTransactions is enabled by default
   def featureSpecificSettings(featureName: String): collection.Map[Setting[_], AnyRef] = featureName match {
-    case "CypherTransactionsAcceptance" => collection.Map(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> java.util.Set.of(Array(cypherTransactionsSemanticFeature):_*))
+    case "CypherTransactionsAcceptance" => collection.Map(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> java.util.Set.of(Array(
+      cypherTransactionsSemanticFeature,
+      cypherTransactionsWithReturnSemanticFeature,
+    ):_*))
     case _ => Map.empty
   }
 

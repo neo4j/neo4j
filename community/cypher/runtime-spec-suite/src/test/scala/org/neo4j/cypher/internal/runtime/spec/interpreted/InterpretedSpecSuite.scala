@@ -143,6 +143,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ThreadUnsafeExpressionTests
 import org.neo4j.cypher.internal.runtime.spec.tests.Top1WithTiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TopTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.TransactionApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachDbHitsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachMemoryManagementTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachProfileRowsTestBase
@@ -288,6 +289,7 @@ class InterpretedForEachTest extends ForeachTestBase(COMMUNITY.EDITION, Interpre
 class InterpretedForEachApplyTest extends ForeachApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSubqueryForeachTest extends SubqueryForeachTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedTransactionForeachTest extends TransactionForeachTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedTransactionApplyTest extends TransactionApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetRelationshipPropertyTest extends SetRelationshipPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDeleteNodeTest extends DeleteNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDetachDeleteNodeTest extends DeleteDetachNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
