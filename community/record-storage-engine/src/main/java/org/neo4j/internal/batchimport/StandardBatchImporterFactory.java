@@ -50,7 +50,7 @@ public class StandardBatchImporterFactory extends BatchImporterFactory
     public BatchImporter instantiate( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer, Configuration config,
             LogService logService, ExecutionMonitor executionMonitor, AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats,
-            ImportLogic.Monitor monitor, JobScheduler scheduler, Collector badCollector,
+            Monitor monitor, JobScheduler scheduler, Collector badCollector,
             LogFilesInitializer logFilesInitializer, IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker )
     {
         return new ParallelBatchImporter( directoryStructure, fileSystem, pageCacheTracer, config, logService, executionMonitor,

@@ -20,11 +20,13 @@
 package org.neo4j.storageengine.api;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.service.Service;
@@ -33,6 +35,14 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.batchimport.AdditionalInitialIds;
+import org.neo4j.internal.batchimport.BatchImporter;
+import org.neo4j.internal.batchimport.IndexConfig;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.internal.batchimport.ReadBehaviour;
+import org.neo4j.internal.batchimport.input.Collector;
+import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.IndexConfigCompleter;
@@ -162,8 +172,11 @@ public interface StorageEngineFactory
     SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
             LogService logService, String recordFormats, PageCacheTracer cacheTracer, CursorContext cursorContext, MemoryTracker memoryTracker );
 
-    List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            CursorContext cursorContext );
+    List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout, boolean lenient,
+            Function<SchemaRule,SchemaRule> schemaRuleMigration, PageCacheTracer pageCacheTracer );
+
+    TokenHolders loadReadOnlyTokens( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, boolean lenient,
+            PageCacheTracer pageCacheTracer );
 
     /**
      * Asks this storage engine about the state of a specific store before opening it. If this specific store is missing optional or
@@ -206,6 +219,18 @@ public interface StorageEngineFactory
      * @return the layout representing the database
      */
     DatabaseLayout databaseLayout( Neo4jLayout neo4jLayout, String databaseName );
+
+    IndexConfig matchingBatchImportIndexConfiguration( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );
+
+    BatchImporter batchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
+            PageCacheTracer pageCacheTracer, org.neo4j.internal.batchimport.Configuration config, LogService logService,
+            PrintStream progressOutput, boolean verboseProgressOutput,
+            AdditionalInitialIds additionalInitialIds, Config dbConfig, Monitor monitor,
+            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
+            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker );
+
+    Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache,
+            PageCacheTracer pageCacheTracer, Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace );
 
     /**
      * @return the default {@link StorageEngineFactory}.

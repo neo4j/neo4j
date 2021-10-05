@@ -61,6 +61,11 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     // For tracking delta
     private long lastProgress;
 
+    public SpectrumExecutionMonitor( PrintStream out )
+    {
+        this( 2, TimeUnit.SECONDS, out, DEFAULT_WIDTH );
+    }
+
     public SpectrumExecutionMonitor( long interval, TimeUnit unit, PrintStream out, int width )
     {
         super( interval, unit );

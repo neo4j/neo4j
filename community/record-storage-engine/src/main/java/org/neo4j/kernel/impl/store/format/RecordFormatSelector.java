@@ -114,6 +114,19 @@ public class RecordFormatSelector
      */
     public static RecordFormats selectForVersion( String storeVersion )
     {
+        // Format can be supplied in two ways:
+        // - The high-level/user-friendly name of the format (potentially also having a version)
+        // - The internal version that gets put into the meta-data store
+        // Here we check for both
+
+        // First check for matching name
+        RecordFormats recordFormatsMatchingName = loadRecordFormat( storeVersion, true );
+        if ( recordFormatsMatchingName != null )
+        {
+            return recordFormatsMatchingName;
+        }
+
+        // The check for matching internal store version
         for ( RecordFormats format : allFormats() )
         {
             if ( format.storeVersion().equals( storeVersion ) )

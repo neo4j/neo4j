@@ -64,7 +64,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.BatchImporter;
-import org.neo4j.internal.batchimport.ImportLogic;
+import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
@@ -146,7 +146,7 @@ class CsvInputBatchImportIT
         {
             BatchImporter importer = new ParallelBatchImporter(
                     databaseLayout, fileSystem, PageCacheTracer.NULL, smallBatchSizeConfig(), NullLogService.getInstance(), ExecutionMonitor.INVISIBLE,
-                    EMPTY, dbConfig, defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(),
+                    EMPTY, dbConfig, defaultFormat(), Monitor.NO_MONITOR, scheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(),
                     new IndexImporterFactoryImpl( dbConfig ), INSTANCE );
             List<InputEntity> nodeData = randomNodeData();
             List<InputEntity> relationshipData = randomRelationshipData( nodeData );

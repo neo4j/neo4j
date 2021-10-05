@@ -28,7 +28,7 @@ import org.neo4j.internal.batchimport.InputIterator;
 /**
  * Unifies all data input given to a {@link BatchImporter} to allow for more coherent implementations.
  */
-public interface Input
+public interface Input extends AutoCloseable
 {
     interface Estimates
     {
@@ -109,6 +109,11 @@ public interface Input
      * @throws IOException on I/O error.
      */
     Estimates calculateEstimates( PropertySizeCalculator valueSizeCalculator ) throws IOException;
+
+    @Override
+    default void close()
+    {
+    }
 
     static Input input( InputIterable nodes, InputIterable relationships, IdType idType, Estimates estimates, ReadableGroups groups )
     {

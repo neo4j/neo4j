@@ -35,8 +35,8 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.ImportLogic;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Distribution;
@@ -165,7 +165,7 @@ class CsvInputEstimateCalculationIT
         {
             PageCacheTracer cacheTracer = PageCacheTracer.NULL;
             new ParallelBatchImporter( databaseLayout, fs, cacheTracer, PBI_CONFIG, NullLogService.getInstance(),
-                    INVISIBLE, EMPTY, config, format, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    INVISIBLE, EMPTY, config, format, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE ).doImport( input );
 
             // then compare estimates with actual disk sizes

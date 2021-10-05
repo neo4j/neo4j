@@ -73,6 +73,12 @@ public class RecordStoreVersion implements StoreVersion
     }
 
     @Override
+    public String formatFamilyName()
+    {
+        return format.getFormatFamily().name();
+    }
+
+    @Override
     public boolean isCompatibleWith( StoreVersion otherVersion )
     {
         if ( !(otherVersion instanceof RecordStoreVersion) )

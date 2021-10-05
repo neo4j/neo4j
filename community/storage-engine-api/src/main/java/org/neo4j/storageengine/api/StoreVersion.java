@@ -58,6 +58,8 @@ public interface StoreVersion
 
     boolean isCompatibleWith( StoreVersion otherVersion );
 
+    String formatFamilyName();
+
     /*
      * The following two methods encode and decode a string that is presumably
      * the store version into a long via Latin1 encoding. This leaves room for

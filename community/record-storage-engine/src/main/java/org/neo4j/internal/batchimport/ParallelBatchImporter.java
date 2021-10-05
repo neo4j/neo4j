@@ -58,7 +58,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final RecordFormats recordFormats;
     private final ExecutionMonitor executionMonitor;
     private final AdditionalInitialIds additionalInitialIds;
-    private final ImportLogic.Monitor monitor;
+    private final Monitor monitor;
     private final JobScheduler jobScheduler;
     private final Collector badCollector;
     private final LogFilesInitializer logFilesInitializer;
@@ -67,7 +67,7 @@ public class ParallelBatchImporter implements BatchImporter
 
     public ParallelBatchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer, Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor,
+            AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, Monitor monitor,
             JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
             IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker )
     {

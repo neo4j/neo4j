@@ -64,6 +64,7 @@ public class SchemaStorage35 implements SchemaStorage
         return () -> loadAllSchemaRules( (SchemaStore35StoreCursors) storeCursors, PROPAGATE_EXCEPTION_HANDLER );
     }
 
+    @Override
     public Iterable<SchemaRule> getAllIgnoreMalformed( StoreCursors storeCursors )
     {
         return () -> loadAllSchemaRules( (SchemaStore35StoreCursors) storeCursors, IGNORE_EXCEPTION_HANDLER );

@@ -90,54 +90,6 @@ public class ImportLogic implements Closeable
 {
     private static final String IMPORT_COUNT_STORE_REBUILD_TAG = "importCountStoreRebuild";
 
-    public interface Monitor
-    {
-        void doubleRelationshipRecordUnitsEnabled();
-
-        void mayExceedNodeIdCapacity( long capacity, long estimatedCount );
-
-        void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount );
-
-        void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize );
-
-        void abundantHeapSize( long optimalMinimalHeapSize, long heapSize );
-
-        void insufficientAvailableMemory( long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory );
-    }
-
-    public static final Monitor NO_MONITOR = new Monitor()
-    {
-        @Override
-        public void mayExceedRelationshipIdCapacity( long capacity, long estimatedCount )
-        {   // no-op
-        }
-
-        @Override
-        public void mayExceedNodeIdCapacity( long capacity, long estimatedCount )
-        {   // no-op
-        }
-
-        @Override
-        public void doubleRelationshipRecordUnitsEnabled()
-        {   // no-op
-        }
-
-        @Override
-        public void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize )
-        {   // no-op
-        }
-
-        @Override
-        public void abundantHeapSize( long optimalMinimalHeapSize, long heapSize )
-        {   // no-op
-        }
-
-        @Override
-        public void insufficientAvailableMemory( long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory )
-        {   // no-op
-        }
-    };
-
     private final Path databaseDirectory;
     private final String databaseName;
     private final BatchingNeoStores neoStore;

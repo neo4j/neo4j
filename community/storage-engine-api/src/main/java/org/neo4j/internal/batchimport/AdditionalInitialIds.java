@@ -26,13 +26,13 @@ import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSI
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
- * Migrating a store uses the {@link ParallelBatchImporter} to do so, where node/relationship stores
+ * Migrating a store uses the {@link BatchImporter} to do so, where node/relationship stores
  * are created with data read from legacy node/relationship stores. The batch import also populates
  * a counts store, which revolves around tokens and their ids. Knowing those high token ids before hand greatly helps
  * the batch importer code do things efficiently, instead of figuring that out as it goes. When doing
  * the migration there are no token stores, although nodes and relationships gets importer with existing
  * token ids in them, so this is a way for the StoreMigrator to communicate those ids to the
- * {@link ParallelBatchImporter}.
+ * {@link BatchImporter}.
  *
  * When actually writing out the counts store on disk the last committed transaction id at that point is also
  * stored, and that's why the StoreMigrator needs to communicate that using
@@ -51,7 +51,7 @@ public interface AdditionalInitialIds
     long checkpointLogVersion();
 
     /**
-     * High ids of zero, useful when creating a completely new store with {@link ParallelBatchImporter}.
+     * High ids of zero, useful when creating a completely new store with {@link BatchImporter}.
      */
     AdditionalInitialIds EMPTY = new AdditionalInitialIds()
     {

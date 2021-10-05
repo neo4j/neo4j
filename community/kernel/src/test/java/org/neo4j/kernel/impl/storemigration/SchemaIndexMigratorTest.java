@@ -47,6 +47,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -117,7 +118,7 @@ class SchemaIndexMigratorTest
         schemaRules.add( forSchema( SchemaDescriptors.forRelType( 5, 3 ) ).withName( "r1" ).materialise( 2L ) );
         schemaRules.add( forSchema( SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "r2" ).materialise( 3L ) );
         schemaRules.add( forSchema( SchemaDescriptors.fulltext( NODE, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "n2" ).materialise( 4L ) );
-        when( storageEngineFactory.loadSchemaRules( any(), any(), any(), any(), any() ) ).thenReturn( schemaRules );
+        when( storageEngineFactory.loadSchemaRules( any(), any(), any(), any(), anyBoolean(), any(), any() ) ).thenReturn( schemaRules );
         SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, false );
 
         // when

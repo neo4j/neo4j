@@ -32,8 +32,8 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.DataStatistics;
-import org.neo4j.internal.batchimport.ImportLogic;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.NodeDegreeCountStage;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.cache.PageCacheArrayFactoryMonitor;
@@ -112,7 +112,7 @@ class HumanUnderstandableExecutionMonitorIT
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             new ParallelBatchImporter( databaseLayout, fileSystem, NULL, configuration, NullLogService.getInstance(), monitor,
-                    EMPTY, defaults(), LATEST_RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    EMPTY, defaults(), LATEST_RECORD_FORMATS, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE ).doImport( input );
 
             // then

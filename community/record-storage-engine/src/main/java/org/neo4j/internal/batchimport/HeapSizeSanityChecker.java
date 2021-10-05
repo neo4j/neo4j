@@ -30,20 +30,20 @@ import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
 /**
  * Sanity checking of {@link Input.Estimates} against heap size and free memory.
- * Registers warnings onto a {@link ImportLogic.Monitor}.
+ * Registers warnings onto a {@link Monitor}.
  */
 class HeapSizeSanityChecker
 {
-    private final ImportLogic.Monitor monitor;
+    private final Monitor monitor;
     private final LongSupplier freeMemoryLookup;
     private final LongSupplier actualHeapSizeLookup;
 
-    HeapSizeSanityChecker( ImportLogic.Monitor monitor )
+    HeapSizeSanityChecker( Monitor monitor )
     {
         this( monitor, OsBeanUtil::getFreePhysicalMemory, Runtime.getRuntime()::maxMemory );
     }
 
-    HeapSizeSanityChecker( ImportLogic.Monitor monitor, LongSupplier freeMemoryLookup, LongSupplier actualHeapSizeLookup )
+    HeapSizeSanityChecker( Monitor monitor, LongSupplier freeMemoryLookup, LongSupplier actualHeapSizeLookup )
     {
         this.monitor = monitor;
         this.freeMemoryLookup = freeMemoryLookup;

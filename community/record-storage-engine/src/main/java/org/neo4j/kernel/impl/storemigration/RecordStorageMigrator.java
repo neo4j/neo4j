@@ -44,10 +44,10 @@ import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.ImportLogic;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
+import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
@@ -481,7 +481,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 BatchImporter importer = batchImporterFactory.instantiate(
                         migrationDirectoryStructure, fileSystem, cacheTracer, importConfig, logService,
                         migrationBatchImporterMonitor( legacyStore, progressReporter,
-                                importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler,
+                                importConfig ), additionalInitialIds, config, newFormat, Monitor.NO_MONITOR, jobScheduler,
                         Collector.STRICT, LogFilesInitializer.NULL, indexImporterFactory, memoryTracker );
                 InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker, storeCursors );
                 InputIterable relationships =

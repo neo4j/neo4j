@@ -30,7 +30,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -105,7 +105,8 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 
     private void deleteRelationshipIndexes( DatabaseLayout databaseLayout ) throws IOException
     {
-        for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, CursorContext.NULL ) )
+        for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r,
+                PageCacheTracer.NULL ) )
         {
             if ( schemaRule.schema().entityType() == EntityType.RELATIONSHIP )
             {

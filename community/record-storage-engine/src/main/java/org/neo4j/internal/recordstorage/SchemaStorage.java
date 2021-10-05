@@ -91,6 +91,12 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
+    public Iterable<SchemaRule> getAllIgnoreMalformed( StoreCursors storeCursors )
+    {
+        return streamAllSchemaRules( true, storeCursors )::iterator;
+    }
+
+    @Override
     public SchemaRule loadSingleSchemaRule( long ruleId, StoreCursors storeCursors ) throws MalformedSchemaRuleException
     {
         SchemaRecord record = loadSchemaRecord( ruleId, storeCursors );

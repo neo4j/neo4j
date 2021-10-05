@@ -21,15 +21,15 @@ package org.neo4j.internal.batchimport.input;
 
 import java.util.function.BiConsumer;
 
-import org.neo4j.internal.batchimport.ImportLogic;
+import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 public class EstimationSanityChecker
 {
     private final RecordFormats formats;
-    private final ImportLogic.Monitor monitor;
+    private final Monitor monitor;
 
-    public EstimationSanityChecker( RecordFormats formats, ImportLogic.Monitor monitor )
+    public EstimationSanityChecker( RecordFormats formats, Monitor monitor )
     {
         this.formats = formats;
         this.monitor = monitor;

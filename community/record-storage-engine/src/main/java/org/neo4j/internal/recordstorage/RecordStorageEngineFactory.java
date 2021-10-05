@@ -19,27 +19,50 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.impl.factory.Sets;
+
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.batchimport.AdditionalInitialIds;
+import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.IndexConfig;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.batchimport.Monitor;
+import org.neo4j.internal.batchimport.ReadBehaviour;
+import org.neo4j.internal.batchimport.input.Collector;
+import org.neo4j.internal.batchimport.input.Input;
+import org.neo4j.internal.batchimport.input.LenientStoreInput;
+import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
+import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
+import org.neo4j.internal.batchimport.staging.SpectrumExecutionMonitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
@@ -72,6 +95,9 @@ import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreRollingUpgradeCompatibility;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35StoreCursors;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -81,6 +107,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
+import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -98,10 +125,14 @@ import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokensLoader;
 
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -111,6 +142,7 @@ import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
+import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.FLEXIBLE_SCHEMA_STORE;
 
 @ServiceProvider
 public class RecordStorageEngineFactory implements StorageEngineFactory
@@ -274,26 +306,140 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout layout,
-            CursorContext cursorContext )
+    public List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout layout, boolean lenient,
+            Function<SchemaRule,SchemaRule> schemaRuleMigration, PageCacheTracer pageCacheTracer )
     {
         RecordDatabaseLayout databaseLayout = convert( layout );
         StoreFactory factory =
-                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
-                        NullLogProvider.getInstance(), PageCacheTracer.NULL, readOnly() );
-        try ( NeoStores stores = factory.openNeoStores( false, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
+                new StoreFactory( databaseLayout, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fs,
+                        NullLogProvider.getInstance(), pageCacheTracer, readOnly() );
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "loadSchemaRules" );
+              var cursorContext = new CursorContext( cursorTracer );
+              var stores = factory.openAllNeoStores();
               var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
         {
             stores.start( cursorContext );
-            TokenHolders tokenHolders = tokenHoldersForSchemaStore( stores, new ReadOnlyTokenCreator(), storeCursors );
-            List<SchemaRule> rules = new ArrayList<>();
-            new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).getAll( storeCursors ).forEach( rules::add );
-            return rules;
+            RecordFormats format = stores.getRecordFormats();
+            TokenHolders tokenHolders = loadReadOnlyTokens( stores, lenient, pageCacheTracer );
+            if ( format.hasCapability( FLEXIBLE_SCHEMA_STORE ) )
+            {
+                List<SchemaRule> rules = new ArrayList<>();
+                SchemaStorage storage = new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST );
+                if ( lenient )
+                {
+                    storage.getAllIgnoreMalformed( storeCursors ).forEach( rules::add );
+                }
+                else
+                {
+                    storage.getAll( storeCursors ).forEach( rules::add );
+                }
+                return rules;
+            }
+            else
+            {
+                try ( SchemaStore35 schemaStore35 = new SchemaStore35( databaseLayout.schemaStore(), databaseLayout.idSchemaStore(), config,
+                        SchemaIdType.SCHEMA, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, NullLogProvider.getInstance(), format, readOnly(),
+                        layout.getDatabaseName(), Sets.immutable.empty() );
+                        var schema35Cursors = new SchemaStore35StoreCursors( schemaStore35, cursorContext ) )
+                {
+                    schemaStore35.initialise( true, cursorContext );
+                    SchemaStorage35 schemaStorage35 = new SchemaStorage35( schemaStore35 );
+
+                    // Get rules and migrate to latest
+                    Map<Long,SchemaRule> ruleById = new LinkedHashMap<>();
+                    Iterable<SchemaRule> schemaRules = lenient
+                                                       ? schemaStorage35.getAllIgnoreMalformed( schema35Cursors )
+                                                       : schemaStorage35.getAll( schema35Cursors );
+                    schemaRules.forEach( rule -> ruleById.put( rule.getId(), rule ) );
+                    RecordStorageMigrator.schemaGenerateNames( schemaRules, tokenHolders, ruleById );
+                    return ruleById.values().stream()
+                            .map( schemaRuleMigration )
+                            .filter( Objects::nonNull )
+                            .collect( toList() );
+                }
+                catch ( KernelException e )
+                {
+                    if ( lenient )
+                    {
+                        return Collections.emptyList();
+                    }
+                    throw new RuntimeException( e );
+                }
+            }
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    @Override
+    public TokenHolders loadReadOnlyTokens( FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache, boolean lenient,
+            PageCacheTracer pageCacheTracer )
+    {
+        RecordDatabaseLayout databaseLayout = convert( layout );
+        StoreFactory factory =
+                new StoreFactory( databaseLayout, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fs,
+                        NullLogProvider.getInstance(), pageCacheTracer, readOnly() );
+        try ( NeoStores stores = factory.openNeoStores( false,
+                StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
+                StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME ) )
+        {
+            return loadReadOnlyTokens( stores, lenient, pageCacheTracer );
+        }
+    }
+
+    private TokenHolders loadReadOnlyTokens( NeoStores stores, boolean lenient, PageCacheTracer pageCacheTracer )
+    {
+        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "loadReadOnlyTokens" );
+                var cursorContext = new CursorContext( cursorTracer );
+                var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
+        {
+            stores.start( cursorContext );
+            TokensLoader loader = lenient ? StoreTokens.allReadableTokens( stores ) : StoreTokens.allTokens( stores );
+            TokenHolder propertyKeys = new DelegatingTokenHolder( ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY );
+            TokenHolder labels = new DelegatingTokenHolder( ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_LABEL );
+            TokenHolder relationshipTypes = new DelegatingTokenHolder( ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE );
+
+            propertyKeys.setInitialTokens( lenient ? unique( loader.getPropertyKeyTokens( storeCursors ) ) : loader.getPropertyKeyTokens( storeCursors ) );
+            labels.setInitialTokens( lenient ? unique( loader.getLabelTokens( storeCursors ) ) : loader.getLabelTokens( storeCursors ) );
+            relationshipTypes.setInitialTokens(
+                    lenient ? unique( loader.getRelationshipTypeTokens( storeCursors ) ) : loader.getRelationshipTypeTokens( storeCursors ) );
+            return new TokenHolders( propertyKeys, labels, relationshipTypes );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private static List<NamedToken> unique( List<NamedToken> tokens )
+    {
+        if ( !tokens.isEmpty() )
+        {
+            Set<String> names = new HashSet<>( tokens.size() );
+            int i = 0;
+            while ( i < tokens.size() )
+            {
+                if ( names.add( tokens.get( i ).name() ) )
+                {
+                    i++;
+                }
+                else
+                {
+                    // Remove the token at the given index, by replacing it with the last token in the list.
+                    // This changes the order of elements, but can be done in constant time instead of linear time.
+                    int lastIndex = tokens.size() - 1;
+                    NamedToken endToken = tokens.remove( lastIndex );
+                    if ( i < lastIndex )
+                    {
+                        tokens.set( i, endToken );
+                    }
+                }
+            }
+        }
+        return tokens;
     }
 
     @Override
@@ -334,6 +480,66 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         return StorageFilesState.recoveredState();
     }
 
+    @Override
+    public IndexConfig matchingBatchImportIndexConfiguration( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
+    {
+        try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(), new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fs,
+                NullLogProvider.getInstance(), PageCacheTracer.NULL, DatabaseReadOnlyChecker.readOnly() ).openAllNeoStores();
+                CachedStoreCursors storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+        {
+            if ( neoStores.getRecordFormats().hasCapability( FLEXIBLE_SCHEMA_STORE ) )
+            {
+                // Injected NLI will be included if the store we're copying from is older than when token indexes were introduced.
+                IndexConfig config = IndexConfig.create();
+                SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(),
+                        loadReadOnlyTokens( neoStores, true, PageCacheTracer.NULL ), neoStores.getMetaDataStore() );
+                schemaRuleAccess.tokenIndexes( storeCursors ).forEachRemaining( index ->
+                {
+                    if ( index.schema().entityType() == NODE )
+                    {
+                        config.withLabelIndex( index.getName() );
+                    }
+                    if ( index.schema().entityType() == RELATIONSHIP )
+                    {
+                        config.withRelationshipTypeIndex( index.getName() );
+                    }
+                } );
+                return config;
+            }
+            else
+            {
+                return IndexConfig.create().withLabelIndex();
+            }
+        }
+    }
+
+    @Override
+    public BatchImporter batchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer, Configuration config,
+            LogService logService, PrintStream progressOutput, boolean verboseProgressOutput, AdditionalInitialIds additionalInitialIds, Config dbConfig,
+            Monitor monitor, JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
+            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker )
+    {
+        RecordFormats recordFormats = RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() );
+        ExecutionMonitor executionMonitor = progressOutput != null
+                ? verboseProgressOutput ? new SpectrumExecutionMonitor( progressOutput ) : ExecutionMonitors.defaultVisible()
+                : ExecutionMonitor.INVISIBLE;
+        return BatchImporterFactory.withHighestPriority().instantiate( databaseLayout, fileSystem, pageCacheTracer, config, logService,
+                executionMonitor, additionalInitialIds, dbConfig,
+                recordFormats, monitor, jobScheduler, badCollector, logFilesInitializer,
+                indexImporterFactory, memoryTracker );
+    }
+
+    @Override
+    public Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache, PageCacheTracer pageCacheTracer,
+            Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace )
+    {
+        NeoStores neoStores =
+                new StoreFactory( databaseLayout, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fileSystem, NullLogProvider.getInstance(),
+                        pageCacheTracer, readOnly() ).openAllNeoStores();
+        return new LenientStoreInput( neoStores, readBehaviour.decorateTokenHolders( loadReadOnlyTokens( neoStores, true, PageCacheTracer.NULL ) ),
+                compactNodeIdSpace, pageCacheTracer, readBehaviour );
+    }
+
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         SchemaStore dstSchema = stores.getSchemaStore();
@@ -369,12 +575,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             }
         };
         var storeCursors = new CachedStoreCursors( stores, cursorContext );
-        TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, storeCursors );
+        TokenHolders dstTokenHolders = loadTokenHolders( stores, propertyKeyTokenCreator, storeCursors );
         return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST ), cursorContext,
                 memoryTracker, storeCursors );
     }
 
-    private static TokenHolders tokenHoldersForSchemaStore( NeoStores stores, TokenCreator propertyKeyTokenCreator, StoreCursors storeCursors )
+    private static TokenHolders loadTokenHolders( NeoStores stores, TokenCreator propertyKeyTokenCreator, StoreCursors storeCursors )
     {
         TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
         TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),

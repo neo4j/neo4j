@@ -61,7 +61,7 @@ import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.Configuration.calculateMaxMemoryFromPercent;
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
-import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
+import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitors.defaultVisible;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;

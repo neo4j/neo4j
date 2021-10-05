@@ -38,7 +38,7 @@ class HeapSizeSanityCheckerTest
 {
     private final LongSupplier freeMemorySupplier = mock( LongSupplier.class );
     private final LongSupplier actualHeapSizeSupplier = mock( LongSupplier.class );
-    private final ImportLogic.Monitor monitor = mock( ImportLogic.Monitor.class );
+    private final Monitor monitor = mock( Monitor.class );
     private final HeapSizeSanityChecker checker = new HeapSizeSanityChecker( monitor, freeMemorySupplier, actualHeapSizeSupplier );
     private final LongSupplier baseMemorySupplier = mock( LongSupplier.class );
     private final MemoryStatsVisitor.Visitable baseMemory = visitor -> visitor.offHeapUsage( baseMemorySupplier.getAsLong() );
