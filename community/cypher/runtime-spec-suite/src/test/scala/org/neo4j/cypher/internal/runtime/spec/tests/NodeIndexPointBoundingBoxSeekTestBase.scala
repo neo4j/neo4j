@@ -25,11 +25,14 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
 import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
 import org.neo4j.values.storable.Values.pointValue
+
+import scala.util.Random
 
 abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
                                                                               edition: Edition[CONTEXT],
@@ -109,8 +112,6 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
     // when
-    val d = WGS84_3D.getCalculator.distance( pointValue(WGS84_3D, 0, 0, 0),
-                                             pointValue(WGS84_3D, 10, 0, 0))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
@@ -149,5 +150,401 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .withRows(singleColumn(List(pointValue(Cartesian, 0, 0),
                                   pointValue(Cartesian, 1, 0),
                                   pointValue(Cartesian, 2, 0))))
+  }
+
+  test("should handle bbox on the north-western hemisphere") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(sizeHint, {
+        case _ =>
+          val longitude = 360 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: 50, latitude: 50, crs: 'wgs-84'}", "{longitude: 60, latitude: 60, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+
+      (longitude >= 50 && longitude <= 60) && (latitude >= 50 && latitude <= 60)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox on the north-eastern hemisphere") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(sizeHint, {
+        case _ =>
+          val longitude = 360 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: -60, latitude: 50, crs: 'wgs-84'}", "{longitude: -50, latitude: 60, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+
+      (longitude >= -60 && longitude <= -50) && (latitude >= 50 && latitude <= 60)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox on the south-western hemisphere") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(sizeHint, {
+        case _ =>
+          val longitude = 360 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: 50, latitude: -60, crs: 'wgs-84'}", "{longitude: 60, latitude: -50, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+
+      (longitude >= 50 && longitude <= 60) && (latitude >= -60 && latitude <= -50)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox on the south-eastern hemisphere") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(sizeHint, {
+        case _ =>
+          val longitude = 360 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: -60, latitude: -60, crs: 'wgs-84'}", "{longitude: -50, latitude: -50, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+
+      (longitude >= -60 && longitude <= -50) && (latitude >= -60 && latitude <= -50)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox crossing the dateline") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(sizeHint, {
+        case _ =>
+          val longitude = 360 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: 170, latitude: 50, crs: 'wgs-84'}", "{longitude: -170, latitude: 60, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      (longitude >= 170 || longitude <= -170) && (latitude>= 50 && latitude <= 60)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox crossing the equator") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(180, {
+        case _ =>
+          val longitude = 360 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: 5, latitude: -10, crs: 'wgs-84'}", "{longitude: 10, latitude: 10, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      (latitude >= -10 && latitude <= 10) && (longitude >= 5 && longitude <= 10)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox crossing the dateline and the equator") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(sizeHint, {
+        case _ =>
+          val longitude = 360 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: 170, latitude: -10, crs: 'wgs-84'}", "{longitude: -170, latitude: 10, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      (longitude >= 170 || longitude <= -170) && (latitude>= -10 && latitude <= 10)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox with lowerLeft east of upperRight on the north-western hemisphere") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(360, {
+        case _ =>
+          val longitude = 180 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: 20, latitude: 50, crs: 'wgs-84'}", "{longitude: 10, latitude: 60, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      (longitude >= 20 || longitude <= 10) && (latitude >= 50 && latitude <= 60)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox with lowerLeft east of upperRight on the north-eastern hemisphere") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(360, {
+        case _ =>
+          val longitude = 180 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: -10, latitude: 50, crs: 'wgs-84'}", "{longitude: -20, latitude: 60, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      (longitude <= -20 || longitude >= -10) && (latitude >= 50 && latitude <= 60)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox with lowerLeft east of upperRight on the south-western hemisphere") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(360, {
+        case _ =>
+          val longitude = 180 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: 20, latitude: -60, crs: 'wgs-84'}", "{longitude: 10, latitude: -50, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      (longitude >= 20 || longitude <= 10) && (latitude >= -60 && latitude <= -50)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox with lowerLeft east of upperRight on the south-eastern hemisphere") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(360, {
+        case _ =>
+          val longitude = 180 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: -10, latitude: -60, crs: 'wgs-84'}", "{longitude: -20, latitude: -50, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      (longitude <= -20 || longitude >= -10) && (latitude >= -60 && latitude <= -50)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle bbox crossing the dateline with lowerLeft east of upperRight") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(360, {
+        case _ =>
+          val longitude = 180 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: -170, latitude: 50, crs: 'wgs-84'}", "{longitude: 170, latitude: 60, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      (longitude <= 170 && longitude >= -170) && (latitude >= 50 && latitude <= 60)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("bbox with lowerLeft north of upperRight is empty") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(180, {
+        case _ =>
+          val longitude = 180 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          Map("location" -> pointValue(WGS84, longitude, latitude ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: 10, latitude: 50, crs: 'wgs-84'}", "{longitude: 20, latitude: 40, crs: 'wgs-84'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n").withNoRows()
+  }
+
+  test("should handle 3D bbox") {
+    val nodes = given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(sizeHint, {
+        case _ =>
+          val longitude = 360 - Random.nextInt(361)
+          val latitude = 90 - Random.nextInt(181)
+          val height = Random.nextInt(1000)
+          Map("location" -> pointValue(WGS84_3D, longitude, latitude, height ))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{longitude: 50, latitude: 50, height: 100, crs: 'wgs-84-3d'}", "{longitude: 60, latitude: 60, height: 200, crs: 'wgs-84-3d'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    val expected = nodes.filter(n => {
+      val longitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(0)
+      val latitude = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(1)
+      val height = n.getProperty("location").asInstanceOf[Point].getCoordinate.getCoordinate.get(2)
+
+      (longitude >= 50 && longitude <= 60) &&
+        (latitude >= 50 && latitude <= 60) &&
+        (height >= 100 && height <= 200)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
   }
 }

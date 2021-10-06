@@ -230,8 +230,16 @@ trait EntityIndexSeeker {
       case PointBoundingBoxSeekRangeExpression(range) =>
         val valueRange = range.map(expr => makeValueNeoSafe(expr(row, state)))
         (valueRange.lowerLeft, valueRange.upperRight) match {
-          case (lowerLeft: PointValue, upperRight: PointValue) =>
-            List(PropertyIndexQuery.range(propertyId, lowerLeft, true, upperRight, true))
+          case (lowerLeft: PointValue, upperRight: PointValue) if lowerLeft.getCoordinateReferenceSystem.equals(upperRight.getCoordinateReferenceSystem) =>
+            val calculator = lowerLeft.getCoordinateReferenceSystem.getCalculator
+
+            val bboxes = calculator.computeBBoxes(lowerLeft, upperRight).asScala
+            bboxes.map(bbox => PropertyIndexQuery.range(propertyId,
+              bbox.first(),
+              true,
+              bbox.other(),
+              true
+            ))
           case _ => Nil
         }
     }

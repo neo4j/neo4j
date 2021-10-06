@@ -42,6 +42,8 @@ public abstract class CRSCalculator
 
     public abstract boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight );
 
+    public abstract List<Pair<PointValue, PointValue>> computeBBoxes( PointValue lowerLeft, PointValue upperRight );
+
     protected static double pythagoras( double[] a, double[] b )
     {
         double sqrSum = 0.0;
@@ -103,6 +105,12 @@ public abstract class CRSCalculator
                 }
             }
             return true;
+        }
+
+        @Override
+        public List<Pair<PointValue,PointValue>> computeBBoxes( PointValue lowerLeft, PointValue upperRight )
+        {
+            return List.of( Pair.of( lowerLeft, upperRight ) );
         }
     }
 
@@ -225,6 +233,37 @@ public abstract class CRSCalculator
         }
 
         @Override
+        public List<Pair<PointValue,PointValue>> computeBBoxes( PointValue lowerLeft, PointValue upperRight )
+        {
+            assert lowerLeft.getCoordinateReferenceSystem().equals( upperRight.getCoordinateReferenceSystem() );
+
+            double[] ll = lowerLeft.coordinate();
+            double[] ur = upperRight.coordinate();
+            if ( ll[0] <= ur[0] )
+            {   //ll is west of ur or we cross the dateline with ll being east of ur,
+                //either way we get a simple continuous range from lower to upper
+                return List.of( Pair.of( lowerLeft, upperRight ) );
+            }
+            else
+            {
+                //ll > ur either means that we crossed the dateline, and we must
+                //scan from lower to the dateline, and then from the dateline to upper
+                if ( ll[0] >= 0 && ur[0] < 0 )
+                {
+                    return List.of( Pair.of( lowerLeft, withLongitude( 180, upperRight ) ),
+                                    Pair.of( withLongitude( -180, lowerLeft ), upperRight ) );
+                }
+                else
+                {
+                    // or that ll is "east" of ur, in which case we must scan the regions not included between the
+                    //two points.
+                    return List.of( Pair.of( withLongitude( -180, lowerLeft ), upperRight ),
+                                    Pair.of( lowerLeft, withLongitude( 180, upperRight ) ) );
+                }
+            }
+        }
+
+        @Override
         public boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight )
         {
             assert point.getCoordinateReferenceSystem().equals( lowerLeft.getCoordinateReferenceSystem() ) &&
@@ -291,6 +330,13 @@ public abstract class CRSCalculator
                 }
             }
             return Pair.of( Values.pointValue( crs, min ), Values.pointValue( crs, max ) );
+        }
+
+        private PointValue withLongitude( double longitude, PointValue point )
+        {
+            double[] coordinates = Arrays.copyOf( point.coordinate(), point.coordinate().length );
+            coordinates[0] = longitude;
+            return Values.pointValue( point.getCoordinateReferenceSystem(), coordinates );
         }
 
         private boolean isNorthOf( double[] p1, double[] p2 )
