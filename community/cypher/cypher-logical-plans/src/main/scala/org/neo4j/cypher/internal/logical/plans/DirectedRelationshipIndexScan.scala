@@ -37,7 +37,7 @@ case class DirectedRelationshipIndexScan(idName: String,
                                          properties: Seq[IndexedProperty],
                                          argumentIds: Set[String],
                                          indexOrder: IndexOrder,
-                                         indexType: IndexType)
+                                         override val indexType: IndexType)
                                         (implicit idGen: IdGen)
   extends RelationshipIndexLeafPlan(idGen) {
 

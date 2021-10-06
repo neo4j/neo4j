@@ -40,7 +40,6 @@ import org.neo4j.graphdb.schema.IndexType
 import java.lang.reflect.Method
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.collection.mutable.ArrayStack
 import scala.util.hashing.MurmurHash3
 
 object LogicalPlan {
@@ -75,7 +74,7 @@ abstract class LogicalPlan(idGen: IdGen)
       val otherPlan = obj.asInstanceOf[LogicalPlan]
       if (this.eq(otherPlan)) return true
       if (this.getClass != otherPlan.getClass) return false
-      val stack = new ArrayStack[(Iterator[Any], Iterator[Any])]()
+      val stack = new mutable.ArrayStack[(Iterator[Any], Iterator[Any])]()
       var p1 = this.productIterator
       var p2 = otherPlan.productIterator
       while (p1.hasNext && p2.hasNext) {
@@ -337,6 +336,8 @@ abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogic
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexLeafPlan
 
   override def copyWithoutGettingValues: RelationshipIndexLeafPlan
+
+  def indexType: IndexType
 }
 
 abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiNodeLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {

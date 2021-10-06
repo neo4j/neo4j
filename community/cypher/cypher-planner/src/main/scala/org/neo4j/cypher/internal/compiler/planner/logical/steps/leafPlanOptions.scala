@@ -29,13 +29,14 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
-import org.neo4j.cypher.internal.logical.plans.IndexedPropertyProvidingPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
-import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 
 import scala.annotation.tailrec
 
@@ -70,20 +71,24 @@ object leafPlanOptions extends LeafPlanFinder {
     bestPlansPerAvailableSymbols.map(_.map(context.leafPlanUpdater.apply))
   }
 
-  type NodeIndexPlan = NodeLogicalLeafPlan with IndexedPropertyProvidingPlan
-  type RelIndexPlan = RelationshipLogicalLeafPlan with IndexedPropertyProvidingPlan
-
   def leafPlanHeuristic(context: LogicalPlanningContext): SelectorHeuristic = new SelectorHeuristic {
     @tailrec
     override def tieBreaker(plan: LogicalPlan): Int = plan match {
-      case s: Selection                                                                  => tieBreaker(s.source)
-      case p: NodeIndexPlan if hasAggregatingProperties(p.idName, p.properties, context) => 3
-      case p: RelIndexPlan if hasAggregatingProperties(p.idName, p.properties, context)  => 3
-      case p: NodeIndexPlan if hasAccessedProperties(p.idName, p.properties, context)    => 2
-      case p: RelIndexPlan if hasAccessedProperties(p.idName, p.properties, context)     => 2
-      case _: NodeByLabelScan                                                            => 1
-      case _: RelationshipTypeScan                                                       => 1
-      case _                                                                             => 0
+      case s: Selection                                                                               => tieBreaker(s.source)
+      case p: NodeIndexLeafPlan if hasAggregatingProperties(p.idName, p.properties, context)          => 30 + indexTypeModifier(p.indexType)
+      case p: RelationshipIndexLeafPlan if hasAggregatingProperties(p.idName, p.properties, context)  => 30 + indexTypeModifier(p.indexType)
+      case p: NodeIndexLeafPlan if hasAccessedProperties(p.idName, p.properties, context)             => 20 + indexTypeModifier(p.indexType)
+      case p: RelationshipIndexLeafPlan if hasAccessedProperties(p.idName, p.properties, context)     => 20 + indexTypeModifier(p.indexType)
+      case _: NodeByLabelScan                                                                         => 10
+      case _: RelationshipTypeScan                                                                    => 10
+      case _                                                                                          => 0
+    }
+
+    private def indexTypeModifier(indexType: org.neo4j.graphdb.schema.IndexType): Int = {
+      IndexDescriptor.IndexType.fromPublicApi(indexType).fold(0) {
+        case IndexType.Btree => 0
+        case IndexType.Text  => 1
+      }
     }
   }
 

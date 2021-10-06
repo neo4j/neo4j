@@ -41,7 +41,7 @@ case class DirectedRelationshipIndexSeek(idName: String,
                                          valueExpr: QueryExpression[Expression],
                                          argumentIds: Set[String],
                                          indexOrder: IndexOrder,
-                                         indexType: IndexType)
+                                         override val indexType: IndexType)
                                         (implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)

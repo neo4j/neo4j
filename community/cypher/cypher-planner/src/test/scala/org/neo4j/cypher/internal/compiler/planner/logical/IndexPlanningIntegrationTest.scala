@@ -910,6 +910,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
       .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
       .enablePlanningTextIndexes()
       .build()
 
@@ -921,12 +922,21 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .build()
     }
 
-    for (op <- List("=", "<", "<=", ">", ">=", "ENDS WITH", "CONTAINS")) {
+    // not supported yet
+
+    for (op <- List("<", "<=", ">", ">=", "ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("a.prop AS `a.prop`")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.BTREE)
+        .build()
+    }
+
+    for (op <- List("=")) {
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
-        .filter(s"cacheNFromStore[a.prop] $op 'hello'")
-        .nodeByLabelScan("a", "A")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", getValue = Map("prop" -> GetValue), indexType = IndexType.BTREE)
         .build()
     }
   }
@@ -936,6 +946,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
       .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
       .enablePlanningTextIndexes()
       .build()
 
@@ -947,12 +958,21 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .build()
     }
 
-    for (op <- List("=", "<", "<=", ">", ">=", "ENDS WITH", "CONTAINS")) {
+    // not supported yet
+
+    for (op <- List("<", "<=", ">", ">=", "ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("r.prop AS `r.prop`")
+        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.BTREE)
+        .build()
+    }
+
+    for (op <- List("=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
-        .filter(s"cacheRFromStore[r.prop] $op 'hello'")
-        .relationshipTypeScan("(a)-[r:REL]->(b)")
+        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.BTREE)
         .build()
     }
   }
