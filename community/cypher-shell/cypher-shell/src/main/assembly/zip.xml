@@ -42,5 +42,17 @@
             <source>src/dist/cypher-shell.bat</source>
             <outputDirectory>/</outputDirectory>
         </file>
+        <file>
+            <source>NOTICE.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>LICENSE.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>LICENSES.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
     </files>
 </assembly>
