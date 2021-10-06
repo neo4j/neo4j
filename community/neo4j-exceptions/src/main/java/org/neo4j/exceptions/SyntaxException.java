@@ -28,7 +28,7 @@ import static java.lang.System.lineSeparator;
 @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
 public class SyntaxException extends Neo4jException
 {
-    private final Optional<Integer> offset;
+    private final transient Optional<Integer> offset;
     private final String query;
 
     public SyntaxException( String message, String query, Optional<Integer> offset, Throwable cause )

@@ -21,7 +21,12 @@ package org.neo4j.exceptions;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+
 import static java.lang.System.lineSeparator;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SyntaxExceptionTest
@@ -288,6 +293,17 @@ class SyntaxExceptionTest
         );
 
         assertEquals( expected, e.getMessage() );
+    }
+
+    @Test
+    void shouldSerialize() throws IOException
+    {
+        // Given
+        SyntaxException e = new SyntaxException( "Message" );
+        ObjectOutputStream stream = new ObjectOutputStream( OutputStream.nullOutputStream() );
+
+        // Then
+        assertDoesNotThrow( () -> stream.writeObject( e ) );
     }
 
     private static String formatExpectedString( String messageLine, String errorLine, String caretLine )
