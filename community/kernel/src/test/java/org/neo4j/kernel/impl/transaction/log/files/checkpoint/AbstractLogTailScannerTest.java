@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -293,7 +294,8 @@ abstract class AbstractLogTailScannerTest
             new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, reader, monitors );
         LogEntryStart startEntry = new LogEntryStart( 3L, 4L, 0, new byte[]{5, 6},
             new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
-        CheckpointInfo checkPoint = new CheckpointInfo( new LogPosition( endLogVersion, 16L ), StoreId.UNKNOWN, LogPosition.UNSPECIFIED );
+        CheckpointInfo checkPoint = new CheckpointInfo( new LogPosition( endLogVersion, 16L ), StoreId.UNKNOWN, LogPosition.UNSPECIFIED,
+                KernelVersion.LATEST );
         LogTailInformation logTailInformation = tailScanner.checkpointTailInformation( endLogVersion, startEntry,
             endLogVersion, (byte) -1, checkPoint, false, StoreId.UNKNOWN );
 

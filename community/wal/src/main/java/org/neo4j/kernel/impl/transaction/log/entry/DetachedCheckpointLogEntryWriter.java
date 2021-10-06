@@ -26,6 +26,7 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.Math.min;
@@ -37,16 +38,18 @@ public class DetachedCheckpointLogEntryWriter
 {
     static final int RECORD_LENGTH_BYTES = 192;
     protected final WritableChecksumChannel channel;
+    private final KernelVersionRepository kernelVersionRepository;
 
-    public DetachedCheckpointLogEntryWriter( WritableChecksumChannel channel )
+    public DetachedCheckpointLogEntryWriter( WritableChecksumChannel channel, KernelVersionRepository kernelVersionRepository )
     {
         this.channel = channel;
+        this.kernelVersionRepository = kernelVersionRepository;
     }
 
     public void writeCheckPointEntry( LogPosition logPosition, Instant checkpointTime, StoreId storeId, String reason ) throws IOException
     {
         channel.beginChecksum();
-        writeLogEntryHeader( DETACHED_CHECK_POINT, channel );
+        writeLogEntryHeader( DETACHED_CHECK_POINT, channel, kernelVersionRepository.kernelVersion() );
         byte[] reasonBytes = reason.getBytes();
         short length = safeCastIntToShort( min( reasonBytes.length, MAX_DESCRIPTION_LENGTH ) );
         byte[] descriptionBytes = new byte[MAX_DESCRIPTION_LENGTH];
@@ -64,8 +67,8 @@ public class DetachedCheckpointLogEntryWriter
         channel.putChecksum();
     }
 
-    protected static void writeLogEntryHeader( byte type, WritableChannel channel ) throws IOException
+    protected static void writeLogEntryHeader( byte type, WritableChannel channel, KernelVersion kernelVersion ) throws IOException
     {
-        channel.put( KernelVersion.LATEST.version() ).put( type );
+        channel.put( kernelVersion.version() ).put( type );
     }
 }
