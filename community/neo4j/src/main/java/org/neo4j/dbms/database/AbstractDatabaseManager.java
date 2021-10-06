@@ -21,6 +21,7 @@ package org.neo4j.dbms.database;
 
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.SystemDbDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
-import org.neo4j.io.pagecache.context.VersionContextSupplierFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -147,7 +147,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         var databaseConfig = new DatabaseConfig( databaseOptions.settings(), config, namedDatabaseId );
 
         return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors,
-                                                   editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig, namedDatabaseId ),
+                                                   editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ),
                                                    databaseConfig, LeaseService.NO_LEASES, editionDatabaseComponents.getExternalIdReuseConditionProvider() );
     }
 
@@ -208,18 +208,26 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         }
     }
 
-    protected final VersionContextSupplier createVersionContextSupplier( DatabaseConfig databaseConfig, NamedDatabaseId databaseId )
+    protected final VersionContextSupplier createVersionContextSupplier( DatabaseConfig databaseConfig )
     {
-        var externalDependencyResolver = globalModule.getExternalDependencyResolver();
-        var klass = VersionContextSupplierFactory.class;
-        if ( externalDependencyResolver.containsDependency( klass ) )
+        var factory = externalVersionContextSupplierFactory( globalModule )
+                .orElse( internalVersionContextSupplierFactory( databaseConfig ) );
+        return factory.create();
+    }
+
+    private static Optional<VersionContextSupplier.Factory> externalVersionContextSupplierFactory( GlobalModule globalModule )
+    {
+        var externalDependencies = globalModule.getExternalDependencyResolver();
+        var klass = VersionContextSupplier.Factory.class;
+        if ( externalDependencies.containsDependency( klass ) )
         {
-            var factory = externalDependencyResolver.resolveDependency( klass );
-            return factory.contextSupplierForDatabase( databaseId.name() );
+            return Optional.of( externalDependencies.resolveDependency( klass ) );
         }
-        else
-        {
-            return databaseConfig.get( snapshot_query ) ? new TransactionVersionContextSupplier() : EmptyVersionContextSupplier.EMPTY;
-        }
+        return Optional.empty();
+    }
+
+    private static VersionContextSupplier.Factory internalVersionContextSupplierFactory( DatabaseConfig databaseConfig )
+    {
+        return () -> databaseConfig.get( snapshot_query ) ? new TransactionVersionContextSupplier() : EmptyVersionContextSupplier.EMPTY;
     }
 }

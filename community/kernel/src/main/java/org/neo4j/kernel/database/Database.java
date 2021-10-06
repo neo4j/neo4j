@@ -465,7 +465,7 @@ public class Database extends LifecycleAdapter
 
             databaseDependencies.satisfyDependency( storageEngine.countsAccessor() );
 
-            versionContextSupplier.init( metadataProvider::getLastClosedTransactionId );
+            versionContextSupplier.init( metadataProvider::getLastClosedTransactionId, namedDatabaseId.name() );
 
             CheckPointerImpl.ForceOperation forceOperation =
                     new DefaultForceOperation( indexingService, storageEngine );

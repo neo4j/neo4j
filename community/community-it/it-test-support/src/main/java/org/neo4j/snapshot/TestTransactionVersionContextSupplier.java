@@ -19,36 +19,46 @@
  */
 package org.neo4j.snapshot;
 
+import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
-import org.neo4j.io.pagecache.context.VersionContextSupplierFactory;
-import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 
 /**
- * A {@link VersionContextSupplierFactory} that can be injected in tests to verify the behavior of {@link SnapshotExecutionEngine}.
+ * A {@link VersionContextSupplier} and {@link VersionContextSupplier.Factory} that can have custom behaviour
+ * injected in tests to verify the behavior of {@link SnapshotExecutionEngine}.
  */
 public class TestTransactionVersionContextSupplier extends TransactionVersionContextSupplier
 {
-    private Supplier<VersionContext> supplier;
+    private final Function<String,TestVersionContext> supplier;
+    private String databaseName;
 
-    public TestTransactionVersionContextSupplier( Supplier<VersionContext> supplier )
+    public TestTransactionVersionContextSupplier( Function<String,TestVersionContext> supplier )
     {
         this.supplier = supplier;
     }
 
     @Override
-    public VersionContext createVersionContext()
+    public void init( LongSupplier lastClosedTransactionIdSupplier, String databaseName )
     {
-        var suppliedContext = supplier.get();
-        return suppliedContext == null ? super.createVersionContext() : suppliedContext;
+        super.init( lastClosedTransactionIdSupplier, databaseName );
+        this.databaseName = databaseName;
     }
 
-    public static class Factory implements VersionContextSupplierFactory
+    @Override
+    public VersionContext createVersionContext()
+    {
+        var name = databaseName;
+        Objects.requireNonNull( name );
+        var ctx = supplier.apply( name );
+        return ctx == null ? super.createVersionContext() : ctx;
+    }
+
+    public static class Factory implements VersionContextSupplier.Factory
     {
         private volatile Function<String,TestVersionContext> wrappedContextSupplier;
 
@@ -57,15 +67,18 @@ public class TestTransactionVersionContextSupplier extends TransactionVersionCon
             this.wrappedContextSupplier = wrappedContextSupplier;
         }
 
-        TestVersionContext getVersionContext( String databaseName )
+        /**
+         * Method acts as a proxy for context suppliers which may be set after `create()` is called.
+         */
+        private TestVersionContext getVersionContext( String databaseName )
         {
             return wrappedContextSupplier == null ? null : wrappedContextSupplier.apply( databaseName );
         }
 
         @Override
-        public VersionContextSupplier contextSupplierForDatabase( String databaseName )
+        public VersionContextSupplier create()
         {
-            return new TestTransactionVersionContextSupplier( () -> getVersionContext( databaseName ) );
+            return new TestTransactionVersionContextSupplier( this::getVersionContext );
         }
     }
 }

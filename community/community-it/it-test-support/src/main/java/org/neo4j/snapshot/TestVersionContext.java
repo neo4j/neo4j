@@ -41,7 +41,7 @@ public class TestVersionContext extends TransactionVersionContext
     private boolean stayDirty;
     private Exception lastMarkAsDirtyCall;
     private Exception additionalAttemptsCall;
-    private String databaseName;
+    private final String databaseName;
 
     public TestVersionContext( LongSupplier transactionIdSupplier, String databaseName )
     {

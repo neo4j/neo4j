@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.context;
 
+import java.util.Objects;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.pagecache.context.VersionContext;
@@ -33,7 +34,7 @@ public class TransactionVersionContextSupplier implements VersionContextSupplier
     private LongSupplier lastClosedTransactionIdSupplier;
 
     @Override
-    public void init( LongSupplier lastClosedTransactionIdSupplier )
+    public void init( LongSupplier lastClosedTransactionIdSupplier, String databaseName )
     {
         this.lastClosedTransactionIdSupplier = lastClosedTransactionIdSupplier;
     }
@@ -41,6 +42,7 @@ public class TransactionVersionContextSupplier implements VersionContextSupplier
     @Override
     public VersionContext createVersionContext()
     {
+        Objects.requireNonNull( lastClosedTransactionIdSupplier );
         return new TransactionVersionContext( lastClosedTransactionIdSupplier );
     }
 

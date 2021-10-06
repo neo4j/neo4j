@@ -30,8 +30,9 @@ public interface VersionContextSupplier
      * Initialise current supplier with provider of last closed transaction ids
      * for future version context to be able to get version ids
      * @param lastClosedTransactionIdSupplier closed transaction id supplier.
+     * @param databaseName name of database producing the versions
      */
-    void init( LongSupplier lastClosedTransactionIdSupplier );
+    void init( LongSupplier lastClosedTransactionIdSupplier, String databaseName );
 
     /**
      * Provide version context
@@ -39,4 +40,9 @@ public interface VersionContextSupplier
      */
     VersionContext createVersionContext();
 
+    @FunctionalInterface
+    interface Factory
+    {
+        VersionContextSupplier create();
+    }
 }

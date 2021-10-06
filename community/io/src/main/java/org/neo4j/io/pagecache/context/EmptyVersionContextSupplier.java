@@ -34,7 +34,7 @@ public class EmptyVersionContextSupplier implements VersionContextSupplier
     }
 
     @Override
-    public void init( LongSupplier lastClosedTransactionIdSupplier )
+    public void init( LongSupplier lastClosedTransactionIdSupplier, String databaseName )
     {
     }
 
