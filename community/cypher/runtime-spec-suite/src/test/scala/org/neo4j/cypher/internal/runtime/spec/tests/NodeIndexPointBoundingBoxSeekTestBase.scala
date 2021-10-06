@@ -547,4 +547,37 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     })
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
   }
+
+  test("should ignore non-points and points with different CRS") {
+    given {
+      nodeIndex("Place", "location")
+      nodePropertyGraph(100, {
+        case i => Map("location" -> i)
+      }, "Place")
+      nodePropertyGraph(100, {
+        case i => Map("location" -> pointValue(WGS84, i, 0))
+      }, "Place")
+      nodePropertyGraph(100, {
+        case i => Map("location" -> pointValue(WGS84_3D, i, 0, 0))
+      }, "Place")
+      nodePropertyGraph(100, {
+        case i => Map("location" -> pointValue(Cartesian_3D, i, 0, 0))
+      }, "Place")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("location" -> pointValue(Cartesian, i, 0))
+      }, "Place")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("location")
+      .projection("n.location.x AS location")
+      .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}")
+      .build()
+
+    //then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("location").withRows(singleColumn(List(0, 1, 2)))
+  }
 }
