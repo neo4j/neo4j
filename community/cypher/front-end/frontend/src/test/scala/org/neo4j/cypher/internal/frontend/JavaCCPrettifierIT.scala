@@ -62,6 +62,12 @@ class JavaCCPrettifierIT extends CypherFunSuite {
       """CALL {
         |  CREATE (n)
         |} IN TRANSACTIONS OF $p ROWS""".stripMargin,
+
+    "alter database foo set ACCESS read only" ->
+      "ALTER DATABASE foo SET ACCESS READ ONLY".stripMargin,
+
+    "alteR databaSe foo if EXISTS SEt access read WRITE" ->
+      "ALTER DATABASE foo IF EXISTS SET ACCESS READ WRITE".stripMargin,
   )
 
   (parboiledPrettifier.tests ++ javaCcOnlyTests) foreach {

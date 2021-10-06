@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.prettifier
 
+import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
@@ -27,6 +28,7 @@ import org.neo4j.cypher.internal.ast.AllNodes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AllQualifier
 import org.neo4j.cypher.internal.ast.AllRelationships
+import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
@@ -124,6 +126,8 @@ import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
+import org.neo4j.cypher.internal.ast.ReadOnlyAccess
+import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipByIds
 import org.neo4j.cypher.internal.ast.RelationshipByParameter
@@ -369,6 +373,15 @@ case class Prettifier(
         case None => ("", "")
       }
     }
+
+    def getAccessString(access: Access): String = {
+      val accessValue = access match {
+        case ReadOnlyAccess => "READ ONLY"
+        case ReadWriteAccess => "READ WRITE"
+      }
+      "SET ACCESS " + accessValue
+    }
+
     val commandString = adminCommand match {
 
       // Probably not needed for production since it is rewritten away by the deprecation rewriter
@@ -533,6 +546,11 @@ case class Prettifier(
           case (false, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} DUMP DATA${waitUntilComplete.name}"
           case (true, DumpData) => s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA${waitUntilComplete.name}"
         }
+
+      case x @ AlterDatabase(dbName, ifExists, access) =>
+        val accessString = getAccessString(access)
+        val maybeIfExists = if(ifExists) " IF EXISTS" else ""
+        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists $accessString"
 
       case x @ StartDatabase(dbName, waitUntilComplete) =>
         s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"

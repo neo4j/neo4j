@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
@@ -120,6 +121,7 @@ object ActionMapper {
     case ShowTransactionAction      => security.PrivilegeAction.SHOW_TRANSACTION
     case AllTransactionActions      => security.PrivilegeAction.TRANSACTION_MANAGEMENT
 
+    case AlterDatabaseAction => security.PrivilegeAction.ALTER_DATABASE
     case StartDatabaseAction => security.PrivilegeAction.START_DATABASE
     case StopDatabaseAction  => security.PrivilegeAction.STOP_DATABASE
 

@@ -517,7 +517,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("ALTER ROLE foo SET NAME bar") {
-    assertJavaCCException(testName, """Invalid input 'ROLE': expected "CURRENT" or "USER" (line 1, column 7 (offset: 6))""")
+    assertJavaCCException(testName, """Invalid input 'ROLE': expected "CURRENT", "DATABASE" or "USER" (line 1, column 7 (offset: 6))""")
   }
 
   test("RENAME ROLE foo IF EXIST TO bar") {

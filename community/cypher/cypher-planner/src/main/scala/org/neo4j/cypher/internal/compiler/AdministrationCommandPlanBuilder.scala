@@ -20,11 +20,14 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
+import org.neo4j.cypher.internal.ast.AlterDatabase
+import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.ClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CommandClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
@@ -43,7 +46,6 @@ import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
-import org.neo4j.cypher.internal.ast.ClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphPrivilege
@@ -406,6 +408,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val assertAllowed = plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(DropDatabaseAction),DropDatabaseAction)
         val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Database", dbName, "delete", s => new NormalizedDatabaseName(s).name()) else assertAllowed
         val plan = wrapInWait(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction), dbName, waitUntilComplete)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // ALTER DATABASE foo [IF EXISTS] SET ACCESS {READ ONLY | READ WRITE}
+      case c@AlterDatabase(dbName, ifExists, access) =>
+        val assertAllowed = plans.AssertAllowedDatabaseAction(AlterDatabaseAction, dbName, Some(plans.AssertNotBlocked(AlterDatabaseAction)))
+        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Database", dbName, "alter", s => new NormalizedDatabaseName(s).name()) else assertAllowed
+        val plan = plans.AlterDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "alter"), dbName, access)
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // START DATABASE foo

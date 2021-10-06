@@ -303,6 +303,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.block_start_stop_database", BOOL, false ).build();
 
     @Internal
+    @Description( "Enable or disable the ability to alter databases." )
+    public static final Setting<Boolean> block_alter_database =
+            newBuilder( "unsupported.dbms.block_alter_database", BOOL, false ).build();
+
+    @Internal
     @Description( "Enable or disable the ability to execute the `dbms.upgrade` procedure." )
     public static final Setting<Boolean> block_upgrade_procedures =
             newBuilder( "unsupported.dbms.upgrade_restriction_enabled", BOOL, false ).build();

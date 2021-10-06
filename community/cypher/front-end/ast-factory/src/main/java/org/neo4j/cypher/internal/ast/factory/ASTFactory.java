@@ -402,6 +402,8 @@ public interface ASTFactory<STATEMENT,
 
     ADMINISTRATION_COMMAND dropDatabase( POS p, SimpleEither<String,PARAMETER> databaseName, boolean ifExists, boolean dumpData, WAIT_CLAUSE wait );
 
+    ADMINISTRATION_COMMAND alterDatabase( POS p, SimpleEither<String,PARAMETER> databaseName, boolean ifExists, AccessType accessType );
+
     ADMINISTRATION_COMMAND showDatabase( POS p, DATABASE_SCOPE scope, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
     ADMINISTRATION_COMMAND startDatabase( POS p, SimpleEither<String,PARAMETER> databaseName, WAIT_CLAUSE wait );

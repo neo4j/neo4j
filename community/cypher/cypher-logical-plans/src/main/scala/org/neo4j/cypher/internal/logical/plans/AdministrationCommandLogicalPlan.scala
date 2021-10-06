@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationAction
 import org.neo4j.cypher.internal.ast.DatabaseAction
@@ -149,6 +150,7 @@ case class ShowDatabase(scope: DatabaseScope,
 
 case class CreateDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter], options: Options)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class DropDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter], additionalAction: DropDatabaseAdditionalAction)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class AlterDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter], access: Access)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class StartDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class StopDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class EnsureValidNonSystemDatabase(source: SecurityAdministrationLogicalPlan, databaseName: Either[String, Parameter], action: String)(implicit idGen: IdGen)

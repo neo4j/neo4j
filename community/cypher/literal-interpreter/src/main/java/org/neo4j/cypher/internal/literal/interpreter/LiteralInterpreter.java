@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
+import org.neo4j.cypher.internal.ast.factory.AccessType;
 import org.neo4j.cypher.internal.ast.factory.ActionType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintVersion;
@@ -745,6 +746,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public NULL dropDatabase( NULL p, SimpleEither<String,Object> databaseName, boolean ifExists, boolean dumpData, NULL wait )
     {
         throw new UnsupportedOperationException( "dropDatabase is not a literal" );
+    }
+
+    @Override
+    public NULL alterDatabase( NULL p, SimpleEither<String,Object> databaseName, boolean ifExists, AccessType accessType )
+    {
+        throw new UnsupportedOperationException( "alterDatabase is not a literal" );
     }
 
     @Override

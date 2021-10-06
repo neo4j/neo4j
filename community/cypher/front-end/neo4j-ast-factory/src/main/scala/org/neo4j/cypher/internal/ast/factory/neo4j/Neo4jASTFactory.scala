@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -168,6 +169,8 @@ import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
+import org.neo4j.cypher.internal.ast.ReadOnlyAccess
+import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
@@ -260,6 +263,9 @@ import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
+import org.neo4j.cypher.internal.ast.factory.AccessType
+import org.neo4j.cypher.internal.ast.factory.AccessType.READ_ONLY
+import org.neo4j.cypher.internal.ast.factory.AccessType.READ_WRITE
 import org.neo4j.cypher.internal.ast.factory.ActionType
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.ast.factory.ConstraintVersion
@@ -1572,6 +1578,14 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     }
 
     DropDatabase(databaseName.asScala, ifExists, action, wait)(p)
+  }
+
+  override def alterDatabase(p:InputPosition, databaseName: SimpleEither[String, Parameter], ifExists: Boolean, accessType: AccessType): AlterDatabase = {
+    val access = accessType match {
+      case READ_ONLY => ReadOnlyAccess
+      case READ_WRITE => ReadWriteAccess
+    }
+    AlterDatabase(databaseName.asScala, ifExists, access)(p)
   }
 
   override def showDatabase(p: InputPosition,

@@ -35,7 +35,6 @@ import org.neo4j.dbms.database.DefaultSystemGraphInitializer
 import org.neo4j.dbms.database.SystemGraphComponents
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
-import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.InMemoryUserRepository
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent
@@ -590,6 +589,17 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS",
       s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME IF EXISTS")
+  }
+
+  test("should fail on altering database from community") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // THEN
+    assertFailure("ALTER DATABASE foo SET ACCESS READ ONLY", "Unsupported administration command: ALTER DATABASE foo SET ACCESS READ ONLY")
+
+    assertFailure(s"ALTER DATABASE $DEFAULT_DATABASE_NAME SET ACCESS READ WRITE",
+      s"Unsupported administration command: ALTER DATABASE $DEFAULT_DATABASE_NAME SET ACCESS READ WRITE")
   }
 
   test("should fail on starting database from community") {

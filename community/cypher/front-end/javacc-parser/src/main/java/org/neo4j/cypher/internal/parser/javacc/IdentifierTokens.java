@@ -120,6 +120,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOWAIT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NULL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ON;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ONLY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OPTIONAL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OPTIONS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OR;
@@ -296,6 +297,7 @@ public class IdentifierTokens
             NULL,
             OF,
             ON,
+            ONLY,
             OPTIONS,
             OPTIONAL,
             OR,

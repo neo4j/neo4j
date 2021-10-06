@@ -48,6 +48,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.neo4j.cypher.internal.ast.factory.AccessType;
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
@@ -415,6 +416,7 @@ TOKEN [IGNORE_CASE] :
     | < NULL: "null">
     | < OF: "OF" >
     | < ON: "ON" >
+    | < ONLY: "ONLY" >
     | < OPTIONAL: "OPTIONAL" >
     | < OPTIONS: "OPTIONS" >
     | < OR: "OR" >
@@ -2861,7 +2863,7 @@ STATEMENT_WITH_GRAPH CommandWithUseGraph( USE_CLAUSE useClause ) throws Exceptio
 {
     (
         s=DropCommand()
-        | s=AlterUserCommand()
+        | s=AlterCommand()
         | s=RenameCommand()
         | s=DenyPrivilege()
         | s=RevokeCommand()
@@ -2887,6 +2889,23 @@ STATEMENT_WITH_GRAPH DropCommand() throws Exception:
         | s=DropDatabase( start )
         | s=DropConstraint( start )
         | s=DropIndex( start )
+    )
+    {
+        return s;
+    }
+}
+
+STATEMENT_WITH_GRAPH AlterCommand() throws Exception:
+{
+    Token start;
+    STATEMENT_WITH_GRAPH s;
+}
+{
+    start=<ALTER>
+    (
+        s=AlterDatabase( start )
+        | s=AlterCurrentUser( start )
+        | s=AlterUser( start )
     )
     {
         return s;
@@ -3883,21 +3902,6 @@ ADMINISTRATION_COMMAND RenameUser(Token start):
     }
 }
 
-ADMINISTRATION_COMMAND AlterUserCommand() throws Exception:
-{
-    Token start = null;
-    ADMINISTRATION_COMMAND statement = null;
-}
-{
-    start=<ALTER> (
-        statement=AlterCurrentUser( start )
-        | statement=AlterUser( start )
-    )
-    {
-        return statement;
-    }
-}
-
 ADMINISTRATION_COMMAND AlterCurrentUser( Token start ) throws Exception:
 {
     EXPRESSION currentPassword = null;
@@ -4546,6 +4550,22 @@ ADMINISTRATION_COMMAND DropDatabase( Token start ):
     }
 }
 
+ADMINISTRATION_COMMAND AlterDatabase( Token start ):
+{
+    SimpleEither<String, PARAMETER> databaseName = null;
+    boolean ifExists = false;
+    AccessType accessType = AccessType.READ_WRITE;
+}
+{
+    <DATABASE>
+    databaseName=SymbolicDatabaseNameStringOrParameter()
+    ( <IF> <EXISTS> { ifExists = true; } )?
+    <SET> <ACCESS> <READ> ( <ONLY> { accessType = AccessType.READ_ONLY; } | <WRITE> )
+    {
+        return astFactory.alterDatabase( pos( start ), databaseName, ifExists, accessType );
+    }
+}
+
 ADMINISTRATION_COMMAND StartDatabase():
 {
     Token start;
@@ -4857,6 +4877,7 @@ Token SymbolicNameString() :
         | t=<NULL>
         | t=<OF>
         | t=<ON>
+        | t=<ONLY>
         | t=<OPTIONAL>
         | t=<OPTIONS>
         | t=<OR>

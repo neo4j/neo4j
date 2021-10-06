@@ -576,6 +576,18 @@ final case class DropDatabase(dbName: Either[String, Parameter],
       SemanticState.recordCurrentScope(this)
 }
 
+final case class AlterDatabase(dbName: Either[String, Parameter],
+                              ifExists: Boolean,
+                              access: Access)
+                             (val position: InputPosition) extends WriteAdministrationCommand {
+
+  override def name = "ALTER DATABASE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class StartDatabase(dbName: Either[String, Parameter], waitUntilComplete: WaitUntilComplete)
                               (val position: InputPosition) extends WaitableAdministrationCommand {
 
@@ -620,6 +632,10 @@ case class TimeoutAfter(timoutSeconds: Long) extends WaitUntilComplete {
   override val name: String = s" WAIT $timoutSeconds SECONDS"
   override def timeout: Long = timoutSeconds
 }
+
+sealed trait Access
+case object ReadOnlyAccess extends Access
+case object ReadWriteAccess extends Access
 
 sealed abstract class DropDatabaseAdditionalAction(val name: String)
 case object DumpData extends DropDatabaseAdditionalAction("DUMP DATA")

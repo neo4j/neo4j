@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.generator
 
+import org.neo4j.cypher.internal.ast.Access
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
 import org.neo4j.cypher.internal.ast.AdministrationCommand
@@ -40,6 +41,7 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -171,6 +173,8 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
+import org.neo4j.cypher.internal.ast.ReadOnlyAccess
+import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
@@ -1704,6 +1708,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     wait <- _waitUntilComplete
   } yield DropDatabase(dbName, ifExists, additionalAction, wait)(pos)
 
+  def _alterDatabase: Gen[AlterDatabase] = for {
+    dbName <- _nameAsEither
+    ifExists <- boolean
+    access <- _access
+  } yield AlterDatabase(dbName, ifExists, access)(pos)
+
   def _startDatabase: Gen[StartDatabase] = for {
     dbName <- _nameAsEither
     wait <- _waitUntilComplete
@@ -1718,9 +1728,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _showDatabase,
     _createDatabase,
     _dropDatabase,
+    _alterDatabase,
     _startDatabase,
     _stopDatabase
   )
+
+  def _access: Gen[Access] = for {
+    access <- oneOf(ReadOnlyAccess, ReadWriteAccess)
+  } yield access
 
   def _waitUntilComplete: Gen[WaitUntilComplete] = for {
     timeout <- posNum[Long]

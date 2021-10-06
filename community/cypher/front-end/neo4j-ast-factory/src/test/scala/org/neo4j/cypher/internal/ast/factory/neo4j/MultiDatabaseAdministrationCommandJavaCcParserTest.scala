@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
@@ -26,11 +27,21 @@ import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
+import org.neo4j.cypher.internal.ast.ReadOnlyAccess
+import org.neo4j.cypher.internal.ast.ReadWriteAccess
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
 
 class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase with FunSuiteLike with TestName with AstConstructionTestSupport {
+
+  val literalFoo: Either[String, Parameter] = Left("foo")
+  val literalFooBar: Either[String, Parameter] = Left("foo.bar")
+  val paramFoo: Either[String, Parameter] = Right(expressions.Parameter("foo", CTString)(_))
+
   // SHOW DATABASE
 
   Seq(
@@ -401,6 +412,99 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
          |  <EOF> (line 1, column 20 (offset: 19))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
+  }
+
+  // ALTER DATABASE
+  Seq(
+    ("READ ONLY", ReadOnlyAccess),
+    ("READ WRITE", ReadWriteAccess)
+  ).foreach {
+    case (accessKeyword, accessType) =>
+
+      test(s"ALTER DATABASE foo SET ACCESS $accessKeyword") {
+        assertJavaCCAST(testName,
+          AlterDatabase(literalFoo, ifExists = false, accessType)(pos))
+      }
+
+      test(s"ALTER DATABASE $$foo SET ACCESS $accessKeyword") {
+        assertJavaCCAST(testName,
+          AlterDatabase(paramFoo, ifExists = false, accessType)(pos))
+      }
+
+      test(s"ALTER DATABASE `foo.bar` SET ACCESS $accessKeyword") {
+        assertJavaCCAST(testName,
+          AlterDatabase(literalFooBar, ifExists = false, accessType)(pos))
+      }
+
+      test(s"USE system ALTER DATABASE foo SET ACCESS $accessKeyword") {
+        // can parse USE clause, but is not included in AST
+        assertJavaCCAST(testName,
+          AlterDatabase(literalFoo, ifExists = false, accessType)(pos))
+      }
+
+      test(s"ALTER DATABASE foo IF EXISTS SET ACCESS $accessKeyword") {
+        assertJavaCCAST(testName,
+          AlterDatabase(literalFoo, ifExists = true, accessType)(pos))
+      }
+  }
+
+  test("ALTER DATABASE") {
+    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))")
+  }
+
+  // TODO why do we allow "." here?
+  test("ALTER DATABASE foo") {
+    assertJavaCCException(testName, "Invalid input '': expected \".\", \"IF\" or \"SET\" (line 1, column 19 (offset: 18))")
+  }
+
+  test("ALTER DATABASE foo SET READ ONLY") {
+    assertJavaCCException(testName, "Invalid input 'READ': expected \"ACCESS\" (line 1, column 24 (offset: 23))")
+  }
+
+  // TODO why do we allow "." here?
+  test("ALTER DATABASE foo ACCESS READ WRITE") {
+    assertJavaCCException(testName, "Invalid input 'ACCESS': expected \".\", \"IF\" or \"SET\" (line 1, column 20 (offset: 19))")
+  }
+
+  test("ALTER DATABASE foo SET ACCESS READ") {
+    assertJavaCCException(testName, "Invalid input '': expected \"ONLY\" or \"WRITE\" (line 1, column 35 (offset: 34))")
+  }
+
+  test("ALTER DATABASE foo SET ACCESS READWRITE'") {
+    assertJavaCCException(testName, "Invalid input 'READWRITE': expected \"READ\" (line 1, column 31 (offset: 30))")
+  }
+
+  test("ALTER DATABASE foo SET ACCESS READ_ONLY") {
+    assertJavaCCException(testName, "Invalid input 'READ_ONLY': expected \"READ\" (line 1, column 31 (offset: 30))")
+  }
+
+  test("ALTER DATABASE foo SET ACCESS WRITE") {
+    assertJavaCCException(testName, "Invalid input 'WRITE': expected \"READ\" (line 1, column 31 (offset: 30))")
+  }
+
+  // Set ACCESS multiple times in the same command
+  test("ALTER DATABASE foo SET ACCESS READ ONLY SET ACCESS READ WRITE") {
+    assertJavaCCException(testName, "Invalid input 'SET': expected <EOF> (line 1, column 41 (offset: 40))")
+  }
+
+  // Wrong order between IF EXISTS and SET
+  test("ALTER DATABASE foo SET ACCESS READ ONLY IF EXISTS") {
+    assertJavaCCException(testName, "Invalid input 'IF': expected <EOF> (line 1, column 41 (offset: 40))")
+  }
+
+  // IF NOT EXISTS instead of IF EXISTS
+  test("ALTER DATABASE foo IF NOT EXISTS SET ACCESS READ ONLY") {
+    assertJavaCCException(testName, "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 23 (offset: 22))")
+  }
+
+  // ALTER with OPTIONS
+  test("ALTER DATABASE foo SET ACCESS READ WRITE OPTIONS {existingData: 'use'}") {
+    assertJavaCCException(testName, "Invalid input 'OPTIONS': expected <EOF> (line 1, column 42 (offset: 41))")
+  }
+
+  // ALTER OR REPLACE
+  test("ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE") {
+    assertJavaCCException(testName, "Invalid input 'OR': expected \"CURRENT\", \"DATABASE\" or \"USER\" (line 1, column 7 (offset: 6))")
   }
 
   // START DATABASE

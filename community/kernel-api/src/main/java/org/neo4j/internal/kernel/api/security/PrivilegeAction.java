@@ -53,6 +53,7 @@ public enum PrivilegeAction
     DROP_CONSTRAINT,
     SHOW_CONSTRAINT,
 
+    ALTER_DATABASE,
     START_DATABASE,
     STOP_DATABASE,
 
