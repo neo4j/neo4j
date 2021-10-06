@@ -110,13 +110,13 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         RawIterator<AnyValue[],ProcedureException> callResult =
                 procs().procedureCallDbms( procedureId, new AnyValue[]{}, ProcedureCallContext.EMPTY );
         List<AnyValue[]> config = asList( callResult );
-        assertEquals( 4, config.size());
+        assertEquals( config.size(), 5 );
 
-        assertEquals( config.get( 0 )[0], stringValue( "browser.post_connect_cmd" ));
-        assertEquals( config.get( 1 )[0], stringValue( "browser.remote_content_hostname_whitelist" ));
-        assertEquals( config.get( 2 )[0], stringValue( "dbms.default_database" ));
-        assertEquals( config.get( 3 )[0], stringValue( "dbms.security.auth_enabled" ));
-
+        assertEquals( stringValue( "browser.post_connect_cmd" ), config.get( 0 )[0] );
+        assertEquals( stringValue( "browser.remote_content_hostname_whitelist" ), config.get( 1 )[0] );
+        assertEquals( stringValue( "clients.allow_telemetry" ), config.get( 2 )[0] );
+        assertEquals( stringValue( "dbms.default_database" ), config.get( 3 )[0] );
+        assertEquals( stringValue( "dbms.security.auth_enabled" ), config.get( 4 )[0] );
     }
 
     @Test
