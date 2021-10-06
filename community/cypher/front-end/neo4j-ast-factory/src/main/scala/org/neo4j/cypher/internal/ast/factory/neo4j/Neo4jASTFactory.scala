@@ -132,6 +132,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
@@ -1451,6 +1452,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     case ActionType.USER_PASSWORD => SetPasswordsAction
     case ActionType.USER_STATUS => SetUserStatusAction
     case ActionType.USER_HOME   => SetUserHomeDatabaseAction
+    case ActionType.USER_IMPERSONATE => ImpersonateUserAction
     case ActionType.ROLE_ALL    => AllRoleActions
     case ActionType.ROLE_SHOW => ShowRoleAction
     case ActionType.ROLE_CREATE => CreateRoleAction

@@ -385,7 +385,9 @@ trait AdministrationCommand extends Parser
     keyword("EXECUTE") ~~ Procedure ~> (_ => ast.ExecuteProcedureAction) |
     keyword("EXECUTE BOOSTED") ~~ Procedure ~> (_ => ast.ExecuteBoostedProcedureAction) |
     keyword("EXECUTE") ~~ Function ~> (_ => ast.ExecuteFunctionAction) |
-    keyword("EXECUTE BOOSTED") ~~ Function ~> (_ => ast.ExecuteBoostedFunctionAction)
+    keyword("EXECUTE BOOSTED") ~~ Function ~> (_ => ast.ExecuteBoostedFunctionAction) |
+    keyword("IMPERSONATE") ~~ UserQualifier ~> (_ => ast.ImpersonateUserAction) |
+    keyword("IMPERSONATE") ~> (_ => List(ast.UserAllQualifier()(InputPosition.NONE))) ~> (_ => ast.ImpersonateUserAction)
   }
 
   private def Procedure: Rule1[List[ast.PrivilegeQualifier]] = ProcedureKeyword ~~ ProcedureIdentifier

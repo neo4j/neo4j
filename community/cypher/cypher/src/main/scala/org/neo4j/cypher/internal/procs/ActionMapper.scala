@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.ast.ExecuteBoostedFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
+import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.ReadAction
@@ -155,6 +156,8 @@ object ActionMapper {
 
     case ExecuteFunctionAction        => security.PrivilegeAction.EXECUTE
     case ExecuteBoostedFunctionAction => security.PrivilegeAction.EXECUTE_BOOSTED
+
+    case ImpersonateUserAction => security.PrivilegeAction.IMPERSONATE
 
     case AllDbmsAction => security.PrivilegeAction.DBMS_ACTIONS
 

@@ -2361,6 +2361,15 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
           s"$action execute boosted user defined functions ??? on dbms $preposition role" ->
             s"$action EXECUTE BOOSTED USER DEFINED FUNCTION ??? ON DBMS $preposition role",
+
+          s"$action impersonate on dbms $preposition role" ->
+            s"$action IMPERSONATE (*) ON DBMS $preposition role",
+
+          s"$action impersonate (*) on dbms $preposition role, $$paramrole" ->
+            s"$action IMPERSONATE (*) ON DBMS $preposition role, $$paramrole",
+
+          s"$action impersonate (foo,bar) on dbms $preposition role" ->
+            s"$action IMPERSONATE (foo, bar) ON DBMS $preposition role",
         )
     }
   }

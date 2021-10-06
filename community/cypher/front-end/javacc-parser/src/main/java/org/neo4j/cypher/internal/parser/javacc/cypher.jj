@@ -380,6 +380,7 @@ TOKEN [IGNORE_CASE] :
     | < HEADERS: "HEADERS" >
     | < HOME: "HOME">
     | < IF: "IF" >
+    | < IMPERSONATE: "IMPERSONATE" >
     | < IN: "IN" >
     | < INDEX: "INDEX" >
     | < INDEXES: "INDEXES" >
@@ -4377,6 +4378,8 @@ PRIVILEGE_TYPE databasePrivilege(Token start):
 PRIVILEGE_TYPE dbmsPrivilege(Token start):
 {
     ADMINISTRATION_ACTION action = null;
+    List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allQualifier();
+    List<SimpleEither<String, PARAMETER>> qualifiers = null;
 }
 {
     (
@@ -4392,10 +4395,13 @@ PRIVILEGE_TYPE dbmsPrivilege(Token start):
             | <USER> { action = astFactory.privilegeAction( ActionType.USER_RENAME ); }
         )
         | <USER> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.USER_ALL ); }
+        | <IMPERSONATE> { qualifier = astFactory.allUsersQualifier(); }
+            ( <LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { qualifier = astFactory.userQualifier(qualifiers); } ) <RPAREN> )?
+            { action = astFactory.privilegeAction( ActionType.USER_IMPERSONATE ); }
     )
     <ON> <DBMS>
     {
-        return astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() );
+        return astFactory.dbmsPrivilege( pos(start), action, qualifier );
     }
 }
 

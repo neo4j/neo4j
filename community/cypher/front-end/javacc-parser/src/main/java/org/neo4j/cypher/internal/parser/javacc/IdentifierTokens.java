@@ -94,6 +94,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.HEADERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.HOME;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IDENTIFIER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IF;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IMPERSONATE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEX;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEXES;
@@ -267,8 +268,9 @@ public class IdentifierTokens
             GRAPHS,
             HEADERS,
             HOME,
-            IF,
             IDENTIFIER,
+            IF,
+            IMPERSONATE,
             IN,
             INDEX,
             INDEXES,
