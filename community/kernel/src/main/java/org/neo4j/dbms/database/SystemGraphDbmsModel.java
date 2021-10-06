@@ -61,6 +61,11 @@ public class SystemGraphDbmsModel
         online,offline
     }
 
+    public enum DatabaseAccess
+    {
+        READ_ONLY, READ_WRITE
+    }
+
     public enum InstanceStatus
     {
         active,draining
@@ -71,6 +76,7 @@ public class SystemGraphDbmsModel
     public static final String DATABASE_UUID_PROPERTY = "uuid";
     public static final String DATABASE_NAME_PROPERTY = "name";
     public static final String DATABASE_STATUS_PROPERTY = "status";
+    public static final String DATABASE_ACCESS_PROPERTY = "access";
     public static final String DATABASE_DEFAULT_PROPERTY = "default";
     public static final String DATABASE_UPDATE_ID_PROPERTY = "update_id";
     public static final String DATABASE_INITIAL_SERVERS_PROPERTY = "initial_members";
