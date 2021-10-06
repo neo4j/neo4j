@@ -316,11 +316,11 @@ class WithinBBoxTest
         var lowerLeft = pointValue( WGS84, 30, 70 );
         var upperRight = pointValue( WGS84, 40, 60 );
 
-        assertThat( withinBBox( pointValue( WGS84, 35, 55 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
-        assertThat( withinBBox( pointValue( WGS84, 35, 60 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 55 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 60 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
         assertThat( withinBBox( pointValue( WGS84, 35, 65 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
-        assertThat( withinBBox( pointValue( WGS84, 35, 70 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
-        assertThat( withinBBox( pointValue( WGS84, 35, 75 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 70 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 75 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
     }
 
     @Test
@@ -342,12 +342,12 @@ class WithinBBoxTest
         var lowerLeft = pointValue( WGS84, 30, -60 );
         var upperRight = pointValue( WGS84, 40, -70 );
 
-        assertThat( withinBBox( pointValue( WGS84, 35, 55 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
-        assertThat( withinBBox( pointValue( WGS84, 35, -55 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
-        assertThat( withinBBox( pointValue( WGS84, 35, -60 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 55 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -55 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -60 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
         assertThat( withinBBox( pointValue( WGS84, 35, -65 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
-        assertThat( withinBBox( pointValue( WGS84, 35, -70 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
-        assertThat( withinBBox( pointValue( WGS84, 35, -75 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -70 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -75 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
     }
 
     @Test
@@ -369,10 +369,29 @@ class WithinBBoxTest
         var lowerLeft = pointValue( WGS84, 30, 10 );
         var upperRight = pointValue( WGS84, 40, -10 );
 
-        assertThat( withinBBox( pointValue( WGS84, 35, -15 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
-        assertThat( withinBBox( pointValue( WGS84, 35, -10 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -15 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, -10 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
         assertThat( withinBBox( pointValue( WGS84, 35, 0 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
-        assertThat( withinBBox( pointValue( WGS84, 35,  10 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
-        assertThat( withinBBox( pointValue( WGS84, 35, 15 ), lowerLeft, upperRight ) ).isEqualTo( TRUE );
+        assertThat( withinBBox( pointValue( WGS84, 35,  10 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 15 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+    }
+
+    @Test
+    void handleBothDirectionsShifted()
+    {
+        var lowerLeft = pointValue( WGS84, 40, 40 );
+        var upperRight = pointValue( WGS84, 30, 30 );
+
+        assertThat( withinBBox( pointValue( WGS84, 45, 30 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 40, 30 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 35, 30 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 30,  30 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 25, 30 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+
+        assertThat( withinBBox( pointValue( WGS84, 30, 45 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 30, 40 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 30, 35 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 30, 30 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
+        assertThat( withinBBox( pointValue( WGS84, 30, 25 ), lowerLeft, upperRight ) ).isEqualTo( FALSE );
     }
 }

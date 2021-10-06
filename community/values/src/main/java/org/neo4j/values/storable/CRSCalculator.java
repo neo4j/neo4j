@@ -233,6 +233,11 @@ public abstract class CRSCalculator
 
             double[] ll = lowerLeft.coordinate();
             double[] ur = upperRight.coordinate();
+            //If lowerLeft is north of upperRight the bbox will always be empty
+            if ( isNorthOf( ll, ur ) )
+            {
+                return false;
+            }
 
             int i = 0;
             //first check latitude and longitude
@@ -254,6 +259,7 @@ public abstract class CRSCalculator
                 }
             }
 
+            //check potential extra dimensions
             for ( ; i < check.length; i++ )
             {
                 if ( check[i] < ll[i] || check[i] > ur[i] )
@@ -285,6 +291,11 @@ public abstract class CRSCalculator
                 }
             }
             return Pair.of( Values.pointValue( crs, min ), Values.pointValue( crs, max ) );
+        }
+
+        private boolean isNorthOf( double[] p1, double[] p2 )
+        {
+            return p1[1] > p2[1];
         }
     }
 }
