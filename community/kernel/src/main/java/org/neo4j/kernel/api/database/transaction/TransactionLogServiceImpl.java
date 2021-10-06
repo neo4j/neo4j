@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.storageengine.api.MetadataProvider;
 
 import static org.neo4j.util.Preconditions.requirePositive;
 
@@ -41,10 +42,13 @@ public class TransactionLogServiceImpl implements TransactionLogService
 {
     private final LogFiles logFiles;
     private final LogicalTransactionStore transactionStore;
+    private final MetadataProvider metadataProvider;
+
     private final Lock pruneLock;
 
-    public TransactionLogServiceImpl( LogFiles logFiles, LogicalTransactionStore transactionStore, Lock pruneLock )
+    public TransactionLogServiceImpl( MetadataProvider metadataProvider, LogFiles logFiles, LogicalTransactionStore transactionStore, Lock pruneLock )
     {
+        this.metadataProvider = metadataProvider;
         this.logFiles = logFiles;
         this.transactionStore = transactionStore;
         this.pruneLock = pruneLock;
@@ -62,9 +66,9 @@ public class TransactionLogServiceImpl implements TransactionLogService
         {
             long minimalVersion = minimalLogPosition.getLogVersion();
             var logFile = logFiles.getLogFile();
-            long highestLogVersion = logFile.getHighestLogVersion();
-
-            var channels = collectChannels( startingTxId, minimalLogPosition, minimalVersion, logFile, highestLogVersion );
+            var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
+            var highestLogPosition = lastClosedTransaction.getLogPosition();
+            var channels = collectChannels( startingTxId, minimalLogPosition, minimalVersion, logFile, highestLogPosition );
             return new TransactionLogChannels( channels );
         }
         finally
@@ -74,8 +78,9 @@ public class TransactionLogServiceImpl implements TransactionLogService
     }
 
     private ArrayList<LogChannel> collectChannels( long startingTxId, LogPosition minimalLogPosition, long minimalVersion, LogFile logFile,
-            long highestLogVersion ) throws IOException
+                                                   LogPosition highestLogPosition ) throws IOException
     {
+        var highestLogVersion = highestLogPosition.getLogVersion();
         int exposedChannels = (int) ((highestLogVersion - minimalVersion) + 1);
         var channels = new ArrayList<LogChannel>( exposedChannels );
         var internalChannels = LongObjectMaps.mutable.<StoreChannel>ofInitialCapacity( exposedChannels );
@@ -88,7 +93,8 @@ public class TransactionLogServiceImpl implements TransactionLogService
                 readOnlyStoreChannel.position( minimalLogPosition.getByteOffset() );
             }
             internalChannels.put( version, readOnlyStoreChannel );
-            channels.add( new LogChannel( lastCommittedTxId, readOnlyStoreChannel ) );
+            var endOffset = version < highestLogVersion ? readOnlyStoreChannel.size() : highestLogPosition.getByteOffset();
+            channels.add( new LogChannel( lastCommittedTxId, readOnlyStoreChannel, endOffset ) );
         }
         logFile.registerExternalReaders( internalChannels );
         return channels;

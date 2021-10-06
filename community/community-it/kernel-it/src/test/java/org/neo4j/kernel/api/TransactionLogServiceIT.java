@@ -97,7 +97,7 @@ class TransactionLogServiceIT
         try ( TransactionLogChannels logReaders = logService.logFilesChannels( lastCommittedBeforeWorkload + 29 ) )
         {
             List<LogChannel> logFileChannels = logReaders.getChannels();
-            assertThat( logFileChannels ).hasSize( 3 );
+            assertThat( logFileChannels ).hasSize( 2 );
             assertThat( logFiles.logFiles() ).hasSizeGreaterThanOrEqualTo( numberOfTransactions );
 
             checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Test checkpoint" ) );
@@ -133,13 +133,16 @@ class TransactionLogServiceIT
 
             checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Test checkpoint" ) );
 
-            // 1 desired, 1 checkpoint  + 2 (see how ThresholdBasedPruneStrategy is working - keeping additional 2 files)
+            // 1 desired, 1 checkpoint + 2 (see how ThresholdBasedPruneStrategy is working - keeping additional 2 files)
             int txLogsAfterCheckpoint = 3;
+            // the transaction log service did not return the last (empty) transaction log file
+            var visibleTxLogsAfterCheckpoints = txLogsAfterCheckpoint - 1;
             int checkpointLogs = 1;
+
             assertThat( logFiles.logFiles() ).hasSize( txLogsAfterCheckpoint + checkpointLogs );
 
-            var closedChannels = logFileChannels.subList( 0, logFileChannels.size() - txLogsAfterCheckpoint );
-            var openChannels = logFileChannels.subList( logFileChannels.size() - txLogsAfterCheckpoint, logFileChannels.size() );
+            var closedChannels = logFileChannels.subList( 0, logFileChannels.size() - visibleTxLogsAfterCheckpoints );
+            var openChannels = logFileChannels.subList( logFileChannels.size() - visibleTxLogsAfterCheckpoints, logFileChannels.size() );
             assertEquals( closedChannels.size() + openChannels.size(), logFileChannels.size() );
 
             for ( LogChannel logChannel : closedChannels )
@@ -227,7 +230,7 @@ class TransactionLogServiceIT
         try ( TransactionLogChannels logReaders = logService.logFilesChannels( initialTxId ) )
         {
             List<LogChannel> logFileChannels = logReaders.getChannels();
-            assertThat( logFileChannels ).hasSize( 15 );
+            assertThat( logFileChannels ).hasSize( 14 );
 
             var channelIterator = logFileChannels.iterator();
             assertEquals( initialTxId, channelIterator.next().getLastCommittedTxId() );
@@ -237,6 +240,34 @@ class TransactionLogServiceIT
                 assertEquals( subsequentTxId, channelIterator.next().getLastCommittedTxId() );
                 subsequentTxId += 2;
             }
+        }
+    }
+
+    @Test
+    void endOffsetPositionedToEndOfFileOrLastClosedTransaction() throws IOException
+    {
+        var propertyValue = RandomStringUtils.randomAscii( (int) THRESHOLD );
+
+        int numberOfTransactions = 30;
+        for ( int i = 0; i < numberOfTransactions; i++ )
+        {
+            executeTransaction( propertyValue );
+        }
+
+        try ( TransactionLogChannels logReaders = logService.logFilesChannels( 2 ) )
+        {
+
+            var channels = logReaders.getChannels();
+            var fullChannels = channels.subList( 0, channels.size() - 1 );
+
+            for ( LogChannel fullChannel : fullChannels )
+            {
+                assertThat( fullChannel.getEndOffset() ).isEqualTo( fullChannel.getChannel().size() );
+            }
+
+            var lastChannel = channels.get( channels.size() - 1 );
+            var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
+            assertThat( lastChannel.getEndOffset() ).isEqualTo( lastClosedTransaction.getLogPosition().getByteOffset() );
         }
     }
 

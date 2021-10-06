@@ -771,7 +771,7 @@ public class Database extends LifecycleAdapter
         life.add( checkPointer );
         life.add( checkPointScheduler );
 
-        TransactionLogServiceImpl transactionLogService = new TransactionLogServiceImpl( logFiles, logicalTransactionStore, pruneLock );
+        TransactionLogServiceImpl transactionLogService = new TransactionLogServiceImpl( metadataProvider, logFiles, logicalTransactionStore, pruneLock );
         databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, logRotation, transactionAppender, transactionLogService );
 
         return new DatabaseTransactionLogModule( checkPointer, transactionAppender );

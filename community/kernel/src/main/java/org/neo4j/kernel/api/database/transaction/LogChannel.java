@@ -25,11 +25,13 @@ public class LogChannel implements AutoCloseable
 {
     private final long lastCommittedTxId;
     private final StoreChannel channel;
+    private final long endOffset;
 
-    public LogChannel( long lastCommittedTxId, StoreChannel channel )
+    public LogChannel( long lastCommittedTxId, StoreChannel channel, long endOffset )
     {
         this.lastCommittedTxId = lastCommittedTxId;
         this.channel = channel;
+        this.endOffset = endOffset;
     }
 
     public long getLastCommittedTxId()
@@ -40,6 +42,14 @@ public class LogChannel implements AutoCloseable
     public StoreChannel getChannel()
     {
         return channel;
+    }
+
+    /**
+     * @return a known transaction-ending aligned offset for this channel.
+     */
+    public long getEndOffset()
+    {
+        return endOffset;
     }
 
     @Override
