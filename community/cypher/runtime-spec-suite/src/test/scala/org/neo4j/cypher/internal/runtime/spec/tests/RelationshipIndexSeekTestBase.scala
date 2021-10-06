@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.storable.ValueType
 
 // Supported by all runtimes
@@ -41,7 +43,13 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
                                                                          runtime: CypherRuntime[CONTEXT],
                                                                          val sizeHint: Int
                                                                        )
-  extends RuntimeTestSuite[CONTEXT](edition, runtime)
+  extends RuntimeTestSuite[CONTEXT](
+    runtime = runtime,
+    edition = edition.copyWith(
+      GraphDatabaseInternalSettings.text_indexes_enabled -> Boolean.box(true),
+      GraphDatabaseInternalSettings.range_indexes_enabled -> Boolean.box(true),
+    )
+  )
   with RandomValuesTestSupport
 {
 
@@ -1216,6 +1224,41 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
           r
       }
     }
+  }
+
+  test("should work with multiple index types") {
+    val rels = given {
+      relationshipIndex(IndexType.RANGE, "R", "prop")
+      relationshipIndex(IndexType.TEXT, "R", "prop")
+
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 2 == 0 => r.setProperty("prop", i)
+        case (r, i) if i % 2 == 1 => r.setProperty("prop", i.toString)
+      }
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .union()
+      .|.relationshipIndexOperator("(x)-[r:R(prop > 42)]->(y)", indexType = IndexType.RANGE)
+      .relationshipIndexOperator("(a)-[r:R(prop CONTAINS '1')]->(b)", indexType = IndexType.TEXT)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = rels.filter { r =>
+      r.getProperty("prop") match {
+        case s: String => s.contains("1")
+        case i: Integer => i > 42
+        case _ => false
+      }
+    }
+
+    runtimeResult should beColumns("r").withRows(singleColumn(expected))
   }
 
   private def propFilter[T](predicate: T => Boolean): Relationship => Boolean = {

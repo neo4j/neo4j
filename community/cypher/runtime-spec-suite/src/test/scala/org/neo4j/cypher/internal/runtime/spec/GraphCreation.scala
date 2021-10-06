@@ -529,11 +529,17 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
+   * Creates a BTREE index and restarts the transaction. This should be called before any data creation operation.
+   */
+  def relationshipIndex(relType: String, properties: String*): Unit =
+    relationshipIndex(IndexType.BTREE, relType, properties:_*)
+
+  /**
    * Creates an index and restarts the transaction. This should be called before any data creation operation.
    */
-  def relationshipIndex(relType: String, properties: String*): Unit = {
+  def relationshipIndex(indexType: IndexType, relType: String, properties: String*): Unit = {
     try {
-      var creator = runtimeTestSupport.tx.schema().indexFor(RelationshipType.withName(relType))
+      var creator = runtimeTestSupport.tx.schema().indexFor(RelationshipType.withName(relType)).withIndexType(indexType)
       properties.foreach(p => creator = creator.on(p))
       creator.create()
     } finally {
