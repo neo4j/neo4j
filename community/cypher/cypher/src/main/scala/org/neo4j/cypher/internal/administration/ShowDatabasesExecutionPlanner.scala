@@ -40,12 +40,10 @@ import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.dbms.database.DatabaseInfo
 import org.neo4j.dbms.database.DatabaseInfoService
 import org.neo4j.dbms.database.ExtendedDatabaseInfo
-import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_ACCESS_PROPERTY
-import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
-import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL
-import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY
-import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_STATUS_PROPERTY
-import org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node

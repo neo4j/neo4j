@@ -105,14 +105,15 @@ object Catalog {
       fqn = namespace :+ name
     } yield CatalogName(fqn.toList) -> graph).toMap)
 
-  private def byIdView(lookupIn: Seq[Catalog.Graph], namespace: String): Catalog =
+  private def byIdView(lookupIn: Seq[Catalog.Graph], namespace: String): Catalog = {
     Catalog(Map(
       CatalogName(namespace, "graph") -> View1(Arg("gid", classOf[IntegralValue]))(gid =>
         lookupIn
-          .collectFirst { case g if g.id == gid.longValue() => g }
+          .collectFirst { case g: ExternalGraph if g.id == gid.longValue() => g }
           .getOrElse(Errors.entityNotFound("Graph", show(gid)))
       )
     ))
+  }
 }
 
 case class Catalog(entries: Map[CatalogName, Catalog.Entry]) {

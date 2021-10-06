@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-import static org.neo4j.kernel.database.TestDatabaseIdRepository.noOpSystemGraphInitializer;
+import static org.neo4j.kernel.database.NoOpSystemGraphInitializer.noOpSystemGraphInitializer;
 
 @Neo4jLayoutExtension
 class DatabaseFailureIT

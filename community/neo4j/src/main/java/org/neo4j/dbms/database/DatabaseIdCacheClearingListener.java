@@ -17,26 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms;
+package org.neo4j.dbms.database;
 
-import org.neo4j.dbms.database.TopologyGraphDbmsModel;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 
-public enum DefaultOperatorState implements OperatorState
+public final class DatabaseIdCacheClearingListener extends TransactionEventListenerAdapter<Object>
 {
-    STOPPED( TopologyGraphDbmsModel.DatabaseStatus.offline.name() ),
-    STARTED( TopologyGraphDbmsModel.DatabaseStatus.online.name() ),
-    UNKNOWN( "unknown" );
+    private final DatabaseIdRepository.Caching repository;
 
-    private final String description;
-
-    DefaultOperatorState( String description )
+    public DatabaseIdCacheClearingListener( DatabaseIdRepository.Caching repository )
     {
-        this.description = description;
+        this.repository = repository;
     }
 
     @Override
-    public String description()
+    public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
     {
-        return description;
+        repository.invalidateAll();
     }
 }

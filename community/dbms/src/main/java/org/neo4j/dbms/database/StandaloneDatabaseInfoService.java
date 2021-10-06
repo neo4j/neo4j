@@ -25,12 +25,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.DatabaseStateService;
-import org.neo4j.dbms.api.DatabaseNotFoundException;
-import org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -38,9 +34,8 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess.READ_ONLY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess.READ_WRITE;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
 
 public class StandaloneDatabaseInfoService implements DatabaseInfoService
 {

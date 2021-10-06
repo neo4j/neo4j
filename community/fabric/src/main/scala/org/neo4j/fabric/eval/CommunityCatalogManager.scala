@@ -20,28 +20,28 @@
 package org.neo4j.fabric.eval
 
 import org.neo4j.configuration.helpers.NormalizedGraphName
-import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.fabric.eval.Catalog.InternalGraph
 import org.neo4j.fabric.executor.Location
-import org.neo4j.graphdb.event.DatabaseEventContext
-import org.neo4j.graphdb.event.DatabaseEventListener
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.event.TransactionData
+import org.neo4j.graphdb.event.TransactionEventListenerAdapter
 import org.neo4j.kernel.database.NamedDatabaseId
-import org.neo4j.kernel.database.NormalizedDatabaseName
+import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners
 
-class CommunityCatalogManager(databaseLookup: DatabaseLookup, databaseManagementService: DatabaseManagementService ) extends CatalogManager {
+class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: GlobalTransactionEventListeners) extends CatalogManager {
 
   private val invalidationLock = new Object()
   @volatile private var cachedCatalog: Catalog = _
   @volatile private var invalidationToken: Object = _
 
-  databaseManagementService.registerDatabaseEventListener(new DatabaseEventListener {
+  registerCatalogInvalidateListeners()
 
-    override def databaseStart(eventContext: DatabaseEventContext): Unit = invalidateCatalog()
-
-    override def databaseShutdown(eventContext: DatabaseEventContext): Unit = invalidateCatalog()
-
-    override def databasePanic(eventContext: DatabaseEventContext): Unit = invalidateCatalog()
-  })
+  override def registerCatalogInvalidateListeners(): Unit = {
+    txListeners.registerTransactionEventListener( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.name(), new TransactionEventListenerAdapter[AnyRef] {
+      override def afterCommit(data: TransactionData, state: AnyRef, databaseService: GraphDatabaseService): Unit =
+        invalidateCatalog()
+    })
+  }
 
   override final def currentCatalog(): Catalog = {
     val existingCatalog = cachedCatalog
@@ -69,20 +69,19 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, databaseManagement
     newCatalog
   }
 
-  private def invalidateCatalog(): Unit = {
+  final def invalidateCatalog(): Unit = {
     invalidationLock.synchronized {
       invalidationToken = new Object()
       cachedCatalog = null
     }
   }
   
-  protected def createCatalog(): Catalog = Catalog.create(asInternal(), Seq.empty, None)
+  protected def createCatalog(): Catalog = Catalog.create(asInternal().toSeq, Seq.empty, None)
 
   protected def asInternal(firstId: Long = 0) = for {
-    (namedDatabaseId, id) <- databaseLookup.databaseIds.toSeq.sortBy(_.name).zip(Stream.iterate(firstId)(_ + 1))
-    graphName = new NormalizedGraphName(namedDatabaseId.name())
-    databaseName = new NormalizedDatabaseName(namedDatabaseId.name())
-  } yield InternalGraph(id, namedDatabaseId.databaseId().uuid(), graphName, databaseName)
+    ((databaseName, databaseId), idx) <- databaseLookup.databaseReferences.zip(Stream.iterate(firstId)(_ + 1))
+    graphName = new NormalizedGraphName(databaseName.name)
+  } yield InternalGraph(idx, databaseId.databaseId().uuid(), graphName, databaseName)
 
   override def locationOf(sessionDatabase: NamedDatabaseId, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
     case Catalog.InternalGraph(id, uuid, _, databaseName) =>

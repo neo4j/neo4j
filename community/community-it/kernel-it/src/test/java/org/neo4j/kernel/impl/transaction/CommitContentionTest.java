@@ -43,7 +43,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.kernel.database.TestDatabaseIdRepository.noOpSystemGraphInitializer;
+import static org.neo4j.kernel.database.NoOpSystemGraphInitializer.noOpSystemGraphInitializer;
 
 @TestDirectoryExtension
 class CommitContentionTest

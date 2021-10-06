@@ -62,7 +62,7 @@ public class BasicSystemGraphRealmTestHelper
     {
         protected GraphDatabaseFacade testSystemDb;
         protected final DatabaseManagementService managementService;
-        private final DatabaseIdRepository.Caching databaseIdRepository = new TestDatabaseIdRepository();
+        private final DatabaseIdRepository.Caching databaseIdRepository = new TestDatabaseIdRepository.Caching();
 
         protected TestDatabaseManager( TestDirectory testDir )
         {

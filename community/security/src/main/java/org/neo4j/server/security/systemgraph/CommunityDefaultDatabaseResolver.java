@@ -32,9 +32,9 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 
 public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAdapter<Object> implements DefaultDatabaseResolver
 {

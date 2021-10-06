@@ -25,25 +25,18 @@ package org.neo4j.kernel.lifecycle;
  */
 public class Lifespan extends LifeSupport implements AutoCloseable
 {
-    private final LifeSupport life = new LifeSupport();
-
     public Lifespan( Lifecycle... subjects )
     {
         for ( Lifecycle subject : subjects )
         {
-            life.add( subject );
+            add( subject );
         }
-        life.start();
-    }
-
-    public <T extends Lifecycle> T add( T subject )
-    {
-        return life.add( subject );
+        start();
     }
 
     @Override
     public void close()
     {
-        life.shutdown();
+        shutdown();
     }
 }

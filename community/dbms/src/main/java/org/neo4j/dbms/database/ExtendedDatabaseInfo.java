@@ -24,7 +24,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 

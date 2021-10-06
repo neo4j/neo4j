@@ -22,14 +22,14 @@ package org.neo4j.dbms.systemgraph.versions;
 
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.KnownSystemComponentVersion;
-import org.neo4j.dbms.database.SystemGraphDbmsModel;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
 
 public abstract class KnownCommunityTopologyComponentVersion extends KnownSystemComponentVersion
 {
@@ -57,7 +57,7 @@ public abstract class KnownCommunityTopologyComponentVersion extends KnownSystem
     protected void setDatabaseAccessToReadWrite( Transaction tx )
     {
         final ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL );
-        nodes.stream().forEach( node -> node.setProperty( DATABASE_ACCESS_PROPERTY, SystemGraphDbmsModel.DatabaseAccess.READ_WRITE.toString() ) );
+        nodes.stream().forEach( node -> node.setProperty( DATABASE_ACCESS_PROPERTY, TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE.toString() ) );
     }
 
     /**

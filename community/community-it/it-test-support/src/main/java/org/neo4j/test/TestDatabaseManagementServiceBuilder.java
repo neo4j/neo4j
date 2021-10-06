@@ -42,7 +42,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.kernel.database.NoOpSystemGraphInitializer;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
@@ -106,7 +106,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         var originalDependencies = dependencies;
         if ( noOpSystemGraphInitializer )
         {
-            dependencies = TestDatabaseIdRepository.noOpSystemGraphInitializer( dependencies, cfg );
+            dependencies = NoOpSystemGraphInitializer.noOpSystemGraphInitializer( dependencies, cfg );
         }
         if ( lazyProcedures )
         {

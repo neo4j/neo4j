@@ -25,9 +25,12 @@ import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atMostOnce;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -39,75 +42,70 @@ class MapCachingDatabaseIdRepositoryTest
 {
     private final DatabaseIdRepository delegate = Mockito.mock( DatabaseIdRepository.class );
 
-    private final NamedDatabaseId otherNamedDbId = from( "randomDb", UUID.randomUUID() );
-    private final String otherDbName = otherNamedDbId.name();
-    private final DatabaseId otherDbid = otherNamedDbId.databaseId();
+    private final NamedDatabaseId randomNamedDbId = from( "randomDb", UUID.randomUUID() );
+    private final String randomDbName = randomNamedDbId.name();
+    private final DatabaseId randomDbId = randomNamedDbId.databaseId();
     private DatabaseIdRepository.Caching databaseIdRepository;
 
     @BeforeEach
     void setUp()
     {
-        when( delegate.getByName( otherDbName ) ).thenReturn( Optional.of( otherNamedDbId ) );
-        when( delegate.getById( otherDbid ) ).thenReturn( Optional.of( otherNamedDbId ) );
+        when( delegate.getByName( randomDbName ) ).thenReturn( Optional.of( randomNamedDbId ) );
+        when( delegate.getById( randomDbId ) ).thenReturn( Optional.of( randomNamedDbId ) );
         databaseIdRepository = new MapCachingDatabaseIdRepository( delegate );
     }
 
     @Test
     void shouldDelegateGetByName()
     {
-        NamedDatabaseId namedDatabaseId = databaseIdRepository.getByName( otherDbName ).get();
-        assertThat( namedDatabaseId ).isEqualTo( otherNamedDbId );
+        NamedDatabaseId namedDatabaseId = databaseIdRepository.getByName( randomDbName ).get();
+        assertThat( namedDatabaseId ).isEqualTo( randomNamedDbId );
     }
 
     @Test
     void shouldDelegateGetByUuid()
     {
-        var databaseId = databaseIdRepository.getById( otherDbid ).get();
-        assertThat( databaseId ).isEqualTo( otherNamedDbId );
+        var databaseId = databaseIdRepository.getById( randomDbId ).get();
+        assertThat( databaseId ).isEqualTo( randomNamedDbId );
     }
 
     @Test
     void shouldCacheDbByName()
     {
-        databaseIdRepository.getByName( otherDbName ).get();
-        databaseIdRepository.getByName( otherDbName ).get();
+        databaseIdRepository.getByName( randomDbName ).get();
+        databaseIdRepository.getByName( randomDbName ).get();
 
-        verify( delegate, atMostOnce() ).getByName( otherDbName );
+        verify( delegate, atMostOnce() ).getByName( randomDbName );
     }
 
     @Test
     void shouldCacheDbByUuid()
     {
-        databaseIdRepository.getById( otherDbid ).get();
-        databaseIdRepository.getById( otherDbid ).get();
+        databaseIdRepository.getById( randomDbId ).get();
+        databaseIdRepository.getById( randomDbId ).get();
 
-        verify( delegate, atMostOnce() ).getById( otherDbid );
+        verify( delegate, atMostOnce() ).getById( randomDbId );
     }
 
     @Test
-    void shouldInvalidateBoth()
+    void shouldCacheBoth()
     {
-        databaseIdRepository.getByName( otherDbName ).get();
-        databaseIdRepository.getById( otherDbid ).get();
+        var otherNamedDbId = DatabaseIdFactory.from( "otherDb", UUID.randomUUID() );
+        when( delegate.getByName( otherNamedDbId.name() ) ).thenReturn( Optional.of( otherNamedDbId ) );
+        when( delegate.getById( otherNamedDbId.databaseId() ) ).thenReturn( Optional.of( otherNamedDbId ) );
 
-        databaseIdRepository.invalidate( otherNamedDbId );
+        databaseIdRepository.getByName( randomDbName ).get();
+        databaseIdRepository.getByName( randomDbName ).get();
+        databaseIdRepository.getById( randomDbId ).get();
 
-        databaseIdRepository.getByName( otherDbName ).get();
-        databaseIdRepository.getById( otherDbid ).get();
+        databaseIdRepository.getById( otherNamedDbId.databaseId() ).get();
+        databaseIdRepository.getById( otherNamedDbId.databaseId() ).get();
+        databaseIdRepository.getByName( otherNamedDbId.name() ).get();
 
-        verify( delegate, times( 2 ) ).getByName( otherDbName );
-        verify( delegate, times( 2 ) ).getById( otherDbid );
-    }
-
-    @Test
-    void shouldCacheDbOnRequest()
-    {
-        databaseIdRepository.cache( otherNamedDbId );
-
-        databaseIdRepository.getByName( otherDbName );
-        databaseIdRepository.getById( otherDbid );
-
-        verifyNoInteractions( delegate );
+        verify( delegate, atMostOnce() ).getByName( randomDbName );
+        verify( delegate, never() ).getById( randomDbId );
+        verify( delegate, atMostOnce() ).getById( otherNamedDbId.databaseId() );
+        verify( delegate, never() ).getByName( otherNamedDbId.name() );
     }
 
     @Test
@@ -128,4 +126,30 @@ class MapCachingDatabaseIdRepositoryTest
         verifyNoInteractions( delegate );
     }
 
+    @Test
+    void shouldInvalidateAll()
+    {
+        var otherNamedDbId = DatabaseIdFactory.from( "otherDb", UUID.randomUUID() );
+
+        databaseIdRepository.getByName( otherNamedDbId.name() );
+        databaseIdRepository.getById( randomDbId );
+
+        databaseIdRepository.invalidateAll();
+
+        databaseIdRepository.getByName( otherNamedDbId.name() );
+        databaseIdRepository.getById( randomDbId );
+
+        verify( delegate, times( 2 ) ).getByName( otherNamedDbId.name() );
+        verify( delegate, times( 2 ) ).getById( randomDbId );
+    }
+
+    @Test
+    void shouldAlwaysDelegateGetAllAliases()
+    {
+        var aliasSnapshots = Stream.generate( databaseIdRepository::getAllDatabaseAliases );
+        var n = 10;
+        aliasSnapshots.limit( n ).collect( Collectors.toList() );
+
+        verify( delegate, times( n ) ).getAllDatabaseAliases();
+    }
 }

@@ -45,7 +45,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 class CommunityDatabaseStateProcedureTest
 {
-    private final TestDatabaseIdRepository idRepository = new TestDatabaseIdRepository();
+    private final TestDatabaseIdRepository.Caching idRepository = new TestDatabaseIdRepository.Caching();
 
     @Test
     void shouldThrowWithInvalidInput()

@@ -35,14 +35,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_STATUS_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_UUID_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DELETED_DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 /**
@@ -94,7 +94,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
      */
     protected void maybeStopDatabase( Node oldDatabaseNode )
     {
-        oldDatabaseNode.setProperty( DATABASE_STATUS_PROPERTY, SystemGraphDbmsModel.DatabaseStatus.offline.name() );
+        oldDatabaseNode.setProperty( DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.offline.name() );
     }
 
     /**
@@ -172,7 +172,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
                 if ( defaultDb != null )
                 {
                     defaultDb.setProperty( DATABASE_DEFAULT_PROPERTY, true );
-                    defaultDb.setProperty( DATABASE_STATUS_PROPERTY, SystemGraphDbmsModel.DatabaseStatus.online.name() );
+                    defaultDb.setProperty( DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.online.name() );
                     defaultFound = true;
                 }
             }
@@ -209,7 +209,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
         var node = tx.createNode( DATABASE_LABEL );
         node.setProperty( DATABASE_NAME_PROPERTY, databaseName );
         node.setProperty( DATABASE_UUID_PROPERTY, uuid.toString() );
-        node.setProperty( DATABASE_STATUS_PROPERTY, SystemGraphDbmsModel.DatabaseStatus.online.name() );
+        node.setProperty( DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.online.name() );
         node.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
         node.setProperty( DATABASE_CREATED_AT_PROPERTY, now );
         node.setProperty( DATABASE_STARTED_AT_PROPERTY, now );

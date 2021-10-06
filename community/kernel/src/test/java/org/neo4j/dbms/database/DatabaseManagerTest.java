@@ -22,6 +22,7 @@ package org.neo4j.dbms.database;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.UUID;
@@ -73,13 +74,7 @@ class DatabaseManagerTest
             return new DatabaseIdRepository.Caching()
             {
                 @Override
-                public void invalidate( NamedDatabaseId namedDatabaseId )
-                {
-
-                }
-
-                @Override
-                public void cache( NamedDatabaseId namedDatabaseId )
+                public void invalidateAll()
                 {
 
                 }
@@ -108,6 +103,12 @@ class DatabaseManagerTest
                     {
                         return Optional.empty();
                     }
+                }
+
+                @Override
+                public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
+                {
+                    return Map.of();
                 }
             };
         }

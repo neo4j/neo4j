@@ -19,26 +19,55 @@
  */
 package org.neo4j.kernel.database;
 
+import java.util.Map;
 import java.util.Optional;
 
 /**
- * Encapsulates the retrieval of a persistent {@link NamedDatabaseId} for a database of a given name.
+ * Implementations of this interface allow for the retrieval of {@link NamedDatabaseId}s for databases which have
+ * not yet been dropped.
+ *
+ * Note: for editions which support multiple instances of Neo4j in one DBMS (i.e. enterprise editions), returning
+ * database Ids from methods of this class does *not* necessarily mean that said databases exist on the local instance.
  */
 public interface DatabaseIdRepository
 {
 
+    /**
+     * Given a database name, return the corresponding {@link NamedDatabaseId} from the system database, if one exists.
+     *
+     * Note: the same id may be returned for multiple different input names. This is due to the fact that database may
+     * have multiple aliases. **Despite this**, {@link NamedDatabaseId#name()} will always return the "true" name, also
+     * known as the primary alias.
+     */
     Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName );
+
+    /**
+     * Given a database Id, return the corresponding {@link NamedDatabaseId} from the system database, if one exists.
+     *
+     * This is useful as many network protocols only send {@link DatabaseId} objects "over-the-wire", and their human
+     * readable names need to be resolved at either end.
+     */
     Optional<NamedDatabaseId> getById( DatabaseId databaseId );
 
+    /**
+     * Given a string representation of a database name, validate it and return the corresponding
+     * {@link NamedDatabaseId} from the system database, if one exists.
+     */
     default Optional<NamedDatabaseId> getByName( String databaseName )
     {
         return getByName( new NormalizedDatabaseName( databaseName ) );
     }
 
+    /**
+     * Fetch all known {@link NormalizedDatabaseName} to {@link NamedDatabaseId} mappings.
+     *
+     * Note: given {@link NamedDatabaseId} objects may appear multiple times in the returned map's value set. This is
+     * due to the fact that databases may have multiple aliases.
+     */
+    Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases();
+
     interface Caching extends DatabaseIdRepository
     {
-        void invalidate( NamedDatabaseId namedDatabaseId );
-
-        void cache( NamedDatabaseId namedDatabaseId );
+        void invalidateAll();
     }
 }

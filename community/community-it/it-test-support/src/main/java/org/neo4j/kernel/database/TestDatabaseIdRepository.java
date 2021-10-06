@@ -21,79 +21,22 @@ package org.neo4j.kernel.database;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.neo4j.collection.Dependencies;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
+public final class TestDatabaseIdRepository
 {
-    private final String defaultDatabaseName;
-    private final Set<String> filterSet;
-
-    public TestDatabaseIdRepository()
-    {
-        this( DEFAULT_DATABASE_NAME );
-    }
-
-    public TestDatabaseIdRepository( Config config )
-    {
-        this( config.get( GraphDatabaseSettings.default_database ) );
-    }
-
-    public TestDatabaseIdRepository( String defaultDbName )
-    {
-        super( new RandomDatabaseIdRepository() );
-        filterSet = new CopyOnWriteArraySet<>();
-        this.defaultDatabaseName = defaultDbName;
-    }
-
-    public NamedDatabaseId defaultDatabase()
-    {
-        return getRaw( defaultDatabaseName );
-    }
-
-    public NamedDatabaseId getRaw( String databaseName )
-    {
-        var databaseIdOpt = getByName( databaseName );
-        Preconditions.checkState( databaseIdOpt.isPresent(),
-                getClass().getSimpleName() + " should always produce a " + NamedDatabaseId.class.getSimpleName() + " for any database name" );
-        var databaseId = databaseIdOpt.get();
-        cache( databaseId );
-        return databaseId;
-    }
-
-    /**
-     * Add a database to appear "not found" by the id repository
-     */
-    public void filter( String databaseName )
-    {
-        filterSet.add( databaseName );
-    }
-
-    @Override
-    public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
-    {
-        var id = super.getByName( databaseName );
-        var nameIsFiltered = id.map( NamedDatabaseId::name ).map( filterSet::contains ).orElse( false );
-        return nameIsFiltered ? Optional.empty() : id;
-    }
-
-    @Override
-    public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
-    {
-        var id = super.getById( databaseId );
-        var uuidIsFiltered = id.map( i -> filterSet.contains( i.name() ) ).orElse( false );
-        return uuidIsFiltered ? Optional.empty() : id;
+    private TestDatabaseIdRepository()
+    { //no-op
     }
 
     /**
@@ -109,7 +52,67 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
         return new DatabaseId( UUID.randomUUID() );
     }
 
-    private static class RandomDatabaseIdRepository implements DatabaseIdRepository
+    public static class Caching extends MapCachingDatabaseIdRepository
+    {
+        private final String defaultDatabaseName;
+        private final Set<String> filterSet;
+
+        public Caching()
+        {
+            this( DEFAULT_DATABASE_NAME );
+        }
+
+        public Caching( Config config )
+        {
+            this( config.get( GraphDatabaseSettings.default_database ) );
+        }
+
+        public Caching( String defaultDbName )
+        {
+            super( new Random() );
+            filterSet = new CopyOnWriteArraySet<>();
+            this.defaultDatabaseName = defaultDbName;
+        }
+
+        public NamedDatabaseId defaultDatabase()
+        {
+            return getRaw( defaultDatabaseName );
+        }
+
+        public NamedDatabaseId getRaw( String databaseName )
+        {
+            var databaseIdOpt = getByName( databaseName );
+            Preconditions.checkState( databaseIdOpt.isPresent(),
+                    getClass().getSimpleName() + " should always produce a " + NamedDatabaseId.class.getSimpleName() + " for any database name" );
+            return databaseIdOpt.get();
+        }
+
+        /**
+         * Add a database to appear "not found" by the id repository
+         */
+        public void filter( String databaseName )
+        {
+            filterSet.add( databaseName );
+        }
+
+        @Override
+        public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
+        {
+            var id = super.getByName( databaseName );
+            var nameIsFiltered = id.map( NamedDatabaseId::name ).map( filterSet::contains ).orElse( false );
+            return nameIsFiltered ? Optional.empty() : id;
+        }
+
+        @Override
+        public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
+        {
+            var id = super.getById( databaseId );
+            var uuidIsFiltered = id.map( i -> filterSet.contains( i.name() ) ).orElse( false );
+            return uuidIsFiltered ? Optional.empty() : id;
+        }
+    }
+
+    private static class Random implements DatabaseIdRepository
     {
         @Override
         public Optional<NamedDatabaseId> getByName( NormalizedDatabaseName databaseName )
@@ -122,45 +125,11 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
         {
             return Optional.of( new NamedDatabaseId( "db" + databaseId.hashCode(), databaseId.uuid() ) );
         }
-    }
 
-    /**
-     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
-     * be possible to read {@link NamedDatabaseId} from system database.
-     * Assumes default database name is {@link GraphDatabaseSettings#DEFAULT_DATABASE_NAME}
-     * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
-     */
-    public static Dependencies noOpSystemGraphInitializer()
-    {
-        return noOpSystemGraphInitializer( Config.defaults() );
-    }
-
-    /**
-     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
-     * be possible to read {@link NamedDatabaseId} from system database.
-     * @param config Used for default database name
-     * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
-     */
-    public static Dependencies noOpSystemGraphInitializer( Config config )
-    {
-        return noOpSystemGraphInitializer( new Dependencies(), config );
-    }
-
-    /**
-     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
-     * be possible to read {@link NamedDatabaseId} from system database.
-     * @param dependencies to include in returned {@link DependencyResolver}
-     * @param config Used for default database name
-     * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
-     */
-    public static Dependencies noOpSystemGraphInitializer( DependencyResolver dependencies, Config config )
-    {
-        return noOpSystemGraphInitializer( new Dependencies( dependencies ), config );
-    }
-
-    private static Dependencies noOpSystemGraphInitializer( Dependencies dependencies, Config config )
-    {
-        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP, new TestDatabaseIdRepository( config ) );
-        return dependencies;
+        @Override
+        public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
+        {
+            return Map.of();
+        }
     }
 }

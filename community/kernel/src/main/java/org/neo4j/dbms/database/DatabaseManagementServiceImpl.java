@@ -38,7 +38,6 @@ import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -53,9 +52,9 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_STORAGE_ENGINE_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STORAGE_ENGINE_PROPERTY;
 
 public class DatabaseManagementServiceImpl implements DatabaseManagementService
 {

@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Caching
@@ -28,8 +29,8 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
     private static final Optional<NamedDatabaseId> OPT_SYS_DB = Optional.of( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID );
 
     private final DatabaseIdRepository delegate;
-    private final Map<String,NamedDatabaseId> databaseIdsByName;
-    private final Map<DatabaseId,NamedDatabaseId> databaseIdsByUuid;
+    private volatile Map<String,NamedDatabaseId> databaseIdsByName;
+    private volatile Map<DatabaseId,NamedDatabaseId> databaseIdsByUuid;
 
     public MapCachingDatabaseIdRepository( DatabaseIdRepository delegate )
     {
@@ -45,9 +46,9 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
         {
             return OPT_SYS_DB;
         }
-        return Optional.ofNullable(
-                databaseIdsByName.computeIfAbsent( databaseName.name(), name -> delegate.getByName( name ).orElse( null ) )
-        );
+        var dbId = Optional.ofNullable( databaseIdsByName.computeIfAbsent( databaseName.name(), name -> delegate.getByName( name ).orElse( null ) ) );
+        dbId.ifPresent( id -> databaseIdsByUuid.put( id.databaseId(), id ) );
+        return dbId;
     }
 
     @Override
@@ -57,22 +58,26 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
         {
             return OPT_SYS_DB;
         }
-        return Optional.ofNullable(
-                databaseIdsByUuid.computeIfAbsent( uuid, id -> delegate.getById( id ).orElse( null ) )
-        );
+        var dbId = Optional.ofNullable( databaseIdsByUuid.computeIfAbsent( uuid, id -> delegate.getById( id ).orElse( null ) ) );
+        dbId.ifPresent( id -> databaseIdsByName.put( id.name(), id ) );
+        return dbId;
     }
 
     @Override
-    public void invalidate( NamedDatabaseId namedDatabaseId )
+    public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
     {
-        databaseIdsByName.remove( namedDatabaseId.name() );
-        databaseIdsByUuid.remove( namedDatabaseId.databaseId() );
+        // Can't cache getAll call
+        return delegate.getAllDatabaseAliases();
     }
 
+    /**
+     * We recreate the maps rather than .clear() because .clear() is not atomic
+     *  and a concurrent .computeIfAbsent() could preserve a stale value.
+     */
     @Override
-    public void cache( NamedDatabaseId namedDatabaseId )
+    public void invalidateAll()
     {
-        this.databaseIdsByName.put( namedDatabaseId.name(), namedDatabaseId );
-        this.databaseIdsByUuid.put( namedDatabaseId.databaseId(), namedDatabaseId );
+        this.databaseIdsByName = new ConcurrentHashMap<>();
+        this.databaseIdsByUuid = new ConcurrentHashMap<>();
     }
 }

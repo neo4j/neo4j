@@ -24,9 +24,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.neo4j.dbms.database.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.SystemGraphDbmsModel;
+import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Log;
@@ -85,10 +86,10 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
     {
         try ( var tx = db.beginTx() )
         {
-            var model = new SystemGraphDbmsModel( tx );
+            var model = new CommunityTopologyGraphDbmsModel( tx );
             var databaseAccess = model.getAllDatabaseAccess();
             return databaseAccess.entrySet().stream()
-                                 .filter( e -> e.getValue() == SystemGraphDbmsModel.DatabaseAccess.READ_ONLY )
+                                 .filter( e -> e.getValue() == TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY )
                                  .map( Map.Entry::getKey )
                                  .collect( Collectors.toUnmodifiableSet() );
         }

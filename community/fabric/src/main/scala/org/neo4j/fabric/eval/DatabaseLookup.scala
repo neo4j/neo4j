@@ -19,33 +19,39 @@
  */
 package org.neo4j.fabric.eval
 
-import java.util.function.Supplier
-import org.neo4j.dbms.database.DatabaseContext
-import org.neo4j.dbms.database.DatabaseManager
+import org.neo4j.kernel.database.DatabaseIdRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 
-import scala.collection.JavaConverters.asScalaSetConverter
+import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.collection.immutable.SortedMap
 
 trait DatabaseLookup {
 
-  def databaseIds: Set[NamedDatabaseId]
+  /**
+    * Returns all known databaseName/databaseId pairs for this DBMS.
+    *
+    * Note: returned map is sorted lexicographically by databaseName, to provide stable iteration order.
+    */
+  def databaseReferences: SortedMap[NormalizedDatabaseName,NamedDatabaseId]
 
   def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId]
 }
 
 object DatabaseLookup {
 
-  class Default(
-    databaseManager: Supplier[DatabaseManager[DatabaseContext]],
-  ) extends DatabaseLookup {
+  implicit val databaseNameOrdering: Ordering[NormalizedDatabaseName] = Ordering.by(_.name())
 
-    def databaseIds: Set[NamedDatabaseId] =
-      databaseManager.get().registeredDatabases().keySet().asScala.toSet
+  class Default(databaseIdRepository: DatabaseIdRepository) extends DatabaseLookup {
+
+    def databaseReferences: SortedMap[NormalizedDatabaseName,NamedDatabaseId] = {
+      val unsortedMap = databaseIdRepository.getAllDatabaseAliases.asScala
+      SortedMap.empty[NormalizedDatabaseName,NamedDatabaseId] ++ unsortedMap
+    }
 
     def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] = {
-      val maybeDatabaseId = databaseManager.get().databaseIdRepository().getByName(databaseName)
-      if (maybeDatabaseId.isPresent) Some(maybeDatabaseId.get) else None
+      val maybeDatabaseId = databaseIdRepository.getByName(databaseName)
+      Option(maybeDatabaseId.get)
     }
   }
 }

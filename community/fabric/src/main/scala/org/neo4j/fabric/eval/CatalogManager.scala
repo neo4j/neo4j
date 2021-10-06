@@ -28,4 +28,5 @@ trait CatalogManager {
 
   def locationOf(sessionDatabase: NamedDatabaseId, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location
 
+  def registerCatalogInvalidateListeners(): Unit
 }

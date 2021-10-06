@@ -44,7 +44,7 @@ import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.database.SystemDbDatabaseIdRepository;
+import org.neo4j.kernel.database.SystemGraphDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -85,7 +85,13 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
                 DatabaseIdRepository.Caching.class,
                 globalModule.getExternalDependencyResolver(),
                 () -> new MapCachingDatabaseIdRepository(
-                        new SystemDbDatabaseIdRepository( this, globalModule.getJobScheduler() ) ) );
+                        new SystemGraphDatabaseIdRepository( this::getSystemDatabaseContext ) ) );
+    }
+
+    private DB getSystemDatabaseContext()
+    {
+        return getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID )
+                .orElseThrow( () -> new DatabaseManagementException( "Unable to retrieve the system database!" ) );
     }
 
     @Override

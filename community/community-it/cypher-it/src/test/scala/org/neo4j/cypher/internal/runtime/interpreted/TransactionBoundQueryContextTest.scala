@@ -59,7 +59,7 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.api.security.AnonymousContext
-import org.neo4j.kernel.database.TestDatabaseIdRepository
+import org.neo4j.kernel.database.TestDatabaseIdRepository.Caching
 import org.neo4j.kernel.impl.api.ClockContext
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation
@@ -100,7 +100,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
     when(kernelTransaction.acquireStatement()).thenReturn(statement)
     statement = new KernelStatement(kernelTransaction, LockTracer.NONE, new ClockContext(),
-      new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE), new TestDatabaseIdRepository().defaultDatabase, Config.defaults() )
+      new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE), new Caching().defaultDatabase, Config.defaults() )
     statement.initialize(null, CursorContext.NULL, 7)
     statement.acquire()
   }

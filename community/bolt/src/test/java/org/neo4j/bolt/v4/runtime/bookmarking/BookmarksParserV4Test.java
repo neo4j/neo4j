@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -172,6 +173,12 @@ class BookmarksParserV4Test
             public Optional<NamedDatabaseId> getById( DatabaseId databaseId )
             {
                 return Optional.empty();
+            }
+
+            @Override
+            public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
+            {
+                return Map.of();
             }
         };
 
