@@ -78,6 +78,12 @@ public class DefaultRecoveryService implements RecoveryService
     }
 
     @Override
+    public TransactionCursor getTransactions( long transactionId ) throws IOException
+    {
+        return logicalTransactionStore.getTransactions( transactionId );
+    }
+
+    @Override
     public TransactionCursor getTransactions( LogPosition position ) throws IOException
     {
         return logicalTransactionStore.getTransactions( position );

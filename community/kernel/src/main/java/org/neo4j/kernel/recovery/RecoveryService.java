@@ -30,6 +30,8 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public interface RecoveryService
 {
+    TransactionCursor getTransactions( long transactionId ) throws IOException;
+
     TransactionCursor getTransactions( LogPosition recoveryFromPosition ) throws IOException;
 
     TransactionCursor getTransactionsInReverseOrder( LogPosition recoveryFromPosition ) throws IOException;

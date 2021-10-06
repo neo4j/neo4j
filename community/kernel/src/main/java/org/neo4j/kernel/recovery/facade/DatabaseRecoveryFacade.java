@@ -26,6 +26,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
@@ -38,14 +39,17 @@ public class DatabaseRecoveryFacade implements RecoveryFacade
     private final DatabaseTracers tracers;
     private final Config config;
     private final MemoryTracker memoryTracker;
+    private final LogProvider logProvider;
 
-    public DatabaseRecoveryFacade( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, MemoryTracker memoryTracker )
+    public DatabaseRecoveryFacade( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, MemoryTracker memoryTracker,
+            LogProvider logProvider )
     {
         this.fs = fs;
         this.pageCache = pageCache;
         this.tracers = tracers;
         this.config = config;
         this.memoryTracker = memoryTracker;
+        this.logProvider = logProvider;
     }
 
     @Override
@@ -64,7 +68,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade
     public void recovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException
     {
         monitor.recoveryStarted();
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, memoryTracker, recoveryCriteria );
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, memoryTracker, logProvider, recoveryCriteria );
         monitor.recoveryCompleted();
     }
 }

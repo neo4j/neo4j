@@ -417,6 +417,12 @@ class PhysicalLogicalTransactionStoreTest
         }
 
         @Override
+        public TransactionCursor getTransactions( long transactionId ) throws IOException
+        {
+            return txStore.getTransactions( transactionId );
+        }
+
+        @Override
         public TransactionCursor getTransactions( LogPosition position ) throws IOException
         {
             return txStore.getTransactions( position );

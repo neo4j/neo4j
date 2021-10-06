@@ -20,14 +20,18 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.nio.file.Path;
+import java.time.Instant;
 
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
+import org.neo4j.kernel.recovery.RecoveryPredicate;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.internal.helpers.Format.duration;
 
 public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInformationProvider.Monitor, LogRotationMonitor
@@ -67,6 +71,13 @@ public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInfo
         log.warn( format( "Fail to recover all transactions. Last recoverable transaction id:%d, committed " +
                         "at:%d. Any later transaction after %s are unreadable and will be truncated.",
                 commitEntry.getTxId(), commitEntry.getTimeWritten(), recoveryToPosition ), t );
+    }
+
+    @Override
+    public void partialRecovery( RecoveryPredicate recoveryPredicate, CommittedTransactionRepresentation lastTransaction )
+    {
+        log.info( "Partial database recovery based on provided criteria: " + recoveryPredicate.describe() + ". Last replayed transaction: " +
+                describeTransaction( lastTransaction ) + "." );
     }
 
     @Override
@@ -135,5 +146,15 @@ public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInfo
             sb.append( ", started after " ).append( millisSinceLastRotation ).append( " millis" );
         }
         log.info( sb.append( '.' ).toString() );
+    }
+
+    private static String describeTransaction( CommittedTransactionRepresentation lastTransaction )
+    {
+        if ( lastTransaction == null )
+        {
+            return "Not found.";
+        }
+        LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
+        return "transaction id: " + commitEntry.getTxId() + ", time " + date( Instant.ofEpochMilli( commitEntry.getTimeWritten() ) );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.recovery;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.factory.Sets;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -76,7 +77,10 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -84,26 +88,32 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.recovery.facade.RecoveryCriteria;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
-import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -127,6 +137,8 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_ST
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
+import static org.neo4j.kernel.recovery.facade.RecoveryCriteria.ALL;
+import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.StorageEngineFactory.defaultStorageEngine;
@@ -146,6 +158,17 @@ class RecoveryIT
     private DatabaseLayout databaseLayout;
     private TestDatabaseManagementServiceBuilder builder;
     private DatabaseManagementService managementService;
+    private FakeClock fakeClock;
+    private AssertableLogProvider logProvider;
+
+    @AfterEach
+    void tearDown()
+    {
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
+    }
 
     @Test
     void recoveryRequiredOnDatabaseWithoutCorrectCheckpoints() throws Throwable
@@ -1120,6 +1143,227 @@ class RecoveryIT
         assertEquals( 2, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL ) );
     }
 
+    @Test
+    void recoverDatabaseWithAllTransactionsPredicate() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        long expectedLastTransactionId = getMetadataProvider( db ).getLastCommittedTransactionId();
+        managementService.shutdown();
+
+        removeFileWithCheckpoint();
+        assertTrue( isRecoveryRequired( layout ) );
+
+        recoverDatabase( ALL );
+
+        db = createDatabase();
+        assertEquals( expectedLastTransactionId, getMetadataProvider( db ).getLastCommittedTransactionId() );
+    }
+
+    @Test
+    void recoverDatabaseWithIdPredicateHigherToLastAvailable() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        long expectedLastTransactionId = getMetadataProvider( db ).getLastCommittedTransactionId();
+        managementService.shutdown();
+
+        removeFileWithCheckpoint();
+        assertTrue( isRecoveryRequired( layout ) );
+
+        recoverDatabase( RecoveryCriteria.until( expectedLastTransactionId + 5 ) );
+
+        db = createDatabase();
+        assertEquals( expectedLastTransactionId, getMetadataProvider( db ).getLastCommittedTransactionId() );
+    }
+
+    @Test
+    void recoverDatabaseWithIdPredicateLowerToLastAvailable() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        long originalLastCommitted = getMetadataProvider( db ).getLastCommittedTransactionId();
+        managementService.shutdown();
+
+        removeFileWithCheckpoint();
+        assertTrue( isRecoveryRequired( layout ) );
+
+        long lastTransactionToBeApplied = originalLastCommitted - 5;
+        recoverDatabase( RecoveryCriteria.until( lastTransactionToBeApplied ) );
+
+        db = createDatabase();
+        assertEquals( lastTransactionToBeApplied - 1, getMetadataProvider( db ).getLastCommittedTransactionId() );
+    }
+
+    @Test
+    void recoverDatabaseWithDatePredicateHigherToLastAvailable() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        var metaDataStore = getMetadataProvider( db );
+        long expectedLastCommitTimestamp = metaDataStore.getLastCommittedTransaction().commitTimestamp();
+        long expectedLastTransactionId = metaDataStore.getLastCommittedTransactionId();
+        managementService.shutdown();
+
+        removeFileWithCheckpoint();
+        assertTrue( isRecoveryRequired( layout ) );
+
+        recoverDatabase( RecoveryCriteria.until( Instant.ofEpochMilli( expectedLastCommitTimestamp + 1 ) ) );
+
+        db = createDatabase();
+        assertEquals( expectedLastTransactionId, getMetadataProvider( db ).getLastCommittedTransactionId() );
+    }
+
+    @Test
+    void recoverDatabaseWithDatePredicateLowerToLastAvailable() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+
+        var metaDataStore = getMetadataProvider( db );
+        long expectedLastCommitTimestamp = metaDataStore.getLastCommittedTransaction().commitTimestamp();
+        long expectedLastCommitted = metaDataStore.getLastCommittedTransactionId();
+
+        fakeClock.forward( 4, MINUTES );
+
+        generateSomeData( db );
+        long originalLastCommitted = metaDataStore.getLastCommittedTransactionId();
+        managementService.shutdown();
+
+        removeFileWithCheckpoint();
+        assertTrue( isRecoveryRequired( layout ) );
+
+        recoverDatabase( RecoveryCriteria.until( Instant.ofEpochMilli( expectedLastCommitTimestamp + 1 ) ) );
+
+        db = createDatabase();
+        long postRecoveryLastCommittedTxId = getMetadataProvider( db ).getLastCommittedTransactionId();
+        assertEquals( expectedLastCommitted, postRecoveryLastCommittedTxId );
+        assertNotEquals( originalLastCommitted, postRecoveryLastCommittedTxId );
+    }
+
+    @Test
+    void recoverDatabaseWithIdPredicateWithNothingAfterLastCheckpoint() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        DatabaseLayout layout = db.databaseLayout();
+        generateSomeData( db );
+        long originalLastCommitted = getMetadataProvider( db ).getLastCommittedTransactionId();
+        db.getDependencyResolver().resolveDependency( CheckPointerImpl.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        generateSomeData( db );
+        managementService.shutdown();
+
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        assertTrue( isRecoveryRequired( layout ) );
+
+        recoverDatabase( RecoveryCriteria.until( originalLastCommitted + 1 ) );
+
+        db = createDatabase();
+        assertEquals( originalLastCommitted, getMetadataProvider( db ).getLastCommittedTransactionId() );
+    }
+
+    @Test
+    void earlyRecoveryTerminationOnTxIdCriteriaShouldPrintReason() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        DatabaseLayout layout = db.databaseLayout();
+        generateSomeData( db );
+        long originalLastCommitted = getMetadataProvider( db ).getLastCommittedTransactionId();
+        managementService.shutdown();
+
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        assertTrue( isRecoveryRequired( layout ) );
+
+        long restoreUntilTxId = originalLastCommitted - 4;
+        recoverDatabase( RecoveryCriteria.until( restoreUntilTxId ) );
+
+        assertThat( logProvider ).containsMessages(
+                "Partial database recovery based on provided criteria: transaction id should be < " + restoreUntilTxId + ". " +
+                        "Last replayed transaction: transaction id: " + (restoreUntilTxId - 1) + ", time 1970-01-01 00:00:10.000+0000." );
+        db = createDatabase();
+        assertEquals( restoreUntilTxId - 1, getMetadataProvider( db ).getLastCommittedTransactionId() );
+    }
+
+    @Test
+    void earlyRecoveryTerminationOnTxDateCriteriaShouldPrintReason() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+
+        var metaDataStore = getMetadataProvider( db );
+        long expectedLastCommitTimestamp = metaDataStore.getLastCommittedTransaction().commitTimestamp();
+        long expectedLastCommitted = metaDataStore.getLastCommittedTransactionId();
+
+        fakeClock.forward( 10, MINUTES );
+
+        generateSomeData( db );
+        long originalLastCommitted = metaDataStore.getLastCommittedTransactionId();
+        managementService.shutdown();
+
+        removeFileWithCheckpoint();
+        assertTrue( isRecoveryRequired( layout ) );
+
+        recoverDatabase( RecoveryCriteria.until( Instant.ofEpochMilli( expectedLastCommitTimestamp + 1 ) ) );
+
+        assertThat( logProvider ).containsMessages(
+                "Partial database recovery based on provided criteria: transaction date should be before 1970-01-01 00:00:10.001+0000. " +
+                        "Last replayed transaction: transaction id: " + expectedLastCommitted + ", time 1970-01-01 00:00:10.000+0000." );
+
+        db = createDatabase();
+        long postRecoveryLastCommittedTxId = getMetadataProvider( db ).getLastCommittedTransactionId();
+        assertEquals( expectedLastCommitted, postRecoveryLastCommittedTxId );
+        assertNotEquals( originalLastCommitted, postRecoveryLastCommittedTxId );
+    }
+
+    @Test
+    void failToReadTransactionOnIncorrectCriteria() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        DatabaseLayout layout = db.databaseLayout();
+        managementService.shutdown();
+
+        removeFileWithCheckpoint();
+        assertTrue( isRecoveryRequired( layout ) );
+
+        assertThatThrownBy( () -> recoverDatabase( RecoveryCriteria.until( 2 ) ) )
+                .hasCauseInstanceOf( RecoveryPredicateException.class )
+                .getCause()
+                .hasMessageContaining( "Partial recovery criteria can't be satisfied. " +
+                        "No transaction after checkpoint matching to provided criteria found and fail " +
+                        "to read transaction before checkpoint. Recovery criteria: transaction id should be < 2." );
+
+        assertTrue( isRecoveryRequired( layout ) );
+    }
+
+    @Test
+    void transactionBeforeCheckpointNotMatchingExpectedCriteria() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        DatabaseLayout layout = db.databaseLayout();
+        generateSomeData( db );
+        db.getDependencyResolver().resolveDependency( CheckPointerImpl.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        generateSomeData( db );
+        managementService.shutdown();
+
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+
+        assertTrue( isRecoveryRequired( layout ) );
+
+        assertThatThrownBy( () -> recoverDatabase( RecoveryCriteria.until( 1 ) ) )
+                .hasCauseInstanceOf( RecoveryPredicateException.class )
+                .getCause().hasMessageContaining(
+                        "Partial recovery criteria can't be satisfied. Transaction after and before " +
+                                "checkpoint does not satisfy provided recovery criteria. Observed transaction id: 24, " +
+                                "recovery criteria: transaction id should be < 1." );
+
+        assertTrue( isRecoveryRequired( layout ) );
+    }
+
     private boolean idGeneratorIsDirty( Path path, IdType idType ) throws IOException
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
@@ -1168,7 +1412,17 @@ class RecoveryIT
 
     private void recoverDatabase() throws Exception
     {
-        recoverDatabase( EMPTY );
+        recoverDatabase( EMPTY, ALL );
+    }
+
+    private void recoverDatabase( DatabaseTracers tracers ) throws Exception
+    {
+        recoverDatabase( tracers, ALL );
+    }
+
+    private void recoverDatabase( RecoveryCriteria recoveryCriteria ) throws Exception
+    {
+        recoverDatabase( EMPTY, recoveryCriteria );
     }
 
     void additionalConfiguration( Config config )
@@ -1181,12 +1435,16 @@ class RecoveryIT
         return builder;
     }
 
-    private void recoverDatabase( DatabaseTracers databaseTracers ) throws Exception
+    private void recoverDatabase( DatabaseTracers databaseTracers, RecoveryCriteria recoveryCriteria ) throws Exception
     {
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( new LoggingLogFileMonitor( logProvider.getLog( getClass() ) ) );
         Config config = Config.newBuilder().build();
         additionalConfiguration( config );
         assertTrue( isRecoveryRequired( databaseLayout, config ) );
-        performRecovery( fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE );
+        performRecovery( fileSystem, pageCache, databaseTracers, config, databaseLayout, defaultStorageEngine(), false, logProvider, monitors,
+                Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), RecoveryStartupChecker.EMPTY_CHECKER, INSTANCE, fakeClock,
+                recoveryCriteria.toPredicate() );
         assertFalse( isRecoveryRequired( databaseLayout, config ) );
     }
 
@@ -1213,7 +1471,11 @@ class RecoveryIT
     {
         return LogFilesBuilder
                 .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
+<<<<<<< HEAD
                 .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() )
+=======
+                .withCommandReaderFactory( defaultStorageEngine().commandReaderFactory() )
+>>>>>>> bc49af6a6c1 (Point in time (transactional history) recovery)
                 .build();
     }
 
@@ -1269,8 +1531,12 @@ class RecoveryIT
     {
         if ( builder == null )
         {
+            logProvider = new AssertableLogProvider();
+            fakeClock = Clocks.fakeClock( 10, SECONDS );
             builder = new TestDatabaseManagementServiceBuilder( neo4jLayout )
                     .setConfig( preallocate_logical_logs, false )
+                    .setClock( fakeClock )
+                    .setInternalLogProvider( logProvider )
                     .setConfig( logical_log_rotation_threshold, logThreshold );
             builder = additionalConfiguration( builder );
         }
@@ -1292,6 +1558,11 @@ class RecoveryIT
     private static PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )
     {
         return databaseAPI.getDependencyResolver().resolveDependency( PageCache.class );
+    }
+
+    private static MetadataProvider getMetadataProvider( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( MetadataProvider.class );
     }
 
     private void verifyRecoveryTimestampPresent( GraphDatabaseAPI databaseAPI ) throws IOException

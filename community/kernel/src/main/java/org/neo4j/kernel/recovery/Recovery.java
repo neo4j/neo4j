@@ -159,9 +159,9 @@ public final class Recovery
      * @return helper recovery checker
      */
     public static DatabaseRecoveryFacade recoveryFacade( FileSystemAbstraction fs, PageCache pageCache, Tracers tracers, Config config,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, LogProvider logProvider )
     {
-        return new DatabaseRecoveryFacade( fs, pageCache, new DatabaseTracers( tracers ), config, memoryTracker );
+        return new DatabaseRecoveryFacade( fs, pageCache, new DatabaseTracers( tracers ), config, memoryTracker, logProvider );
     }
 
     /**
@@ -324,15 +324,15 @@ public final class Recovery
      * @param databaseLayout database to recover layout.
      * @param memoryTracker memory tracker for recovery to track consumed memory
      * @param logProvider log provider for recovery loggers
-     * @param recoveryPredicate predicate for transactions that recovery should recover. We always replay everything, but can do early termination
+     * @param recoveryCriteria criteria for transactions that recovery should recover. We always replay everything, but can do early termination
      * based on predicate for point in time recovery
      * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, DatabaseLayout databaseLayout,
-            MemoryTracker memoryTracker, LogProvider logProvider, RecoveryPredicate recoveryPredicate ) throws IOException
+            MemoryTracker memoryTracker, LogProvider logProvider, RecoveryCriteria recoveryCriteria ) throws IOException
     {
         performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine( fs, databaseLayout, pageCache, config ), false,
-                memoryTracker, logProvider, recoveryPredicate );
+                memoryTracker, logProvider, recoveryCriteria.toPredicate() );
     }
 
     /**
@@ -365,7 +365,7 @@ public final class Recovery
         requireNonNull( storageEngineFactory );
         //remove any custom logical logs location
         Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
-        performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, StorageEngineFactory.defaultStorageEngine(), forceRunRecovery,
+        performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, storageEngineFactory, forceRunRecovery,
                 logProvider, new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock(), recoveryPredicate );
     }
 

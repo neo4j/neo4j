@@ -34,6 +34,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Stopwatch;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.kernel.recovery.Recovery.throwUnableToCleanRecover;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
@@ -125,25 +126,87 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 // of the schema life until after we've done the reverse recovery.
                 schemaLife.init();
 
+                boolean fullRecovery = true;
                 try ( var transactionsToRecover = recoveryService.getTransactions( recoveryStartPosition );
                         var recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, pageCacheTracer, RECOVERY_TAG ) )
                 {
-                    while ( transactionsToRecover.next() && recoveryPredicate.test( transactionsToRecover.get() ) )
+                    while ( fullRecovery && transactionsToRecover.next() )
                     {
-                        recoveryStartupChecker.checkIfCanceled();
-                        lastTransaction = transactionsToRecover.get();
-                        long txId = lastTransaction.getCommitEntry().getTxId();
-                        recoveryVisitor.visit( lastTransaction );
-                        monitor.transactionRecovered( txId );
-                        numberOfRecoveredTransactions++;
-                        lastTransactionPosition = transactionsToRecover.position();
-                        recoveryToPosition = lastTransactionPosition;
-                        reportProgress();
+                        var nextTransaction = transactionsToRecover.get();
+                        if ( !recoveryPredicate.test( nextTransaction ) )
+                        {
+                            monitor.partialRecovery( recoveryPredicate, lastTransaction );
+                            fullRecovery = false;
+                            if ( lastTransaction == null )
+                            {
+                                // First transaction after checkpoint failed predicate test
+                                // we can't always load transaction before checkpoint to check what values we had there since those logs may be pruned,
+                                // but we will try to load first transaction before checkpoint to see if we just on the edge of provided criteria
+                                // and will fail otherwise.
+                                long beforeCheckpointTransaction = recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() - 1;
+                                if ( beforeCheckpointTransaction < TransactionIdStore.BASE_TX_ID )
+                                {
+                                    throw new RecoveryPredicateException( format(
+                                            "Partial recovery criteria can't be satisfied. No transaction after checkpoint matching to provided " +
+                                                    "criteria found and transaction before checkpoint is not valid. " +
+                                                    "Transaction id before checkpoint: %d, criteria %s.",
+                                            beforeCheckpointTransaction, recoveryPredicate.describe() ) );
+                                }
+                                try ( var beforeCheckpointCursor = recoveryService.getTransactions( beforeCheckpointTransaction ) )
+                                {
+                                    if ( beforeCheckpointCursor.next() )
+                                    {
+                                        CommittedTransactionRepresentation candidate = beforeCheckpointCursor.get();
+                                        if ( !recoveryPredicate.test( candidate ) )
+                                        {
+                                            throw new RecoveryPredicateException( format(
+                                                    "Partial recovery criteria can't be satisfied. " +
+                                                    "Transaction after and before checkpoint does not satisfy provided recovery criteria. " +
+                                                    "Observed transaction id: %d, recovery criteria: %s.", candidate.getCommitEntry().getTxId(),
+                                                    recoveryPredicate.describe() ) );
+                                        }
+                                        lastTransaction = candidate;
+                                        lastTransactionPosition = beforeCheckpointCursor.position();
+                                    }
+                                    else
+                                    {
+                                        throw new RecoveryPredicateException( format(
+                                                "Partial recovery criteria can't be satisfied. No transaction after checkpoint matching " +
+                                                "to provided criteria found and transaction before checkpoint not found. Recovery criteria: %s.",
+                                                recoveryPredicate.describe() ) );
+                                    }
+                                }
+                                catch ( RecoveryPredicateException re )
+                                {
+                                    throw re;
+                                }
+                                catch ( Exception e )
+                                {
+                                    throw new RecoveryPredicateException( format(
+                                            "Partial recovery criteria can't be satisfied. No transaction after checkpoint matching " +
+                                            "to provided criteria found and fail to read transaction before checkpoint. Recovery criteria: %s.",
+                                            recoveryPredicate.describe() ), e );
+                                }
+                            }
+                        }
+                        else
+                        {
+                            recoveryStartupChecker.checkIfCanceled();
+                            long txId = nextTransaction.getCommitEntry().getTxId();
+                            recoveryVisitor.visit( nextTransaction );
+
+                            lastTransaction = nextTransaction;
+                            monitor.transactionRecovered( txId );
+                            numberOfRecoveredTransactions++;
+                            lastTransactionPosition = transactionsToRecover.position();
+                            recoveryToPosition = lastTransactionPosition;
+                            reportProgress();
+                        }
                     }
-                    recoveryToPosition = transactionsToRecover.position();
+                    recoveryToPosition = fullRecovery ? transactionsToRecover.position() : lastTransactionPosition;
                 }
             }
-            catch ( Error | ClosedByInterruptException | DatabaseStartAbortedException e )
+            catch ( Error | ClosedByInterruptException | DatabaseStartAbortedException | RecoveryPredicateException e )
             {
                 // We do not want to truncate logs based on these exceptions. Since users can influence them with config changes
                 // the users are able to workaround this if truncations is really needed.

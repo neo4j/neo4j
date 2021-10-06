@@ -27,12 +27,12 @@ public interface RecoveryCriteria
 {
     RecoveryCriteria ALL = () -> RecoveryPredicate.ALL;
 
-    static RecoveryCriteria of( long txId )
+    static RecoveryCriteria until( long txId )
     {
         return new TransactionIdCriteria( txId );
     }
 
-    static RecoveryCriteria of( Instant date )
+    static RecoveryCriteria until( Instant date )
     {
         return new TransactionDateCriteria( date );
     }
