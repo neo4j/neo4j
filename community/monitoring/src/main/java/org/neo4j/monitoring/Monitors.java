@@ -23,20 +23,14 @@ import org.apache.commons.lang3.ClassUtils;
 import org.eclipse.collections.api.bag.MutableBag;
 import org.eclipse.collections.impl.bag.mutable.MultiReaderHashBag;
 
-import java.lang.invoke.LambdaMetafactory;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
@@ -176,20 +170,10 @@ public class Monitors
     private static class UntaggedMonitorListenerInvocationHandler implements MonitorListenerInvocationHandler
     {
         private final Object monitorListener;
-        private final MethodHandles.Lookup lookup;
-        private final Map<Method,MethodHandle> methods = new IdentityHashMap<>();
 
         UntaggedMonitorListenerInvocationHandler( Object monitorListener )
         {
             this.monitorListener = monitorListener;
-            try
-            {
-                lookup = MethodHandles.privateLookupIn( monitorListener.getClass(), MethodHandles.lookup() );
-            }
-            catch ( IllegalAccessException e )
-            {
-                throw new RuntimeException( e );
-            }
         }
 
         @Override
@@ -201,17 +185,7 @@ public class Monitors
         @Override
         public void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable
         {
-            methods.computeIfAbsent( method, method1 ->
-            {
-                try
-                {
-                    return lookup.unreflect( method1 ).bindTo( monitorListener );
-                }
-                catch ( IllegalAccessException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            } ).invokeWithArguments( args );
+            method.invoke( monitorListener, args );
         }
     }
 
