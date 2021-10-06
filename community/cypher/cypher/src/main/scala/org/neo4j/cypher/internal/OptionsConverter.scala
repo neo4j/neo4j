@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.NoValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.utils.PrettyPrinter
@@ -95,14 +96,16 @@ trait OptionsConverter[T] {
 case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDatabaseOptions] {
   val EXISTING_DATA = "existingData"
   val EXISTING_SEED_INSTANCE = "existingDataSeedInstance"
-  val PERMITTED_OPTIONS = s"'$EXISTING_DATA', '$EXISTING_SEED_INSTANCE'"
+  val NUM_PRIMARIES = "primaries"
+  val NUM_SECONDARIES = "secondaries"
+  val VISIBLE_PERMITTED_OPTIONS = s"'$EXISTING_DATA', '$EXISTING_SEED_INSTANCE'"
 
   //existing Data values
   val USE_EXISTING_DATA = "use"
 
   override def convert(map: MapValue): CreateDatabaseOptions = {
 
-      map.foldLeft(CreateDatabaseOptions(None, None)) { case (ops, (key, value)) =>
+      map.foldLeft(CreateDatabaseOptions(None, None, None, None)) { case (ops, (key, value)) =>
       //existingData
       if (key.equalsIgnoreCase(EXISTING_DATA)) {
         value match {
@@ -120,8 +123,22 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
           case _ =>
             throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected instance uuid string.")
         }
+        //numberOfPrimaries
+      } else if (key.equalsIgnoreCase(NUM_PRIMARIES)) {
+        value match {
+          case number: IntegralValue if number.longValue() >= 1 => ops.copy(primaries = Some(number.longValue().intValue()))
+          case _ =>
+            throw new InvalidArgumentsException(s"Could not create database with specified $NUM_PRIMARIES '$value'. Expected positive integer number of primaries.")
+        }
+        //numberOfSecondaries
+      } else if (key.equalsIgnoreCase(NUM_SECONDARIES)) {
+        value match {
+          case number: IntegralValue if number.longValue() >= 0 => ops.copy(secondaries = Some(number.longValue().intValue()))
+          case _ =>
+            throw new InvalidArgumentsException(s"Could not create database with specified $NUM_SECONDARIES '$value'. Expected non-negative integer number of secondaries.")
+        }
       } else {
-        throw new InvalidArgumentsException(s"Could not create database with unrecognised option: '$key'. Expected $PERMITTED_OPTIONS.")
+        throw new InvalidArgumentsException(s"Could not create database with unrecognised option: '$key'. Expected $VISIBLE_PERMITTED_OPTIONS.")
       }
     }
   }
@@ -549,7 +566,7 @@ case class CreateWithNoOptions()
 case class CreateIndexProviderOnlyOptions(provider: Option[IndexProviderDescriptor])
 case class CreateIndexWithStringProviderOptions(provider: Option[String], config: IndexConfig)
 case class CreateIndexWithProviderDescriptorOptions(provider: Option[IndexProviderDescriptor], config: IndexConfig)
-case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String])
+case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String], primaries: Option[Integer], secondaries: Option[Integer])
 
 object MapValueOps {
 
