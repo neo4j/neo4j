@@ -56,7 +56,7 @@ public abstract class LoginContext
 
     public boolean impersonating()
     {
-        return !Objects.equals( subject.executingUser(), subject().authenticatedUser() );
+        return !Objects.equals( subject.executingUser(), subject.authenticatedUser() );
     }
 
     /**
