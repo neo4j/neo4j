@@ -172,6 +172,11 @@ public class DataGeneratorInput implements Input
 
     private static double[] sampleProperties( InputEntity[] sample, PropertySizeCalculator valueSizeCalculator )
     {
+        if ( sample.length == 0 || sample[0] == null )
+        {
+            return new double[]{0, 0};
+        }
+
         int propertiesPerEntity = sample[0].propertyCount();
         long propertiesSize = 0;
         for ( InputEntity entity : sample )
