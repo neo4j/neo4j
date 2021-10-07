@@ -129,12 +129,12 @@ trait IndexCompatiblePredicatesProvider {
       // n.prop ENDS WITH 'substring'
       case predicate@EndsWith(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
         IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
-          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Btree))
+          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Btree, IndexType.Text))
 
       // n.prop CONTAINS 'substring'
       case predicate@Contains(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
         IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
-          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Btree))
+          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Btree, IndexType.Text))
     }
 
     val implicitCompatiblePredicates = implicitIndexCompatiblePredicates(planContext, indexPredicateProviderContext, predicates, explicitCompatiblePredicates, valid)

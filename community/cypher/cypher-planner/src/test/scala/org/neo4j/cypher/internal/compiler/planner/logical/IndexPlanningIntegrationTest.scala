@@ -914,7 +914,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .enablePlanningTextIndexes()
       .build()
 
-    for (op <- List("STARTS WITH")) {
+    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("a.prop AS `a.prop`")
@@ -924,7 +924,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
     // not supported yet
 
-    for (op <- List("<", "<=", ">", ">=", "ENDS WITH", "CONTAINS")) {
+    for (op <- List("<", "<=", ">", ">=")) {
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("a.prop AS `a.prop`")
@@ -950,7 +950,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .enablePlanningTextIndexes()
       .build()
 
-    for (op <- List("STARTS WITH")) {
+    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("r.prop AS `r.prop`")
@@ -960,7 +960,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
     // not supported yet
 
-    for (op <- List("<", "<=", ">", ">=", "ENDS WITH", "CONTAINS")) {
+    for (op <- List("<", "<=", ">", ">=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("r.prop AS `r.prop`")

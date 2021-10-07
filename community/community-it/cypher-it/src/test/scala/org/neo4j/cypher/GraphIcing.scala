@@ -153,6 +153,10 @@ trait GraphIcing {
       createNodeIndex(None, label, properties)
     }
 
+    def createNodeIndex(indexType: IndexType, label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(None, label, properties, indexType)
+    }
+
     def createNodeIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
       createNodeIndex(None, label, properties, options = Map("indexProvider" -> s"'$provider'"))
     }
@@ -165,12 +169,24 @@ trait GraphIcing {
       createRelationshipIndex(None, relType, properties)
     }
 
+    def createRelationshipIndex(indexType: IndexType, relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(None, relType, properties, indexType)
+    }
+
     def createNodeIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
       createNodeIndex(Some(name), label, properties)
     }
 
+    def createNodeIndexWithName(indexType: IndexType, name: String, label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(Some(name), label, properties, indexType)
+    }
+
     def createRelationshipIndexWithName(name: String, relType: String, properties: String*): IndexDefinition = {
       createRelationshipIndex(Some(name), relType, properties)
+    }
+
+    def createRelationshipIndexWithName(indexType: IndexType, name: String, relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(Some(name), relType, properties, indexType)
     }
 
     def createRangeNodeIndex(label: String, properties: String*): IndexDefinition = {

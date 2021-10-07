@@ -76,9 +76,9 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   testFindIndexCompatiblePredicate("startsWith", startsWith(property, literalString("test")), indexTypes = Set(IndexType.Btree, IndexType.Text))
 
-  testFindIndexCompatiblePredicate("endsWith", endsWith(property, literalString("test")))
+  testFindIndexCompatiblePredicate("endsWith", endsWith(property, literalString("test")), indexTypes = Set(IndexType.Btree, IndexType.Text))
 
-  testFindIndexCompatiblePredicate("contains", contains(property, literalString("test")))
+  testFindIndexCompatiblePredicate("contains", contains(property, literalString("test")), indexTypes = Set(IndexType.Btree, IndexType.Text))
 
   testFindIndexCompatiblePredicate("lessThan with literal",
     lessThan(property, integerLiteral),
