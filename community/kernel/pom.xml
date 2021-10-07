@@ -72,12 +72,12 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-storage-engine-api</artifactId>
+            <artifactId>neo4j-kernel-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel-api</artifactId>
+            <artifactId>neo4j-storage-engine-util</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

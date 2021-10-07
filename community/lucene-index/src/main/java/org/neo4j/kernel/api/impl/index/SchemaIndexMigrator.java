@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.migration;
+package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
+import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 /**
  * Migrates schema and label indexes between different neo4j versions.
