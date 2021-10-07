@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
+import org.neo4j.cypher.internal.util.DeprecatedPeriodicCommit
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
@@ -328,6 +329,12 @@ object Deprecations {
         Deprecation(
           Some(Ref(c) -> c.source),
           Some(DeprecatedCatalogKeywordForAdminCommandSyntax(c.position))
+        )
+
+      case p: ast.PeriodicCommitHint =>
+        Deprecation(
+          None,
+          Some(DeprecatedPeriodicCommit(p.position))
         )
     }
 

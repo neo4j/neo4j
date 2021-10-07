@@ -33,6 +33,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_FUNCTION
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PARAMETER_SYNTAX
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PERIODIC_COMMIT
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX
@@ -411,7 +412,10 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNoNotificationInSupportedVersions(okQueries, DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN)
   }
 
-
+  test("deprecated periodic commit hint") {
+    val query = "USING PERIODIC COMMIT LOAD CSV FROM 'file:///artists.csv' AS line CREATE (:Artist {name: line[1], year: toInteger(line[2])})"
+    assertNotificationInSupportedVersions(query, DEPRECATED_PERIODIC_COMMIT)
+  }
 
   // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 

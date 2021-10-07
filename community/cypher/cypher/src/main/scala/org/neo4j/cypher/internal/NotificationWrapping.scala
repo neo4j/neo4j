@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
+import org.neo4j.cypher.internal.util.DeprecatedPeriodicCommit
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
@@ -143,6 +144,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_DEFAULT_GRAPH_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCatalogKeywordForAdminCommandSyntax(pos) =>
       NotificationCode.DEPRECATED_CATALOG_KEYWORD_FOR_ADMIN_COMMAND_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedPeriodicCommit(pos) =>
+      NotificationCode.DEPRECATED_PERIODIC_COMMIT.notification(pos.withOffset(offset).asInputPosition)
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
     case ExperimentalFeatureNotification(msg) =>

@@ -166,6 +166,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The optional `CATALOG` prefix for administration commands has been deprecated and should be omitted."
     ),
+    DEPRECATED_PERIODIC_COMMIT(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The usage of the PERIODIC COMMIT hint has been deprecated. Please use a transactional subquery (e.g. `CALL { ... } IN TRANSACTIONS`) instead."
+    ),
     DEPRECATED_OCTAL_LITERAL_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
