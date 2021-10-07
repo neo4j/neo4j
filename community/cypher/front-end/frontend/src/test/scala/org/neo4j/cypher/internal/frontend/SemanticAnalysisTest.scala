@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CallSubqueryInTransactions
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
@@ -212,88 +211,12 @@ class SemanticAnalysisTest extends CypherFunSuite {
     }
   }
 
-  test("unit CALL { ... } IN TRANSACTIONS") {
-    val query = "CALL { CREATE () } IN TRANSACTIONS RETURN 1 AS result"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) shouldBe Seq(
-      "The CALL { ... } IN TRANSACTIONS clause is not available in this implementation of Cypher due to lack of support for running subqueries in separate transactions."
-    )
-  }
-
-  test("unit CALL { ... } IN TRANSACTIONS with feature enabled") {
-    val query = "CALL { CREATE () } IN TRANSACTIONS RETURN 1 AS result"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) shouldBe empty
-  }
-
-  test("returning CALL { ... } IN TRANSACTIONS") {
-    val query = "CALL { MATCH (n) RETURN n AS n } IN TRANSACTIONS RETURN n AS n"
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions)
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) shouldBe Seq(
-      "The returning CALL { ... } IN TRANSACTIONS clause is not available in this implementation of Cypher due to lack of support for running returning subqueries in separate transactions."
-    )
-  }
-
-  test("should not (yet) allow for correlated transactional subqueries") {
-
-    val query =
-      """UNWIND 1 as i
-        |CALL {
-        |  WITH i
-        |  CREATE (n)
-        |} IN TRANSACTIONS
-        |RETURN i AS result""".stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-    pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions).transform(startState, context)
-
-    context.errors.map(_.msg) shouldBe empty
-  }
-
-  test("returning CALL { ... } IN TRANSACTIONS with feature enabled") {
-    val query =
-      """WITH 1 AS x
-        |CALL {
-        |  WITH x AS x
-        |  MATCH (n)
-        |  RETURN n AS n
-        |} IN TRANSACTIONS
-        |RETURN n AS n""".stripMargin
-
-    val startState = initStartState(query)
-    val context = new ErrorCollectingContext()
-
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CorrelatedSubQueries, SemanticFeature.CallSubqueryInTransactions, SemanticFeature.CallReturningSubqueryInTransactions)
-    pipeline.transform(startState, context)
-
-    context.errors.map(_.msg) shouldBe empty
-  }
-
   test("nested CALL { ... } IN TRANSACTIONS") {
     val query = "CALL { CALL { CREATE (x) } IN TRANSACTIONS } IN TRANSACTIONS RETURN 1 AS result"
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -307,7 +230,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe empty
@@ -319,7 +241,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -333,7 +254,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -353,7 +273,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -372,7 +291,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -390,7 +308,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -408,7 +325,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -427,7 +343,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -447,7 +362,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -465,7 +379,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -483,7 +396,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -501,7 +413,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe empty
@@ -516,7 +427,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe empty
@@ -531,7 +441,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = pipelineWithSemanticFeatures(SemanticFeature.CallSubqueryInTransactions)
     pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
@@ -676,7 +585,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+    pipeline.transform(startState, context)
 
     context.errors shouldBe empty
   }
@@ -690,7 +599,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+    pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
       SemanticError("Invalid input. '0' is not a valid value. Must be a positive integer.", InputPosition(40, 3, 22))
@@ -706,7 +615,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+    pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
       SemanticError("Invalid input. '-1' is not a valid value. Must be a positive integer.", InputPosition(40, 3, 22))
@@ -722,7 +631,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+    pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
       SemanticError("Invalid input. '1.5' is not a valid value. Must be a positive integer.", InputPosition(40, 3, 22)),
@@ -739,7 +648,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+    pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
       SemanticError("Invalid input. 'foo' is not a valid value. Must be a positive integer.", InputPosition(40, 3, 22)),
@@ -757,7 +666,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+    pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
       SemanticError("integer is too large", InputPosition(40, 3, 22))
@@ -774,7 +683,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+    pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
       SemanticError("It is not allowed to refer to variables in OF ... ROWS", InputPosition(52, 4, 22))
@@ -790,7 +699,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipelineWithSemanticFeatures(CallSubqueryInTransactions).transform(startState, context)
+    pipeline.transform(startState, context)
 
     context.errors shouldBe Seq(
       SemanticError("It is not allowed to refer to variables in OF ... ROWS", InputPosition(40, 3, 22)),

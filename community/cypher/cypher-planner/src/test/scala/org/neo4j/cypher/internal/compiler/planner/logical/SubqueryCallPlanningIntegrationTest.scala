@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -32,7 +31,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.SyntaxException
 
 class SubqueryCallPlanningIntegrationTest
   extends CypherFunSuite
@@ -833,7 +831,6 @@ class SubqueryCallPlanningIntegrationTest
   test("call unit subquery in transactions") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
       .build()
 
     val query =
@@ -857,7 +854,6 @@ class SubqueryCallPlanningIntegrationTest
   test("call unit subquery in transactions with specified batch size") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
       .build()
 
     val query =
@@ -881,7 +877,6 @@ class SubqueryCallPlanningIntegrationTest
   test("call correlated unit subquery in transactions") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
       .build()
 
     val query =
@@ -906,8 +901,6 @@ class SubqueryCallPlanningIntegrationTest
   test("call returning subquery in transactions") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
-      .addSemanticFeature(SemanticFeature.CallReturningSubqueryInTransactions)
       .build()
 
     val query =
@@ -932,8 +925,6 @@ class SubqueryCallPlanningIntegrationTest
   test("call returning subquery in transactions with specified batch size") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
-      .addSemanticFeature(SemanticFeature.CallReturningSubqueryInTransactions)
       .build()
 
     val query =
@@ -958,8 +949,6 @@ class SubqueryCallPlanningIntegrationTest
   test("call correlated returning subquery in transactions") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
-      .addSemanticFeature(SemanticFeature.CallReturningSubqueryInTransactions)
       .build()
 
     val query =
@@ -985,7 +974,6 @@ class SubqueryCallPlanningIntegrationTest
   test("call subquery in transactions with internal read-write conflict is eagerized") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
       .build()
 
     val query =
@@ -1011,7 +999,6 @@ class SubqueryCallPlanningIntegrationTest
   test("call subquery in transactions with internal read-write, and external write-read conflict is eagerized") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
       .build()
 
     val query =
@@ -1041,7 +1028,6 @@ class SubqueryCallPlanningIntegrationTest
   test("call subquery in transactions with external property write-read conflict is eagerized") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
       .build()
 
     val query =
@@ -1068,7 +1054,6 @@ class SubqueryCallPlanningIntegrationTest
   test("consecutive call subquery in transactions with write-read conflict is eagerized") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
       .build()
 
     val query =
@@ -1102,7 +1087,6 @@ class SubqueryCallPlanningIntegrationTest
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[]->()", 10000)
-      .addSemanticFeature(SemanticFeature.CallSubqueryInTransactions)
       .build()
 
     val query =

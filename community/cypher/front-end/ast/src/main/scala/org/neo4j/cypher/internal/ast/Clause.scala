@@ -990,7 +990,6 @@ case class Yield(returnItems: ReturnItems,
 object SubqueryCall {
   final case class InTransactionsParameters(batchSize: Option[Expression])(val position: InputPosition) extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
     override def semanticCheck: SemanticCheck =
-      requireFeatureSupport("The CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallSubqueryInTransactions, position) chain
         batchSize.foldSemanticCheck {
           checkExpressionIsStaticInt(_,"OF ... ROWS", acceptsZero = false)
         }
@@ -1008,11 +1007,8 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
   override def semanticCheck: SemanticCheck = {
     checkSubquery chain
       inTransactionsParameters.foldSemanticCheck {
-        _.semanticCheck chain {
-          when (part.isYielding) {
-            requireFeatureSupport("The returning CALL { ... } IN TRANSACTIONS clause", SemanticFeature.CallReturningSubqueryInTransactions, position)
-          }
-        } chain checkNoNestedCallInTransactions
+        _.semanticCheck chain
+          checkNoNestedCallInTransactions
       } chain
       checkNoCallInTransactionsInsideRegularCall
   }
