@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.commandline.Util;
@@ -39,7 +38,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.internal.batchimport.BatchImporter;
-import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.internal.batchimport.input.BadCollector;
@@ -50,9 +48,6 @@ import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
-import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
-import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
-import org.neo4j.internal.batchimport.staging.SpectrumExecutionMonitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -61,7 +56,6 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.NullLogProvider;
@@ -70,6 +64,7 @@ import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
@@ -154,11 +149,12 @@ class CsvImporter implements Importer
             final var nodeData = nodeData();
             final var relationshipsData = relationshipData();
 
-            CsvInput input = new CsvInput( nodeData, defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ),
-                relationshipsData, defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType,
-                csvConfig, autoSkipHeaders, new CsvInput.PrintingMonitor( stdOut ), memoryTracker );
-
-            doImport( input, badCollector );
+            try ( CsvInput input = new CsvInput( nodeData, defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ), relationshipsData,
+                    defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType, csvConfig, autoSkipHeaders,
+                    new CsvInput.PrintingMonitor( stdOut ), memoryTracker ) )
+            {
+                doImport( input, badCollector );
+            }
         }
     }
 
@@ -171,19 +167,18 @@ class CsvImporter implements Importer
               OutputStream outputStream = FileSystemUtils.createOrOpenAsOutputStream( fileSystem, internalLogFile, true );
               Log4jLogProvider logProvider = Util.configuredLogProvider( databaseConfig, outputStream ) )
         {
-            ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, stdOut,
-                    SpectrumExecutionMonitor.DEFAULT_WIDTH ) : ExecutionMonitors.defaultVisible();
-
-            BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate(
+            // Let the storage engine factory be configurable in the tool later on...
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
+            BatchImporter importer = storageEngineFactory.batchImporter(
                     databaseLayout,
                     fileSystem,
                     pageCacheTracer,
                     importConfig,
                     new SimpleLogService( NullLogProvider.getInstance(), logProvider ),
-                    executionMonitor,
+                    stdOut,
+                    verbose,
                     EMPTY,
                     databaseConfig,
-                    RecordFormatSelector.selectForConfig( databaseConfig, logProvider ),
                     new PrintingImportLogicMonitor( stdOut, stdErr ),
                     jobScheduler,
                     badCollector,
