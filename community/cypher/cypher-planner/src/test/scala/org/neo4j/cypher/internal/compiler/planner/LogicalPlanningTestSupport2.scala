@@ -78,6 +78,7 @@ import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
@@ -219,41 +220,47 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def table = Map.empty[PatternExpression, QueryGraph]
 
     def planContext: NotImplementedPlanContext = new NotImplementedPlanContext {
+      private def indexesForLabel(label: String, indexType: IndexType): Iterator[IndexDescriptor] =
+        config.indexes.collect {
+          case (indexDef@IndexDef(IndexDefinition.EntityType.Node(`label`), _, `indexType`), _) =>
+            newIndexDescriptor(indexDef, config.indexes(indexDef))
+        }.toIterator
+
+      private def indexesForRelType(relType: String, indexType: IndexType): Iterator[IndexDescriptor] =
+        config.indexes.collect {
+          case (indexDef@IndexDef(IndexDefinition.EntityType.Relationship(`relType`), _, `indexType`), _) =>
+            newIndexDescriptor(indexDef, config.indexes(indexDef))
+        }.toIterator
+
       override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(
         config.graphStatistics,
         new MutableGraphStatisticsSnapshot())
 
       override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-        config.labelsById.get(labelId).toIterator.flatMap(label =>
-          config.indexes.collect {
-            case (indexDef@IndexDef(IndexDefinition.EntityType.Node(labelOrRelType), _), _) if labelOrRelType == label =>
-              newIndexDescriptor(indexDef, config.indexes(indexDef))
-          })
+        config.labelsById.get(labelId).toIterator.flatMap(label => indexesForLabel(label, IndexType.Btree))
       }
 
       override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
-        config.relTypesById.get(relTypeId).toIterator.flatMap(relType =>
-          config.indexes.collect {
-            case (indexDef@IndexDef(IndexDefinition.EntityType.Relationship(labelOrRelType), _), _) if labelOrRelType == relType =>
-              newIndexDescriptor(indexDef, config.indexes(indexDef))
-          })
+        config.relTypesById.get(relTypeId).toIterator.flatMap(relType => indexesForRelType(relType, IndexType.Btree))
+      }
+
+      override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        config.labelsById.get(labelId).toIterator.flatMap(label => indexesForLabel(label, IndexType.Text))
+      }
+
+      override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+        config.relTypesById.get(relTypeId).toIterator.flatMap(relType => indexesForRelType(relType, IndexType.Text))
       }
 
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = config.indexes.map {
-        case (indexDef: IndexDef, indexType : IndexType) => newIndexDescriptor(indexDef, indexType)
+        case (indexDef: IndexDef, indexAttributes: IndexAttributes) => newIndexDescriptor(indexDef, indexAttributes)
       }.toIterator
 
-      override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
-        Iterator.empty
-
-      override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
-        Iterator.empty
-
-      private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType) = {
+      private def newIndexDescriptor(indexDef: IndexDef, indexAttributes: IndexAttributes) = {
         // Our fake index either can always or never return property values
-        val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
+        val canGetValue = if (indexAttributes.withValues) CanGetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
-        val orderCapability: OrderCapability = _ => indexType.withOrdering
+        val orderCapability: OrderCapability = _ => indexAttributes.withOrdering
         val entityType = indexDef.entityType match {
           case IndexDefinition.EntityType.Node(label) => IndexDescriptor.EntityType.Node(
             semanticTable.resolvedLabelNames(label))
@@ -261,12 +268,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
             semanticTable.resolvedRelTypeNames(relType))
         }
         IndexDescriptor(
-          IndexDescriptor.IndexType.Btree,
+          indexDef.indexType,
           entityType,
           indexDef.propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
           valueCapability = valueCapability,
           orderCapability = orderCapability,
-          isUnique = indexType.isUnique
+          isUnique = indexAttributes.isUnique
         )
       }
 
@@ -293,26 +300,26 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
         val labelName = config.labelsById(labelId)
         config.indexes.keys.exists {
-          case IndexDef(IndexDefinition.EntityType.Node(`labelName`), _) => true
+          case IndexDef(IndexDefinition.EntityType.Node(`labelName`), _, IndexType.Btree) => true
           case _ => false
         }
       }
 
       override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
-        config.indexes.contains(IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKey))
+        config.indexes.contains(IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKey, IndexType.Btree))
 
 
       override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String,
                                                            propertyKey: Seq[String]): Boolean =
-        config.indexes.contains(IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKey))
+        config.indexes.contains(IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKey, IndexType.Btree))
 
       override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-        val indexDef = IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKeys)
+        val indexDef = IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKeys, IndexType.Btree)
         config.indexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
       }
 
       override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-        val indexDef = IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKeys)
+        val indexDef = IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKeys, IndexType.Btree)
         config.indexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
       }
 

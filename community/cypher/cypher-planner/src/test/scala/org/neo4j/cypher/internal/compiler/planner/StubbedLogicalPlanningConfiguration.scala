@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -44,19 +45,19 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
 
-case class IndexModifier(indexType: IndexType) {
+case class IndexModifier(indexAttributes: IndexAttributes) {
   def providesValues(): IndexModifier = {
-    indexType.withValues = true
+    indexAttributes.withValues = true
     this
   }
   def providesOrder(order: IndexOrderCapability): IndexModifier = {
-    indexType.withOrdering = order
+    indexAttributes.withOrdering = order
     this
   }
 }
 
 trait FakeIndexAndConstraintManagement {
-  var indexes: Map[IndexDef, IndexType] = Map.empty
+  var indexes: Map[IndexDef, IndexAttributes] = Map.empty
 
   var nodeConstraints: Set[(String, Set[String])] = Set.empty
 
@@ -65,31 +66,41 @@ trait FakeIndexAndConstraintManagement {
   var procedureSignatures: Set[ProcedureSignature] = Set.empty
 
   def indexOn(label: String, properties: String*): IndexModifier = {
-    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE)
+    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Btree)
+    IndexModifier(indexes(indexDef))
+  }
+
+  def textIndexOn(label: String, properties: String*): IndexModifier = {
+    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Text)
     IndexModifier(indexes(indexDef))
   }
 
   def relationshipIndexOn(relationshipType: String, properties: String*): IndexModifier = {
-    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE)
+    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Btree)
+    IndexModifier(indexes(indexDef))
+  }
+
+  def relationshipTextIndexOn(relationshipType: String, properties: String*): IndexModifier = {
+    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Text)
     IndexModifier(indexes(indexDef))
   }
 
   def uniqueIndexOn(label: String, properties: String*): IndexModifier = {
-    val indexDef = indexOn(label, properties, isUnique = true, withValues = false, IndexOrderCapability.NONE)
+    val indexDef = indexOn(label, properties, isUnique = true, withValues = false, IndexOrderCapability.NONE, IndexType.Btree)
     IndexModifier(indexes(indexDef))
   }
 
-  def indexOn(label: String, properties: Seq[String], isUnique: Boolean, withValues: Boolean, providesOrder: IndexOrderCapability): IndexDef = {
-    val indexType = new IndexType(isUnique, withValues, providesOrder)
-    val indexDef = IndexDef(IndexDefinition.EntityType.Node(label), properties)
-    indexes += indexDef -> indexType
+  def indexOn(label: String, properties: Seq[String], isUnique: Boolean, withValues: Boolean, providesOrder: IndexOrderCapability, indexType: IndexType): IndexDef = {
+    val indexAttributes = new IndexAttributes(isUnique, withValues, providesOrder)
+    val indexDef = IndexDef(IndexDefinition.EntityType.Node(label), properties, indexType)
+    indexes += indexDef -> indexAttributes
     indexDef
   }
 
-  def relationshipIndexOn(relationshipType: String, properties: Seq[String], isUnique: Boolean, withValues: Boolean, providesOrder: IndexOrderCapability): IndexDef = {
-    val indexType = new IndexType(isUnique, withValues, providesOrder)
-    val indexDef = IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), properties)
-    indexes += indexDef -> indexType
+  def relationshipIndexOn(relationshipType: String, properties: Seq[String], isUnique: Boolean, withValues: Boolean, providesOrder: IndexOrderCapability, indexType: IndexType): IndexDef = {
+    val indexAttributes = new IndexAttributes(isUnique, withValues, providesOrder)
+    val indexDef = IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), properties, indexType)
+    indexes += indexDef -> indexAttributes
     indexDef
   }
 
@@ -139,7 +150,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
   lazy val labelsById: Map[Int, String] = {
     val indexed = indexes.keys.collect {
-      case IndexDef(IndexDefinition.EntityType.Node(label), _) => label
+      case IndexDef(IndexDefinition.EntityType.Node(label), _, _) => label
     }.toSeq
     val known = knownLabels.toSeq
     val indexedThenKnown = (indexed ++ known).distinct
@@ -148,7 +159,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
   lazy val relTypesById: Map[Int, String] = {
     val indexed = indexes.keys.collect {
-      case IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), _) => relationshipType
+      case IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), _, _) => relationshipType
     }.toSeq
     val known = knownRelationships.toSeq
     val indexedThenKnown = (indexed ++ known).distinct

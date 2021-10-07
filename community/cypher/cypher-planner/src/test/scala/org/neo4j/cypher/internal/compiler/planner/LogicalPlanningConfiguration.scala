@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -55,7 +56,7 @@ trait LogicalPlanningConfiguration {
                        expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost]
   def graphStatistics: GraphStatistics
-  def indexes: Map[IndexDef, IndexType]
+  def indexes: Map[IndexDef, IndexAttributes]
   def nodeConstraints: Set[(String, Set[String])]
   def relationshipConstraints: Set[(String, Set[String])]
   def procedureSignatures: Set[ProcedureSignature]
@@ -75,10 +76,10 @@ trait LogicalPlanningConfiguration {
   }
 }
 
-case class IndexDef(entityType: IndexDefinition.EntityType, propertyKeys: Seq[String])
-class IndexType(var isUnique: Boolean = false,
-                var withValues: Boolean = false,
-                var withOrdering: IndexOrderCapability = IndexOrderCapability.NONE)
+case class IndexDef(entityType: IndexDefinition.EntityType, propertyKeys: Seq[String], indexType: IndexType)
+class IndexAttributes(var isUnique: Boolean = false,
+                      var withValues: Boolean = false,
+                      var withOrdering: IndexOrderCapability = IndexOrderCapability.NONE)
 
 trait LogicalPlanningConfigurationAdHocSemanticTable {
   self: LogicalPlanningConfiguration =>
@@ -101,10 +102,10 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
         table.resolvedRelTypeNames.put(relationType, RelTypeId(table.resolvedRelTypeNames.size))
       }
     indexes.keys.foreach {
-      case IndexDef(IndexDefinition.EntityType.Node(label), properties) =>
+      case IndexDef(IndexDefinition.EntityType.Node(label), properties, _) =>
         addLabelIfUnknown(label)
         properties.foreach(addPropertyKeyIfUnknown)
-      case IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), properties) =>
+      case IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), properties, _) =>
         addRelationshipTypeIfUnknown(relationshipType)
         properties.foreach(addPropertyKeyIfUnknown)
     }
