@@ -40,6 +40,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
+import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
@@ -199,6 +200,8 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         addIfNonZero( builder, "indexes-removed", queryStatistics.getIndexesRemoved() );
         addIfNonZero( builder, "constraints-added", queryStatistics.getConstraintsAdded() );
         addIfNonZero( builder, "constraints-removed", queryStatistics.getConstraintsRemoved() );
+        builder.add( "contains-updates", booleanValue( queryStatistics.containsUpdates() ) );
+        builder.add( "contains-system-updates", booleanValue( queryStatistics.containsSystemUpdates() ) );
         return builder.build();
     }
 
