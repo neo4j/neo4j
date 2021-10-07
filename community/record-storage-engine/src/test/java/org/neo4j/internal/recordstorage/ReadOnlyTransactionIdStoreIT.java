@@ -23,37 +23,48 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DbmsExtension
+@EphemeralPageCacheExtension
 class ReadOnlyTransactionIdStoreIT
 {
     @Inject
     private PageCache pageCache;
     @Inject
-    private DatabaseLayout databaseLayout;
-    @Inject
-    private FileSystemAbstraction fs;
+    private TestDirectory directory;
 
     @Test
     void testPageCacheAccessOnTransactionIdStoreConstruction() throws IOException
     {
+        // given
+        var databaseLayout = Neo4jLayout.of( directory.homePath() ).databaseLayout( "db" );
+        new StoreFactory( databaseLayout, Config.defaults(), new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, directory.getFileSystem(),
+                NullLogProvider.getInstance(), PageCacheTracer.NULL, DatabaseReadOnlyChecker.writable() ).openAllNeoStores( true ).close();
         var pageCacheTracer = new DefaultPageCacheTracer();
         var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "testPageCacheAccessOnTransactionIdStoreConstruction" ) );
-        new ReadOnlyTransactionIdStore( fs, pageCache, databaseLayout, cursorContext );
 
+        // when
+        new ReadOnlyTransactionIdStore( directory.getFileSystem(), pageCache, databaseLayout, cursorContext );
+
+        // then
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 4 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 4 );
+        assertThat( cursorTracer.hits() ).isEqualTo( 0 );
     }
 }
