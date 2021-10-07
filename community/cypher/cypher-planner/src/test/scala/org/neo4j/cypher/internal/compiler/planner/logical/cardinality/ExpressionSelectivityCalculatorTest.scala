@@ -1169,6 +1169,20 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     in10000Result should be <= isNotNullSel
   }
 
+  //Point bbox
+  test("point.withinBBox(p, p1, p2) should have same selectivity as p1 <= p <= p2") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val lowerLeft = function("point", mapOf("x" -> literalInt(0), "y" -> literalInt(0)))
+    val upperRight = function("point", mapOf("x" -> literalInt(10), "y" -> literalInt(10)))
+    val inequality = nPredicate(nAnded(NonEmptyList(
+      greaterThanOrEqual(nProp, lowerLeft),
+      lessThanOrEqual(nProp, upperRight)
+    )))
+    val bbox = nPredicate(function(List("point"), "withinBBox", nProp, lowerLeft, upperRight))
+
+    calculator(inequality.expr) should equal(calculator(bbox.expr))
+  }
+
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {

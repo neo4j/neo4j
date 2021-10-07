@@ -314,10 +314,49 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                             labelInfo: LabelInfo,
                                                             relTypeInfo: RelTypeInfo)
                                                           (implicit semanticTable: SemanticTable): Selectivity = {
-    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(seekable.ident.name, labelInfo, relTypeInfo, seekable.propertyKeyName)
-    val indexBBoxSelectivities = indexPropertyExistsSelectivities.map(_ * Selectivity(DEFAULT_RANGE_SEEK_FACTOR))
-    combiner.orTogetherSelectivities(indexBBoxSelectivities).getOrElse(DEFAULT_RANGE_SELECTIVITY)
-  }
+    //NOTE this equivalent to using two inequalities, like p1 <= n.prop <= p2
+    def default = {
+      val defaultRange = DEFAULT_RANGE_SELECTIVITY * Selectivity(0.5)
+      Selectivity.of(DEFAULT_EQUALITY_SELECTIVITY.factor + defaultRange.factor).getOrElse(Selectivity.ONE)
+    }
+
+    //NOTE this equivalent to using two inequalities, like p1 <= n.prop <= p2
+    def getPropertyPredicateRangeSelectivity(propEqValueSelectivity: Selectivity): Selectivity = {
+      val pNeq = propEqValueSelectivity.negate
+      val pNeqRange = pNeq.factor * DEFAULT_RANGE_SEEK_FACTOR / 2
+
+      val pRange = Selectivity(propEqValueSelectivity.factor + pNeqRange)
+      Selectivity(math.max(propEqValueSelectivity.factor, pRange.factor))
+    }
+
+    val labels = labelInfo.getOrElse(seekable.ident.name, Set.empty)
+    val relTypes = relTypeInfo.get(seekable.ident.name)
+    val indexRangeSelectivities: Seq[Selectivity] = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
+      val ids = name match {
+        case labelName: LabelName => (semanticTable.id(labelName), semanticTable.id(seekable.property.propertyKey))
+        case relTypeName: RelTypeName => (semanticTable.id(relTypeName), semanticTable.id(seekable.property.propertyKey))
+      }
+
+      ids match {
+        case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
+          val descriptor = labelOrRelTypeId match {
+            case labelId: LabelId => IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, labelId, Seq(propertyKeyId))
+            case relTypeId: RelTypeId => IndexDescriptor.forRelType(IndexDescriptor.IndexType.Btree, relTypeId, Seq(propertyKeyId))
+          }
+
+          for {
+            propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
+            propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
+          } yield {
+            val pRangeBounded: Selectivity = getPropertyPredicateRangeSelectivity(propEqValueSelectivity)
+            pRangeBounded * propertyExistsSelectivity
+          }
+
+        case _ => Some(Selectivity.ZERO)
+      }
+    }
+      combiner.orTogetherSelectivities(indexRangeSelectivities).getOrElse(default)
+    }
 
   private def calculateSelectivityForSubstringSargable(variable: String,
                                                        labelInfo: LabelInfo,
