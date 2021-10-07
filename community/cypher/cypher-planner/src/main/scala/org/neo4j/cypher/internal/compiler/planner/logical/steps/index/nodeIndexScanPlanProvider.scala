@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 
 object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
 
@@ -49,6 +50,8 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
 
     val solutions = for {
       indexMatch <- indexMatches
+      // Text indexes don't support scanning
+      if indexMatch.indexDescriptor.indexType != IndexDescriptor.IndexType.Text
       if isAllowedByRestrictions(indexMatch.variableName, restrictions)
     } yield createSolution(indexMatch, hints, argumentIds, context)
 

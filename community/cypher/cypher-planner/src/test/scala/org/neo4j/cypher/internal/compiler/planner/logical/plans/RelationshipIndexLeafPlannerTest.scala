@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -51,6 +52,7 @@ import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
@@ -152,9 +154,13 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
       )
 
       relationshipIndexOn("Awesome", "prop")
+      relationshipTextIndexOn("Awesome", "prop")
       relationshipIndexOn("Awesome", "foo", "bar")
       relationshipIndexOn("Awesome", "aaa", "bbb", "ccc")
-    }.withLogicalPlanningContext { (cfg, ctx) =>
+    }.withLogicalPlanningContext { (cfg, baseCtx) =>
+
+      val ctx = baseCtx.copy(planningTextIndexesEnabled = true)
+
       // when
       val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
       val resultPlans = relationshipIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
@@ -177,6 +183,7 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
         DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropStartsWithLitFoo
         DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.TEXT),
         // nPropDistance
         DirectedRelationshipIndexSeek("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEqualsXProp
@@ -203,6 +210,54 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
       )
 
       // DirectedRelationshipIndexScan(o, o1, o2, RelationshipTypeToken(Awesome,RelTypeId(0)), List(IndexedProperty(PropertyKeyToken(aaa,PropertyKeyId(3)),DoNotGetValue,RELATIONSHIP_TYPE), IndexedProperty(PropertyKeyToken(bbb,PropertyKeyId(4)),DoNotGetValue,RELATIONSHIP_TYPE), IndexedProperty(PropertyKeyToken(ccc,PropertyKeyId(5)),DoNotGetValue,RELATIONSHIP_TYPE)), Set(x), IndexOrderNone) {},
+    }
+  }
+
+  test("should not find relationship index scans for text indexes") {
+
+    val litFoo = literalString("foo")
+
+    val rProp = prop("r", "prop")
+
+    val rPropStartsWithLitFoo = startsWith(rProp, litFoo)
+    val rPropEndsWithLitFoo = endsWith(rProp, litFoo)
+    val rPropContainsLitFoo = contains(rProp, litFoo)
+    val rIsNotNull = isNotNull(rProp)
+    new given {
+      addTypeToSemanticTable(rProp, CTInteger.invariant)
+
+      val predicates: Set[Expression] = Set(
+        rPropStartsWithLitFoo,
+        rPropEndsWithLitFoo,
+        rPropContainsLitFoo,
+        rIsNotNull,
+      )
+
+      qg = QueryGraph(
+        selections = Selections(predicates.flatMap(_.asPredicates)),
+        patternNodes = Set("a", "b"),
+        patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(RelTypeName("REL")(pos)), SimplePatternLength))
+      )
+
+      relationshipTextIndexOn("REL", "prop")
+
+    }.withLogicalPlanningContext { (cfg, baseCtx) =>
+
+      val ctx = baseCtx.copy(planningTextIndexesEnabled = true)
+
+      // when
+      val restriction = LeafPlanRestrictions.NoRestrictions
+      val resultPlans = relationshipIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      val relTypeToken = RelationshipTypeToken("REL", RelTypeId(0))
+      val propToken = PropertyKeyToken("prop", PropertyKeyId(0))
+
+      resultPlans shouldEqual Set(
+        // rPropStartsWithLitFoo
+        DirectedRelationshipIndexSeek("r", "a", "b", relTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set(), IndexOrderNone, IndexType.TEXT),
+        // no scan plans
+      )
     }
   }
 }

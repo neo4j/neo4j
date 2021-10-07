@@ -140,9 +140,13 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
       )
 
       indexOn("Awesome", "prop")
+      textIndexOn("Awesome", "prop")
       indexOn("Awesome", "foo", "bar")
       indexOn("Awesome", "aaa", "bbb", "ccc")
-    }.withLogicalPlanningContext { (cfg, ctx) =>
+    }.withLogicalPlanningContext { (cfg, c) =>
+
+      val ctx = c.copy(planningTextIndexesEnabled = true)
+
       // when
       val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
       val resultPlans = nodeIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
@@ -156,7 +160,7 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
       val bbbToken = PropertyKeyToken("bbb", PropertyKeyId(4))
       val cccToken = PropertyKeyToken("ccc", PropertyKeyId(5))
 
-      resultPlans.toSet shouldEqual Set(
+      resultPlans shouldEqual Set(
         // nPropInLit6Lit42
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropLessThanLit6
@@ -165,6 +169,7 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropStartsWithLitFoo
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.TEXT),
         // nPropDistance
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEqualsXProp
@@ -190,6 +195,54 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         NodeIndexScan("o", labelToken, Seq(IndexedProperty(aaaToken, DoNotGetValue, NODE_TYPE), IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE), IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
       )
 
+    }
+  }
+
+  test("should not find node index scans for text indexes") {
+
+    val litFoo = literalString("foo")
+
+    val nProp = prop("n", "prop")
+
+    val nPropStartsWithLitFoo = startsWith(nProp, litFoo)
+    val nPropEndsWithLitFoo = endsWith(nProp, litFoo)
+    val nPropContainsLitFoo = contains(nProp, litFoo)
+    val nPropIsNotNull = isNotNull(nProp)
+    new given {
+      addTypeToSemanticTable(nProp, CTInteger.invariant)
+
+      val predicates: Set[Expression] = Set(
+        hasLabels("n", "Awesome"),
+        nPropStartsWithLitFoo,
+        nPropEndsWithLitFoo,
+        nPropContainsLitFoo,
+        nPropIsNotNull,
+      )
+
+      qg = QueryGraph(
+        selections = Selections(predicates.flatMap(_.asPredicates)),
+        patternNodes = Set("n"),
+      )
+
+      textIndexOn("Awesome", "prop")
+
+    }.withLogicalPlanningContext { (cfg, c) =>
+
+      val ctx = c.copy(planningTextIndexesEnabled = true)
+
+      // when
+      val restriction = LeafPlanRestrictions.NoRestrictions
+      val resultPlans = nodeIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      val labelToken = LabelToken("Awesome", LabelId(0))
+      val propToken = PropertyKeyToken("prop", PropertyKeyId(0))
+
+      resultPlans shouldEqual Set(
+        // nPropStartsWithLitFoo
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set(), IndexOrderNone, IndexType.TEXT),
+        // no scan plans
+      )
     }
   }
 }
