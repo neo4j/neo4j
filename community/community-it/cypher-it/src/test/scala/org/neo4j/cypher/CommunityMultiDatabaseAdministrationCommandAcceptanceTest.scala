@@ -20,6 +20,8 @@
 package org.neo4j.cypher
 
 import java.nio.file.Path
+import java.time.Clock
+
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
@@ -652,7 +654,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
   private def initSystemGraph(config: Config): Unit = {
     val systemGraphComponents = new SystemGraphComponents()
-    systemGraphComponents.register(new DefaultSystemGraphComponent(config))
+    systemGraphComponents.register(new DefaultSystemGraphComponent(config, Clock.systemUTC))
     systemGraphComponents.register(new UserSecurityGraphComponent(mock[AbstractSecurityLog], new InMemoryUserRepository, new InMemoryUserRepository, config))
 
     val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])

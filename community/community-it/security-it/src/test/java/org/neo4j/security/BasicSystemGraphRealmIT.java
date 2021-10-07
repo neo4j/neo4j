@@ -229,7 +229,7 @@ class BasicSystemGraphRealmIT
         Config config = Config.defaults( GraphDatabaseInternalSettings.auth_store_directory, testDirectory.directory( "data/dbms" ) );
 
         var systemGraphComponents = new SystemGraphComponents();
-        systemGraphComponents.register( new DefaultSystemGraphComponent( config ) );
+        systemGraphComponents.register( new DefaultSystemGraphComponent( config, Clock.systemUTC() ) );
         systemGraphComponents.register( new UserSecurityGraphComponent( Mockito.mock( AbstractSecurityLog.class ), oldUsers, initialPassword, config ) );
 
         var systemGraphSupplier = SystemGraphRealmHelper.makeSystemSupplier( dbManager );

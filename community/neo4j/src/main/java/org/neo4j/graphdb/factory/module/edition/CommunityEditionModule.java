@@ -258,7 +258,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     @Override
     public void registerSystemGraphComponents( SystemGraphComponents systemGraphComponents, GlobalModule globalModule )
     {
-        var systemGraphComponent = new DefaultSystemGraphComponent( globalModule.getGlobalConfig() );
+        var systemGraphComponent = new DefaultSystemGraphComponent( globalModule.getGlobalConfig(), globalModule.getGlobalClock() );
         systemGraphComponents.register( systemGraphComponent );
     }
 

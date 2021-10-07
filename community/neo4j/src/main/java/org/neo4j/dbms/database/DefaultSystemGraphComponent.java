@@ -19,6 +19,10 @@
  */
 package org.neo4j.dbms.database;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -33,9 +37,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_STATUS_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_UUID_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DELETED_DATABASE_LABEL;
@@ -51,11 +57,13 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABA
 public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
 {
     private final NormalizedDatabaseName defaultDbName;
+    private final Clock clock;
 
-    public DefaultSystemGraphComponent( Config config )
+    public DefaultSystemGraphComponent( Config config, Clock clock )
     {
         super( config );
         this.defaultDbName = new NormalizedDatabaseName( config.get( GraphDatabaseSettings.default_database ) );
+        this.clock = clock;
     }
 
     @Override
@@ -185,20 +193,28 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
         newDb( system, defaultDbName, true, UUID.randomUUID() );
     }
 
-    private static void newDb( GraphDatabaseService system, NormalizedDatabaseName databaseName, boolean defaultDb, UUID uuid ) throws InvalidArgumentsException
+    private void newDb( GraphDatabaseService system, NormalizedDatabaseName databaseName, boolean defaultDb, UUID uuid ) throws InvalidArgumentsException
     {
-        try ( Transaction tx = system.beginTx() )
+        try ( var tx = system.beginTx() )
         {
-            Node node = tx.createNode( DATABASE_LABEL );
-            node.setProperty( DATABASE_NAME_PROPERTY, databaseName.name() );
-            node.setProperty( DATABASE_UUID_PROPERTY, uuid.toString() );
-            node.setProperty( DATABASE_STATUS_PROPERTY, SystemGraphDbmsModel.DatabaseStatus.online.name() );
-            node.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
+            createDatabaseNode( tx, databaseName.name(), defaultDb, uuid, ZonedDateTime.ofInstant( clock.instant(), clock.getZone() ) );
             tx.commit();
         }
         catch ( ConstraintViolationException e )
         {
             throw new InvalidArgumentsException( "The specified database '" + databaseName + "' already exists." );
         }
+    }
+
+    protected Node createDatabaseNode( Transaction tx, String databaseName, boolean defaultDb, UUID uuid, ZonedDateTime now )
+    {
+        var node = tx.createNode( DATABASE_LABEL );
+        node.setProperty( DATABASE_NAME_PROPERTY, databaseName );
+        node.setProperty( DATABASE_UUID_PROPERTY, uuid.toString() );
+        node.setProperty( DATABASE_STATUS_PROPERTY, SystemGraphDbmsModel.DatabaseStatus.online.name() );
+        node.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
+        node.setProperty( DATABASE_CREATED_AT_PROPERTY, now );
+        node.setProperty( DATABASE_STARTED_AT_PROPERTY, now );
+        return node;
     }
 }
