@@ -21,6 +21,12 @@ package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.function.LongFunction;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
@@ -32,10 +38,13 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
@@ -148,6 +157,95 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
 
         // Then samples calculated with documents pending merge
         assertThat( populator.sample( NULL ) ).isEqualTo( new IndexSample( 2, 5, 10 ) );
+    }
+
+    @Test
+    final void shouldIgnoreAddedUnsupportedValueTypes() throws Exception
+    {
+        // given  the population of an empty index
+        final var externalUpdates = generateUpdates( 10, id -> IndexEntryUpdate.add( id, SCHEMA_DESCRIPTOR, unsupportedValue( id ) ) );
+        // when   processing the addition of unsupported value types
+        // then   updates should not have been indexed
+        test( List.of(), externalUpdates, 0 );
+    }
+
+    @Test
+    final void shouldIgnoreRemovedUnsupportedValueTypes() throws Exception
+    {
+        // given  the population of an empty index
+        final var externalUpdates = generateUpdates( 10, id -> IndexEntryUpdate.remove( id, SCHEMA_DESCRIPTOR, unsupportedValue( id ) ) );
+        // when   processing the removal of unsupported value types
+        // then   updates should not have been indexed
+        test( List.of(), externalUpdates, 0 );
+    }
+
+    @Test
+    final void shouldIgnoreChangesBetweenUnsupportedValueTypes() throws Exception
+    {
+        // given  the population of an empty index
+        final var externalUpdates = generateUpdates( 10, id ->
+                IndexEntryUpdate.change( id, SCHEMA_DESCRIPTOR, unsupportedValue( id ), unsupportedValue( id + 1 ) ) );
+        // when   processing the change between unsupported value types
+        // then   updates should not have been indexed
+        test( List.of(), externalUpdates, 0 );
+    }
+
+    @Test
+    final void shouldNotIgnoreChangesUnsupportedValueTypesToSupportedValueTypes() throws Exception
+    {
+        // given  the population of an empty index
+        final var externalUpdates = generateUpdates( 10, id -> IndexEntryUpdate.change( id, SCHEMA_DESCRIPTOR, unsupportedValue( id ), supportedValue( id ) ) );
+        // when   processing the change from an unsupported to a supported value type
+        // then   updates should have been indexed as additions
+        test( List.of(), externalUpdates, externalUpdates.size() );
+    }
+
+    @Test
+    final void shouldNotIgnoreChangesSupportedValueTypesToUnsupportedValueTypes() throws Exception
+    {
+        // given  the population of an empty index
+        final var internalUpdates = generateUpdates( 10, id1 -> IndexEntryUpdate.add( id1, SCHEMA_DESCRIPTOR, supportedValue( id1 ) ) );
+        final var externalUpdates = generateUpdates( 10, id -> IndexEntryUpdate.change( id, SCHEMA_DESCRIPTOR, supportedValue( id ), unsupportedValue( id ) ) );
+        // when   processing the change from a supported to an unsupported value type
+        // then   updates should have been indexed as removals
+        test( internalUpdates, externalUpdates, 0 );
+    }
+
+    private void test( Collection<IndexEntryUpdate<?>> internalUpdates, Collection<IndexEntryUpdate<?>> externalUpdates, long expectedIndexSize )
+            throws Exception
+    {
+
+        final var provider = createIndexProvider();
+        final var populator = getPopulator( provider, SCHEMA_DESCRIPTOR );
+        populator.add( internalUpdates, NULL );
+
+        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL ) )
+        {
+            for ( final var update : externalUpdates )
+            {
+                updater.process( update );
+            }
+        }
+
+        final var sample = populator.sample( NULL );
+        assertThat( sample.indexSize() ).isEqualTo( expectedIndexSize );
+    }
+
+    private Value supportedValue( long i )
+    {
+        return Values.of( "string_" + i );
+    }
+
+    private Value unsupportedValue( long i )
+    {
+        return Values.of( i );
+    }
+
+    private Collection<IndexEntryUpdate<?>> generateUpdates( long n, LongFunction<IndexEntryUpdate<?>> updateFunction )
+    {
+        return LongStream.range( 0L, n )
+                         .mapToObj( updateFunction )
+                         .collect( Collectors.toUnmodifiableList() );
     }
 
     private IndexPopulator getPopulator( LuceneIndexProvider provider, SchemaDescriptorSupplier supplier ) throws Exception

@@ -613,9 +613,9 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         }
     }
 
-    private BlockBasedIndexPopulator<KEY> instantiatePopulator( BlockStorage.Monitor monitor ) throws IOException
+    protected BlockBasedIndexPopulator<KEY> instantiatePopulator( BlockStorage.Monitor monitor ) throws IOException
     {
-        return instantiatePopulator( monitor, heapBufferFactory( 100), INSTANCE );
+        return instantiatePopulator( monitor, heapBufferFactory( 100 ), INSTANCE );
     }
 
     private Collection<IndexEntryUpdate<?>> batchOfUpdates()

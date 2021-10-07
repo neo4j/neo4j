@@ -27,14 +27,20 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
+import java.util.stream.Stream;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -45,6 +51,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
@@ -62,6 +69,8 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
+import org.neo4j.values.storable.ValueType;
 
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -81,6 +90,15 @@ import static org.neo4j.values.storable.Values.stringValue;
 @TestDirectoryExtension
 public class LuceneIndexAccessorIT
 {
+
+    private static final ValueType[] SUPPORTED_TYPES = Stream.of( ValueType.values() )
+                                                             .filter( type -> type.valueGroup.category() == ValueCategory.TEXT )
+                                                             .toArray( ValueType[]::new );
+
+    private static final ValueType[] UNSUPPORTED_TYPES = Stream.of( ValueType.values() )
+                                                               .filter( type -> type.valueGroup.category() != ValueCategory.TEXT )
+                                                               .toArray( ValueType[]::new );
+
     @Inject
     private RandomSupport random;
     @Inject
@@ -98,8 +116,8 @@ public class LuceneIndexAccessorIT
         Path path = directory.directory( "db" );
         config = Config.defaults();
         readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
-        indexProvider = new LuceneIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ), new Monitors(), config,
-                readOnlyChecker );
+        indexProvider = new LuceneIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ),
+                                                 new Monitors(), config, readOnlyChecker );
         life.add( indexProvider );
         life.start();
         samplingConfig = new IndexSamplingConfig( config );
@@ -224,6 +242,102 @@ public class LuceneIndexAccessorIT
         }
     }
 
+    @ParameterizedTest
+    @MethodSource( "unsupportedTypes" )
+    void updaterShouldIgnoreUnsupportedTypes( ValueType unsupportedType ) throws Exception
+    {
+        final var descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
+        try ( var accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        {
+            // given  an empty index
+            // when   an unsupported value type is added
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            {
+                final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
+                updater.process( IndexEntryUpdate.add( idGenerator().getAsLong(), descriptor, unsupportedValue ) );
+            }
+
+            // then   it should not be indexed, and thus not visible
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            {
+                assertThat( reader ).isEmpty();
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource( "unsupportedTypes" )
+    void updaterShouldChangeUnsupportedToSupportedByAdd( ValueType unsupportedType ) throws Exception
+    {
+        final var descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
+        try ( var accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        {
+            // when   an unsupported value type is added
+            final var entityId = idGenerator().getAsLong();
+            final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            {
+                updater.process( IndexEntryUpdate.add( entityId, descriptor, unsupportedValue ) );
+            }
+
+            // then   it should not be indexed, and thus not visible
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            {
+                assertThat( reader ).isEmpty();
+            }
+
+            // when   the unsupported value type is changed to a supported value type
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            {
+                final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
+                updater.process( IndexEntryUpdate.change( entityId, descriptor, unsupportedValue, supportedValue ) );
+            }
+
+            // then   it should be added to the index, and thus now visible
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            {
+                assertThat( reader ).containsExactlyInAnyOrder( entityId );
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource( "unsupportedTypes" )
+    void updaterShouldChangeSupportedToUnsupportedByRemove( ValueType unsupportedType ) throws Exception
+    {
+        final var descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
+        try ( var accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        {
+            // given  an empty index
+            // when   a supported value type is added
+            final var entityId = idGenerator().getAsLong();
+            final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            {
+                updater.process( IndexEntryUpdate.add( entityId, descriptor, supportedValue ) );
+            }
+
+            // then   it should be added to the index, and thus visible
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            {
+                assertThat( reader ).containsExactlyInAnyOrder( entityId );
+            }
+
+            // when   the supported value type is changed to an unsupported value type
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            {
+                final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
+                updater.process( IndexEntryUpdate.change( entityId, descriptor, supportedValue, unsupportedValue ) );
+            }
+
+            // then   it should be removed from the index, and thus no longer visible
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            {
+                assertThat( reader ).isEmpty();
+            }
+        }
+    }
+
     private static void removeSomeNodes( IndexDescriptor indexDescriptor, int nodes, IndexAccessor accessor, MutableLongSet expectedNodes )
             throws IndexEntryConflictException
     {
@@ -240,9 +354,8 @@ public class LuceneIndexAccessorIT
     private void populateWithInitialNodes( IndexDescriptor indexDescriptor, int nodes, MutableLongSet expectedNodes )
             throws IndexEntryConflictException, IOException
     {
-        IndexPopulator populator =
-                indexProvider.getPopulator( indexDescriptor, samplingConfig, ByteBufferFactory.heapBufferFactory( (int) kibiBytes( 100 ) ), INSTANCE,
-                        mock( TokenNameLookup.class ) );
+        IndexPopulator populator = indexProvider.getPopulator( indexDescriptor, samplingConfig, ByteBufferFactory.heapBufferFactory( (int) kibiBytes( 100 ) ),
+                                                               INSTANCE, mock( TokenNameLookup.class ) );
         Collection<IndexEntryUpdate<IndexDescriptor>> initialData = new ArrayList<>();
         populator.create();
         for ( long id = 0; id < nodes; id++ )
@@ -329,5 +442,15 @@ public class LuceneIndexAccessorIT
         long entityId = highEntityId.getAndIncrement();
         liveEntityIds.set( toIntExact( entityId ) );
         return IndexEntryUpdate.add( entityId, descriptor, stringValue( String.valueOf( entityId ) ) );
+    }
+
+    private static LongSupplier idGenerator()
+    {
+        return new AtomicLong( 0 )::incrementAndGet;
+    }
+
+    private static Stream<ValueType> unsupportedTypes()
+    {
+        return Arrays.stream( UNSUPPORTED_TYPES );
     }
 }

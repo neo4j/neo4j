@@ -21,17 +21,29 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.stream.Stream;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
+import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -40,6 +52,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
@@ -49,19 +62,19 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
-import static org.neo4j.values.storable.ValueType.CARTESIAN_POINT;
-import static org.neo4j.values.storable.ValueType.CARTESIAN_POINT_3D;
-import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT;
-import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT_3D;
 
 @ExtendWith( RandomExtension.class )
 public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPopulatorUpdatesTest<PointKey>
 {
-    private static final ValueType[] supportedTypes = new ValueType[]{CARTESIAN_POINT, CARTESIAN_POINT_3D, GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_3D};
-    private final Config config = Config.defaults();
-    private final StandardConfiguration configuration = new StandardConfiguration();
-    private final IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
-    private final PointLayout layout = new PointLayout( spatialSettings );
+    private static final StandardConfiguration CONFIGURATION = new StandardConfiguration();
+    private static final Config CONFIG = Config.defaults();
+    private static final IndexSpecificSpaceFillingCurveSettings SPATIAL_SETTINGS = IndexSpecificSpaceFillingCurveSettings.fromConfig( CONFIG );
+    private static final PointLayout LAYOUT = new PointLayout( SPATIAL_SETTINGS );
+    private static final Set<ValueType> UNSUPPORTED_TYPES =
+            Collections.unmodifiableSet( Arrays.stream( ValueType.values() )
+                                               .filter( type -> type.valueGroup.category() != ValueCategory.GEOMETRY )
+                                               .collect( Collectors.toCollection( () -> EnumSet.noneOf( ValueType.class ) ) ) );
+
     @Inject
     private RandomSupport random;
 
@@ -74,9 +87,9 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     @Override
     BlockBasedIndexPopulator<PointKey> instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException
     {
-        PointBlockBasedIndexPopulator populator =
-                new PointBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, indexDescriptor, spatialSettings, configuration, false,
-                        heapBufferFactory( (int) kibiBytes( 40 ) ), config, EmptyMemoryTracker.INSTANCE );
+        final var populator = new PointBlockBasedIndexPopulator( databaseIndexContext, indexFiles, LAYOUT, indexDescriptor, SPATIAL_SETTINGS,
+                                                                 CONFIGURATION, false, heapBufferFactory( (int) kibiBytes( 40 ) ),
+                                                                 CONFIG, EmptyMemoryTracker.INSTANCE );
         populator.create();
         return populator;
     }
@@ -88,46 +101,6 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     }
 
     @Test
-    void shouldIgnoreUnsupportedValueTypesInExternalUpdatesBeforeScanCompleted() throws Exception
-    {
-        // given
-        BlockBasedIndexPopulator<PointKey> populator = instantiatePopulator( INDEX_DESCRIPTOR );
-        try
-        {
-            // when
-            unsupportedTypes().forEach( unsupportedType -> externalUpdate( populator, random.nextValue( unsupportedType ), 1 ) );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-        }
-        finally
-        {
-            populator.close( true, NULL );
-        }
-
-        // then
-        assertEmpty();
-    }
-
-    @Test
-    void shouldIgnoreUnsupportedValueTypesInExternalUpdatesAfterScanCompleted() throws Exception
-    {
-        // given
-        BlockBasedIndexPopulator<PointKey> populator = instantiatePopulator( INDEX_DESCRIPTOR );
-        try
-        {
-            // when
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-            unsupportedTypes().forEach( unsupportedType -> externalUpdate( populator, random.nextValue( unsupportedType ), 1 ) );
-        }
-        finally
-        {
-            populator.close( true, NULL );
-        }
-
-        // then
-        assertEmpty();
-    }
-
-    @Test
     void shouldIgnoreUnsupportedValueTypesInScan() throws Exception
     {
         // given
@@ -135,7 +108,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
         try
         {
             // when
-            unsupportedTypes().forEach( unsupportedType ->
+            UNSUPPORTED_TYPES.forEach( unsupportedType ->
             {
                 IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, random.nextValue( unsupportedType ) );
                 populator.add( singleton( update ), NULL );
@@ -148,27 +121,156 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
         }
 
         // then
-        assertEmpty();
+        try ( var accessor = pointAccessor();
+              var reader = accessor.newAllEntriesValueReader( NULL ) )
+        {
+            assertThat( reader.iterator() ).isExhausted();
+        }
     }
 
-    private void assertEmpty() throws Exception
+    @ParameterizedTest
+    @EnumSource( ScanUpdateOrder.class )
+    final void shouldIgnoreAddedUnsupportedValueTypes( ScanUpdateOrder scanUpdateOrder ) throws Exception
+    {
+        // given  the population of an empty index
+        final var updates = generateUpdatesToIgnore( ( id, value ) -> IndexEntryUpdate.add( id, INDEX_DESCRIPTOR, value ) );
+        // when   processing the addition of unsupported value types
+        // then   updates should not have been indexed
+        test( scanUpdateOrder, updates, 0L );
+    }
+
+    @ParameterizedTest
+    @EnumSource( ScanUpdateOrder.class )
+    final void shouldIgnoreRemovedUnsupportedValueTypes( ScanUpdateOrder scanUpdateOrder ) throws Exception
+    {
+        // given  the population of an empty index
+        final var updates = generateUpdatesToIgnore( ( id, value ) -> IndexEntryUpdate.remove( id, INDEX_DESCRIPTOR, value ) );
+        // when   processing the removal of unsupported value types
+        // then   updates should not have been indexed
+        test( scanUpdateOrder, updates, 0L );
+    }
+
+    @ParameterizedTest
+    @EnumSource( ScanUpdateOrder.class )
+    final void shouldIgnoreChangesBetweenUnsupportedValueTypes( ScanUpdateOrder scanUpdateOrder ) throws Exception
+    {
+        // given  the population of an empty index
+        final var otherValue = random.randomValues().nextValueOfTypes( UNSUPPORTED_TYPES.toArray( ValueType[]::new ) );
+        final var updates = generateUpdatesToIgnore( ( id, value ) -> IndexEntryUpdate.change( id, INDEX_DESCRIPTOR, value, otherValue ) );
+        // when   processing the change between unsupported value types
+        // then   updates should not have been indexed
+        test( scanUpdateOrder, updates, 0L );
+    }
+
+    @ParameterizedTest
+    @EnumSource( ScanUpdateOrder.class )
+    final void shouldNotIgnoreChangesUnsupportedValueTypesToSupportedValueTypes( ScanUpdateOrder scanUpdateOrder ) throws Exception
+    {
+        // given  the population of an empty index
+        final var supportedValue = supportedValue( random.nextInt() );
+        final var updates = generateUpdatesToIgnore( ( id, value ) -> IndexEntryUpdate.change( id, INDEX_DESCRIPTOR, value, supportedValue ) );
+        // when   processing the change from an unsupported to a supported value type
+        // then   updates should have been indexed as additions
+        test( scanUpdateOrder, updates, updates.size() );
+    }
+
+    @ParameterizedTest
+    @EnumSource( ScanUpdateOrder.class )
+    final void shouldNotIgnoreChangesSupportedValueTypesToUnsupportedValueTypes( ScanUpdateOrder scanUpdateOrder ) throws Exception
+    {
+        // given  the population of an empty index
+        final var supportedValue = supportedValue( random.nextInt() );
+        final var updates = generateUpdatesToIgnore( ( id, value ) -> IndexEntryUpdate.change( id, INDEX_DESCRIPTOR, supportedValue, value ) );
+        // when   processing the change from a supported to an unsupported value type
+        // then   updates should have been indexed as removals
+        test( scanUpdateOrder, updates, updates.size() );
+    }
+
+    private void test( ScanUpdateOrder scanUpdateOrder,
+            Collection<IndexEntryUpdate<?>> updates, long expectedUpdateCount ) throws Exception
     {
         try ( var accessor = pointAccessor();
-              var allEntriesReader = accessor.newAllEntriesValueReader( NULL ) )
+              var reader = accessor.newAllEntriesValueReader( NULL ) )
         {
-            assertThat( allEntriesReader.iterator().hasNext() ).as( "has values" ).isFalse();
+            assertThat( reader.iterator() ).isExhausted();
         }
+
+        final var populator = instantiatePopulator( INDEX_DESCRIPTOR );
+        scanUpdateOrder.beforeUpdates( populator, populationWorkScheduler );
+        try ( var updater = populator.newPopulatingUpdater( CursorContext.NULL ) )
+        {
+            for ( final var update : updates )
+            {
+                updater.process( update );
+            }
+            scanUpdateOrder.afterUpdates( populator, populationWorkScheduler );
+        }
+        finally
+        {
+            populator.close( true, CursorContext.NULL );
+        }
+
+        final var sample = populator.sample( CursorContext.NULL );
+        assertThat( sample.indexSize() ).isEqualTo( 0L );
+        assertThat( sample.updates() ).isEqualTo( expectedUpdateCount );
+    }
+
+    private Collection<IndexEntryUpdate<?>> generateUpdatesToIgnore( BiFunction<Long,Value,IndexEntryUpdate<?>> updateFunction )
+    {
+        final var idGen = idGenerator();
+        final var randomValues = random.randomValues();
+        return UNSUPPORTED_TYPES.stream()
+                                .map( randomValues::nextValueOfType )
+                                .map( value -> updateFunction.apply( idGen.getAsLong(), value ) )
+                                .collect( Collectors.toUnmodifiableList() );
+    }
+
+    private static LongSupplier idGenerator()
+    {
+        return new AtomicLong( 0 )::incrementAndGet;
     }
 
     private PointIndexAccessor pointAccessor()
     {
-        RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
-        return new PointIndexAccessor( databaseIndexContext, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, spatialSettings, configuration );
+        final var cleanup = RecoveryCleanupWorkCollector.immediate();
+        return new PointIndexAccessor( databaseIndexContext, indexFiles, LAYOUT, cleanup, INDEX_DESCRIPTOR, SPATIAL_SETTINGS, CONFIGURATION );
     }
 
-    private static Stream<ValueType> unsupportedTypes()
+    private enum ScanUpdateOrder
     {
-        return Arrays.stream( ValueType.values() )
-                .filter( type -> !ArrayUtil.contains( supportedTypes, type ) );
+        UPDATES_BEFORE_SCAN_COMPLETE
+                {
+                    @Override
+                    void beforeUpdates( IndexPopulator populator, IndexPopulator.PopulationWorkScheduler populationWorkScheduler )
+                    {
+                    }
+
+                    @Override
+                    void afterUpdates( IndexPopulator populator, IndexPopulator.PopulationWorkScheduler populationWorkScheduler )
+                            throws IndexEntryConflictException
+                    {
+                        populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL );
+                    }
+                },
+        UPDATES_AFTER_SCAN_COMPLETE
+                {
+                    @Override
+                    void beforeUpdates( IndexPopulator populator, IndexPopulator.PopulationWorkScheduler populationWorkScheduler )
+                            throws IndexEntryConflictException
+                    {
+                        populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL );
+                    }
+
+                    @Override
+                    void afterUpdates( IndexPopulator populator, IndexPopulator.PopulationWorkScheduler populationWorkScheduler )
+                    {
+                    }
+                };
+
+        abstract void beforeUpdates( IndexPopulator populator, IndexPopulator.PopulationWorkScheduler populationWorkScheduler )
+                throws IndexEntryConflictException;
+
+        abstract void afterUpdates( IndexPopulator populator, IndexPopulator.PopulationWorkScheduler populationWorkScheduler )
+                throws IndexEntryConflictException;
     }
 }

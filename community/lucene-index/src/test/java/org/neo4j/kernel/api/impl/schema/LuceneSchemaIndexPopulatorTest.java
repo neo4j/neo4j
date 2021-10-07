@@ -32,8 +32,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -134,6 +137,21 @@ class LuceneSchemaIndexPopulatorTest
                 hit( "4L", 6 ),
                 hit( "5F", 7 ),
                 hit( "6D", 8 ) );
+    }
+
+    @Test
+    void shouldIgnoreAddingUnsupportedValueTypes() throws Exception
+    {
+        // given  populating an empty index
+        final var ids = LongStream.range( 0L, 10L ).toArray();
+
+        // when   updates of unsupported value types (longs in this case) are processed
+        final var updates = Arrays.stream( ids ).mapToObj( id -> add( id, id ) ).collect( Collectors.toUnmodifiableList() );
+        indexPopulator.add( updates, NULL );
+
+        // then   should not be indexed
+        final var hits = Arrays.stream( ids ).mapToObj( Hit::new ).toArray( Hit[]::new );
+        assertIndexedValues( hits );
     }
 
     @Test
