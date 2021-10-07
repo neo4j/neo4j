@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQueries
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
@@ -912,7 +911,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     val result = endoRewrite(original)
     assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
 
-    val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases, CorrelatedSubQueries))
+    val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases))
     val errors = checkResult.errors.map(error => s"${error.msg} (${error.position})").toSet
     semanticErrors.foreach(msg =>
       assert(errors contains msg, s"Error '$msg' not produced (errors: $errors)}")
@@ -926,7 +925,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     val result = endoRewrite(original)
     assert(result === expected, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
 
-    val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases, CorrelatedSubQueries))
+    val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases))
     assert(checkResult.errors === Seq())
     notificationLogger.notifications should equal(expectedWarnings)
   }

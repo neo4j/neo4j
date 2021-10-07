@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQueries
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseGraphSelector
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
@@ -46,7 +45,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
       SemanticAnalysis(warn = true, features: _*) andThen
       SemanticAnalysis(warn = false, features: _*)
 
-  private val pipeline = pipelineWithFeatures(Seq(CorrelatedSubQueries))
+  private val pipeline = pipelineWithFeatures(Seq.empty)
 
   private val emptyTokenErrorMessage = "'' is not a valid token name. Token names cannot be empty or contain any null-bytes."
 
@@ -746,7 +745,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
 
   test("Subquery with only USE and importing WITH") {
     val query = "WITH 1 AS a CALL { USE x WITH a } RETURN a"
-    expectErrorMessagesWithFeaturesFrom(Seq(UseGraphSelector, CorrelatedSubQueries), query, List(
+    expectErrorMessagesWithFeaturesFrom(Seq(UseGraphSelector), query, List(
       "Query must conclude with a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD",
     ))
   }

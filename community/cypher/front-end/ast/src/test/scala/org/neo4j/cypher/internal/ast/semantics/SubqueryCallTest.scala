@@ -31,7 +31,6 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val clean =
     SemanticState.clean
-      .withFeature(SemanticFeature.CorrelatedSubQueries)
       .withFeature(SemanticFeature.MultipleGraphs)
       .withFeature(SemanticFeature.UseGraphSelector)
       .withFeature(SemanticFeature.ExpressionsInViewInvocations)
@@ -458,26 +457,6 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       .semanticCheck(clean)
       .tap(_.errors.size.shouldEqual(1))
       .tap(_.errors.head.msg.should(include("Variable `y` not defined")))
-  }
-
-  test("correlated subqueries require semantic feature") {
-    // WITH 1 AS a
-    // CALL {
-    //   WITH a
-    //   RETURN 1 AS b
-    // }
-    // RETURN a
-    query(
-      with_(literal(1).as("a")),
-      subqueryCall(
-        with_(varFor("a").aliased),
-        return_(literal(1).as("b"))
-      ),
-      return_(varFor("a").as("a"))
-    )
-      .semanticCheck(SemanticState.clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("Importing") and include("correlated subqueries")))
   }
 
   test("correlated subquery with union") {

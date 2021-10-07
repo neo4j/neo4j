@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -177,7 +176,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         recordCurrentScope(wth)
       )
 
-    checkCorrelatedSubQueriesFeature chain
     checkIllegalImportWith chain
     checkLeadingFrom(outer) chain
     semanticCheckAbstract(
@@ -186,12 +184,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     ) chain
     checkShadowedVariables(outer)
   }
-
-  private def checkCorrelatedSubQueriesFeature: SemanticCheck =
-    importWith match {
-      case Some(wth) => requireFeatureSupport(s"Importing variables into subqueries", SemanticFeature.CorrelatedSubQueries, wth.position)
-      case None      => success
-    }
 
   private def checkLeadingFrom(outer: SemanticState): SemanticCheck =
     leadingGraphSelection match {
