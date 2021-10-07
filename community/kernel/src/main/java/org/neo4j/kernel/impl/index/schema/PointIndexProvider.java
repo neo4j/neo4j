@@ -48,7 +48,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
-import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration;
 
@@ -58,7 +57,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
     public static final IndexCapability CAPABILITY = new PointIndexCapability();
 
     // Ignore everything except GEOMETRY values
-    static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = update -> update.values()[0].valueGroup() != ValueGroup.GEOMETRY;
+    static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = values -> values[0].valueGroup().category() != ValueCategory.GEOMETRY;
     /**
      * Cache of all setting for various specific CRS's found in the config at instantiation of this provider.
      * The config is read once and all relevant CRS configs cached here.

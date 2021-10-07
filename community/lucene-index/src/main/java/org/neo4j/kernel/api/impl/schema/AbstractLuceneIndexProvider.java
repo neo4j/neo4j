@@ -59,14 +59,14 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.util.VisibleForTesting;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 public abstract class AbstractLuceneIndexProvider extends IndexProvider
 {
     // Ignore everything except TEXT values
-    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = update -> update.values()[0].valueGroup() != ValueGroup.TEXT;
+    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = values -> values[0].valueGroup().category() != ValueCategory.TEXT;
 
     private final IndexStorageFactory indexStorageFactory;
     private final Config config;

@@ -19,19 +19,99 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.Value;
 
 @FunctionalInterface
 public interface IndexUpdateIgnoreStrategy
 {
     /**
+     * @param values to process
+     * @return true if values should be ignored by the updater
+     */
+    boolean ignore( Value[] values );
+
+    /**
+     * Default: check the before and after values for a change; otherwise the values
      * @param update the update to process
      * @return true if update should be ignored by updater
      */
-    boolean ignore( ValueIndexEntryUpdate<?> update );
+    default <INDEX_KEY extends SchemaDescriptorSupplier> boolean ignore( ValueIndexEntryUpdate<INDEX_KEY> update )
+    {
+        if ( update.updateMode() == UpdateMode.CHANGED )
+        {
+            return ignore( update.beforeValues() ) && ignore( update.values() );
+        }
+        return ignore( update.values() );
+    }
+
+    /**
+     * Some {@link ValueIndexEntryUpdate}s may be better represented by another in some indexes; especially those that do not support all value types.
+     * Default: {@link UpdateMode#CHANGED} updates, for Indexes that do not support all values; are better represented as an {@link UpdateMode#REMOVED} or
+     * {@link UpdateMode#ADDED} update.
+     *
+     * @param update a {@link ValueIndexEntryUpdate} to convert
+     * @return an equivalent {@link ValueIndexEntryUpdate}
+     */
+    default <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> toEquivalentUpdate( ValueIndexEntryUpdate<INDEX_KEY> update )
+    {
+        // Only CHANGED may need replacing
+        if ( update.updateMode() != UpdateMode.CHANGED )
+        {
+            return update;
+        }
+
+        final var beforeValues = update.beforeValues();
+        final var afterValues = update.values();
+
+        final var shouldRemove = !ignore( beforeValues );
+        final var shouldAdd = !ignore( afterValues );
+
+        if ( shouldRemove && shouldAdd )
+        {
+            return update;
+        }
+
+        final var key = update.indexKey();
+        final var entityId = update.getEntityId();
+
+        if ( shouldRemove )
+        {
+            return IndexEntryUpdate.remove( entityId, key, beforeValues );
+        }
+
+        if ( shouldAdd )
+        {
+            return IndexEntryUpdate.add( entityId, key, afterValues );
+        }
+
+        throw new IllegalStateException( "Attempted a " + UpdateMode.CHANGED + " update, which was not applicable to the index" );
+    }
 
     /**
      * Ignores nothing
      */
-    IndexUpdateIgnoreStrategy NO_IGNORE = update -> false;
+    IndexUpdateIgnoreStrategy NO_IGNORE = new IndexUpdateIgnoreStrategy()
+    {
+        @Override
+        public boolean ignore( Value[] values )
+        {
+            return false;
+        }
+
+        @Override
+        public <INDEX_KEY extends SchemaDescriptorSupplier> boolean ignore( ValueIndexEntryUpdate<INDEX_KEY> update )
+        {
+            return false;
+        }
+
+        @Override
+        public <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> toEquivalentUpdate( ValueIndexEntryUpdate<INDEX_KEY> update )
+        {
+            return update;
+        }
+    };
 }

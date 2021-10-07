@@ -75,6 +75,7 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
@@ -86,7 +87,17 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALY
 
 public class FulltextIndexProvider extends IndexProvider
 {
-    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = IndexUpdateIgnoreStrategy.NO_IGNORE;
+    public static final IndexUpdateIgnoreStrategy UPDATE_IGNORE_STRATEGY = values ->
+    {
+        for ( final var value : values )
+        {
+            if ( value != null && value.valueGroup().category() == ValueCategory.TEXT )
+            {
+                return false;
+            }
+        }
+        return true;
+    };
 
     private final FileSystemAbstraction fileSystem;
     private final Config config;
