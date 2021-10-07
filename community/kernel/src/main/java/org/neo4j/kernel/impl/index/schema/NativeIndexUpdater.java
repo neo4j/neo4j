@@ -61,11 +61,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
     {
         assertOpen();
         ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
-        if ( ignoreStrategy.ignore( valueUpdate ) )
-        {
-            return;
-        }
-        processUpdate( treeKey, valueUpdate, writer, conflictDetectingValueMerger );
+        processUpdate( treeKey, valueUpdate, writer, conflictDetectingValueMerger, ignoreStrategy );
     }
 
     @Override
@@ -84,57 +80,53 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
     }
 
     static <KEY extends NativeIndexKey<KEY>> void processUpdate( KEY treeKey,
-            ValueIndexEntryUpdate<?> update, Writer<KEY,NullValue> writer, ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger )
+                                                                 ValueIndexEntryUpdate<?> update, Writer<KEY,NullValue> writer,
+                                                                 ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger,
+                                                                 IndexUpdateIgnoreStrategy ignoreStrategy )
             throws IndexEntryConflictException
     {
         switch ( update.updateMode() )
         {
-        case ADDED:
-            processAdd( treeKey, update, writer, conflictDetectingValueMerger );
+        case REMOVED:
+            processRemove( treeKey, update.getEntityId(), update.values(), writer, ignoreStrategy );
             break;
         case CHANGED:
-            processChange( treeKey, update, writer, conflictDetectingValueMerger );
-            break;
-        case REMOVED:
-            processRemove( treeKey, update, writer );
+            processRemove( treeKey, update.getEntityId(), update.beforeValues(), writer, ignoreStrategy );
+            // fallthrough
+        case ADDED:
+            processAdd( treeKey, update.getEntityId(), update.values(), writer, conflictDetectingValueMerger, ignoreStrategy );
             break;
         default:
             throw new IllegalArgumentException();
         }
     }
 
-    private static <KEY extends NativeIndexKey<KEY>> void processRemove( KEY treeKey,
-            ValueIndexEntryUpdate<?> update, Writer<KEY,NullValue> writer )
+    private static <KEY extends NativeIndexKey<KEY>> void processRemove( KEY treeKey, long entityId, Value[] values, Writer<KEY,NullValue> writer,
+                                                                         IndexUpdateIgnoreStrategy ignoreStrategy )
     {
+        if ( ignoreStrategy.ignore( values ) )
+        {
+            return;
+        }
         // todo Do we need to verify that we actually removed something at all?
         // todo Difference between online and recovery?
-        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.values() );
+        initializeKeyFromUpdate( treeKey, entityId, values );
         writer.remove( treeKey );
     }
 
-    private static <KEY extends NativeIndexKey<KEY>> void processChange( KEY treeKey,
-            ValueIndexEntryUpdate<?> update, Writer<KEY,NullValue> writer,
-            ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger )
+    private static <KEY extends NativeIndexKey<KEY>> void processAdd( KEY treeKey, long entityId, Value[] values, Writer<KEY,NullValue> writer,
+                                                                      ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger,
+                                                                      IndexUpdateIgnoreStrategy ignoreStrategy )
             throws IndexEntryConflictException
     {
-        // Remove old entry
-        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.beforeValues() );
-        writer.remove( treeKey );
-        // Insert new entry
-        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.values() );
+        if ( ignoreStrategy.ignore( values ) )
+        {
+            return;
+        }
+        initializeKeyFromUpdate( treeKey, entityId, values );
         conflictDetectingValueMerger.controlConflictDetection( treeKey );
         writer.merge( treeKey, NullValue.INSTANCE, conflictDetectingValueMerger );
-        conflictDetectingValueMerger.checkConflict( update.values() );
-    }
-
-    private static <KEY extends NativeIndexKey<KEY>> void processAdd( KEY treeKey,
-            ValueIndexEntryUpdate<?> update, Writer<KEY,NullValue> writer, ConflictDetectingValueMerger<KEY,Value[]> conflictDetectingValueMerger )
-            throws IndexEntryConflictException
-    {
-        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.values() );
-        conflictDetectingValueMerger.controlConflictDetection( treeKey );
-        writer.merge( treeKey, NullValue.INSTANCE, conflictDetectingValueMerger );
-        conflictDetectingValueMerger.checkConflict( update.values() );
+        conflictDetectingValueMerger.checkConflict( values );
     }
 
     static <KEY extends NativeIndexKey<KEY>> void initializeKeyFromUpdate( KEY treeKey, long entityId, Value[] values )

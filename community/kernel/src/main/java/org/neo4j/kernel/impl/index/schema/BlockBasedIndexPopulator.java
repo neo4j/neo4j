@@ -106,7 +106,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
     private final List<ThreadLocalBlockStorage> allScanUpdates = new CopyOnWriteArrayList<>();
     private final ThreadLocal<ThreadLocalBlockStorage> scanUpdates;
     private final ByteBufferFactory bufferFactory;
-    private final IndexUpdateIgnoreStrategy ignoreStrategy;
     private IndexUpdateStorage<KEY> externalUpdates;
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean scanCompleted;
@@ -138,18 +137,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         this.blockStorageMonitor = blockStorageMonitor;
         this.scanUpdates = ThreadLocal.withInitial( this::newThreadLocalBlockStorage );
         this.bufferFactory = bufferFactory;
-        this.ignoreStrategy = indexUpdateIgnoreStrategy();
-    }
-
-    /**
-     * {@link IndexUpdateIgnoreStrategy Ignore strategy} to be used by index updater.
-     * Sub-classes are expected to override this method if they want to use something
-     * other than {@link IndexUpdateIgnoreStrategy#NO_IGNORE}.
-     * @return {@link IndexUpdateIgnoreStrategy} to be used by index updater.
-     */
-    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy()
-    {
-        return IndexUpdateIgnoreStrategy.NO_IGNORE;
     }
 
     private synchronized ThreadLocalBlockStorage newThreadLocalBlockStorage()
@@ -180,8 +167,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
         Path storeFile = indexFiles.getStoreFile();
         Path externalUpdatesFile = storeFile.resolveSibling( storeFile.getFileName() + ".ext" );
         validator = instantiateValueValidator();
-        externalUpdates = new IndexUpdateStorage<>( fileSystem, externalUpdatesFile, bufferFactory.globalAllocator(), smallerBufferSize(), layout,
-                memoryTracker );
+        externalUpdates = new IndexUpdateStorage<>( fileSystem, externalUpdatesFile, bufferFactory.globalAllocator(),
+                                                    smallerBufferSize(), layout, memoryTracker );
     }
 
     protected abstract IndexValueValidator instantiateValueValidator();
@@ -200,7 +187,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
             for ( IndexEntryUpdate<?> update : updates )
             {
                 ValueIndexEntryUpdate<?> valueUpdate = (ValueIndexEntryUpdate<?>) update;
-                if ( ignoreStrategy.ignore( valueUpdate ) )
+                if ( ignoreStrategy.ignore( valueUpdate.values() ) )
                 {
                     continue;
                 }
@@ -495,6 +482,9 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                     {
                         return;
                     }
+                    // A change might just be an add or a remove for indexes not supporting all value types.
+                    // Let's do any necessary conversion now and store it as the actual update the index needs.
+                    valueUpdate = ignoreStrategy.toEquivalentUpdate( (ValueIndexEntryUpdate<?>) update );
                     externalUpdates.add( valueUpdate );
                 }
                 catch ( IOException e )

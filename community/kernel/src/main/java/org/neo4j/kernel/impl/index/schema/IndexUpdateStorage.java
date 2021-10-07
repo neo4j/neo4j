@@ -29,6 +29,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 
@@ -43,8 +44,8 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>>
     private final KEY key2;
     private final NullValue value = NullValue.INSTANCE;
 
-    IndexUpdateStorage( FileSystemAbstraction fs, Path file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, IndexLayout<KEY> layout,
-            MemoryTracker memoryTracker )
+    IndexUpdateStorage( FileSystemAbstraction fs, Path file, ByteBufferFactory.Allocator byteBufferFactory,
+                        int blockSize, IndexLayout<KEY> layout, MemoryTracker memoryTracker )
     {
         super( fs, file, byteBufferFactory, blockSize, memoryTracker );
         this.layout = layout;
@@ -53,39 +54,53 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>>
     }
 
     @Override
-    public void add( IndexEntryUpdate<?> update, PageCursor pageCursor ) throws IOException
-    {
-        ValueIndexEntryUpdate<?> valueUpdate = (ValueIndexEntryUpdate<?>) update;
-        int entrySize = TYPE_SIZE;
-        UpdateMode updateMode = valueUpdate.updateMode();
-        switch ( updateMode )
-        {
-        case ADDED:
-            initializeKeyFromUpdate( key1, valueUpdate.getEntityId(), valueUpdate.values() );
-            entrySize += BlockEntry.entrySize( layout, key1, value );
-            break;
-        case REMOVED:
-            initializeKeyFromUpdate( key1, valueUpdate.getEntityId(), valueUpdate.values() );
-            entrySize += BlockEntry.keySize( layout, key1 );
-            break;
-        case CHANGED:
-            initializeKeyFromUpdate( key1, valueUpdate.getEntityId(), valueUpdate.beforeValues() );
-            initializeKeyFromUpdate( key2, valueUpdate.getEntityId(), valueUpdate.values() );
-            entrySize += BlockEntry.keySize( layout, key1 ) + BlockEntry.entrySize( layout, key2, value );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unknown update mode " + updateMode );
-        }
-
-        prepareWrite( entrySize );
-
-        pageCursor.putByte( (byte) updateMode.ordinal() );
-        IndexUpdateEntry.write( pageCursor, layout, updateMode, key1, key2, value );
-    }
-
-    @Override
     public IndexUpdateCursor<KEY,NullValue> reader( PageCursor pageCursor )
     {
         return new IndexUpdateCursor<>( pageCursor, layout );
+    }
+
+    @Override
+    public void add( IndexEntryUpdate<?> update, PageCursor pageCursor ) throws IOException
+    {
+        ValueIndexEntryUpdate<?> valueUpdate = (ValueIndexEntryUpdate<?>) update;
+        final var entrySize = calculateEntrySize( valueUpdate );
+        write( pageCursor, valueUpdate.updateMode(), entrySize );
+    }
+
+    private int calculateEntrySize( ValueIndexEntryUpdate<?> update )
+    {
+        final var entityId = update.getEntityId();
+        final var values = update.values();
+        final var updateMode = update.updateMode();
+        switch ( updateMode )
+        {
+        case ADDED:
+            return TYPE_SIZE + added( key1, entityId, values );
+        case CHANGED:
+            return TYPE_SIZE + removed( key1, entityId, update.beforeValues() ) + added( key2, entityId, values );
+        case REMOVED:
+            return TYPE_SIZE + removed( key1, entityId, values );
+        default:
+            throw new IllegalArgumentException( "Unknown update mode " + updateMode );
+        }
+    }
+
+    private int added( KEY key, long entityId, Value[] values )
+    {
+        initializeKeyFromUpdate( key, entityId, values );
+        return BlockEntry.entrySize( layout, key, value );
+    }
+
+    private int removed( KEY key, long entityId, Value[] values )
+    {
+        initializeKeyFromUpdate( key, entityId, values );
+        return BlockEntry.keySize( layout, key );
+    }
+
+    private void write( PageCursor pageCursor, UpdateMode updateMode, int entrySize ) throws IOException
+    {
+        prepareWrite( entrySize );
+        pageCursor.putByte( (byte) updateMode.ordinal() );
+        IndexUpdateEntry.write( pageCursor, layout, updateMode, key1, key2, value );
     }
 }

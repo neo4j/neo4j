@@ -53,6 +53,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>>
     public static final byte BYTE_FAILED = 0;
     static final byte BYTE_ONLINE = 1;
     static final byte BYTE_POPULATING = 2;
+    protected final IndexUpdateIgnoreStrategy ignoreStrategy;
 
     private final KEY treeKey;
     private final UniqueIndexSampler uniqueSampler;
@@ -70,9 +71,21 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>>
         super( databaseIndexContext, layout, indexFiles, descriptor );
         this.treeKey = layout.newKey();
         this.uniqueSampler = descriptor.isUnique() ? new UniqueIndexSampler() : null;
+        this.ignoreStrategy = indexUpdateIgnoreStrategy();
     }
 
     abstract NativeIndexReader<KEY> newReader();
+
+    /**
+     * {@link IndexUpdateIgnoreStrategy Ignore strategy} to be used by index updater.
+     * Sub-classes are expected to override this method if they want to use something
+     * other than {@link IndexUpdateIgnoreStrategy#NO_IGNORE}.
+     * @return {@link IndexUpdateIgnoreStrategy} to be used by index updater.
+     */
+    protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy()
+    {
+        return IndexUpdateIgnoreStrategy.NO_IGNORE;
+    }
 
     @Override
     public synchronized void create() throws IOException
@@ -222,7 +235,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>>
         {
             for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
             {
-                NativeIndexUpdater.processUpdate( treeKey, (ValueIndexEntryUpdate<?>) indexEntryUpdate, writer, conflictDetector );
+                NativeIndexUpdater.processUpdate( treeKey, (ValueIndexEntryUpdate<?>) indexEntryUpdate, writer, conflictDetector, ignoreStrategy );
             }
         }
         catch ( IOException e )
