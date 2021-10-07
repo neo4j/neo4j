@@ -87,8 +87,7 @@ public class BasicSystemGraphRealm extends AuthManager
     @Override
     public LoginContext impersonate( LoginContext originalAuth, String userToImpersonate )
     {
-        // TODO decide on error type
-        throw new InvalidArgumentException( "Not supported" );
+        throw new InvalidArgumentException( "Impersonation is not supported in community edition." );
     }
 
     @Override

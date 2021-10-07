@@ -33,14 +33,19 @@ import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstrai
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
+import org.neo4j.cypher.internal.ast.DbmsPrivilege
+import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
+import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.RangeIndexes
+import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
@@ -239,6 +244,17 @@ object Additions {
       case c: CreateUniquePropertyConstraint if c.constraintVersion == ConstraintVersion2 =>
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint using `FOR ... REQUIRE` is not supported in this Cypher version.", c.position)
 
+      // GRANT IMPERSONATE (name) ON DBMS TO role
+      case p@GrantPrivilege(DbmsPrivilege(ImpersonateUserAction), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("IMPERSONATE privilege is not supported in this Cypher version.", p.position)
+
+      // DENY IMPERSONATE (name) ON DBMS TO role
+      case p@DenyPrivilege(DbmsPrivilege(ImpersonateUserAction), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("IMPERSONATE privilege is not supported in this Cypher version.", p.position)
+
+      // REVOKE IMPERSONATE (name) ON DBMS TO role
+      case p@RevokePrivilege(DbmsPrivilege(ImpersonateUserAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("IMPERSONATE privilege is not supported in this Cypher version.", p.position)
     }
 
     private def hasRangeOptions(options: Options): Boolean = options match {
