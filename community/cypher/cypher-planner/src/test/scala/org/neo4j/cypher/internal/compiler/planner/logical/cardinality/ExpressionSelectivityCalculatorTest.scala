@@ -486,7 +486,6 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   private val fakePoint = trueLiteral
   private val nPropDistance = nPredicate(lessThan(function(Distance.name, nProp, fakePoint), literalInt(3)))
   private val rPropDistance = nPredicate(lessThan(function(Distance.name, rProp, fakePoint), literalInt(3)))
-
   test("distance with no label") {
     val calculator = setUpCalculator()
     val distanceResult = calculator(nPropDistance.expr)

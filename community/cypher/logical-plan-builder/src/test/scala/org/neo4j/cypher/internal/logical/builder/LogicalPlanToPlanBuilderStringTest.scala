@@ -769,6 +769,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .pointBoundingBoxNodeIndexSeek("x", "L", "prop","{x: 0.0, y: 1.0, crs: 'cartesian'}", "{x: 100.0, y: 100.0, crs: 'cartesian'}", indexOrder = IndexOrderDescending)
       .build())
 
+  testPlan("pointBoundingBoxRelationshipIndexSeek",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .apply()
+      .|.pointBoundingBoxRelationshipIndexSeek("y", "y1", "y2", "L", "prop", "{x: 1.0, y: 2.0, crs: 'cartesian'}", "{x: 10.0, y: 20.0, crs: 'cartesian'}", argumentIds = Set("x"), getValue = GetValue)
+      .pointBoundingBoxRelationshipIndexSeek("x", "x1", "y1",  "L", "prop","{x: 0.0, y: 1.0, crs: 'cartesian'}", "{x: 100.0, y: 100.0, crs: 'cartesian'}", directed = false, indexOrder = IndexOrderDescending)
+      .build())
+
   testPlan("directedRelationshipByIdSeek",
            new TestPlanBuilder()
              .produceResults("x", "y")
@@ -1242,7 +1250,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
    * This is done via reflection.
    */
   test("all the tests exist") {
-    val methodsWeCantTest = Set("filterExpression", "appendAtCurrentIndent", "nestedPlanExistsExpressionProjection", "nestedPlanCollectExpressionProjection", "pointDistanceNodeIndexSeekExpr", "pointBoundingBoxNodeIndexSeekExpr")
+    val methodsWeCantTest = Set("filterExpression", "appendAtCurrentIndent", "nestedPlanExistsExpressionProjection", "nestedPlanCollectExpressionProjection", "pointDistanceNodeIndexSeekExpr", "pointBoundingBoxNodeIndexSeekExpr", "pointBoundingBoxRelationshipIndexSeekExpr")
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>
         val modifiers = m.getModifiers

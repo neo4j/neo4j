@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.ShortestPaths
@@ -92,6 +93,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
@@ -186,6 +188,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -197,6 +200,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InputPosition.NONE
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -897,6 +901,55 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         indexOrder,
         indexType)(idGen)
       newNode(varFor(plan.idName))
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
+  def pointBoundingBoxRelationshipIndexSeek(rel: String,
+                                            start: String,
+                                            end: String,
+                                            typeName: String,
+                                            property: String,
+                                            lowerLeft: String,
+                                            upperRight: String,
+                                            directed: Boolean = true,
+                                            getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                            indexOrder: IndexOrder = IndexOrderNone,
+                                            argumentIds: Set[String] = Set.empty,
+                                            indexType: IndexType = IndexType.BTREE): IMPL = {
+    pointBoundingBoxRelationshipIndexSeekExpr(rel, start, end, typeName, property, lowerLeft, upperRight, directed, getValue, indexOrder, argumentIds, indexType)
+  }
+
+  def pointBoundingBoxRelationshipIndexSeekExpr(relationship: String,
+                                                startNode: String,
+                                                endNode: String,
+                                                typeName: String,
+                                                property: String,
+                                                lowerLeft: String,
+                                                upperRight: String,
+                                                directed: Boolean = true,
+                                                getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                                indexOrder: IndexOrder = IndexOrderNone,
+                                                argumentIds: Set[String] = Set.empty,
+                                                indexType: IndexType = IndexType.BTREE): IMPL = {
+    val typ = resolver.getRelTypeId(typeName)
+
+    val propId = resolver.getPropertyKeyId(property)
+    val planBuilder = (idGen: IdGen) => {
+      val typeToken = RelationshipTypeToken(typeName, RelTypeId(typ))
+      val propToken = PropertyKeyToken(PropertyKeyName(property)(NONE), PropertyKeyId(propId))
+      val indexedProperty = IndexedProperty(propToken, getValue, NODE_TYPE)
+      val e =
+        RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
+          PointBoundingBoxRange(function("point", parseExpression(lowerLeft)), function("point", parseExpression(upperRight))))(NONE))
+
+      val plan =
+        if (directed) {
+          DirectedRelationshipIndexSeek(relationship,  startNode, endNode, typeToken,  Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
+        } else {
+          UndirectedRelationshipIndexSeek(relationship,  startNode, endNode, typeToken,  Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
+        }
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
