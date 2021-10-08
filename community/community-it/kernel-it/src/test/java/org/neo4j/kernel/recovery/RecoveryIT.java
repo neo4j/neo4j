@@ -94,6 +94,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -106,7 +108,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.point_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.range_indexes_enabled;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.text_indexes_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -117,7 +121,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
@@ -384,12 +388,14 @@ class RecoveryIT
         String property = "prop";
         String btreeIndex = "b-tree index";
         String rangeIndex = "range index";
+        String textIndex = "text index";
         String fullTextIndex = "full text index";
 
         try ( Transaction transaction = database.beginTx() )
         {
             transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.BTREE ).withName( btreeIndex ).create();
             transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.RANGE ).withName( rangeIndex ).create();
+            transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.TEXT ).withName( textIndex ).create();
             transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( fullTextIndex ).create();
             transaction.commit();
         }
@@ -414,10 +420,53 @@ class RecoveryIT
         awaitIndexesOnline( recoveredDatabase );
         try ( InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx() )
         {
-            var propertyId = transaction.kernelTransaction().tokenRead().propertyKey( property );
-            verifyNodeIndexEntries( numberOfNodes, btreeIndex, transaction, exists( propertyId ) );
-            verifyNodeIndexEntries( numberOfNodes, rangeIndex, transaction, exists( propertyId ) );
+            verifyNodeIndexEntries( numberOfNodes, btreeIndex, transaction, allEntries() );
+            verifyNodeIndexEntries( numberOfNodes, rangeIndex, transaction, allEntries() );
+            verifyNodeIndexEntries( numberOfNodes, textIndex, transaction, allEntries() );
             verifyNodeIndexEntries( numberOfNodes, fullTextIndex, transaction, fulltextSearch( "*" ) );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void recoverDatabaseWithNodePointIndex() throws Throwable
+    {
+        GraphDatabaseService database = createDatabase();
+        int numberOfNodes = 10;
+        Label label = Label.label( "myLabel" );
+        String property = "prop";
+        String pointIndex = "point index";
+
+        try ( Transaction transaction = database.beginTx() )
+        {
+            transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.POINT ).withName( pointIndex ).create();
+            transaction.commit();
+        }
+        awaitIndexesOnline( database );
+
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            try ( Transaction tx = database.beginTx() )
+            {
+                Node node = tx.createNode( label );
+
+                node.setProperty( property, Values.pointValue( CoordinateReferenceSystem.Cartesian, i, -i ) );
+                tx.commit();
+            }
+        }
+        managementService.shutdown();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+
+        recoverDatabase();
+
+        GraphDatabaseAPI recoveredDatabase = createDatabase();
+        awaitIndexesOnline( recoveredDatabase );
+        try ( InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx() )
+        {
+            verifyNodeIndexEntries( numberOfNodes, pointIndex, transaction, allEntries() );
         }
         finally
         {
@@ -434,12 +483,14 @@ class RecoveryIT
         String property = "prop";
         String btreeIndex = "b-tree index";
         String rangeIndex = "range index";
+        String textIndex = "text index";
         String fullTextIndex = "full text index";
 
         try ( Transaction transaction = database.beginTx() )
         {
             transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.BTREE ).withName( btreeIndex ).create();
             transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.RANGE ).withName( rangeIndex ).create();
+            transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.TEXT ).withName( textIndex ).create();
             transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( fullTextIndex ).create();
             transaction.commit();
         }
@@ -452,7 +503,7 @@ class RecoveryIT
             for ( int i = 0; i < numberOfRelationships; i++ )
             {
                 Relationship relationship = start.createRelationshipTo( stop, type );
-                relationship.setProperty( property, "value" );
+                relationship.setProperty( property, "value" + i );
             }
             transaction.commit();
         }
@@ -465,10 +516,54 @@ class RecoveryIT
         awaitIndexesOnline( recoveredDatabase );
         try ( InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx() )
         {
-            var propertyId = transaction.kernelTransaction().tokenRead().propertyKey( property );
-            verifyRelationshipIndexEntries( numberOfRelationships, btreeIndex, transaction, exists( propertyId ) );
-            verifyRelationshipIndexEntries( numberOfRelationships, rangeIndex, transaction, exists( propertyId ) );
+            verifyRelationshipIndexEntries( numberOfRelationships, btreeIndex, transaction, allEntries() );
+            verifyRelationshipIndexEntries( numberOfRelationships, rangeIndex, transaction, allEntries() );
+            verifyRelationshipIndexEntries( numberOfRelationships, textIndex, transaction, allEntries() );
             verifyRelationshipIndexEntries( numberOfRelationships, fullTextIndex, transaction, fulltextSearch( "*" ) );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void recoverDatabaseWithRelationshipPointIndex() throws Throwable
+    {
+        GraphDatabaseService database = createDatabase();
+        int numberOfRelationships = 10;
+        RelationshipType type = RelationshipType.withName( "TYPE" );
+        String property = "prop";
+        String pointIndex = "point index";
+
+        try ( Transaction transaction = database.beginTx() )
+        {
+            transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.POINT ).withName( pointIndex ).create();
+            transaction.commit();
+        }
+        awaitIndexesOnline( database );
+
+        try ( Transaction transaction = database.beginTx() )
+        {
+            Node start = transaction.createNode();
+            Node stop = transaction.createNode();
+            for ( int i = 0; i < numberOfRelationships; i++ )
+            {
+                Relationship relationship = start.createRelationshipTo( stop, type );
+                relationship.setProperty( property, Values.pointValue( CoordinateReferenceSystem.Cartesian, i, -i ) );
+            }
+            transaction.commit();
+        }
+        managementService.shutdown();
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+
+        recoverDatabase();
+
+        GraphDatabaseAPI recoveredDatabase = createDatabase();
+        awaitIndexesOnline( recoveredDatabase );
+        try ( InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx() )
+        {
+            verifyRelationshipIndexEntries( numberOfRelationships, pointIndex, transaction, allEntries() );
         }
         finally
         {
@@ -1178,6 +1273,8 @@ class RecoveryIT
         {
             builder = new TestDatabaseManagementServiceBuilder( neo4jLayout )
                     .setConfig( range_indexes_enabled, true )
+                    .setConfig( text_indexes_enabled, true )
+                    .setConfig( point_indexes_enabled, true )
                     .setConfig( preallocate_logical_logs, false )
                     .setConfig( logical_log_rotation_threshold, logThreshold );
             builder = additionalConfiguration( builder );
