@@ -45,7 +45,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
-import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.writeAll;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -104,7 +103,7 @@ public class FullCheckCountsStoreIT
 
         // when
         ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout,
-                defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() ), NONE, NullLogProvider.getInstance(), false, DEFAULT );
+                defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() ), null, NullLogProvider.getInstance(), false, DEFAULT );
 
         // then
         assertThat( result.summary().getGenericErrors() ).contains( errorMessage );

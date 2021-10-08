@@ -52,6 +52,8 @@ import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
@@ -300,6 +302,28 @@ class SchemaChecker
                 }
             }
         }
+    }
+
+    static Function<AbstractBaseRecord,String> moreDescriptiveRecordToStrings( NeoStores neoStores, TokenHolders tokenHolders )
+    {
+        return record ->
+        {
+            String result = record.toString();
+            if ( record instanceof SchemaRecord )
+            {
+                try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+                {
+                    SchemaRule schemaRule =
+                            SchemaStore.readSchemaRule( (SchemaRecord) record, neoStores.getPropertyStore(), tokenHolders, storeCursors );
+                    result += " (" + schemaRule.userDescription( tokenHolders ) + ")";
+                }
+                catch ( Exception e )
+                {
+                    result += " (schema user description not available due to: " + e + ")";
+                }
+            }
+            return result;
+        };
     }
 
     private class BasicSchemaCheck implements SchemaProcessor

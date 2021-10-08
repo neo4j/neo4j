@@ -36,6 +36,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -93,7 +94,6 @@ import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
-import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -189,9 +189,8 @@ class MultipleIndexPopulationStressIT
                               .set( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) )
                               .set( index_population_queue_threshold, concurrentUpdatesQueueFlushThreshold )
                               .build();
-        Result result = cc.runFullConsistencyCheck( RecordDatabaseLayout.of( config ),
-                                                    config,
-                                                    NONE, NullLogProvider.getInstance(), false );
+        Result result =
+                cc.runFullConsistencyCheck( RecordDatabaseLayout.of( config ), config, null, NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
         assertThat( result.isSuccessful() ).as( "Database consistency" )
                                            .withFailMessage( "%nExpecting database to be consistent, but it was not.%n%s%nDetailed report: '%s'%n",
                                                              result.summary(), result.reportFile() )

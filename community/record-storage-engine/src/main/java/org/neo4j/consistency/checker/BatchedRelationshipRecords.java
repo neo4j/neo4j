@@ -19,8 +19,9 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+
+import static org.neo4j.consistency.checking.cache.CacheSlots.longOf;
 
 /**
  * A batch of relationship records as one contiguous piece of memory. Used as means of communication between threads checking relationship chains.
@@ -61,7 +62,7 @@ class BatchedRelationshipRecords
         fields[writeCursor++] = relationshipRecord.getFirstNextRel();
         fields[writeCursor++] = relationshipRecord.getSecondPrevRel();
         fields[writeCursor++] = relationshipRecord.getSecondNextRel();
-        fields[writeCursor++] = CacheSlots.longOf( relationshipRecord.isFirstInFirstChain() ) | CacheSlots.longOf( relationshipRecord.isFirstInSecondChain() ) << 1;
+        fields[writeCursor++] = longOf( relationshipRecord.isFirstInFirstChain() ) | longOf( relationshipRecord.isFirstInSecondChain() ) << 1;
     }
 
     boolean fillNext( RelationshipRecord relationshipRecord )

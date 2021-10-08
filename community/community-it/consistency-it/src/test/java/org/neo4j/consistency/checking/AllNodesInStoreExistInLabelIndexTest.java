@@ -55,7 +55,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
-import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyFile;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
@@ -410,6 +409,6 @@ class AllNodesInStoreExistInLabelIndexTest
         ConsistencyCheckService service = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = db.databaseLayout();
         Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory() );
-        return service.runFullConsistencyCheck( databaseLayout, addAdditionalConfigToCC( config ), NONE, log, false, ConsistencyFlags.DEFAULT );
+        return service.runFullConsistencyCheck( databaseLayout, addAdditionalConfigToCC( config ), null, log, false, ConsistencyFlags.DEFAULT );
     }
 }

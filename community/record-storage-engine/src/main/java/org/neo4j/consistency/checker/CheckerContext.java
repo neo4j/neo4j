@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.token.TokenHolders;
@@ -67,7 +68,8 @@ class CheckerContext
     final IndexAccessor nodeLabelIndex;
     final IndexAccessor relationshipTypeIndex;
     private final AtomicBoolean cancelled;
-    private final DebugContext debugContext;
+    private final Log log;
+    private final boolean verbose;
 
     CheckerContext(
             NeoStores neoStores,
@@ -83,11 +85,11 @@ class CheckerContext
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
-            DebugContext debug,
+            Log log, boolean verbose,
             ConsistencyFlags consistencyFlags )
     {
         this( neoStores, indexAccessors, execution, reporter, cacheAccess, tokenHolders, recordLoader,
-                observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, new AtomicBoolean(), consistencyFlags );
+                observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, log, verbose, new AtomicBoolean(), consistencyFlags );
     }
 
     private CheckerContext(
@@ -104,7 +106,7 @@ class CheckerContext
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
-            DebugContext debug,
+            Log log, boolean verbose,
             AtomicBoolean cancelled,
             ConsistencyFlags consistencyFlags )
     {
@@ -114,7 +116,8 @@ class CheckerContext
         this.indexAccessors = indexAccessors;
         this.nodeLabelIndex = indexAccessors.nodeLabelIndex();
         this.relationshipTypeIndex = indexAccessors.relationshipTypeIndex();
-        this.debugContext = debug;
+        this.log = log;
+        this.verbose = verbose;
         this.consistencyFlags = consistencyFlags;
         this.indexSizes = new IndexSizes( execution, indexAccessors, highNodeId, highRelationshipId, pageCacheTracer );
         this.execution = execution;
@@ -135,7 +138,7 @@ class CheckerContext
     CheckerContext withoutReporting()
     {
         return new CheckerContext( neoStores, indexAccessors, execution, ConsistencyReport.NO_REPORT, cacheAccess,
-                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debugContext,
+                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, log, verbose,
                 cancelled, consistencyFlags );
     }
 
@@ -143,7 +146,7 @@ class CheckerContext
     {
         debug( limiter.toString() );
         timeOperation( "Initialize index sizes", indexSizes::initialize, false );
-        if ( debugContext.debugEnabled() )
+        if ( verbose )
         {
             debugPrintIndexes( indexSizes.largeIndexes( EntityType.NODE ), "considered large node indexes" );
             debugPrintIndexes( indexSizes.smallIndexes( EntityType.NODE ), "considered small node indexes" );
@@ -213,9 +216,9 @@ class CheckerContext
 
     private void debug( boolean linePadded, String format, Object... params )
     {
-        if ( debugContext.debugEnabled() )
+        if ( verbose )
         {
-            debugContext.debug( String.format( (linePadded ? "%n" : "") + format, params ) );
+            log.info( (linePadded ? "%n" : "") + format, params );
         }
     }
 

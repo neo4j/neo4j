@@ -98,7 +98,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST2;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
@@ -154,7 +153,7 @@ class DenseNodeConcurrencyIT
             Config config = deps.resolveDependency( Config.class );
             RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.cast( database.databaseLayout() );
             dbms.shutdown();
-            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, config, NONE,
+            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, config, null,
                     NullLogProvider.getInstance(),
                     deps.resolveDependency( FileSystemAbstraction.class ), false, ConsistencyFlags.DEFAULT );
             assertThat( result.isSuccessful() ).as( new Description()

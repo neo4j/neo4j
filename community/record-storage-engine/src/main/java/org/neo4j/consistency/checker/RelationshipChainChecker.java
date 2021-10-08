@@ -150,18 +150,18 @@ class RelationshipChainChecker implements Checker
         {
             for ( long nodeId = nodeIdRange.from(); nodeId < nodeIdRange.to(); nodeId++ )
             {
-                boolean inUse = client.getBooleanFromCache( nodeId, RelationshipLink.SLOT_IN_USE );
-                boolean hasMultipleRelationships = client.getBooleanFromCache( nodeId, RelationshipLink.SLOT_HAS_MULTIPLE_RELATIONSHIPS );
+                boolean inUse = client.getBooleanFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_IN_USE );
+                boolean hasMultipleRelationships = client.getBooleanFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_HAS_MULTIPLE_RELATIONSHIPS );
                 if ( inUse && !hasMultipleRelationships )
                 {
-                    long reference = client.getFromCache( nodeId, RelationshipLink.SLOT_REFERENCE );
-                    long relationshipId = client.getFromCache( nodeId, RelationshipLink.SLOT_RELATIONSHIP_ID );
-                    long sourceOrTarget = client.getFromCache( nodeId, RelationshipLink.SLOT_SOURCE_OR_TARGET );
-                    long prevOrNext = client.getFromCache( nodeId, RelationshipLink.SLOT_PREV_OR_NEXT );
-                    boolean isFirstInChain = client.getBooleanFromCache( nodeId, RelationshipLink.SLOT_FIRST_IN_CHAIN );
+                    long reference = client.getFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_REFERENCE );
+                    long relationshipId = client.getFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_RELATIONSHIP_ID );
+                    long sourceOrTarget = client.getFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_SOURCE_OR_TARGET );
+                    long prevOrNext = client.getFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_PREV_OR_NEXT );
+                    boolean isFirstInChain = client.getBooleanFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_FIRST_IN_CHAIN );
 
                     boolean consistent;
-                    if ( prevOrNext == RelationshipLink.PREV )
+                    if ( prevOrNext == CacheSlots.RelationshipLink.PREV )
                     {
                         // we don't know here if this chain belongs to a group and has external degrees, because if so it could have any value here
                         consistent = isFirstInChain;
@@ -177,7 +177,8 @@ class RelationshipChainChecker implements Checker
                                 relationshipStore.getRecordByCursor( relationshipId, relationshipStore.newRecord(), FORCE, relationshipCursor );
                         RelationshipRecord referenceRelationship =
                                 relationshipStore.getRecordByCursor( reference, relationshipStore.newRecord(), FORCE, relationshipCursor );
-                        linkOf( sourceOrTarget == RelationshipLink.SOURCE, prevOrNext == RelationshipLink.PREV ).reportDoesNotReferenceBack( reporter, relationship, referenceRelationship );
+                        linkOf( sourceOrTarget == CacheSlots.RelationshipLink.SOURCE,
+                                prevOrNext == CacheSlots.RelationshipLink.PREV ).reportDoesNotReferenceBack( reporter, relationship, referenceRelationship );
                     }
                 }
             }
@@ -233,7 +234,7 @@ class RelationshipChainChecker implements Checker
                             }
                             if ( processStartNode )
                             {
-                                boolean wasInUse = client.getBooleanFromCache( firstNode, RelationshipLink.SLOT_IN_USE );
+                                boolean wasInUse = client.getBooleanFromCache( firstNode, CacheSlots.RelationshipLink.SLOT_IN_USE );
                                 long link = sourceCachePointer.link( relationship );
                                 if ( link < NULL_REFERENCE.longValue() )
                                 {
@@ -241,14 +242,14 @@ class RelationshipChainChecker implements Checker
                                 }
                                 else
                                 {
-                                    client.putToCache( firstNode, relationship.getId(), link, RelationshipLink.SOURCE, prevOrNext, 1,
+                                    client.putToCache( firstNode, relationship.getId(), link, CacheSlots.RelationshipLink.SOURCE, prevOrNext, 1,
                                             CacheSlots.longOf( wasInUse ), CacheSlots.longOf( relationship.isFirstInFirstChain() ) );
                                 }
 
                             }
                             if ( processEndNode )
                             {
-                                boolean wasInUse = client.getBooleanFromCache( secondNode, RelationshipLink.SLOT_IN_USE );
+                                boolean wasInUse = client.getBooleanFromCache( secondNode, CacheSlots.RelationshipLink.SLOT_IN_USE );
 
                                 long link = targetCachePointer.link( relationship );
                                 if ( link < NULL_REFERENCE.longValue() )
@@ -257,7 +258,7 @@ class RelationshipChainChecker implements Checker
                                 }
                                 else
                                 {
-                                    client.putToCache( secondNode, relationship.getId(), link, RelationshipLink.TARGET, prevOrNext, 1,
+                                    client.putToCache( secondNode, relationship.getId(), link, CacheSlots.RelationshipLink.TARGET, prevOrNext, 1,
                                             CacheSlots.longOf( wasInUse ), CacheSlots.longOf( relationship.isFirstInSecondChain() ) );
                                 }
 
@@ -276,8 +277,8 @@ class RelationshipChainChecker implements Checker
         long relationshipId = relationshipCursor.getId();
         long nodeId = link.node( relationshipCursor );
         long linkId = link.link( relationshipCursor );
-        long fromCache = client.getFromCache( nodeId, RelationshipLink.SLOT_RELATIONSHIP_ID );
-        boolean cachedLinkInUse = client.getBooleanFromCache( nodeId, RelationshipLink.SLOT_IN_USE );
+        long fromCache = client.getFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_RELATIONSHIP_ID );
+        boolean cachedLinkInUse = client.getBooleanFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_IN_USE );
         if ( !link.endOfChain( relationshipCursor ) && cachedLinkInUse )
         {
             if ( fromCache != linkId )
@@ -303,11 +304,12 @@ class RelationshipChainChecker implements Checker
                 // OK good we can use the cached values representing a relationship right before us in this chain
                 otherRelationship.clear();
                 otherRelationship.setId( linkId );
-                long other = client.getFromCache( nodeId, RelationshipLink.SLOT_REFERENCE );
-                NodeLink nodeLink = client.getFromCache( nodeId, RelationshipLink.SLOT_SOURCE_OR_TARGET ) == RelationshipLink.SOURCE ? NodeLink.SOURCE : NodeLink.TARGET;
+                long other = client.getFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_REFERENCE );
+                NodeLink nodeLink = client.getFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_SOURCE_OR_TARGET ) == CacheSlots.RelationshipLink.SOURCE
+                                    ? NodeLink.SOURCE : NodeLink.TARGET;
                 nodeLink.setNode( otherRelationship, nodeId );
                 link.setOther( otherRelationship, nodeLink, other );
-                otherRelationship.setInUse( client.getBooleanFromCache( nodeId, RelationshipLink.SLOT_IN_USE ) );
+                otherRelationship.setInUse( client.getBooleanFromCache( nodeId, CacheSlots.RelationshipLink.SLOT_IN_USE ) );
                 otherRelationship.setCreated();
             }
             checkRelationshipLink( direction, link, otherRelationship, relationshipId, nodeId, linkId, storeCursors );
@@ -395,7 +397,7 @@ class RelationshipChainChecker implements Checker
 
     private enum ScanDirection
     {
-        FORWARD( SOURCE_PREV, TARGET_PREV, RelationshipLink.PREV )
+        FORWARD( SOURCE_PREV, TARGET_PREV, CacheSlots.RelationshipLink.PREV )
         {
             @Override
             boolean exclude( long id, long reference )
@@ -415,7 +417,7 @@ class RelationshipChainChecker implements Checker
                 return 0;
             }
         },
-        BACKWARD( SOURCE_NEXT, TARGET_NEXT, RelationshipLink.NEXT )
+        BACKWARD( SOURCE_NEXT, TARGET_NEXT, CacheSlots.RelationshipLink.NEXT )
         {
             @Override
             boolean exclude( long id, long reference )

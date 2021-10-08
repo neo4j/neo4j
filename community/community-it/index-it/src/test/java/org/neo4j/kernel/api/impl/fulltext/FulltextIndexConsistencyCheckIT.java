@@ -51,7 +51,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -725,7 +724,7 @@ class FulltextIndexConsistencyCheckIT
     {
         Config config = Config.defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() );
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
-        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, ProgressMonitorFactory.NONE,
+        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, null,
                 NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
     }
 

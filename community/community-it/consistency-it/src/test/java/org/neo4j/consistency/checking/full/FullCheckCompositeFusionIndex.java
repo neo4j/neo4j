@@ -32,7 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -88,6 +87,6 @@ public class FullCheckCompositeFusionIndex
 
         ConsistencyCheckService checkService = new ConsistencyCheckService();
         return checkService.runFullConsistencyCheck( Neo4jLayout.of( config ).databaseLayout( "neo4j" ),
-                config, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false, DEFAULT );
+                config, null, NullLogProvider.getInstance(), false, DEFAULT );
     }
 }

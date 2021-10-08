@@ -28,35 +28,26 @@ import java.util.Map;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checker.DebugContext;
-import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
-import org.neo4j.consistency.report.ConsistencySummaryStatistics;
-import org.neo4j.consistency.store.DirectStoreAccess;
-import org.neo4j.counts.CountsStore;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -64,7 +55,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.token.TokenHolders;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -73,7 +63,6 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CU
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -130,35 +119,16 @@ public class DetectAllRelationshipInconsistenciesIT
         }
 
         // THEN the checker should find it, where ever it is in the store
-        db = getGraphDatabaseAPI();
-        try
-        {
-            DependencyResolver resolver = db.getDependencyResolver();
-            RecordStorageEngine storageEngine = resolver.resolveDependency( RecordStorageEngine.class );
-            NeoStores neoStores = storageEngine.testAccessNeoStores();
-            CountsStore counts = (CountsStore) storageEngine.countsAccessor();
-            RelationshipGroupDegreesStore groupDegreesStore = storageEngine.relationshipGroupDegreesStore();
-            DirectStoreAccess directStoreAccess = new DirectStoreAccess( neoStores,
-                    db.getDependencyResolver().resolveDependency( IndexProviderMap.class ),
-                    db.getDependencyResolver().resolveDependency( TokenHolders.class ),
-                    db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ),
-                    db.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ) );
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        ConsistencyCheckService.Result result =
+                new ConsistencyCheckService().runFullConsistencyCheck( Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ),
+                        getTuningConfiguration(), null, logProvider, false, ConsistencyFlags.DEFAULT );
+        assertThat( result.isSuccessful() ).isFalse();
+        LogAssertions.assertThat( logProvider ).containsMessages( sabotage.after.toString() );
 
-            int threads = random.intBetween( 2, 10 );
-            FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, threads, ConsistencyFlags.DEFAULT, getTuningConfiguration(),
-                    DebugContext.NO_DEBUG, EntityBasedMemoryLimiter.DEFAULT );
-            AssertableLogProvider logProvider = new AssertableLogProvider( true );
-            ConsistencySummaryStatistics summary = checker.execute( resolver.resolveDependency( PageCache.class ), directStoreAccess, () -> counts,
-                    () -> groupDegreesStore, null, PageCacheTracer.NULL, INSTANCE, logProvider.getLog( FullCheck.class ) );
-            int relationshipInconsistencies = summary.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP );
+        int relationshipInconsistencies = result.summary().getInconsistencyCountForRecordType( RecordType.RELATIONSHIP.name() );
 
-            assertTrue( relationshipInconsistencies > 0, "Couldn't detect sabotaged relationship " + sabotage );
-            assertThat( logProvider ).containsMessages( sabotage.after.toString() );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
+        assertTrue( relationshipInconsistencies > 0, "Couldn't detect sabotaged relationship " + sabotage );
     }
 
     private Config getTuningConfiguration()

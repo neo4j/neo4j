@@ -65,7 +65,6 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
@@ -2076,7 +2075,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             {
                 ConsistencyCheckService cc = new ConsistencyCheckService();
                 ConsistencyCheckService.Result result = cc.runFullConsistencyCheck(
-                        layout, Config.defaults(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
+                        layout, Config.defaults(), null, NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
                 if ( !result.isSuccessful() )
                 {
                     Files.lines( result.reportFile() ).forEach( System.out::println );

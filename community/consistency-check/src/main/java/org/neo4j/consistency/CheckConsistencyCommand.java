@@ -24,6 +24,7 @@ import picocli.CommandLine.Option;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -39,7 +40,6 @@ import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -132,17 +132,13 @@ public class CheckConsistencyCommand extends AbstractCommand
             {
                 checkDbState( ctx.fs(), databaseLayout, config, memoryTracker );
                 // Only output progress indicator if a console receives the output
-                ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
-                if ( System.console() != null )
-                {
-                    progressMonitorFactory = ProgressMonitorFactory.textual( System.out );
-                }
+                PrintStream progressOutput = System.console() != null ? System.out : null;
 
                 ConsistencyCheckService.Result consistencyCheckResult;
                 try ( Log4jLogProvider logProvider = Util.configuredLogProvider( config, System.out ) )
                 {
                     consistencyCheckResult = consistencyCheckService
-                            .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory, logProvider, fileSystem,
+                            .runFullConsistencyCheck( databaseLayout, config, progressOutput, logProvider, fileSystem,
                                     verbose, options.getReportDir().normalize(),
                                     new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure() ) );
                 }

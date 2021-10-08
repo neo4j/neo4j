@@ -51,16 +51,15 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
-import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyDirectory;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
@@ -341,7 +340,7 @@ class IndexConsistencyIT
             ConsistencyCheckService service = new ConsistencyCheckService();
             DatabaseLayout databaseLayout = db.databaseLayout();
             Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory() );
-            return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, fsa, false, ConsistencyFlags.DEFAULT );
+            return service.runFullConsistencyCheck( databaseLayout, config, null, log, fsa, false, ConsistencyFlags.DEFAULT );
         }
     }
 }

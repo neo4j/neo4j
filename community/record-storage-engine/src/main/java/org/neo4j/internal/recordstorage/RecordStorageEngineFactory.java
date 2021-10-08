@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.eclipse.collections.impl.factory.Sets;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -40,6 +41,11 @@ import java.util.function.Function;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
+import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
+import org.neo4j.consistency.checker.RecordStorageConsistencyChecker;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -58,6 +64,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
 import org.neo4j.internal.batchimport.staging.SpectrumExecutionMonitor;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -75,6 +82,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -99,9 +107,11 @@ import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35StoreCursors;
 import org.neo4j.lock.LockService;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
@@ -547,6 +557,33 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         return createMigrationTargetSchemaRuleAccess( stores, cursorContext, memoryTracker, () -> KernelVersion.LATEST );
+    }
+
+    @Override
+    public void consistencyCheck( FileSystemAbstraction fileSystem, DatabaseLayout layout, Config config, PageCache pageCache, IndexProviderMap indexProviders,
+            Log log, ConsistencySummaryStatistics summary, int numberOfThreads, double memoryLimitLeewayFactor, OutputStream progressOutput, boolean verbose,
+            ConsistencyFlags flags, PageCacheTracer pageCacheTracer )
+            throws ConsistencyCheckIncompleteException
+    {
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, RecoveryCleanupWorkCollector.ignore(), layout.getDatabaseName() );
+        try ( NeoStores neoStores = new StoreFactory( layout, config,
+                idGeneratorFactory, pageCache, fileSystem,
+                NullLogProvider.getInstance(), pageCacheTracer, readOnly() ).openAllNeoStores() )
+        {
+            neoStores.start( CursorContext.NULL );
+            ProgressMonitorFactory progressMonitorFactory =
+                    progressOutput != null ? ProgressMonitorFactory.textual( progressOutput ) : ProgressMonitorFactory.NONE;
+            try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( fileSystem, RecordDatabaseLayout.convert( layout ), pageCache,
+                    neoStores, indexProviders, null, idGeneratorFactory, summary, progressMonitorFactory, config, numberOfThreads, log, verbose, flags,
+                    EntityBasedMemoryLimiter.defaultWithLeeway( memoryLimitLeewayFactor ), pageCacheTracer, EmptyMemoryTracker.INSTANCE ) )
+            {
+                checker.check();
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContext cursorContext, MemoryTracker memoryTracker,

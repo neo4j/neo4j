@@ -27,9 +27,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +55,6 @@ import org.neo4j.index.internal.gbptree.GBPTreePointerType;
 import org.neo4j.index.internal.gbptree.InspectingVisitor;
 import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
 import org.neo4j.internal.counts.CountsLayout;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
@@ -88,7 +87,6 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
-import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
@@ -212,12 +210,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @Test
     void shouldReportProgress() throws Exception
     {
-        Writer writer = new StringWriter();
-        ProgressMonitorFactory factory = ProgressMonitorFactory.textual( writer );
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), factory );
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), output );
 
         assertTrue( result.isSuccessful(), "Expected new database to be clean." );
-        assertTrue( writer.toString().contains( "Index structure consistency check" ) );
+        assertTrue( output.toString().contains( "Index structure consistency check" ) );
     }
 
     @Test
@@ -689,7 +686,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
             assertTrue( files.size() > 0, "Expected number of corrupted files to be more than one." );
             ConsistencyCheckService.Result result =
-                    runConsistencyCheck( fs, neo4jHome, layout, NullLogProvider.getInstance(), NONE, DEFAULT );
+                    runConsistencyCheck( fs, neo4jHome, layout, NullLogProvider.getInstance(), null, DEFAULT );
             for ( Path file : files )
             {
                 assertResultContainsMessage( fs, result,
@@ -730,48 +727,48 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider ) throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( logProvider, NONE );
+        return runConsistencyCheck( logProvider, (OutputStream) null );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, Consumer<Config> adaptConfig )
             throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, NONE, DEFAULT, adaptConfig );
+        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, null, DEFAULT, adaptConfig );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( logProvider, NONE, consistencyFlags );
+        return runConsistencyCheck( logProvider, null, consistencyFlags );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ProgressMonitorFactory progressFactory )
+    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, OutputStream progressOutput )
             throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( logProvider, progressFactory, DEFAULT );
+        return runConsistencyCheck( logProvider, progressOutput, DEFAULT );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ProgressMonitorFactory progressFactory,
+    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, OutputStream progressOutput,
             ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressFactory, consistencyFlags );
+        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressOutput, consistencyFlags );
     }
 
     private static ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
-            LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
+            LogProvider logProvider, OutputStream progressOutput, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressFactory, consistencyFlags, config -> {} );
+        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressOutput, consistencyFlags, config -> {} );
     }
 
     private static ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
-            LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig )
+            LogProvider logProvider, OutputStream progressOutput, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig )
             throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         Config config = Config.defaults( neo4j_home, neo4jHome );
         adaptConfig.accept( config );
-        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fs, false, consistencyFlags );
+        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressOutput, logProvider, fs, false, consistencyFlags );
     }
 
     /**

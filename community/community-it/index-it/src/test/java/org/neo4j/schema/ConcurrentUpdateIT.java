@@ -39,7 +39,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -51,6 +50,7 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 @Neo4jLayoutExtension
@@ -123,8 +123,7 @@ class ConcurrentUpdateIT
             managementService.shutdown();
             ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
             Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
-            consistencyCheckService.runFullConsistencyCheck( databaseLayout, config,
-                    ProgressMonitorFactory.NONE, new Log4jLogProvider( System.out ), false );
+            consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, null, new Log4jLogProvider( System.out ), false, DEFAULT );
         }
     }
 

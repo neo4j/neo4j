@@ -33,12 +33,15 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -193,10 +196,24 @@ class IndexSizesTest
         assertTrue( sizes.largeIndexes( entityType ).isEmpty() );
     }
 
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldConsiderLargeNodePointIndexesAsLarge( EntityType entityType ) throws Exception
+    {
+        // given
+        SchemaDescriptor schema = entityType == NODE ? SchemaDescriptors.forLabel( 1, 2 ) : SchemaDescriptors.forRelType( 1, 2 );
+        indexes.add( prototype( entityType ).withSchemaDescriptor( schema ).withIndexType( IndexType.POINT ).materialise(
+                highNodeId ).withIndexCapability( yes() ) );
+        sizes.initialize();
+
+        // when/then
+        assertThat( sizes.largeIndexes( entityType ).size() ).isEqualTo( 1 );
+        assertThat( sizes.smallIndexes( entityType ).size() ).isEqualTo( 0 );
+    }
+
     private void createIndexes( int numSmall, int numLarge, EntityType entityType )
     {
-        IndexCapability capabilityWithValue = mock( IndexCapability.class );
-        when( capabilityWithValue.valueCapability( any() ) ).thenReturn( IndexValueCapability.YES );
+        IndexCapability capabilityWithValue = yes();
         IndexPrototype prototype = prototype( entityType );
 
         int highId = entityType == NODE ? highNodeId : highRelationshipId;
@@ -217,6 +234,13 @@ class IndexSizesTest
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private IndexCapability yes()
+    {
+        IndexCapability capabilityWithValue = mock( IndexCapability.class );
+        when( capabilityWithValue.valueCapability( any() ) ).thenReturn( IndexValueCapability.YES );
+        return capabilityWithValue;
     }
 
     private static IndexPrototype prototype( EntityType entityType )

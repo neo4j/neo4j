@@ -27,6 +27,7 @@ import picocli.CommandLine.MutuallyExclusiveArgsException;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,8 +41,6 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -144,7 +143,7 @@ class CheckConsistencyCommandIT
 
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( neo4jLayout, "mydb" );
         when( consistencyCheckService
-                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( OutputStream.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
@@ -153,7 +152,7 @@ class CheckConsistencyCommandIT
         checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
-                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( OutputStream.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) );
     }
@@ -189,7 +188,7 @@ class CheckConsistencyCommandIT
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( neo4jLayout, "mydb" );
 
         when( consistencyCheckService
-                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( OutputStream.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
@@ -198,7 +197,7 @@ class CheckConsistencyCommandIT
         checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
-                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( OutputStream.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) );
     }
@@ -211,7 +210,7 @@ class CheckConsistencyCommandIT
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
         when( consistencyCheckService
-                .runFullConsistencyCheck( any( RecordDatabaseLayout.class ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                .runFullConsistencyCheck( any( RecordDatabaseLayout.class ), any( Config.class ), any( OutputStream.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.failure( Path.of( "/the/report/path" ), new ConsistencySummaryStatistics() ) );
@@ -364,7 +363,7 @@ class CheckConsistencyCommandIT
 
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( backupLayout ), any( Config.class ),
-                        any( ProgressMonitorFactory.class ),
+                        any( OutputStream.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
@@ -374,7 +373,7 @@ class CheckConsistencyCommandIT
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( backupLayout ), any( Config.class ),
-                        any( ProgressMonitorFactory.class ),
+                        any( OutputStream.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) );
     }

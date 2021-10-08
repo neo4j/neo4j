@@ -53,7 +53,6 @@ import static java.lang.Integer.max;
 import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 
 /**
  * This is a test for triggering a race which was found in and around {@link RecordStorageEngine#apply(CommandsToApply, TransactionApplicationMode)}
@@ -105,7 +104,7 @@ class LabelScanStoreTxApplyRaceIT
         managementService.shutdown();
 
         assertTrue( new ConsistencyCheckService().runFullConsistencyCheck( dbLayout, defaults( GraphDatabaseSettings.neo4j_home, testDirectory.homePath() ),
-                NONE, new Log4jLogProvider( System.out ), false, new ConsistencyFlags( true, true, true ) ).isSuccessful() );
+                null, new Log4jLogProvider( System.out ), false, new ConsistencyFlags( true, true, true ) ).isSuccessful() );
     }
 
     private Runnable creator( AtomicReferenceArray<Node> nodeHeads, int guy )

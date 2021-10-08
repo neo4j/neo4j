@@ -33,20 +33,18 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
+import org.neo4j.consistency.checker.RecordStorageConsistencyChecker;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
-import org.neo4j.consistency.store.DirectStoreAccess;
-import org.neo4j.counts.CountsAccessor;
-import org.neo4j.counts.CountsStore;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -56,18 +54,18 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.Unzip;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.token.TokenHolders;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,8 +74,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_single_automatic_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 public class FullCheckTokenIndexIT
@@ -138,7 +134,7 @@ public class FullCheckTokenIndexIT
         assertFalse( check.isConsistent() );
         assertThat( logStream.toString() ).contains( "refers to a node record that is not in use" );
         assertThat( check.getTotalInconsistencyCount() ).isEqualTo( 1 );
-        assertThat( check.getInconsistencyCountForRecordType( RecordType.LABEL_SCAN_DOCUMENT ) ).isEqualTo( 1 );
+        assertThat( check.getInconsistencyCountForRecordType( RecordType.LABEL_SCAN_DOCUMENT.name() ) ).isEqualTo( 1 );
     }
 
     @Test
@@ -172,7 +168,7 @@ public class FullCheckTokenIndexIT
         assertFalse( check.isConsistent() );
         assertThat( logStream.toString() ).contains( "refers to a node record that is not in use" );
         assertThat( check.getTotalInconsistencyCount() ).isEqualTo( 1 );
-        assertThat( check.getInconsistencyCountForRecordType( RecordType.LABEL_SCAN_DOCUMENT ) ).isEqualTo( 1 );
+        assertThat( check.getInconsistencyCountForRecordType( RecordType.LABEL_SCAN_DOCUMENT.name() ) ).isEqualTo( 1 );
     }
 
     void updateNodeLabelIndex( GraphDatabaseAPI database, IndexDescriptor index ) throws IOException, IndexEntryConflictException
@@ -210,27 +206,20 @@ public class FullCheckTokenIndexIT
         return (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 
-    private ConsistencySummaryStatistics check( GraphDatabaseAPI database, Config config )
-            throws ConsistencyCheckIncompleteException
+    private ConsistencySummaryStatistics check( GraphDatabaseAPI database, Config config ) throws ConsistencyCheckIncompleteException, IOException
     {
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        RecordStorageEngine storageEngine = dependencyResolver.resolveDependency( RecordStorageEngine.class );
-        NeoStores neoStores = storageEngine.testAccessNeoStores();
-        IndexingService indexingService = dependencyResolver.resolveDependency( IndexingService.class );
-        DirectStoreAccess directStoreAccess = new DirectStoreAccess( neoStores,
-                dependencyResolver.resolveDependency( IndexProviderMap.class ),
-                dependencyResolver.resolveDependency( TokenHolders.class ),
-                dependencyResolver.resolveDependency( IndexStatisticsStore.class ),
-                dependencyResolver.resolveDependency( IdGeneratorFactory.class ) );
-        CountsAccessor countsStore = storageEngine.countsAccessor();
-        RelationshipGroupDegreesStore groupDegreesStore = storageEngine.relationshipGroupDegreesStore();
-        PageCache pageCache = dependencyResolver.resolveDependency( PageCache.class );
-        IndexAccessors.IndexAccessorLookup indexAccessorLookup = new LookupAccessorsFromRunningDb( indexingService );
-
-        FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), ConsistencyFlags.DEFAULT,
-                config, DebugContext.NO_DEBUG, EntityBasedMemoryLimiter.DEFAULT );
-        return checker.execute( pageCache, directStoreAccess, () -> (CountsStore) countsStore, () -> groupDegreesStore, indexAccessorLookup,
-                PageCacheTracer.NULL, INSTANCE, logProvider.getLog( "test" ) );
+        dependencyResolver.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "Force before 'online' consistency check" ) );
+        ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
+        LookupAccessorsFromRunningDb accessorLookup =
+                new LookupAccessorsFromRunningDb( dependencyResolver.resolveDependency( IndexingService.class ) );
+        new RecordStorageConsistencyChecker( dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
+                RecordDatabaseLayout.convert( database.databaseLayout() ), dependencyResolver.resolveDependency( PageCache.class ),
+                dependencyResolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores(),
+                dependencyResolver.resolveDependency( IndexProviderMap.class ), accessorLookup,
+                dependencyResolver.resolveDependency( IdGeneratorFactory.class ), summary, ProgressMonitorFactory.NONE, config, 4, logProvider.getLog( "test" ),
+                false, ConsistencyFlags.DEFAULT, EntityBasedMemoryLimiter.DEFAULT, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE ).check();
+        return summary;
     }
 
     private static void awaitIndexesOnline( GraphDatabaseAPI database )

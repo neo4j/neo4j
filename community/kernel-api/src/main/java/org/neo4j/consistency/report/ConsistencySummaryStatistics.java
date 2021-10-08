@@ -20,30 +20,19 @@
 package org.neo4j.consistency.report;
 
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.consistency.RecordType;
-
 public class ConsistencySummaryStatistics
 {
-    private final Map<RecordType, AtomicInteger> inconsistentRecordCount = new EnumMap<>( RecordType.class );
-    private final AtomicLong totalInconsistencyCount = new AtomicLong();
+    private final Map<String,AtomicInteger> inconsistenciesPerType = new ConcurrentHashMap<>();
     private final AtomicLong errorCount = new AtomicLong();
     private final AtomicLong warningCount = new AtomicLong();
     private final List<String> genericErrors = new CopyOnWriteArrayList<>();
-
-    public ConsistencySummaryStatistics()
-    {
-        for ( RecordType recordType : RecordType.values() )
-        {
-            inconsistentRecordCount.put( recordType, new AtomicInteger() );
-        }
-    }
 
     @Override
     public String toString()
@@ -51,7 +40,7 @@ public class ConsistencySummaryStatistics
         StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( '{' );
         result.append( "\n\tNumber of errors: " ).append( errorCount );
         result.append( "\n\tNumber of warnings: " ).append( warningCount );
-        for ( Map.Entry<RecordType, AtomicInteger> entry : inconsistentRecordCount.entrySet() )
+        for ( Map.Entry<String, AtomicInteger> entry : inconsistenciesPerType.entrySet() )
         {
             if ( entry.getValue().get() != 0 )
             {
@@ -69,17 +58,18 @@ public class ConsistencySummaryStatistics
 
     public boolean isConsistent()
     {
-        return totalInconsistencyCount.get() == 0;
+        return getTotalInconsistencyCount() == 0;
     }
 
-    public int getInconsistencyCountForRecordType( RecordType recordType )
+    public int getInconsistencyCountForRecordType( String type )
     {
-        return inconsistentRecordCount.get( recordType ).get();
+        AtomicInteger count = inconsistenciesPerType.get( type );
+        return count != null ? count.get() : 0;
     }
 
     public long getTotalInconsistencyCount()
     {
-        return totalInconsistencyCount.get();
+        return errorCount.get() - genericErrors.size();
     }
 
     public long getTotalWarningCount()
@@ -92,12 +82,11 @@ public class ConsistencySummaryStatistics
         return Collections.unmodifiableList( genericErrors );
     }
 
-    public void update( RecordType recordType, int errors, int warnings )
+    public void update( String type, int errors, int warnings )
     {
         if ( errors > 0 )
         {
-            inconsistentRecordCount.get( recordType ).addAndGet( errors );
-            totalInconsistencyCount.addAndGet( errors );
+            inconsistenciesPerType.computeIfAbsent( type, t -> new AtomicInteger() ).addAndGet( errors );
             errorCount.addAndGet( errors );
         }
         if ( warnings > 0 )

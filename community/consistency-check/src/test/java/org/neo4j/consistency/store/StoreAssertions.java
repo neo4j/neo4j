@@ -23,7 +23,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
@@ -41,8 +40,8 @@ public final class StoreAssertions
     {
         Config configuration = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
         AssertableLogProvider logger = new AssertableLogProvider();
-        ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, configuration,
-                ProgressMonitorFactory.NONE, logger, false, DEFAULT );
+        ConsistencyCheckService.Result result =
+                new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, configuration, null, logger, false, DEFAULT );
 
         assertTrue( result.isSuccessful(), "Consistency check for " + databaseLayout + " found inconsistencies:\n\n" + logger.serialize() );
     }

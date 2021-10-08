@@ -48,7 +48,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -150,7 +149,7 @@ class SpecialisedIndexFullCheckTest
 
             assertFalse( stats.isConsistent() );
             assertThat( logStream.toString() ).contains( "This index entry refers to a node record that is not in use" );
-            assertThat( stats.getInconsistencyCountForRecordType( RecordType.INDEX ) ).isEqualTo( 3 );
+            assertThat( stats.getInconsistencyCountForRecordType( RecordType.INDEX.name() ) ).isEqualTo( 3 );
         }
 
         @ParameterizedTest
@@ -184,7 +183,7 @@ class SpecialisedIndexFullCheckTest
 
             assertFalse( stats.isConsistent() );
             assertThat( logStream.toString() ).contains( "This node was not found in the expected index" );
-            assertThat( stats.getInconsistencyCountForRecordType( RecordType.NODE ) ).isEqualTo( 3 );
+            assertThat( stats.getInconsistencyCountForRecordType( RecordType.NODE.name() ) ).isEqualTo( 3 );
         }
 
         // All the index types doesn't stores values and will not actually be tested by different checkers depending on the size,
@@ -220,7 +219,7 @@ class SpecialisedIndexFullCheckTest
 
             assertFalse( stats.isConsistent() );
             assertThat( logStream.toString() ).contains( "This relationship was not found in the expected index" );
-            assertThat( stats.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP ) ).isEqualTo( 3 );
+            assertThat( stats.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP.name() ) ).isEqualTo( 3 );
         }
 
         @ParameterizedTest
@@ -250,7 +249,7 @@ class SpecialisedIndexFullCheckTest
             ConsistencySummaryStatistics stats = check();
 
             assertFalse( stats.isConsistent() );
-            assertThat( stats.getInconsistencyCountForRecordType( RecordType.INDEX) ).isEqualTo( 2 );
+            assertThat( stats.getInconsistencyCountForRecordType( RecordType.INDEX.name() ) ).isEqualTo( 2 );
         }
 
         Value[] values( IndexDescriptor indexRule )
@@ -278,7 +277,7 @@ class SpecialisedIndexFullCheckTest
 
             ConsistencyCheckService checkService = new ConsistencyCheckService();
             return checkService.runFullConsistencyCheck( Neo4jLayout.of( config ).databaseLayout( "neo4j" ),
-                    config, ProgressMonitorFactory.NONE, logProvider, false, DEFAULT ).summary();
+                    config, null, logProvider, false, DEFAULT ).summary();
         }
 
         private GraphStoreFixture createFixture()

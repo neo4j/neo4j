@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -50,6 +49,7 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 
 @Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
@@ -199,8 +199,8 @@ class ConcurrentChangesOnEntitiesTest
         LogProvider logProvider = new Log4jLogProvider( System.out );
         assertDoesNotThrow( () ->
         {
-            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, Config.defaults(),
-                    ProgressMonitorFactory.textual( System.err ), logProvider, false );
+            ConsistencyCheckService.Result result =
+                    new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, Config.defaults(), System.err, logProvider, false, DEFAULT );
             Assertions.assertTrue( result.isSuccessful() );
         } );
     }

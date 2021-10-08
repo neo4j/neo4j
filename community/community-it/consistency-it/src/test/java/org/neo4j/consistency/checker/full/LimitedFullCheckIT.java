@@ -28,33 +28,25 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
-import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
-import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.cache.CacheSlots.CACHE_LINE_SIZE_BYTES;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class LimitedFullCheckIT extends FullCheckIntegrationTest
 {
@@ -128,15 +120,6 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
         on( stats ).verify( RecordType.NODE, 4 ) // 4 node indexes with 1 entry removed
                 .verify( RecordType.RELATIONSHIP, 4 ) // 4 relationship indexes with 1 entry removed
                 .andThatsAllFolks();
-    }
-
-    private ConsistencySummaryStatistics check( EntityBasedMemoryLimiter.Factory specialMemoryLimiter ) throws ConsistencyCheckIncompleteException
-    {
-        FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), ConsistencyFlags.DEFAULT, Config.defaults(),
-                        DebugContext.NO_DEBUG, specialMemoryLimiter );
-
-        return checker.execute( fixture.getInstantiatedPageCache(), fixture.readOnlyDirectStoreAccess(), fixture.counts(), fixture.groupDegrees(),
-                fixture.indexAccessorLookup(), PageCacheTracer.NULL, INSTANCE, logProvider.getLog( "test" ) );
     }
 
     private Pair<Long,Long> addMoreIndexedEntries( long highEntityId, boolean moreNodesThanRelationships )

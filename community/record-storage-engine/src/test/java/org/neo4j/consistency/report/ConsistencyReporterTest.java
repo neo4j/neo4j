@@ -42,7 +42,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -64,7 +63,6 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
@@ -182,7 +180,7 @@ class ConsistencyReporterTest
             }
             if ( type == TokenScanDocument.class )
             {
-                return new TokenScanDocument( new EntityTokenRangeImpl( 0, new long[][] {}, NODE ) );
+                return new TokenScanDocument( null );
             }
             if ( type == IndexEntry.class )
             {
@@ -208,9 +206,8 @@ class ConsistencyReporterTest
             }
             if ( type == RelationshipGroupRecord.class )
             {
-                return new RelationshipGroupRecord( 0 )
-                        .initialize( false, 1, Record.NULL_REFERENCE.longValue(), Record.NULL_REFERENCE.longValue(), Record.NULL_REFERENCE.longValue(), Record.NULL_REFERENCE.longValue(),
-                                Record.NULL_REFERENCE.longValue() );
+                return new RelationshipGroupRecord( 0 ).initialize( false, 1, Record.NULL_REFERENCE.longValue(), Record.NULL_REFERENCE.longValue(),
+                        Record.NULL_REFERENCE.longValue(), Record.NULL_REFERENCE.longValue(), Record.NULL_REFERENCE.longValue() );
             }
             if ( type == long.class )
             {

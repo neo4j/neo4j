@@ -73,6 +73,6 @@ public class InconsistencyReport implements InconsistencyLogger
 
     public void updateSummary( RecordType type, int errors, int warnings )
     {
-        summary.update( type, errors, warnings );
+        summary.update( type.name(), errors, warnings );
     }
 }

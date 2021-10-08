@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -33,6 +34,9 @@ import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
@@ -54,7 +58,9 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.lock.LockService;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
@@ -231,6 +237,28 @@ public interface StorageEngineFactory
 
     Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache,
             PageCacheTracer pageCacheTracer, Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace );
+
+    /**
+     * Checks consistency of a store.
+     *
+     * @param fileSystem file system the store is on.
+     * @param layout layout of the store.
+     * @param config configuration to use.
+     * @param pageCache page cache to load pages into.
+     * @param indexProviders index providers for accessing indexes to check against the store.
+     * @param log to log inconsistencies/warnings to.
+     * @param summary to update when finding inconsistencies.
+     * @param numberOfThreads max number of threads to use.
+     * @param memoryLimitLeewayFactor factor between 0..1 of available machine memory to use.
+     * @param progressOutput output where progress of the check is printed, or {@code null} if no progress should be printed.
+     * @param verbose whether or not to print verbose progress output.
+     * @param flags which parts of the store/indexes to check.
+     * @param pageCacheTracer to trace cursor access.
+     * @throws ConsistencyCheckIncompleteException on failure doing the consistency check.
+     */
+    void consistencyCheck( FileSystemAbstraction fileSystem, DatabaseLayout layout, Config config, PageCache pageCache, IndexProviderMap indexProviders,
+            Log log, ConsistencySummaryStatistics summary, int numberOfThreads, double memoryLimitLeewayFactor, OutputStream progressOutput, boolean verbose,
+            ConsistencyFlags flags, PageCacheTracer pageCacheTracer ) throws ConsistencyCheckIncompleteException;
 
     /**
      * @return the default {@link StorageEngineFactory}.

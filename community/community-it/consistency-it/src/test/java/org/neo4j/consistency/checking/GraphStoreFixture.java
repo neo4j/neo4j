@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -90,7 +89,6 @@ import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
-import org.neo4j.util.Preconditions;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -158,7 +156,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
         directStoreAccess = new DirectStoreAccess( neoStores,
                 dependencyResolver.resolveDependency( IndexProviderMap.class ),
                 dependencyResolver.resolveDependency( TokenHolders.class ),
-                dependencyResolver.resolveDependency( IndexStatisticsStore.class ),
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ) );
         countsStore = storageEngine.countsAccessor();
         storeCursors = storageEngine.createStorageCursors( NULL );
@@ -194,22 +191,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     public DirectStoreAccess directStoreAccess()
     {
-        return directStoreAccess( false );
-    }
-
-    public DirectStoreAccess readOnlyDirectStoreAccess()
-    {
-        return directStoreAccess( false );
-    }
-
-    public PageCache getInstantiatedPageCache()
-    {
-        return pageCache;
-    }
-
-    private DirectStoreAccess directStoreAccess( boolean readOnly )
-    {
-        Preconditions.checkState( !readOnly, "Doesn't support read-only yet" );
         return directStoreAccess;
     }
 
@@ -221,6 +202,11 @@ public abstract class GraphStoreFixture implements AutoCloseable
     public ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees()
     {
         return () -> groupDegreesStore;
+    }
+
+    public GraphDatabaseAPI database()
+    {
+        return database;
     }
 
     /**

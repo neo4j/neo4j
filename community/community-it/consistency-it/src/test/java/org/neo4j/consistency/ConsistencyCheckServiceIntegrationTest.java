@@ -46,7 +46,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Strings;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -82,6 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
+import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -166,13 +166,13 @@ public class ConsistencyCheckServiceIntegrationTest
         try ( Lifespan life = new Lifespan( jobScheduler );
               PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
         {
-            var result = service.runFullConsistencyCheck( fixture.databaseLayout(), Config.defaults( settings() ), ProgressMonitorFactory.NONE,
+            var result = service.runFullConsistencyCheck( fixture.databaseLayout(), Config.defaults( settings() ), null,
                     NullLogProvider.getInstance(), testDirectory.getFileSystem(), pageCache, false, ConsistencyFlags.DEFAULT,
                     pageCacheTracer, INSTANCE );
 
             assertFalse( result.isSuccessful() );
             assertThat( pageCacheTracer.pins() ).isGreaterThanOrEqualTo( 74 );
-            assertThat( pageCacheTracer.unpins() ).isGreaterThanOrEqualTo( 74 );
+            assertThat( pageCacheTracer.unpins() ).isEqualTo( pageCacheTracer.pins() );
             assertThat( pageCacheTracer.hits() ).isGreaterThanOrEqualTo( 35 );
             assertThat( pageCacheTracer.faults() ).isGreaterThanOrEqualTo( 39 );
         }
@@ -422,8 +422,7 @@ public class ConsistencyCheckServiceIntegrationTest
             throws ConsistencyCheckIncompleteException
     {
         fixture.close();
-        return service.runFullConsistencyCheck( databaseLayout,
-                configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
+        return service.runFullConsistencyCheck( databaseLayout, configuration, null, NullLogProvider.getInstance(), false, DEFAULT );
     }
 
     protected String getRecordFormatName()

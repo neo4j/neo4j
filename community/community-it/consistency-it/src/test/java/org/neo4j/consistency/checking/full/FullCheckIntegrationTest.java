@@ -44,31 +44,32 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
+import org.neo4j.consistency.checker.RecordStorageConsistencyChecker;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
 import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
-import org.neo4j.counts.CountsStore;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -76,6 +77,8 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -86,8 +89,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
@@ -115,7 +120,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -136,7 +144,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
-import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.constraintIndexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.indexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.nodePropertyExistenceConstraintRule;
@@ -2609,7 +2616,7 @@ public class FullCheckIntegrationTest
 
         // then number of relationship inconsistencies may be 1 or 2, because in a fail-fast setting not all failures are necessarily reported
         // before the checker is aborted. The driver for this arose when adding memory-limited testing to the new checker.
-        int relationshipInconsistencies = stats.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP );
+        int relationshipInconsistencies = stats.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP.name() );
         assertThat( relationshipInconsistencies ).isIn( 1, 2 );
         assertEquals( stats.getTotalInconsistencyCount(), relationshipInconsistencies );
     }
@@ -2962,29 +2969,25 @@ public class FullCheckIntegrationTest
         void create( TransactionDataBuilder tx, IdGenerator next, long propertyRecordId );
     }
 
-    protected ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException
+    protected ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException, IOException
     {
-        DirectStoreAccess stores = fixture.readOnlyDirectStoreAccess();
-        return check( fixture.getInstantiatedPageCache(), stores, fixture.counts(), fixture.groupDegrees() );
+        return check( memoryLimit() );
     }
 
-    private ConsistencySummaryStatistics check( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts,
-            ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees ) throws ConsistencyCheckIncompleteException
+    protected ConsistencySummaryStatistics check( EntityBasedMemoryLimiter.Factory memoryLimiter ) throws ConsistencyCheckIncompleteException, IOException
     {
-        Config config = config();
-        return check( pageCache, stores, counts, groupDegrees, config );
-    }
-
-    private ConsistencySummaryStatistics check( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts,
-            ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees, Config config )
-            throws ConsistencyCheckIncompleteException
-    {
-        final var consistencyFlags = new ConsistencyFlags( true, true, true );
-        FullCheck checker =
-                new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), consistencyFlags, config, DebugContext.NO_DEBUG,
-                        memoryLimit() );
-        return checker.execute( pageCache, stores, counts, groupDegrees, fixture.indexAccessorLookup(), PageCacheTracer.NULL, INSTANCE,
-                logProvider.getLog( "test" ) );
+        DependencyResolver dependencyResolver = fixture.database().getDependencyResolver();
+        dependencyResolver.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "Force before 'online' consistency check" ) );
+        ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
+        LookupAccessorsFromRunningDb accessorLookup =
+                new LookupAccessorsFromRunningDb( dependencyResolver.resolveDependency( IndexingService.class ) );
+        new RecordStorageConsistencyChecker( dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
+                RecordDatabaseLayout.convert( fixture.databaseLayout() ), dependencyResolver.resolveDependency( PageCache.class ),
+                dependencyResolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores(),
+                dependencyResolver.resolveDependency( IndexProviderMap.class ), accessorLookup,
+                dependencyResolver.resolveDependency( IdGeneratorFactory.class ), summary, ProgressMonitorFactory.NONE, config(), 4,
+                logProvider.getLog( "test" ), false, ConsistencyFlags.DEFAULT, memoryLimiter, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE ).check();
+        return summary;
     }
 
     protected EntityBasedMemoryLimiter.Factory memoryLimit()
@@ -3296,7 +3299,7 @@ public class FullCheckIntegrationTest
                 throw new IllegalStateException( "Tried to verify the same type twice: " + type );
             }
             assertEquals( inconsistencies,
-                    stats.getInconsistencyCountForRecordType( type ), "Inconsistencies of type: " + type );
+                    stats.getInconsistencyCountForRecordType( type.name() ), "Inconsistencies of type: " + type );
             total += inconsistencies;
             return this;
         }

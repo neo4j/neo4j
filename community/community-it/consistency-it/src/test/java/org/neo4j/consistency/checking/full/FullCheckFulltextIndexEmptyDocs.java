@@ -26,7 +26,6 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -50,7 +49,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
-import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -94,8 +92,8 @@ public class FullCheckFulltextIndexEmptyDocs
         ConsistencyCheckService.Result result;
         try
         {
-            result = new ConsistencyCheckService().runFullConsistencyCheck( layout, config, NONE, NullLogProvider.getInstance(), fs, pageCache,
-                    DebugContext.NO_DEBUG, layout.databaseDirectory(), DEFAULT, NULL, INSTANCE );
+            result = new ConsistencyCheckService().runFullConsistencyCheck( layout, config, null, NullLogProvider.getInstance(), fs, pageCache,
+                    false, layout.databaseDirectory(), DEFAULT, NULL, INSTANCE );
         }
         finally
         {
