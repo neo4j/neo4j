@@ -42,7 +42,6 @@ import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
-import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -56,7 +55,6 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.consistency.checker.NodeChecker.compareTwoSortedLongArrays;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.checker.RecordLoading.lightClear;
-import static org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl.NO_TOKENS;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 /**
@@ -273,7 +271,7 @@ class RelationshipChecker implements Checker
         }
         else
         {
-            TokenScanDocument document = new TokenScanDocument( new EntityTokenRangeImpl( relationshipId / Long.SIZE, NO_TOKENS, RELATIONSHIP ) );
+            TokenScanDocument document = new TokenScanDocument( null );
             reporter.forRelationshipTypeScan( document ).relationshipTypeNotInIndex( recordLoader.relationship( relationshipId, storeCursors ), type );
         }
     }

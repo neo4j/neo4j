@@ -45,7 +45,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
-import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
@@ -63,7 +62,6 @@ import static org.apache.commons.lang3.math.NumberUtils.min;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.checker.RecordLoading.lightClear;
-import static org.neo4j.consistency.checking.cache.CacheSlots.longOf;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
@@ -165,7 +163,7 @@ class NodeChecker implements Checker
                 }
 
                 nextRelCacheFields[CacheSlots.NodeLink.SLOT_RELATIONSHIP_ID] = nextRel;
-                nextRelCacheFields[CacheSlots.NodeLink.SLOT_IS_DENSE] = longOf( nodeRecord.isDense() );
+                nextRelCacheFields[CacheSlots.NodeLink.SLOT_IS_DENSE] = CacheSlots.longOf( nodeRecord.isDense() );
                 usedNodes++;
 
                 // Labels
@@ -183,14 +181,14 @@ class NodeChecker implements Checker
                     labelField = NO_LABELS_FIELD.longValue();
                 }
                 boolean hasSingleLabel = labels != null && labels.length == 1;
-                nextRelCacheFields[CacheSlots.NodeLink.SLOT_HAS_INLINED_LABELS] = longOf( hasInlinedLabels );
+                nextRelCacheFields[CacheSlots.NodeLink.SLOT_HAS_INLINED_LABELS] = CacheSlots.longOf( hasInlinedLabels );
                 nextRelCacheFields[CacheSlots.NodeLink.SLOT_LABELS] = hasSingleLabel
                         // If this node has only a single label then put it straight in there w/o encoding, along w/ SLOT_HAS_SINGLE_LABEL=1
                         // this makes RelationshipChecker "parse" the cached node labels more efficiently for single-label nodes
                         ? labels[0]
                         // Otherwise put the encoded label field if inlined, otherwise a ref to the cached dynamic labels
                         : hasInlinedLabels ? labelField : observedCounts.cacheDynamicNodeLabels( labels );
-                nextRelCacheFields[CacheSlots.NodeLink.SLOT_HAS_SINGLE_LABEL] = longOf( hasSingleLabel );
+                nextRelCacheFields[CacheSlots.NodeLink.SLOT_HAS_SINGLE_LABEL] = CacheSlots.longOf( hasSingleLabel );
 
                 // Properties
                 lightClear( propertyValues );
@@ -334,7 +332,7 @@ class NodeChecker implements Checker
         {
             for ( long label : labels )
             {
-                reporter.forNodeLabelScan( new TokenScanDocument( new EntityTokenRangeImpl( nodeId / Long.SIZE, EntityTokenRangeImpl.NO_TOKENS, NODE ) ) )
+                reporter.forNodeLabelScan( new TokenScanDocument( null ) )
                         .nodeLabelNotInIndex( recordLoader.node( nodeId, storeCursors ), label );
             }
         }

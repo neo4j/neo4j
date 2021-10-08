@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.counts.CountsVisitor;
@@ -37,9 +38,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLink.SLOT_HAS_INLINED_LABELS;
-import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLink.SLOT_HAS_SINGLE_LABEL;
-import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLink.SLOT_LABELS;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.internal.recordstorage.RelationshipCounter.labelsCountsLength;
@@ -123,8 +121,8 @@ class CountsState implements AutoCloseable
                 {
                     return EMPTY_LONG_ARRAY;
                 }
-                boolean hasSingleLabel = cacheAccessClient.getBooleanFromCache( nodeId, SLOT_HAS_SINGLE_LABEL );
-                long labelField = cacheAccessClient.getFromCache( nodeId, SLOT_LABELS );
+                boolean hasSingleLabel = cacheAccessClient.getBooleanFromCache( nodeId, CacheSlots.NodeLink.SLOT_HAS_SINGLE_LABEL );
+                long labelField = cacheAccessClient.getFromCache( nodeId, CacheSlots.NodeLink.SLOT_LABELS );
                 if ( hasSingleLabel )
                 {
                     // Just grab the field, which represents a single label and then terminate the array with -1
@@ -134,7 +132,7 @@ class CountsState implements AutoCloseable
                 }
                 else
                 {
-                    boolean hasInlinedLabels = cacheAccessClient.getBooleanFromCache( nodeId, SLOT_HAS_INLINED_LABELS );
+                    boolean hasInlinedLabels = cacheAccessClient.getBooleanFromCache( nodeId, CacheSlots.NodeLink.SLOT_HAS_INLINED_LABELS );
                     return hasInlinedLabels ? parseInlined( labelField ) : dynamicNodeLabelsCache.get( labelField, labelsHolder );
                 }
             }

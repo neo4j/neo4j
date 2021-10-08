@@ -32,9 +32,9 @@ public class TokenScanDocument extends AbstractBaseRecord
 
     public TokenScanDocument( EntityTokenRange entityTokenRange )
     {
-        super( entityTokenRange.id() );
+        super( entityTokenRange != null ? entityTokenRange.id() : -1 );
         this.entityTokenRange = entityTokenRange;
-        setInUse( true );
+        setInUse( entityTokenRange != null );
     }
 
     @Override
@@ -42,11 +42,6 @@ public class TokenScanDocument extends AbstractBaseRecord
     {
         super.clear();
         this.entityTokenRange = null;
-    }
-
-    public EntityTokenRange getEntityTokenRange()
-    {
-        return entityTokenRange;
     }
 
     @Override
@@ -58,6 +53,6 @@ public class TokenScanDocument extends AbstractBaseRecord
     @Override
     public String toString()
     {
-        return entityTokenRange.toString();
+        return entityTokenRange != null ? entityTokenRange.toString() : "<no token scan data>";
     }
 }

@@ -19,25 +19,10 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
-
 public class ConsistencyCheckIncompleteException extends Exception
 {
     public ConsistencyCheckIncompleteException( Throwable cause )
     {
         super( "Full consistency check did not complete", cause );
-    }
-
-    @Override
-    public void printStackTrace( PrintStream s )
-    {
-        super.printStackTrace( s );
-    }
-
-    @Override
-    public void printStackTrace( PrintWriter s )
-    {
-        super.printStackTrace( s );
     }
 }

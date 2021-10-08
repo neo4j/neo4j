@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -65,7 +66,7 @@ class SchemaComplianceChecker implements AutoCloseable
     private final Iterable<IndexDescriptor> indexes;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
-    private final DefaultNodePropertyAccessor propertyAccessor;
+    private final NodePropertyAccessor propertyAccessor;
 
     SchemaComplianceChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties, Iterable<IndexDescriptor> indexes,
             CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )

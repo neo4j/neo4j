@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -51,8 +52,6 @@ import org.neo4j.token.api.TokenHolder;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
 import static org.neo4j.consistency.checker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
-import static org.neo4j.consistency.checking.cache.CacheSlots.ID_SLOT_SIZE;
-import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.defaultByteArray;
 
 /**
  * A consistency checker for a {@link RecordStorageEngine}, focused on keeping abstractions to a minimum and having clean and understandable
@@ -65,7 +64,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
     private static final String SCHEMA_CONSISTENCY_CHECKER_TAG = "schemaConsistencyChecker";
     private static final String CONSISTENCY_CHECKER_TOKEN_LOADER_TAG = "consistencyCheckerTokenLoader";
-    static final int[] DEFAULT_SLOT_SIZES = {ID_SLOT_SIZE, ID_SLOT_SIZE, 1, 1, 1, 1, 1, 1 /*2 bits unused*/};
+    static final int[] DEFAULT_SLOT_SIZES = {CacheSlots.ID_SLOT_SIZE, CacheSlots.ID_SLOT_SIZE, 1, 1, 1, 1, 1, 1 /*2 bits unused*/};
 
     private final PageCache pageCache;
     private final NeoStores neoStores;
@@ -111,7 +110,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                 DEFAULT_IDS_PER_CHUNK );
         RecordLoading recordLoading = new RecordLoading( neoStores );
         this.limiter = instantiateMemoryLimiter( memoryLimit );
-        this.cacheAccess = new DefaultCacheAccess( defaultByteArray( limiter.rangeSize(), memoryTracker ), Counts.NONE, numberOfThreads );
+        this.cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( limiter.rangeSize(), memoryTracker ), Counts.NONE, numberOfThreads );
         this.observedCounts = new CountsState( neoStores, cacheAccess, memoryTracker );
         this.progress = progressFactory.multipleParts( "Consistency check" );
         this.context = new CheckerContext( neoStores, indexAccessors, execution,

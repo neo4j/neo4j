@@ -22,26 +22,18 @@ package org.neo4j.consistency.report;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.helpers.Strings;
-import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.Level;
 import org.neo4j.logging.LogAssert;
-
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
-import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
-import static org.neo4j.logging.LogAssertions.assertThat;
+import org.neo4j.logging.LogAssertions;
 
 class MessageConsistencyLoggerTest
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final InconsistencyMessageLogger logger = new InconsistencyMessageLogger( logProvider.getLog( getClass() ) );
-    private final LogAssert logMatcher = assertThat( logProvider ).forClass( MessageConsistencyLoggerTest.class );
+    private final LogAssert logMatcher = LogAssertions.assertThat( logProvider ).forClass( MessageConsistencyLoggerTest.class );
 
     @Test
     void shouldFormatErrorForRecord()
@@ -50,7 +42,7 @@ class MessageConsistencyLoggerTest
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
 
         // then
-        logMatcher.forLevel( ERROR )
+        logMatcher.forLevel( Level.ERROR )
                 .containsMessages( join( "sample message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) );
     }
 
@@ -61,7 +53,7 @@ class MessageConsistencyLoggerTest
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), "multiple\n line\r\n message", 1, 2 );
 
         // then
-        logMatcher.forLevel( ERROR )
+        logMatcher.forLevel( Level.ERROR )
                 .containsMessages( join( "multiple line message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) );
     }
 
@@ -72,7 +64,7 @@ class MessageConsistencyLoggerTest
         logger.warning( RecordType.NEO_STORE, new NeoStoreRecord(), "sample message", 1, 2 );
 
         // then
-        logMatcher.forLevel( WARN )
+        logMatcher.forLevel( Level.WARN )
                 .containsMessages( join( "sample message", neoStoreRecord( true, -1 ), "Inconsistent with: 1 2" ) );
     }
 
@@ -83,33 +75,11 @@ class MessageConsistencyLoggerTest
         logger.error( RecordType.NEO_STORE, new NeoStoreRecord(), new NeoStoreRecord(), "sample message", 1, 2 );
 
         // then
-        logMatcher.forLevel( ERROR )
+        logMatcher.forLevel( Level.ERROR )
                 .containsMessages( join( "sample message",
                         "- " + neoStoreRecord( true, -1 ),
                         "+ " + neoStoreRecord( true, -1 ),
                         "Inconsistent with: 1 2" ) );
-    }
-
-    @Test
-    void shouldAdaptLogMessageToEntityTokenRangeTypeNode()
-    {
-        // when
-        logger.error( RecordType.LABEL_SCAN_DOCUMENT, new TokenScanDocument( new EntityTokenRangeImpl( 0, new long[0][], NODE ) ),
-                "Some label index error", new NodeRecord( 1 ) );
-
-        // then
-        logMatcher.containsMessages( "NodeLabelRange" );
-    }
-
-    @Test
-    void shouldAdaptLogMessageToEntityTokenRangeTypeRelationship()
-    {
-        // when
-        logger.error( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, new TokenScanDocument( new EntityTokenRangeImpl( 0, new long[0][], RELATIONSHIP ) ),
-                "Some relationship type error", new RelationshipRecord( 1 ) );
-
-        // then
-        logMatcher.containsMessages( "RelationshipTypeRange" );
     }
 
     private static String join( String firstLine, String... lines )

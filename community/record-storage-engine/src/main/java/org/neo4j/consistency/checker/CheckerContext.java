@@ -36,7 +36,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
+import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.Stopwatch;
@@ -64,8 +64,8 @@ class CheckerContext
     final MemoryTracker memoryTracker;
     final long highNodeId;
     final long highRelationshipId;
-    final TokenIndexAccessor nodeLabelIndex;
-    final TokenIndexAccessor relationshipTypeIndex;
+    final IndexAccessor nodeLabelIndex;
+    final IndexAccessor relationshipTypeIndex;
     private final AtomicBoolean cancelled;
     private final DebugContext debugContext;
 

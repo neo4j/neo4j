@@ -34,9 +34,9 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;

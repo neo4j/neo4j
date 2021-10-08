@@ -22,9 +22,9 @@ package org.neo4j.consistency.checker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;

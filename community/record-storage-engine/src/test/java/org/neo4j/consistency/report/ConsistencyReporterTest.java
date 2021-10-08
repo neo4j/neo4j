@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -68,7 +69,6 @@ import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 class ConsistencyReporterTest
 {
@@ -209,8 +209,8 @@ class ConsistencyReporterTest
             if ( type == RelationshipGroupRecord.class )
             {
                 return new RelationshipGroupRecord( 0 )
-                        .initialize( false, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                                NULL_REFERENCE.longValue() );
+                        .initialize( false, 1, Record.NULL_REFERENCE.longValue(), Record.NULL_REFERENCE.longValue(), Record.NULL_REFERENCE.longValue(), Record.NULL_REFERENCE.longValue(),
+                                Record.NULL_REFERENCE.longValue() );
             }
             if ( type == long.class )
             {

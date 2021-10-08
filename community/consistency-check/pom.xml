@@ -109,5 +109,10 @@
             <artifactId>neo4j-record-storage-engine</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-storage-engine-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>

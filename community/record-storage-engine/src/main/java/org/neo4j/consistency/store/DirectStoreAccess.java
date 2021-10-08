@@ -21,7 +21,6 @@ package org.neo4j.consistency.store;
 
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.token.TokenHolders;
 
@@ -30,16 +29,14 @@ public class DirectStoreAccess
     private final NeoStores nativeStores;
     private final IndexProviderMap indexes;
     private final TokenHolders tokenHolders;
-    private final IndexStatisticsStore indexStatisticsStore;
     private final IdGeneratorFactory idGeneratorFactory;
 
     public DirectStoreAccess( NeoStores nativeStores, IndexProviderMap indexes, TokenHolders tokenHolders,
-            IndexStatisticsStore indexStatisticsStore, IdGeneratorFactory idGeneratorFactory )
+            IdGeneratorFactory idGeneratorFactory )
     {
         this.nativeStores = nativeStores;
         this.indexes = indexes;
         this.tokenHolders = tokenHolders;
-        this.indexStatisticsStore = indexStatisticsStore;
         this.idGeneratorFactory = idGeneratorFactory;
     }
 
@@ -56,11 +53,6 @@ public class DirectStoreAccess
     public TokenHolders tokenHolders()
     {
         return tokenHolders;
-    }
-
-    public IndexStatisticsStore indexStatisticsStore()
-    {
-        return indexStatisticsStore;
     }
 
     public IdGeneratorFactory idGeneratorFactory()
