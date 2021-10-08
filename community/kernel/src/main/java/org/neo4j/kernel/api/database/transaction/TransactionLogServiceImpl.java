@@ -24,10 +24,12 @@ import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.OptionalLong;
 import java.util.concurrent.locks.Lock;
 
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
@@ -36,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.storageengine.api.MetadataProvider;
 
+import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 public class TransactionLogServiceImpl implements TransactionLogService
@@ -45,13 +48,18 @@ public class TransactionLogServiceImpl implements TransactionLogService
     private final MetadataProvider metadataProvider;
 
     private final Lock pruneLock;
+    private final LogFile logFile;
+    private final DatabaseAvailabilityGuard availabilityGuard;
 
-    public TransactionLogServiceImpl( MetadataProvider metadataProvider, LogFiles logFiles, LogicalTransactionStore transactionStore, Lock pruneLock )
+    public TransactionLogServiceImpl( MetadataProvider metadataProvider, LogFiles logFiles, LogicalTransactionStore transactionStore, Lock pruneLock,
+            DatabaseAvailabilityGuard availabilityGuard )
     {
         this.metadataProvider = metadataProvider;
         this.logFiles = logFiles;
         this.transactionStore = transactionStore;
         this.pruneLock = pruneLock;
+        this.logFile = logFiles.getLogFile();
+        this.availabilityGuard = availabilityGuard;
     }
 
     @Override
@@ -75,6 +83,20 @@ public class TransactionLogServiceImpl implements TransactionLogService
         {
             pruneLock.unlock();
         }
+    }
+
+    @Override
+    public LogPosition append( ByteBuffer byteBuffer, OptionalLong transactionId ) throws IOException
+    {
+        checkState( !availabilityGuard.isAvailable(), "Database should not be available." );
+        return logFile.append( byteBuffer, transactionId );
+    }
+
+    @Override
+    public void restore( LogPosition position ) throws IOException
+    {
+        checkState( !availabilityGuard.isAvailable(), "Database should not be available." );
+        logFile.truncate( position );
     }
 
     private ArrayList<LogChannel> collectChannels( long startingTxId, LogPosition minimalLogPosition, long minimalVersion, LogFile logFile,

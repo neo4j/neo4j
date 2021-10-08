@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.JobScheduler;
@@ -32,16 +31,16 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.dedicated_tr
 public class TransactionAppenderFactory
 {
     public static TransactionAppender createTransactionAppender( LogFiles logFiles, TransactionIdStore transactionIdStore,
-            TransactionMetadataCache transactionMetadataCache, LogRotation logRotation, Config config, Health databaseHealth, JobScheduler scheduler,
+            TransactionMetadataCache transactionMetadataCache, Config config, Health databaseHealth, JobScheduler scheduler,
             LogProvider logProvider )
     {
         if ( config.get( dedicated_transaction_appender ) )
         {
-            var queue = new TransactionLogQueue( logFiles, logRotation, transactionIdStore, databaseHealth, transactionMetadataCache, config, scheduler,
+            var queue = new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, transactionMetadataCache, config, scheduler,
                     logProvider );
             return new QueueTransactionAppender( queue );
         }
 
-        return new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth );
+        return new BatchingTransactionAppender( logFiles, transactionMetadataCache, transactionIdStore, databaseHealth );
     }
 }

@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -45,9 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
@@ -111,16 +108,14 @@ class TransactionAppenderRotationIT
         life.add( logFiles );
         Health databaseHealth = getDatabaseHealth();
 
-        LogRotation logRotation =
-                FileLogRotation.transactionLogRotation( logFiles, Clock.systemUTC(), databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
         TransactionAppender transactionAppender =
-                createTransactionAppender( logFiles, databaseHealth, logRotation, transactionMetadataCache, transactionIdStore, jobScheduler );
+                createTransactionAppender( logFiles, databaseHealth, transactionMetadataCache, transactionIdStore, jobScheduler );
 
         life.add( transactionAppender );
 
-        LogAppendEvent logAppendEvent = new RotationLogAppendEvent( logRotation );
+        LogAppendEvent logAppendEvent = new RotationLogAppendEvent( logFiles.getLogFile().getLogRotation() );
         TransactionToApply transactionToApply = prepareTransaction();
         transactionAppender.append( transactionToApply, logAppendEvent );
 
@@ -131,10 +126,10 @@ class TransactionAppenderRotationIT
         assertEquals( 2, logHeader.getLastCommittedTxId() );
     }
 
-    private static TransactionAppender createTransactionAppender( LogFiles logFiles, Health databaseHealth, LogRotation logRotation,
+    private static TransactionAppender createTransactionAppender( LogFiles logFiles, Health databaseHealth,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore, JobScheduler scheduler )
     {
-        return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, logRotation, Config.defaults(),
+        return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, Config.defaults(),
                 databaseHealth, scheduler, NullLogProvider.getInstance() );
     }
 

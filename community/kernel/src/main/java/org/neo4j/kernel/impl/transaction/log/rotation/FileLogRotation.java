@@ -25,8 +25,8 @@ import java.time.Clock;
 import java.util.function.LongSupplier;
 
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.RotatableFile;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointLogFile;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
@@ -56,10 +56,10 @@ public class FileLogRotation implements LogRotation
                 () -> logFile.getLogFileInformation().committingEntryId(), uncheckedLongSupplier( checkpointLogFile::getCurrentDetachedLogVersion ) );
     }
 
-    public static LogRotation transactionLogRotation( LogFiles logFiles, Clock clock, Health databaseHealth, LogRotationMonitor monitor )
+    public static LogRotation transactionLogRotation( LogFile logFile, Clock clock, Health databaseHealth, LogRotationMonitor monitor )
     {
-        return new FileLogRotation( logFiles.getLogFile(), clock, databaseHealth, monitor,
-                () -> logFiles.getLogFile().getLogFileInformation().committingEntryId(), logFiles.getLogFile()::getCurrentLogVersion );
+        return new FileLogRotation( logFile, clock, databaseHealth, monitor,
+                () -> logFile.getLogFileInformation().committingEntryId(), logFile::getCurrentLogVersion );
     }
 
     private FileLogRotation( RotatableFile rotatableFile, Clock clock, Health databaseHealth, LogRotationMonitor monitor,
@@ -91,11 +91,31 @@ public class FileLogRotation implements LogRotation
     }
 
     @Override
+    public boolean batchedRotateLogIfNeeded( LogRotateEvents logRotateEvents, long lastTransactionId ) throws IOException
+    {
+        if ( rotatableFile.rotationNeeded() )
+        {
+            synchronized ( rotatableFile )
+            {
+                if ( rotatableFile.rotationNeeded() )
+                {
+                    TransactionLogFile logFile = (TransactionLogFile) rotatableFile;
+                    long version = logFile.getHighestLogVersion();
+                    doRotate( logRotateEvents, lastTransactionId, () -> version, () -> logFile.batchedRotate( version, lastTransactionId ) );
+                    return true;
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public boolean locklessRotateLogIfNeeded( LogRotateEvents logRotateEvents ) throws IOException
     {
         if ( rotatableFile.rotationNeeded() )
         {
-            doRotate( logRotateEvents );
+            doRotate( logRotateEvents, lastTransactionIdSupplier.getAsLong(), currentFileVersionSupplier, rotatableFile::rotate );
             return true;
         }
         return false;
@@ -107,11 +127,12 @@ public class FileLogRotation implements LogRotation
     {
         synchronized ( rotatableFile )
         {
-            doRotate( logRotateEvents );
+            doRotate( logRotateEvents, lastTransactionIdSupplier.getAsLong(), currentFileVersionSupplier, rotatableFile::rotate );
         }
     }
 
-    private void doRotate( LogRotateEvents logRotateEvents ) throws IOException
+    private void doRotate( LogRotateEvents logRotateEvents, long lastTransactionId, LongSupplier currentFileVersionSupplier, FileRotator fileRotator )
+            throws IOException
     {
         try ( LogRotateEvent rotateEvent = logRotateEvents.beginLogRotate() )
         {
@@ -123,13 +144,18 @@ public class FileLogRotation implements LogRotation
             databaseHealth.assertHealthy( IOException.class );
             long startTimeMillis = clock.millis();
             monitor.startRotation( currentVersion );
-            Path newLogFile = rotatableFile.rotate();
-            long lastTransactionId = lastTransactionIdSupplier.getAsLong();
+            Path newLogFile = fileRotator.rotate();
             long millisSinceLastRotation = lastRotationCompleted == 0 ? 0 : startTimeMillis - lastRotationCompleted;
             lastRotationCompleted = clock.millis();
             long rotationElapsedTime = lastRotationCompleted - startTimeMillis;
             rotateEvent.rotationCompleted( rotationElapsedTime );
             monitor.finishLogRotation( newLogFile, currentVersion, lastTransactionId, rotationElapsedTime, millisSinceLastRotation );
         }
+    }
+
+    @FunctionalInterface
+    private interface FileRotator
+    {
+        Path rotate() throws IOException;
     }
 }

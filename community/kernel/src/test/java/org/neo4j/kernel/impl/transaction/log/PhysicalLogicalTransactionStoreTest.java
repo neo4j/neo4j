@@ -82,7 +82,6 @@ import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -349,7 +348,7 @@ class PhysicalLogicalTransactionStoreTest
     private static TransactionAppender createTransactionAppender( TransactionIdStore transactionIdStore, TransactionMetadataCache positionCache,
             LogFiles logFiles, Config config, JobScheduler jobScheduler )
     {
-        return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, positionCache, NO_ROTATION, config, DATABASE_HEALTH,
+        return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, positionCache, config, DATABASE_HEALTH,
                 jobScheduler, NullLogProvider.getInstance() );
     }
 

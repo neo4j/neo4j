@@ -62,7 +62,6 @@ import org.neo4j.util.concurrent.Futures;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
 
 @Neo4jLayoutExtension
@@ -195,7 +194,7 @@ class QueueTransactionAppenderConcurrencyIT
     private QueueTransactionAppender createAppender( LogFiles logFiles )
     {
         TransactionLogQueue logQueue =
-                new TransactionLogQueue( logFiles, NO_ROTATION, transactionIdStore, databaseHealth, metadataCache, config, jobScheduler, logProvider );
+                new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, config, jobScheduler, logProvider );
         return new QueueTransactionAppender( logQueue );
     }
 

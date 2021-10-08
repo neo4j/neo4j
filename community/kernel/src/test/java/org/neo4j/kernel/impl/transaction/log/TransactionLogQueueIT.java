@@ -57,7 +57,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
 
 @Neo4jLayoutExtension
@@ -157,7 +156,7 @@ class TransactionLogQueueIT
 
     private TransactionLogQueue createLogQueue( LogFiles logFiles )
     {
-        return new TransactionLogQueue( logFiles, NO_ROTATION, transactionIdStore, databaseHealth, metadataCache, config, jobScheduler, logProvider );
+        return new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, config, jobScheduler, logProvider );
     }
 
     private LogFiles buildLogFiles( SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore ) throws IOException

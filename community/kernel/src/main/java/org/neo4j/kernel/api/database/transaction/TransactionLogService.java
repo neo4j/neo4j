@@ -20,6 +20,10 @@
 package org.neo4j.kernel.api.database.transaction;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.OptionalLong;
+
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 /**
  * Service to access database transaction logs
@@ -37,4 +41,26 @@ public interface TransactionLogService
      * @throws IllegalArgumentException invalid transaction id, transaction id not found in any of the log files
      */
     TransactionLogChannels logFilesChannels( long initialTxId ) throws IOException;
+
+    /**
+     * Append buffer content to the end of transaction logs. Buffer content is only appended and is not interpreted at this point.
+     * Meaning transactions will be replayed as subsequent recovery. There is no guarantee what buffer will contain in terms of transactions: it can
+     * be completely empty, contain only part of transaction, several of those etc.
+     * Unlike transactional log append log rotation will be performed only when transaction id is provided and rotations is required.
+     * Transactions that are appended by this method do not perform commit, as result there no updates to metadata store will be executed.
+     * Mixing bulk append and applying standard transactional workload is not supported and will result in corrupted database.
+     * @param byteBuffer buffer with transactional content
+     * @param transactionId optional known transaction id
+     * @return log position before any buffer content updates happen
+     * @throws IOException on failure performing underlying transaction logs operation
+     */
+    LogPosition append( ByteBuffer byteBuffer, OptionalLong transactionId ) throws IOException;
+
+    /**
+     * Reset writer position after failed transactional log bulk update.
+     * In case if provided log position does not cover area of transaction logs that is batch appended various runtime exceptions will be thrown.
+     * @param position log position to which bulk writer should be reset to.
+     * @throws IOException on failure performing underlying transaction logs operation
+     */
+    void restore( LogPosition position ) throws IOException;
 }

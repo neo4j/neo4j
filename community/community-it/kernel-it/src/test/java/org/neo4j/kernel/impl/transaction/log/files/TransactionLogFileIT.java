@@ -108,15 +108,16 @@ class TransactionLogFileIT
         life.start();
 
         MutableLong rotationObservedVersion = new MutableLong();
-        LogRotation logRotation = FileLogRotation.transactionLogRotation( logFiles, Clock.systemUTC(), new DatabaseHealth( NO_OP, NullLog.getInstance() ),
-                new LogRotationMonitorAdapter()
-                {
-                    @Override
-                    public void startRotation( long currentLogVersion )
-                    {
-                        rotationObservedVersion.setValue( currentLogVersion );
-                    }
-                } );
+        LogRotation logRotation =
+                FileLogRotation.transactionLogRotation( logFiles.getLogFile(), Clock.systemUTC(), new DatabaseHealth( NO_OP, NullLog.getInstance() ),
+                        new LogRotationMonitorAdapter()
+                        {
+                            @Override
+                            public void startRotation( long currentLogVersion )
+                            {
+                                rotationObservedVersion.setValue( currentLogVersion );
+                            }
+                        } );
 
         for ( int i = 0; i < 6; i++ )
         {

@@ -25,10 +25,12 @@ import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -63,6 +65,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
@@ -75,6 +78,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
@@ -94,6 +98,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final TransactionLogChannelAllocator channelAllocator;
     private final DatabaseHealth databaseHealth;
     private final String baseName;
+    private final LogRotation logRotation;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
@@ -117,6 +122,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
                 new LogFileChannelNativeAccessor( fileSystem, context ) );
         this.readerLogVersionBridge = new ReaderLogVersionBridge( this );
         this.pageCacheTracer = context.getDatabaseTracers().getPageCacheTracer();
+        this.logRotation = transactionLogRotation( this, context.getClock(), databaseHealth, context.getMonitors().newMonitor( LogRotationMonitor.class ) );
         this.memoryTracker = context.getMemoryTracker();
     }
 
@@ -188,7 +194,66 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void truncate() throws IOException
     {
-        channel.truncate( channel.position() );
+        truncate( writer.getCurrentPosition() );
+    }
+
+    @Override
+    public synchronized void truncate( LogPosition targetPosition ) throws IOException
+    {
+        long currentVersion = writer.getCurrentPosition().getLogVersion();
+        long targetVersion = targetPosition.getLogVersion();
+        if ( currentVersion < targetVersion )
+        {
+            throw new IllegalArgumentException( "Log position requested for restore points to the log file that is higher than " +
+                    "existing available highest log file. Requested restore position: " + targetPosition + ", " +
+                    "current log file version: " + currentVersion + "." );
+        }
+
+        LogPosition lastClosed = context.getLastClosedTransactionPosition();
+        if ( isCoveredByCommittedTransaction( targetPosition, targetVersion, lastClosed ) )
+        {
+            throw new IllegalArgumentException( "Log position requested to be used for restore belongs to the log file that " +
+                    "was already appended by transaction and cannot be restored. " +
+                    "Last closed position: " + lastClosed + ", requested restore: " + targetPosition );
+        }
+
+        writer.prepareForFlush().flush();
+        if ( currentVersion != targetVersion )
+        {
+            var oldChannel = channel;
+            channel = createLogChannelForVersion( targetVersion, context::committingTransactionId );
+            writer.setChannel( channel );
+            oldChannel.close();
+
+            // delete newer files
+            for ( long i = currentVersion; i > targetVersion; i-- )
+            {
+                fileSystem.deleteFile( fileHelper.getLogFileForVersion( i ) );
+            }
+        }
+
+        //truncate current file
+        channel.truncate( targetPosition.getByteOffset() );
+        channel.position( channel.size() );
+    }
+
+    @Override
+    public synchronized LogPosition append( ByteBuffer byteBuffer, OptionalLong transactionId ) throws IOException
+    {
+        var transactionLogWriter = getTransactionLogWriter();
+        var logPositionBefore = transactionLogWriter.getCurrentPosition();
+        try ( var logAppend = context.getDatabaseTracers().getDatabaseTracer().logAppend() )
+        {
+            transactionLogWriter.append( byteBuffer );
+            var logPositionAfter = transactionLogWriter.getCurrentPosition();
+            logAppend.appendToLogFile( logPositionBefore, logPositionAfter );
+
+            if ( transactionId.isPresent() )
+            {
+                logRotation.batchedRotateLogIfNeeded( logAppend, transactionId.getAsLong() );
+            }
+        }
+        return logPositionBefore;
     }
 
     @Override
@@ -200,6 +265,19 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
             writer.setChannel( channel );
             return channel.getPath();
         }
+    }
+
+    public synchronized Path batchedRotate( long currentVersion, long lastTransactionId ) throws IOException
+    {
+        channel = rotateToNewVersion( channel, currentVersion + 1, () -> lastTransactionId );
+        writer.setChannel( channel );
+        return channel.getPath();
+    }
+
+    @Override
+    public LogRotation getLogRotation()
+    {
+        return logRotation;
     }
 
     @Override
@@ -570,6 +648,12 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
          * current log file and replay everything. That's unnecessary but totally ok.
          */
         long newLogVersion = logVersionRepository.incrementAndGetVersion( cursorContext );
+        return rotateToNewVersion( currentLog, newLogVersion, context::committingTransactionId );
+    }
+
+    private PhysicalLogVersionedStoreChannel rotateToNewVersion( LogVersionedStoreChannel currentLog, long newLogVersion,
+            LongSupplier lastTransactionIdSupplier ) throws IOException
+    {
         /*
          * Rotation can happen at any point, although not concurrently with an append,
          * although an append may have (most likely actually) left at least some bytes left
@@ -588,9 +672,15 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
          * we can have transactions that are not yet published as committed but were already stored
          * into transaction log that was just rotated.
          */
-        PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion( newLogVersion, context::committingTransactionId );
+        PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion( newLogVersion, lastTransactionIdSupplier );
         currentLog.close();
         return newLog;
+    }
+
+    private static boolean isCoveredByCommittedTransaction( LogPosition targetPosition, long targetVersion, LogPosition lastClosed )
+    {
+        return lastClosed.getLogVersion() > targetVersion ||
+                lastClosed.getLogVersion() == targetVersion && lastClosed.getByteOffset() > targetPosition.getByteOffset();
     }
 
     private void seekChannelPosition( long currentLogVersion ) throws IOException

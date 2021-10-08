@@ -68,11 +68,11 @@ public class TransactionLogQueue extends LifecycleAdapter
     private TransactionWriter transactionWriter;
     private volatile boolean stopped;
 
-    public TransactionLogQueue( LogFiles logFiles, LogRotation logRotation, TransactionIdStore transactionIdStore, Health databaseHealth,
+    public TransactionLogQueue( LogFiles logFiles, TransactionIdStore transactionIdStore, Health databaseHealth,
             TransactionMetadataCache transactionMetadataCache, Config config, JobScheduler jobScheduler, LogProvider logProvider )
     {
         this.logFiles = logFiles;
-        this.logRotation = logRotation;
+        this.logRotation = logFiles.getLogFile().getLogRotation();
         this.transactionIdStore = transactionIdStore;
         this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;

@@ -273,7 +273,7 @@ public class TransactionAppenderConcurrencyTest
 
     private TransactionAppender createTransactionAppender( DatabaseHealth databaseHealth, LogFiles logFiles, JobScheduler scheduler )
     {
-        return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, logRotation,
+        return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache,
                 Config.defaults( dedicated_transaction_appender, false ),
                 databaseHealth, scheduler, NullLogProvider.getInstance() );
     }

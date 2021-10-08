@@ -40,6 +40,12 @@ public interface LogRotation
         }
 
         @Override
+        public boolean batchedRotateLogIfNeeded( LogRotateEvents logRotateEvents, long transactionId )
+        {
+            return false;
+        }
+
+        @Override
         public boolean locklessRotateLogIfNeeded( LogRotateEvents logRotateEvents )
         {
             return false;
@@ -58,6 +64,12 @@ public interface LogRotation
     boolean rotateLogIfNeeded( LogRotateEvents logRotateEvents ) throws IOException;
 
     /**
+     * Rotates the underlying log if it is required for batch updates. Returns true if rotation happened, false otherwise.
+     * Batch rotation does not perform any metadata or lover version store updates and only perform log file rotations.
+     */
+    boolean batchedRotateLogIfNeeded( LogRotateEvents logRotateEvents, long lastTransactionId ) throws IOException;
+
+    /**
      * Rotates the underlying log if it is required. Returns true if rotation happened, false otherwise
      * @param logRotateEvents A trace event for the current log append operation.
      */
@@ -65,7 +77,6 @@ public interface LogRotation
 
     /**
      * Force a log rotation.
-     *
      * @throws IOException
      */
     void rotateLogFile( LogRotateEvents logRotateEvents ) throws IOException;

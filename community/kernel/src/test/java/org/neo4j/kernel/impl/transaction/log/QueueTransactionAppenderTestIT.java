@@ -66,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
@@ -237,7 +236,7 @@ class QueueTransactionAppenderTestIT
     private QueueTransactionAppender createAppender( LogFiles logFiles )
     {
         TransactionLogQueue logQueue =
-                new TransactionLogQueue( logFiles, NO_ROTATION, transactionIdStore, databaseHealth, metadataCache, config, jobScheduler, logProvider );
+                new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, config, jobScheduler, logProvider );
         return new QueueTransactionAppender( logQueue );
     }
 

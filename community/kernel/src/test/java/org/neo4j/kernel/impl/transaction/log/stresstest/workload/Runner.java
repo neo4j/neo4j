@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import java.io.IOException;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -41,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -55,8 +53,6 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.util.concurrent.Futures;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
-import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
-import static org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter.EMPTY;
 
 public class Runner implements Callable<Long>
 {
@@ -117,8 +113,7 @@ public class Runner implements Callable<Long>
     {
         Log log = NullLog.getInstance();
         DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, log );
-        LogRotation logRotation = transactionLogRotation( logFiles, Clock.systemUTC(), databaseHealth, EMPTY );
-        return createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, logRotation, config, databaseHealth,
+        return createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache, config, databaseHealth,
                 jobScheduler, NullLogProvider.getInstance() );
     }
 

@@ -142,6 +142,12 @@ public class DefaultTracer implements DatabaseTracer
     }
 
     @Override
+    public LogAppendEvent logAppend()
+    {
+        return logAppendEvent;
+    }
+
+    @Override
     public LogFileFlushEvent flushFile()
     {
         return logFileFlushEvent;

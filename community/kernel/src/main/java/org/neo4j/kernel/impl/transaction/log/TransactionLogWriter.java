@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -80,5 +81,10 @@ public class TransactionLogWriter
     public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter()
     {
         return logEntryWriterFactory.createEntryWriter( channel );
+    }
+
+    public void append( ByteBuffer byteBuffer ) throws IOException
+    {
+        channel.write( byteBuffer );
     }
 }

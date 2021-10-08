@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -83,7 +81,6 @@ import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
@@ -129,9 +126,8 @@ class TransactionLogAppendAndRotateIT
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         monitoring.setLogFile( logFiles.getLogFile() );
         Health health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
-        LogRotation rotation = transactionLogRotation( logFiles, Clock.systemUTC(), health, monitoring );
         final TransactionAppender appender =
-                life.add( createBatchAppender( logFiles, txIdStore, metadataCache, health, rotation, jobScheduler, Config.defaults() ) );
+                life.add( createBatchAppender( logFiles, txIdStore, metadataCache, health, jobScheduler, Config.defaults() ) );
 
         // WHEN
         Race race = new Race();
@@ -162,9 +158,9 @@ class TransactionLogAppendAndRotateIT
     }
 
     private TransactionAppender createBatchAppender( LogFiles logFiles, TransactionIdStore txIdStore, TransactionMetadataCache metadataCache,
-            Health health, LogRotation rotation, JobScheduler jobScheduler, Config config )
+            Health health, JobScheduler jobScheduler, Config config )
     {
-        return createTransactionAppender( logFiles, txIdStore, metadataCache, rotation, config, health, jobScheduler, NullLogProvider.getInstance() );
+        return createTransactionAppender( logFiles, txIdStore, metadataCache, config, health, jobScheduler, NullLogProvider.getInstance() );
     }
 
     private static Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end, AllTheMonitoring monitoring )

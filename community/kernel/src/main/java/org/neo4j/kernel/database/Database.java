@@ -134,8 +134,6 @@ import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
 import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLoggingMonitor;
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -187,7 +185,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
-import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
 
@@ -749,10 +746,8 @@ public class Database extends LifecycleAdapter
         final LogPruning logPruning =
                 new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, pruneLock );
 
-        final LogRotation logRotation = transactionLogRotation( logFiles, clock, databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
-
         var transactionAppender =
-                createTransactionAppender( logFiles, metadataProvider, transactionMetadataCache, logRotation, config, databaseHealth, scheduler, logProvider );
+                createTransactionAppender( logFiles, metadataProvider, transactionMetadataCache, config, databaseHealth, scheduler, logProvider );
         life.add( transactionAppender );
 
         final LogicalTransactionStore logicalTransactionStore =
@@ -772,8 +767,9 @@ public class Database extends LifecycleAdapter
         life.add( checkPointer );
         life.add( checkPointScheduler );
 
-        TransactionLogServiceImpl transactionLogService = new TransactionLogServiceImpl( metadataProvider, logFiles, logicalTransactionStore, pruneLock );
-        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, logRotation, transactionAppender, transactionLogService );
+        TransactionLogServiceImpl transactionLogService =
+                new TransactionLogServiceImpl( metadataProvider, logFiles, logicalTransactionStore, pruneLock, databaseAvailabilityGuard );
+        databaseDependencies.satisfyDependencies( checkPointer, logFiles, logicalTransactionStore, transactionAppender, transactionLogService );
 
         return new DatabaseTransactionLogModule( checkPointer, transactionAppender );
     }

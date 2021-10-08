@@ -126,7 +126,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
-import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
@@ -473,7 +472,7 @@ public final class Recovery
                                                                                                 failOnCorruptedLogFiles, config );
 
         var transactionAppender =
-                createTransactionAppender( logFiles, metadataProvider, metadataCache, NO_ROTATION, config, databaseHealth, scheduler, logProvider );
+                createTransactionAppender( logFiles, metadataProvider, metadataCache, config, databaseHealth, scheduler, logProvider );
 
         LifeSupport schemaLife = new LifeSupport();
         schemaLife.add( storageEngine.schemaAndTokensLifecycle() );

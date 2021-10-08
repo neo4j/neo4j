@@ -72,7 +72,6 @@ import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -162,7 +161,7 @@ class BatchingTransactionAppenderTest
         long nextTxId = 15;
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( nextTxId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP ) );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
+        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, positionCache,
                 transactionIdStore, databaseHealth ) );
 
         // WHEN
@@ -272,7 +271,7 @@ class BatchingTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP ) );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, metadataCache, transactionIdStore, databaseHealth ) );
+        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, metadataCache, transactionIdStore, databaseHealth ) );
 
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
@@ -299,7 +298,7 @@ class BatchingTransactionAppenderTest
 
     private BatchingTransactionAppender createTransactionAppender()
     {
-        return new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, databaseHealth );
+        return new BatchingTransactionAppender( logFiles, positionCache, transactionIdStore, databaseHealth );
     }
 
     private static TransactionRepresentation transaction( List<StorageCommand> commands, byte[] additionalHeader, long timeStarted,

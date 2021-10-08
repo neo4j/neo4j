@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.OptionalLong;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.fs.ReadableChannel;
@@ -34,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecks
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 
 /**
@@ -51,6 +54,11 @@ public interface LogFile extends RotatableFile
      * @return transaction writer capable to append transaction representation into transaction log
      */
     TransactionLogWriter getTransactionLogWriter();
+
+    /**
+     * @return transaction log rotation
+     */
+    LogRotation getLogRotation();
 
     /**
      * Opens a {@link ReadableLogChannel reader} at the desired {@link LogPosition}, capable of reading log entries
@@ -128,6 +136,10 @@ public interface LogFile extends RotatableFile
     void flush() throws IOException;
 
     void truncate() throws IOException;
+
+    void truncate( LogPosition position ) throws IOException;
+
+    LogPosition append( ByteBuffer byteBuffer, OptionalLong transactionId ) throws IOException;
 
     /**
      * Register map of externally exposed readers. Key is log version number. Value is log reader.

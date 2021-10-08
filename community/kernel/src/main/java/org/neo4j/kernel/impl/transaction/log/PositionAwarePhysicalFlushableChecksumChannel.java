@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FlushableChecksumChannel;
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
@@ -122,6 +123,12 @@ public class PositionAwarePhysicalFlushableChecksumChannel implements FlushableP
     {
         channel.close();
         channel.setScopedBuffer( EMPTY_BUFFER );
+    }
+
+    @Override
+    public void write( ByteBuffer buffer ) throws IOException
+    {
+        logVersionedStoreChannel.writeAll( buffer );
     }
 
     public void setChannel( LogVersionedStoreChannel channel )

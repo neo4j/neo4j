@@ -49,11 +49,11 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
     private TransactionLogWriter transactionLogWriter;
     private int previousChecksum;
 
-    BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation, TransactionMetadataCache transactionMetadataCache,
+    BatchingTransactionAppender( LogFiles logFiles, TransactionMetadataCache transactionMetadataCache,
             TransactionIdStore transactionIdStore, Health databaseHealth )
     {
         this.logFile = logFiles.getLogFile();
-        this.logRotation = logRotation;
+        this.logRotation = logFile.getLogRotation();
         this.transactionIdStore = transactionIdStore;
         this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;

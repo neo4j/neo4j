@@ -292,6 +292,12 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
         buffer.position( (int) byteOffset );
     }
 
+    @Override
+    public void write( ByteBuffer buffer ) throws IOException
+    {
+        writer.write( buffer );
+    }
+
     static class ByteBufferBase implements PositionAwareChannel, Closeable
     {
         protected final ByteBuffer buffer;
@@ -540,6 +546,12 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
         private void updateCrc( int size )
         {
             checksum.update( buffer.array(), buffer.position() - size, size );
+        }
+
+        @Override
+        public void write( ByteBuffer byteBuffer ) throws IOException
+        {
+            buffer.put( byteBuffer );
         }
     }
 }
