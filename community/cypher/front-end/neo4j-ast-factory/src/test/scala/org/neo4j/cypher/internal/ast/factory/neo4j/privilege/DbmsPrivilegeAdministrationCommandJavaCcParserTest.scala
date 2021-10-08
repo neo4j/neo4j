@@ -19,16 +19,47 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
+import org.neo4j.cypher.internal.ast
+
+import org.neo4j.cypher.internal.ast.AlterDatabaseAction
+
+import org.neo4j.cypher.internal.ast.DbmsAction
+import org.neo4j.cypher.internal.ast.RevokeBothType
+import org.neo4j.cypher.internal.ast.RevokeDenyType
+import org.neo4j.cypher.internal.ast.RevokeGrantType
+import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.factory.neo4j.ParserComparisonTestBase
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
 
 class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase with FunSuiteLike with TestName {
 
-  def privilegeTests(command: String, preposition: String): Unit = {
+  protected val pos: InputPosition = DummyPosition(0)
+
+  type dbmsPrivilegeFunc = (DbmsAction, Seq[Either[String, Parameter]]) =>  ast.Statement
+
+  def grantDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): ast.Statement =
+    ast.GrantPrivilege.dbmsAction(a, r)(pos)
+
+  def denyDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): ast.Statement =
+    ast.DenyPrivilege.dbmsAction(a, r)(pos)
+
+  def revokeGrantDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): ast.Statement =
+    ast.RevokePrivilege.dbmsAction(a, r, RevokeGrantType()(pos))(pos)
+
+  def revokeDenyDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): ast.Statement =
+    ast.RevokePrivilege.dbmsAction(a, r, RevokeDenyType()(pos))(pos)
+
+  def revokeDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): ast.Statement =
+    ast.RevokePrivilege.dbmsAction(a, r, RevokeBothType()(pos))(pos)
+
+  def privilegeTests(command: String, preposition: String, privilegeFunc: dbmsPrivilegeFunc): Unit = {
     val offset = command.length + 1
 
-    Seq(
+    val privilegesSupportedInParboiled = Seq(
       "CREATE ROLE",
       "RENAME ROLE",
       "DROP ROLE",
@@ -37,6 +68,7 @@ class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserCompariso
       "REMOVE ROLE",
       "ROLE MANAGEMENT",
       "CREATE USER",
+      "RENAME USER",
       "DROP USER",
       "SHOW USER",
       "SET PASSWORD",
@@ -52,7 +84,14 @@ class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserCompariso
       "ASSIGN PRIVILEGE",
       "REMOVE PRIVILEGE",
       "PRIVILEGE MANAGEMENT"
-    ).foreach {
+    )
+
+    val privilegesOnlySupportedInJavaCc = Seq(
+      "ALTER DATABASE",
+      "SET DATABASE ACCESS"
+    )
+
+    privilegesSupportedInParboiled.foreach {
       privilege: String =>
         test(s"$command $privilege ON DBMS $preposition role") {
           assertSameAST(testName)
@@ -65,7 +104,18 @@ class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserCompariso
         test(s"$command $privilege ON DBMS $preposition `r:ole`") {
           assertSameAST(testName)
         }
+    }
 
+    test(s"$command ALTER DATABASE ON DBMS $preposition role") {
+      assertJavaCCAST(testName, privilegeFunc(AlterDatabaseAction, Seq(Left("role"))))
+    }
+
+    test(s"$command SET DATABASE ACCESS ON DBMS $preposition role") {
+      assertJavaCCAST(testName, privilegeFunc(SetDatabaseAccessAction, Seq(Left("role"))))
+    }
+
+    (privilegesSupportedInParboiled ++ privilegesOnlySupportedInJavaCc).foreach {
+      privilege: String =>
         test(s"$command $privilege ON DATABASE $preposition role") {
           val offset = command.length + 5 + privilege.length
           assertJavaCCException(testName, s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""")
@@ -80,9 +130,9 @@ class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserCompariso
           val offset = command.length + 2 + privilege.length
           val expected = (command, privilege) match {
             // this case looks like granting/revoking a role named MANAGEMENT to/from a user
-            case ("GRANT", "ROLE MANAGEMENT")  => s"""Invalid input 'DBMS': expected "," or "TO" (line 1, column ${offset + 1} (offset: $offset))"""
+            case ("GRANT", "ROLE MANAGEMENT") => s"""Invalid input 'DBMS': expected "," or "TO" (line 1, column ${offset + 1} (offset: $offset))"""
             case ("REVOKE", "ROLE MANAGEMENT") => s"""Invalid input 'DBMS': expected "," or "FROM" (line 1, column ${offset + 1} (offset: $offset))"""
-            case _                 => s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 1} (offset: $offset))"""
+            case _ => s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 1} (offset: $offset))"""
           }
           assertJavaCCException(testName, expected)
         }

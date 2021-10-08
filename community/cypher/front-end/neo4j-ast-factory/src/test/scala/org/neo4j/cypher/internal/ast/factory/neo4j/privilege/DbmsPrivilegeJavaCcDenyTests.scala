@@ -20,5 +20,5 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 class DbmsPrivilegeJavaCcDenyTests extends DbmsPrivilegeAdministrationCommandJavaCcParserTest {
-  privilegeTests("DENY", "TO")
+  privilegeTests("DENY", "TO", denyDbmsPrivilege)
 }

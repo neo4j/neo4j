@@ -20,5 +20,5 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 class DbmsPrivilegeJavaCcGrantTests extends DbmsPrivilegeAdministrationCommandJavaCcParserTest {
-  privilegeTests("GRANT", "TO")
+  privilegeTests("GRANT", "TO", grantDbmsPrivilege)
 }

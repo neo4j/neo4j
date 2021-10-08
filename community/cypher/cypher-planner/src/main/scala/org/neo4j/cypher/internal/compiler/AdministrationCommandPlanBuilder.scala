@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
+import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
@@ -412,7 +413,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // ALTER DATABASE foo [IF EXISTS] SET ACCESS {READ ONLY | READ WRITE}
       case c@AlterDatabase(dbName, ifExists, access) =>
-        val assertAllowed = plans.AssertAllowedDatabaseAction(AlterDatabaseAction, dbName, Some(plans.AssertNotBlocked(AlterDatabaseAction)))
+        val assertAllowed = plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(AlterDatabaseAction),SetDatabaseAccessAction)
         val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Database", dbName, "alter", s => new NormalizedDatabaseName(s).name()) else assertAllowed
         val plan = plans.AlterDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "alter"), dbName, access)
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))

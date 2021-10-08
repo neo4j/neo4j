@@ -4315,6 +4315,7 @@ PRIVILEGE_TYPE setPrivilege(Token start):
                     <STATUS> { action = astFactory.privilegeAction( ActionType.USER_STATUS ); }
                     | <HOME> <DATABASE> { action = astFactory.privilegeAction( ActionType.USER_HOME ); }
                 )
+                | <DATABASE> <ACCESS> { action = astFactory.privilegeAction( ActionType.SET_DATABASE_ACCESS); }
             ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() ); }
         ) | (
             ( <LABEL> resource=labelResource() <ON> graphs=graphScopeList() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_LABEL_SET ), graphs, resource, List.of( astFactory.allLabelsQualifier( pos(start) ) ) ); } )
@@ -4387,7 +4388,10 @@ PRIVILEGE_TYPE dbmsPrivilege(Token start):
 }
 {
     (
-        <ALTER> <USER> { action = astFactory.privilegeAction( ActionType.USER_ALTER ); }
+        <ALTER> (
+            <USER> { action = astFactory.privilegeAction( ActionType.USER_ALTER ); } |
+            <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_ALTER ); }
+        )
         | <ASSIGN> (
             <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_ASSIGN ); }
             | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_ASSIGN ); }

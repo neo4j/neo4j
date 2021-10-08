@@ -20,5 +20,5 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 class DbmsPrivilegeJavaCcRevokeGrantTests extends DbmsPrivilegeAdministrationCommandJavaCcParserTest {
-  privilegeTests("REVOKE GRANT", "FROM")
+  privilegeTests("REVOKE GRANT", "FROM", revokeGrantDbmsPrivilege)
 }

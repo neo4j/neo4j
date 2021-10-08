@@ -150,7 +150,9 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
 
     val allowsDatabaseManagement: Boolean =
       securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.CREATE_DATABASE, AdminActionOnResource.DatabaseScope.ALL, Segment.ALL)).allowsAccess() ||
-        securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.DROP_DATABASE, AdminActionOnResource.DatabaseScope.ALL, Segment.ALL)).allowsAccess()
+        securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.DROP_DATABASE, AdminActionOnResource.DatabaseScope.ALL, Segment.ALL)).allowsAccess() ||
+        securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.ALTER_DATABASE, AdminActionOnResource.DatabaseScope.ALL, Segment.ALL)).allowsAccess() ||
+        securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.SET_DATABASE_ACCESS, AdminActionOnResource.DatabaseScope.ALL, Segment.ALL)).allowsAccess()
     val roles = securityContext.mode().roles()
 
     val allDatabaseNode = transaction.findNode(Label.label("DatabaseAll"), "name", "*")

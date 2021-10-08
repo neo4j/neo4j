@@ -53,7 +53,6 @@ public enum PrivilegeAction
     DROP_CONSTRAINT,
     SHOW_CONSTRAINT,
 
-    ALTER_DATABASE,
     START_DATABASE,
     STOP_DATABASE,
 
@@ -65,6 +64,7 @@ public enum PrivilegeAction
     // DBMS actions
     CREATE_DATABASE,
     DROP_DATABASE,
+    SET_DATABASE_ACCESS,
 
     SHOW_USER,
     CREATE_USER,
@@ -169,6 +169,21 @@ public enum PrivilegeAction
                     {
                     case CREATE_DATABASE:
                     case DROP_DATABASE:
+                        return true;
+                    default:
+                        return ALTER_DATABASE.satisfies( action ) || this == action;
+                    }
+                }
+            },
+
+    ALTER_DATABASE
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case SET_DATABASE_ACCESS:
                         return true;
                     default:
                         return this == action;

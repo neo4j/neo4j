@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameUserAction
+import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetPropertyAction
@@ -121,7 +122,6 @@ object ActionMapper {
     case ShowTransactionAction      => security.PrivilegeAction.SHOW_TRANSACTION
     case AllTransactionActions      => security.PrivilegeAction.TRANSACTION_MANAGEMENT
 
-    case AlterDatabaseAction => security.PrivilegeAction.ALTER_DATABASE
     case StartDatabaseAction => security.PrivilegeAction.START_DATABASE
     case StopDatabaseAction  => security.PrivilegeAction.STOP_DATABASE
 
@@ -146,6 +146,8 @@ object ActionMapper {
     case AllDatabaseManagementActions => security.PrivilegeAction.DATABASE_MANAGEMENT
     case CreateDatabaseAction         => security.PrivilegeAction.CREATE_DATABASE
     case DropDatabaseAction           => security.PrivilegeAction.DROP_DATABASE
+    case AlterDatabaseAction          => security.PrivilegeAction.ALTER_DATABASE
+    case SetDatabaseAccessAction      => security.PrivilegeAction.SET_DATABASE_ACCESS
 
     case AllPrivilegeActions   => security.PrivilegeAction.PRIVILEGE_MANAGEMENT
     case ShowPrivilegeAction   => security.PrivilegeAction.SHOW_PRIVILEGE

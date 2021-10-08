@@ -52,8 +52,6 @@ abstract class DatabaseAction(override val name: String) extends AdministrationA
 
 case object AllDatabaseAction extends DatabaseAction("ALL DATABASE PRIVILEGES")
 
-case object AlterDatabaseAction extends DatabaseAction("ALTER")
-
 case object StartDatabaseAction extends DatabaseAction("START")
 
 case object StopDatabaseAction extends DatabaseAction("STOP")
@@ -159,6 +157,10 @@ case object AllDatabaseManagementActions extends DatabaseManagementAction("DATAB
 case object CreateDatabaseAction extends DatabaseManagementAction("CREATE DATABASE")
 
 case object DropDatabaseAction extends DatabaseManagementAction("DROP DATABASE")
+
+case object AlterDatabaseAction extends DatabaseManagementAction("ALTER DATABASE")
+
+case object SetDatabaseAccessAction extends DatabaseManagementAction("SET DATABASE ACCESS")
 
 abstract class PrivilegeManagementAction(override val name: String) extends DbmsAction(name)
 

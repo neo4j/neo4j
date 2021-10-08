@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AlterDatabase
+import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
@@ -47,6 +48,7 @@ import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.RevokePrivilege
+import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
@@ -261,6 +263,21 @@ object Additions {
       case a: AlterDatabase =>
         throw cypherExceptionFactory.syntaxException("The ALTER DATABASE command is not supported in this Cypher version.", a.position)
 
+      // GRANT/DENY/REVOKE ALTER DATABASE ...
+      case p@GrantPrivilege(DbmsPrivilege(AlterDatabaseAction), _, _, _)    =>
+        throw cypherExceptionFactory.syntaxException("ALTER DATABASE privilege is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DbmsPrivilege(AlterDatabaseAction), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("ALTER DATABASE privilege is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DbmsPrivilege(AlterDatabaseAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("ALTER DATABASE privilege is not supported in this Cypher version.", p.position)
+
+      // GRANT/DENY/REVOKE SET DATABASE ACCESS ...
+      case p@GrantPrivilege(DbmsPrivilege(SetDatabaseAccessAction), _, _, _)    =>
+        throw cypherExceptionFactory.syntaxException("SET DATABASE ACCESS privilege is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DbmsPrivilege(SetDatabaseAccessAction), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("SET DATABASE ACCESS privilege is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DbmsPrivilege(SetDatabaseAccessAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("SET DATABASE ACCESS privilege is not supported in this Cypher version.", p.position)
     }
 
     private def hasRangeOptions(options: Options): Boolean = options match {

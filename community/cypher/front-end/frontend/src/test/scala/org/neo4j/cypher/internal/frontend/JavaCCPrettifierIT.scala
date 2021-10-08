@@ -68,6 +68,23 @@ class JavaCCPrettifierIT extends CypherFunSuite {
 
     "alteR databaSe foo if EXISTS SEt access read WRITE" ->
       "ALTER DATABASE foo IF EXISTS SET ACCESS READ WRITE".stripMargin,
+  ) ++
+  (
+    Seq(
+      ("GRANT", "TO"),
+      ("DENY", "TO"),
+      ("REVOKE GRANT", "FROM"),
+      ("REVOKE DENY", "FROM"),
+      ("REVOKE", "FROM")
+    ) flatMap {
+      case (action, preposition) =>
+
+        Seq(s"$action alter database on dbms $preposition role" ->
+          s"$action ALTER DATABASE ON DBMS $preposition role",
+
+          s"$action set database access on dbms $preposition role" ->
+            s"$action SET DATABASE ACCESS ON DBMS $preposition role")
+    }
   )
 
   (parboiledPrettifier.tests ++ javaCcOnlyTests) foreach {
