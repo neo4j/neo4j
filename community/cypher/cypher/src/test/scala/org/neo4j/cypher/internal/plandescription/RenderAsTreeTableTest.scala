@@ -895,14 +895,14 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val effectiveCardinalities = new EffectiveCardinalities
     effectiveCardinalities.set(logicalPlan.id, EffectiveCardinality(2.0))
     val plan = LogicalPlan2PlanDescription.create(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, effectiveCardinalities, withRawCardinalities = false, new ProvidedOrders, StubExecutionPlan().operatorMetadata)
-
+    println(renderAsTreeTable(plan))
     renderAsTreeTable(plan) should equal(
       """+---------------------+------------------------------------------------------------------------------------------------------+----------------+
         || Operator            | Details                                                                                              | Estimated Rows |
         |+---------------------+------------------------------------------------------------------------------------------------------+----------------+
         || +MultiNodeIndexSeek | UNIQUE x:Label(Prop, Foo, Distance, Name) WHERE Prop = 10 AND Foo = 1 AND Distance = 6 AND Name = "K |              2 |
-        ||                     | aroline Getinge", y:Label(Prop, Name) WHERE Prop = 12 AND Name = "Foo",                              |                |
-        ||                     | z:Label(Prop, Name) WHERE Prop > 100 AND Name IS NOT NULL                                            |                |
+        ||                     | aroline Getinge", BTREE INDEX y:Label(Prop, Name) WHERE Prop = 12 AND Name = "Foo",                  |                |
+        ||                     | BTREE INDEX z:Label(Prop, Name) WHERE Prop > 100 AND Name IS NOT NULL                                |                |
         |+---------------------+------------------------------------------------------------------------------------------------------+----------------+
         |""".stripMargin)
   }

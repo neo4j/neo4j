@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.plandescription.TwoChildren
 import org.neo4j.cypher.internal.plandescription.asPrettyString
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
@@ -113,11 +114,12 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
                                          labelName: String,
                                          properties: Seq[String],
                                          unique: Boolean = false,
+                                         indexType: IndexType = IndexType.BTREE,
                                          caches: Boolean = false): PlanMatcher = {
-    val u = if (unique) "UNIQUE " else ""
+    val i = if (unique) "UNIQUE" else s"${indexType.name()} INDEX"
     val p = properties.mkString(", ")
     val c = if (caches) properties.map(p => s", cache\\[$varName\\.$p]").mkString else ""
-    containingArgumentRegex(s"$u$varName:$labelName\\($p\\).*$c".r)
+    containingArgumentRegex(s"$i $varName:$labelName\\($p\\).*$c".r)
   }
 
   def containingArgumentForRelIndexPlan(varName: String,
@@ -126,11 +128,13 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
                                         end: String,
                                         properties: Seq[String],
                                         directed: Boolean,
+                                        indexType: IndexType = IndexType.BTREE,
                                         caches: Boolean = false): PlanMatcher = {
+    val i = s"${indexType.name()} INDEX"
     val p = properties.mkString(", ")
     val c = if (caches) properties.map(p => s", cache\\[$varName\\.$p]").mkString else ""
     val endArrow = if (directed) "->" else "-"
-    containingArgumentRegex(s"\\($start\\)-\\[$varName:$typeName\\($p\\)\\]$endArrow\\($end\\).*$c".r)
+    containingArgumentRegex(s"$i \\($start\\)-\\[$varName:$typeName\\($p\\)\\]$endArrow\\($end\\).*$c".r)
   }
 
   def containingArgumentRegex(argument: Regex*): PlanMatcher
