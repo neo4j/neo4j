@@ -35,8 +35,6 @@ import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
@@ -144,7 +142,7 @@ trait TransactionPipe {
       case p: PathWrappingPathValue =>
         val nodeValues = p.path().nodes().asScala.map(rebindNode).toArray
         val relValues = p.path().relationships().asScala.map(rebindRelationship).toArray
-        VirtualValues.path(nodeValues, relValues)
+        VirtualValues.pathReference(nodeValues, relValues)
 
       case m: MapValue =>
         val builder = new MapValueBuilder(m.size())
