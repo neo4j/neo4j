@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -339,9 +338,15 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private boolean containsPoints()
     {
-        return Arrays.stream( values )
-                     .map( Value::valueGroup )
-                     .anyMatch( EnumSet.of( ValueGroup.GEOMETRY, ValueGroup.GEOMETRY_ARRAY )::contains );
+        for ( final var value : values )
+        {
+            final var valueGroup = value.valueGroup();
+            if ( valueGroup == ValueGroup.GEOMETRY || valueGroup == ValueGroup.GEOMETRY_ARRAY )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean eagerizingPoints()
