@@ -48,6 +48,7 @@ import scala.collection.Map
 class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase with OptionValues {
   private val onlineStatus = DatabaseStatus.Online.stringValue()
   private val defaultConfig = Config.defaults()
+  private val accessString = "read-write"
   private val localHostString = "localhost:7687"
   private val dbDefaultMap = Map("db" -> DEFAULT_DATABASE_NAME)
   private val nameDefaultMap = Map("name" -> DEFAULT_DATABASE_NAME)
@@ -636,6 +637,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
   private def db(name: String, home: Boolean = false, default: Boolean = false): Map[String, Any] =
     Map("name" -> name,
+      "access" -> accessString,
       "address" -> localHostString,
       "role" -> "standalone",
       "requestedStatus" -> onlineStatus,
@@ -647,6 +649,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
   private def homeOrdefaultDb(name: String): Map[String, String] =
     Map("name" -> name,
+      "access" -> accessString,
       "address" -> localHostString,
       "role" -> "standalone",
       "requestedStatus" -> onlineStatus,

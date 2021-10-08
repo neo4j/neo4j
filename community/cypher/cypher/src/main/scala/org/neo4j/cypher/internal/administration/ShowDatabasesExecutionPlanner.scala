@@ -40,6 +40,12 @@ import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.dbms.database.DatabaseInfo
 import org.neo4j.dbms.database.DatabaseInfoService
 import org.neo4j.dbms.database.ExtendedDatabaseInfo
+import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_ACCESS_PROPERTY
+import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
+import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL
+import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY
+import org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_STATUS_PROPERTY
+import org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
@@ -99,19 +105,27 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
         // show all databases
         case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter)
       }
+
       val verboseColumns = if (verbose) ", props.databaseID as databaseID, props.serverID as serverID, props.lastCommittedTxn as lastCommittedTxn, props.replicationLag as replicationLag" else ""
       val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
 
       val query = s"""// First resolve which database is the home database
-                     |OPTIONAL MATCH (default: Database {default: true})
-                     |OPTIONAL MATCH (user:User {name: $$`$usernameKey`})
-                     |WITH coalesce(user.homeDatabase, default.name) as homeDbName
+                     |OPTIONAL MATCH (default:$DATABASE_LABEL {$DATABASE_DEFAULT_PROPERTY: true})
+                     |OPTIONAL MATCH (user:User {$DATABASE_NAME_PROPERTY: $$`$usernameKey`})
+                     |WITH coalesce(user.homeDatabase, default.$DATABASE_NAME_PROPERTY) as homeDbName
                      |
                      |UNWIND $$`$accessibleDbsKey` AS props
-                     |MATCH (d:Database)
-                     |WHERE d.name = props.name
-                     |WITH d.name as name, props.address as address, props.role as role, d.status as requestedStatus, props.status as currentStatus, props.error as error,
-                     |d.default as default, coalesce(d.name = homeDbName, false) as home
+                     |MATCH (d:$DATABASE_LABEL)
+                     |WHERE d.$DATABASE_NAME_PROPERTY = props.name
+                     |WITH d.$DATABASE_NAME_PROPERTY as name,
+                     |props.access as access,
+                     |props.address as address,
+                     |props.role as role,
+                     |d.$DATABASE_STATUS_PROPERTY as requestedStatus,
+                     |props.status as currentStatus,
+                     |props.error as error,
+                     |d.$DATABASE_DEFAULT_PROPERTY as default,
+                     |coalesce(d.$DATABASE_NAME_PROPERTY = homeDbName, false) as home
                      |$verboseColumns
                      |$extraFilter
                      |$returnClause""".stripMargin
@@ -224,9 +238,10 @@ trait DatabaseInfoMapper[T <: DatabaseInfo] {
 object BaseDatabaseInfoMapper extends DatabaseInfoMapper[DatabaseInfo] {
   override def toMapValue(databaseManagementService: DatabaseManagementService,
                           extendedDatabaseInfo: DatabaseInfo): MapValue = VirtualValues.map(
-    Array("name", "address", "role", "status", "error", "databaseID", "serverID"),
+    Array("name", "access", "address", "role", "status", "error", "databaseID", "serverID"),
     Array(
       Values.stringValue(extendedDatabaseInfo.namedDatabaseId().name()),
+      Values.stringValue(extendedDatabaseInfo.access().getStringRepr),
       extendedDatabaseInfo.boltAddress().map[AnyValue](s => Values.stringValue(s.toString)).orElse(Values.NO_VALUE),
       Values.stringValue(extendedDatabaseInfo.role()),
       Values.stringValue(extendedDatabaseInfo.status()),

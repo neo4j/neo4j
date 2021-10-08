@@ -41,7 +41,7 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
     result match {
       // Rewrite to approximately `SHOW DATABASES YIELD * WHERE name STARTS WITH 's'` but because we didn't have a YIELD * in the original
       // query the columns are brief and not verbose so it's not exactly the same
-      case ShowDatabase(_, Some(Left((Yield(ReturnItems(returnStar, _, Some(List("name", "address", "role", "requestedStatus", "currentStatus", "error", "default", "home")) ), None, None, None, Some(Where(StartsWith(Variable("name"),StringLiteral("s"))))), None))), _)  if returnStar => ()
+      case ShowDatabase(_, Some(Left((Yield(ReturnItems(returnStar, _, Some(List("name", "access", "address", "role", "requestedStatus", "currentStatus", "error", "default", "home")) ), None, None, None, Some(Where(StartsWith(Variable("name"),StringLiteral("s"))))), None))), _)  if returnStar => ()
       case _ => fail(s"\n$originalQuery\nshould be rewritten to:\nSHOW DATABASES YIELD * WHERE name STARTS WITH 's'\nbut was rewritten to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
     }
   }

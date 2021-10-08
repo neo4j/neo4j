@@ -25,32 +25,43 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.DatabaseStateService;
+import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess.READ_ONLY;
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess.READ_WRITE;
+
 public class StandaloneDatabaseInfoService implements DatabaseInfoService
 {
     private static final String ROLE_LABEL = "standalone";
 
     private final DatabaseIdRepository idRepository;
+    private final ReadOnlyDatabases readOnlyDatabases;
     private final ServerId serverId;
     private final SocketAddress address;
     private final DatabaseManager<?> databaseManager;
     private final DatabaseStateService stateService;
 
     public StandaloneDatabaseInfoService( ServerId serverId, SocketAddress address,
-                                          DatabaseManager<?> databaseManager, DatabaseStateService stateService )
+            DatabaseManager<?> databaseManager, DatabaseStateService stateService, ReadOnlyDatabases readOnlyDatabases )
     {
         this.serverId = serverId;
         this.address = address;
         this.databaseManager = databaseManager;
         this.stateService = stateService;
         this.idRepository = databaseManager.databaseIdRepository();
+        this.readOnlyDatabases = readOnlyDatabases;
     }
 
     @Override
@@ -99,6 +110,7 @@ public class StandaloneDatabaseInfoService implements DatabaseInfoService
     {
         var status = stateService.stateOfDatabase( namedDatabaseId ).operatorState().description();
         var error = stateService.causeOfFailure( namedDatabaseId ).map( Throwable::getMessage ).orElse( "" );
-        return new DatabaseInfo( namedDatabaseId, serverId, address, null, ROLE_LABEL, status, error );
+        var access = readOnlyDatabases.isReadOnly( namedDatabaseId ) ? READ_ONLY : READ_WRITE;
+        return new DatabaseInfo( namedDatabaseId, serverId, access, address, null, ROLE_LABEL, status, error );
     }
 }

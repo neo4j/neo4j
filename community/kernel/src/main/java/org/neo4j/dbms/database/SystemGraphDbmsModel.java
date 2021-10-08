@@ -20,7 +20,6 @@
 package org.neo4j.dbms.database;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -72,7 +71,19 @@ public class SystemGraphDbmsModel
 
     public enum DatabaseAccess
     {
-        READ_ONLY, READ_WRITE
+        READ_ONLY( "read-only" ), READ_WRITE( "read-write" );
+
+        private final String stringRepr;
+
+        DatabaseAccess( String stringRepr )
+        {
+            this.stringRepr = stringRepr;
+        }
+
+        public String getStringRepr()
+        {
+            return stringRepr;
+        }
     }
 
     public enum InstanceStatus

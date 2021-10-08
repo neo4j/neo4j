@@ -252,7 +252,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public DatabaseInfoService createDatabaseInfoService( DatabaseManager<?> databaseManager )
     {
         var address = globalModule.getGlobalConfig().get( BoltConnector.advertised_address );
-        return new StandaloneDatabaseInfoService( identityModule.serverId(), address, databaseManager , databaseStateService );
+        return new StandaloneDatabaseInfoService( identityModule.serverId(), address, databaseManager , databaseStateService, globalReadOnlyChecker );
     }
 
     @Override

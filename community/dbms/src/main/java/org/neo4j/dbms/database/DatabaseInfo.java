@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -34,17 +35,19 @@ public class DatabaseInfo
 {
     final NamedDatabaseId namedDatabaseId;
     final ServerId serverId;
+    final DatabaseAccess access;
     final SocketAddress boltAddress;
     final SocketAddress catchupAddress;
     final String role;
     final String status;
     final String error;
 
-    public DatabaseInfo( NamedDatabaseId namedDatabaseId, ServerId serverId, SocketAddress boltAddress, SocketAddress catchupAddress,
-                         String role, String status, String error )
+    public DatabaseInfo( NamedDatabaseId namedDatabaseId, ServerId serverId, DatabaseAccess access, SocketAddress boltAddress,
+                         SocketAddress catchupAddress, String role, String status, String error )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.serverId = serverId;
+        this.access = access;
         this.boltAddress = boltAddress;
         this.catchupAddress = catchupAddress;
         this.role = role;
@@ -59,7 +62,7 @@ public class DatabaseInfo
 
     public ExtendedDatabaseInfo extendWith( long lastCommittedTxId, long maxCommittedTxId )
     {
-        return new ExtendedDatabaseInfo( namedDatabaseId, serverId, boltAddress, catchupAddress, role, status, error, lastCommittedTxId,
+        return new ExtendedDatabaseInfo( namedDatabaseId, serverId, access, boltAddress, catchupAddress, role, status, error, lastCommittedTxId,
                                              lastCommittedTxId - maxCommittedTxId );
     }
 
@@ -79,6 +82,11 @@ public class DatabaseInfo
     public ServerId rawServerId()
     {
         return serverId;
+    }
+
+    public DatabaseAccess access()
+    {
+        return access;
     }
 
     /**
@@ -123,6 +131,7 @@ public class DatabaseInfo
         DatabaseInfo that = (DatabaseInfo) o;
         return Objects.equals( namedDatabaseId, that.namedDatabaseId ) &&
                Objects.equals( serverId, that.serverId ) &&
+               Objects.equals( access, that.access ) &&
                Objects.equals( boltAddress, that.boltAddress ) &&
                Objects.equals( catchupAddress, that.catchupAddress ) &&
                Objects.equals( role, that.role ) &&
@@ -133,7 +142,7 @@ public class DatabaseInfo
     @Override
     public int hashCode()
     {
-        return Objects.hash( namedDatabaseId, serverId, boltAddress, catchupAddress, role, status, error );
+        return Objects.hash( namedDatabaseId, serverId, access, boltAddress, catchupAddress, role, status, error );
     }
 
     @Override
@@ -142,6 +151,7 @@ public class DatabaseInfo
         return "DatabaseInfoImpl{" +
                "namedDatabaseId=" + namedDatabaseId +
                ", serverId=" + serverId +
+               ", accessFromConfig=" + access +
                ", boltAddress=" + boltAddress +
                ", catchupAddress=" + catchupAddress +
                ", role='" + role + '\'' +

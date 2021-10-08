@@ -30,7 +30,7 @@ class ExtendedDatabaseInfoTest
     void shouldReturnEmptyLastCommittedTxId()
     {
         // given
-        var databaseInfo = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -1 );
+        var databaseInfo = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -1 );
 
         // when
         var result = databaseInfo.lastCommittedTxId();
@@ -43,7 +43,7 @@ class ExtendedDatabaseInfoTest
     void shouldReturnEmptyTxCommitLag()
     {
         // given
-        var databaseInfo = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -42 );
+        var databaseInfo = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -42 );
 
         // when
         var result = databaseInfo.txCommitLag();
@@ -57,7 +57,7 @@ class ExtendedDatabaseInfoTest
     {
         // given
         var lastCommittedTxId = 5040;
-        var databaseInfo = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, lastCommittedTxId, -42 );
+        var databaseInfo = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, null, lastCommittedTxId, -42 );
 
         // when
         var result = databaseInfo.lastCommittedTxId();
@@ -71,7 +71,7 @@ class ExtendedDatabaseInfoTest
     {
         // given
         var txCommitLag = -1;
-        var databaseInfo = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, 5040, txCommitLag );
+        var databaseInfo = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, null, 5040, txCommitLag );
 
         // when
         var result = databaseInfo.txCommitLag();
@@ -84,8 +84,8 @@ class ExtendedDatabaseInfoTest
     void shouldBeEqualIfConstructedWithDifferentTxCommitLagButNoCommittedTxIdAvailable()
     {
         // given
-        var databaseInfo1 = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, -1, -7 );
-        var databaseInfo2 = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, -1, -50 );
+        var databaseInfo1 = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, null, -1, -7 );
+        var databaseInfo2 = new ExtendedDatabaseInfo( null, null, null, null, null, null, null, null, -1, -50 );
 
         // then
         assertThat( databaseInfo1 ).isEqualTo( databaseInfo2 );

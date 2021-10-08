@@ -24,6 +24,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.dbms.database.SystemGraphDbmsModel.DatabaseAccess;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -41,10 +42,10 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
     /**
      * If the lastCommittedTxId is set to COMMITTED_TX_ID_NOT_AVAILABLE both lastCommittedTxId() and txCommitLag() will return empty optionals
      */
-    public ExtendedDatabaseInfo( NamedDatabaseId namedDatabaseId, ServerId serverId, SocketAddress boltAddress, SocketAddress catchupAddress, String role,
-                                 String status, String error, long lastCommittedTxId, long txCommitLag )
+    public ExtendedDatabaseInfo( NamedDatabaseId namedDatabaseId, ServerId serverId, DatabaseAccess accessFromConfig, SocketAddress boltAddress,
+                                 SocketAddress catchupAddress, String role, String status, String error, long lastCommittedTxId, long txCommitLag )
     {
-        super( namedDatabaseId, serverId, boltAddress, catchupAddress, role, status, error );
+        super( namedDatabaseId, serverId, accessFromConfig, boltAddress, catchupAddress, role, status, error );
         this.committedTxIdNotAvailable = lastCommittedTxId == COMMITTED_TX_ID_NOT_AVAILABLE;
         this.lastCommittedTxId = committedTxIdNotAvailable ? 0 : lastCommittedTxId;
         this.txCommitLag = committedTxIdNotAvailable ? 0 : txCommitLag;
@@ -95,6 +96,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
                txCommitLag == that.txCommitLag &&
                Objects.equals( namedDatabaseId, that.namedDatabaseId ) &&
                Objects.equals( serverId, that.serverId ) &&
+               Objects.equals( access, that.access ) &&
                Objects.equals( boltAddress, that.boltAddress ) &&
                Objects.equals( catchupAddress, that.catchupAddress ) &&
                Objects.equals( role, that.role ) &&
@@ -105,7 +107,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
     @Override
     public int hashCode()
     {
-        return Objects.hash( namedDatabaseId, serverId, boltAddress, catchupAddress, role, status, error, lastCommittedTxId, txCommitLag );
+        return Objects.hash( namedDatabaseId, serverId, access, boltAddress, catchupAddress, role, status, error, lastCommittedTxId, txCommitLag );
     }
 
     @Override
@@ -114,6 +116,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo
         return "ExtendedDatabaseInfoImpl{" +
                "namedDatabaseId=" + namedDatabaseId +
                ", serverId=" + serverId +
+               ", accessFromConfig=" + access +
                ", boltAddress=" + boltAddress +
                ", catchupAddress=" + catchupAddress +
                ", role='" + role + '\'' +

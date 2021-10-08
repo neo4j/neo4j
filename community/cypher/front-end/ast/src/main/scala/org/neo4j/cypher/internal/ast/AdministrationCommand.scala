@@ -513,8 +513,9 @@ final case class ShowDatabase(scope: DatabaseScope, override val yieldOrWhere: Y
 object ShowDatabase {
   def apply(scope: DatabaseScope, yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowDatabase = {
     val showColumns = List(
-      // (column, briefOnly)
+      // (column, brief)
       (ShowColumn("name")(position), true),
+      (ShowColumn("access")(position), true),
       (ShowColumn("databaseID")(position), false),
       (ShowColumn("serverID")(position), false),
       (ShowColumn("address")(position), true),
