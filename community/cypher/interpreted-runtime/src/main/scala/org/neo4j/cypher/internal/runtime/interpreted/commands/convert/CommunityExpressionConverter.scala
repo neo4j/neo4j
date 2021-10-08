@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.expressions.functions.LTrim
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Last
 import org.neo4j.cypher.internal.expressions.functions.Left
+import org.neo4j.cypher.internal.expressions.functions.LegacyDistance
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.expressions.functions.Linenumber
@@ -438,7 +439,7 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
         else
           command
       case Pi => commands.expressions.PiFunction()
-      case Distance =>
+      case Distance | LegacyDistance =>
         val firstArg = self.toCommandExpression(id, invocation.arguments.head)
         val secondArg = self.toCommandExpression(id, invocation.arguments(1))
         commands.expressions.DistanceFunction(firstArg, secondArg)

@@ -22,7 +22,8 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 
-class DistanceTest extends FunctionTestBase("point.distance")  {
+//TODO: remove in 5.0
+class LegacyDistanceTest extends FunctionTestBase("distance")  {
 
   test("should accept correct types") {
     testValidTypes(CTGeometry, CTGeometry)(CTFloat)
@@ -37,13 +38,13 @@ class DistanceTest extends FunctionTestBase("point.distance")  {
 
   test("should fail if wrong number of arguments") {
     testInvalidApplication()(
-      "Insufficient parameters for function 'point.distance'"
+      "Insufficient parameters for function 'distance'"
     )
     testInvalidApplication(CTMap)(
-      "Insufficient parameters for function 'point.distance'"
+      "Insufficient parameters for function 'distance'"
     )
     testInvalidApplication(CTGeometry, CTGeometry, CTGeometry)(
-      "Too many parameters for function 'point.distance'"
+      "Too many parameters for function 'distance'"
     )
   }
 }

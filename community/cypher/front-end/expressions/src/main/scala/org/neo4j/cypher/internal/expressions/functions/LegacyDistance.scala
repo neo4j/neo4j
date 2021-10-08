@@ -20,8 +20,10 @@ import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 
-case object Distance extends Function {
-  val name = "point.distance"
+//This should be replaced with point.distance
+@deprecated
+case object LegacyDistance extends Function {
+  val name = "distance"
 
   override val signatures = Vector(
     FunctionTypeSignature(function = this, names = Vector("from", "to"), argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat,

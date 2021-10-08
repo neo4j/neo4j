@@ -110,7 +110,8 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setRelationshipCardinality("()-[]->(:Preference)", 20)
       .build()
 
-  test("should not plan index usage if distance predicate depends on variable from same QueryGraph") {
+  //TODO: remove in 5.0
+  test("should not plan index usage if distance predicate depends on variable from same QueryGraph - legacy") {
     val query =
       """MATCH (p:Place)-[r]->(x:Preference)
         |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
@@ -127,7 +128,25 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
   }
 
-  test("should plan index usage if distance predicate depends on variable from the horizon") {
+  test("should not plan index usage if distance predicate depends on variable from same QueryGraph") {
+    val query =
+      """MATCH (p:Place)-[r]->(x:Preference)
+        |WHERE point.distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
+        |RETURN p.location as point
+        """.stripMargin
+
+    val cfg = plannerConfigForDistancePredicateTests()
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[p.location] AS point")
+      .filter("x.maxDistance >= point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))", "x:Preference")
+      .expandAll("(p)-[r]->(x)")
+      .nodeByLabelScan("p", "Place")
+      .build()
+  }
+
+  //TODO: remove in 5.0
+  test("should plan index usage if distance predicate depends on variable from the horizon - legacy") {
     val query =
       """WITH 10 AS maxDistance
         |MATCH (p:Place)
@@ -147,7 +166,28 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
   }
 
-  test("should plan index usage if distance predicate depends on property read of variable from the horizon") {
+  test("should plan index usage if distance predicate depends on variable from the horizon") {
+    val query =
+      """WITH 10 AS maxDistance
+        |MATCH (p:Place)
+        |WHERE point.distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance
+        |RETURN p.location as point
+        """.stripMargin
+
+    val cfg = plannerConfigForDistancePredicateTests()
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[p.location] AS point")
+      .filter("point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance")
+      .apply()
+      .|.pointDistanceNodeIndexSeekExpr("p", "Place", "location", "{x: 0, y: 0, crs: 'cartesian'}", distanceExpr = varFor("maxDistance"), argumentIds = Set("maxDistance"), inclusive = true)
+      .projection("10 AS maxDistance")
+      .argument()
+      .build()
+  }
+
+  //TODO: remove in 5.0
+  test("should plan index usage if distance predicate depends on property read of variable from the horizon - legacy") {
     val query =
       """WITH {maxDistance: 10} AS x
         |MATCH (p:Place)
@@ -160,6 +200,26 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheN[p.location] AS point")
       .filter("x.maxDistance >= distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))")
+      .apply()
+      .|.pointDistanceNodeIndexSeekExpr("p", "Place", "location", "{x: 0, y: 0, crs: 'cartesian'}", distanceExpr = prop("x", "maxDistance"), argumentIds = Set("x"), inclusive = true)
+      .projection("{maxDistance: 10} AS x")
+      .argument()
+      .build()
+  }
+
+  test("should plan index usage if distance predicate depends on property read of variable from the horizon") {
+    val query =
+      """WITH {maxDistance: 10} AS x
+        |MATCH (p:Place)
+        |WHERE point.distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
+        |RETURN p.location as point
+        """.stripMargin
+
+    val cfg = plannerConfigForDistancePredicateTests()
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[p.location] AS point")
+      .filter("x.maxDistance >= point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))")
       .apply()
       .|.pointDistanceNodeIndexSeekExpr("p", "Place", "location", "{x: 0, y: 0, crs: 'cartesian'}", distanceExpr = prop("x", "maxDistance"), argumentIds = Set("x"), inclusive = true)
       .projection("{maxDistance: 10} AS x")
