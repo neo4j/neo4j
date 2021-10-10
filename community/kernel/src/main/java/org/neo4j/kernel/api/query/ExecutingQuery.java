@@ -459,6 +459,11 @@ public class ExecutingQuery
         return waitTimeNanos + status.waitTimeNanos( currentTimeNanos );
     }
 
+    public String threadExecutingTheQueryName()
+    {
+        return this.threadExecutingTheQueryName;
+    }
+
     ClientConnectionInfo clientConnection()
     {
         return clientConnection;
