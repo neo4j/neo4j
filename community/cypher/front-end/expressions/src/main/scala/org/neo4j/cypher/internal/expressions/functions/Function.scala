@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -156,25 +157,39 @@ abstract case class FunctionInfo(f: FunctionWithName) {
 }
 
 abstract class Function extends FunctionWithName with TypeSignatures {
-  private val functionName = asFunctionName(InputPosition.NONE)
 
-  def asFunctionName(implicit position: InputPosition): FunctionName = FunctionName(name)(position)
+  def asFunctionName(implicit position: InputPosition): (Namespace, FunctionName) = {
+    val names = name.split("\\.")
+    if (names.length == 1) {
+      (Namespace()(position), FunctionName(name)(position))
+    } else {
+      (Namespace(names.dropRight(1).toList)(position), FunctionName(names.last)(position))
+    }
+  }
 
-  def asInvocation(argument: Expression, distinct: Boolean = false)(implicit position: InputPosition): FunctionInvocation =
-    FunctionInvocation(asFunctionName, distinct = distinct, IndexedSeq(argument))(position)
+  def asInvocation(argument: Expression, distinct: Boolean = false)(implicit position: InputPosition): FunctionInvocation = {
+    val (namespace, functionName) = asFunctionName
+    FunctionInvocation(namespace, functionName, distinct = distinct, IndexedSeq(argument))(position)
+  }
 
-  def asInvocation(lhs: Expression, rhs: Expression)(implicit position: InputPosition): FunctionInvocation =
-    FunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
+  def asInvocation(lhs: Expression, rhs: Expression)(implicit position: InputPosition): FunctionInvocation = {
+    val (namespace, functionName) = asFunctionName(position)
+    FunctionInvocation(namespace, functionName, distinct = false, IndexedSeq(lhs, rhs))(position)
+  }
 
   // Default apply and unapply methods which are valid for functions taking exactly one argument
-  def apply(arg: Expression)(pos: InputPosition): FunctionInvocation =
-    FunctionInvocation(asFunctionName(pos), arg)(pos)
+  def apply(arg: Expression)(pos: InputPosition): FunctionInvocation = {
+    val (namespace, functionName) = asFunctionName(pos)
+    FunctionInvocation(namespace, functionName, arg)(pos)
+  }
 
-  def unapply(arg: Expression): Option[Expression] =
+  def unapply(arg: Expression): Option[Expression] = {
+    val (namespace, functionName) = asFunctionName(InputPosition.NONE)
     arg match {
-      case FunctionInvocation(_, `functionName`, _, args) => Some(args.head)
+      case FunctionInvocation(ns, `functionName`, _, args) if ns == namespace => Some(args.head)
       case _ => None
     }
+  }
 }
 
 trait FunctionWithName {

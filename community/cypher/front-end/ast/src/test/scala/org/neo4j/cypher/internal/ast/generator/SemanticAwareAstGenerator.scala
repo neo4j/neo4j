@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.MapProjection
-import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.functions.Avg
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
@@ -51,7 +50,8 @@ class SemanticAwareAstGenerator(simpleStrings: Boolean = true, allowedVarNames: 
     numArgs = signature.argumentTypes.length
     distinct <- boolean
     args <- listOfN(numArgs, nonAggregatingExpression)
-  } yield FunctionInvocation(Namespace()(pos), function.asFunctionName(pos), distinct, args.toIndexedSeq)(pos)
+    (ns, name) = function.asFunctionName(pos)
+  } yield FunctionInvocation(ns, name, distinct, args.toIndexedSeq)(pos)
 
   def aggregatingExpression: Gen[Expression] =
     frequency(
