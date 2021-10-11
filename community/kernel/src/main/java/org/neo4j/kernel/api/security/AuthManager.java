@@ -67,8 +67,7 @@ public abstract class AuthManager extends LifecycleAdapter
         @Override
         public LoginContext impersonate( LoginContext originalAuth, String userToImpersonate )
         {
-            // TODO decide on error type
-            throw new InvalidArgumentException( "Not supported" );
+            throw new InvalidArgumentException( "Impersonation is not supported with auth disabled." );
         }
 
         @Override
