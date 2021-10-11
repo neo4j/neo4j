@@ -25,7 +25,10 @@ import org.hamcrest.Matchers;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -34,6 +37,7 @@ import java.util.stream.Collectors;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Main;
 import org.neo4j.shell.ShellRunner;
+import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.log.AnsiLogger;
 
@@ -48,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.shell.Main.EXIT_FAILURE;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.cli.CliArgHelper.parseAndThrow;
+import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 
 public class AssertableMain
 {
@@ -71,13 +76,13 @@ public class AssertableMain
 
     public AssertableMain assertOutputLines( String... expected )
     {
-        return assertThatOutput( Matchers.equalTo( stream( expected ).map( l -> l + lineSeparator() ).collect( joining() ) ) );
+        return assertThatOutput( Matchers.equalTo( stream( expected ).map( l -> l + "\n" ).collect( joining() ) ) );
     }
 
     @SafeVarargs
     public final AssertableMain assertThatOutput( Matcher<String>... matchers )
     {
-        var output = out.toString( UTF_8 );
+        var output = out.toString( UTF_8 ).replace( "\r\n", "\n" );
         stream( matchers ).forEach( matcher -> assertThat( output, matcher ) );
         return this;
     }
@@ -135,12 +140,12 @@ public class AssertableMain
     {
         public ByteArrayInputStream in = new ByteArrayInputStream( new byte[0] );
         public List<String> args = new ArrayList<>();
-        public Boolean isInputInteractive;
         public Boolean isOutputInteractive;
         public CypherShell shell;
         public ShellRunner.Factory runnerFactory;
         public final ByteArrayOutputStream out = new ByteArrayOutputStream();
         public final ByteArrayOutputStream err = new ByteArrayOutputStream();
+        public File historyFile;
 
         public AssertableMainBuilder shell( CypherShell shell )
         {
@@ -166,10 +171,9 @@ public class AssertableMain
             return this;
         }
 
-        public AssertableMainBuilder interactive( boolean input, boolean output )
+        public AssertableMainBuilder outputInteractive( boolean isOutputInteractive )
         {
-            this.isInputInteractive = input;
-            this.isOutputInteractive = output;
+            this.isOutputInteractive = isOutputInteractive;
             return this;
         }
 
@@ -185,14 +189,30 @@ public class AssertableMain
             return this;
         }
 
-        public AssertableMain run() throws ArgumentParserException
+        public AssertableMainBuilder historyFile( File file )
         {
-            var logger = new AnsiLogger( false, Format.VERBOSE, new PrintStream( out ), new PrintStream( err ) );
-            var parsedArgs = parseAndThrow( args.toArray( String[]::new ) );
-            var printOut = new PrintStream( out );
-            var main = new Main( parsedArgs, in, printOut, logger, shell, isInputInteractive, isOutputInteractive, runnerFactory );
+            this.historyFile = file;
+            return this;
+        }
+
+        public AssertableMain run() throws ArgumentParserException, IOException
+        {
+            var outPrintStream = new PrintStream( out );
+            var errPrintStream = new PrintStream( err );
+            var args = parseArgs();
+            var logger = new AnsiLogger( false, Format.VERBOSE, outPrintStream, errPrintStream );
+            var terminal = terminalBuilder().dumb().streams( in, outPrintStream ).interactive( !args.getNonInteractive() ).logger( logger ).build();
+            var main = new Main( args, logger, shell, isOutputInteractive, runnerFactory, terminal );
             var exitCode = main.startShell();
             return new AssertableMain( exitCode, out, err, shell );
+        }
+
+        protected CliArgs parseArgs() throws ArgumentParserException, IOException
+        {
+            var parsedArgs = parseAndThrow( args.toArray( String[]::new ) );
+            var history = historyFile != null ? historyFile : Files.createTempFile( "temp-history", null ).toFile();
+            parsedArgs.setHistoryFile( history );
+            return parsedArgs;
         }
     }
 }

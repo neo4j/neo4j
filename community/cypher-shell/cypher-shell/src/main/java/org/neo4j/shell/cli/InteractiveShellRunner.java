@@ -19,13 +19,8 @@
  */
 package org.neo4j.shell.cli;
 
-import jline.console.ConsoleReader;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -40,18 +35,21 @@ import org.neo4j.shell.UserMessagesHandler;
 import org.neo4j.shell.commands.Exit;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.exception.NoMoreInputException;
+import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.Logger;
-import org.neo4j.shell.parser.StatementParser;
-import org.neo4j.shell.prettyprint.OutputFormatter;
+import org.neo4j.shell.terminal.CypherShellTerminal;
+import org.neo4j.shell.terminal.CypherShellTerminal.UserInterruptHandler;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.DATABASE_UNAVAILABLE_ERROR_CODE;
+import static org.neo4j.shell.terminal.CypherShellTerminal.PROMPT_MAX_LENGTH;
 
 /**
  * A shell runner intended for interactive sessions where lines are input one by one and execution should happen along the way.
  */
-public class InteractiveShellRunner implements ShellRunner, SignalHandler
+public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
 {
     static final String INTERRUPT_SIGNAL = "INT";
     static final String UNRESOLVED_DEFAULT_DB_PROPMPT_TEXT = "<default_database>";
@@ -59,32 +57,26 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
     private static final String FRESH_PROMPT = "> ";
     private static final String TRANSACTION_PROMPT = "# ";
     private static final String USERNAME_DB_DELIMITER = "@";
-    private static final int ONELINE_PROMPT_MAX_LENGTH = 50;
     // Need to know if we are currently executing when catch Ctrl-C, needs to be atomic due to
     // being called from different thread
     private final AtomicBoolean currentlyExecuting;
 
     private final Logger logger;
-    private final ConsoleReader reader;
-    private final Historian historian;
-    private final StatementParser statementParser;
+    private final CypherShellTerminal terminal;
     private final TransactionHandler txHandler;
     private final DatabaseManager databaseManager;
     private final StatementExecuter executer;
     private final UserMessagesHandler userMessagesHandler;
     private final ConnectionConfig connectionConfig;
 
-    private AnsiFormattedText continuationPrompt;
-
     public InteractiveShellRunner( StatementExecuter executer,
                                    TransactionHandler txHandler,
                                    DatabaseManager databaseManager,
                                    Logger logger,
-                                   StatementParser statementParser,
-                                   InputStream inputStream,
-                                   File historyFile,
+                                   CypherShellTerminal terminal,
                                    UserMessagesHandler userMessagesHandler,
-                                   ConnectionConfig connectionConfig ) throws IOException
+                                   ConnectionConfig connectionConfig,
+                                   File historyFile )
     {
         this.userMessagesHandler = userMessagesHandler;
         this.currentlyExecuting = new AtomicBoolean( false );
@@ -92,24 +84,12 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
         this.txHandler = txHandler;
         this.databaseManager = databaseManager;
         this.logger = logger;
-        this.statementParser = statementParser;
-        this.reader = setupConsoleReader( logger, inputStream );
-        this.historian = FileHistorian.setupHistory( reader, logger, historyFile );
+        this.terminal = terminal;
         this.connectionConfig = connectionConfig;
+        setupHistory( historyFile );
 
         // Catch ctrl-c
-        Signal.handle( new Signal( INTERRUPT_SIGNAL ), this );
-    }
-
-    private static ConsoleReader setupConsoleReader( Logger logger,
-            InputStream inputStream ) throws IOException
-    {
-        ConsoleReader reader = new ConsoleReader( inputStream, logger.getOutputStream() );
-        // Disable expansion of bangs: !
-        reader.setExpandEvents( false );
-        // Ensure Reader does not handle user input for ctrl+C behaviour
-        reader.setHandleUserInterrupt( false );
-        return reader;
+        terminal.bindUserInterruptHandler( this );
     }
 
     @Override
@@ -151,44 +131,34 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
             }
         }
         logger.printIfVerbose( UserMessagesHandler.getExitMessage() );
+        flushHistory();
         return exitCode;
     }
 
     @Override
     public Historian getHistorian()
     {
-        return historian;
+        return terminal.getHistory();
     }
 
     /**
      * Reads from the InputStream until one or more statements can be found.
      *
      * @return a list of command statements
-     * @throws IOException
-     * @throws NoMoreInputException
+     * @throws NoMoreInputException if there is no more input
      */
-    public List<String> readUntilStatement() throws IOException, NoMoreInputException
+    @VisibleForTesting
+    protected List<String> readUntilStatement() throws NoMoreInputException
     {
         while ( true )
         {
-            String line = reader.readLine( updateAndGetPrompt().renderedString() );
-            if ( line == null )
+            try
             {
-                // User hit CTRL-D, or file ended
-                throw new NoMoreInputException();
+                return terminal.read().readStatement( updateAndGetPrompt().renderedString() ).parsed();
             }
-
-            // Empty lines are ignored if nothing has been read yet
-            if ( line.trim().isEmpty() && !statementParser.containsText() )
+            catch ( UserInterruptException e )
             {
-                continue;
-            }
-
-            statementParser.parseMoreText( line + "\n" );
-
-            if ( statementParser.hasStatements() )
-            {
-                return statementParser.consumeStatements();
+                handleUserInterrupt();
             }
         }
     }
@@ -196,13 +166,8 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
     /**
      * @return suitable prompt depending on current parsing state
      */
-    AnsiFormattedText updateAndGetPrompt()
+    private AnsiFormattedText updateAndGetPrompt()
     {
-        if ( statementParser.containsText() )
-        {
-            return continuationPrompt;
-        }
-
         String databaseName = databaseManager.getActualDatabaseAsReportedByServer();
         if ( databaseName == null || ABSENT_DB_NAME.equals( databaseName ) )
         {
@@ -231,15 +196,13 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
             prePrompt.colorRed().append( errorSuffix ).colorDefault();
         }
 
-        if ( promptIndent <= ONELINE_PROMPT_MAX_LENGTH )
+        if ( promptIndent <= PROMPT_MAX_LENGTH )
         {
-            continuationPrompt = AnsiFormattedText.s().bold().append( OutputFormatter.repeat( ' ', promptIndent ) );
             return prePrompt
                     .append( txHandler.isTransactionOpen() ? TRANSACTION_PROMPT : FRESH_PROMPT );
         }
         else
         {
-            continuationPrompt = AnsiFormattedText.s().bold();
             return prePrompt
                     .appendNewLine()
                     .append( txHandler.isTransactionOpen() ? TRANSACTION_PROMPT : FRESH_PROMPT );
@@ -261,64 +224,48 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
         return errorPromptSuffix;
     }
 
-    /**
-     * Catch Ctrl-C from user and handle it nicely
-     *
-     * @param signal to handle
-     */
+    private void setupHistory( File historyFile )
+    {
+        var dir = historyFile.getParentFile();
+
+        if ( !dir.isDirectory() && !dir.mkdir() )
+        {
+            logger.printError( "Could not load history file. Falling back to session-based history.\n" );
+        }
+        else
+        {
+            terminal.setHistoryFile( historyFile );
+        }
+    }
+
+    private void flushHistory()
+    {
+        try
+        {
+            getHistorian().flushHistory();
+        }
+        catch ( IOException e )
+        {
+            logger.printError( "Failed to save history: " + e.getMessage() );
+        }
+    }
+
     @Override
-    public void handle( final Signal signal )
+    public void handleUserInterrupt()
     {
         // Stop any running cypher statements
         if ( currentlyExecuting.get() )
         {
+            logger.printError( "Stopping query..." ); // Stopping execution can take some time
             executer.reset();
         }
         else
         {
-            // Print a literal newline here to get around us being in the middle of the prompt
             logger.printError(
-                    AnsiFormattedText.s().colorRed()
-                                     .append( "\nInterrupted (Note that Cypher queries must end with a " )
-                                     .bold().append( "semicolon. " ).boldOff()
-                                     .append( "Type " )
-                                     .bold().append( Exit.COMMAND_NAME ).append( " " ).boldOff()
-                                     .append( "to exit the shell.)" )
-                                     .formattedString() );
-            // Clear any text which has been inputted
-            resetPrompt();
-        }
-    }
-
-    /**
-     * Clears the prompt of any text which has been inputted and redraws it.
-     */
-    private void resetPrompt()
-    {
-        try
-        {
-            // Clear whatever text has currently been inputted
-            boolean more = true;
-            while ( more )
-            {
-                more = reader.delete();
-            }
-            more = true;
-            while ( more )
-            {
-                more = reader.backspace();
-            }
-            // Clear parser state
-            statementParser.reset();
-
-            // Redraw the prompt now because the error message has changed the terminal text
-            reader.setPrompt( updateAndGetPrompt().renderedString() );
-            reader.redrawLine();
-            reader.flush();
-        }
-        catch ( IOException e )
-        {
-            logger.printError( e );
+                AnsiFormattedText.s().colorRed()
+                    .append( "Interrupted (Note that Cypher queries must end with a " ).bold( "semicolon" )
+                    .append( ". Type " ).bold( Exit.COMMAND_NAME ).append( " to exit the shell.)" )
+                    .formattedString() );
         }
     }
 }

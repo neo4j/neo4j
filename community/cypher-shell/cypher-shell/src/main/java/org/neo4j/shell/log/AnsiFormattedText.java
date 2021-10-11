@@ -180,6 +180,11 @@ public class AnsiFormattedText
         return this;
     }
 
+    public AnsiFormattedText bold( String bold )
+    {
+        return bold().append( bold ).boldOff();
+    }
+
     /**
      * Set formatting to not bold. Note that this has no effect on strings already in the text.
      *

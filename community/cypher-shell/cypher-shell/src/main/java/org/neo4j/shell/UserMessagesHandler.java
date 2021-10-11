@@ -45,26 +45,19 @@ public class UserMessagesHandler
             Version version = Versions.version( protocolVersion );
             neo4j += " using Bolt protocol version " + version.major() + "." + version.minor();
         }
-        AnsiFormattedText welcomeMessage = AnsiFormattedText.from( "Connected to " )
-                                                            .append( neo4j )
-                                                            .append( " at " )
-                                                            .bold().append( connectionConfig.driverUrl() ).boldOff();
+        AnsiFormattedText welcomeMessage = AnsiFormattedText.from( "Connected to " + neo4j + " at " ).bold( connectionConfig.driverUrl() );
 
         if ( !connectionConfig.username().isEmpty() )
         {
-            welcomeMessage = welcomeMessage
-                    .append( " as user " )
-                    .bold().append( connectionConfig.username() ).boldOff();
+            welcomeMessage = welcomeMessage.append( " as user " ).bold( connectionConfig.username() );
         }
 
         return welcomeMessage
-                .append( ".\nType " )
-                .bold().append( Help.COMMAND_NAME ).boldOff()
+                .append( ".\nType " ).bold( Help.COMMAND_NAME )
                 .append( " for a list of available commands or " )
-                .bold().append( Exit.COMMAND_NAME ).boldOff()
-                .append( " to exit the shell." )
-                .append( "\nNote that Cypher queries must end with a " )
-                .bold().append( "semicolon." ).boldOff().formattedString();
+                .bold( Exit.COMMAND_NAME ).append( " to exit the shell." )
+                .append( "\nNote that Cypher queries must end with a " ).bold( "semicolon." )
+                .formattedString();
     }
 
     public static String getExitMessage()

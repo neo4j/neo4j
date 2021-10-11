@@ -64,8 +64,7 @@ public class Exit implements Command
     @Override
     public String getHelp()
     {
-        return AnsiFormattedText.from( "Exit the logger. Corresponds to entering " ).bold().append( "CTRL-D" ).boldOff()
-                                .append( "." ).formattedString();
+        return AnsiFormattedText.from( "Exit the logger. Corresponds to entering " ).bold( "CTRL-D" ).append( "." ).formattedString();
     }
 
     @Override

@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.parser;
 
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -282,7 +280,7 @@ class ShellStatementParserTest
 
         assertEquals( 3, statements.size() );
         assertEquals( " :help me \n", statements.get( 0 ) );
-        assertEquals( " cypher me up \n :scotty \n ;", statements.get( 1 ) );
+        assertEquals( "cypher me up \n :scotty \n ;", statements.get( 1 ) );
         assertEquals( " :do it now! \n", statements.get( 2 ) );
 
         assertFalse( parser.hasStatements() );
@@ -305,7 +303,7 @@ class ShellStatementParserTest
         List<String> statements = parser.consumeStatements();
 
         assertEquals( 1, statements.size() );
-        assertEquals( " first  third ;", statements.get( 0 ) );
+        assertEquals( "first  third ;", statements.get( 0 ) );
 
         assertFalse( parser.hasStatements() );
         assertEquals( 0, parser.consumeStatements().size() );
@@ -323,7 +321,7 @@ class ShellStatementParserTest
         List<String> statements = parser.consumeStatements();
 
         assertEquals( 1, statements.size() );
-        assertEquals( "\nCREATE ();", statements.get( 0 ) );
+        assertEquals( "CREATE ();", statements.get( 0 ) );
 
         assertFalse( parser.hasStatements() );
         assertEquals( 0, parser.consumeStatements().size() );
@@ -399,7 +397,7 @@ class ShellStatementParserTest
         List<String> statements = parser.consumeStatements();
 
         assertEquals( 1, statements.size() );
-        assertEquals( "\n;", statements.get( 0 ) );
+        assertEquals( ";", statements.get( 0 ) );
 
         assertFalse( parser.hasStatements() );
         assertEquals( 0, parser.consumeStatements().size() );
@@ -443,6 +441,28 @@ class ShellStatementParserTest
         assertEquals( ":end\n", statements.get( 2 ) );
 
         assertFalse( parser.hasStatements() );
+        assertEquals( 0, parser.consumeStatements().size() );
+        assertFalse( parser.containsText() );
+    }
+
+    @Test
+    void trimWhiteSpace()
+    {
+        // when
+        parser.parseMoreText( "\t \r\n match (n) return n;\n\t    return 3;\t\r\n " );
+
+        // then
+        assertTrue( parser.hasStatements() );
+        assertTrue( parser.incompleteStatement().isEmpty() );
+
+        List<String> statements = parser.consumeStatements();
+
+        assertEquals( 2, statements.size() );
+        assertEquals( "match (n) return n;", statements.get( 0 ) );
+        assertEquals( "return 3;", statements.get( 1 ) );
+
+        assertFalse( parser.hasStatements() );
+        assertTrue( parser.incompleteStatement().isEmpty() );
         assertEquals( 0, parser.consumeStatements().size() );
         assertFalse( parser.containsText() );
     }

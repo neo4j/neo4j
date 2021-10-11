@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell;
 
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -58,7 +56,7 @@ class MainTest
         mockRunnerFactory = mock( ShellRunner.Factory.class );
         var runnerMock = mock( ShellRunner.class );
         when( runnerMock.runUntilEnd() ).thenReturn( EXIT_SUCCESS );
-        when( mockRunnerFactory.create( any(), any(), any(), any(), any(), anyBoolean() ) ).thenReturn( runnerMock );
+        when( mockRunnerFactory.create( any(), any(), any(), any(), any() ) ).thenReturn( runnerMock );
     }
 
     @Test
@@ -68,7 +66,7 @@ class MainTest
             .userInput( "no newline" )
             .run()
             .assertFailure( "No text could be read, exiting..." )
-            .assertThatOutput( equalTo( "username: no newline" ) );
+            .assertOutputLines( "username: no newline" );
     }
 
     @Test
@@ -85,7 +83,6 @@ class MainTest
     void promptsForUsernameAndPasswordIfNoneGivenIfInteractive() throws Exception
     {
         testWithMockUser( "bob", "secret" )
-            .interactive( true, true )
             .userInputLines( "bob", "secret" )
             .run()
             .assertSuccess()
@@ -96,7 +93,7 @@ class MainTest
     void promptsSilentlyForUsernameAndPasswordIfNoneGivenIfOutputRedirected() throws Exception
     {
         testWithMockUser( "bob", "secret" )
-            .interactive( true, false )
+            .outputInteractive( false )
             .userInputLines( "bob", "secret" )
             .run()
             .assertSuccess()
@@ -107,7 +104,7 @@ class MainTest
     void doesNotPromptIfInputRedirected() throws Exception
     {
         testWithMockUser( "bob", "secret" )
-            .interactive( false, true )
+            .addArgs( "--non-interactive" )
             .userInputLines( "bob", "secret" )
             .run()
             .assertFailure( authException.getMessage() )
@@ -119,7 +116,6 @@ class MainTest
     {
         testWithMockUser( "bob", "secret" )
             .args( "-p secret" )
-            .interactive( true, true )
             .userInputLines( "bob", "secret" )
             .run()
             .assertSuccess()
@@ -133,7 +129,7 @@ class MainTest
     {
         testWithMockUser( "bob", "secret" )
             .args( "-p secret" )
-            .interactive( true, false )
+            .outputInteractive( false )
             .userInputLines( "bob" )
             .run()
             .assertSuccess()
@@ -147,7 +143,6 @@ class MainTest
     {
         testWithMockUser( "bob", "secret" )
             .args( "-u bob" )
-            .interactive( true, true )
             .userInputLines( "secret" )
             .run()
             .assertSuccess()
@@ -161,7 +156,7 @@ class MainTest
     {
         testWithMockUser( "bob", "secret" )
             .args( "-u bob" )
-            .interactive( true, false )
+            .outputInteractive( false )
             .userInputLines( "secret" )
             .run()
             .assertSuccess()
@@ -174,7 +169,6 @@ class MainTest
     void promptsForNewPasswordIfPasswordChangeRequiredCannotBeEmpty() throws Exception
     {
         testWithMockUser( "expired_bob", "newpassword", "oldpassword" )
-            .interactive( true, true )
             .userInputLines( "expired_bob", "oldpassword", "", "newpassword" )
             .run()
             .assertSuccess()
@@ -190,7 +184,6 @@ class MainTest
     void promptsHandlesBang() throws Exception
     {
         testWithMockUser( "bo!b", "sec!ret" )
-            .interactive( true, true )
             .userInputLines( "bo!b", "sec!ret" )
             .run()
             .assertSuccess()
@@ -204,7 +197,6 @@ class MainTest
     {
         testWithMockUser( "bob", "secret" )
             .args( "-u bob -p wrongpass" )
-            .interactive( true, true )
             .run()
             .assertFailure( authException.getMessage() )
             .assertOutputLines();
@@ -217,7 +209,6 @@ class MainTest
     {
         testWithMockUser( "bob", "secret" )
             .userInputLines( "", "bob", "secret" )
-            .interactive( true, true )
             .run()
             .assertSuccess()
             .assertOutputLines( "username: ", "username cannot be empty", "", "username: bob", "password: ******" );
@@ -230,7 +221,7 @@ class MainTest
     {
         testWithMockUser( "bob", "secret" )
             .userInputLines( "", "secret" )
-            .interactive( true, false )
+            .outputInteractive( false )
             .run()
             .assertFailure( authException.getMessage() )
             .assertOutputLines( "username: ", "password: ******" );
@@ -239,7 +230,7 @@ class MainTest
     }
 
     @Test
-    void printsVersionAndExits() throws ArgumentParserException
+    void printsVersionAndExits() throws Exception
     {
         var result = testWithMocks().args( "--version" ).run();
 
@@ -248,7 +239,7 @@ class MainTest
     }
 
     @Test
-    void printsDriverVersionAndExits() throws ArgumentParserException
+    void printsDriverVersionAndExits() throws Exception
     {
         var result = testWithMocks().args( "--driver-version" ).run();
 
@@ -258,7 +249,7 @@ class MainTest
 
     private AssertableMain.AssertableMainBuilder testWithMocks()
     {
-        return new AssertableMain.AssertableMainBuilder().interactive( true, false ).shell( mockShell ).runnerFactory( mockRunnerFactory );
+        return new AssertableMain.AssertableMainBuilder().outputInteractive( true ).shell( mockShell ).runnerFactory( mockRunnerFactory );
     }
 
     private AssertableMain.AssertableMainBuilder testWithMockUser( String name, String password ) throws CommandException

@@ -19,9 +19,11 @@
  */
 package org.neo4j.shell.cli;
 
+import java.io.File;
 import java.util.Optional;
 
 import org.neo4j.shell.ConnectionConfig;
+import org.neo4j.shell.Historian;
 import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.ShellParameterMap;
 
@@ -54,6 +56,7 @@ public class CliArgs
     private String inputFilename;
     private ParameterMap parameters = new ShellParameterMap();
     private boolean changePassword;
+    private File historyFile = Historian.defaultHistoryFile();
 
     /**
      * Set the scheme to the primary value, or if null, the fallback value.
@@ -290,5 +293,15 @@ public class CliArgs
     public ConnectionConfig connectionConfig()
     {
         return new ConnectionConfig( getScheme(), getHost(), getPort(), getUsername(), getPassword(), getEncryption(), getDatabase() );
+    }
+
+    public File getHistoryFile()
+    {
+        return historyFile;
+    }
+
+    public void setHistoryFile( File historyFile )
+    {
+        this.historyFile = historyFile;
     }
 }

@@ -73,6 +73,12 @@ public class ShellStatementParser implements StatementParser
         char prev, current = (char) 0;
         for ( char c : line.toCharArray() )
         {
+            // Trim white space
+            if ( statement.length() == 0 && isWhitespace( c ) )
+            {
+                continue;
+            }
+
             // append current
             statement.append( c );
             // last char shuffling
@@ -112,6 +118,11 @@ public class ShellStatementParser implements StatementParser
             // If it's the start of a quote or comment
             awaitedRightDelimiter = getRightDelimiter( prev, current );
         }
+    }
+
+    private static boolean isWhitespace( char c )
+    {
+        return c == ' ' || c == '\n' || c == '\t' || c == '\r';
     }
 
     /**
@@ -259,7 +270,7 @@ public class ShellStatementParser implements StatementParser
      */
     private boolean statementNotStarted()
     {
-        return statement.toString().trim().isEmpty();
+        return statement.length() == 0 || statement.toString().trim().isEmpty();
     }
 
     @Override

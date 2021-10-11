@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,6 +28,7 @@ import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
 
+import static java.lang.String.format;
 import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 
 /**
@@ -67,7 +69,7 @@ public class History implements Command
     @Override
     public String getHelp()
     {
-        return "Print a list of the last commands executed.";
+        return "':history' prints a list of the last statements executed\n':history clear' removes all entries from the history";
     }
 
     @Override
@@ -79,12 +81,26 @@ public class History implements Command
     @Override
     public void execute( String argString ) throws ExitException, CommandException
     {
-        simpleArgParse( argString, 0, COMMAND_NAME, getUsage() );
+        var args = simpleArgParse( argString, 0, 1, COMMAND_NAME, getUsage() );
 
-        // Calculate starting position
-        int lineCount = 16;
+        if ( args.length == 1 )
+        {
+            if ( "clear".equals( args[0] ) )
+            {
+                clearHistory();
+            }
+            else
+            {
+                throw new CommandException( "Unrecognised argument " + args[0] );
+            }
+        }
+        else
+        {
+            // Calculate starting position
+            int lineCount = 16;
 
-        logger.printOut( printHistory( historian.getHistory(), lineCount ) );
+            logger.printOut( printHistory( historian.getHistory(), lineCount ) );
+        }
     }
 
     /**
@@ -96,18 +112,36 @@ public class History implements Command
     {
         // for alignment, check the string length of history size
         int colWidth = Integer.toString( history.size() ).length();
-        String fmt = " %-" + colWidth + "d  %s\n";
+        String firstLineFormat = " %-" + colWidth + "d  %s%n";
+        String continuationLineFormat = " %-" + colWidth + "s  %s%n";
+        StringBuilder builder = new StringBuilder();
 
-        String result = "";
-        int count = 0;
-
-        for ( int i = history.size() - 1; i >= 0 && count < lineCount; i--, count++ )
+        for ( int i = Math.max( 0, history.size() - lineCount ); i < history.size(); i++ )
         {
-            String line = history.get( i );
-            // Executing old commands with !N actually starts from 1, and not 0, hence increment index by one
-            result = String.format( fmt, i + 1, line ) + result;
+            var statement = history.get( i );
+            var lines = statement.split( "\\r?\\n" );
+
+            builder.append( format( firstLineFormat, i + 1, lines[0] ) );
+
+            for ( int l = 1; l < lines.length; l++ )
+            {
+                builder.append( format( continuationLineFormat, " ", lines[l] ) );
+            }
         }
 
-        return result;
+        return builder.toString();
+    }
+
+    private void clearHistory() throws CommandException
+    {
+        try
+        {
+            logger.printIfVerbose( "Removing history..." );
+            historian.clear();
+        }
+        catch ( IOException e )
+        {
+            throw new CommandException( "Failed to clear history: " + e.getMessage() );
+        }
     }
 }

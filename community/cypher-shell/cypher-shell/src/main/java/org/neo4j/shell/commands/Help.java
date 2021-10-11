@@ -99,12 +99,11 @@ public class Help implements Command
 
         if ( cmd == null )
         {
-            throw new CommandException( AnsiFormattedText.from( "No such command: " ).bold().append( name ) );
+            throw new CommandException( AnsiFormattedText.from( "No such command: " ).bold( name ) );
         }
 
         logger.printOut( AnsiFormattedText.from( "\nusage: " )
-                                          .bold().append( cmd.getName() )
-                                          .boldOff()
+                                          .bold( cmd.getName() )
                                           .append( " " )
                                           .append( cmd.getUsage() )
                                           .append( "\n\n" )
@@ -124,15 +123,17 @@ public class Help implements Command
 
         allCommands.stream().forEach( cmd -> logger.printOut(
                 AnsiFormattedText.from( "  " )
-                                 .bold().append( String.format( "%-" + leftColWidth + "s", cmd.getName() ) )
-                                 .boldOff().append( " " + cmd.getDescription() )
+                                 .bold( String.format( "%-" + leftColWidth + "s", cmd.getName() ) )
+                                 .append( " " + cmd.getDescription() )
                                  .formattedString() ) );
 
         logger.printOut( "\nFor help on a specific command type:" );
         logger.printOut( AnsiFormattedText.from( "    " )
                                           .append( COMMAND_NAME )
-                                          .bold().append( " command" )
-                                          .boldOff().append( "\n" ).formattedString() );
+                                          .bold( " command" )
+                                          .append( "\n" ).formattedString() );
+
+        logger.printOut( "Use up and down arrows to access statement history." );
 
         logger.printOut( "\nFor help on cypher please visit:" );
         logger.printOut( AnsiFormattedText.from( "    " )

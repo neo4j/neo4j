@@ -77,14 +77,14 @@ public class Param extends ParameterSetter<CommandException> implements Command
     protected void onWrongUsage() throws CommandException
     {
         throw new CommandException( AnsiFormattedText.from( "Incorrect usage.\nusage: " )
-                                                     .bold().append( COMMAND_NAME ).boldOff().append( " " ).append( getUsage() ) );
+                                                     .bold( COMMAND_NAME ).append( " " ).append( getUsage() ) );
     }
 
     @Override
     protected void onWrongNumberOfArguments() throws CommandException
     {
         throw new CommandException( AnsiFormattedText.from( "Incorrect number of arguments.\nusage: " )
-                                                     .bold().append( COMMAND_NAME ).boldOff().append( " " ).append( getUsage() ) );
+                                                     .bold( COMMAND_NAME ).append( " " ).append( getUsage() ) );
     }
 
     @Override

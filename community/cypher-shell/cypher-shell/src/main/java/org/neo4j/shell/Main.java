@@ -19,10 +19,6 @@
  */
 package org.neo4j.shell;
 
-import jline.console.ConsoleReader;
-
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
@@ -33,13 +29,18 @@ import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.ThrowingAction;
+import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.util.VisibleForTesting;
 
+import static org.neo4j.shell.ShellRunner.shouldBeInteractive;
+import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
 public class Main
@@ -48,45 +49,42 @@ public class Main
     public static final int EXIT_SUCCESS = 0;
     static final String NEO_CLIENT_ERROR_SECURITY_UNAUTHORIZED = "Neo.ClientError.Security.Unauthorized";
     private final CliArgs args;
-    private final InputStream in;
-    private final OutputStream interactiveOut;
     private final Logger logger;
     private final CypherShell shell;
-    private final boolean isInputInteractive;
     private final boolean isOutputInteractive;
     private final ShellRunner.Factory runnerFactory;
+    private final CypherShellTerminal terminal;
 
     public Main( CliArgs args )
     {
-        this( args, System.in, System.out, ShellRunner.getOutputStreamForInteractivePrompt(), System.err,
-              !args.getNonInteractive() && ShellRunner.isInputInteractive(),
-              !args.getNonInteractive() && ShellRunner.isOutputInteractive() );
+        boolean isInteractive = !args.getNonInteractive() && ShellRunner.isInputInteractive();
+        this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, System.out, System.err );
+        this.terminal = terminalBuilder().interactive( isInteractive ).logger( logger ).build();
+        this.args = args;
+        this.shell = new CypherShell( logger, new PrettyConfig( args ), shouldBeInteractive( args, terminal.isInteractive() ), args.getParameters() );
+        this.isOutputInteractive = !args.getNonInteractive() && ShellRunner.isOutputInteractive();
+        this.runnerFactory = new ShellRunner.Factory();
     }
 
     @VisibleForTesting
-    public Main( CliArgs args, InputStream in, PrintStream out, OutputStream interactiveOut, PrintStream err,
-                 boolean inputInteractive, boolean outputInteractive )
+    public Main( CliArgs args, PrintStream out, PrintStream err, boolean outputInteractive, CypherShellTerminal terminal )
     {
+        this.terminal = terminal;
         this.args = args;
-        this.in = in;
-        this.interactiveOut = interactiveOut;
         this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, out, err );
-        this.shell = new CypherShell( logger, new PrettyConfig( args ), ShellRunner.shouldBeInteractive( args, inputInteractive ), args.getParameters() );
-        this.isInputInteractive = inputInteractive;
+        this.shell = new CypherShell( logger, new PrettyConfig( args ), shouldBeInteractive( args, terminal.isInteractive() ), args.getParameters() );
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = new ShellRunner.Factory();
     }
 
     @VisibleForTesting
-    public Main( CliArgs args, InputStream in, OutputStream interactiveOut, AnsiLogger logger, CypherShell shell,
-          boolean inputInteractive, boolean outputInteractive, ShellRunner.Factory runnerFactory )
+    public Main( CliArgs args, AnsiLogger logger, CypherShell shell,
+                 boolean outputInteractive, ShellRunner.Factory runnerFactory, CypherShellTerminal terminal )
     {
+        this.terminal = terminal;
         this.args = args;
-        this.in = in;
-        this.interactiveOut = interactiveOut;
         this.logger = logger;
         this.shell = shell;
-        this.isInputInteractive = inputInteractive;
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = runnerFactory;
     }
@@ -109,12 +107,12 @@ public class Main
     {
         if ( args.getVersion() )
         {
-            logger.printOut( "Cypher-Shell " + Build.version() );
+            terminal.write().println( "Cypher-Shell " + Build.version() );
             return EXIT_SUCCESS;
         }
         if ( args.getDriverVersion() )
         {
-            logger.printOut( "Neo4j Driver " + Build.driverVersion() );
+            terminal.write().println( "Neo4j Driver " + Build.driverVersion() );
             return EXIT_SUCCESS;
         }
         if ( args.getChangePassword() )
@@ -163,7 +161,7 @@ public class Main
                 }
 
                 // Construct shellrunner after connecting, due to interrupt handling
-                ShellRunner shellRunner = runnerFactory.create( args, shell, logger, newConnectionConfig, in, isInputInteractive );
+                ShellRunner shellRunner = runnerFactory.create( args, shell, logger, newConnectionConfig, terminal );
                 CommandHelper commandHelper = new CommandHelper( logger, shellRunner.getHistorian(), shell );
 
                 shell.setCommandHelper( commandHelper );
@@ -188,7 +186,7 @@ public class Main
         boolean didPrompt = false;
 
         // Prompt directly in interactive mode if user provided username but not password
-        if ( isInputInteractive && !connectionConfig.username().isEmpty() && connectionConfig.password().isEmpty() )
+        if ( terminal.isInteractive() && !connectionConfig.username().isEmpty() && connectionConfig.password().isEmpty() )
         {
             promptForUsernameAndPassword( connectionConfig );
             didPrompt = true;
@@ -206,7 +204,7 @@ public class Main
                 // Fail if we already prompted,
                 // or do not have interactive input,
                 // or already tried with both username and password
-                if ( didPrompt || !isInputInteractive || !connectionConfig.username().isEmpty() && !connectionConfig.password().isEmpty() )
+                if ( didPrompt || !terminal.isInteractive() || !connectionConfig.username().isEmpty() && !connectionConfig.password().isEmpty() )
                 {
                     throw e;
                 }
@@ -217,7 +215,7 @@ public class Main
             }
             catch ( Neo4jException e )
             {
-                if ( !args.getNonInteractive() && isPasswordChangeRequiredException( e ) )
+                if ( terminal.isInteractive() && isPasswordChangeRequiredException( e ) )
                 {
                     promptAndChangePassword( connectionConfig, "Password change required" );
                     didPrompt = true;
@@ -232,57 +230,42 @@ public class Main
 
     private void promptForUsernameAndPassword( ConnectionConfig connectionConfig ) throws Exception
     {
-        try ( ConsoleReader consoleReader = new ConsoleReader( in, interactiveOut ) )
+        if ( connectionConfig.username().isEmpty() )
         {
-            // Disable expansion of bangs: !
-            consoleReader.setExpandEvents( false );
-            // Ensure Reader does not handle user input for ctrl+C behaviour
-            consoleReader.setHandleUserInterrupt( false );
-            if ( connectionConfig.username().isEmpty() )
-            {
-                String username = isOutputInteractive ?
-                        promptForNonEmptyText( "username", consoleReader, null ) :
-                        promptForText( "username", consoleReader, null );
-                connectionConfig.setUsername( username );
-            }
-            if ( connectionConfig.password().isEmpty() )
-            {
-                connectionConfig.setPassword( promptForText( "password", consoleReader, '*' ) );
-            }
+            String username = isOutputInteractive ?
+                    promptForNonEmptyText( "username", null ) :
+                    promptForText( "username", null );
+            connectionConfig.setUsername( username );
+        }
+        if ( connectionConfig.password().isEmpty() )
+        {
+            connectionConfig.setPassword( promptForText( "password", '*' ) );
         }
     }
 
     private ConnectionConfig promptAndChangePassword( ConnectionConfig connectionConfig, String message ) throws Exception
     {
-        try ( ConsoleReader consoleReader = new ConsoleReader( in, interactiveOut ) )
+        if ( message != null )
         {
-            // Disable expansion of bangs: !
-            consoleReader.setExpandEvents( false );
-            // Ensure Reader does not handle user input for ctrl+C behaviour
-            consoleReader.setHandleUserInterrupt( false );
-
-            if ( message != null )
-            {
-                consoleReader.println( message );
-            }
-            if ( connectionConfig.username().isEmpty() )
-            {
-                String username = isOutputInteractive ?
-                        promptForNonEmptyText( "username", consoleReader, null ) :
-                        promptForText( "username", consoleReader, null );
-                connectionConfig.setUsername( username );
-            }
-            if ( connectionConfig.password().isEmpty() )
-            {
-                connectionConfig.setPassword( promptForText( "password", consoleReader, '*' ) );
-            }
-            String newPassword = isOutputInteractive ?
-                    promptForNonEmptyText( "new password", consoleReader, '*' ) :
-                    promptForText( "new password", consoleReader, '*' );
-
-            shell.changePassword( connectionConfig, newPassword );
-            connectionConfig.setPassword( newPassword );
+            terminal.write().println( message );
         }
+        if ( connectionConfig.username().isEmpty() )
+        {
+            String username = isOutputInteractive ?
+                    promptForNonEmptyText( "username", null ) :
+                    promptForText( "username", null );
+            connectionConfig.setUsername( username );
+        }
+        if ( connectionConfig.password().isEmpty() )
+        {
+            connectionConfig.setPassword( promptForText( "password", '*' ) );
+        }
+        String newPassword = isOutputInteractive ?
+                promptForNonEmptyText( "new password", '*' ) :
+                promptForText( "new password", '*' );
+
+        shell.changePassword( connectionConfig, newPassword );
+        connectionConfig.setPassword( newPassword );
         return connectionConfig;
     }
 
@@ -292,38 +275,27 @@ public class Main
         return shell;
     }
 
-    /**
-     * @param prompt to display to the user
-     * @param mask   single character to display instead of what the user is typing, use null if text is not secret
-     * @return the text which was entered
-     * @throws Exception in case of errors
-     */
-    private static String promptForNonEmptyText( String prompt, ConsoleReader consoleReader, Character mask ) throws Exception
+    private String promptForNonEmptyText( String prompt, Character mask ) throws Exception
     {
-        String text = promptForText( prompt, consoleReader, mask );
+        String text = promptForText( prompt, mask );
         if ( !text.isEmpty() )
         {
             return text;
         }
-        consoleReader.println( prompt + " cannot be empty" );
-        consoleReader.println();
-        return promptForNonEmptyText( prompt, consoleReader, mask );
+        terminal.write().println( prompt + " cannot be empty" );
+        terminal.write().println();
+        return promptForNonEmptyText( prompt, mask );
     }
 
-    /**
-     * @param prompt        to display to the user
-     * @param mask          single character to display instead of what the user is typing, use null if text is not secret
-     * @param consoleReader the reader
-     * @return the text which was entered
-     * @throws Exception in case of errors
-     */
-    private static String promptForText( String prompt, ConsoleReader consoleReader, Character mask ) throws Exception
+    private String promptForText( String prompt, Character mask ) throws CommandException
     {
-        String line = consoleReader.readLine( prompt + ": ", mask );
-        if ( line == null )
+        try
+        {
+            return terminal.read().simplePrompt( prompt + ": ", mask );
+        }
+        catch ( NoMoreInputException | UserInterruptException e )
         {
             throw new CommandException( "No text could be read, exiting..." );
         }
-        return line;
     }
 }

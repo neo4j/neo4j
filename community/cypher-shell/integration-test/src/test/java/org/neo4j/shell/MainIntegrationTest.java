@@ -25,7 +25,9 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.function.ThrowingAction;
@@ -34,6 +36,7 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.test.AssertableMain;
 
@@ -42,14 +45,16 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.endsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
-import static org.neo4j.shell.cli.CliArgHelper.parseAndThrow;
+import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 import static org.neo4j.shell.util.Versions.majorVersion;
 
 @Timeout( value = 5, unit = MINUTES )
@@ -57,11 +62,11 @@ class MainIntegrationTest
 {
     private static final String USER = "neo4j";
     private static final String PASSWORD = "neo";
+    private static final String newLine = System.lineSeparator();
 
-    private final String newLine = System.lineSeparator();
     private final int majorServerVersion = majorVersion( runInSystemDbAndReturn( CypherShell::getServerVersion ) );
-
     private final Matcher<String> endsWithInteractiveExit = endsWith( format( "> :exit%n%nBye!%n" ) );
+
     private Matcher<String> returned42AndExited()
     {
         return Matchers.allOf( containsString( return42Output() ), endsWithInteractiveExit );
@@ -72,7 +77,6 @@ class MainIntegrationTest
     {
         testWithUser( "kate", "bush", false )
             .args( "--format verbose" )
-            .interactive( true, true )
             .userInputLines( "kate", "bush", "return 42 as x;", ":exit" )
             .run()
             .assertSuccess()
@@ -117,7 +121,6 @@ class MainIntegrationTest
         testWithUser( "bob", "expired", true )
             .args( "-u bob -p expired -d system --format verbose" )
             .addArgs( "ALTER CURRENT USER SET PASSWORD FROM \"expired\" TO \"shinynew\";" )
-            .interactive( true, true )
             .run()
             .assertSuccess()
             .assertThatOutput( containsString( "0 rows" ) );
@@ -170,7 +173,7 @@ class MainIntegrationTest
     {
         testWithUser( "holy", "ghost", false )
             .addArgs( "return 42 as x;" )
-            .interactive( true, false )
+            .outputInteractive( false )
             .userInputLines( "holy", "ghost" )
             .run()
             .assertSuccessAndConnected()
@@ -178,7 +181,7 @@ class MainIntegrationTest
     }
 
     @Test
-    void wrongPortWithBolt() throws ArgumentParserException
+    void wrongPortWithBolt() throws Exception
     {
         testWithUser( "leonard", "coen", false )
             .args( "-u leonard -p coen -a bolt://localhost:1234" )
@@ -187,7 +190,7 @@ class MainIntegrationTest
     }
 
     @Test
-    void wrongPortWithNeo4j() throws ArgumentParserException
+    void wrongPortWithNeo4j() throws Exception
     {
         testWithUser( "jackie", "leven", false )
             .args( "-u jackie -p leven -a neo4j://localhost:1234" )
@@ -224,7 +227,7 @@ class MainIntegrationTest
     }
 
     @Test
-    void shouldReadEmptyCypherStatementsFile() throws ArgumentParserException
+    void shouldReadEmptyCypherStatementsFile() throws Exception
     {
         buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "empty.cypher" ) ).run()
             .assertSuccessAndConnected()
@@ -232,7 +235,7 @@ class MainIntegrationTest
     }
 
     @Test
-    void shouldReadMultipleCypherStatementsFromFile() throws ArgumentParserException
+    void shouldReadMultipleCypherStatementsFromFile() throws Exception
     {
         buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "multiple.cypher" ) ).run()
             .assertSuccessAndConnected()
@@ -240,14 +243,14 @@ class MainIntegrationTest
     }
 
     @Test
-    void shouldFailIfInputFileDoesntExist() throws ArgumentParserException
+    void shouldFailIfInputFileDoesntExist() throws Exception
     {
         buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", "missing-file" ).run()
             .assertFailure( "missing-file (No such file or directory)" );
     }
 
     @Test
-    void shouldHandleInvalidCypherFromFile() throws ArgumentParserException
+    void shouldHandleInvalidCypherFromFile() throws Exception
     {
         buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "invalid.cypher" ) ).run()
             .assertFailure()
@@ -434,14 +437,91 @@ class MainIntegrationTest
             .assertOutputLines( "password: ******************", "new password: ******" );
     }
 
-    private void assertUserCanConnectAndRunQuery( String user, String password ) throws ArgumentParserException
+    @Test
+    void shouldHandleMultiLineHistory() throws Exception
+    {
+        var expected =
+            "> :history\n" +
+            " 1  return\n" +
+            "    'hej' as greeting;\n" +
+            " 2  return\n" +
+            "    1\n" +
+            "    as\n" +
+            "    x\n" +
+            "    ;\n" +
+            " 3  :history\n";
+
+        buildTest()
+            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+            .userInputLines(
+                "return",
+                "'hej' as greeting;",
+                "return",
+                "1",
+                "as",
+                "x",
+                ";",
+                ":history",
+                ":exit"
+            )
+            .run()
+            .assertSuccessAndConnected()
+            .assertThatOutput( containsString( expected ), endsWithInteractiveExit );
+    }
+
+    @Test
+    void clearHistory() throws ArgumentParserException, IOException
+    {
+        var history = Files.createTempFile( "temp-history", null );
+
+        // Build up some history
+        buildTest()
+            .historyFile( history.toFile() )
+            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+            .userInputLines( "return 1;", "return 2;", ":exit" )
+            .run()
+            .assertSuccessAndConnected();
+
+        var readHistory = Files.readAllLines( history );
+        assertEquals( 3, readHistory.size() );
+        assertThat( readHistory.get( 0 ), endsWith( "return 1;" ) );
+        assertThat( readHistory.get( 1 ), endsWith( "return 2;" ) );
+        assertThat( readHistory.get( 2 ), endsWith( ":exit" ) );
+
+        var expected1 =
+                "> :history\n" +
+                " 1  return 1;\n" +
+                " 2  return 2;\n" +
+                " 3  :exit\n" +
+                " 4  return 3;\n" +
+                " 5  :history";
+        var expected2 =
+                "> :history\n" +
+                " 1  :history\n\n";
+
+        // Build up more history and clear
+        buildTest()
+            .historyFile( history.toFile() )
+            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+            .userInputLines( "return 3;", ":history", ":history clear", ":history", ":exit" )
+            .run()
+            .assertSuccessAndConnected()
+            .assertThatOutput( containsString( expected1 ), containsString( expected2 ) );
+
+        var readHistoryAfterClear = Files.readAllLines( history );
+        assertEquals( 2, readHistoryAfterClear.size() );
+        assertThat( readHistoryAfterClear.get( 0 ), endsWith( ":history" ) );
+        assertThat( readHistoryAfterClear.get( 1 ), endsWith( ":exit" ) );
+    }
+
+    private void assertUserCanConnectAndRunQuery( String user, String password ) throws Exception
     {
         buildTest().addArgs( "-u", user, "-p", password, "--format", "plain", "return 42 as x;" ).run().assertSuccess();
     }
 
     private AssertableMain.AssertableMainBuilder buildTest()
     {
-        return new TestBuilder().interactive( true, true );
+        return new TestBuilder().outputInteractive( true );
     }
 
     private AssertableMain.AssertableMainBuilder testWithUser( String name, String password, boolean requirePasswordChange )
@@ -549,13 +629,16 @@ class MainIntegrationTest
     private static class TestBuilder extends AssertableMain.AssertableMainBuilder
     {
         @Override
-        public AssertableMain run() throws ArgumentParserException
+        public AssertableMain run() throws ArgumentParserException, IOException
         {
             assertNull( runnerFactory );
             assertNull( shell );
-            var parsedArgs = parseAndThrow( args.toArray( String[]::new ) );
-            var printOut = new PrintStream( out );
-            var main = new Main( parsedArgs, in, printOut, printOut, new PrintStream( err ), isInputInteractive, isOutputInteractive );
+            var args = parseArgs();
+            var outPrintStream = new PrintStream( out );
+            var errPrintStream = new PrintStream( err );
+            var logger = new AnsiLogger( false, Format.VERBOSE, outPrintStream, errPrintStream );
+            var terminal = terminalBuilder().dumb().streams( in, outPrintStream ).interactive( !args.getNonInteractive() ).logger( logger ).build();
+            var main = new Main( args, outPrintStream, errPrintStream, isOutputInteractive, terminal );
             var exitCode = main.startShell();
             return new AssertableMain( exitCode, out, err, main.getCypherShell() );
         }

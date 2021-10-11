@@ -73,7 +73,7 @@ public class CommandHelper
         if ( args.length < minCount || args.length > maxCount )
         {
             throw new CommandException( AnsiFormattedText.from( "Incorrect number of arguments.\nusage: " )
-                                                         .bold().append( commandName ).boldOff().append( " " ).append( usage ) );
+                                                         .bold( commandName ).append( " " ).append( usage ) );
         }
 
         return args;

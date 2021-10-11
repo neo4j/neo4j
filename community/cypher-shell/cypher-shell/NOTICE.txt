@@ -43,7 +43,8 @@ BSD - Scala License
   Scala Library
 
 BSD License
-  JLine
+  JLine Reader
+  JLine Terminal
 
 Creative Commons 0
   reactive-streams

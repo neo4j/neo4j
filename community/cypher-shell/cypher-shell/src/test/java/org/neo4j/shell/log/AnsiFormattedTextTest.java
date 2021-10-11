@@ -50,11 +50,9 @@ class AnsiFormattedTextTest
     void withFormatting()
     {
         AnsiFormattedText st = AnsiFormattedText.s()
-                                                .bold()
                                                 .colorRed()
-                                                .append( "hello" )
+                                                .bold( "hello" )
                                                 .colorDefault()
-                                                .boldOff()
                                                 .append( " world" );
 
         assertEquals( "hello world", st.plainString() );

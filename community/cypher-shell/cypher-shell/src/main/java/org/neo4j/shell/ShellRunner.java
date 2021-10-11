@@ -19,25 +19,19 @@
  */
 package org.neo4j.shell;
 
-import org.apache.commons.io.output.NullOutputStream;
-import org.apache.commons.io.output.WriterOutputStream;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
 
 import org.neo4j.shell.cli.CliArgs;
-import org.neo4j.shell.cli.FileHistorian;
 import org.neo4j.shell.cli.InteractiveShellRunner;
 import org.neo4j.shell.cli.NonInteractiveShellRunner;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.ShellStatementParser;
+import org.neo4j.shell.terminal.CypherShellTerminal;
 
 import static org.fusesource.jansi.internal.CLibrary.STDIN_FILENO;
 import static org.fusesource.jansi.internal.CLibrary.STDOUT_FILENO;
@@ -124,43 +118,6 @@ public interface ShellRunner
         }
     }
 
-    static OutputStream getOutputStreamForInteractivePrompt()
-    {
-        if ( isWindows() )
-        {
-            // Output will never be a TTY on windows and it isatty seems to be able to block forever on Windows so avoid
-            // calling it.
-            if ( System.console() != null )
-            {
-                return new WriterOutputStream( System.console().writer(), Charset.defaultCharset() );
-            }
-        }
-        else
-        {
-            try
-            {
-                if ( 1 == isatty( STDOUT_FILENO ) )
-                {
-                    return System.out;
-                }
-                else
-                {
-                    return new FileOutputStream( new File( "/dev/tty" ) );
-                }
-            }
-            catch ( Throwable ignored )
-            {
-                // system is not using libc (like Alpine Linux)
-                // Fallback to checking stdin OR stdout
-                if ( System.console() != null )
-                {
-                    return new WriterOutputStream( System.console().writer(), Charset.defaultCharset() );
-                }
-            }
-        }
-        return new NullOutputStream();
-    }
-
     /**
      * Run and handle user input until end of file
      *
@@ -175,18 +132,17 @@ public interface ShellRunner
 
     class Factory
     {
-        public ShellRunner create( CliArgs cliArgs, CypherShell cypherShell, Logger logger, ConnectionConfig connectionConfig, InputStream in,
-                                   boolean inputInteractive ) throws IOException
+        public ShellRunner create( CliArgs cliArgs, CypherShell shell, Logger logger, ConnectionConfig connectionConfig,
+                                   CypherShellTerminal terminal ) throws IOException
         {
-            if ( shouldBeInteractive( cliArgs, inputInteractive ) )
+            if ( shouldBeInteractive( cliArgs, terminal.isInteractive() ) )
             {
-                var userMessagesHandler = new UserMessagesHandler( connectionConfig, cypherShell.getProtocolVersion() );
-                return new InteractiveShellRunner( cypherShell, cypherShell, cypherShell, logger, new ShellStatementParser(),
-                                                   in, FileHistorian.getDefaultHistoryFile(), userMessagesHandler, connectionConfig );
+                var userMessagesHandler = new UserMessagesHandler( connectionConfig, shell.getProtocolVersion() );
+                return new InteractiveShellRunner( shell, shell, shell, logger, terminal, userMessagesHandler, connectionConfig, cliArgs.getHistoryFile() );
             }
             else
             {
-                return new NonInteractiveShellRunner( cliArgs.getFailBehavior(), cypherShell, logger, new ShellStatementParser(), getInputStream( cliArgs ) );
+                return new NonInteractiveShellRunner( cliArgs.getFailBehavior(), shell, logger, new ShellStatementParser(), getInputStream( cliArgs ) );
             }
         }
     }
