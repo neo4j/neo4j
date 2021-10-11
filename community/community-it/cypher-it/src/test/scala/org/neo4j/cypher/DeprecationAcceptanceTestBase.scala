@@ -497,4 +497,15 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
     assertNoNotificationInLastMajorVersion(queries, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR)
   }
+
+  // FUNCTIONALITY DEPRECATED IN 4.4, TO BE REMOVED IN 5.0
+
+  test("use point.distance rather than distance") {
+    val deprecated = Seq(" MATCH (n) WHERE distance(n.prop, point({x:0, y:0})) < 10 RETURN n")
+    val newSyntax = Seq(" MATCH (n) WHERE point.distance(n.prop, point({x:0, y:0})) < 10 RETURN n")
+    val detail = NotificationDetail.Factory.deprecatedName("distance", "point.distance")
+
+    assertNotificationInSupportedVersions(deprecated, DEPRECATED_FUNCTION, detail)
+    assertNoNotificationInSupportedVersions(newSyntax, DEPRECATED_FUNCTION)
+  }
 }

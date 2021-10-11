@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.expressions.functions.ToBoolean
 import org.neo4j.cypher.internal.expressions.functions.ToString
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.expressions.functions.WithinBBox
+import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
@@ -194,7 +195,12 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
           specifyType(CTFloat, invocation)
 
       case LegacyDistance =>
-        checkArgs(invocation, 2) ifOkChain
+        def warn = (originalState: SemanticState) => {
+          val newState = originalState.addNotification(DeprecatedFunctionNotification(invocation.position, "distance", "point.distance"))
+          SemanticCheckResult(newState, Seq.empty)
+        }
+
+        warn chain checkArgs(invocation, 2) ifOkChain
           specifyType(CTFloat, invocation)
 
       case WithinBBox =>
