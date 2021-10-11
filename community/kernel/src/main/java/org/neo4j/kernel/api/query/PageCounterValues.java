@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.api.query;
 
-import java.util.function.LongSupplier;
-
 class PageCounterValues
 {
     final long hits;
     final long faults;
 
-    PageCounterValues( LongSupplier hits, LongSupplier faults )
+    PageCounterValues( long hits, long faults )
     {
-        this.hits = hits.getAsLong();
-        this.faults = faults.getAsLong();
+        this.hits = hits;
+        this.faults = faults;
     }
 }

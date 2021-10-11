@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.QueryExecutionType;
@@ -85,6 +86,15 @@ public class ExecutingQuery
 
     private OptionalMemoryTracker memoryTracker;
     private TransactionBinding transactionBinding = TransactionBinding.EMPTY;
+
+    // Accumulated statistics of transactions that have executed this query but are already committed
+    private long pageHitsOfClosedTransactions;
+    private long pageFaultsOfClosedTransactions;
+
+    @Nullable
+    private NamedDatabaseId namedDatabaseId;
+
+    private long transactionId = -1L;
 
     public ExecutingQuery(
             long queryId, ClientConnectionInfo clientConnection, String username, String queryText, MapValue queryParameters,
@@ -160,6 +170,18 @@ public class ExecutingQuery
     public void onTransactionBound( TransactionBinding transactionBinding )
     {
         this.transactionBinding = transactionBinding;
+        this.namedDatabaseId = transactionBinding.namedDatabaseId;
+    }
+
+    /**
+     * Called when a transaction, that this query (or part of this query) has executed in, is about to close.
+     * Removes the TransactionBinding for that transaction, after capturing some statistics that we might need even after the transaction has closed.
+     */
+    public void onTransactionUnbound()
+    {
+        pageHitsOfClosedTransactions += transactionBinding.hitsSupplier.getAsLong();
+        pageFaultsOfClosedTransactions += transactionBinding.faultsSupplier.getAsLong();
+        transactionBinding = TransactionBinding.EMPTY;
     }
 
     public void onObfuscatorReady( QueryObfuscator queryObfuscator )
@@ -252,7 +274,9 @@ public class ExecutingQuery
         // activeLockCount is not atomic to capture, so we capture it after the most sensitive part.
         long totalActiveLocks = transactionBinding.activeLockCount.getAsLong();
         // just needs to be captured at some point...
-        PageCounterValues pageCounters = new PageCounterValues( transactionBinding.hitsSupplier, transactionBinding.faultsSupplier );
+        var hits = pageHitsOfClosedTransactions + transactionBinding.hitsSupplier.getAsLong();
+        var faults = pageFaultsOfClosedTransactions + transactionBinding.faultsSupplier.getAsLong();
+        PageCounterValues pageCounters = new PageCounterValues( hits, faults );
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
         long compilationTimeNanos = (status.isParsingOrPlanning() ? currentTimeNanos : compilationCompletedNanos) - startTimeNanos;
@@ -343,7 +367,7 @@ public class ExecutingQuery
 
     public Optional<NamedDatabaseId> databaseId()
     {
-        return Optional.ofNullable( transactionBinding.namedDatabaseId );
+        return Optional.ofNullable( namedDatabaseId );
     }
 
     public long startTimestampMillis()
