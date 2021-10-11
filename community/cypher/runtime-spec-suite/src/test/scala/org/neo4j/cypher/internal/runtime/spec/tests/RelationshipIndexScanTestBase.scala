@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
@@ -507,5 +508,30 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
     //then
     runtimeResult should beColumns("value").withRows(rowCount(limit))
+  }
+
+  test("should handle undirected and continuation") {
+    val size = 100
+    val rels = given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(size)
+      rels.zipWithIndex.foreach {
+        case(r, i) => r.setProperty("prop", i)
+      }
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("r")
+      .withRows(singleColumn(rels.flatMap(r => Seq.fill(2 * 10)(r))))
   }
 }

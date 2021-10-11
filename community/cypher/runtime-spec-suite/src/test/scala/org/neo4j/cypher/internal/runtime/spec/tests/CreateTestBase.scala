@@ -613,7 +613,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     nodes should have size size
   }
 
-  ignore("should not create too many nodes if creates is between two loops with continuation 4") {
+  test("should not create too many nodes if creates is between two loops with continuation 4") {
     //NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
     val (_, rels) = given {
