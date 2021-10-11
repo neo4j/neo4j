@@ -26,6 +26,7 @@ import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+@Isolated
 public class Neo4jCommandIT extends Neo4jCommandTestBase
 {
     private static final int MAX_HEAP_MB = 100;
@@ -106,7 +108,7 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
 
             int updatedSetting = 2 * INITIAL_HEAP_MB;
             addConf( BootloaderSettings.initial_heap_size, String.format( "%dm", updatedSetting ) );
-            assertThat( execute( "update-service" ) ).isEqualTo( 0 );
+            assertThat( execute( "update-service" ) ).withFailMessage( () -> "Out:" + out.toString() + ", err: " + err.toString() ).isEqualTo( 0 );
 
             shouldBeAbleToStartAndStopRealServer( updatedSetting );
         }
