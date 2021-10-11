@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.TransientFailureException
+import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
@@ -71,6 +72,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
       val securityContext = tc.securityContext()
+      if (securityContext.impersonating()) throw new AuthorizationViolationException("Not allowed to run updating system commands when impersonating a user.")
       if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired(securityAuthorizationHandler)
       val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)

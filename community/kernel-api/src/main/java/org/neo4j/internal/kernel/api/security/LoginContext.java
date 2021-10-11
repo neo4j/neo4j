@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.Objects;
+
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -50,6 +52,11 @@ public abstract class LoginContext
     public ClientConnectionInfo connectionInfo()
     {
         return connectionInfo;
+    }
+
+    public boolean impersonating()
+    {
+        return !Objects.equals( subject.executingUser(), subject().authenticatedUser() );
     }
 
     /**
