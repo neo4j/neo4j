@@ -111,7 +111,7 @@ class CachingExpandIntoTest
     void shouldComputeDegreeOfStartAndEndNodeEveryTimeIfCacheIsFull() throws Exception
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0 );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0, true );
         NodeCursor cursor = mockCursor();
 
         // When
@@ -148,7 +148,7 @@ class CachingExpandIntoTest
     void shouldRecomputeIfSameNodesAndTypesIfCacheIsFull() throws Exception
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0 );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0, true );
         findConnections( expandInto, mockCursor(), 42, 43, 100, 101 );
         NodeCursor cursor = mockCursor();
 
