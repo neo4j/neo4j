@@ -70,6 +70,7 @@ public class StatementQueryRegistry implements QueryRegistry
     @Override
     public void unregisterExecutingQuery( ExecutingQuery executingQuery )
     {
+        executingQuery.onTransactionUnbound();
         statement.stopQueryExecution( executingQuery );
     }
 }

@@ -161,11 +161,22 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
 
     public long getHits()
     {
+        /*
+         * The cursor tracer is shared between queries in the same transaction.
+         * This makes it impossible to track page hits per query.
+         *
+         * We try by subtracting initialStatementHits. But this will only work
+         * when executing one query at a time. If multiple queries in the same
+         * transaction are open simultaneously it easily leads to a state where
+         * this method returns more hits than the current executing query are
+         * responsible for.
+         */
         return subtractExact( pageCursorTracer.hits(), initialStatementHits );
     }
 
     public long getFaults()
     {
+        // Comment on getHits also applies here.
         return subtractExact( pageCursorTracer.faults(), initialStatementFaults );
     }
 
