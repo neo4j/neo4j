@@ -203,7 +203,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                    logicalQuery.readOnly,
                                    logicalQuery.cardinalities,
                                    logicalQuery.providedOrders,
-                                   StubExecutionPlan())
+                                   executionPlan)
 
       planDescriptionBuilder.explain()
     }
