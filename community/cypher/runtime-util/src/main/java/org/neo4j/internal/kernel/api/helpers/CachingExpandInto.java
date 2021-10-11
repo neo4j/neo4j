@@ -70,6 +70,7 @@ public class CachingExpandInto extends DefaultCloseListenable
 
     private final RelationshipCache relationshipCache;
     private final NodeDegreeCache degreeCache;
+    private final boolean transferOwnershipOfTraversalCursors;
 
     @Unmetered
     private final Read read;
@@ -80,10 +81,15 @@ public class CachingExpandInto extends DefaultCloseListenable
 
     public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker )
     {
-        this( read, direction, memoryTracker, DEFAULT_CAPACITY );
+        this( read, direction, memoryTracker, DEFAULT_CAPACITY, /*transferOwnershipOfTraversalCursors*/ true );
     }
 
-    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, int capacity )
+    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, boolean transferOwnershipOfTraversalCursors )
+    {
+        this( read, direction, memoryTracker, DEFAULT_CAPACITY, transferOwnershipOfTraversalCursors );
+    }
+
+    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, int capacity, boolean transferOwnershipOfTraversalCursors )
     {
         this.scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         this.scopedMemoryTracker.allocateHeap( CACHING_EXPAND_INTO_SHALLOW_SIZE );
@@ -91,6 +97,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         this.direction = direction;
         this.relationshipCache = new RelationshipCache( capacity, scopedMemoryTracker );
         this.degreeCache = new NodeDegreeCache( capacity, scopedMemoryTracker );
+        this.transferOwnershipOfTraversalCursors = transferOwnershipOfTraversalCursors;
     }
 
     @Override
@@ -111,6 +118,7 @@ public class CachingExpandInto extends DefaultCloseListenable
      * @param nodeCursor Node cursor used in traversal
      * @param traversalCursor Traversal cursor used in traversal
      * @param firstNode The first node
+     * @param types The relationship types to traverse
      * @param secondNode The second node
      * @return The interconnecting relationships in the given direction with any of the given types.
      */
@@ -446,7 +454,10 @@ public class CachingExpandInto extends DefaultCloseListenable
         @Override
         public void closeInternal()
         {
-            allRelationships.close();
+            if ( transferOwnershipOfTraversalCursors )
+            {
+                allRelationships.close();
+            }
             connections = null;
             innerMemoryTracker.close();
         }
