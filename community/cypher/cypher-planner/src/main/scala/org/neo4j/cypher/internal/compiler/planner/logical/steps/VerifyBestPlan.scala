@@ -23,15 +23,14 @@ import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.exceptions.HintException
 import org.neo4j.exceptions.IndexHintException
 import org.neo4j.exceptions.InternalException
@@ -44,8 +43,8 @@ object VerifyBestPlan {
     val constructed: PlannerQueryPart = context.planningAttributes.solveds.get(plan.id)
 
     if (expected != constructed) {
-      val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context.planContext, context.semanticTable)
-      val unfulfillableJoinHints = findUnfulfillableJoinHints(expected, context.planContext)
+      val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context)
+      val unfulfillableJoinHints = findUnfulfillableJoinHints(expected)
       val expectedWithoutHints = expected.withoutHints(unfulfillableIndexHints.map(_.hint) ++ unfulfillableJoinHints)
       if (expectedWithoutHints != constructed) {
         val a: PlannerQueryPart = expected.withoutHints(expected.allHints)
@@ -125,11 +124,36 @@ object VerifyBestPlan {
 
   case class UnfulfillableIndexHint(hint: UsingIndexHint, entityType: EntityType)
 
-  private def findUnfulfillableIndexHints(query: PlannerQueryPart, planContext: PlanContext, semanticTable: SemanticTable): Set[UnfulfillableIndexHint] = {
+  private def findUnfulfillableIndexHints(query: PlannerQueryPart, context: LogicalPlanningContext): Set[UnfulfillableIndexHint] = {
+    
+    val planContext = context.planContext
+    val semanticTable = context.semanticTable
+    
+    def nodeIndexHintFulfillable(labelOrRelType: LabelOrRelTypeName, properties: Seq[PropertyKeyName]): Boolean = {
+      val labelName = labelOrRelType.name
+      val propertyNames = properties.map(_.name)
+
+      planContext.btreeIndexExistsForLabelAndProperties(labelName, propertyNames) ||
+        (context.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(labelName, propertyNames))
+    }
+
+    def relIndexHintFulfillable(labelOrRelType: LabelOrRelTypeName, properties: Seq[PropertyKeyName]): Boolean = {
+      val relTypeName = labelOrRelType.name
+      val propertyNames = properties.map(_.name)
+
+      planContext.btreeIndexExistsForRelTypeAndProperties(relTypeName, propertyNames) ||
+        (context.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(relTypeName, propertyNames))
+    }
+
     query.allHints.flatMap {
       // using index name:label(property1,property2)
-      case UsingIndexHint(_, LabelOrRelTypeName(label), properties, _)
-        if planContext.btreeIndexExistsForLabelAndProperties(label, properties.map(_.name)) => None
+      case UsingIndexHint(v, labelOrRelType, properties, _) if semanticTable.isNodeNoFail(v.name) && nodeIndexHintFulfillable(labelOrRelType, properties) =>
+        None
+
+      // using index name:relType(property1,property2)
+      case UsingIndexHint(v, labelOrRelType, properties, _) if semanticTable.isRelationshipNoFail(v.name) && relIndexHintFulfillable(labelOrRelType, properties) =>
+        None
+
       // no such index exists
       case hint: UsingIndexHint =>
         // Let's assume node type by default, in case we have no type information.
@@ -140,7 +164,7 @@ object VerifyBestPlan {
     }
   }
 
-  private def findUnfulfillableJoinHints(query: PlannerQueryPart, planContext: PlanContext): Set[UsingJoinHint] = {
+  private def findUnfulfillableJoinHints(query: PlannerQueryPart): Set[UsingJoinHint] = {
     query.allHints.collect {
       case hint: UsingJoinHint => hint
     }

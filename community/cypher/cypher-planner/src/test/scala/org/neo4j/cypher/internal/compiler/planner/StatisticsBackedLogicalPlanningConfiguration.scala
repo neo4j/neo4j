@@ -598,8 +598,16 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         btreeIndexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
       }
 
-      override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
-        btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKey).nonEmpty
+      override def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
+        textIndexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
+      }
+
+      override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = {
+        btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys).nonEmpty
+      }
+
+      override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = {
+        textIndexGetForRelTypeAndProperties(relTypeName, propertyKeys).nonEmpty
       }
 
       override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
@@ -607,9 +615,19 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.BTREE)
       }
 
+      override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Node(labelName)
+        indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.TEXT)
+      }
+
       override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.BTREE)
+      }
+
+      override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
+        indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.TEXT)
       }
 
       private def indexGetForEntityTypePropertiesAndIndexType(entityType: IndexDefinition.EntityType,

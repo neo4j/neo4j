@@ -71,19 +71,39 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
-   * Gets an index if it exists for a given relationship type and properties, without taking any schema locks.
+   * Gets a TEXT index if it exists (general or unique) for a given label and properties, without taking any schema locks.
+   */
+  def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
+
+  /**
+   * Gets a BTREE index if it exists for a given relationship type and properties, without taking any schema locks.
    */
   def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
-   * Checks if an index exists (general or unique) for a given label and properties, without taking any schema locks.
+   * Gets a TEXT index if it exists for a given relationship type and properties, without taking any schema locks.
    */
-  def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean
+  def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
-   * Checks if an index exists for a given relationship type and properties, without taking any schema locks.
+   * Checks if an index exists (general or unique) for a given label and properties, without taking any schema locks.
    */
-  def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean
+  def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
+
+  /**
+   * Checks if a TEXT index exists (general or unique) for a given label and properties, without taking any schema locks.
+   */
+  def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
+
+  /**
+   * Checks if a BTREE exists for a given relationship type and properties, without taking any schema locks.
+   */
+  def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
+
+  /**
+   * Checks if a TEXT index exists for a given relationship type and properties, without taking any schema locks.
+   */
+  def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
 
   /**
    * Checks if it is possible to lookup nodes by their labels (either through the scan store or a lookup index). Does not take any schema locks.

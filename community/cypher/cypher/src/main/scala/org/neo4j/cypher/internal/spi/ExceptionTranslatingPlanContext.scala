@@ -49,14 +49,26 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.btreeIndexGetForLabelAndProperties(labelName, propertyKeys))
 
+  override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.textIndexGetForLabelAndProperties(labelName, propertyKeys))
+
   override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys))
+
+  override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.textIndexGetForRelTypeAndProperties(relTypeName, propertyKeys))
 
   override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
     translateException(tokenNameLookup, inner.btreeIndexExistsForLabelAndProperties(labelName, propertyKey))
 
+  override def textIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
+    translateException(tokenNameLookup, inner.textIndexExistsForLabelAndProperties(labelName, propertyKey))
+
   override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean =
     translateException(tokenNameLookup, inner.btreeIndexExistsForRelTypeAndProperties(relTypeName, propertyKey))
+
+  override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean =
+    translateException(tokenNameLookup, inner.textIndexExistsForRelTypeAndProperties(relTypeName, propertyKey))
 
   override def statistics: InstrumentedGraphStatistics =
     translateException(tokenNameLookup, inner.statistics)

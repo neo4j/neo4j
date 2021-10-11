@@ -125,6 +125,10 @@ class CypherQueryObfuscatorFactory {
     override def getOptRelTypeId(relType: String): Nothing = fail()
     override def getRelTypeId(relType: String): Nothing = fail()
     override def txStateHasChanges(): Nothing = fail()
+    override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
+    override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
+    override def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
+    override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
 
     private def fail() = throw new IllegalStateException("Should not have been called in this test.")
   }

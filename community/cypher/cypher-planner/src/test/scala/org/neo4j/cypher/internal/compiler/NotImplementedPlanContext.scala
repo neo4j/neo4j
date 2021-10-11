@@ -91,4 +91,12 @@ class NotImplementedPlanContext extends PlanContext {
   override def getOptRelTypeId(relType: String): Option[Int] = ???
 
   override def getRelTypeId(relType: String): Int = ???
+
+  override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+
+  override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+
+  override def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = ???
+
+  override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = ???
 }

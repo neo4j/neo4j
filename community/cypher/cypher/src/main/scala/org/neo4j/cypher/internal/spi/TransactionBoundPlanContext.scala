@@ -151,13 +151,29 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    descriptor.flatMap(indexGetForSchemaDescriptor(schema.IndexType.BTREE))
+    indexGetForLabelAndProperties(schema.IndexType.BTREE, labelName, propertyKeys)
+  }
+
+  override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+    indexGetForLabelAndProperties(schema.IndexType.TEXT, labelName, propertyKeys)
   }
 
   override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+    indexGetForRelTypeAndProperties(schema.IndexType.BTREE, relTypeName, propertyKeys)
+  }
+
+  override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+    indexGetForRelTypeAndProperties(schema.IndexType.TEXT, relTypeName, propertyKeys)
+  }
+
+  private def indexGetForLabelAndProperties(indexType: schema.IndexType, labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
+    descriptor.flatMap(indexGetForSchemaDescriptor(indexType))
+  }
+
+  private def indexGetForRelTypeAndProperties(indexType: schema.IndexType, relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     val descriptor = toRelTypeSchemaDescriptor(this, relTypeName, propertyKeys)
-    descriptor.flatMap(indexGetForSchemaDescriptor(schema.IndexType.BTREE))
+    descriptor.flatMap(indexGetForSchemaDescriptor(indexType))
   }
 
   private def indexGetForSchemaDescriptor(indexType: schema.IndexType)(descriptor: SchemaDescriptor): Option[IndexDescriptor] = {
@@ -171,8 +187,16 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     btreeIndexGetForLabelAndProperties(labelName, propertyKey).isDefined
   }
 
+  override def textIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
+    textIndexGetForLabelAndProperties(labelName, propertyKey).isDefined
+  }
+
   override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
     btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
+  }
+
+  override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
+    textIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
   }
 
   private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] = {
