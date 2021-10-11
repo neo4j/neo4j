@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
@@ -412,5 +413,25 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
         relationships
           .flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
           .sortBy(_.head.getId * -1)))
+  }
+
+  test("should handle undirected and continuation") {
+    val size = 100
+    val (_, rels) = given {
+      circleGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r2")
+      .relationshipTypeScan("(n)-[r:R]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("r")
+      .withRows(singleColumn(rels.flatMap(r => Seq.fill(2 * 10)(r))))
   }
 }
