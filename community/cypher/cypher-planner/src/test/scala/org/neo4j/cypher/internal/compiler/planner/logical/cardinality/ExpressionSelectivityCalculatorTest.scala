@@ -979,13 +979,13 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("isNotNull with one label, text index only, greater than the default value") {
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo,
-      stats = mockStats(indexCardinalities = Map(indexPersonText -> 900.0 )))
+      stats = mockStats(indexCardinalities = Map(indexPersonText -> 900.0)))
 
     val labelResult = calculator(nIsPerson.expr)
     val isNotNullResult = calculator(nIsNotNull.expr)
 
     labelResult.factor shouldEqual 0.1
-    isNotNullResult.factor shouldEqual 0.9
+    isNotNullResult.factor shouldEqual 0.95
   }
 
   test("isNotNull with one label, text index only, less than the default value") {
@@ -996,7 +996,29 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val isNotNullResult = calculator(nIsNotNull.expr)
 
     labelResult.factor shouldEqual 0.1
+    isNotNullResult.factor shouldEqual 0.55
+  }
+
+  test("isNotNull with one label, empty text index only") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(indexCardinalities = Map(indexPersonText -> 0.0)))
+
+    val labelResult = calculator(nIsPerson.expr)
+    val isNotNullResult = calculator(nIsNotNull.expr)
+
+    labelResult.factor shouldEqual 0.1
     isNotNullResult shouldEqual DEFAULT_PROPERTY_SELECTIVITY
+  }
+
+  test("isNotNull with one label, text index only, all properties are text") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(indexCardinalities = Map(indexPersonText -> 1000.0)))
+
+    val labelResult = calculator(nIsPerson.expr)
+    val isNotNullResult = calculator(nIsNotNull.expr)
+
+    labelResult.factor shouldEqual 0.1
+    isNotNullResult shouldEqual Selectivity.ONE
   }
 
   test("isNotNull with one relType") {

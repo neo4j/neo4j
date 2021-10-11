@@ -204,7 +204,9 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
           if (indexType == IndexType.Btree)
             selectivity
           else
-            Selectivity.max(selectivity, DEFAULT_PROPERTY_SELECTIVITY) // not as accurate as BTREE, but can be an improvement over the default value
+            Selectivity
+              .of(selectivity.factor + (selectivity.negate * DEFAULT_PROPERTY_SELECTIVITY).factor) // not as accurate as BTREE, but can be an improvement over the default value
+              .getOrElse(DEFAULT_PROPERTY_SELECTIVITY)
       }
 
     combiner.orTogetherSelectivities(indexPropertyExistsSelectivities).getOrElse(DEFAULT_PROPERTY_SELECTIVITY)
