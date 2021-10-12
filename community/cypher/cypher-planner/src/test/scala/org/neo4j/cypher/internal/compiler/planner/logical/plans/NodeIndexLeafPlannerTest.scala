@@ -183,8 +183,10 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
           CompositeQueryExpression(Seq(SingleQueryExpression(lit42), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), ExistenceQueryExpression())), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropContainsLitFoo
         NodeIndexContainsScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexContainsScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.TEXT),
         // nPropEndsWithLitFoo
         NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.TEXT),
         // ..several..
         NodeIndexScan("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oPropIsNotNull, oPropExists
@@ -241,6 +243,10 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
       resultPlans shouldEqual Set(
         // nPropStartsWithLitFoo
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set(), IndexOrderNone, IndexType.TEXT),
+        // nPropEndsWithLitFoo
+        NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set(), IndexOrderNone, IndexType.TEXT),
+        // nPropContainsLitFoo
+        NodeIndexContainsScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set(), IndexOrderNone, IndexType.TEXT),
         // no scan plans
       )
     }

@@ -197,8 +197,10 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           CompositeQueryExpression(Seq(SingleQueryExpression(lit42), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), ExistenceQueryExpression())), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropContainsLitFoo
         DirectedRelationshipIndexContainsScan("n", "n1", "n2", relationshipTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.BTREE),
+        DirectedRelationshipIndexContainsScan("n", "n1", "n2", relationshipTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.TEXT),
         // nPropEndsWithLitFoo
         DirectedRelationshipIndexEndsWithScan("n", "n1", "n2", relationshipTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.BTREE),
+        DirectedRelationshipIndexEndsWithScan("n", "n1", "n2", relationshipTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.TEXT),
         // ..several..
         DirectedRelationshipIndexScan("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // oPropIsNotNull, oPropExists
@@ -256,6 +258,10 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
       resultPlans shouldEqual Set(
         // rPropStartsWithLitFoo
         DirectedRelationshipIndexSeek("r", "a", "b", relTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set(), IndexOrderNone, IndexType.TEXT),
+        // rPropEndsWithLitFoo
+        DirectedRelationshipIndexEndsWithScan("r", "a", "b", relTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set(), IndexOrderNone, IndexType.TEXT),
+        // rPropContainsLitFoo
+        DirectedRelationshipIndexContainsScan("r", "a", "b", relTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set(), IndexOrderNone, IndexType.TEXT),
         // no scan plans
       )
     }
