@@ -90,7 +90,7 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
     val nPropInLit6Lit42 = in(nProp, listOf(lit6, lit42))
     val nPropInLitFooLitBar = in(nProp, listOf(litFoo, litBar))
     val nPropLessThanLit6 = lessThan(nProp, lit6)
-    val litFoo = literalString("foo")
+    val nPropLessThanLitFoo = lessThan(nProp, litFoo)
     val nPropStartsWithLitFoo = startsWith(nProp, litFoo)
     val nPropEndsWithLitFoo = endsWith(nProp, litFoo)
     val nPropContainsLitFoo = contains(nProp, litFoo)
@@ -123,6 +123,7 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         nPropInLit6Lit42,
         nPropInLitFooLitBar,
         nPropLessThanLit6,
+        nPropLessThanLitFoo,
         nPropEqualsLit42,
         nPropEqualsLitFoo,
         nPropStartsWithLitFoo,
@@ -177,6 +178,9 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(litFoo, litBar)), Set("x"), IndexOrderNone, IndexType.TEXT),
         // nPropLessThanLit6
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        // nPropLessThanLitFoo
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(litFoo))))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(litFoo))))(pos)), Set("x"), IndexOrderNone, IndexType.TEXT),
         // nPropEqualsLit42
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEqualsLitFoo

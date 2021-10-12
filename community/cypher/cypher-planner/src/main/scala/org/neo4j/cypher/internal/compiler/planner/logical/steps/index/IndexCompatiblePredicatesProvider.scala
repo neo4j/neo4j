@@ -107,7 +107,7 @@ trait IndexCompatiblePredicatesProvider {
         val queryExpression = seekable.asQueryExpression
         IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate, solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Btree))
+          compatibleIndexTypes = findCompatibleIndexTypes(seekable.propertyValueType(semanticTable)))
 
       case predicate@AsBoundingBoxSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression

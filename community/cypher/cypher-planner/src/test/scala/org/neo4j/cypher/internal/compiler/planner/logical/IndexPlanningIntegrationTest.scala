@@ -975,7 +975,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .enablePlanningTextIndexes()
       .build()
 
-    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
+    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS", "<", "<=", ">", ">=")) {
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("a.prop AS `a.prop`")
@@ -983,52 +983,16 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .build()
     }
 
-    // not supported yet
-
-    for (op <- List("<", "<=", ">", ">=")) {
+    for (op <- List("=")) {
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection("a.prop AS `a.prop`")
-        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.BTREE)
+        .projection("cacheN[a.prop] AS `a.prop`")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
         .build()
     }
   }
 
-  test("should plan node text index usage for equality predicate when comparing with string") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setLabelCardinality("A", 500)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
-      .enablePlanningTextIndexes()
-      .build()
-
-    val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop = 'hello' RETURN a, a.prop").stripProduceResults
-    plan shouldEqual cfg.subPlanBuilder()
-      .projection("cacheN[a.prop] AS `a.prop`")
-      .nodeIndexOperator(s"a:A(prop = 'hello')", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
-      .build()
-  }
-
-  test("should plan relationship text index usage for equality predicate when comparing with string") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setAllRelationshipsCardinality(1000)
-      .setRelationshipCardinality("()-[:R]->()", 500)
-      .setLabelCardinality("A", 500)
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
-      .enablePlanningTextIndexes()
-      .build()
-
-    val plan = cfg.plan(s"MATCH (a)-[r:R]->(b) WHERE r.prop = 'hello' RETURN r, r.prop").stripProduceResults
-    plan shouldEqual cfg.subPlanBuilder()
-      .projection("cacheR[r.prop] AS `r.prop`")
-      .relationshipIndexOperator(s"(a)-[r:R(prop = 'hello')]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
-      .build()
-  }
-
-  test("should not plan node text index usage for equality predicate when comparing with non-string") {
+  test("should not plan node text index usage when comparing with non-string") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
@@ -1037,33 +1001,17 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
 
     for (arg <- List("3", "a.prop2", "[\"a\", \"b\", \"c\"]", "$param")) {
-      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop = $arg RETURN a, a.prop").stripProduceResults
-      plan shouldEqual cfg.subPlanBuilder()
-        .projection("cacheN[a.prop] AS `a.prop`")
-        .filter(s"cacheNFromStore[a.prop] = $arg")
-        .nodeByLabelScan("a", "A", IndexOrderNone)
-        .build()
-    }
-  }
-
-  test("should not plan relationship text index usage for equality predicate when comparing with non-string") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setLabelCardinality("A", 500)
-      .setAllRelationshipsCardinality(1000)
-      .setRelationshipCardinality("()-[:R]->()", 500)
-      .addNodeIndex("R", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .enablePlanningTextIndexes()
-      .build()
-
-    for (arg <- List("3", "r.prop2", "[\"a\", \"b\", \"c\"]", "$param")) {
-      val plan = cfg.plan(s"MATCH (a)-[r:R]->(b) WHERE r.prop = $arg RETURN r, r.prop").stripProduceResults
-      plan shouldEqual cfg.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
-        .filter(s"cacheRFromStore[r.prop] = $arg")
-        .expandAll("(a)-[r:R]->(b)")
-        .allNodeScan("a")
-        .build()
+      for (op <- List("<", "<=", ">", ">=", "=")) {
+        val query = s"MATCH (a:A) WHERE a.prop $op $arg RETURN a, a.prop"
+        val plan = cfg.plan(query).stripProduceResults
+        withClue(query) {
+          plan shouldEqual cfg.subPlanBuilder()
+            .projection("cacheN[a.prop] AS `a.prop`")
+            .filter(s"cacheNFromStore[a.prop] $op $arg")
+            .nodeByLabelScan("a", "A", IndexOrderNone)
+            .build()
+        }
+      }
     }
   }
 
@@ -1076,7 +1024,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .enablePlanningTextIndexes()
       .build()
 
-    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
+    for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS", "<", "<=", ">", ">=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("r.prop AS `r.prop`")
@@ -1084,14 +1032,37 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .build()
     }
 
-    // not supported yet
-
-    for (op <- List("<", "<=", ">", ">=")) {
+    for (op <- List("=")) {
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
-        .projection("r.prop AS `r.prop`")
-        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.BTREE)
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
         .build()
+    }
+  }
+
+  test("should not plan relationship text index usage when comparing with non-string") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(1000)
+      .setRelationshipCardinality("()-[:R]->()", 500)
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .enablePlanningTextIndexes()
+      .build()
+
+    for (arg <- List("3", "a.prop2", "[\"a\", \"b\", \"c\"]", "$param")) {
+      for (op <- List("<", "<=", ">", ">=", "=")) {
+        val query = s"MATCH (a)-[r:R]->(b) WHERE r.prop $op $arg RETURN r, r.prop"
+        val plan = cfg.plan(query).stripProduceResults
+        withClue(query) {
+          plan shouldEqual cfg.subPlanBuilder()
+            .projection("cacheR[r.prop] AS `r.prop`")
+            .filter(s"cacheRFromStore[r.prop] $op $arg")
+            .expandAll("(a)-[r:R]->(b)")
+            .allNodeScan("a")
+            .build()
+        }
+      }
     }
   }
 }
