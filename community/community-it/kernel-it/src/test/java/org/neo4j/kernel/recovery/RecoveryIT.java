@@ -99,10 +99,10 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.Values;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -1471,11 +1471,7 @@ class RecoveryIT
     {
         return LogFilesBuilder
                 .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
-<<<<<<< HEAD
-                .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() )
-=======
-                .withCommandReaderFactory( defaultStorageEngine().commandReaderFactory() )
->>>>>>> bc49af6a6c1 (Point in time (transactional history) recovery)
+                .withStorageEngineFactory( defaultStorageEngine() )
                 .build();
     }
 
