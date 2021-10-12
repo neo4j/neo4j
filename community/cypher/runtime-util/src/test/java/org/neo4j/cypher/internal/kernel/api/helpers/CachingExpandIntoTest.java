@@ -117,7 +117,7 @@ class CachingExpandIntoTest
     void shouldComputeDegreeOfStartAndEndNodeEveryTimeIfCacheIsFull()
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0, true );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0 );
         NodeCursor cursor = mockCursor();
 
         // When
@@ -155,7 +155,7 @@ class CachingExpandIntoTest
     void shouldRecomputeIfSameNodesAndTypesIfCacheIsFull()
     {
         // Given
-        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0, true );
+        CachingExpandInto expandInto = new CachingExpandInto( mock( Read.class ), OUTGOING, memoryTracker, 0 );
         findConnections( expandInto, mockCursor(), 42, 43, 100, 101 );
         NodeCursor cursor = mockCursor();
 
@@ -191,7 +191,7 @@ class CachingExpandIntoTest
         StubRead read = new StubRead();
 
         // When
-        CachingExpandInto expandInto = new CachingExpandInto( read, OUTGOING, memoryTracker, 100, true );
+        CachingExpandInto expandInto = new CachingExpandInto( read, OUTGOING, memoryTracker, 100 );
         long nativeMemoryBefore = memoryTracker.usedNativeMemory();
         long heapMemoryBefore = memoryTracker.estimatedHeapMemory();
         expandInto.connectingRelationships( nodeCursor, relationshipCursor, fromNodeId, new int[]{type}, toNodeId );

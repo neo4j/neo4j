@@ -71,7 +71,6 @@ public class CachingExpandInto extends DefaultCloseListenable
 
     private final RelationshipCache relationshipCache;
     private final NodeDegreeCache degreeCache;
-    private final boolean transferOwnershipOfTraversalCursors;
 
     @Unmetered
     private final Read read;
@@ -82,15 +81,10 @@ public class CachingExpandInto extends DefaultCloseListenable
 
     public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker )
     {
-        this( read, direction, memoryTracker, DEFAULT_CAPACITY, /*transferOwnershipOfTraversalCursors*/ true );
+        this( read, direction, memoryTracker, DEFAULT_CAPACITY );
     }
 
-    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, boolean transferOwnershipOfTraversalCursors )
-    {
-        this( read, direction, memoryTracker, DEFAULT_CAPACITY, transferOwnershipOfTraversalCursors );
-    }
-
-    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, int capacity, boolean transferOwnershipOfTraversalCursors )
+    public CachingExpandInto( Read read, Direction direction, MemoryTracker memoryTracker, int capacity )
     {
         this.scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         this.scopedMemoryTracker.allocateHeap( CACHING_EXPAND_INTO_SHALLOW_SIZE );
@@ -98,7 +92,6 @@ public class CachingExpandInto extends DefaultCloseListenable
         this.direction = direction;
         this.relationshipCache = new RelationshipCache( capacity, scopedMemoryTracker );
         this.degreeCache = new NodeDegreeCache( capacity, scopedMemoryTracker );
-        this.transferOwnershipOfTraversalCursors = transferOwnershipOfTraversalCursors;
     }
 
     @Override
@@ -115,6 +108,14 @@ public class CachingExpandInto extends DefaultCloseListenable
 
     /**
      * Creates a cursor for all connecting relationships given a first and a second node.
+     *
+     * NOTE: Ownership of traversalCursor is _not_ transferred, so the caller is responsible
+     *       for closing it when applicable
+     *
+     * NOTE: In case nodeCursor supports fast relationships, the given traversalCursor could be returned.
+     *       Otherwise a specialized relationship selection cursor will be created and returned, and
+     *       in this case it is important that this specialized cursor does not get reused as a general
+     *       relationship traversal cursor just because it implements the RelationshipTraversalCursor interface.
      *
      * @param nodeCursor Node cursor used in traversal
      * @param traversalCursor Traversal cursor used in traversal
@@ -137,7 +138,6 @@ public class CachingExpandInto extends DefaultCloseListenable
             {
                 nodeCursor.relationshipsTo( traversalCursor, selection( types, direction ), secondNode );
             }
-            // TODO: This will not be closed internally when transferOwnershipOfTraversalCursors is true
             return traversalCursor;
         }
 
@@ -465,10 +465,6 @@ public class CachingExpandInto extends DefaultCloseListenable
         @Override
         public void closeInternal()
         {
-            if ( transferOwnershipOfTraversalCursors )
-            {
-                allRelationships.close();
-            }
             connections = null;
             innerMemoryTracker.close();
         }
@@ -563,7 +559,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         @Override
         public boolean isClosed()
         {
-            return allRelationships.isClosed();
+            return connections == null;
         }
     }
 

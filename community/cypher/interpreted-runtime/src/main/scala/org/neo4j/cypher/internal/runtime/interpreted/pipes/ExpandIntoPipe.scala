@@ -24,9 +24,11 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.relationshipIterator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.relationshipSelectionCursorIterator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.traceRelationshipSelectionCursor
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Direction
@@ -86,8 +88,8 @@ case class ExpandIntoPipe(source: Pipe,
                                                                            fromNode.id(),
                                                                            lazyTypes.types(query),
                                                                            n.id())
-                  query.resources.trace(selectionCursor)
-                  val relationships = relationshipIterator(selectionCursor, query)
+                  traceRelationshipSelectionCursor(query.resources, selectionCursor, traversalCursor)
+                  val relationships = relationshipSelectionCursorIterator(selectionCursor, traversalCursor, query)
                   if (relationships.isEmpty) Iterator.empty
                   else relationships.map(r => rowFactory.copyWith(row, relName, r))
                 } finally {
@@ -106,8 +108,17 @@ case class ExpandIntoPipe(source: Pipe,
 
 object ExpandIntoPipe {
 
-  def relationshipIterator(cursor: RelationshipTraversalCursor,
-                           query: QueryContext): ClosingIterator[RelationshipValue] = {
+  def traceRelationshipSelectionCursor(resources: ResourceManager, selectionCursor: RelationshipTraversalCursor, traversalCursor: RelationshipTraversalCursor): Unit = {
+    resources.trace(selectionCursor)
+    // In case the originating node cursor supports fast relationships these two could be the same object, so we need to do this check
+    if (!(traversalCursor eq selectionCursor)) {
+      resources.trace(traversalCursor)
+    }
+  }
+
+  def relationshipSelectionCursorIterator(cursor: RelationshipTraversalCursor,
+                                          traversalCursor: RelationshipTraversalCursor,
+                                          query: QueryContext): ClosingIterator[RelationshipValue] = {
     new CursorIterator[RelationshipValue] {
 
       override protected def fetchNext(): RelationshipValue = {
@@ -119,7 +130,12 @@ object ExpandIntoPipe {
         }
       }
 
-      override protected def closeMore(): Unit = cursor.close()
+      override protected def closeMore(): Unit = {
+        if (!(traversalCursor eq cursor)) {
+          traversalCursor.close()
+        }
+        cursor.close()
+      }
     }
   }
 

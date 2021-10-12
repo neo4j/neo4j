@@ -1411,7 +1411,7 @@ object TransactionBoundQueryContext {
     override def close(): Unit
   }
 
-  class RelationshipCursorIterator(selectionCursor: RelationshipTraversalCursor) extends BaseRelationshipCursorIterator {
+  class RelationshipCursorIterator(selectionCursor: RelationshipTraversalCursor, traversalCursor: RelationshipTraversalCursor = null) extends BaseRelationshipCursorIterator {
 
     override protected def fetchNext(): Long =
       if (selectionCursor.next()) selectionCursor.relationshipReference()
@@ -1426,7 +1426,12 @@ object TransactionBoundQueryContext {
       target = selectionCursor.targetNodeReference()
     }
 
-    override def close(): Unit = selectionCursor.close()
+    override def close(): Unit = {
+      if (traversalCursor != null && !(traversalCursor eq selectionCursor)) {
+        traversalCursor.close()
+      }
+      selectionCursor.close()
+    }
   }
 
   class RelationshipTypeCursorIterator(read: Read, typeIndexCursor: RelationshipTypeIndexCursor, scanCursor: RelationshipScanCursor) extends BaseRelationshipCursorIterator {

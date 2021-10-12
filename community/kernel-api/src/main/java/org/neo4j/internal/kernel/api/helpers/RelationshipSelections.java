@@ -136,17 +136,8 @@ public final class RelationshipSelections
     public static RelationshipTraversalCursor relationshipsCursor( RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types,
             Direction outgoing )
     {
-        try
-        {
-            node.relationships( traversalCursor, RelationshipSelection.selection( types, outgoing ) );
-            return traversalCursor;
-        }
-        catch ( Throwable t )
-        {
-            // TODO: It may not be safe to close this if the owner does not expect it
-            traversalCursor.close();
-            throw t;
-        }
+        node.relationships( traversalCursor, RelationshipSelection.selection( types, outgoing ) );
+        return traversalCursor;
     }
 
     /**
