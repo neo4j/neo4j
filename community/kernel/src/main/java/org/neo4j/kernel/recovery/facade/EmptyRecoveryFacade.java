@@ -32,19 +32,19 @@ class EmptyRecoveryFacade implements RecoveryFacade
     }
 
     @Override
-    public void recovery( DatabaseLayout databaseLayout ) throws IOException
+    public void performRecovery( DatabaseLayout databaseLayout ) throws IOException
     {
         // noop
     }
 
     @Override
-    public void recovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException
+    public void performRecovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException
     {
         // noop
     }
 
     @Override
-    public void recovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException
+    public void performRecovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException
     {
         // noop
     }

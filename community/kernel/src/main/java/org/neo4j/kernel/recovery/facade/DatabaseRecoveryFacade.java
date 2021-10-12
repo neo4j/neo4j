@@ -26,10 +26,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.facade.RecoveryFacadeMonitor.EMPTY_MONITOR;
 
 public class DatabaseRecoveryFacade implements RecoveryFacade
@@ -53,22 +53,22 @@ public class DatabaseRecoveryFacade implements RecoveryFacade
     }
 
     @Override
-    public void recovery( DatabaseLayout databaseLayout ) throws IOException
+    public void performRecovery( DatabaseLayout databaseLayout ) throws IOException
     {
-        recovery( databaseLayout, EMPTY_MONITOR );
+        performRecovery( databaseLayout, EMPTY_MONITOR );
     }
 
     @Override
-    public void recovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException
+    public void performRecovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException
     {
-        recovery( databaseLayout, RecoveryCriteria.ALL, monitor );
+        performRecovery( databaseLayout, RecoveryCriteria.ALL, monitor );
     }
 
     @Override
-    public void recovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException
+    public void performRecovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException
     {
         monitor.recoveryStarted();
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, memoryTracker, logProvider, recoveryCriteria );
+        Recovery.performRecovery( fs, pageCache, tracers, config, databaseLayout, memoryTracker, logProvider, recoveryCriteria );
         monitor.recoveryCompleted();
     }
 }

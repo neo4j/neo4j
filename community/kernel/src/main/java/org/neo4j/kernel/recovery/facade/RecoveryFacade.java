@@ -27,9 +27,9 @@ public interface RecoveryFacade
 {
     RecoveryFacade EMPTY = EmptyRecoveryFacade.INSTANCE;
 
-    void recovery( DatabaseLayout databaseLayout ) throws IOException;
+    void performRecovery( DatabaseLayout databaseLayout ) throws IOException;
 
-    void recovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException;
+    void performRecovery( DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor ) throws IOException;
 
-    void recovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException;
+    void performRecovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException;
 }
