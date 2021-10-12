@@ -113,6 +113,7 @@ org.neo4j.kernel.api.exceptions.Status.Security::AuthorizationExpired org.neo4j.
 org.neo4j.kernel.api.exceptions.Status.Security::CredentialsExpired org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::Forbidden org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::ModifiedConcurrently org.neo4j.kernel.api.exceptions.Status.Security public static final
+org.neo4j.kernel.api.exceptions.Status.Security::TokenExpired org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::Unauthorized org.neo4j.kernel.api.exceptions.Status.Security public static final
 org.neo4j.kernel.api.exceptions.Status.Security::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.Security::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Security public static

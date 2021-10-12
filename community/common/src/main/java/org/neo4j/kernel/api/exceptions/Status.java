@@ -407,7 +407,8 @@ public interface Status
         Forbidden( ClientError, "An attempt was made to perform an unauthorized action." ),
         AuthorizationExpired( ClientError, "The stored authorization info has expired. Please reconnect." ),
         AuthProviderTimeout( TransientError, "An auth provider request timed out." ),
-        AuthProviderFailed( TransientError, "An auth provider request failed." );
+        AuthProviderFailed( TransientError, "An auth provider request failed." ),
+        TokenExpired( ClientError, "The auth provider token has expired" );
 
         private final Code code;
 

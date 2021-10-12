@@ -1023,7 +1023,11 @@
         <artifactId>jamm</artifactId>
         <version>${jamm.version}</version>
       </dependency>
-
+      <dependency>
+        <groupId>org.bitbucket.b_c</groupId>
+        <artifactId>jose4j</artifactId>
+        <version>0.7.8</version>
+      </dependency>
       <!--
        - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
        - needs updating.
