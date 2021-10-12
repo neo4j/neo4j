@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
@@ -70,6 +71,8 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
 
     val lit42: Expression = literalInt(42)
     val lit6: Expression = literalInt(6)
+    val litFoo = literalString("foo")
+    val litBar = literalString("bar")
 
     val nProp = prop("n", "prop")
     val mProp = prop("m", "prop")
@@ -83,7 +86,9 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
 
     val nPropEqualsXProp = Equals(nProp, xProp)(pos)
     val nPropEqualsLit42 = equals(lit42, nProp)
+    val nPropEqualsLitFoo = equals(litFoo, nProp)
     val nPropInLit6Lit42 = in(nProp, listOf(lit6, lit42))
+    val nPropInLitFooLitBar = in(nProp, listOf(litFoo, litBar))
     val nPropLessThanLit6 = lessThan(nProp, lit6)
     val litFoo = literalString("foo")
     val nPropStartsWithLitFoo = startsWith(nProp, litFoo)
@@ -107,6 +112,8 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
       addTypeToSemanticTable(oProp, CTInteger.invariant)
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       addTypeToSemanticTable(lit6, CTInteger.invariant)
+      addTypeToSemanticTable(litFoo, CTString.invariant)
+      addTypeToSemanticTable(litBar, CTString.invariant)
 
       val predicates: Set[Expression] = Set(
         hasLabels("n", "Awesome"),
@@ -114,8 +121,10 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         hasLabels("o", "Awesome"),
         hasLabels("x", "Awesome"),
         nPropInLit6Lit42,
+        nPropInLitFooLitBar,
         nPropLessThanLit6,
         nPropEqualsLit42,
+        nPropEqualsLitFoo,
         nPropStartsWithLitFoo,
         nPropEndsWithLitFoo,
         nPropContainsLitFoo,
@@ -163,10 +172,16 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
       resultPlans shouldEqual Set(
         // nPropInLit6Lit42
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        // nPropInLitFooLitBar
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(litFoo, litBar)), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), ManyQueryExpression(listOf(litFoo, litBar)), Set("x"), IndexOrderNone, IndexType.TEXT),
         // nPropLessThanLit6
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         // nPropEqualsLit42
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone, IndexType.BTREE),
+        // nPropEqualsLitFoo
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(litFoo), Set("x"), IndexOrderNone, IndexType.BTREE),
+        NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)), SingleQueryExpression(litFoo), Set("x"), IndexOrderNone, IndexType.TEXT),
         // nPropStartsWithLitFoo
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.BTREE),
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)), Set("x"), IndexOrderNone, IndexType.TEXT),
