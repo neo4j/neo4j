@@ -33,60 +33,72 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.graphdb
 
 case class checkForSuboptimalIndexBehaviours(planContext: PlanContext) extends NotificationChecker {
 
   def apply(plan: LogicalPlan): Set[InternalNotification] = {
 
     plan.treeFold[Set[InternalNotification]](Set.empty) {
-      case NodeIndexContainsScan(varName, label, property, _, _, _, _) =>
+      case NodeIndexContainsScan(varName, label, property, _, _, _, indexType) =>
         acc =>
-          val notifications = getNodeIndexBehaviours(label, property.propertyKeyToken).collect {
+          val notifications = getNodeIndexBehaviours(indexType, label, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForConstainsQueryNotification(varName, label.name, Seq(property.propertyKeyToken.name), EntityType.NODE)
           }
           SkipChildren(acc ++ notifications)
-      case NodeIndexEndsWithScan(varName, label, property, _, _, _, _) =>
+      case NodeIndexEndsWithScan(varName, label, property, _, _, _, indexType) =>
         acc =>
-          val notifications = getNodeIndexBehaviours(label, property.propertyKeyToken).collect {
+          val notifications = getNodeIndexBehaviours(indexType, label, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForEndsWithQueryNotification(varName, label.name, Seq(property.propertyKeyToken.name), EntityType.NODE)
           }
           SkipChildren(acc ++ notifications)
-      case UndirectedRelationshipIndexContainsScan(varName, _, _, relType, property, _, _, _, _) =>
+      case UndirectedRelationshipIndexContainsScan(varName, _, _, relType, property, _, _, _, indexType) =>
         acc =>
-          val notifications = getRelationshipIndexBehaviours(relType, property.propertyKeyToken).collect {
+          val notifications = getRelationshipIndexBehaviours(indexType, relType, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForConstainsQueryNotification(varName, relType.name, Seq(property.propertyKeyToken.name), EntityType.RELATIONSHIP)
           }
           SkipChildren(acc ++ notifications)
-      case UndirectedRelationshipIndexEndsWithScan(varName, _, _, relType, property, _, _, _, _) =>
+      case UndirectedRelationshipIndexEndsWithScan(varName, _, _, relType, property, _, _, _, indexType) =>
         acc =>
-          val notifications = getRelationshipIndexBehaviours(relType, property.propertyKeyToken).collect {
+          val notifications = getRelationshipIndexBehaviours(indexType, relType, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForEndsWithQueryNotification(varName, relType.name, Seq(property.propertyKeyToken.name), EntityType.RELATIONSHIP)
           }
           SkipChildren(acc ++ notifications)
-      case DirectedRelationshipIndexContainsScan(varName, _, _, relType, property, _, _, _, _) =>
+      case DirectedRelationshipIndexContainsScan(varName, _, _, relType, property, _, _, _, indexType) =>
         acc =>
-          val notifications = getRelationshipIndexBehaviours(relType, property.propertyKeyToken).collect {
+          val notifications = getRelationshipIndexBehaviours(indexType, relType, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForConstainsQueryNotification(varName, relType.name, Seq(property.propertyKeyToken.name), EntityType.RELATIONSHIP)
           }
           SkipChildren(acc ++ notifications)
-      case DirectedRelationshipIndexEndsWithScan(varName, _, _, relType, property, _, _, _, _) =>
+      case DirectedRelationshipIndexEndsWithScan(varName, _, _, relType, property, _, _, _, indexType) =>
         acc =>
-          val notifications = getRelationshipIndexBehaviours(relType, property.propertyKeyToken).collect {
+          val notifications = getRelationshipIndexBehaviours(indexType, relType, property.propertyKeyToken).collect {
             case SlowContains => SuboptimalIndexForEndsWithQueryNotification(varName, relType.name, Seq(property.propertyKeyToken.name), EntityType.RELATIONSHIP)
           }
           SkipChildren(acc ++ notifications)
     }
   }
 
-  private def getNodeIndexBehaviours(label: LabelToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
-    planContext.btreeIndexGetForLabelAndProperties(label.name, Seq(property.name)).fold(Set.empty[IndexBehaviour])(_.behaviours)
+  private def getNodeIndexBehaviours(indexType: graphdb.schema.IndexType, label: LabelToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
+    val maybeDescriptor = IndexDescriptor.IndexType.fromPublicApi(indexType).flatMap {
+      case IndexDescriptor.IndexType.Btree => planContext.btreeIndexGetForLabelAndProperties(label.name, Seq(property.name))
+      case IndexDescriptor.IndexType.Text => planContext.textIndexGetForLabelAndProperties(label.name, Seq(property.name))
+    }
+
+    maybeDescriptor.fold(Set.empty[IndexBehaviour])(_.behaviours)
   }
 
-  private def getRelationshipIndexBehaviours(relTypeToken: RelationshipTypeToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
-    planContext.btreeIndexGetForRelTypeAndProperties(relTypeToken.name, Seq(property.name)).fold(Set.empty[IndexBehaviour])(_.behaviours)
+  private def getRelationshipIndexBehaviours(indexType: graphdb.schema.IndexType, relTypeToken: RelationshipTypeToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
+    val maybeDescriptor = IndexDescriptor.IndexType.fromPublicApi(indexType).flatMap {
+      case IndexDescriptor.IndexType.Btree => planContext.btreeIndexGetForRelTypeAndProperties(relTypeToken.name, Seq(property.name))
+      case IndexDescriptor.IndexType.Text => planContext.textIndexGetForRelTypeAndProperties(relTypeToken.name, Seq(property.name))
+    }
+
+    maybeDescriptor.fold(Set.empty[IndexBehaviour])(_.behaviours)
   }
 }
