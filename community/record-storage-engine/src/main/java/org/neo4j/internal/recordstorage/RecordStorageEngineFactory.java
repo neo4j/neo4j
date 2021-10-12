@@ -521,7 +521,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         RecordFormats recordFormats = RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() );
         ExecutionMonitor executionMonitor = progressOutput != null
-                ? verboseProgressOutput ? new SpectrumExecutionMonitor( progressOutput ) : ExecutionMonitors.defaultVisible()
+                ? verboseProgressOutput ? new SpectrumExecutionMonitor( progressOutput ) : ExecutionMonitors.defaultVisible( progressOutput )
                 : ExecutionMonitor.INVISIBLE;
         return BatchImporterFactory.withHighestPriority().instantiate( databaseLayout, fileSystem, pageCacheTracer, config, logService,
                 executionMonitor, additionalInitialIds, dbConfig,

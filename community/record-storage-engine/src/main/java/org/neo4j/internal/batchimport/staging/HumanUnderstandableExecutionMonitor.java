@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
+import java.io.PrintStream;
+
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.batchimport.CountGroupsStage;
 import org.neo4j.internal.batchimport.DataImporter;
@@ -98,6 +100,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private static final int PERCENTAGES_PER_LINE = 5;
 
     private final Monitor monitor;
+    private final PrintStream out;
     private DependencyResolver dependencyResolver;
     private boolean newInternalStage;
     private PageCacheArrayFactoryMonitor pageCacheArrayFactoryMonitor;
@@ -110,9 +113,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private long lastReportTime;
     private long stageStartTime;
 
-    HumanUnderstandableExecutionMonitor( Monitor monitor )
+    HumanUnderstandableExecutionMonitor( Monitor monitor, PrintStream out )
     {
         this.monitor = monitor;
+        this.out = out;
     }
 
     @Override
@@ -127,7 +131,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         long biggestCacheMemory = estimatedCacheSize( neoStores,
                 NodeRelationshipCache.memoryEstimation( estimates.numberOfNodes() ),
                 idMapper.memoryEstimation( estimates.numberOfNodes() ) );
-        System.out.println();
+        out.println();
         printStageHeader( "Import starting",
                 ESTIMATED_NUMBER_OF_NODES, count( estimates.numberOfNodes() ),
                 ESTIMATED_NUMBER_OF_NODE_PROPERTIES, count( estimates.numberOfNodeProperties() ),
@@ -138,7 +142,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                         relationshipsDiskUsage( estimates, neoStores ) +
                         estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() ),
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString( biggestCacheMemory ) );
-        System.out.println();
+        out.println();
     }
 
     private static long baselineMemoryRequirement( BatchingNeoStores neoStores )
@@ -223,7 +227,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         updateProgress( goal );
         if ( currentStage != null )
         {
-            System.out.printf( "%s COMPLETED in %s%n%n", currentStage.description(), duration( currentTimeMillis() - stageStartTime ) );
+            out.printf( "%s COMPLETED in %s%n%n", currentStage.description(), duration( currentTimeMillis() - stageStartTime ) );
         }
     }
 
@@ -334,12 +338,12 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             if ( currentLine < line || currentDotOnLine == dotsPerLine() )
             {
                 int percentage = percentage( currentLine );
-                System.out.printf( "%4d%% ∆%s%n", percentage, durationSinceLastReport() );
+                out.printf( "%4d%% ∆%s%n", percentage, durationSinceLastReport() );
                 monitor.progress( currentStage, percentage );
                 currentLine++;
                 if ( currentLine == lines() )
                 {
-                    System.out.println();
+                    out.println();
                 }
                 currentDotOnLine = 0;
             }
@@ -367,7 +371,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         {
             if ( current > 0 && current % DOT_GROUP_SIZE == 0 )
             {
-                System.out.print( ' ' );
+                out.print( ' ' );
             }
             char dotChar = '.';
             if ( newInternalStage )
@@ -375,7 +379,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 newInternalStage = false;
                 dotChar = '-';
             }
-            System.out.print( dotChar );
+            out.print( dotChar );
             current++;
 
             printPageCacheAllocationWarningIfUsed();
@@ -422,14 +426,14 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         currentStage = stage;
     }
 
-    private static void printStageHeader( String description, Object... data )
+    private void printStageHeader( String description, Object... data )
     {
-        System.out.println( description + " " + localDate() );
+        out.println( description + " " + localDate() );
         if ( data.length > 0 )
         {
             for ( int i = 0; i < data.length; )
             {
-                System.out.println( "  " + data[i++] + ": " + data[i++] );
+                out.println( "  " + data[i++] + ": " + data[i++] );
             }
         }
     }
@@ -444,8 +448,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     {
         endPrevious();
 
-        System.out.println();
-        System.out.printf( "IMPORT %s in %s. %s%n", successful ? "DONE" : "FAILED", duration( totalTimeMillis ), additionalInformation );
+        out.println();
+        out.printf( "IMPORT %s in %s. %s%n", successful ? "DONE" : "FAILED", duration( totalTimeMillis ), additionalInformation );
     }
 
     @Override
