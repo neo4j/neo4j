@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterExpression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -71,6 +72,7 @@ import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPeriodicCommit
+import org.neo4j.cypher.internal.util.DeprecatedPointsComparison
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
@@ -86,6 +88,7 @@ import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTPoint
 
 import scala.collection.immutable.TreeMap
 
@@ -412,6 +415,9 @@ object Deprecations {
       typeInfo => typeInfo.expected.fold(false)(CTBoolean.covariant.containsAll)
     )
 
+    private def isPoint(semanticTable: SemanticTable, e: Expression) =
+      semanticTable.types(e).actual == CTPoint.invariant
+
     private def isListCoercedToBoolean(semanticTable: SemanticTable, e: Expression): Boolean = semanticTable.types.get(e).exists(
       typeInfo =>
         CTList(CTAny).covariant.containsAll(typeInfo.specified) && isExpectedTypeBoolean(semanticTable, e)
@@ -437,6 +443,12 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedCoercionOfListToBoolean(e.position))
+        )
+
+      case x: InequalityExpression if isPoint(semanticTable, x.lhs) || isPoint(semanticTable, x.rhs) =>
+        Deprecation(
+          None,
+          Some(DeprecatedPointsComparison(x.position))
         )
 
       // CREATE (a {prop:7})-[r:R]->(b {prop: a.prop})

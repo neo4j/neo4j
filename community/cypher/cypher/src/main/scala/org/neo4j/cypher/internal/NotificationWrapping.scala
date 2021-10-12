@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPeriodicCommit
+import org.neo4j.cypher.internal.util.DeprecatedPointsComparison
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
@@ -178,6 +179,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedSelfReferenceToVariableInCreatePattern(pos) =>
       NotificationCode.DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedPointsComparison(pos) =>
+      NotificationCode.DEPRECATED_POINTS_COMPARE.notification(pos.withOffset(offset).asInputPosition)
     case SubqueryVariableShadowing(pos, varName)             =>
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.shadowingVariable(varName))
     case MissingAliasNotification(pos) =>

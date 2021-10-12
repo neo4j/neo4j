@@ -75,6 +75,8 @@ case class DeprecatedCoercionOfListToBoolean(position: InputPosition) extends In
 
 case class DeprecatedSelfReferenceToVariableInCreatePattern(position: InputPosition) extends InternalNotification
 
+case class DeprecatedPointsComparison(position: InputPosition) extends InternalNotification
+
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
 
 case class MissingAliasNotification(pos: InputPosition) extends InternalNotification

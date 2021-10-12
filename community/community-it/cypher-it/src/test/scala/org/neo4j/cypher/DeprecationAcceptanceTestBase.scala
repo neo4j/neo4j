@@ -34,6 +34,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITER
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PARAMETER_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PERIODIC_COMMIT
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_POINTS_COMPARE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX
@@ -424,6 +425,20 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
     assertNotificationInSupportedVersions(deprecated, DEPRECATED_FUNCTION, detail)
     assertNoNotificationInSupportedVersions(newSyntax, DEPRECATED_FUNCTION)
+  }
+
+  test("comparing points is deprecated") {
+    val deprecated = Seq(
+      "MATCH (n) WHERE n.prop < point({x:0, y:0}) RETURN n",
+      "MATCH (n) WHERE n.prop <= point({x:0, y:0}) RETURN n",
+      "MATCH (n) WHERE n.prop > point({x:0, y:0}) RETURN n",
+      "MATCH (n) WHERE n.prop >= point({x:0, y:0}) RETURN n",
+      "RETURN point({x:0, y:0}) < point({x:0, y:0}) <= point({x:0, y:0})"
+    )
+    val newSyntax = Seq(" MATCH (n) WHERE point.distance(n.prop, point({x:0, y:0})) < 10 RETURN n")
+    val detail = NotificationDetail.Factory.deprecatedName("distance", "point.distance")
+
+    assertNotificationInSupportedVersions(deprecated, DEPRECATED_POINTS_COMPARE)
   }
 
   // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0

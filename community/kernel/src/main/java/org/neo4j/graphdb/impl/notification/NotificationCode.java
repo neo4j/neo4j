@@ -199,6 +199,12 @@ public enum NotificationCode
             "Referencing a node or relationship variable that is created in the same CREATE clause is deprecated. " +
             "The behaviour of using this syntax is undefined and should be avoided. Please consider only referencing variables created in earlier clauses."
     ),
+    DEPRECATED_POINTS_COMPARE(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The behavior when comparing spatial points with '<', '<=', '>', and '>=` will change. Please use the 'point.withinBBox' or 'point.distance'" +
+            " for seeking spatial points within a specific range."
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,
