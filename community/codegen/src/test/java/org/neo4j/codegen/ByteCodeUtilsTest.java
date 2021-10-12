@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.values.storable.Values;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -80,6 +82,15 @@ class ByteCodeUtilsTest
         assertTypeName( boolean[][].class, "[[Z" );
 
         assertTypeName( String[][].class, "[[Ljava/lang/String;" );
+    }
+
+    @Test
+    void validByteCodeName()
+    {
+        assertThat( ByteCodeUtils.byteCodeName( typeReference( String.class ) ) ).isEqualTo( "java/lang/String" );
+        assertThat( ByteCodeUtils.byteCodeName( typeReference( String[].class ) ) ).isEqualTo( "[Ljava/lang/String;" );
+        assertThat( ByteCodeUtils.byteCodeName( typeReference( ByteCodeUtils.class ) ) ).isEqualTo( "org/neo4j/codegen/ByteCodeUtils" );
+        assertThat( ByteCodeUtils.byteCodeName( typeReference( Values.class ) ) ).isEqualTo( "org/neo4j/values/storable/Values" );
     }
 
     @Test

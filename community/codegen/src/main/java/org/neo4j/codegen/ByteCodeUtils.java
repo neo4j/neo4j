@@ -36,7 +36,7 @@ public final class ByteCodeUtils
 
     public static String byteCodeName( TypeReference reference )
     {
-       return className( reference ).replaceAll( "\\.", "/" );
+       return className( reference ).replace( '.', '/' );
     }
 
     public static String className( TypeReference reference )
@@ -74,7 +74,7 @@ public final class ByteCodeUtils
         StringBuilder builder = new StringBuilder();
         if ( !reference.packageName().isEmpty() )
         {
-            builder.append( reference.packageName().replaceAll( "\\.", "/" ) ).append( '/' );
+            builder.append( reference.packageName().replace( '.', '/' ) ).append( '/' );
         }
         builder.append( reference.simpleName() );
 
@@ -216,7 +216,7 @@ public final class ByteCodeUtils
             else
             {
                 builder.append( 'L' );
-                String packageName = reference.packageName().replaceAll( "\\.", "\\/" );
+                String packageName = reference.packageName().replace( '.', '/' );
                 if ( !packageName.isEmpty() )
                 {
                     builder.append( packageName ).append( '/' );
@@ -225,7 +225,7 @@ public final class ByteCodeUtils
                 {
                     builder.append( parent.name() ).append( '$' );
                 }
-                builder.append( name.replaceAll( "\\.", "\\/" ) );
+                builder.append( name.replace( '.', '/' ) );
             }
 
             List<TypeReference> parameters = reference.parameters();

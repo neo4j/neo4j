@@ -289,7 +289,7 @@ public class MemoryRecommendationsCommand extends AbstractCommand
         else
         {
             var nameWithFixedUnderscores = setting.name().replaceAll( "_", "__" );
-            var nameWithFixedUnderscoresAndDots = nameWithFixedUnderscores.replaceAll( "\\.", "_" );
+            var nameWithFixedUnderscoresAndDots = nameWithFixedUnderscores.replace( '.', '_' );
             print( "EXPORT NEO4J_" + nameWithFixedUnderscoresAndDots + "='" + value + "'" );
         }
     }
