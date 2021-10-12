@@ -174,11 +174,11 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( add( 3, descriptor, "qux" ) );
 
         verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
-                documentRepresentingProperties( 1, "foo" ) );
+                                         documentRepresentingProperties( 1, "foo" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
-                documentRepresentingProperties( 2, "bar" ) );
+                                         documentRepresentingProperties( 2, "bar" ) );
         verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ),
-                documentRepresentingProperties( 3, "qux" ) );
+                                         documentRepresentingProperties( 3, "qux" ) );
     }
 
     @Test
@@ -190,10 +190,10 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
         updater.process( change( 1, descriptor, "before1", "after1" ) );
         updater.process( change( 2, descriptor, "before2", "after2" ) );
 
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
-                documentRepresentingProperties( 1, "after1" ) );
-        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
-                documentRepresentingProperties( 2, "after2" ) );
+        verify( writer ).updateOrDeleteDocument( newTermForChangeOrRemove( 1 ),
+                                                 documentRepresentingProperties( 1, "after1" ) );
+        verify( writer ).updateOrDeleteDocument( newTermForChangeOrRemove( 2 ),
+                                                 documentRepresentingProperties( 2, "after2" ) );
     }
 
     @Test

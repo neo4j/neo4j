@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -102,8 +103,8 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
         {
             try
             {
-                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
-                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
+                Document document = LuceneDocumentStructure.documentRepresentingProperties( entityId, values );
+                writer.updateOrDeleteDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ), document );
             }
             catch ( IOException e )
             {
@@ -116,7 +117,8 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
         {
             try
             {
-                writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
+                Document document = LuceneDocumentStructure.documentRepresentingProperties( entityId, values );
+                writer.nullableAddDocument( document );
             }
             catch ( IOException e )
             {
@@ -129,8 +131,9 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
         {
             try
             {
-                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
-                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
+                Term term = LuceneDocumentStructure.newTermForChangeOrRemove( entityId );
+                Document document = LuceneDocumentStructure.documentRepresentingProperties( entityId, values );
+                writer.updateOrDeleteDocument( term, document );
             }
             catch ( IOException e )
             {
@@ -143,7 +146,8 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
         {
             try
             {
-                writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ) );
+                Term term = LuceneDocumentStructure.newTermForChangeOrRemove( entityId );
+                writer.deleteDocuments( term );
             }
             catch ( IOException e )
             {

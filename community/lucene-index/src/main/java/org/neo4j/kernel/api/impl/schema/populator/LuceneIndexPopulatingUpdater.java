@@ -70,12 +70,12 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
             case ADDED:
                 added( valueUpdate );
                 writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
-                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, valueUpdate.values() ) );
+                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
                 break;
             case CHANGED:
                 changed( valueUpdate );
-                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
-                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, valueUpdate.values() ) );
+                writer.updateOrDeleteDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
+                                               LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
                 break;
             case REMOVED:
                 removed( valueUpdate );

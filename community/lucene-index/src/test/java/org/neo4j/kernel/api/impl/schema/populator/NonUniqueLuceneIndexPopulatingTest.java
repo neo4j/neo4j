@@ -50,18 +50,18 @@ class NonUniqueLuceneIndexPopulatingTest
     {
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
-        String expectedString1 = documentRepresentingProperties( 1, "foo" ).toString();
-        String expectedString2 = documentRepresentingProperties( 2, "bar" ).toString();
-        String expectedString3 = documentRepresentingProperties( 3, "qux" ).toString();
 
         updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
-        verifyDocument( writer, newTermForChangeOrRemove( 1 ), expectedString1 );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 1 ),
+                                         documentRepresentingProperties( 1, "foo" ) );
 
         updater.process( add( 2, SCHEMA_DESCRIPTOR, "bar" ) );
-        verifyDocument( writer, newTermForChangeOrRemove( 2 ), expectedString2 );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 2 ),
+                                         documentRepresentingProperties( 2, "bar" ) );
 
         updater.process( add( 3, SCHEMA_DESCRIPTOR, "qux" ) );
-        verifyDocument( writer, newTermForChangeOrRemove( 3 ), expectedString3 );
+        verify( writer ).updateDocument( newTermForChangeOrRemove( 3 ),
+                                         documentRepresentingProperties( 3, "qux" ) );
     }
 
     @Test
@@ -69,14 +69,14 @@ class NonUniqueLuceneIndexPopulatingTest
     {
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
-        String expectedString1 = documentRepresentingProperties( 1, "after1" ).toString();
-        String expectedString2 = documentRepresentingProperties( 2, "after2" ).toString();
 
         updater.process( change( 1, SCHEMA_DESCRIPTOR, "before1", "after1" ) );
-        verifyDocument( writer, newTermForChangeOrRemove( 1 ), expectedString1 );
+        verify( writer ).updateOrDeleteDocument( newTermForChangeOrRemove( 1 ),
+                                                 documentRepresentingProperties( 1, "after1" ) );
 
         updater.process( change( 2, SCHEMA_DESCRIPTOR, "before2", "after2" ) );
-        verifyDocument( writer, newTermForChangeOrRemove( 2 ), expectedString2 );
+        verify( writer ).updateOrDeleteDocument( newTermForChangeOrRemove( 2 ),
+                                                 documentRepresentingProperties( 2, "after2" ) );
     }
 
     @Test
@@ -97,7 +97,7 @@ class NonUniqueLuceneIndexPopulatingTest
 
     private static void verifyDocument( LuceneIndexWriter writer, Term eq, String documentString ) throws IOException
     {
-        verify( writer ).updateDocument( eq( eq ), argThat( doc -> documentString.equals( doc.toString() ) ) );
+        verify( writer ).updateOrDeleteDocument( eq( eq ), argThat( doc -> documentString.equals( doc.toString() ) ) );
     }
 
     private static NonUniqueLuceneIndexPopulatingUpdater newUpdater( LuceneIndexWriter writer )
