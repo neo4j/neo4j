@@ -26,14 +26,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 
 /**
  * An {@link IndexUpdater} used while index population is in progress. Takes special care of node property additions
@@ -43,49 +43,61 @@ import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.UPDATE_IGNORE
 public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
 {
     private final LuceneIndexWriter writer;
+    private final IndexUpdateIgnoreStrategy ignoreStrategy;
 
-    public LuceneIndexPopulatingUpdater( LuceneIndexWriter writer )
+    public LuceneIndexPopulatingUpdater( LuceneIndexWriter writer, IndexUpdateIgnoreStrategy ignoreStrategy )
     {
         this.writer = writer;
+        this.ignoreStrategy = ignoreStrategy;
     }
 
     @Override
     public void process( IndexEntryUpdate<?> update )
     {
-        ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
-        if ( UPDATE_IGNORE_STRATEGY.ignore( valueUpdate ) )
+        final var valueUpdate = asValueUpdate( update );
+        if ( valueUpdate == null )
         {
             return;
         }
 
-        long nodeId = valueUpdate.getEntityId();
-
         try
         {
-            switch ( valueUpdate.updateMode() )
+            final var entityId = valueUpdate.getEntityId();
+            final var values = valueUpdate.values();
+            final var updateMode = valueUpdate.updateMode();
+            switch ( updateMode )
             {
             case ADDED:
                 added( valueUpdate );
-                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, valueUpdate.values() ) );
+                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
+                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, valueUpdate.values() ) );
                 break;
             case CHANGED:
                 changed( valueUpdate );
-                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, valueUpdate.values() ) );
+                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
+                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, valueUpdate.values() ) );
                 break;
             case REMOVED:
                 removed( valueUpdate );
-                writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
+                writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ) );
                 break;
             default:
-                throw new IllegalStateException( "Unknown update mode " + valueUpdate.updateMode() + " for values " + Arrays.toString( valueUpdate.values() ) );
+                throw new IllegalStateException( "Unknown update mode " + updateMode + " for values " + Arrays.toString( values ) );
             }
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    @Override
+    public <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate( IndexEntryUpdate<INDEX_KEY> update )
+    {
+        final var valueUpdate = IndexUpdater.super.asValueUpdate( update );
+        return !ignoreStrategy.ignore( valueUpdate )
+               ? ignoreStrategy.toEquivalentUpdate( valueUpdate )
+               : null;
     }
 
     /**

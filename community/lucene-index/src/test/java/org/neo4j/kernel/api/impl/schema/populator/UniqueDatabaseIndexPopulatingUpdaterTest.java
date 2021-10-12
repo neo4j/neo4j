@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -234,11 +235,10 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
         return newUpdater( mock( SchemaIndex.class ), mock( LuceneIndexWriter.class ), sampler );
     }
 
-    private static UniqueLuceneIndexPopulatingUpdater newUpdater( SchemaIndex index, LuceneIndexWriter writer,
-            UniqueIndexSampler sampler )
+    private static UniqueLuceneIndexPopulatingUpdater newUpdater( SchemaIndex index, LuceneIndexWriter writer, UniqueIndexSampler sampler )
     {
         return new UniqueLuceneIndexPopulatingUpdater( writer, descriptor.schema().getPropertyIds(), index,
-                mock( NodePropertyAccessor.class ), sampler );
+                                                       mock( NodePropertyAccessor.class ), sampler, LuceneIndexProvider.UPDATE_IGNORE_STRATEGY );
     }
 
     private static void verifyVerifyUniqueness( SchemaIndex index, SchemaDescriptorSupplier descriptor, Object... values )

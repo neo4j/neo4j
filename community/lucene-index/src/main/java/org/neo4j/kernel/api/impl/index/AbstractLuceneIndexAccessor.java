@@ -34,6 +34,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
@@ -259,40 +260,6 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
         }
 
         @Override
-        public void process( IndexEntryUpdate<?> update )
-        {
-            assert update.indexKey().schema().equals( descriptor.schema() );
-            ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
-            if ( ignoreStrategy.ignore( valueUpdate ) )
-            {
-                return;
-            }
-
-            switch ( valueUpdate.updateMode() )
-            {
-            case ADDED:
-                if ( idempotent )
-                {
-                    addIdempotent( valueUpdate.getEntityId(), valueUpdate.values() );
-                }
-                else
-                {
-                    add( valueUpdate.getEntityId(), valueUpdate.values() );
-                }
-                break;
-            case CHANGED:
-                change( valueUpdate.getEntityId(), valueUpdate.values() );
-                break;
-            case REMOVED:
-                remove( valueUpdate.getEntityId() );
-                break;
-            default:
-                throw new UnsupportedOperationException();
-            }
-            hasChanges = true;
-        }
-
-        @Override
         public void close()
         {
             if ( hasChanges && refresh )
@@ -308,12 +275,61 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
             }
         }
 
-        protected abstract void addIdempotent( long nodeId, Value[] values );
+        @Override
+        public void process( IndexEntryUpdate<?> update )
+        {
+            assert update.indexKey().schema().equals( descriptor.schema() );
+            final var valueUpdate = asValueUpdate( update );
 
-        protected abstract void add( long nodeId, Value[] values );
+            // ignoreStrategy set update to null; ignore update
+            if ( valueUpdate == null )
+            {
+                return;
+            }
 
-        protected abstract void change( long nodeId, Value[] values );
+            final var entityId = valueUpdate.getEntityId();
+            final var values = valueUpdate.values();
+            final var updateMode = valueUpdate.updateMode();
+            switch ( updateMode )
+            {
+            case ADDED:
+                if ( idempotent )
+                {
+                    addIdempotent( entityId, values );
+                }
+                else
+                {
+                    add( entityId, values );
+                }
+                break;
+            case CHANGED:
+                change( entityId, values );
+                break;
+            case REMOVED:
+                remove( entityId );
+                break;
+            default:
+                throw new IllegalArgumentException( "Unknown update mode " + updateMode );
+            }
 
-        protected abstract void remove( long nodeId );
+            hasChanges = true;
+        }
+
+        @Override
+        public <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate( IndexEntryUpdate<INDEX_KEY> update )
+        {
+            final var valueUpdate = IndexUpdater.super.asValueUpdate( update );
+            return !ignoreStrategy.ignore( valueUpdate )
+                   ? ignoreStrategy.toEquivalentUpdate( valueUpdate )
+                   : null;
+        }
+
+        protected abstract void addIdempotent( long entityId, Value[] values );
+
+        protected abstract void add( long entityId, Value[] values );
+
+        protected abstract void change( long entityId, Value[] values );
+
+        protected abstract void remove( long entityId );
     }
 }

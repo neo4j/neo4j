@@ -50,7 +50,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIn
     @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
     {
-        return new NonUniqueLuceneIndexPopulatingUpdater( writer );
+        return new NonUniqueLuceneIndexPopulatingUpdater( writer, ignoreStrategy );
     }
 
     @Override

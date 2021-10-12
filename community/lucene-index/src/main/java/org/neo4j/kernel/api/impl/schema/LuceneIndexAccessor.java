@@ -98,12 +98,12 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
         }
 
         @Override
-        protected void addIdempotent( long nodeId, Value[] values )
+        protected void addIdempotent( long entityId, Value[] values )
         {
             try
             {
-                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
+                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
             }
             catch ( IOException e )
             {
@@ -112,11 +112,11 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
         }
 
         @Override
-        protected void add( long nodeId, Value[] values )
+        protected void add( long entityId, Value[] values )
         {
             try
             {
-                writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+                writer.addDocument( LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
             }
             catch ( IOException e )
             {
@@ -125,12 +125,12 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
         }
 
         @Override
-        protected void change( long nodeId, Value[] values )
+        protected void change( long entityId, Value[] values )
         {
             try
             {
-                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                        LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
+                writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ),
+                                       LuceneDocumentStructure.documentRepresentingProperties( entityId, values ) );
             }
             catch ( IOException e )
             {
@@ -139,11 +139,11 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
         }
 
         @Override
-        protected void remove( long nodeId )
+        protected void remove( long entityId )
         {
             try
             {
-                writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
+                writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( entityId ) );
             }
             catch ( IOException e )
             {

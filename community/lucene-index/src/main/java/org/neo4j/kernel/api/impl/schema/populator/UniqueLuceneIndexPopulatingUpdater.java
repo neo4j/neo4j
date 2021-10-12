@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.UniqueIndexSampler;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
@@ -46,10 +47,11 @@ public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpd
 
     private final List<Value[]> updatedValueTuples = new ArrayList<>();
 
-    public UniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer, int[] propertyKeyIds,
-            SchemaIndex luceneIndex, NodePropertyAccessor nodePropertyAccessor, UniqueIndexSampler sampler )
+    public UniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer, int[] propertyKeyIds, SchemaIndex luceneIndex,
+                                               NodePropertyAccessor nodePropertyAccessor, UniqueIndexSampler sampler,
+                                               IndexUpdateIgnoreStrategy ignoreStrategy )
     {
-        super( writer );
+        super( writer, ignoreStrategy );
         this.propertyKeyIds = propertyKeyIds;
         this.luceneIndex = luceneIndex;
         this.nodePropertyAccessor = nodePropertyAccessor;

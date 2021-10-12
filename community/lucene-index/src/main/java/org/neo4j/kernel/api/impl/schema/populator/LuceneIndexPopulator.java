@@ -42,7 +42,7 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
  */
 public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> implements IndexPopulator
 {
-    private final IndexUpdateIgnoreStrategy ignoreStrategy;
+    protected final IndexUpdateIgnoreStrategy ignoreStrategy;
     protected INDEX luceneIndex;
     protected LuceneIndexWriter writer;
 

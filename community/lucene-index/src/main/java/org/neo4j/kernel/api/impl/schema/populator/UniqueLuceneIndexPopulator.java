@@ -67,7 +67,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex
     @Override
     public IndexUpdater newPopulatingUpdater( final NodePropertyAccessor accessor, CursorContext cursorContext )
     {
-        return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyIds, luceneIndex, accessor, sampler );
+        return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyIds, luceneIndex, accessor, sampler, ignoreStrategy );
     }
 
     @Override

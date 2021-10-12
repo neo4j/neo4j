@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 /**
@@ -28,9 +29,9 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpdater
 {
 
-    public NonUniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer )
+    public NonUniqueLuceneIndexPopulatingUpdater( LuceneIndexWriter writer, IndexUpdateIgnoreStrategy ignoreStrategy )
     {
-        super( writer );
+        super( writer, ignoreStrategy );
     }
 
     @Override
