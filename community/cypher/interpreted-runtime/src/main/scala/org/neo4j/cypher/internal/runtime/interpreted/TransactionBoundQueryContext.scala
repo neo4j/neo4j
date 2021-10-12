@@ -195,26 +195,15 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
   }
 
   override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
-    val schemaWrite = transactionalContext.schemaWrite
-    val descriptor = entityType match {
-      case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, propertyKeyIds: _*)
-      case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, propertyKeyIds: _*)
-    }
-    val prototype = provider.map(p => IndexPrototype.forSchema(descriptor,schemaWrite.indexProviderByName(p))).getOrElse(IndexPrototype.forSchema(descriptor))
-      .withIndexType(IndexType.BTREE)
-      .withIndexConfig(indexConfig)
-    val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
-    addIndexRule(descriptor, namedPrototype)
+    val indexProvider = provider.map(p => transactionalContext.schemaWrite.indexProviderByName(p))
+    val (descriptor, prototype) = getIndexDescriptorAndPrototype(IndexType.BTREE, entityId, entityType, propertyKeyIds, name, indexProvider)
+    val prototypeWithConfig = prototype.withIndexConfig(indexConfig)
+    addIndexRule(descriptor, prototypeWithConfig)
   }
 
   override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = {
-    val descriptor = entityType match {
-      case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, propertyKeyIds: _*)
-      case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, propertyKeyIds: _*)
-    }
-    val prototype = provider.map(p => IndexPrototype.forSchema(descriptor, p)).getOrElse(IndexPrototype.forSchema(descriptor)).withIndexType(IndexType.RANGE)
-    val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
-    addIndexRule(descriptor, namedPrototype)
+    val (descriptor, prototype) = getIndexDescriptorAndPrototype(IndexType.RANGE, entityId, entityType, propertyKeyIds, name, provider)
+    addIndexRule(descriptor, prototype)
   }
 
   override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = {
@@ -240,25 +229,29 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
   }
 
   override def addTextIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = {
-    val descriptor = entityType match {
-      case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, propertyKeyIds: _*)
-      case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, propertyKeyIds: _*)
-    }
-    val prototype = provider.map(p => IndexPrototype.forSchema(descriptor, p)).getOrElse(IndexPrototype.forSchema(descriptor)).withIndexType(IndexType.TEXT)
-    val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
-    addIndexRule(descriptor, namedPrototype)
+    val (descriptor, prototype) = getIndexDescriptorAndPrototype(IndexType.TEXT, entityId, entityType, propertyKeyIds, name, provider)
+    addIndexRule(descriptor, prototype)
   }
 
   override def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = {
+    val (descriptor, prototype) = getIndexDescriptorAndPrototype(IndexType.POINT, entityId, entityType, propertyKeyIds, name, provider)
+    val prototypeWithConfig = prototype.withIndexConfig(indexConfig)
+    addIndexRule(descriptor, prototypeWithConfig)
+  }
+
+  private def getIndexDescriptorAndPrototype(indexType: IndexType,
+                                             entityId: Int,
+                                             entityType: EntityType,
+                                             propertyKeyIds: Seq[Int],
+                                             name: Option[String],
+                                             provider: Option[IndexProviderDescriptor]): (SchemaDescriptor, IndexPrototype) = {
     val descriptor = entityType match {
       case EntityType.NODE         => SchemaDescriptors.forLabel(entityId, propertyKeyIds: _*)
       case EntityType.RELATIONSHIP => SchemaDescriptors.forRelType(entityId, propertyKeyIds: _*)
     }
-    val prototype = provider.map(p => IndexPrototype.forSchema(descriptor, p)).getOrElse(IndexPrototype.forSchema(descriptor))
-      .withIndexType(IndexType.POINT)
-      .withIndexConfig(indexConfig)
+    val prototype = provider.map(p => IndexPrototype.forSchema(descriptor, p)).getOrElse(IndexPrototype.forSchema(descriptor)).withIndexType(indexType)
     val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
-    addIndexRule(descriptor, namedPrototype)
+    (descriptor, namedPrototype)
   }
 
   private def addIndexRule(descriptor: SchemaDescriptor, prototype: IndexPrototype): IndexDescriptor = {

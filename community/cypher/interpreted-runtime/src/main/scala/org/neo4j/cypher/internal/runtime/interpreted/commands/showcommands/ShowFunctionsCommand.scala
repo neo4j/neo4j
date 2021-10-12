@@ -47,7 +47,7 @@ import scala.collection.JavaConverters.mapAsScalaMapConverter
 case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val isCommunity = state.rowFactory.isInstanceOf[CommunityCypherRowFactory]
-    lazy val systemGraph = ShowProcFuncCommandHelper.systemGraph(state)
+    lazy val systemGraph = state.query.systemGraph
 
     val privileges = 
       if (!isCommunity && (verbose || executableBy.isDefined)) ShowProcFuncCommandHelper.getPrivileges(systemGraph, "FUNCTION")

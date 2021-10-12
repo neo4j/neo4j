@@ -19,12 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
-import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.User
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.procs.FieldSignature
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
@@ -50,9 +47,6 @@ import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
 object ShowProcFuncCommandHelper {
-
-  private[showcommands] def systemGraph(queryState: QueryState): GraphDatabaseService =
-    queryState.query.systemGraph
 
   def getRolesForExecutableByUser(securityContext: SecurityContext, securityHandler: SecurityAuthorizationHandler, systemGraph: => GraphDatabaseService, executableBy: Option[ExecutableBy], command: String): (Set[String], Boolean) = executableBy match {
     case Some(CurrentUser) if securityContext.subject().equals(AuthSubject.AUTH_DISABLED) => (Set.empty[String], true)
