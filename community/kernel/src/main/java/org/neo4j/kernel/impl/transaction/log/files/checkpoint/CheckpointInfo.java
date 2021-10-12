@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryInlinedCheckPoint;
@@ -30,25 +29,22 @@ public class CheckpointInfo
     private final LogPosition transactionLogPosition;
     private final LogPosition checkpointEntryPosition;
     private final StoreId storeId;
-    private final KernelVersion kernelVersion;
 
     public CheckpointInfo( LogEntryInlinedCheckPoint checkpoint, StoreId storeId, LogPosition checkpointEntryPosition )
     {
-        this( checkpoint.getLogPosition(), storeId, checkpointEntryPosition, checkpoint.getVersion() );
+        this( checkpoint.getLogPosition(), storeId, checkpointEntryPosition );
     }
 
     public CheckpointInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition )
     {
-        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, checkpoint.getVersion() );
+        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition );
     }
 
-    public CheckpointInfo( LogPosition transactionLogPosition, StoreId storeId, LogPosition checkpointEntryPosition,
-            KernelVersion kernelVersion )
+    public CheckpointInfo( LogPosition transactionLogPosition, StoreId storeId, LogPosition checkpointEntryPosition )
     {
         this.transactionLogPosition = transactionLogPosition;
         this.storeId = storeId;
         this.checkpointEntryPosition = checkpointEntryPosition;
-        this.kernelVersion = kernelVersion;
     }
 
     public LogPosition getTransactionLogPosition()
@@ -64,11 +60,6 @@ public class CheckpointInfo
     public StoreId storeId()
     {
         return storeId;
-    }
-
-    public KernelVersion getKernelVersion()
-    {
-        return kernelVersion;
     }
 
     @Override

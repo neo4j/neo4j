@@ -30,7 +30,6 @@ import java.time.Instant;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -40,7 +39,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -72,7 +70,6 @@ class CheckpointLogFileTest
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
     private CheckpointFile checkpointFile;
-    private final FakeKernelVersionProvider versionProvider = new FakeKernelVersionProvider();
 
     @BeforeEach
     void setUp() throws IOException
@@ -172,24 +169,6 @@ class CheckpointLogFileTest
         assertThat( checkpointFile.reachableCheckpoints() ).hasSize( 3 );
     }
 
-    @Test
-    void shouldWriteCheckPointsWithVersionFromProvider() throws IOException
-    {
-        var checkpointAppender = checkpointFile.getCheckpointAppender();
-
-        versionProvider.version = KernelVersion.V4_2;
-        checkpointAppender.checkPoint( NULL, new LogPosition( 1, 2 ), Instant.now(), "test" );
-
-        CheckpointInfo checkpointInfo = checkpointFile.findLatestCheckpoint().orElseThrow();
-        assertThat( checkpointInfo.getKernelVersion() ).isEqualTo( KernelVersion.V4_2 );
-
-        versionProvider.version = KernelVersion.LATEST;
-        checkpointAppender.checkPoint( NULL, new LogPosition( 1, 4 ), Instant.now(), "test" );
-
-        checkpointInfo = checkpointFile.findLatestCheckpoint().orElseThrow();
-        assertThat( checkpointInfo.getKernelVersion() ).isEqualTo( KernelVersion.LATEST );
-    }
-
     private LogFiles buildLogFiles() throws IOException
     {
         return LogFilesBuilder.builder( databaseLayout, fileSystem )
@@ -197,20 +176,8 @@ class CheckpointLogFileTest
                 .withTransactionIdStore( transactionIdStore )
                 .withDatabaseHealth( databaseHealth )
                 .withLogVersionRepository( logVersionRepository )
-                .withKernelVersionProvider( versionProvider )
                 .withLogEntryReader( logEntryReader() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
-    }
-
-    private static class FakeKernelVersionProvider implements KernelVersionRepository
-    {
-        volatile KernelVersion version = KernelVersion.LATEST;
-
-        @Override
-        public KernelVersion kernelVersion()
-        {
-            return version;
-        }
     }
 }

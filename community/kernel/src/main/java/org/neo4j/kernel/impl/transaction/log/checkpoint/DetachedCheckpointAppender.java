@@ -87,7 +87,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         channel.position( channel.size() );
         buffer = new NativeScopedBuffer( kibiBytes( 1 ), context.getMemoryTracker() );
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, buffer );
-        checkpointWriter = new DetachedCheckpointLogEntryWriter( writer, context.getKernelVersionProvider() );
+        checkpointWriter = new DetachedCheckpointLogEntryWriter( writer );
     }
 
     @Override

@@ -24,7 +24,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -58,10 +57,6 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.logging.AssertableLogProvider;
@@ -330,27 +325,6 @@ class DatabaseUpgradeTransactionIT
         LogAssertions.assertThat( logProvider )
                 .containsMessageWithArguments( "Upgrade transaction from %s to %s started", V4_2, LATEST )
                 .containsMessageWithArguments( "Upgrade transaction from %s to %s completed", V4_2, LATEST );
-    }
-
-    @Test
-    void shouldWriteCheckpointWithCurrentKernelVersion() throws IOException
-    {
-        setKernelVersion( V4_2 );
-        setDbmsRuntime( DbmsRuntimeVersion.V4_3 );
-        restartDbms();
-        assertThat( getKernelVersion() ).isEqualTo( V4_2 );
-
-        CheckPointer checkPointer = db.getDependencyResolver().resolveDependency( CheckPointer.class );
-        CheckpointFile checkpointFile = db.getDependencyResolver().resolveDependency( LogFiles.class ).getCheckpointFile();
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
-        assertThat( checkpointFile.findLatestCheckpoint().orElseThrow().getKernelVersion() ).isEqualTo( V4_2 );
-
-        setDbmsRuntime( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION );
-        createWriteTransaction();
-        assertThat( getKernelVersion() ).isEqualTo( LATEST );
-
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
-        assertThat( checkpointFile.findLatestCheckpoint().orElseThrow().getKernelVersion() ).isEqualTo( LATEST );
     }
 
     private long getNodeCount()
