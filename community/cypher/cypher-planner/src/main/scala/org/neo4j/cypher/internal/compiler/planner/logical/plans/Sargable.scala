@@ -211,7 +211,6 @@ object AsDistanceSeekable {
 
 object DistanceFunction {
   def unapply(v: Expression): Option[(Expression, Expression)] = v match {
-    case FunctionInvocation(Namespace(List()), FunctionName("distance"), _, args) => Some((args.head, args(1)))
     case FunctionInvocation(Namespace(List(namespace)), FunctionName("distance"), _, args) if namespace.toLowerCase == "point" => Some((args.head, args(1)))
     case _ => None
   }

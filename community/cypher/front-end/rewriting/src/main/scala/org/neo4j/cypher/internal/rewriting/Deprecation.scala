@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
@@ -95,6 +96,9 @@ object Deprecations {
 
   def renameFunctionTo(newName: String): FunctionInvocation => FunctionInvocation =
     f => f.copy(functionName = FunctionName(newName)(f.functionName.position))(f.position)
+
+  def renameFunctionTo(newNamespace: Namespace, newName: String): FunctionInvocation => FunctionInvocation =
+    f => f.copy(namespace = newNamespace, functionName = FunctionName(newName)(f.functionName.position))(f.position)
 
   case object syntacticallyDeprecatedFeaturesIn4_X extends SyntacticDeprecations {
     override val find: PartialFunction[Any, Deprecation] = {
@@ -335,6 +339,13 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedPeriodicCommit(p.position))
+        )
+
+      // distance -> point.distance
+      case f@FunctionInvocation(namespace, FunctionName("distance"), _, _) if namespace.parts.isEmpty =>
+        Deprecation(
+          Some(Ref(f) -> renameFunctionTo(Namespace(List("point"))(f.position), "distance")(f)),
+          Some(DeprecatedFunctionNotification(f.position, "distance", "point.distance"))
         )
     }
 

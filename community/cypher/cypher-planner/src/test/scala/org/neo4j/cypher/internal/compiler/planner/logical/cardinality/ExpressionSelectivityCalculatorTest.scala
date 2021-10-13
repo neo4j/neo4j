@@ -484,13 +484,10 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   private val fakePoint = trueLiteral
   private val nPropDistance = nPredicate(lessThan(function(Seq("point"), "distance", nProp, fakePoint), literalInt(3)))
-  private val nPropDistanceLegacy = nPredicate(lessThan(function( "distance", nProp, fakePoint), literalInt(3)))
   private val rPropDistance = nPredicate(lessThan(function(Seq("point"), "distance", rProp, fakePoint), literalInt(3)))
-  private val rPropDistanceLegacy = nPredicate(lessThan(function( "distance", rProp, fakePoint), literalInt(3)))
   test("distance with no label") {
     val calculator = setUpCalculator()
     calculator(nPropDistance.expr) should equal(DEFAULT_RANGE_SELECTIVITY)
-    calculator(nPropDistanceLegacy.expr) should equal(DEFAULT_RANGE_SELECTIVITY)
   }
 
   test("distance with one label") {
@@ -499,10 +496,6 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val labelResult = calculator(nIsPerson.expr)
     labelResult.factor should equal(0.1)
     calculator(nPropDistance.expr).factor should equal(
-      0.2 // n.prop IS NOT NULL
-        * DEFAULT_RANGE_SEEK_FACTOR // point distance
-    )
-    calculator(nPropDistanceLegacy.expr).factor should equal(
       0.2 // n.prop IS NOT NULL
         * DEFAULT_RANGE_SEEK_FACTOR // point distance
     )
@@ -519,7 +512,6 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
       )
 
     calculator(rPropDistance.expr).factor should equal(friendsIndexSelectivity)
-    calculator(rPropDistanceLegacy.expr).factor should equal(friendsIndexSelectivity)
   }
 
   test("distance with two labels, two indexes") {
@@ -543,26 +535,10 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     calculator(nPropDistance.expr).factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
       +- 0.00000001)
-    calculator(nPropDistanceLegacy.expr).factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
-      +- 0.00000001)
   }
 
   test("distance in AndedPropertyInequalities") {
     val inequality = lessThan(function(Seq("point"), "distance", nProp, fakePoint), rProp)
-    val predicate = AndedPropertyInequalities(varFor("r"), rProp, NonEmptyList(inequality))
-
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
-
-    val distanceResult = calculator(predicate)
-
-    distanceResult.factor should equal(
-      0.2 // exists n.prop
-        * DEFAULT_RANGE_SEEK_FACTOR // point distance
-    )
-  }
-
-  test("distance in AndedPropertyInequalities - legacy") {
-    val inequality = lessThan(function("distance", nProp, fakePoint), rProp)
     val predicate = AndedPropertyInequalities(varFor("r"), rProp, NonEmptyList(inequality))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)

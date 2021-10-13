@@ -71,7 +71,6 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions
-import org.neo4j.cypher.internal.expressions.functions.LegacyDistance
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedStartNotification
@@ -381,9 +380,7 @@ case class Match(
               expr match {
                 case Property(Variable(id), PropertyKeyName(name)) if id == variable =>
                   acc :+ name
-                case FunctionInvocation(Namespace(List("point")), FunctionName("distance"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _)) if id == variable =>
-                  acc :+ name
-                case FunctionInvocation(Namespace(List()), FunctionName(LegacyDistance.name), _, Seq(Property(Variable(id), PropertyKeyName(name)), _)) if id == variable =>
+                case FunctionInvocation(Namespace(List(point)), FunctionName("distance"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _)) if id == variable && point.equalsIgnoreCase("point") =>
                   acc :+ name
                 case _ =>
                   acc

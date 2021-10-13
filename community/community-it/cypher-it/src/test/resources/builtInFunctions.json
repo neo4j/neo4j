@@ -802,36 +802,6 @@
     "rolesBoostedExecution": []
   },
   {
-    "name": "distance",
-    "category": "Spatial",
-    "description": "Returns a floating point number representing the geodesic distance between any two points in the same CRS.",
-    "signature": "distance(from :: POINT?, to :: POINT?) :: (FLOAT?)",
-    "isBuiltIn": true,
-    "argumentDescription": [
-      {
-        "name": "from",
-        "description": "from :: POINT?",
-        "type": "POINT?"
-      },
-      {
-        "name": "to",
-        "description": "to :: POINT?",
-        "type": "POINT?"
-      }
-    ],
-    "returnDescription": "FLOAT?",
-    "aggregating": false,
-    "rolesExecution": [
-      "PUBLIC",
-      "admin",
-      "architect",
-      "editor",
-      "publisher",
-      "reader"
-    ],
-    "rolesBoostedExecution": []
-  },
-  {
     "name": "duration",
     "category": "Temporal",
     "description": "Construct a Duration value.",
