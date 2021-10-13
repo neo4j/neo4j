@@ -66,7 +66,7 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def btreeIndexExistsForLabel(labelId: Int): Boolean
 
   /**
-   * Gets an index if it exists (general or unique) for a given label and properties, without taking any schema locks.
+   * Gets a BTREE index if it exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
@@ -86,7 +86,7 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
-   * Checks if an index exists (general or unique) for a given label and properties, without taking any schema locks.
+   * Checks if a BTREE index exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
 
