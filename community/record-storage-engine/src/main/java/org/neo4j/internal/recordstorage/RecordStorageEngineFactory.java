@@ -210,7 +210,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             PageCacheTracer cacheTracer )
     {
         RecordDatabaseLayout databaseLayout = convert( layout );
-        RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance(), cacheTracer );
+        RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fs, pageCache, NullLogProvider.getInstance(), cacheTracer );
         var readOnlyChecker = new DbmsReadOnlyChecker.Default( config ).forDatabase( config, databaseLayout.getDatabaseName() );
         var idGeneratorFactory = readOnlyChecker.isReadOnly() ? new ScanOnOpenReadOnlyIdGeneratorFactory()
                                                               : new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
