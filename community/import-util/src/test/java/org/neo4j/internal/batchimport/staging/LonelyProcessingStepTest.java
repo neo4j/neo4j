@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport.staging;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
@@ -29,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,7 +39,6 @@ import static org.neo4j.internal.batchimport.executor.ProcessorScheduler.SPAWN_T
 class LonelyProcessingStepTest
 {
     @Test
-    @Timeout( 10 )
     void issuePanicBeforeCompletionOnError() throws Exception
     {
         List<Step<?>> stepsPipeline = new ArrayList<>();
