@@ -143,7 +143,6 @@ public final class RelationshipSelections
         }
         catch ( Throwable t )
         {
-            // TODO: It may not be safe to close this if the owner does not expect it
             traversalCursor.close();
             throw t;
         }
