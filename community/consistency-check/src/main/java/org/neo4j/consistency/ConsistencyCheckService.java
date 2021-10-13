@@ -29,7 +29,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.consistency.checker.DebugContext;
-import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
+import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.FullCheck;
@@ -285,7 +285,7 @@ public class ConsistencyCheckService
             DirectStoreAccess stores = new DirectStoreAccess( neoStores, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
             double memoryLimitLeewayFactor = config.get( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor );
             FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, debugContext,
-                    NodeBasedMemoryLimiter.defaultWithLeeway( memoryLimitLeewayFactor ) );
+                    EntityBasedMemoryLimiter.defaultWithLeeway( memoryLimitLeewayFactor ) );
             summary = check.execute( pageCache, stores, countsStoreManager, groupDegreesStoreManager, null, pageCacheTracer, memoryTracker, log );
         }
         finally

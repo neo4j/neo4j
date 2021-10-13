@@ -306,7 +306,7 @@ class IndexCheckingSelectorTest
         IndexAccessors.IndexAccessorLookup indexAccessorLookup = new LookupAccessorsFromRunningDb( indexingService );
 
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), ConsistencyFlags.DEFAULT,
-                Config.defaults(), debugContext, NodeBasedMemoryLimiter.DEFAULT );
+                Config.defaults(), debugContext, EntityBasedMemoryLimiter.DEFAULT );
         return checker.execute( pageCache, directStoreAccess, () -> (CountsStore) countsStore, () -> groupDegreesStore, indexAccessorLookup,
                 NULL, INSTANCE, NullLog.getInstance() );
     }

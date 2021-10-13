@@ -56,7 +56,7 @@ class CheckerContext
     final TokenHolders tokenHolders;
     final RecordLoading recordLoader;
     final CountsState observedCounts;
-    final NodeBasedMemoryLimiter limiter;
+    final EntityBasedMemoryLimiter limiter;
     final ProgressMonitorFactory.MultiPartBuilder progress;
     final TokenNameLookup tokenNameLookup;
     final PageCache pageCache;
@@ -77,7 +77,7 @@ class CheckerContext
             TokenHolders tokenHolders,
             RecordLoading recordLoader,
             CountsState observedCounts,
-            NodeBasedMemoryLimiter limiter,
+            EntityBasedMemoryLimiter limiter,
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
@@ -98,7 +98,7 @@ class CheckerContext
             TokenHolders tokenHolders,
             RecordLoading recordLoader,
             CountsState observedCounts,
-            NodeBasedMemoryLimiter limiter,
+            EntityBasedMemoryLimiter limiter,
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
@@ -193,7 +193,7 @@ class CheckerContext
     {
         if ( !isCancelled() && checker.shouldBeChecked( consistencyFlags ) )
         {
-            timeOperation( checker.toString(), () -> checker.check( range, NodeBasedMemoryLimiter.isFirst( range ), limiter.isLast( range ) ), true );
+            timeOperation( checker.toString(), () -> checker.check( range, EntityBasedMemoryLimiter.isFirst( range ), limiter.isLast( range ) ), true );
         }
     }
 

@@ -43,8 +43,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
@@ -76,14 +76,14 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private final CacheAccess cacheAccess;
     private final ConsistencyReporter reporter;
     private final CountsState observedCounts;
-    private final NodeBasedMemoryLimiter limiter;
+    private final EntityBasedMemoryLimiter limiter;
     private final CheckerContext context;
     private final ProgressMonitorFactory.MultiPartBuilder progress;
 
     public RecordStorageConsistencyChecker( PageCache pageCache, NeoStores neoStores, CountsStore counts,
             IndexAccessors indexAccessors, InconsistencyReport report,
             ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, DebugContext debug, ConsistencyFlags consistencyFlags,
-            NodeBasedMemoryLimiter.Factory memoryLimit, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            EntityBasedMemoryLimiter.Factory memoryLimit, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         this.pageCache = pageCache;
         this.neoStores = neoStores;
@@ -192,7 +192,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         }
     }
 
-    private NodeBasedMemoryLimiter instantiateMemoryLimiter( NodeBasedMemoryLimiter.Factory memoryLimit )
+    private EntityBasedMemoryLimiter instantiateMemoryLimiter( EntityBasedMemoryLimiter.Factory memoryLimit )
     {
         // The checker makes use of a large memory array to hold data per node. For large stores there may not be enough memory
         // to hold all node data and in that case the checking will happen iteratively where one part of the node store is selected

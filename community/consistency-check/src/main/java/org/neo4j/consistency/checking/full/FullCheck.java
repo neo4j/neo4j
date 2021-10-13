@@ -28,7 +28,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checker.DebugContext;
-import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
+import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
 import org.neo4j.consistency.checker.RecordStorageConsistencyChecker;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReporter;
@@ -64,14 +64,14 @@ public class FullCheck
     private static final String INDEX_STRUCTURE_CHECKER_TAG = "indexStructureChecker";
     private final Config config;
     private final DebugContext debugContext;
-    private final NodeBasedMemoryLimiter.Factory memoryLimit;
+    private final EntityBasedMemoryLimiter.Factory memoryLimit;
     private final ProgressMonitorFactory progressFactory;
     private final IndexSamplingConfig samplingConfig;
     private final int threads;
     private final ConsistencyFlags flags;
 
     public FullCheck( ProgressMonitorFactory progressFactory, int threads,
-                      ConsistencyFlags consistencyFlags, Config config, DebugContext debugContext, NodeBasedMemoryLimiter.Factory memoryLimit )
+                      ConsistencyFlags consistencyFlags, Config config, DebugContext debugContext, EntityBasedMemoryLimiter.Factory memoryLimit )
     {
         this.threads = threads;
         this.progressFactory = progressFactory;

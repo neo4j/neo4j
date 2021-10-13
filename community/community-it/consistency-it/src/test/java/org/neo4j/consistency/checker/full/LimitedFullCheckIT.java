@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
+import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -42,10 +42,10 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 class LimitedFullCheckIT extends FullCheckIntegrationTest
 {
     @Override
-    protected NodeBasedMemoryLimiter.Factory memoryLimit()
+    protected EntityBasedMemoryLimiter.Factory memoryLimit()
     {
         // Make it so that it will have to do the checking in a couple of node id ranges
-        return ( pageCacheMemory, highNodeId ) -> new NodeBasedMemoryLimiter( pageCacheMemory, 0, pageCacheMemory + highNodeId * CACHE_LINE_SIZE_BYTES / 3,
+        return ( pageCacheMemory, highNodeId ) -> new EntityBasedMemoryLimiter( pageCacheMemory, 0, pageCacheMemory + highNodeId * CACHE_LINE_SIZE_BYTES / 3,
                 CACHE_LINE_SIZE_BYTES, highNodeId, 1 );
     }
 

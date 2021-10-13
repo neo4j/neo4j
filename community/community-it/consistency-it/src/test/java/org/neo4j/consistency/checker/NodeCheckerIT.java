@@ -126,7 +126,7 @@ class NodeCheckerIT
                 () -> KernelVersion.LATEST );
         context = new CheckerContext( neoStores, indexAccessors,
                 execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
-                tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( NodeBasedMemoryLimiter.class ),
+                tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( EntityBasedMemoryLimiter.class ),
                 ProgressMonitorFactory.NONE.multipleParts( "test" ), pageCache, pageCacheTracer, INSTANCE, DebugContext.NO_DEBUG,
                 ConsistencyFlags.DEFAULT );
         context.initialize();

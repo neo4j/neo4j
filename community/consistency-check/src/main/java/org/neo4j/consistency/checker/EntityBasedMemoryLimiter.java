@@ -33,7 +33,7 @@ import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
-public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
+public class EntityBasedMemoryLimiter extends PrefetchingIterator<LongRange>
 {
     public static final Factory DEFAULT = new DefaultFactory( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor.defaultValue() );
 
@@ -58,7 +58,7 @@ public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
     private long currentRangeStart;
     private long currentRangeEnd;
 
-    public NodeBasedMemoryLimiter( long pageCacheMemory, long jvmMemory, long machineMemory, long requiredMemoryPerNode, long highNodeId, double leewayFactor )
+    public EntityBasedMemoryLimiter( long pageCacheMemory, long jvmMemory, long machineMemory, long requiredMemoryPerNode, long highNodeId, double leewayFactor )
     {
         // Store the original parameters so that they can be printed for reference later
         this.pageCacheMemory = pageCacheMemory;
@@ -144,7 +144,7 @@ public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
 
     public interface Factory
     {
-        NodeBasedMemoryLimiter create( long pageCacheMemory, long highNodeId );
+        EntityBasedMemoryLimiter create( long pageCacheMemory, long highNodeId );
     }
 
     private static class DefaultFactory implements Factory
@@ -157,12 +157,12 @@ public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
         }
 
         @Override
-        public NodeBasedMemoryLimiter create( long pageCacheMemory, long highNodeId )
+        public EntityBasedMemoryLimiter create( long pageCacheMemory, long highNodeId )
         {
             long jvmMemory = Runtime.getRuntime().maxMemory();
             long machineMemory = OsBeanUtil.getTotalPhysicalMemory();
             long perNodeMemory = CacheSlots.CACHE_LINE_SIZE_BYTES;
-            return new NodeBasedMemoryLimiter( pageCacheMemory, jvmMemory, machineMemory, perNodeMemory, highNodeId, memoryLeewayFactor );
+            return new EntityBasedMemoryLimiter( pageCacheMemory, jvmMemory, machineMemory, perNodeMemory, highNodeId, memoryLeewayFactor );
         }
     }
 }

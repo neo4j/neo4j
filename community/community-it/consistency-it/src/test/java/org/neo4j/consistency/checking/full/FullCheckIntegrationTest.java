@@ -50,7 +50,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checker.DebugContext;
-import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
+import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
 import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
@@ -2934,9 +2934,9 @@ public class FullCheckIntegrationTest
                 logProvider.getLog( "test" ) );
     }
 
-    protected NodeBasedMemoryLimiter.Factory memoryLimit()
+    protected EntityBasedMemoryLimiter.Factory memoryLimit()
     {
-        return NodeBasedMemoryLimiter.DEFAULT;
+        return EntityBasedMemoryLimiter.DEFAULT;
     }
 
     private Config config()

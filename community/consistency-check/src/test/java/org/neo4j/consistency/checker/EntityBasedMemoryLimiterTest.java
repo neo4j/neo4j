@@ -26,13 +26,13 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-class NodeBasedMemoryLimiterTest
+class EntityBasedMemoryLimiterTest
 {
     @Test
     void shouldReturnTheWholeRangeIfItFits()
     {
         // given
-        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 100, 100, 250, 1, 40, 1 );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 250, 1, 40, 1 );
         assertEquals( 1, limiter.numberOfRanges() );
 
         // when
@@ -47,7 +47,7 @@ class NodeBasedMemoryLimiterTest
     void shouldReturnMultipleRangesIfWholeRangeDontFit()
     {
         // given
-        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 100, 100, 1000, 10, 200, 1 );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 1000, 10, 200, 1 );
         assertEquals( 3, limiter.numberOfRanges() );
 
         // when/then
@@ -61,7 +61,7 @@ class NodeBasedMemoryLimiterTest
     void shouldReturnMultipleRangesIfWholeRangeDontFitWithLeeway()
     {
         // given
-        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 100, 100, 500, 25, 10, 0.8 );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 100, 100, 500, 25, 10, 0.8 );
         assertEquals( 2, limiter.numberOfRanges() );
 
         // when/then
@@ -74,7 +74,7 @@ class NodeBasedMemoryLimiterTest
     void shouldReturnCorrectNumberOfRangesOnExactMatch()
     {
         // given
-        NodeBasedMemoryLimiter limiter = new NodeBasedMemoryLimiter( 10, 20, 40, 1, 100, 1 );
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( 10, 20, 40, 1, 100, 1 );
 
         // then
         assertEquals( 10, limiter.numberOfRanges() );
