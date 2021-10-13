@@ -134,9 +134,15 @@ public class BuiltInDbmsProcedures
     public Stream<SystemInfo> databaseInfo() throws NoSuchAlgorithmException
     {
         var systemGraph = getSystemDatabase();
-        var storeIdProvider = getSystemDatabaseStoreIdProvider( systemGraph );
-        var creationTime = formatTime( storeIdProvider.getStoreId().getCreationTime(), getConfiguredTimeZone() );
-        return Stream.of( new SystemInfo( decodeId( storeIdProvider ), systemGraph.databaseName(), creationTime ) );
+        return dbmsInfo( systemGraph );
+    }
+
+    public static Stream<SystemInfo> dbmsInfo( GraphDatabaseAPI system ) throws NoSuchAlgorithmException
+    {
+        Config config = system.getDependencyResolver().resolveDependency( Config.class );
+        var storeIdProvider = getSystemDatabaseStoreIdProvider( system );
+        var creationTime = formatTime( storeIdProvider.getStoreId().getCreationTime(), config.get( GraphDatabaseSettings.db_timezone ).getZoneId() );
+        return Stream.of( new SystemInfo( decodeId( storeIdProvider ), system.databaseName(), creationTime ) );
     }
 
     @Admin

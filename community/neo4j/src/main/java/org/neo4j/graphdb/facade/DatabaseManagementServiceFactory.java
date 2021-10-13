@@ -19,11 +19,13 @@
  */
 package org.neo4j.graphdb.facade;
 
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
@@ -71,6 +73,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.procedure.impl.ProcedureConfig;
@@ -173,6 +176,9 @@ public class DatabaseManagementServiceFactory
         globalLife.add( globalModule.getCapabilitiesService() );
 
         startDatabaseServer( globalModule, globalLife, internalLog, databaseManager, managementService );
+
+        //System is available here, checked on startDatabaseServer
+        dumpDbmsInfo( logService.getUserLog( getClass() ), databaseManager.getDatabaseContext( NAMED_SYSTEM_DATABASE_ID ).get().databaseFacade() );
 
         return managementService;
     }
@@ -350,5 +356,25 @@ public class DatabaseManagementServiceFactory
                                edition.getBoltAuthManager( globalModule.getGlobalDependencies() ), edition.getBoltInClusterAuthManager(),
                                edition.getBoltLoopbackAuthManager(), globalModule.getMemoryPools(), edition.getDefaultDatabaseResolver(),
                                globalModule.getCentralBufferMangerHolder(), globalModule.getTransactionManager() );
+    }
+
+    private static void dumpDbmsInfo( Log log, GraphDatabaseAPI system )
+    {
+        try
+        {
+            Class<BuiltInDbmsProcedures.SystemInfo> systemInfoClass = BuiltInDbmsProcedures.SystemInfo.class;
+            Field[] fields = systemInfoClass.getFields();
+            for ( BuiltInDbmsProcedures.SystemInfo info : BuiltInDbmsProcedures.dbmsInfo( system ).collect( Collectors.toList() ) )
+            {
+                for ( Field field : fields )
+                {
+                    log.info( field.getName() + ": " + field.get( info ) );
+                }
+            }
+        }
+        catch ( Exception e )
+        {
+            log.info( "Unable to dump DBMS information", e );
+        }
     }
 }

@@ -65,6 +65,9 @@ class StartupLoggingIT extends ExclusiveWebContainerTestBase
                 info( "Starting..." ),
                 info( NEO4J_IS_STARTING_MESSAGE ),
                 info( "Remote interface available at " + uri ),
+                info( "id: .*" ),
+                info( "name: system" ),
+                info( "creationDate: .*" ),
                 info( "Started." ),
                 info( "Stopping..." ),
                 info( "Stopped." )
