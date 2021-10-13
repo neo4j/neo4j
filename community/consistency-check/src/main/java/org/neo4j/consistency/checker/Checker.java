@@ -27,4 +27,12 @@ interface Checker
     void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception;
 
     boolean shouldBeChecked( ConsistencyFlags flags );
+
+    /**
+     * If the ranges the checker uses is based on the node ids.
+     */
+    default boolean isNodeBasedCheck()
+    {
+        return true;
+    };
 }

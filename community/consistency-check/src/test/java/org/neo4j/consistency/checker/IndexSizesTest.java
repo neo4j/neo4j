@@ -21,10 +21,14 @@ package org.neo4j.consistency.checker;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -41,7 +45,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.consistency.checker.IndexChecker.NUM_INDEXES_IN_CACHE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.consistency.checker.NodeIndexChecker.NUM_INDEXES_IN_CACHE;
 import static org.neo4j.consistency.checker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 
@@ -49,6 +54,7 @@ class IndexSizesTest
 {
     private IndexSizes sizes;
     private final int highNodeId = 10000;
+    private final int highRelationshipId = 50000;
     private List<IndexDescriptor> indexes;
 
     @BeforeEach
@@ -58,7 +64,11 @@ class IndexSizesTest
 
         indexes = new ArrayList<>();
         var indexAccessors = mock( IndexAccessors.class );
-        when( indexAccessors.onlineRules( any() ) ).thenReturn( indexes );
+        when( indexAccessors.onlineRules( any() ) ).then( invocation ->
+                indexes.stream()
+                        .filter( index -> index.schema().entityType() == invocation.getArgument( 0 ) )
+                        .collect( Collectors.toList() )
+        );
         when( indexAccessors.accessorFor( any() ) ).then( invocation ->
         {
             IndexAccessor mock = mock( IndexAccessor.class );
@@ -66,79 +76,133 @@ class IndexSizesTest
             return mock;
         } );
 
-        sizes = new IndexSizes( execution, indexAccessors, highNodeId, PageCacheTracer.NULL );
+        sizes = new IndexSizes( execution, indexAccessors, highNodeId, highRelationshipId, PageCacheTracer.NULL );
     }
 
     @Test
-    void shouldSplitEvenly()
+    void shouldDivideByEntityType()
     {
         //given
-        createIndexes( 3, 3 );
+        createIndexes( 3, 3, NODE );
+        createIndexes( 3, 3, RELATIONSHIP );
         //then
-        assertEquals( NUM_INDEXES_IN_CACHE, sizes.largeIndexes( NODE ).size() );
-        assertEquals( 6 - NUM_INDEXES_IN_CACHE, sizes.smallIndexes( NODE ).size() );
+        List<IndexDescriptor> largeNodeIndexes = sizes.largeIndexes( NODE );
+        List<IndexDescriptor> smallNodeIndexes = sizes.smallIndexes( NODE );
+        List<IndexDescriptor> largeRelIndexes = sizes.largeIndexes( RELATIONSHIP );
+        List<IndexDescriptor> smallRelIndexes = sizes.smallIndexes( RELATIONSHIP );
+        assertEquals( NUM_INDEXES_IN_CACHE, largeNodeIndexes.size() );
+        assertEquals( 6 - NUM_INDEXES_IN_CACHE, smallNodeIndexes.size() );
+        assertEquals( NUM_INDEXES_IN_CACHE, largeRelIndexes.size() );
+        assertEquals( 6 - NUM_INDEXES_IN_CACHE, smallRelIndexes.size() );
     }
 
-    @Test
-    void shouldSplitEvenlyLarge()
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldSplitEvenly( EntityType entityType )
     {
         //given
-        createIndexes( 151, 149 );
+        createIndexes( 3, 3, entityType );
         //then
-        assertEquals( 150, sizes.largeIndexes( NODE ).size() );
-        assertEquals( 150, sizes.smallIndexes( NODE ).size() );
+        assertEquals( NUM_INDEXES_IN_CACHE, sizes.largeIndexes( entityType ).size() );
+        assertEquals( 6 - NUM_INDEXES_IN_CACHE, sizes.smallIndexes( entityType ).size() );
     }
 
-    @Test
-    void shouldHandleAllSmall()
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldSplitEvenlyLarge( EntityType entityType )
     {
         //given
-        createIndexes( 3, 0 );
+        createIndexes( 151, 149, entityType );
         //then
-        assertEquals( 3, sizes.smallIndexes( NODE ).size() );
-        assertEquals( 0, sizes.largeIndexes( NODE ).size() );
+        assertEquals( 150, sizes.largeIndexes( entityType ).size() );
+        assertEquals( 150, sizes.smallIndexes( entityType ).size() );
     }
 
-    @Test
-    void shouldHandleAllLarge()
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldHandleAllSmall( EntityType entityType )
     {
         //given
-        createIndexes( 0, 3 );
+        createIndexes( 3, 0, entityType );
         //then
-        assertEquals( 0, sizes.smallIndexes( NODE ).size() );
-        assertEquals( 3, sizes.largeIndexes( NODE ).size() );
+        assertEquals( 3, sizes.smallIndexes( entityType ).size() );
+        assertEquals( 0, sizes.largeIndexes( entityType ).size() );
     }
 
-    @Test
-    void shouldHandleEmpty()
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldHandleAllLarge( EntityType entityType )
+    {
+        //given
+        createIndexes( 0, 3, entityType );
+        //then
+        assertEquals( 0, sizes.smallIndexes( entityType ).size() );
+        assertEquals( 3, sizes.largeIndexes( entityType ).size() );
+    }
+
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldHandleEmpty( EntityType entityType )
     {
         //then
-        createIndexes( 0, 0 );
-        assertEquals( 0, sizes.largeIndexes( NODE ).size() );
-        assertEquals( 0, sizes.smallIndexes( NODE ).size() );
+        createIndexes( 0, 0, entityType );
+        assertEquals( 0, sizes.largeIndexes( entityType ).size() );
+        assertEquals( 0, sizes.smallIndexes( entityType ).size() );
     }
 
-    @Test
-    void shouldNotConsiderIndexWithoutValueCapabilityAsLarge() throws Exception
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldNotConsiderIndexWithoutValueCapabilityAsLarge( EntityType entityType ) throws Exception
     {
         // given
-        indexes.add( prototype().materialise( 0 ) /*w/o value capability*/ );
+        int highId = entityType == NODE ? highNodeId : highRelationshipId;
+        indexes.add( prototype( entityType ).materialise( highId / 2 ) /*w/o value capability*/ );
         sizes.initialize();
 
         // when/then
-        assertTrue( sizes.largeIndexes( NODE ).isEmpty() );
-        assertEquals( indexes, sizes.smallIndexes( NODE ) );
+        assertTrue( sizes.largeIndexes( entityType ).isEmpty() );
+        assertEquals( indexes, sizes.smallIndexes( entityType ) );
     }
 
-    private void createIndexes( int numSmall, int numLarge )
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldTreatFulltextAsLargeEvenThoughHasNoValueCapability( EntityType entityType ) throws Exception
+    {
+        // given
+        int highId = entityType == NODE ? highNodeId : highRelationshipId;
+        indexes.add( IndexPrototype.forSchema( SchemaDescriptors.fulltext( entityType, new int[]{1}, new int[]{2} ) ).withName( "foobar" )
+                .materialise( highId / 2 ) /*w/o value capability*/ );
+        sizes.initialize();
+
+        // when/then
+        assertEquals( indexes, sizes.largeIndexes( entityType ) );
+        assertTrue( sizes.smallIndexes( entityType ).isEmpty() );
+    }
+
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldTreatSmallFulltextAsSmall( EntityType entityType ) throws Exception
+    {
+        // given
+        indexes.add( IndexPrototype.forSchema( SchemaDescriptors.fulltext( entityType, new int[]{1}, new int[]{2} ) ).withName( "foobar" )
+                .materialise( 1 ) /*w/o value capability*/ );
+        sizes.initialize();
+
+        // when/then
+        assertEquals( indexes, sizes.smallIndexes( entityType ) );
+        assertTrue( sizes.largeIndexes( entityType ).isEmpty() );
+    }
+
+    private void createIndexes( int numSmall, int numLarge, EntityType entityType )
     {
         IndexCapability capabilityWithValue = mock( IndexCapability.class );
         when( capabilityWithValue.valueCapability( any() ) ).thenReturn( IndexValueCapability.YES );
-        IndexPrototype prototype = prototype();
+        IndexPrototype prototype = prototype( entityType );
 
+        int highId = entityType == NODE ? highNodeId : highRelationshipId;
         for ( int i = 0; i < numLarge; i++ )
         {
-            indexes.add( prototype.materialise( highNodeId / 2 + i ).withIndexCapability( capabilityWithValue ) ); //using id as "size"
+            indexes.add( prototype.materialise( highId / 2 + i ).withIndexCapability( capabilityWithValue ) ); //using id as "size"
         }
         for ( int i = 0; i < numSmall; i++ )
         {
@@ -155,8 +219,12 @@ class IndexSizesTest
         }
     }
 
-    private static IndexPrototype prototype()
+    private static IndexPrototype prototype( EntityType entityType )
     {
-        return IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 1, 2 ) ).withName( "foo" );
+        if ( entityType == NODE )
+        {
+            return IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 1, 2 ) ).withName( "foo" );
+        }
+        return IndexPrototype.forSchema( SchemaDescriptors.forRelType( 1, 1, 2 ) ).withName( "bar" );
     }
 }

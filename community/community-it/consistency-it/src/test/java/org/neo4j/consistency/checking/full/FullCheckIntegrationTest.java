@@ -183,10 +183,10 @@ import static org.neo4j.util.Bits.bits;
 public class FullCheckIntegrationTest
 {
     private static final IndexProviderDescriptor DESCRIPTOR = GenericNativeIndexProvider.DESCRIPTOR;
-    private static final String PROP1 = "key1";
-    private static final String PROP2 = "key2";
-    private static final Object VALUE1 = "value1";
-    private static final Object VALUE2 = "value2";
+    protected static final String PROP1 = "key1";
+    protected static final String PROP2 = "key2";
+    protected static final Object VALUE1 = "value1";
+    protected static final Object VALUE2 = "value2";
     private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
     @Inject
@@ -194,7 +194,7 @@ public class FullCheckIntegrationTest
 
     protected GraphStoreFixture fixture;
     private final ByteArrayOutputStream logStream = new ByteArrayOutputStream();
-    private final Log4jLogProvider logProvider = new Log4jLogProvider( logStream );
+    protected final Log4jLogProvider logProvider = new Log4jLogProvider( logStream );
 
     @RegisterExtension
     ExtendFailureMessageWatcher watcher = new ExtendFailureMessageWatcher( () -> String.format( "%n%s%n", logStream ) );
@@ -602,9 +602,12 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    @Test
-    void shouldReportRelationshipsThatAreNotIndexed() throws Exception
+    @ParameterizedTest
+    @EnumSource( RelationshipIndexSize.class )
+    void shouldReportRelationshipsThatAreNotIndexed( RelationshipIndexSize indexSize ) throws Exception
     {
+        indexSize.createAdditionalData( fixture );
+
         // given
         Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
         while ( indexDescriptorIterator.hasNext() )
@@ -667,6 +670,38 @@ public class FullCheckIntegrationTest
                 .andThatsAllFolks();
     }
 
+    // RelationshipChecker (=SMALL_INDEX) doesn't check indexes for entries that should not be there
+    @ParameterizedTest
+    @EnumSource( value = RelationshipIndexSize.class, names = "LARGE_INDEX" )
+    void shouldReportRelationshipsThatAreIndexedWhenTheyShouldNotBe( RelationshipIndexSize indexSize ) throws Exception
+    {
+        indexSize.createAdditionalData( fixture );
+
+        // given
+        long newRel = createOneRelationship();
+
+        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
+        while ( indexDescriptorIterator.hasNext() )
+        {
+            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+            if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP && !indexDescriptor.isUnique() )
+            {
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                {
+                    updater.process( IndexEntryUpdate.add( newRel, indexDescriptor, values( indexDescriptor ) ) );
+                }
+            }
+        }
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.INDEX, 4 ) // 2 BTREE and 2 RANGE indexes
+                .andThatsAllFolks();
+    }
+
     @ParameterizedTest
     @EnumSource( IndexSize.class )
     void shouldReportNodesThatAreIndexedWithTheWrongValues( IndexSize indexSize ) throws Exception
@@ -704,9 +739,12 @@ public class FullCheckIntegrationTest
                 .andThatsAllFolks();
     }
 
-    @Test
-    void shouldReportRelationshipsThatAreIndexedWithTheWrongValues() throws Exception
+    @ParameterizedTest
+    @EnumSource( RelationshipIndexSize.class )
+    void shouldReportRelationshipsThatAreIndexedWithTheWrongValues( RelationshipIndexSize indexSize ) throws Exception
     {
+        indexSize.createAdditionalData( fixture );
+
         // given
         final AtomicLong id = new AtomicLong();
         fixture.apply( tx ->
@@ -734,7 +772,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.RELATIONSHIP, 4 ) // 2 BTREE and 2 RANGE indexes
+        RecordType expectedType = indexSize == RelationshipIndexSize.SMALL_INDEX ? RecordType.RELATIONSHIP : RecordType.INDEX;
+        on( stats ).verify( expectedType, 4 ) // 2 BTREE and 2 RANGE indexes
                 .andThatsAllFolks();
     }
 
@@ -765,15 +804,18 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexDescriptor indexRule = indexRuleIterator.next();
-            // Don't close this accessor. It will be done when shutting down db.
-            IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
-
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+            if ( indexRule.schema().isLabelSchemaDescriptor() )
             {
-                // There is already another node (created in generateInitialData()) that has this value
-                updater.process( IndexEntryUpdate.add( nodeId, indexRule, values( indexRule ) ) );
+                // Don't close this accessor. It will be done when shutting down db.
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
+
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                {
+                    // There is already another node (created in generateInitialData()) that has this value
+                    updater.process( IndexEntryUpdate.add( nodeId, indexRule, values( indexRule ) ) );
+                }
+                accessor.force( NULL );
             }
-            accessor.force( NULL );
         }
 
         // when
@@ -791,6 +833,17 @@ public class FullCheckIntegrationTest
         fixture.apply( tx ->
         {
             id.set( tx.createNode().getId() );
+        } );
+        return id.get();
+    }
+
+    protected long createOneRelationship()
+    {
+        final AtomicLong id = new AtomicLong();
+        fixture.apply( tx ->
+        {
+            Node node = tx.createNode();
+            id.set( node.createRelationshipTo( node, withName( "T" ) ).getId() );
         } );
         return id.get();
     }
@@ -3362,6 +3415,47 @@ public class FullCheckIntegrationTest
                             Node node = tx.createNode( label( "label3" ) );
                             node.setProperty( PROP1, "someValue" );
                             node.setProperty( PROP2, "someOtherValue" );
+                        } );
+                    }
+                };
+
+        public abstract void createAdditionalData( GraphStoreFixture fixture );
+    }
+
+    /**
+     * Indexes are consistency checked in different ways depending on their size.
+     * This can be used to make the indexes created in the setup appear large or small.
+     */
+    private enum RelationshipIndexSize
+    {
+        SMALL_INDEX
+                {
+                    @Override
+                    public void createAdditionalData( GraphStoreFixture fixture )
+                    {
+                        fixture.apply( tx ->
+                        {
+                            // Create more relationships so our indexes will be considered to be small indexes (less than 5% of relationships in index).
+                            // 60 to be sure to still be considered a small index for tests that add one more relationship to the index.
+                            for ( int i = 0; i < 60; i++ )
+                            {
+                                Node node = tx.createNode();
+                                node.createRelationshipTo( node, withName( "T" ) );
+                            }
+                        } );
+                    }
+                },
+        LARGE_INDEX
+                {
+                    @Override
+                    public void createAdditionalData( GraphStoreFixture fixture )
+                    {
+                        // Create one more rel in index to be considered large index for tests that remove entries
+                        fixture.apply( tx ->
+                        {
+                            Node node = tx.createNode();
+                            Relationship relationship = node.createRelationshipTo( node, withName( "C" ) );
+                            relationship.setProperty( PROP1, VALUE2 );
                         } );
                     }
                 };

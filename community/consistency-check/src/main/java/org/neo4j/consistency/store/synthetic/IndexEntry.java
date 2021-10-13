@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -57,6 +58,7 @@ public class IndexEntry extends AbstractBaseRecord
     @Override
     public String toString()
     {
-        return format( "IndexEntry[nodeId=%d, index=%s]", getId(), indexDescriptor.userDescription( tokenNameLookup ) );
+        return format( "IndexEntry[%s=%d, index=%s]", indexDescriptor.schema().entityType() == EntityType.NODE ? "nodeId" : "relationshipId", getId(),
+                indexDescriptor.userDescription( tokenNameLookup ) );
     }
 }

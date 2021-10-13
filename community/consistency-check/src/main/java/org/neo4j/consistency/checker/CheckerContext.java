@@ -63,6 +63,7 @@ class CheckerContext
     final PageCacheTracer pageCacheTracer;
     final MemoryTracker memoryTracker;
     final long highNodeId;
+    final long highRelationshipId;
     final TokenIndexAccessor nodeLabelIndex;
     final TokenIndexAccessor relationshipTypeIndex;
     private final AtomicBoolean cancelled;
@@ -109,12 +110,13 @@ class CheckerContext
     {
         this.neoStores = neoStores;
         this.highNodeId = neoStores.getNodeStore().getHighId();
+        this.highRelationshipId = neoStores.getRelationshipStore().getHighId();
         this.indexAccessors = indexAccessors;
         this.nodeLabelIndex = indexAccessors.nodeLabelIndex();
         this.relationshipTypeIndex = indexAccessors.relationshipTypeIndex();
         this.debugContext = debug;
         this.consistencyFlags = consistencyFlags;
-        this.indexSizes = new IndexSizes( execution, indexAccessors, neoStores.getNodeStore().getHighId(), pageCacheTracer );
+        this.indexSizes = new IndexSizes( execution, indexAccessors, highNodeId, highRelationshipId, pageCacheTracer );
         this.execution = execution;
         this.reporter = reporter;
         this.cacheAccess = cacheAccess;
@@ -145,7 +147,8 @@ class CheckerContext
         {
             debugPrintIndexes( indexSizes.largeIndexes( EntityType.NODE ), "considered large node indexes" );
             debugPrintIndexes( indexSizes.smallIndexes( EntityType.NODE ), "considered small node indexes" );
-            debugPrintIndexes( indexAccessors.onlineRules( EntityType.RELATIONSHIP ), "the relationship indexes" );
+            debugPrintIndexes( indexSizes.largeIndexes( EntityType.RELATIONSHIP ), "considered large relationship indexes" );
+            debugPrintIndexes( indexSizes.smallIndexes( EntityType.RELATIONSHIP ), "considered small relationship indexes" );
         }
     }
 
@@ -193,7 +196,8 @@ class CheckerContext
     {
         if ( !isCancelled() && checker.shouldBeChecked( consistencyFlags ) )
         {
-            timeOperation( checker.toString(), () -> checker.check( range, EntityBasedMemoryLimiter.isFirst( range ), limiter.isLast( range ) ), true );
+            timeOperation( checker.toString(), () -> checker.check( range, EntityBasedMemoryLimiter.isFirst( range ),
+                    limiter.isLast( range, checker.isNodeBasedCheck() ) ), true );
         }
     }
 
@@ -217,7 +221,8 @@ class CheckerContext
 
     ProgressListener progressReporter( Checker checker, String name, long totalCount )
     {
-        return roundInsensitiveProgressReporter( checker, name, totalCount * limiter.numberOfRanges() );
+        int nbrRanges = checker.isNodeBasedCheck() ? limiter.numberOfNodeRanges() : limiter.numberOfRelationshipRanges();
+        return roundInsensitiveProgressReporter( checker, name, totalCount * nbrRanges );
     }
 
     ProgressListener roundInsensitiveProgressReporter( Checker checker, String name, long totalCount )

@@ -89,7 +89,7 @@ class RelationshipChecker implements Checker
         this.recordLoader = context.recordLoader;
         this.observedCounts = context.observedCounts;
         this.mandatoryProperties = mandatoryProperties;
-        this.indexes = context.indexAccessors.onlineRules( RELATIONSHIP );
+        this.indexes = context.indexSizes.smallIndexes( RELATIONSHIP );
         this.progress = context.progressReporter( this, "Relationships", neoStores.getRelationshipStore().getHighId() );
     }
 

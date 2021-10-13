@@ -82,6 +82,8 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class IndexCheckingSelectorTest
 {
     private static final Label label1 = Label.label( "Label1" );
+    private static final RelationshipType relType1 = RelationshipType.withName( "RelType1" );
+    private static final RelationshipType relType2 = RelationshipType.withName( "RelType2" );
     private static final String property1 = "property1";
     private final StringJoiner output = new StringJoiner( System.lineSeparator() );
     private final DebugContext debugContext = new DebugContext()
@@ -176,19 +178,22 @@ class IndexCheckingSelectorTest
     }
 
     @Test
-    void checkIndexesWithoutValuesWithNodeChecker() throws Exception
+    void checkLargeFulltextIndexesWithIndexCheckers() throws Exception
     {
 
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label1 );
             node.setProperty( property1, "value" );
+            Relationship relationship = node.createRelationshipTo( node, relType1 );
+            relationship.setProperty( property1, "value1" );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( "CREATE FULLTEXT INDEX FOR (n:Label1) ON EACH [n.property1]" );
+            tx.execute( "CREATE FULLTEXT INDEX FOR ()-[r:RelType1]-() ON EACH [r.property1]" );
             tx.commit();
         }
         dbms.shutdown();
@@ -215,15 +220,39 @@ class IndexCheckingSelectorTest
 
         assertThat( output.toString() )
                 .contains( "IndexChecker[entityType:NODE,indexesToCheck:1]" )
-                .containsPattern( "NodeChecker\\[highId:.,indexesToCheck:0\\]" );
+                .containsPattern( "NodeChecker\\[highId:.,indexesToCheck:0\\]" )
+                .contains( "RelationshipIndexChecker[entityType:RELATIONSHIP,indexesToCheck:1]" )
+                .containsPattern( "RelationshipChecker\\[highId:.,indexesToCheck:0\\]" );
     }
 
     @Test
-    void checkAllRelationshipIndexesWithRelationshipChecker() throws ConsistencyCheckIncompleteException
+    void checkLargeRelationshipIndexesWithRelationshipIndexChecker() throws ConsistencyCheckIncompleteException
     {
-        RelationshipType relType1 = RelationshipType.withName( "RelType1" );
-        RelationshipType relType2 = RelationshipType.withName( "RelType2" );
+        // An index is considered large if it contains more than 5% of the relationships.
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode( label1 );
+            Relationship relationship = node.createRelationshipTo( node, relType1 );
+            relationship.setProperty( property1, "value" );
+            tx.commit();
+        }
 
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().indexFor( relType1 ).on( property1 ).create();
+            tx.commit();
+        }
+
+        runConsistencyCheck();
+
+        assertThat( output.toString() )
+                .contains( "RelationshipIndexChecker[entityType:RELATIONSHIP,indexesToCheck:1]" )
+                .containsPattern( "RelationshipChecker\\[highId:.,indexesToCheck:0\\]" );
+    }
+
+    @Test
+    void checkSmallRelationshipIndexesWithRelationshipChecker() throws ConsistencyCheckIncompleteException
+    {
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label1 );
@@ -232,28 +261,22 @@ class IndexCheckingSelectorTest
 
             for ( int i = 0; i < 20; i++ )
             {
-                Node node2 = tx.createNode( label1 );
-                Relationship relationship2 = node2.createRelationshipTo( node2, relType2 );
-                relationship2.setProperty( property1, "value" );
-
+                node.createRelationshipTo( node, relType2 );
             }
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
-            // Create one large and one small index.
             tx.schema().indexFor( relType1 ).on( property1 ).create();
-            tx.schema().indexFor( relType2 ).on( property1 ).create();
             tx.commit();
         }
 
         runConsistencyCheck();
 
-        // Both large and small relationship indexes should be checked by RelationshipChecker until there
-        // is an IndexChecker variant that can handle relationship indexes.
         assertThat( output.toString() )
-                .containsPattern( "RelationshipChecker\\[highId:..,indexesToCheck:2\\]" );
+                .contains( "RelationshipIndexChecker[entityType:RELATIONSHIP,indexesToCheck:0]" )
+                .containsPattern( "RelationshipChecker\\[highId:..,indexesToCheck:1\\]" );
     }
 
     @Test

@@ -25,7 +25,6 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
@@ -142,7 +141,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
             // Some pieces of check logic are extracted from this main class to reduce the size of this class. Instantiate those here first
             NodeChecker nodeChecker = new NodeChecker( context, mandatoryNodeProperties );
-            IndexChecker indexChecker = new IndexChecker( context, EntityType.NODE );
+            NodeIndexChecker indexChecker = new NodeIndexChecker( context );
+            RelationshipIndexChecker relationshipIndexChecker = new RelationshipIndexChecker( context );
             RelationshipChecker relationshipChecker = new RelationshipChecker( context, mandatoryRelationshipProperties );
             RelationshipGroupChecker relationshipGroupChecker = new RelationshipGroupChecker( context );
             RelationshipChainChecker relationshipChainChecker = new RelationshipChainChecker( context );
@@ -156,7 +156,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                     break;
                 }
 
-                LongRange range = limiter.next();
+                EntityBasedMemoryLimiter.CheckRange range = limiter.next();
                 if ( numberOfRanges > 1 )
                 {
                     context.debug( "=== Checking range %d/%d (%s) ===", i, numberOfRanges, range );
@@ -167,15 +167,26 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                 // take that into consideration when working with offset arrays where the index is based on node ids.
                 cacheAccess.setPivotId( range.from() );
 
-                // Go into a node-centric mode where the nodes themselves are checked and somewhat cached off-heap.
-                // Then while we have the nodes loaded in cache do all other checking that has anything to do with nodes
-                // so that the "other" store can be checked sequentially and the random node lookups will be cheap
-                context.runIfAllowed( indexChecker, range );
-                cacheAccess.setCacheSlotSizesAndClear( DEFAULT_SLOT_SIZES );
-                context.runIfAllowed( nodeChecker, range );
-                context.runIfAllowed( relationshipGroupChecker, range );
-                context.runIfAllowed( relationshipChecker, range );
-                context.runIfAllowed( relationshipChainChecker, range );
+                if ( range.applicableForRelationshipBasedChecks() )
+                {
+                    LongRange relationshipRange = range.getRelationshipRange();
+                    context.runIfAllowed( relationshipIndexChecker, relationshipRange );
+                    cacheAccess.clearCache();
+                }
+
+                if ( range.applicableForNodeBasedChecks() )
+                {
+                    LongRange nodeRange = range.getNodeRange();
+                    // Go into a node-centric mode where the nodes themselves are checked and somewhat cached off-heap.
+                    // Then while we have the nodes loaded in cache do all other checking that has anything to do with nodes
+                    // so that the "other" store can be checked sequentially and the random node lookups will be cheap
+                    context.runIfAllowed( indexChecker, nodeRange );
+                    cacheAccess.setCacheSlotSizesAndClear( DEFAULT_SLOT_SIZES );
+                    context.runIfAllowed( nodeChecker, nodeRange );
+                    context.runIfAllowed( relationshipGroupChecker, nodeRange );
+                    context.runIfAllowed( relationshipChecker, nodeRange );
+                    context.runIfAllowed( relationshipChainChecker, nodeRange );
+                }
             }
 
             if ( !isCancelled() && context.consistencyFlags.isCheckGraph() )
@@ -201,7 +212,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
         long pageCacheMemory = pageCache.maxCachedPages() * pageCache.pageSize();
         long nodeCount = neoStores.getNodeStore().getHighId();
-        return memoryLimit.create( pageCacheMemory, nodeCount );
+        long relationshipCount = neoStores.getRelationshipStore().getHighId();
+        return memoryLimit.create( pageCacheMemory, nodeCount, relationshipCount );
     }
 
     @Override

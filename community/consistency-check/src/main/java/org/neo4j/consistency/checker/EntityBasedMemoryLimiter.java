@@ -33,7 +33,7 @@ import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
-public class EntityBasedMemoryLimiter extends PrefetchingIterator<LongRange>
+public class EntityBasedMemoryLimiter extends PrefetchingIterator<EntityBasedMemoryLimiter.CheckRange>
 {
     public static final Factory DEFAULT = new DefaultFactory( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor.defaultValue() );
 
@@ -46,7 +46,7 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<LongRange>
     private final long pageCacheMemory;
     private final long jvmMemory;
     private final long machineMemory;
-    private final long requiredMemoryPerNode;
+    private final long requiredMemoryPerEntity;
 
     // Calculated values
     private final long effectiveJvmMemory;
@@ -54,17 +54,20 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<LongRange>
     private long effectiveMachineMemory;
 
     private final long highNodeId;
-    private final long nodesPerRange;
+    private final long highRelationshipId;
+    private final long highEntityId;
+    private final long entitiesPerRange;
     private long currentRangeStart;
     private long currentRangeEnd;
 
-    public EntityBasedMemoryLimiter( long pageCacheMemory, long jvmMemory, long machineMemory, long requiredMemoryPerNode, long highNodeId, double leewayFactor )
+    public EntityBasedMemoryLimiter( long pageCacheMemory, long jvmMemory, long machineMemory, long requiredMemoryPerEntity, long highNodeId,
+            long highRelationshipId, double leewayFactor )
     {
         // Store the original parameters so that they can be printed for reference later
         this.pageCacheMemory = pageCacheMemory;
         this.jvmMemory = jvmMemory;
         this.machineMemory = machineMemory;
-        this.requiredMemoryPerNode = requiredMemoryPerNode;
+        this.requiredMemoryPerEntity = requiredMemoryPerEntity;
 
         // Store calculated values
         this.effectiveJvmMemory = jvmMemory == Long.MAX_VALUE ? Runtime.getRuntime().totalMemory() : jvmMemory;
@@ -77,35 +80,48 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<LongRange>
         long availableMemory = effectiveMachineMemory - occupiedMemory;
 
         assert availableMemory > 0;
-        assert requiredMemoryPerNode > 0;
+        assert requiredMemoryPerEntity > 0;
 
         this.highNodeId = highNodeId;
-        this.nodesPerRange = max( 1, min( highNodeId, availableMemory / requiredMemoryPerNode ) );
+        this.highRelationshipId = highRelationshipId;
+        this.highEntityId = max( highNodeId, highRelationshipId );
+        this.entitiesPerRange = max( 1, min( highEntityId, availableMemory / requiredMemoryPerEntity ) );
         this.currentRangeStart = 0;
-        this.currentRangeEnd = min( this.highNodeId, nodesPerRange );
+        this.currentRangeEnd = min( this.highEntityId, entitiesPerRange );
     }
 
     int numberOfRanges()
     {
-        return toIntExact( (long) ((((double) highNodeId - 1) / nodesPerRange) + 1) );
+        return toIntExact( (long) ((((double) highEntityId - 1) / entitiesPerRange) + 1) );
+    }
+
+    int numberOfNodeRanges()
+    {
+        return toIntExact( (long) ((((double) highNodeId - 1) / entitiesPerRange) + 1) );
+    }
+
+    int numberOfRelationshipRanges()
+    {
+        return toIntExact( (long) ((((double) highRelationshipId - 1) / entitiesPerRange) + 1) );
     }
 
     long rangeSize()
     {
-        return nodesPerRange;
+        return entitiesPerRange;
     }
 
     @Override
-    protected LongRange fetchNextOrNull()
+    protected CheckRange fetchNextOrNull()
     {
-        if ( currentRangeStart >= highNodeId )
+        if ( currentRangeStart >= highEntityId )
         {
             return null;
         }
 
-        LongRange range = LongRange.range( currentRangeStart, currentRangeEnd );
+        CheckRange range = new CheckRange( currentRangeStart, currentRangeEnd, highNodeId, highRelationshipId );
+
         currentRangeStart = currentRangeEnd;
-        currentRangeEnd = min( highNodeId, currentRangeEnd + nodesPerRange );
+        currentRangeEnd = min( highEntityId, currentRangeEnd + entitiesPerRange );
         return range;
     }
 
@@ -116,8 +132,9 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<LongRange>
         builder.append( format( "%n  pageCacheMemory:%s", bytesToString( pageCacheMemory ) ) );
         builder.append( format( "%n  jvmMemory:%s", bytesToString( jvmMemory ) ) );
         builder.append( format( "%n  machineMemory:%s", bytesToString( machineMemory ) ) );
-        builder.append( format( "%n  perNodeMemory:%s", bytesToString( requiredMemoryPerNode ) ) );
+        builder.append( format( "%n  perEntityMemory:%s", bytesToString( requiredMemoryPerEntity ) ) );
         builder.append( format( "%n  nodeHighId:%s", highNodeId ) );
+        builder.append( format( "%n  relationshipHighId:%s", highRelationshipId ) );
         if ( effectiveJvmMemory != jvmMemory )
         {
             builder.append( format( "%n  effective jvmMemory:%s", bytesToString( effectiveJvmMemory ) ) );
@@ -128,7 +145,7 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<LongRange>
         }
         builder.append( format( "%n  occupiedMemory:%s", bytesToString( occupiedMemory ) ) );
         builder.append( format( "%n  ==> numberOfRanges:%d", numberOfRanges() ) );
-        builder.append( format( "%n  ==> numberOfNodesPerRange:%d", nodesPerRange ) );
+        builder.append( format( "%n  ==> numberOfEntitiesPerRange:%d", entitiesPerRange ) );
         return builder.toString();
     }
 
@@ -137,14 +154,18 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<LongRange>
         return range.from() == 0;
     }
 
-    boolean isLast( LongRange range )
+    boolean isLast( LongRange range, boolean isNodeRange )
     {
-        return range.to() == highNodeId;
+        if ( isNodeRange )
+        {
+            return range.to() == highNodeId;
+        }
+        return range.to() == highRelationshipId;
     }
 
     public interface Factory
     {
-        EntityBasedMemoryLimiter create( long pageCacheMemory, long highNodeId );
+        EntityBasedMemoryLimiter create( long pageCacheMemory, long highNodeId, long highRelationshipId );
     }
 
     private static class DefaultFactory implements Factory
@@ -157,12 +178,60 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<LongRange>
         }
 
         @Override
-        public EntityBasedMemoryLimiter create( long pageCacheMemory, long highNodeId )
+        public EntityBasedMemoryLimiter create( long pageCacheMemory, long highNodeId, long highRelationshipId )
         {
             long jvmMemory = Runtime.getRuntime().maxMemory();
             long machineMemory = OsBeanUtil.getTotalPhysicalMemory();
-            long perNodeMemory = CacheSlots.CACHE_LINE_SIZE_BYTES;
-            return new EntityBasedMemoryLimiter( pageCacheMemory, jvmMemory, machineMemory, perNodeMemory, highNodeId, memoryLeewayFactor );
+            long perEntityMemory = CacheSlots.CACHE_LINE_SIZE_BYTES;
+            return new EntityBasedMemoryLimiter( pageCacheMemory, jvmMemory, machineMemory, perEntityMemory, highNodeId, highRelationshipId,
+                    memoryLeewayFactor );
+        }
+    }
+
+    static class CheckRange
+    {
+        private final LongRange nodeRange;
+        private final LongRange relationshipRange;
+        private final long rangeStart;
+        private final long rangeEnd;
+
+        CheckRange( long rangeStart, long rangeEnd, long highNodeId, long highRelationshipId )
+        {
+            this.rangeStart = rangeStart;
+            this.rangeEnd = rangeEnd;
+            relationshipRange = rangeStart < highRelationshipId ? LongRange.range( rangeStart, min( rangeEnd, highRelationshipId ) ) : null;
+            nodeRange = rangeStart < highNodeId ? LongRange.range( rangeStart, min( rangeEnd, highNodeId ) ) : null;
+        }
+
+        boolean applicableForNodeBasedChecks()
+        {
+            return nodeRange != null;
+        }
+
+        boolean applicableForRelationshipBasedChecks()
+        {
+            return relationshipRange != null;
+        }
+
+        public LongRange getNodeRange()
+        {
+            return nodeRange;
+        }
+
+        public LongRange getRelationshipRange()
+        {
+            return relationshipRange;
+        }
+
+        public long from()
+        {
+            return rangeStart;
+        }
+
+        @Override
+        public String toString()
+        {
+            return LongRange.range( rangeStart, rangeEnd ).toString();
         }
     }
 }

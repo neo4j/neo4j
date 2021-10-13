@@ -21,7 +21,6 @@ package org.neo4j.consistency.checker;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.exceptions.KernelException;
@@ -32,7 +31,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class IndexCheckerTest extends CheckerTestBase
+public class NodeIndexCheckerTest extends CheckerTestBase
 {
     int label;
     int prop;
@@ -62,7 +61,7 @@ public class IndexCheckerTest extends CheckerTestBase
         // The ordering of the created property values will give several empty partitions.
         ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
         CheckerContext context = context( 4, ConsistencyFlags.DEFAULT, inconsistenciesSummary );
-        IndexChecker indexChecker = new IndexChecker( context, EntityType.NODE );
+        NodeIndexChecker indexChecker = new NodeIndexChecker( context );
         indexChecker.check( LongRange.range( 0L, 10L), true, false );
 
         // We should not have found any inconsistencies in the consistent index.

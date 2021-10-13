@@ -249,7 +249,7 @@ class CheckerTestBase
         reporter = new ConsistencyReporter( report, monitor );
         countsState = new CountsState( neoStores, cacheAccess, INSTANCE );
         EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter( pageCache.pageSize() * pageCache.maxCachedPages(),
-                Runtime.getRuntime().maxMemory(), Long.MAX_VALUE, CacheSlots.CACHE_LINE_SIZE_BYTES, nodeStore.getHighId(), 1 );
+                Runtime.getRuntime().maxMemory(), Long.MAX_VALUE, CacheSlots.CACHE_LINE_SIZE_BYTES, nodeStore.getHighId(), relationshipStore.getHighId(), 1 );
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
         ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK );
         context = new CheckerContext( neoStores, indexAccessors, execution, reporter, cacheAccess, tokenHolders,

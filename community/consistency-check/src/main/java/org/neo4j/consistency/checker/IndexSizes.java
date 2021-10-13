@@ -50,13 +50,15 @@ class IndexSizes
     private final ConcurrentMap<IndexDescriptor,Long> nodeIndexSizes = new ConcurrentHashMap<>();
     private final ConcurrentMap<IndexDescriptor,Long> relationshipIndexSizes = new ConcurrentHashMap<>();
     private final long highNodeId;
+    private final long highRelationshipId;
     private final PageCacheTracer pageCacheTracer;
 
-    IndexSizes( ParallelExecution execution, IndexAccessors indexAccessors, long highNodeId, PageCacheTracer pageCacheTracer )
+    IndexSizes( ParallelExecution execution, IndexAccessors indexAccessors, long highNodeId, long highRelationshipId, PageCacheTracer pageCacheTracer )
     {
         this.execution = execution;
         this.indexAccessors = indexAccessors;
         this.highNodeId = highNodeId;
+        this.highRelationshipId = highRelationshipId;
         this.pageCacheTracer = pageCacheTracer;
     }
 
@@ -105,7 +107,7 @@ class IndexSizes
                 continue;
             }
 
-            if ( getSizeFactor( index ) > SMALL_INDEX_FACTOR_THRESHOLD || threshold % IndexChecker.NUM_INDEXES_IN_CACHE != 0 )
+            if ( getSizeFactor( index, entityType ) > SMALL_INDEX_FACTOR_THRESHOLD || threshold % IndexChecker.NUM_INDEXES_IN_CACHE != 0 )
             {
                 threshold++;
             }
@@ -121,8 +123,12 @@ class IndexSizes
         return capabilities.valueCapability( categories ) == IndexValueCapability.YES && !index.schema().isFulltextSchemaDescriptor();
     }
 
-    private double getSizeFactor( IndexDescriptor index )
+    private double getSizeFactor( IndexDescriptor index, EntityType entityType )
     {
+        if ( entityType == EntityType.RELATIONSHIP )
+        {
+            return (double) getEstimatedIndexSize( index ) / highRelationshipId;
+        }
         return (double) getEstimatedIndexSize( index ) / highNodeId;
     }
 

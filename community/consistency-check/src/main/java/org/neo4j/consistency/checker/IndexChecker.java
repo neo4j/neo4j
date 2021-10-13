@@ -40,22 +40,20 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.consistency.checker.RecordLoading.entityIntersectionWithSchema;
 import static org.neo4j.consistency.checker.RecordLoading.lightClear;
-import static org.neo4j.consistency.checker.RecordLoading.safeGetNodeLabels;
 import static org.neo4j.consistency.checker.SchemaComplianceChecker.areValuesSupportedByIndex;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public class IndexChecker implements Checker
+public abstract class IndexChecker<Record extends PrimitiveRecord> implements Checker
 {
     private static final String INDEX_CHECKER_TAG = "IndexChecker";
     private static final String CONSISTENCY_INDEX_ENTITY_CHECK_TAG = "consistencyIndexEntityCheck";
@@ -71,14 +69,14 @@ public class IndexChecker implements Checker
 
     private final EntityType entityType;
     private final ConsistencyReport.Reporter reporter;
-    private final CheckerContext context;
+    protected final CheckerContext context;
     private final IndexAccessors indexAccessors;
     private final CacheAccess cacheAccess;
     private final ProgressListener cacheProgress;
     private final ProgressListener scanProgress;
     private final List<IndexDescriptor> indexes;
 
-    IndexChecker( CheckerContext context, EntityType entityType )
+    IndexChecker( CheckerContext context, EntityType entityType, String entityName )
     {
         indexAccessors = context.indexAccessors;
         this.context = context;
@@ -88,18 +86,41 @@ public class IndexChecker implements Checker
         this.indexes = context.indexSizes.largeIndexes( entityType );
         long totalSize = indexes.stream().mapToLong( context.indexSizes::getEstimatedIndexSize ).sum();
         int rounds = (indexes.size() - 1) / NUM_INDEXES_IN_CACHE + 1;
-        this.scanProgress = context.roundInsensitiveProgressReporter( this, "Node index checking", rounds * context.neoStores.getNodeStore().getHighId() );
-        // The caching of indexes is generally so much quicker than other things and is based on estimates so dividing by 3
+        this.scanProgress = context.roundInsensitiveProgressReporter( this, entityName + " index checking", rounds * highId() );
+        // The caching of indexes is generally so much quicker than other things and is based on estimates so dividing by 10
         // makes the progress more even and any estimation flaws less visible.
-        this.cacheProgress = context.roundInsensitiveProgressReporter( this, "Node index caching", totalSize / INDEX_CACHING_PROGRESS_FACTOR );
+        this.cacheProgress = context.roundInsensitiveProgressReporter( this, entityName + " index caching", totalSize / 3 );
+    }
+
+    abstract CommonAbstractStore<Record,?> store();
+
+    abstract long highId();
+
+    abstract Record getEntity( StoreCursors storeCursors, long entityId );
+
+    abstract long[] getEntityTokens( CheckerContext context, StoreCursors storeCursors, Record record, RecordReader<DynamicRecord> additionalReader );
+
+    abstract RecordReader<DynamicRecord> additionalEntityTokenReader( CursorContext cursorContext );
+
+    abstract void reportEntityNotInUse( ConsistencyReport.IndexConsistencyReport report, Record record );
+
+    abstract void reportIndexedIncorrectValues( ConsistencyReport.IndexConsistencyReport report, Record record, Object[] propertyValues );
+
+    abstract void reportIndexedWhenShouldNot( ConsistencyReport.IndexConsistencyReport report, Record record );
+
+    abstract ConsistencyReport.PrimitiveConsistencyReport getReport( Record cursor, ConsistencyReport.Reporter reporter );
+
+    private ConsistencyReport.PrimitiveConsistencyReport getReport( Record cursor )
+    {
+        return getReport( cursor, reporter );
     }
 
     @Override
-    public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
+    public void check( LongRange entityIdRange, boolean firstRange, boolean lastRange ) throws Exception
     {
         // While more indexes
-        //   Scan through one or more indexes (as sequentially as possible) and cache the node ids + hash of the indexed value in one bit-set for each index
-        //   Then scan through node store, its labels and relevant properties and hash that value too --> match with the bit-set + hash.
+        //   Scan through one or more indexes (as sequentially as possible) and cache the entity ids + hash of the indexed value in one bit-set for each index
+        //   Then scan through entity store, its entity tokens and relevant properties and hash that value too --> match with the bit-set + hash.
 
         cacheAccess.setCacheSlotSizesAndClear( TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE ); //can hold up to 5 indexes
         List<IndexContext> indexesToCheck = new ArrayList<>();
@@ -110,12 +131,12 @@ public class IndexChecker implements Checker
             {
                 IndexContext index = new IndexContext( indexes.get( i ), i % NUM_INDEXES_IN_CACHE );
                 indexesToCheck.add( index );
-                cacheIndex( index, nodeIdRange, firstRange, indexChecker, storeCursors );
+                cacheIndex( index, entityIdRange, firstRange, indexChecker, storeCursors );
                 boolean isLastIndex = i == indexes.size() - 1;
                 boolean canFitMoreAndIsNotLast = !isLastIndex && index.cacheSlotOffset != NUM_INDEXES_IN_CACHE - 1;
                 if ( !canFitMoreAndIsNotLast  && !context.isCancelled() )
                 {
-                    checkVsEntities( indexesToCheck, nodeIdRange );
+                    checkVsEntities( indexesToCheck, entityIdRange );
                     indexesToCheck = new ArrayList<>();
                     cacheAccess.clearCache();
                 }
@@ -129,7 +150,7 @@ public class IndexChecker implements Checker
         return flags.isCheckIndexes();
     }
 
-    private void cacheIndex( IndexContext index, LongRange nodeIdRange, boolean firstRange, CursorContext cursorContext, StoreCursors storeCursors )
+    private void cacheIndex( IndexContext index, LongRange entityIdRange, boolean firstRange, CursorContext cursorContext, StoreCursors storeCursors )
             throws Exception
     {
         IndexAccessor accessor = indexAccessors.accessorFor( index.descriptor );
@@ -157,12 +178,12 @@ public class IndexChecker implements Checker
                         while ( partition.hasNext() && !this.context.isCancelled() )
                         {
                             long entityId = partition.next();
-                            if ( !nodeIdRange.isWithinRangeExclusiveTo( entityId ) )
+                            if ( !entityIdRange.isWithinRangeExclusiveTo( entityId ) )
                             {
-                                if ( firstRange && entityId >= this.context.highNodeId )
+                                if ( firstRange && entityId >= highId() )
                                 {
-                                    reporter.forIndexEntry( new IndexEntry( index.descriptor, this.context.tokenNameLookup, entityId ) )
-                                            .nodeNotInUse( this.context.recordLoader.node( entityId, localStoreCursors ) );
+                                    reportEntityNotInUse( reporter.forIndexEntry( new IndexEntry( index.descriptor, this.context.tokenNameLookup, entityId ) ),
+                                            getEntity( localStoreCursors, entityId ) );
                                 }
                                 else if ( firstRange && index.descriptor.isUnique() && index.hasValues )
                                 {
@@ -215,12 +236,12 @@ public class IndexChecker implements Checker
                 {
                     Value[] left = lastValues[i];
                     Value[] right = firstValues[i + 1];
-                    // Skip any empty partition - can be empty if all entries in a partition of the index were for nodes outside of the current range.
+                    // Skip any empty partition - can be empty if all entries in a partition of the index were for entities outside of the current range.
                     if ( left != null && right != null && Arrays.equals( left, right ) )
                     {
                         long leftEntityId = lastEntityIds[i];
                         long rightEntityId = firstEntityIds[i + 1];
-                        reporter.forNode( context.recordLoader.node( leftEntityId, storeCursors ) ).uniqueIndexNotUnique( index.descriptor, left,
+                        getReport( getEntity( storeCursors, leftEntityId ) ).uniqueIndexNotUnique( index.descriptor, left,
                                 rightEntityId );
                     }
                 }
@@ -246,7 +267,7 @@ public class IndexChecker implements Checker
             {
                 if ( Arrays.equals( lastValues[slot], indexedValues ) )
                 {
-                    reporter.forNode( this.context.recordLoader.node( entityId, localStoreCursors ) )
+                    getReport( getEntity( localStoreCursors, entityId ) )
                             .uniqueIndexNotUnique( index.descriptor, indexedValues, lastEntityIds[slot] );
                 }
             }
@@ -256,11 +277,11 @@ public class IndexChecker implements Checker
         return checksum;
     }
 
-    private void checkVsEntities( List<IndexContext> indexes, LongRange nodeIdRange ) throws Exception
+    private void checkVsEntities( List<IndexContext> indexes, LongRange entityIdRange ) throws Exception
     {
         ParallelExecution execution = context.execution;
         execution.run( getClass().getSimpleName() + "-checkVsEntities",
-                execution.partition( nodeIdRange, ( from, to, last ) -> () -> checkVsEntities( indexes, from, to ) ) );
+                execution.partition( entityIdRange, ( from, to, last ) -> () -> checkVsEntities( indexes, from, to ) ) );
     }
 
     private void checkVsEntities( List<IndexContext> indexes, long fromEntityId, long toEntityId )
@@ -268,9 +289,9 @@ public class IndexChecker implements Checker
         // This is one thread
         CheckerContext noReportingContext = context.withoutReporting();
         try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ENTITY_CHECK_TAG ) );
-                var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext );
-              RecordReader<NodeRecord> nodeReader = new RecordReader<>( context.neoStores.getNodeStore(), true, cursorContext );
-              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), false, cursorContext );
+              var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext );
+              RecordReader<Record> entityReader = new RecordReader<>( store(), true, cursorContext );
+              RecordReader<DynamicRecord> entityTokenReader = additionalEntityTokenReader( cursorContext );
               SafePropertyChainReader propertyReader = new SafePropertyChainReader( noReportingContext, cursorContext ) )
         {
             ProgressListener localScanProgress = scanProgress.threadLocalReporter();
@@ -279,13 +300,14 @@ public class IndexChecker implements Checker
             int numberOfIndexes = indexes.size();
             for ( long entityId = fromEntityId; entityId < toEntityId && !context.isCancelled(); entityId++ )
             {
-                NodeRecord nodeRecord = nodeReader.read( entityId );
-                if ( nodeRecord.inUse() )
+                Record entityRecord = entityReader.read( entityId );
+                if ( entityRecord.inUse() )
                 {
-                    long[] entityTokens = safeGetNodeLabels( noReportingContext, storeCursors, nodeRecord.getId(), nodeRecord.getLabelField(), labelReader );
+                    long[] entityTokens = getEntityTokens( noReportingContext, storeCursors, entityRecord, entityTokenReader );
                     lightClear( allValues );
                     boolean propertyChainRead =
-                            entityTokens != null && propertyReader.read( allValues, nodeRecord, noReportingContext.reporter::forNode, storeCursors );
+                            entityTokens != null &&
+                            propertyReader.read( allValues, entityRecord, record -> getReport( record, noReportingContext.reporter ), storeCursors );
                     if ( propertyChainRead )
                     {
                         for ( int i = 0; i < numberOfIndexes; i++ )
@@ -293,22 +315,22 @@ public class IndexChecker implements Checker
                             IndexContext index = indexes.get( i );
                             IndexDescriptor descriptor = index.descriptor;
                             long cachedValue = client.getFromCache( entityId, i );
-                            boolean nodeIsInIndex = (cachedValue & IN_USE_MASK) != 0;
+                            boolean entityIsInIndex = (cachedValue & IN_USE_MASK) != 0;
                             Value[] values = entityIntersectionWithSchema( entityTokens, allValues, descriptor.schema(), descriptor.getIndexType() );
                             if ( index.descriptor.schema().isFulltextSchemaDescriptor() )
                             {
                                 // The strategy for fulltext indexes is way simpler. Simply check of the sets of tokens (label tokens and property key tokens)
-                                // and if they match the index schema descriptor then the node should be in the index, otherwise not
-                                int[] nodePropertyKeys = allValues.keySet().toArray();
+                                // and if they match the index schema descriptor then the entity should be in the index, otherwise not
+                                int[] entityPropertyKeys = allValues.keySet().toArray();
                                 int[] indexPropertyKeys = index.descriptor.schema().getPropertyIds();
-                                boolean nodeShouldBeInIndex =
-                                        index.descriptor.schema().isAffected( entityTokens ) && containsAny( indexPropertyKeys, nodePropertyKeys ) &&
+                                boolean entityShouldBeInIndex =
+                                        index.descriptor.schema().isAffected( entityTokens ) && containsAny( indexPropertyKeys, entityPropertyKeys ) &&
                                                 areValuesSupportedByIndex( IndexType.FULLTEXT, values );
-                                if ( nodeShouldBeInIndex && !nodeIsInIndex )
+                                if ( entityShouldBeInIndex && !entityIsInIndex )
                                 {
-                                    getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor, new Object[0] );
+                                    getReport( getEntity( storeCursors, entityId ) ).notIndexed( descriptor, new Object[0] );
                                 }
-                                else if ( !nodeShouldBeInIndex && nodeIsInIndex )
+                                else if ( !entityShouldBeInIndex && entityIsInIndex )
                                 {
                                     // Fulltext indexes created before 4.3.0-drop02 can contain empty documents (added when the schema matched but the values
                                     // were not text). The index still works with those empty documents present, so we don't want to report them as
@@ -323,8 +345,8 @@ public class IndexChecker implements Checker
 
                                     if ( docsWithNoneOfProperties != 1 )
                                     {
-                                        reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeIndexedWhenShouldNot(
-                                                context.recordLoader.node( entityId, storeCursors ) );
+                                        reportIndexedWhenShouldNot( reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ),
+                                                getEntity( storeCursors, entityId ) );
                                     }
                                 }
                             }
@@ -332,11 +354,11 @@ public class IndexChecker implements Checker
                             {
                                 if ( values != null )
                                 {
-                                    // This node should really be in the index, is it?
-                                    if ( !nodeIsInIndex )
+                                    // This entity should really be in the index, is it?
+                                    if ( !entityIsInIndex )
                                     {
                                         // It wasn't, report it
-                                        getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor, Values.asObjects( values ) );
+                                        getReport( getEntity( storeCursors, entityId ) ).notIndexed( descriptor, Values.asObjects( values ) );
                                     }
                                     else if ( index.hasValues )
                                     {
@@ -344,18 +366,19 @@ public class IndexChecker implements Checker
                                         int actualChecksum = checksum( values );
                                         if ( cachedChecksum != actualChecksum )
                                         {
-                                            reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
-                                                    .nodeIndexedWithWrongValues( context.recordLoader.node( entityId, storeCursors ),
-                                                            Values.asObjects( values ) );
+                                            reportIndexedIncorrectValues(
+                                                    reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ),
+                                                    getEntity( storeCursors, entityId ), Values.asObjects( values ) );
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    if ( nodeIsInIndex )
+                                    if ( entityIsInIndex )
                                     {
-                                        reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeIndexedWhenShouldNot(
-                                                context.recordLoader.node( entityId, storeCursors ) );
+                                        reportIndexedWhenShouldNot(
+                                                reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ),
+                                                getEntity( storeCursors, entityId ) );
                                     }
                                 }
                             }
@@ -364,14 +387,14 @@ public class IndexChecker implements Checker
                 }
                 else
                 {
-                    // This node shouldn't be in any index
+                    // This entity shouldn't be in any index
                     for ( int i = 0; i < numberOfIndexes; i++ )
                     {
                         boolean isInIndex = (client.getFromCache( entityId, i ) & IN_USE_MASK) != 0;
                         if ( isInIndex )
                         {
-                            reporter.forIndexEntry( new IndexEntry( indexes.get( i ).descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
-                                    context.recordLoader.node( entityId, storeCursors ) );
+                            reportEntityNotInUse( reporter.forIndexEntry( new IndexEntry( indexes.get( i ).descriptor, context.tokenNameLookup, entityId ) ),
+                                    getEntity( storeCursors, entityId ) );
                         }
                     }
                 }
@@ -418,15 +441,6 @@ public class IndexChecker implements Checker
         }
         int twoByteChecksum = (checksum >>> Short.SIZE) ^ (checksum & 0xFF);
         return twoByteChecksum & CHECKSUM_MASK;
-    }
-
-    private ConsistencyReport.PrimitiveConsistencyReport getReporter( PrimitiveRecord cursor )
-    {
-        if ( EntityType.NODE.equals( entityType ) )
-        {
-            return reporter.forNode( (NodeRecord) cursor );
-        }
-        return reporter.forRelationship( (RelationshipRecord) cursor );
     }
 
     private static class IndexContext

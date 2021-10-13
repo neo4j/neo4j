@@ -187,9 +187,14 @@ class SpecialisedIndexFullCheckTest
             assertThat( stats.getInconsistencyCountForRecordType( RecordType.NODE ) ).isEqualTo( 3 );
         }
 
-        @Test
-        void shouldReportRelationshipsThatAreNotIndexed() throws Exception
+        // All the index types doesn't stores values and will not actually be tested by different checkers depending on the size,
+        // but doesn't hurt to run it for all anyway.
+        @ParameterizedTest
+        @EnumSource( IndexSize.class )
+        void shouldReportRelationshipsThatAreNotIndexed( IndexSize indexSize ) throws Exception
         {
+            indexSize.createAdditionalData( fixture );
+
             Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
             while ( indexDescriptorIterator.hasNext() )
             {
@@ -317,9 +322,11 @@ class SpecialisedIndexFullCheckTest
                         indexedRelationships
                                 .add( set( node2.createRelationshipTo( node6, withName( "Type1" ) ), property( PROP1, indexedValue() ),
                                         property( PROP2, anotherIndexedValue() ) ).getId() );
-                        indexedRelationships.add(
-                                set( node3.createRelationshipTo( node6, withName( "Type1" ) ), property( PROP1, notIndexedValue() ) ).getId() );
+                        set( node3.createRelationshipTo( node6, withName( "Type1" ) ), property( PROP1, notIndexedValue() ) ).getId();
 
+                        // Add another relationship that is indexed so our tests removing an indexed entry actually run for both IndexSizes
+                        set( node1.createRelationshipTo( node3, withName( "Type1" ) ), property( PROP1, anotherIndexedValue() ),
+                                property( PROP2, indexedValue() ) );
                         tx.commit();
                     }
                 }
@@ -443,10 +450,12 @@ class SpecialisedIndexFullCheckTest
                     {
                         fixture.apply( tx ->
                         {
-                            // Create more nodes so our indexes will be considered to be small indexes (less than 5% of nodes in index).
+                            // Create more nodes/relationships so our indexes will be considered to be small indexes
+                            // (less than 5% of nodes/relationships in index).
                             for ( int i = 0; i < 80; i++ )
                             {
-                                tx.createNode();
+                                Node node = tx.createNode();
+                                node.createRelationshipTo( node, withName( "OtherType" ) );
                             }
                         } );
                     }
