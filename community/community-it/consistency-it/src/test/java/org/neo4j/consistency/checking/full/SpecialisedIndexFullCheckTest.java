@@ -269,6 +269,9 @@ class SpecialisedIndexFullCheckTest
                         indexedNodes.add( node1.getId() );
                         indexedNodes.add( node2.getId() );
 
+                        // Add another node that is indexed so our tests removing an indexed entry actually run for both IndexSizes
+                        set( tx.createNode( label( "Label1" ) ), property( PROP1, indexedValue() ), property( PROP2, anotherIndexedValue() ) );
+
                         indexedRelationships.add( set( node1.createRelationshipTo( node6, withName( "Type1" ) ), property( PROP1, indexedValue() ) ).getId() );
                         indexedRelationships
                                 .add( set( node2.createRelationshipTo( node6, withName( "Type1" ) ), property( PROP1, indexedValue() ),

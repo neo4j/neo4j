@@ -3240,6 +3240,13 @@ public class FullCheckIntegrationTest
                     @Override
                     public void createAdditionalData( GraphStoreFixture fixture )
                     {
+                        // Create one more node in index to still be considered large index for tests that remove entries
+                        fixture.apply( tx ->
+                        {
+                            Node node = tx.createNode( label( "label3" ) );
+                            node.setProperty( PROP1, "someValue" );
+                            node.setProperty( PROP2, "someOtherValue" );
+                        } );
                     }
                 };
 
