@@ -126,9 +126,21 @@ object CodeGeneration {
   }
 
   private def setConstants(clazz: Class[_], fields: Seq[Field]): Unit = {
+    if (fields.isEmpty) {
+      return
+    }
+    val declaredFields = clazz.getDeclaredFields
+
+    def findField(fields: Array[java.lang.reflect.Field], name: String) : java.lang.reflect.Field = {
+      for (field <- fields) {
+        if (field.getName == name) return field
+      }
+      throw new NoSuchFieldException(name)
+    }
+
     fields.distinct.foreach {
       case StaticField(_, name, Some(value)) =>
-        clazz.getDeclaredField(name).set(null, value)
+        findField(declaredFields, name).set(null, value)
       case _ =>
     }
   }
