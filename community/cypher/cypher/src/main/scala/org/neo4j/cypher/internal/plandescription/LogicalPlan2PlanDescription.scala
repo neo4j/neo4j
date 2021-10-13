@@ -1037,7 +1037,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
           val poi = prettyPoint(point)
           val propertyKeyName = asPrettyString(propertyKeys.head.name)
           val distanceStr = asPrettyString(distance)
-          pretty"distance($propertyKeyName, $poi) <${if (inclusive) pretty"=" else pretty""} $distanceStr"
+          pretty"point.distance($propertyKeyName, $poi) <${if (inclusive) pretty"=" else pretty""} $distanceStr"
 
         case PointBoundingBoxSeekRangeWrapper(PointBoundingBoxRange(ll, ur)) =>
           val pll = prettyPoint(ll)
