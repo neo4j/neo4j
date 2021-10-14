@@ -59,8 +59,14 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
-                writer.updateOrDeleteDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ),
-                        updateAsDocument( (ValueIndexEntryUpdate<?>) update ) );
+                final var valueUpdate = (ValueIndexEntryUpdate<?>) update;
+                if ( ignoreStrategy.ignore( valueUpdate.values() ) )
+                {
+                    continue;
+                }
+
+                writer.updateOrDeleteDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( valueUpdate.getEntityId() ),
+                                               updateAsDocument( valueUpdate ) );
             }
         }
         catch ( IOException e )
@@ -110,6 +116,10 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         public void process( IndexEntryUpdate<?> update )
         {
             ValueIndexEntryUpdate<?> valueUpdate = asValueUpdate( update );
+            if ( ignoreStrategy.ignore( valueUpdate ) )
+            {
+                return;
+            }
             try
             {
                 long nodeId = valueUpdate.getEntityId();
