@@ -46,9 +46,12 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetProperties
 import org.neo4j.cypher.internal.logical.plans.SetProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
@@ -196,11 +199,26 @@ case object PushdownPropertyReads {
               case SetProperty(_, variable: LogicalVariable, propertyKey, _) =>
                 Seq(Property(variable, propertyKey)(InputPosition.NONE))
 
+              case SetProperties(_, variable: LogicalVariable, items) =>
+                items.map {
+                  case (p, _) => Property(variable, p)(InputPosition.NONE)
+                }
+
               case SetNodeProperty(_, idName, propertyKey, _) =>
                 Seq(Property(Variable(idName)(InputPosition.NONE), propertyKey)(InputPosition.NONE))
 
+              case SetNodeProperties(_, idName, items) =>
+                items.map {
+                  case (p, _) => Property(Variable(idName)(InputPosition.NONE), p)(InputPosition.NONE)
+                }
+
               case SetRelationshipProperty(_, idName, propertyKey, _) =>
                 Seq(Property(Variable(idName)(InputPosition.NONE), propertyKey)(InputPosition.NONE))
+
+              case SetRelationshipProperties(_, idName, items) =>
+                items.map {
+                  case (p, _) => Property(Variable(idName)(InputPosition.NONE), p)(InputPosition.NONE)
+                }
 
               case SetNodePropertiesFromMap(_, idName, map: MapExpression, false) =>
                 propertiesFromMap(idName, map)

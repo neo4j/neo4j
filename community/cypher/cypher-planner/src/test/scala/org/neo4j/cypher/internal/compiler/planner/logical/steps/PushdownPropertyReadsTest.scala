@@ -1172,6 +1172,45 @@ class PushdownPropertyReadsTest
     rewritten shouldBe plan
   }
 
+  test("should not pushdown if setProperties") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.p1 == 'NOT-IMPORTANT' && n.p2 == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setProperties("n", ("p1", "42"), ("p2", "42")).withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown if setNodeProperties") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.p1 == 'NOT-IMPORTANT' && n.p2 == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setNodeProperties("n", ("p1", "42"), ("p2", "42")).withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown if setRelationshipProperties") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("n.p1 == 'NOT-IMPORTANT' && n.p2 == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setProperties("n", ("p1", "42"), ("p2", "42")).withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
   test("should not pushdown if setNodePropertiesFromMap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
