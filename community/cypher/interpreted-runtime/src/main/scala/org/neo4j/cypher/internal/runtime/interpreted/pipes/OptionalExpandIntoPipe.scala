@@ -77,7 +77,7 @@ case class OptionalExpandIntoPipe(source: Pipe,
                                                                            n.id())
                   traceRelationshipSelectionCursor(query.resources, selectionCursor, traversalCursor)
                   query.resources.trace(selectionCursor)
-                  val relationships = relationshipSelectionCursorIterator(selectionCursor, traversalCursor, query)
+                  val relationships = relationshipSelectionCursorIterator(selectionCursor, traversalCursor)
                   val filteredRows = ListBuffer.empty[CypherRow]
                   // This is exhausting relationships directly, thus we do not need to return
                   // a ClosingIterator in this flatMap.

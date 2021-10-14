@@ -71,7 +71,6 @@ case class VarLengthExpandPipe(source: Pipe,
         if (rels.size < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(node)) {
           val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
 
-          //val relationshipValues = relationships.filter(filteringStep.filterRelationship(row, state))
           // relationships get immediately exhausted. Therefore we do not need a ClosingIterator here.
           while (relationships.hasNext) {
             val rel = VirtualValues.relationship(relationships.next(), relationships.startNodeId(), relationships.endNodeId(), relationships.typeId())

@@ -46,13 +46,6 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     private volatile MapValue properties;
     private volatile VirtualNodeValue startNode;
     private volatile VirtualNodeValue endNode;
-    /**
-     * Wraps a {@link Relationship}, reading out its meta data eagerly.
-     */
-    static RelationshipEntityWrappingValue wrapEager( Relationship relationship )
-    {
-        return new RelationshipEntityWrappingValue( relationship, relationship.getStartNodeId(), relationship.getEndNodeId() );
-    }
 
     /**
      * Wraps a {@link Relationship}, reading out its meta data lazily, i.e. on first access of e.g. {@link #startNodeId()}.
