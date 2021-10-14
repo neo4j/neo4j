@@ -49,6 +49,7 @@ public interface TransactionLogService
      * Unlike transactional log append log rotation will be performed only when transaction id is provided and rotations is required.
      * Transactions that are appended by this method do not perform commit, as result there no updates to metadata store will be executed.
      * Mixing bulk append and applying standard transactional workload is not supported and will result in corrupted database.
+     * Provided byte buffer can be reused, if required, after append operation completion.
      * @param byteBuffer buffer with transactional content
      * @param transactionId optional known transaction id
      * @return log position before any buffer content updates happen
