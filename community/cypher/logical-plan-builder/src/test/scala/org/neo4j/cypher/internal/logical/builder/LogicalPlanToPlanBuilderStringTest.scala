@@ -681,6 +681,27 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build())
 
+  testPlan("setProperties",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setProperties("x", ("p1", "42"), ("p1", "42"))
+      .argument()
+      .build())
+
+  testPlan("setNodeProperties",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setNodeProperties("x", ("p1", "42"), ("p1", "42"))
+      .argument()
+      .build())
+
+  testPlan("setRelationshipProperties",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .setRelationshipProperties("x", ("p1", "42"), ("p1", "42"))
+      .argument()
+      .build())
+
   testPlan("setPropertiesFromMap",
     new TestPlanBuilder()
       .produceResults("x", "y")

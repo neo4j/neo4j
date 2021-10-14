@@ -170,10 +170,13 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetProperties
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
@@ -1069,6 +1072,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def setRelationshipProperty(relationship: String, propertyKey: String, value: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)))
+  }
+
+  def setProperties(entity: String, items: (String, String)*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => SetProperties(source, parseExpression(entity), items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2))))(_)))
+  }
+
+  def setNodeProperties(node: String, items: (String, String)*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => SetNodeProperties(source, node, items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2))))(_)))
+  }
+
+  def setRelationshipProperties(node: String, items: (String, String)*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => SetRelationshipProperties(source, node, items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2))))(_)))
   }
 
   def setPropertiesFromMap(entity: String, map: String, removeOtherProps: Boolean): IMPL = {

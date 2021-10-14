@@ -347,6 +347,21 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotationsAndMkString(Seq(idName, propertyKey.name, expressionStringifier(value)))
       case SetRelationshipProperty(_, idName, propertyKey, value) =>
         wrapInQuotationsAndMkString(Seq(idName, propertyKey.name, expressionStringifier(value)))
+      case SetProperties(_, entity, items) =>
+        val args = items.map {
+          case (p, e) => s"(${wrapInQuotations(p.name)}, ${wrapInQuotations(expressionStringifier(e))})"
+        }.mkString(", ")
+        Seq(wrapInQuotations(expressionStringifier(entity)), args).mkString(", ")
+      case SetNodeProperties(_, entity, items) =>
+        val args = items.map {
+          case (p, e) => s"(${wrapInQuotations(p.name)}, ${wrapInQuotations(expressionStringifier(e))})"
+        }.mkString(", ")
+        Seq(wrapInQuotations(entity), args).mkString(", ")
+      case SetRelationshipProperties(_, entity, items) =>
+        val args = items.map {
+          case (p, e) => s"(${wrapInQuotations(p.name)}, ${wrapInQuotations(expressionStringifier(e))})"
+        }.mkString(", ")
+        Seq(wrapInQuotations(entity), args).mkString(", ")
       case SetPropertiesFromMap(_, idName, expression, removeOtherProps) =>
         s""" ${wrapInQuotationsAndMkString(Seq(expressionStringifier(idName), expressionStringifier(expression)))}, $removeOtherProps """.trim
       case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
