@@ -74,11 +74,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_log_buffer_size;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
+import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
@@ -240,6 +242,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public synchronized LogPosition append( ByteBuffer byteBuffer, OptionalLong transactionId ) throws IOException
     {
+        checkArgument( byteBuffer.isDirect(), "Its is required for byte buffer to be direct." );
         var transactionLogWriter = getTransactionLogWriter();
         var logPositionBefore = transactionLogWriter.getCurrentPosition();
         try ( var logAppend = context.getDatabaseTracers().getDatabaseTracer().logAppend() )

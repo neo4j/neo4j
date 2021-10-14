@@ -215,6 +215,14 @@ class TransactionLogServiceIT
     }
 
     @Test
+    void requireDirectByteBufferForLogFileAppending()
+    {
+        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+
+        assertThrows( IllegalArgumentException.class, () -> logService.append( ByteBuffer.allocate( 5 ), empty()  ) );
+    }
+
+    @Test
     void logFileChannelsAreNonWritable() throws IOException
     {
         executeTransaction( "a" );
@@ -325,7 +333,7 @@ class TransactionLogServiceIT
         var metadataBefore = metadataProvider.getLastClosedTransaction();
         for ( int i = 0; i < 100; i++ )
         {
-            logService.append( ByteBuffer.wrap( new byte[]{1, 2, 3, 4, 5} ), empty() );
+            logService.append( createBuffer().put( new byte[]{1, 2, 3, 4, 5} ), empty() );
         }
 
         assertEquals( metadataBefore, metadataProvider.getLastClosedTransaction() );
@@ -339,7 +347,7 @@ class TransactionLogServiceIT
         var metadataBefore = metadataProvider.getLastClosedTransaction();
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
-        var appendData = ByteBuffer.wrap( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         for ( int i = 0; i < appendIterations; i++ )
         {
@@ -362,7 +370,7 @@ class TransactionLogServiceIT
 
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
-        var appendData = ByteBuffer.wrap( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         int transactionalShift = 10;
         for ( int i = 0; i < appendIterations; i++ )
@@ -426,7 +434,7 @@ class TransactionLogServiceIT
         BulkAppendLogRotationMonitor monitorListener = new BulkAppendLogRotationMonitor();
         databaseAPI.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener( monitorListener );
 
-        var appendData = ByteBuffer.wrap( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         int transactionalShift = 10;
         for ( int i = 0; i < appendIterations; i++ )
@@ -447,7 +455,7 @@ class TransactionLogServiceIT
         DatabaseTracers databaseTracers = databaseAPI.getDependencyResolver().resolveDependency( DatabaseTracers.class );
         assertEquals( 0, databaseTracers.getDatabaseTracer().numberOfLogRotations() );
 
-        var appendData = ByteBuffer.wrap( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         int transactionalShift = 10;
         for ( int i = 0; i < appendIterations; i++ )
@@ -494,7 +502,7 @@ class TransactionLogServiceIT
         availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
-        var appendData = ByteBuffer.wrap( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         LogPosition previousPosition = null;
         for ( int i = 0; i < appendIterations; i++ )
@@ -518,7 +526,7 @@ class TransactionLogServiceIT
         availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
-        var appendData = ByteBuffer.wrap( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         LogPosition firstPosition = null;
         for ( int i = 0; i < appendIterations; i++ )
@@ -546,7 +554,7 @@ class TransactionLogServiceIT
         {
             reader.get( data, length );
         }
-        return ByteBuffer.wrap( data );
+        return createBuffer( length ).put( data );
     }
 
     private long getTxOffset( int txId ) throws IOException
@@ -572,6 +580,16 @@ class TransactionLogServiceIT
             node.setProperty( "a", propertyValue );
             tx.commit();
         }
+    }
+
+    private static ByteBuffer createBuffer( int length )
+    {
+        return ByteBuffers.allocateDirect( length, INSTANCE );
+    }
+
+    private static ByteBuffer createBuffer()
+    {
+        return ByteBuffers.allocateDirect( (int) (THRESHOLD << 1), INSTANCE );
     }
 
     private static class BulkAppendLogRotationMonitor extends LogRotationMonitorAdapter
