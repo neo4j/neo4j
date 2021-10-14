@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemant
 import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.combineSetProperty
 import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.moveWithPastMatch
@@ -53,6 +54,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 object ASTRewriter {
 
   private val AccumulatedSteps(orderedSteps, _) = StepSequencer(ListStepAccumulator[StepSequencer.Step with ASTRewriterFactory]()).orderSteps(Set(
+    combineSetProperty,
     expandStar,
     normalizeHasLabelsAndHasType,
     desugarMapProjection,

@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.SetPropertyItems
 import org.neo4j.cypher.internal.ast.SortItem
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UnresolvedCall
@@ -99,10 +100,13 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -486,11 +490,20 @@ object ClauseConverters {
     case SetPropertyItem(Property(node: Variable, propertyKey), expr) if semanticTable.isNode(node) =>
       SetNodePropertyPattern(node.name, propertyKey, expr)
 
+    case SetPropertyItems(node: Variable, items) if semanticTable.isNode(node) =>
+      SetNodePropertiesPattern(node.name, items)
+
     case SetPropertyItem(Property(rel: Variable, propertyKey), expr) if semanticTable.isRelationship(rel) =>
       SetRelationshipPropertyPattern(rel.name, propertyKey, expr)
 
+    case SetPropertyItems(rel: Variable, items) if semanticTable.isRelationship(rel) =>
+      SetRelationshipPropertiesPattern(rel.name, items)
+
     case SetPropertyItem(Property(entityExpr, propertyKey), expr) =>
       SetPropertyPattern(entityExpr, propertyKey, expr)
+
+    case SetPropertyItems(Property(entityExpr, propertyKey), items) =>
+      SetPropertiesPattern(entityExpr, items)
 
     case SetExactPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>
       SetNodePropertiesFromMapPattern(node.name, expression, removeOtherProps = true)

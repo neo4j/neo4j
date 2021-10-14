@@ -39,10 +39,13 @@ import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -149,13 +152,25 @@ case object PlanUpdates extends UpdatesPlanner {
       case pattern:SetNodePropertyPattern =>
         context.logicalPlanProducer.planSetNodeProperty(source, pattern, context)
 
+      //SET n.prop1 = 42, n.prop2 = 42
+      case pattern:SetNodePropertiesPattern =>
+        context.logicalPlanProducer.planSetNodeProperties(source, pattern, context)
+
       //SET r.prop = 42
       case pattern:SetRelationshipPropertyPattern =>
         context.logicalPlanProducer.planSetRelationshipProperty(source, pattern, context)
 
+      //SET r.prop1 = 42, r.prop2 = 42
+      case pattern:SetRelationshipPropertiesPattern =>
+        context.logicalPlanProducer.planSetRelationshipProperties(source, pattern, context)
+
       //SET x.prop = 42
       case pattern:SetPropertyPattern =>
         context.logicalPlanProducer.planSetProperty(source, pattern, context)
+
+      //SET x.prop1 = 42, x.prop2 = 42
+      case pattern:SetPropertiesPattern =>
+        context.logicalPlanProducer.planSetProperties(source, pattern, context)
 
       //SET n += {p1: ..., p2: ...}
       case pattern:SetNodePropertiesFromMapPattern =>

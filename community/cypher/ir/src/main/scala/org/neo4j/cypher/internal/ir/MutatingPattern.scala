@@ -55,10 +55,34 @@ case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: Pro
   override def mapExpressions(f: Expression => Expression): SetPropertyPattern = copy(expression = f(expression))
 }
 
+case class SetPropertiesPattern(entityExpression: Expression, items: Seq[(PropertyKeyName, Expression)])
+  extends SetMutatingPattern with HasMappableExpressions[SetPropertiesPattern] {
+
+  override def dependencies: Set[String] = items.map(_._2).flatMap(deps).toSet ++ entityExpression.dependencies.map(_.name)
+
+  override def mapExpressions(f: Expression => Expression): SetPropertiesPattern = {
+    copy(items = items.map {
+      case (k, e) => (k, f(e))
+    })
+  }
+}
+
 case class SetRelationshipPropertyPattern(idName: String, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
   with HasMappableExpressions[SetRelationshipPropertyPattern] {
   override def dependencies: Set[String] = deps(expression) + idName
   override def mapExpressions(f: Expression => Expression): SetRelationshipPropertyPattern = copy(expression = f(expression))
+}
+
+case class SetRelationshipPropertiesPattern(idName: String, items: Seq[(PropertyKeyName, Expression)])
+  extends SetMutatingPattern with HasMappableExpressions[SetRelationshipPropertiesPattern] {
+
+  override def dependencies: Set[String] = items.map(_._2).flatMap(deps).toSet + idName
+
+  override def mapExpressions(f: Expression => Expression): SetRelationshipPropertiesPattern = {
+    copy(items = items.map {
+      case (k, e) => (k, f(e))
+    })
+  }
 }
 
 case class SetNodePropertiesFromMapPattern(idName: String, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
@@ -83,6 +107,18 @@ case class SetNodePropertyPattern(idName: String, propertyKey: PropertyKeyName, 
   with HasMappableExpressions[SetNodePropertyPattern] {
   override def dependencies: Set[String] = deps(expression) + idName
   override def mapExpressions(f: Expression => Expression): SetNodePropertyPattern = copy(expression = f(expression))
+}
+
+case class SetNodePropertiesPattern(idName: String, items: Seq[(PropertyKeyName, Expression)])
+  extends SetMutatingPattern with HasMappableExpressions[SetNodePropertiesPattern] {
+
+  override def dependencies: Set[String] = items.map(_._2).flatMap(deps).toSet + idName
+
+  override def mapExpressions(f: Expression => Expression): SetNodePropertiesPattern = {
+    copy(items = items.map {
+      case (k, e) => (k, f(e))
+    })
+  }
 }
 
 case class SetLabelPattern(idName: String, labels: Seq[LabelName]) extends SetMutatingPattern {
