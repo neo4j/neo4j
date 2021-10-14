@@ -81,17 +81,22 @@ public class Dumper
 
     public void dump( Path path, Path archive, CompressionFormat format ) throws IOException
     {
-        this.dump( path, path, archive, format, Predicates.alwaysFalse() );
+        dump( path, path, openForDump( archive ), format, Predicates.alwaysFalse() );
     }
 
-    public void dump( Path dbPath, Path transactionalLogsPath, Path archive, CompressionFormat format ) throws IOException
-    {
-        this.dump( dbPath, transactionalLogsPath, archive, format, Predicates.alwaysFalse() );
-    }
-
-    public void dump( Path dbPath, Path transactionalLogsPath, Path archive, CompressionFormat format, Predicate<Path> exclude ) throws IOException
+    public OutputStream openForDump( Path archive ) throws IOException
     {
         checkWritableDirectory( archive.getParent() );
+        // StandardOpenOption.CREATE_NEW is important here because it atomically asserts that the file doesn't
+        // exist as it is opened, avoiding a TOCTOU race condition which results in a security vulnerability. I
+        // can't see a way to write a test to verify that we are using this option rather than just implementing
+        // the check ourselves non-atomically.
+        return Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW );
+    }
+
+    public void dump( Path dbPath, Path transactionalLogsPath, OutputStream out, CompressionFormat format, Predicate<Path> exclude )
+            throws IOException
+    {
         operations.clear();
 
         visitPath( dbPath, exclude );
@@ -107,7 +112,7 @@ public class Dumper
             progressPrinter.maxFiles += operation.isFile ? 1 : 0;
         }
 
-        try ( ArchiveOutputStream stream = openArchiveOut( archive, format );
+        try ( ArchiveOutputStream stream = wrapArchiveOut( out, format );
               Resource ignore = progressPrinter.startPrinting() )
         {
             for ( ArchiveOperation operation : operations )
@@ -127,13 +132,8 @@ public class Dumper
                                                 justContinue() ) ) ) ) );
     }
 
-    private ArchiveOutputStream openArchiveOut( Path archive, CompressionFormat format ) throws IOException
+    private ArchiveOutputStream wrapArchiveOut( OutputStream out, CompressionFormat format ) throws IOException
     {
-        // StandardOpenOption.CREATE_NEW is important here because it atomically asserts that the file doesn't
-        // exist as it is opened, avoiding a TOCTOU race condition which results in a security vulnerability. I
-        // can't see a way to write a test to verify that we are using this option rather than just implementing
-        // the check ourselves non-atomically.
-        OutputStream out = Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW );
         OutputStream compress = format.compress( out );
 
         // Add enough archive meta-data that the load command can print a meaningful progress indicator.

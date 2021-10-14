@@ -19,6 +19,7 @@
  */
 package org.neo4j.cli;
 
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
@@ -34,6 +35,7 @@ public class ExecutionContext
     private final Path confDir;
     private final PrintStream out;
     private final PrintStream err;
+    private final InputStream in;
     private final FileSystemAbstraction fs;
 
     public ExecutionContext( Path homeDir, Path confDir )
@@ -44,10 +46,16 @@ public class ExecutionContext
     @VisibleForTesting
     public ExecutionContext( Path homeDir, Path confDir, PrintStream out, PrintStream err, FileSystemAbstraction fs )
     {
+        this( homeDir, confDir, out, err, System.in, fs );
+    }
+
+    public ExecutionContext( Path homeDir, Path confDir, PrintStream out, PrintStream err, InputStream in, FileSystemAbstraction fs )
+    {
         this.homeDir = requireNonNull( homeDir );
         this.confDir = requireNonNull( confDir );
         this.out = requireNonNull( out );
         this.err = requireNonNull( err );
+        this.in = requireNonNull( in );
         this.fs = requireNonNull( fs );
     }
 
@@ -59,6 +67,11 @@ public class ExecutionContext
     public PrintStream err()
     {
         return err;
+    }
+
+    public InputStream in()
+    {
+        return in;
     }
 
     public FileSystemAbstraction fs()

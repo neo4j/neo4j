@@ -21,8 +21,10 @@ package org.neo4j.commandline.dbms;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,6 +39,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -61,8 +64,11 @@ import static picocli.CommandLine.Option;
 )
 public class LoadCommand extends AbstractCommand
 {
-    @Option( names = "--from", required = true, paramLabel = "<path>", description = "Path to archive created with the dump command." )
-    private Path from;
+    private static final String STANDARD_INPUT = "-";
+
+    @Option( names = "--from", required = true, paramLabel = "<path>", description = "Path to archive created with the dump command " +
+                                                                                     "or '-' to read from standard input." )
+    private String from;
     @Option( names = "--database", description = "Name of the database to load.", defaultValue = DEFAULT_DATABASE_NAME,
             converter = Converters.DatabaseNameConverter.class )
     protected NormalizedDatabaseName database;
@@ -103,7 +109,7 @@ public class LoadCommand extends AbstractCommand
     {
         try
         {
-            Loader.DumpMetaData metaData = loader.getMetaData( from );
+            Loader.DumpMetaData metaData = loader.getMetaData( getArchiveInputStreamSupplier() );
             ctx.out().println( "Format: " + metaData.format );
             ctx.out().println( "Files: " + metaData.fileCount );
             ctx.out().println( "Bytes: " + metaData.byteCount );
@@ -112,6 +118,25 @@ public class LoadCommand extends AbstractCommand
         {
             wrapIOException( e );
         }
+    }
+
+    private ThrowingSupplier<InputStream,IOException> getArchiveInputStreamSupplier() throws IOException
+    {
+        var path = getArchivePath();
+        if ( path != null )
+        {
+            return () -> Files.newInputStream( path );
+        }
+        return ctx::in;
+    }
+
+    private Path getArchivePath()
+    {
+        if ( STANDARD_INPUT.equals( from ) )
+        {
+            return null;
+        }
+        return Path.of( from );
     }
 
     protected void loadDump() throws IOException
@@ -124,7 +149,7 @@ public class LoadCommand extends AbstractCommand
         try ( Closeable ignore = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             deleteIfNecessary( databaseLayout, force );
-            load( from, databaseLayout );
+            load( getArchiveInputStreamSupplier(), databaseLayout, getArchivePath() );
         }
         catch ( FileLockException e )
         {
@@ -174,17 +199,18 @@ public class LoadCommand extends AbstractCommand
         }
     }
 
-    private void load( Path archive, DatabaseLayout databaseLayout )
+    private void load( ThrowingSupplier<InputStream,IOException> streamSupplier, DatabaseLayout databaseLayout, Path archive )
     {
+        var inputName = archive == null ? "reading from stdin" : archive.toString();
         try
         {
-            loader.load( archive, databaseLayout );
+            loader.load( databaseLayout, streamSupplier, inputName );
         }
         catch ( NoSuchFileException e )
         {
-            if ( Paths.get( e.getMessage() ).toAbsolutePath().equals( archive.toAbsolutePath() ) )
+            if ( archive != null && Paths.get( e.getMessage() ).toAbsolutePath().equals( archive.toAbsolutePath() ) )
             {
-                throw new CommandFailedException( "Archive does not exist: " + archive, e );
+                throw new CommandFailedException( "Archive does not exist: " + inputName, e );
             }
             wrapIOException( e );
         }
@@ -202,7 +228,7 @@ public class LoadCommand extends AbstractCommand
         }
         catch ( IncorrectFormat incorrectFormat )
         {
-            throw new CommandFailedException( "Not a valid Neo4j archive: " + archive, incorrectFormat );
+            throw new CommandFailedException( "Not a valid Neo4j archive: " + inputName , incorrectFormat );
         }
     }
 }

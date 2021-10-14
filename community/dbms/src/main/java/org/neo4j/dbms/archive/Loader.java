@@ -70,13 +70,26 @@ public class Loader
         this.progressPrinter = new ArchiveProgressPrinter( progressPrinter );
     }
 
-    public void load( Path archive, DatabaseLayout databaseLayout ) throws IOException, IncorrectFormat
+    public void load( DatabaseLayout databaseLayout, ThrowingSupplier<InputStream,IOException> streamSupplier ) throws IOException, IncorrectFormat
     {
-        load( archive, databaseLayout, false, true, StandardCompressionFormat::decompress );
+        load( databaseLayout, streamSupplier, "" );
+    }
+
+    public void load( DatabaseLayout databaseLayout, ThrowingSupplier<InputStream,IOException> streamSupplier,
+                      String inputName ) throws IOException, IncorrectFormat
+    {
+        load( databaseLayout, false, true, DumpFormatSelector::decompress, streamSupplier, inputName );
     }
 
     public void load( Path archive, DatabaseLayout databaseLayout, boolean validateDatabaseExistence, boolean validateLogsExistence,
-            DecompressionSelector selector ) throws IOException, IncorrectFormat
+                      DecompressionSelector selector ) throws IOException, IncorrectFormat
+    {
+        load( databaseLayout, validateDatabaseExistence, validateLogsExistence, selector, () -> Files.newInputStream( archive ), archive.toString() );
+    }
+
+    public void load( DatabaseLayout databaseLayout, boolean validateDatabaseExistence, boolean validateLogsExistence,
+                      DecompressionSelector selector, ThrowingSupplier<InputStream,IOException> streamSupplier, String inputName )
+            throws IOException, IncorrectFormat
     {
         Path databaseDestination = databaseLayout.databaseDirectory();
         Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
@@ -89,11 +102,11 @@ public class Loader
 
         checkDatabasePresence( databaseLayout );
 
-        try ( ArchiveInputStream stream = openArchiveIn( archive, selector );
+        try ( ArchiveInputStream stream = openArchiveIn( selector, streamSupplier, inputName );
               Resource ignore = progressPrinter.startPrinting() )
         {
             ArchiveEntry entry;
-            while ( (entry = nextEntry( stream, archive )) != null )
+            while ( (entry = nextEntry( stream, inputName )) != null )
             {
                 Path destination = determineEntryDestination( entry, databaseDestination, transactionLogsDirectory );
                 loadEntry( destination, stream, entry );
@@ -109,9 +122,9 @@ public class Loader
         }
     }
 
-    public DumpMetaData getMetaData( Path archive ) throws IOException
+    public DumpMetaData getMetaData( ThrowingSupplier<InputStream,IOException> streamSupplier ) throws IOException
     {
-        try ( InputStream decompressor = StandardCompressionFormat.decompress( () -> Files.newInputStream( archive ) ) )
+        try ( InputStream decompressor = DumpFormatSelector.decompress( streamSupplier ) )
         {
             String format = "TAR+GZIP.";
             String files = "?";
@@ -168,7 +181,7 @@ public class Loader
         }
     }
 
-    private static ArchiveEntry nextEntry( ArchiveInputStream stream, Path archive ) throws IncorrectFormat
+    private static ArchiveEntry nextEntry( ArchiveInputStream stream, String inputName ) throws IncorrectFormat
     {
         try
         {
@@ -176,7 +189,7 @@ public class Loader
         }
         catch ( IOException e )
         {
-            throw new IncorrectFormat( archive, e );
+            throw new IncorrectFormat( inputName, e );
         }
     }
 
@@ -201,11 +214,11 @@ public class Loader
         }
     }
 
-    private ArchiveInputStream openArchiveIn( Path archive, DecompressionSelector selector ) throws IOException, IncorrectFormat
+    private ArchiveInputStream openArchiveIn( DecompressionSelector selector, ThrowingSupplier<InputStream,IOException> streamSupplier, String inputName )
+            throws IOException, IncorrectFormat
     {
         try
         {
-            ThrowingSupplier<InputStream,IOException> streamSupplier = () -> Files.newInputStream( archive );
             InputStream decompressor = selector.decompress( streamSupplier );
 
             if ( StandardCompressionFormat.ZSTD.isFormat( decompressor ) )
@@ -222,7 +235,7 @@ public class Loader
         }
         catch ( IOException e )
         {
-            throw new IncorrectFormat( archive, e );
+            throw new IncorrectFormat( inputName, e );
         }
     }
 

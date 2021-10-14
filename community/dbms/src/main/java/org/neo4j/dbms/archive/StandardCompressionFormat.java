@@ -137,7 +137,7 @@ public enum StandardCompressionFormat implements CompressionFormat
         return decompress( streamSupplier, GZIP );
     }
 
-    public static InputStream decompress( ThrowingSupplier<InputStream, IOException> streamSupplier, CompressionFormat format ) throws IOException
+    private static InputStream decompress( ThrowingSupplier<InputStream, IOException> streamSupplier, CompressionFormat format ) throws IOException
     {
         InputStream source = streamSupplier.get();
         try

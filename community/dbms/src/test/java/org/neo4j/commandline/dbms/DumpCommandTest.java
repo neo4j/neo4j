@@ -54,8 +54,8 @@ class DumpCommandTest
                 "%n" +
                 "Dump a database into a single-file archive. The archive can be used by the load%n" +
                 "command. <destination-path> can be a file or directory (in which case a file%n" +
-                "called <database>.dump will be created). It is not possible to dump a database%n" +
-                "that is mounted in a running Neo4j server.%n" +
+                "called <database>.dump will be created), or '-' to use standard output. It is%n" +
+                "not possible to dump a database that is mounted in a running Neo4j server.%n" +
                 "%n" +
                 "OPTIONS%n" +
                 "%n" +
@@ -64,7 +64,8 @@ class DumpCommandTest
                 "      --database=<database>%n" +
                 "                          Name of the database to dump.%n" +
                 "                            Default: neo4j%n" +
-                "      --to=<path>         Destination (file or folder) of database dump."
+                "      --to=<path>         Destination (file or folder or '-' for stdout) of%n" +
+                "                            database dump."
         ) );
     }
 }

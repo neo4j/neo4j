@@ -214,7 +214,7 @@ class Neo4jAdminCommandTest
             Runtime.Version version = Runtime.Version.parse( "11.0.11+9-LTS" );
             Map<String,String> vm = Map.of( PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM", PROP_VM_VENDOR, "Oracle" );
             assertThat( execute( List.of( "test-command"), vm, version ) ).isEqualTo( EXIT_CODE_OK );
-            assertThat( out.toString() ).containsSubsequence( String.format( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
+            assertThat( err.toString() ).containsSubsequence( String.format( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
                     version, vm.get( PROP_VM_NAME ), vm.get( PROP_VM_VENDOR ) ) );
         }
 

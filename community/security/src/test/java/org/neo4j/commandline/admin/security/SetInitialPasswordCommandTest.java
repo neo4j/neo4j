@@ -60,7 +60,8 @@ class SetInitialPasswordCommandTest
     void setup()
     {
         command = new SetInitialPasswordCommand( new ExecutionContext( testDir.directory( "home" ),
-                testDir.directory( "conf" ), mock( PrintStream.class ), mock( PrintStream.class ), fileSystem ) );
+                                                                       testDir.directory( "conf" ), mock( PrintStream.class ), mock( PrintStream.class ),
+                                                                       fileSystem ) );
 
         authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile( command.loadNeo4jConfig() );
         CommunitySecurityModule.getUserRepositoryFile( command.loadNeo4jConfig() );

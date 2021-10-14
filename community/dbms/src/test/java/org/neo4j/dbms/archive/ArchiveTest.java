@@ -138,10 +138,11 @@ class ArchiveTest
         Files.write( directory.resolve( "another-file" ), new byte[0] );
 
         Path archive = testDirectory.file( "the-archive.dump" );
-        new Dumper().dump( directory, directory, archive, compressionFormat, path -> path.getFileName().toString().equals( "another-file" ) );
+        Dumper dumper = new Dumper();
+        dumper.dump( directory, directory, dumper.openForDump( archive ), compressionFormat, path -> path.getFileName().toString().equals( "another-file" ) );
         Path txRootDirectory = testDirectory.directory( "tx-root_directory" );
         DatabaseLayout databaseLayout = layoutWithCustomTxRoot( txRootDirectory,"the-new-directory" );
-        new Loader().load( archive, databaseLayout );
+        new Loader().load( databaseLayout, () -> Files.newInputStream( archive ) );
 
         Path expectedOutput = testDirectory.directory( "expected-output" );
         Files.createDirectories( expectedOutput );
@@ -160,11 +161,12 @@ class ArchiveTest
         Files.write( subdir.resolve( "a-file" ), new byte[0] );
 
         Path archive = testDirectory.file( "the-archive.dump" );
-        new Dumper().dump( directory, directory, archive, compressionFormat, path -> path.getFileName().toString().equals( "subdir" ) );
+        Dumper dumper = new Dumper();
+        dumper.dump( directory, directory, dumper.openForDump( archive ), compressionFormat, path -> path.getFileName().toString().equals( "subdir" ) );
         Path txLogsRoot = testDirectory.directory( "txLogsRoot" );
         DatabaseLayout databaseLayout = layoutWithCustomTxRoot( txLogsRoot,"the-new-directory" );
 
-        new Loader().load( archive, databaseLayout );
+        new Loader().load( databaseLayout, () -> Files.newInputStream( archive ) );
 
         Path expectedOutput = testDirectory.directory( "expected-output" );
         Files.createDirectories( expectedOutput );
@@ -185,12 +187,13 @@ class ArchiveTest
         Files.write( txLogsDirectory.resolve( TransactionLogFilesHelper.DEFAULT_NAME + ".0" ), new byte[0] );
 
         Path archive = testDirectory.file( "the-archive.dump" );
-        new Dumper().dump( testDatabaseLayout.databaseDirectory(), txLogsDirectory, archive, compressionFormat, alwaysFalse() );
+        Dumper dumper = new Dumper();
+        dumper.dump( testDatabaseLayout.databaseDirectory(), txLogsDirectory, dumper.openForDump( archive ), compressionFormat, alwaysFalse() );
 
         Path newTxLogsRoot = testDirectory.directory( "newTxLogsRoot" );
         DatabaseLayout newDatabaseLayout = layoutWithCustomTxRoot( newTxLogsRoot,"the-new-database" );
 
-        new Loader().load( archive, newDatabaseLayout );
+        new Loader().load( newDatabaseLayout, () -> Files.newInputStream( archive ) );
 
         Path expectedOutput = testDirectory.directory( "expected-output" );
         Files.write( expectedOutput.resolve( "dbfile" ), new byte[0] );
@@ -215,10 +218,11 @@ class ArchiveTest
     private void assertRoundTrips( Path oldDirectory, StandardCompressionFormat compressionFormat ) throws IOException, IncorrectFormat
     {
         Path archive = testDirectory.file( "the-archive.dump" );
-        new Dumper().dump( oldDirectory, oldDirectory, archive, compressionFormat, alwaysFalse() );
+        Dumper dumper = new Dumper();
+        dumper.dump( oldDirectory, oldDirectory, dumper.openForDump( archive ), compressionFormat, alwaysFalse() );
         Path newDirectory = testDirectory.file( "the-new-directory" );
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( newDirectory );
-        new Loader().load( archive, databaseLayout );
+        new Loader().load( databaseLayout, () -> Files.newInputStream( archive ) );
 
         assertEquals( describeRecursively( oldDirectory ), describeRecursively( newDirectory ) );
     }

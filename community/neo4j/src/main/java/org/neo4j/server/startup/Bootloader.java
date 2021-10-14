@@ -265,7 +265,7 @@ class Bootloader
 
     int admin()
     {
-        ctx.out.printf( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n", ctx.version(), ctx.getProp( PROP_VM_NAME ), ctx.getProp( PROP_VM_VENDOR ) );
+        ctx.err.printf( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n", ctx.version(), ctx.getProp( PROP_VM_NAME ), ctx.getProp( PROP_VM_VENDOR ) );
         try
         {
             ctx.validateConfig();

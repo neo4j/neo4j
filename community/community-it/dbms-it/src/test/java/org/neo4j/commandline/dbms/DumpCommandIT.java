@@ -78,12 +78,12 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.dbms.archive.StandardCompressionFormat.ZSTD;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @Neo4jLayoutExtension
@@ -128,8 +128,8 @@ class DumpCommandIT
     void shouldDumpTheDatabaseToTheArchive() throws Exception
     {
         execute( "foo" );
-        verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo" ) ),
-                eq( homeDir.resolve( "data/transactions/foo" ) ), eq( archive ), eq( ZSTD ), any() );
+        verify( dumper ).openForDump( eq( archive ) );
+        verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo" ) ), eq( homeDir.resolve( "data/transactions/foo" ) ), any(), any(), any() );
     }
 
     @Test
@@ -186,7 +186,8 @@ class DumpCommandIT
     {
         Path to = testDirectory.directory( "some-dir" );
         execute( "foo", to );
-        verify( dumper ).dump( any( Path.class ), any( Path.class ), eq( to.resolve( "foo.dump" ) ), any(), any() );
+        Dumper dumper1 = verify( dumper );
+        dumper1.openForDump( eq( to.resolve( "foo.dump" ) ) );
     }
 
     @Test
@@ -195,7 +196,7 @@ class DumpCommandIT
     {
         Files.createFile( archive );
         execute( "foo" );
-        verify( dumper ).dump( any(), any(), eq( archive ), any(), any() );
+        verify( dumper ).openForDump( eq( archive ) );
     }
 
     @Test
@@ -242,7 +243,8 @@ class DumpCommandIT
     @Test
     void shouldReleaseTheDatabaseLockEvenIfThereIsAnError() throws Exception
     {
-        doThrow( IOException.class ).when( dumper ).dump( any(), any(), any(), any(), any() );
+        Dumper dumper1 = doThrow( IOException.class ).when( dumper );
+        dumper1.dump( any(), any(), any(), any(), any() );
         assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertCanLockDatabase( databaseDirectory );
     }
@@ -290,7 +292,7 @@ class DumpCommandIT
             assertThat( exclude.test( lockFile.getFileName() ) ).isEqualTo( true );
             assertThat( exclude.test( Path.of( "some-other-file" ) ) ).isEqualTo( false );
             return null;
-        } ).when( dumper ).dump(any(), any(), any(), any(), any() );
+        } ).when( dumper ).dump( any(), any(), any(), any(), any() );
 
         execute( "foo" );
     }
@@ -326,7 +328,7 @@ class DumpCommandIT
     @Test
     void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception
     {
-        doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump(any(), any(), any(), any(), any() );
+        doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump( any(), any(), any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertEquals( "Unable to dump database: NoSuchFileException: " + archive.getParent(), commandFailed.getMessage() );
     }
@@ -335,9 +337,22 @@ class DumpCommandIT
     void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws Exception
     {
-        doThrow( new IOException( "the-message" ) ).when( dumper ).dump(any(), any(), any(), any(), any() );
+        doThrow( new IOException( "the-message" ) ).when( dumper ).dump( any(), any(), any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
         assertEquals( "Unable to dump database: IOException: the-message", commandFailed.getMessage() );
+    }
+
+    @Test
+    void shouldDumpTheDatabaseToTheStdOut() throws Exception
+    {
+        var out = mock( PrintStream.class );
+        var ctx = new ExecutionContext( homeDir, configDir, out, mock( PrintStream.class ), testDirectory.getFileSystem() );
+        var command = new DumpCommand( ctx, dumper );
+        CommandLine.populateCommand( command, "--database=" + "foo", "--to=-" );
+        command.execute();
+
+        verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo" ) ), eq( homeDir.resolve( "data/transactions/foo" ) ), eq( out ), any(), any() );
+        verifyNoMoreInteractions( dumper );
     }
 
     private void execute( String database )
@@ -348,7 +363,7 @@ class DumpCommandIT
     private void execute( String database, Path to )
     {
         final ExecutionContext ctx = new ExecutionContext( homeDir, configDir, mock( PrintStream.class ), mock( PrintStream.class ),
-                testDirectory.getFileSystem() );
+                                                           testDirectory.getFileSystem() );
         final var command = new DumpCommand( ctx, dumper );
 
         CommandLine.populateCommand( command,

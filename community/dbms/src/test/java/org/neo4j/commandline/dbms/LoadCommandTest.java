@@ -133,7 +133,8 @@ class LoadCommandTest
                         "%n" +
                         "      --verbose           Enable verbose output.%n" +
                         "      --expand-commands   Allow command expansion in config value evaluation.%n" +
-                        "      --from=<path>       Path to archive created with the dump command.%n" +
+                        "      --from=<path>       Path to archive created with the dump command or '-'%n" +
+                        "                            to read from standard input.%n" +
                         "      --database=<database>%n" +
                         "                          Name of the database to load.%n" +
                         "                            Default: neo4j%n" +
@@ -149,7 +150,7 @@ class LoadCommandTest
         execute( "foo", archive );
         DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data" ), homeDir.resolve( "data/databases" ), "foo",
                 homeDir.resolve( "data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME ) );
-        verify( loader ).load( archive, databaseLayout );
+        verify( loader ).load( eq( databaseLayout ), any(), any() );
     }
 
     @Test
@@ -164,7 +165,7 @@ class LoadCommandTest
 
         execute( "foo", archive );
         DatabaseLayout databaseLayout = createDatabaseLayout( dataDir, databaseDir.getParent(), "foo", transactionLogsDir );
-        verify( loader ).load( any(), eq( databaseLayout ) );
+        verify( loader ).load( eq( databaseLayout ), any(), any() );
     }
 
     @Test
@@ -179,7 +180,7 @@ class LoadCommandTest
 
         execute( "foo", archive );
         DatabaseLayout databaseLayout = createDatabaseLayout( dataDir, databaseDir.getParent(), "foo", txLogsDir );
-        verify( loader ).load( any(), eq( databaseLayout ) );
+        verify( loader ).load( eq( databaseLayout ), any(), any() );
     }
 
     @Test
@@ -203,7 +204,7 @@ class LoadCommandTest
 
         execute( "foo", archive );
         DatabaseLayout databaseLayout = createDatabaseLayout( dataDir, databasesDir, "foo", txLogsDir );
-        verify( loader ).load( any(), eq( databaseLayout ) );
+        verify( loader ).load( eq( databaseLayout ), any(), any() );
     }
 
     @Test
@@ -260,7 +261,7 @@ class LoadCommandTest
     @Test
     void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat
     {
-        doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any() );
+        doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
         assertEquals( "Archive does not exist: " + archive, commandFailed.getMessage() );
     }
@@ -268,7 +269,7 @@ class LoadCommandTest
     @Test
     void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat
     {
-        doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any() );
+        doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
         assertEquals( "Database already exists: foo", commandFailed.getMessage() );
     }
@@ -277,7 +278,7 @@ class LoadCommandTest
     void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable()
             throws IOException, IncorrectFormat
     {
-        doThrow( AccessDeniedException.class ).when( loader ).load( any(), any() );
+        doThrow( AccessDeniedException.class ).when( loader ).load( any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
         assertEquals( "You do not have permission to load the database.", commandFailed.getMessage() );
     }
@@ -286,7 +287,7 @@ class LoadCommandTest
     void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectFormat
     {
-        doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any() );
+        doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
         assertEquals( "Unable to load database: FileSystemException: the-message", commandFailed.getMessage() );
     }
@@ -294,7 +295,7 @@ class LoadCommandTest
     @Test
     void shouldThrowIfTheArchiveFormatIsInvalid() throws IOException, IncorrectFormat
     {
-        doThrow( IncorrectFormat.class ).when( loader ).load( any(), any() );
+        doThrow( IncorrectFormat.class ).when( loader ).load( any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
         assertThat( commandFailed.getMessage() ).contains( archive.toString() );
         assertThat( commandFailed.getMessage() ).contains( "valid Neo4j archive" );
@@ -303,7 +304,7 @@ class LoadCommandTest
     @Test
     void infoMustPrintArchiveMetaData() throws IOException
     {
-        when( loader.getMetaData( archive ) ).thenReturn( new Loader.DumpMetaData( "ZSTD", "42", "1337" ) );
+        when( loader.getMetaData( any() ) ).thenReturn( new Loader.DumpMetaData( "ZSTD", "42", "1337" ) );
         var baos = new ByteArrayOutputStream();
         try ( PrintStream out = new PrintStream( baos ) )
         {

@@ -355,7 +355,7 @@ public class PushToCloudCommand extends AbstractCommand
         Loader.DumpMetaData metaData;
         try
         {
-            metaData = new Loader( System.out ).getMetaData( dump );
+            metaData = new Loader( System.out ).getMetaData( () -> Files.newInputStream( dump ) );
         }
         catch ( IOException e )
         {

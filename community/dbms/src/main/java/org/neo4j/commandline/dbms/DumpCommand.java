@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -33,6 +34,7 @@ import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
+import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -48,7 +50,6 @@ import org.neo4j.memory.MemoryTracker;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.dbms.archive.StandardCompressionFormat.selectCompressionFormat;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;
@@ -59,15 +60,16 @@ import static picocli.CommandLine.Option;
         header = "Dump a database into a single-file archive.",
         description = "Dump a database into a single-file archive. The archive can be used by the load command. " +
                 "<destination-path> can be a file or directory (in which case a file called <database>.dump will " +
-                "be created). It is not possible to dump a database that is mounted in a running Neo4j server."
+                "be created), or '-' to use standard output. It is not possible to dump a database that is mounted in a running Neo4j server."
 )
 public class DumpCommand extends AbstractCommand
 {
+    public static final String STANDARD_OUTPUT = "-";
     @Option( names = "--database", description = "Name of the database to dump.", defaultValue = DEFAULT_DATABASE_NAME,
             converter = DatabaseNameConverter.class )
     protected NormalizedDatabaseName database;
-    @Option( names = "--to", paramLabel = "<path>", required = true, description = "Destination (file or folder) of database dump." )
-    private Path to;
+    @Option( names = "--to", paramLabel = "<path>", required = true, description = "Destination (file or folder or '-' for stdout) of database dump." )
+    private String to;
     private final Dumper dumper;
 
     public DumpCommand( ExecutionContext ctx, Dumper dumper )
@@ -80,7 +82,6 @@ public class DumpCommand extends AbstractCommand
     public void execute()
     {
         var databaseName = database.name();
-        Path archive = buildArchivePath( databaseName, to.toAbsolutePath() );
         var memoryTracker =  EmptyMemoryTracker.INSTANCE;
 
         Config config = CommandHelpers.buildConfig( ctx, allowCommandExpansion );
@@ -111,7 +112,7 @@ public class DumpCommand extends AbstractCommand
         try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             checkDbState( databaseLayout, config, memoryTracker );
-            dump( databaseLayout, archive );
+            dump( databaseLayout, databaseName );
         }
         catch ( FileLockException e )
         {
@@ -132,15 +133,26 @@ public class DumpCommand extends AbstractCommand
         return Files.isDirectory( to ) ? to.resolve( database + ".dump" ) : to;
     }
 
-    private void dump( DatabaseLayout databaseLayout, Path archive )
+    private OutputStream openDumpStream( String databaseName, String destination ) throws IOException
+    {
+        if ( destination.equals( STANDARD_OUTPUT ) )
+        {
+            return ctx.out();
+        }
+        var archive = buildArchivePath( databaseName, Path.of( destination ).toAbsolutePath() );
+        return dumper.openForDump( archive );
+    }
+
+    private void dump( DatabaseLayout databaseLayout, String databaseName )
     {
         Path databasePath = databaseLayout.databaseDirectory();
         try
         {
-            var format = selectCompressionFormat( ctx.err() );
+            var format = DumpFormatSelector.selectFormat( ctx.err() );
             var lockFile = databaseLayout.databaseLockFile().getFileName().toString();
             var quarantineMarkerFile = databaseLayout.quarantineMarkerFile().getFileName().toString();
-            dumper.dump( databasePath, databaseLayout.getTransactionLogsDirectory(), archive, format, path -> oneOf( path, lockFile, quarantineMarkerFile ) );
+            var out = openDumpStream( databaseName, to );
+            dumper.dump( databasePath, databaseLayout.getTransactionLogsDirectory(), out, format, path -> oneOf( path, lockFile, quarantineMarkerFile ) );
         }
         catch ( FileAlreadyExistsException e )
         {
