@@ -1151,14 +1151,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val query =
         """MATCH (n:Person)
-          |WHERE distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5
+          |WHERE point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5
           |RETURN n
           |""".stripMargin
 
     val plan = pb.plan(query).stripProduceResults
 
     val expectedPlan = pb.subPlanBuilder()
-      .filter("distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5")
+      .filter("point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5")
       .pointDistanceNodeIndexSeek("n", "Person", "prop", "{x: 1.1, y: 5.4}", 0.5, indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
       .build()
 

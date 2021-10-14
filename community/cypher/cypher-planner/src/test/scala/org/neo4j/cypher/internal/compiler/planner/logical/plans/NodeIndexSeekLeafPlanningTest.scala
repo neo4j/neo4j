@@ -473,7 +473,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         startsWith(nProp, literalString("foo")),
         endsWith(nProp, literalString("foo")),
         contains(nProp, literalString("foo")),
-        greaterThan(lit42, function("distance", nProp, function("point", mapOfInt("x" -> 1, "y" -> 2)))),
+        greaterThan(lit42, function(List("point"), "distance", nProp, function("point", mapOfInt("x" -> 1, "y" -> 2)))),
         nPropEqualsXProp,
       )
 
@@ -571,7 +571,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val nPropEndsWith = endsWith(nProp, literalFoo)
     val nPropContains = contains(nProp, literalFoo)
     val point = function("point", mapOfInt("x" -> 1, "y" -> 2))
-    val nPropDistance = greaterThan(lit42, function("distance", nProp, point))
+    val nPropDistance = greaterThan(lit42, function(List("point"), "distance", nProp, point))
     new given {
       addTypeToSemanticTable(nProp, CTInteger.invariant)
       addTypeToSemanticTable(lit42, CTInteger.invariant)

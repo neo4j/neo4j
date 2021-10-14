@@ -538,7 +538,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         ))(pos)),
         Set.empty, IndexOrderNone, IndexType.BTREE),
         95.0),
-      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE distance(Prop, point(1, 2, \"cartesian\")) <= 10")), Set("x")))
+      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE point.distance(Prop, point(1, 2, \"cartesian\")) <= 10")), Set("x")))
 
     assertGood(
       attach(NodeIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),

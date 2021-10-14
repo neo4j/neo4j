@@ -252,7 +252,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
         startsWith(rProp, literalString(foo)),
         endsWith(rProp, literalString(foo)),
         contains(rProp, literalString(foo)),
-        greaterThan(lit42, function("distance", rProp, function("point", mapOfInt("x" -> 1, "y" -> 2)))),
+        greaterThan(lit42, function(List("point"), "distance", rProp, function("point", mapOfInt("x" -> 1, "y" -> 2)))),
         rPropEqualsXProp,
       )
 

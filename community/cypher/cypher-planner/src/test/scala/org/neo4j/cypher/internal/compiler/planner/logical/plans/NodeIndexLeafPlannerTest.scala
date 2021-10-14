@@ -90,7 +90,7 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
     val nPropEndsWithLitFoo = endsWith(nProp, litFoo)
     val nPropContainsLitFoo = contains(nProp, litFoo)
     val point = function("point", mapOfInt("x" -> 1, "y" -> 2))
-    val nPropDistance = greaterThan(lit42, function("distance", nProp, point))
+    val nPropDistance = greaterThan(lit42, function(List("point"), "distance", nProp, point))
     val mPropEqualsXProp = Equals(mProp, xProp)(pos)
     val mPropIsNotNull = isNotNull(mProp)
     val oPropIsNotNull = isNotNull(oProp)

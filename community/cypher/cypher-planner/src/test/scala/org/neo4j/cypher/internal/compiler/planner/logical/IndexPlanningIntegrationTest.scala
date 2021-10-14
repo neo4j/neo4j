@@ -122,7 +122,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheN[p.location] AS point")
-      .filter("x.maxDistance >= distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))", "x:Preference")
+      .filter("x.maxDistance >= point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))", "x:Preference")
       .expandAll("(p)-[r]->(x)")
       .nodeByLabelScan("p", "Place")
       .build()
@@ -158,7 +158,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheN[p.location] AS point")
-      .filter("distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance")
+      .filter("point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance")
       .apply()
       .|.pointDistanceNodeIndexSeekExpr("p", "Place", "location", "{x: 0, y: 0, crs: 'cartesian'}", distanceExpr = varFor("maxDistance"), argumentIds = Set("maxDistance"), inclusive = true)
       .projection("10 AS maxDistance")
@@ -199,7 +199,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("cacheN[p.location] AS point")
-      .filter("x.maxDistance >= distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))")
+      .filter("x.maxDistance >= point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))")
       .apply()
       .|.pointDistanceNodeIndexSeekExpr("p", "Place", "location", "{x: 0, y: 0, crs: 'cartesian'}", distanceExpr = prop("x", "maxDistance"), argumentIds = Set("x"), inclusive = true)
       .projection("{maxDistance: 10} AS x")
