@@ -220,10 +220,11 @@ class TransactionLogsRecoveryTest
             StorageEngine storageEngine = mock( StorageEngine.class );
             when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
             final LogEntryReader reader = logEntryReader();
+            Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
-                    monitors, false );
+                                                                                   monitors, false, config );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
@@ -320,10 +321,11 @@ class TransactionLogsRecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader reader = logEntryReader();
+            Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
-                    monitors, false );
+                                                                                   monitors, false, config );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( new RecoveryMonitor()
             {
@@ -576,9 +578,10 @@ class TransactionLogsRecoveryTest
             StorageEngine storageEngine = mock( StorageEngine.class );
             when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
             final LogEntryReader reader = logEntryReader();
+            Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false );
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false, config );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,

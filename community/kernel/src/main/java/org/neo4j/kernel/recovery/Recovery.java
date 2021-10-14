@@ -470,7 +470,7 @@ public final class Recovery
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
-                failOnCorruptedLogFiles );
+                                                                                                failOnCorruptedLogFiles, config );
 
         var transactionAppender =
                 createTransactionAppender( logFiles, metadataProvider, metadataCache, NO_ROTATION, config, databaseHealth, scheduler, logProvider );

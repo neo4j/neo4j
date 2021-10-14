@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.SketchingTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
@@ -71,6 +72,7 @@ public class ReversedSingleFileTransactionCursor implements TransactionCursor
     private final TransactionCursor transactionCursor;
     // Should be generally large enough to hold transactions in a chunk, where one chunk is the read-ahead size of ReadAheadLogChannel
     private final Deque<CommittedTransactionRepresentation> chunkTransactions = new ArrayDeque<>( 20 );
+    private final SketchingTransactionCursor sketchingCursor;
     private CommittedTransactionRepresentation currentChunkTransaction;
     // May be longer than required, offsetLength holds the actual length.
     private final long[] offsets;
@@ -87,6 +89,7 @@ public class ReversedSingleFileTransactionCursor implements TransactionCursor
         // There's an assumption here: that the underlying channel can move in between calls and that the
         // transaction cursor will just happily read from the new position.
         this.transactionCursor = new PhysicalTransactionCursor( channel, logEntryReader );
+        this.sketchingCursor = new SketchingTransactionCursor( channel, logEntryReader );
         this.offsets = sketchOutTransactionStartOffsets();
     }
 
@@ -101,10 +104,10 @@ public class ReversedSingleFileTransactionCursor implements TransactionCursor
         long startOffset = channel.position();
         try
         {
-            while ( transactionCursor.next() )
+            while ( sketchingCursor.next() )
             {
                 if ( offsetCursor == offsets.length )
-                {   // Grow
+                {
                     offsets = Arrays.copyOf( offsets, offsetCursor * 2 );
                 }
                 offsets[offsetCursor++] = startOffset;

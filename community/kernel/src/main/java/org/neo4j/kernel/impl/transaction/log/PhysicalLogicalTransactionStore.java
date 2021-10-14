@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileTransactio
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedTransactionCursorMonitor;
 import org.neo4j.monitoring.Monitors;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.pre_sketch_transaction_logs;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 
@@ -44,17 +46,19 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     private final LogEntryReader logEntryReader;
     private final Monitors monitors;
     private final boolean failOnCorruptedLogFiles;
+    private final boolean presketchLogFiles;
 
     public PhysicalLogicalTransactionStore( LogFiles logFiles,
-            TransactionMetadataCache transactionMetadataCache,
-            LogEntryReader logEntryReader, Monitors monitors,
-            boolean failOnCorruptedLogFiles )
+                                            TransactionMetadataCache transactionMetadataCache,
+                                            LogEntryReader logEntryReader, Monitors monitors,
+                                            boolean failOnCorruptedLogFiles, Config config )
     {
         this.logFile = logFiles.getLogFile();
         this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryReader = logEntryReader;
         this.monitors = monitors;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
+        this.presketchLogFiles = config.get( pre_sketch_transaction_logs );
     }
 
     @Override
@@ -68,7 +72,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     {
         return ReversedMultiFileTransactionCursor
                 .fromLogFile( logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles,
-                        monitors.newMonitor( ReversedTransactionCursorMonitor.class ) );
+                        monitors.newMonitor( ReversedTransactionCursorMonitor.class ), presketchLogFiles );
     }
 
     @Override

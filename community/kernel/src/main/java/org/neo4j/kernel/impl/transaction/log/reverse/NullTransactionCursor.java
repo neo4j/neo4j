@@ -19,9 +19,35 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-public interface ReversedTransactionCursorMonitor
-{
-    void transactionalLogRecordReadFailure( long[] offsets, int offsetCursor, long logVersion );
+import java.io.IOException;
 
-    void presketchingTransactionLogs();
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+
+public class NullTransactionCursor implements TransactionCursor
+{
+    @Override
+    public boolean next() throws IOException
+    {
+        return false;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+
+    }
+
+    @Override
+    public LogPosition position()
+    {
+        throw new UnsupportedOperationException( "unsupported" );
+    }
+
+    @Override
+    public CommittedTransactionRepresentation get()
+    {
+        throw new UnsupportedOperationException( "unsupported" );
+    }
 }

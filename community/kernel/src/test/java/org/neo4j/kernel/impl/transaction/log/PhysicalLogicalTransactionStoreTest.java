@@ -119,6 +119,7 @@ class PhysicalLogicalTransactionStoreTest
     {
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
+        Config config = Config.defaults();
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
@@ -142,7 +143,7 @@ class PhysicalLogicalTransactionStoreTest
         fileSystem.write( logFile.getLogFileForVersion( logFile.getHighestLogVersion() + 1 ) ).close();
         positionCache.clear();
 
-        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );
+        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true, config );
         verifyTransaction( positionCache, additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store );
     }
 
@@ -176,6 +177,7 @@ class PhysicalLogicalTransactionStoreTest
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
+        Config config = Config.defaults();
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
@@ -201,7 +203,7 @@ class PhysicalLogicalTransactionStoreTest
         FakeRecoveryVisitor visitor = new FakeRecoveryVisitor( additionalHeader, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
 
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, positionCache,
-                logEntryReader(), monitors, true );
+                                                                               logEntryReader(), monitors, true, config );
 
         life.add( createTransactionAppender( transactionIdStore, positionCache, logFiles, Config.defaults(), jobScheduler ) );
         CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystem, INSTANCE );
@@ -230,6 +232,7 @@ class PhysicalLogicalTransactionStoreTest
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
+        Config config = Config.defaults();
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
@@ -250,7 +253,7 @@ class PhysicalLogicalTransactionStoreTest
 
         life = new LifeSupport();
         life.add( logFiles );
-        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );
+        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true, config );
 
         // WHEN
         life.start();
@@ -268,6 +271,7 @@ class PhysicalLogicalTransactionStoreTest
     void shouldThrowNoSuchTransactionExceptionIfLogFileIsMissing() throws Exception
     {
         // GIVEN
+        Config config = Config.defaults();
         LogFile logFile = mock( LogFile.class );
         LogFiles logFiles = mock( LogFiles.class );
         // a missing file
@@ -279,7 +283,7 @@ class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
 
-        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, cache, logEntryReader(), monitors, true );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, cache, logEntryReader(), monitors, true, config );
 
         try
         {

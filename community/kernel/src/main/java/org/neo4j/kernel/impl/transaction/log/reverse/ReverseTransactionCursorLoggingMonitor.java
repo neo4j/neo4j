@@ -40,4 +40,10 @@ public class ReverseTransactionCursorLoggingMonitor implements ReversedTransacti
                        logVersion, transactionOffsets[transactionIndex - 1] ) :
                format( "Fail to read first transaction of log version %d.", logVersion) );
     }
+
+    @Override
+    public void presketchingTransactionLogs()
+    {
+        log.debug( "Pre-sketching transaction logs in the background." );
+    }
 }
