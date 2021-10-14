@@ -29,6 +29,7 @@ public interface ComponentVersion
     String SECURITY_PRIVILEGE_COMPONENT = "security-privileges";
     String DBMS_RUNTIME_COMPONENT = "dbms-runtime";
     String TOPOLOGY_GRAPH_COMPONENT = "topology-graph";
+    String COMMUNITY_TOPOLOGY_GRAPH_COMPONENT = "community-topology-graph";
 
     /**
      * Get the version of the component. Component versions are expected to be ordered and the oldest version is 0.

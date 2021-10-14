@@ -41,6 +41,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
@@ -74,6 +76,7 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_single_automatic_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
+import static org.neo4j.dbms.database.ComponentVersion.COMMUNITY_TOPOLOGY_GRAPH_COMPONENT;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.CURRENT;
@@ -170,10 +173,11 @@ class UserSecurityGraphComponentTest
             systemGraphComponents.forEach( component -> statuses.put( component.componentName(), component.detect( tx ) ) );
             statuses.put( "dbms-status", systemGraphComponents.detect( tx ) );
         } );
-        assertEquals( statuses.size(), 3, "Expecting three components" );
-        assertEquals( statuses.get( "multi-database" ), CURRENT, "System graph status" );
-        assertEquals( statuses.get( "security-users" ), CURRENT, "Users status" );
-        assertEquals( statuses.get( "dbms-status" ), CURRENT, "Overall status" );
+        assertEquals( statuses.size(), 4, "Expecting four components" );
+        assertEquals( CURRENT, statuses.get( "multi-database" ), "System graph status" );
+        assertEquals( CURRENT, statuses.get( SECURITY_USER_COMPONENT ), "Users status" );
+        assertEquals( CURRENT, statuses.get( COMMUNITY_TOPOLOGY_GRAPH_COMPONENT ), "Community topology graph status" );
+        assertEquals( CURRENT, statuses.get( "dbms-status" ), "Overall status" );
     }
 
     @ParameterizedTest
@@ -248,7 +252,8 @@ class UserSecurityGraphComponentTest
         var systemGraphComponents = system.getDependencyResolver().resolveDependency( SystemGraphComponents.class );
         assertStatus( Map.of(
                 "multi-database", CURRENT,
-                "security-users", initialState,
+                SECURITY_USER_COMPONENT, initialState,
+                COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, CURRENT,
                 "dbms-status", initialState
         ) );
 
@@ -258,7 +263,8 @@ class UserSecurityGraphComponentTest
         // Then when looking at component statuses
         assertStatus( Map.of(
                 "multi-database", CURRENT,
-                "security-users", CURRENT,
+                SECURITY_USER_COMPONENT, CURRENT,
+                COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, CURRENT,
                 "dbms-status", CURRENT
         ) );
     }
@@ -273,7 +279,7 @@ class UserSecurityGraphComponentTest
         } );
         for ( var entry : expected.entrySet() )
         {
-            assertEquals( statuses.get( entry.getKey() ), entry.getValue(), entry.getKey() );
+            assertEquals( entry.getValue(), statuses.get( entry.getKey() ), entry.getKey() );
         }
     }
 
@@ -317,6 +323,9 @@ class UserSecurityGraphComponentTest
     {
         var systemGraphComponent = new DefaultSystemGraphComponent( Config.defaults(), Clock.systemUTC() );
         systemGraphComponent.initializeSystemGraph( system, true );
+
+        var communityTopologyComponent = new CommunityTopologyGraphComponent( Config.defaults(), NullLogProvider.getInstance() );
+        communityTopologyComponent.initializeSystemGraph( system, true );
     }
 
     private static void initUserSecurityComponent( UserSecurityGraphComponentVersion version ) throws Exception

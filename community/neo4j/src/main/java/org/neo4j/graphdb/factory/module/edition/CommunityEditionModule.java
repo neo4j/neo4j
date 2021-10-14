@@ -46,6 +46,7 @@ import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.procedures.StandaloneDatabaseStateProcedure;
+import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -268,8 +269,13 @@ public class CommunityEditionModule extends StandaloneEditionModule
     @Override
     public void registerSystemGraphComponents( SystemGraphComponents systemGraphComponents, GlobalModule globalModule )
     {
-        var systemGraphComponent = new DefaultSystemGraphComponent( globalModule.getGlobalConfig(), globalModule.getGlobalClock() );
+        var config = globalModule.getGlobalConfig();
+        var log = globalModule.getLogService().getInternalLogProvider();
+        var clock = globalModule.getGlobalClock();
+        var systemGraphComponent = new DefaultSystemGraphComponent( config, clock );
         systemGraphComponents.register( systemGraphComponent );
+        var communityTopologyGraphComponentComponent = new CommunityTopologyGraphComponent( config, log );
+        systemGraphComponents.register( communityTopologyGraphComponentComponent );
     }
 
     protected static Supplier<GraphDatabaseService> systemSupplier( DependencyResolver dependencies )

@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
 import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
@@ -214,8 +213,6 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
         node.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
         node.setProperty( DATABASE_CREATED_AT_PROPERTY, now );
         node.setProperty( DATABASE_STARTED_AT_PROPERTY, now );
-        // TODO this should be done as part of topology graph migration instead
-        node.setProperty( DATABASE_ACCESS_PROPERTY, SystemGraphDbmsModel.DatabaseAccess.READ_WRITE.toString() );
         return node;
     }
 }
