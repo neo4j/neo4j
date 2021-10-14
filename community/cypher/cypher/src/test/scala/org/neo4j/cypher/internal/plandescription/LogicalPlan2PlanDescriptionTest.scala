@@ -120,6 +120,7 @@ import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -274,9 +275,11 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
+import org.neo4j.cypher.internal.logical.plans.SetProperties
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
@@ -1280,6 +1283,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(Merge(lhsLP, Seq.empty, Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)),
         Seq.empty, Seq.empty, Set("x", "y")), 32.2),
       planDescription(id, "LockingMerge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x)<-[r:R]-(y)", "LOCK(x, y)"))), Set("a")))
+
+    assertGood(
+      attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
+        Seq(SetNodePropertiesPattern("x", Seq((key("p1"), number("1")), (key("p2"), number("2"))))), Seq.empty, Set.empty), 32.2),
+      planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON MATCH SET x.p1 = 1, x.p2 = 2"))), Set("a")))
+
   }
 
   test("foreach") {
@@ -1568,6 +1577,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(SetRelationshipProperty(lhsLP, "x", key("prop"), number("1")), 1.0),
       planDescription(id, "SetProperty", SingleChild(lhsPD), Seq(details("x.prop = 1")), Set("a", "x")))
+    //Set multiple properties
+    assertGood(attach(SetProperties(lhsLP, varFor("x"), Seq((key("p1"), number("1")), (key("p2"), number("2")))), 1.0),
+      planDescription(id, "SetProperties", SingleChild(lhsPD), Seq(details("x.p1 = 1, x.p2 = 2")), Set("a")))
+
+    assertGood(attach(SetNodeProperties(lhsLP, "x",  Seq((key("p1"), number("1")), (key("p2"), number("2")))), 1.0),
+      planDescription(id, "SetProperties", SingleChild(lhsPD), Seq(details("x.p1 = 1, x.p2 = 2")), Set("a", "x")))
+
+    assertGood(attach(SetNodeProperties(lhsLP, "x",  Seq((key("p1"), number("1")), (key("p2"), number("2")))), 1.0),
+      planDescription(id, "SetProperties", SingleChild(lhsPD), Seq(details("x.p1 = 1, x.p2 = 2")), Set("a", "x")))
+
   }
 
   test("Sort") {

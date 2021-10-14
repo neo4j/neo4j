@@ -55,10 +55,13 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
@@ -188,10 +191,13 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetProperties
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
@@ -732,6 +738,33 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       case SetRelationshipProperty(_, idName, propertyKey, expression) =>
         val details = Details(setPropertyInfo(pretty"${asPrettyString(idName)}.${asPrettyString(propertyKey.name)}", expression, true))
         PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables, withRawCardinalities)
+
+      case SetProperties(_, entity, items) =>
+        val setOps = items.map {
+          case (p, v) =>
+            val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(p.name)}"
+            setPropertyInfo(entityString, v, removeOtherProps = true)
+        }.mkPrettyString(", ")
+        val details = Details(setOps)
+        PlanDescriptionImpl(id, "SetProperties", children, Seq(details), variables, withRawCardinalities)
+
+      case SetNodeProperties(_, idName, items) =>
+        val setOps = items.map {
+          case (p, v) =>
+            val entityString = pretty"${asPrettyString(idName)}.${asPrettyString(p.name)}"
+            setPropertyInfo(entityString, v, removeOtherProps = true)
+        }.mkPrettyString(", ")
+        val details = Details(setOps)
+        PlanDescriptionImpl(id, "SetProperties", children, Seq(details), variables, withRawCardinalities)
+
+      case SetRelationshipProperties(_, idName, items) =>
+        val setOps = items.map {
+          case (p, v) =>
+            val entityString = pretty"${asPrettyString(idName)}.${asPrettyString(p.name)}"
+            setPropertyInfo(entityString, v, removeOtherProps = true)
+        }.mkPrettyString(", ")
+        val details = Details(setOps)
+        PlanDescriptionImpl(id, "SetProperties", children, Seq(details), variables, withRawCardinalities)
 
       case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
         val details = Details(setPropertyInfo(asPrettyString(idName), expression, removeOtherProps))
@@ -1393,13 +1426,34 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
     case SetNodePropertiesFromMapPattern(node, value, removeOtherProps) =>
       pretty"SET ${setPropertyInfo(asPrettyString(node),  value, removeOtherProps)}"
     case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
-      pretty" SET ${setPropertyInfo(pretty"${asPrettyString(relationship)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
+      pretty"SET ${setPropertyInfo(pretty"${asPrettyString(relationship)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
     case SetRelationshipPropertiesFromMapPattern(relationship, value, removeOtherProps) =>
-      pretty" SET ${setPropertyInfo(asPrettyString(relationship),  value, removeOtherProps)}"
+      pretty"SET ${setPropertyInfo(asPrettyString(relationship),  value, removeOtherProps)}"
     case SetPropertyPattern(entity, propertyKey, expression) =>
       val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(propertyKey.name)}"
-      pretty" SET ${setPropertyInfo(entityString, expression, true)}"
+      pretty"SET ${setPropertyInfo(entityString, expression, true)}"
     case SetPropertiesFromMapPattern(entity, expression, removeOtherProps) =>
-      pretty" SET ${setPropertyInfo(asPrettyString(entity), expression, removeOtherProps)}"
+      pretty"SET ${setPropertyInfo(asPrettyString(entity), expression, removeOtherProps)}"
+    case SetPropertiesPattern(entity, items) =>
+      val setOps = items.map {
+        case (p, e) =>
+          val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(p.name)}"
+          setPropertyInfo(entityString, e, removeOtherProps = true)
+      }.mkPrettyString(", ")
+      pretty"SET $setOps"
+    case SetNodePropertiesPattern(entity, items) =>
+      val setOps = items.map {
+        case (p, e) =>
+          val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(p.name)}"
+          setPropertyInfo(entityString, e, removeOtherProps = true)
+      }.mkPrettyString(", ")
+      pretty"SET $setOps"
+    case SetRelationshipPropertiesPattern(entity, items) =>
+      val setOps = items.map {
+        case (p, e) =>
+          val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(p.name)}"
+          setPropertyInfo(entityString, e, removeOtherProps = true)
+      }.mkPrettyString(", ")
+      pretty"SET $setOps"
   }
 }
