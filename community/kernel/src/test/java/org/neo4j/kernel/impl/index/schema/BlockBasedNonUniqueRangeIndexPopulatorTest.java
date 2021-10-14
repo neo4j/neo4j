@@ -28,7 +28,7 @@ class BlockBasedNonUniqueRangeIndexPopulatorTest extends NativeNonUniqueIndexPop
 {
     BlockBasedNonUniqueRangeIndexPopulatorTest()
     {
-        super( rangeBlockBasedPopulatorFactory(), ValueType.values(), () -> new RangeLayout( 1 ) );
+        super( rangeBlockBasedPopulatorFactory(), ValueType.values(), new RangeLayout( 1 ) );
     }
 
     @Override

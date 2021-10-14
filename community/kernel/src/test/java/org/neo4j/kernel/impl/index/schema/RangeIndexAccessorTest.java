@@ -57,25 +57,26 @@ import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLI
 
 class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
 {
-    private static final IndexDescriptor indexDescriptor = forSchema( forLabel( 42, 666 ) ).withIndexType( IndexType.RANGE )
-            .withName( "index" ).materialise( 0 );
-
-    private final ValueType[] supportedTypes = ValueType.values();
-    private final IndexLayoutFactory<RangeKey> indexLayoutFactory = () -> new RangeLayout( 1 );
-    private final IndexCapability indexCapability = RangeIndexProvider.CAPABILITY;
+    private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 42, 666 ) ).withIndexType( IndexType.RANGE )
+                                                                                            .withIndexProvider( RangeIndexProvider.DESCRIPTOR )
+                                                                                            .withName( "index" )
+                                                                                            .materialise( 0 );
+    private static final ValueType[] SUPPORTED_TYPES = ValueType.values();
+    private static final RangeLayout LAYOUT = new RangeLayout( 1 );
+    private static final IndexCapability INDEX_CAPABILITY = RangeIndexProvider.CAPABILITY;
 
     @Override
     NativeIndexAccessor<RangeKey> createAccessor( PageCache pageCache )
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
-        return new RangeIndexAccessor( context, indexFiles, layout, cleanup, indexDescriptor, tokenNameLookup );
+        return new RangeIndexAccessor( context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, tokenNameLookup );
     }
 
     @Override
     IndexCapability indexCapability()
     {
-        return indexCapability;
+        return INDEX_CAPABILITY;
     }
 
     @Override
@@ -87,19 +88,19 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
     @Override
     ValueCreatorUtil<RangeKey> createValueCreatorUtil()
     {
-        return new ValueCreatorUtil<>( indexDescriptor, supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
+        return new ValueCreatorUtil<>( INDEX_DESCRIPTOR, SUPPORTED_TYPES, FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override
     IndexDescriptor indexDescriptor()
     {
-        return indexDescriptor;
+        return INDEX_DESCRIPTOR;
     }
 
     @Override
-    IndexLayout<RangeKey> createLayout()
+    RangeLayout layout()
     {
-        return indexLayoutFactory.create();
+        return LAYOUT;
     }
 
     @Test

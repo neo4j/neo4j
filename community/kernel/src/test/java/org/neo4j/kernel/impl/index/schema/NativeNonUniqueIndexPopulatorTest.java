@@ -46,14 +46,12 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
 {
     private final NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory;
     private final ValueType[] typesOfGroup;
-    private final IndexLayoutFactory<KEY> indexLayoutFactory;
 
-    NativeNonUniqueIndexPopulatorTest( NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory, ValueType[] typesOfGroup,
-        IndexLayoutFactory<KEY> indexLayoutFactory )
+    NativeNonUniqueIndexPopulatorTest( NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory, ValueType[] typesOfGroup, IndexLayout<KEY> layout )
     {
         this.populatorFactory = populatorFactory;
         this.typesOfGroup = typesOfGroup;
-        this.indexLayoutFactory = indexLayoutFactory;
+        this.layout = layout;
     }
 
     private final IndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( indexType(), 42, 666 );
@@ -74,9 +72,9 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
     }
 
     @Override
-    IndexLayout<KEY> createLayout()
+    IndexLayout<KEY> layout()
     {
-        return indexLayoutFactory.create();
+        return layout;
     }
 
     @Override

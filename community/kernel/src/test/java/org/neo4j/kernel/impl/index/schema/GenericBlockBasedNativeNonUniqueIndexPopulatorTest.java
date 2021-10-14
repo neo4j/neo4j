@@ -29,7 +29,7 @@ class GenericBlockBasedNativeNonUniqueIndexPopulatorTest extends NativeNonUnique
 {
     GenericBlockBasedNativeNonUniqueIndexPopulatorTest()
     {
-        super( genericBlockBasedPopulatorFactory(), ValueType.values(), () -> new GenericLayout( 1, spaceFillingCurveSettings ) );
+        super( genericBlockBasedPopulatorFactory(), ValueType.values(), new GenericLayout( 1, spaceFillingCurveSettings ) );
     }
 
     @Override

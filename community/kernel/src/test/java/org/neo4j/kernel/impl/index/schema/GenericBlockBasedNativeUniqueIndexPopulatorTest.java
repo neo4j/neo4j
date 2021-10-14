@@ -29,7 +29,7 @@ class GenericBlockBasedNativeUniqueIndexPopulatorTest extends NativeUniqueIndexP
 {
     GenericBlockBasedNativeUniqueIndexPopulatorTest()
     {
-        super( genericBlockBasedPopulatorFactory(), ValueType.values(), () -> new GenericLayout( 1, spaceFillingCurveSettings ) );
+        super( genericBlockBasedPopulatorFactory(), ValueType.values(), new GenericLayout( 1, spaceFillingCurveSettings ) );
     }
 
     @Override

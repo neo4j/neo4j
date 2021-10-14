@@ -173,7 +173,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
     }
 
     @Override
-    IndexLayout<BtreeKey> createLayout()
+    IndexLayout<BtreeKey> layout()
     {
         return new GenericLayout( 1,specificSettings );
     }

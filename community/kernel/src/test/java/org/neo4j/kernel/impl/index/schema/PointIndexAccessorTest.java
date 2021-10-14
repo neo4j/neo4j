@@ -70,7 +70,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
                                                                                             .withName( "index" )
                                                                                             .materialise( 0 );
 
-    private static final IndexLayoutFactory<PointKey> INDEX_LAYOUT_FACTORY = () -> new PointLayout( SPACE_FILLING_CURVE_SETTINGS );
+    private static final PointLayout LAYOUT = new PointLayout( SPACE_FILLING_CURVE_SETTINGS );
 
     private static final ValueType[] SUPPORTED_TYPES = Stream.of( ValueType.values() )
                                                              .filter( type -> type.valueGroup.category() == ValueCategory.GEOMETRY )
@@ -107,9 +107,9 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
     }
 
     @Override
-    IndexLayout<PointKey> createLayout()
+    PointLayout layout()
     {
-        return INDEX_LAYOUT_FACTORY.create();
+        return LAYOUT;
     }
 
     @ParameterizedTest

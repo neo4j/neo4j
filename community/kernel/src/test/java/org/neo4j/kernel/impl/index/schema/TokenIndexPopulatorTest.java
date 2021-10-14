@@ -72,7 +72,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     }
 
     @Override
-    TokenScanLayout createLayout()
+    TokenScanLayout layout()
     {
         return new TokenScanLayout();
     }

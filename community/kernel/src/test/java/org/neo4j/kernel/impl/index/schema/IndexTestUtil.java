@@ -41,11 +41,11 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -79,7 +79,7 @@ public abstract class IndexTestUtil<KEY,VALUE, LAYOUT extends Layout<KEY,VALUE>>
     void setup()
     {
         indexDescriptor = indexDescriptor();
-        layout = createLayout();
+        layout = layout();
         this.indexFiles = createIndexFiles( fs, directory, indexDescriptor );
         indexFiles.ensureDirectoryExist();
         tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
@@ -105,7 +105,7 @@ public abstract class IndexTestUtil<KEY,VALUE, LAYOUT extends Layout<KEY,VALUE>>
 
     abstract IndexDescriptor indexDescriptor();
 
-    abstract LAYOUT createLayout();
+    abstract LAYOUT layout();
 
     GBPTree<KEY,VALUE> getTree()
     {

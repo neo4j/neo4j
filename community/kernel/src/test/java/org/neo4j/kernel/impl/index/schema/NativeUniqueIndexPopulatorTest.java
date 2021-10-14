@@ -51,14 +51,12 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> e
 
     private final NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory;
     private final ValueType[] typesOfGroup;
-    private final IndexLayoutFactory<KEY> indexLayoutFactory;
 
-    NativeUniqueIndexPopulatorTest( NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory, ValueType[] typesOfGroup,
-        IndexLayoutFactory<KEY> indexLayoutFactory )
+    NativeUniqueIndexPopulatorTest( NativeIndexPopulatorTestCases.PopulatorFactory<KEY> populatorFactory, ValueType[] typesOfGroup, IndexLayout<KEY> layout )
     {
         this.populatorFactory = populatorFactory;
         this.typesOfGroup = typesOfGroup;
-        this.indexLayoutFactory = indexLayoutFactory;
+        this.layout = layout;
     }
 
     abstract IndexType indexType();
@@ -77,9 +75,9 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> e
     }
 
     @Override
-    IndexLayout<KEY> createLayout()
+    IndexLayout<KEY> layout()
     {
-        return indexLayoutFactory.create();
+        return layout;
     }
 
     @Override

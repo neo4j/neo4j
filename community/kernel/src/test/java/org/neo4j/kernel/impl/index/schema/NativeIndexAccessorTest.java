@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
@@ -50,28 +51,31 @@ import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLI
 
 class NativeIndexAccessorTest extends GenericNativeIndexAccessorTests<BtreeKey>
 {
-    private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
+    private static final IndexSpecificSpaceFillingCurveSettings SPACE_FILLING_CURVE_SETTINGS =
             IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    private static final StandardConfiguration configuration = new StandardConfiguration();
-    private static final IndexDescriptor indexDescriptor = forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 );
+    private static final StandardConfiguration CONFIGURATION = new StandardConfiguration();
+    private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 42, 666 ) ).withIndexType( IndexType.BTREE )
+                                                                                            .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR )
+                                                                                            .withName( "index" )
+                                                                                            .materialise( 0 );
 
-    private final ValueType[] supportedTypes = ValueType.values();
-    private final IndexLayoutFactory<BtreeKey> indexLayoutFactory = () -> new GenericLayout( 1, spaceFillingCurveSettings );
-    private final IndexCapability indexCapability = GenericNativeIndexProvider.CAPABILITY;
+    private static final ValueType[] SUPPORTED_TYPES = ValueType.values();
+    private static final GenericLayout LAYOUT = new GenericLayout( 1, SPACE_FILLING_CURVE_SETTINGS );
+    private static final IndexCapability INDEX_CAPABILITY = GenericNativeIndexProvider.CAPABILITY;
 
     @Override
     NativeIndexAccessor<BtreeKey> createAccessor( PageCache pageCache )
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
-        return new GenericNativeIndexAccessor( context, indexFiles, layout, cleanup, indexDescriptor, spaceFillingCurveSettings, configuration,
-                tokenNameLookup );
+        return new GenericNativeIndexAccessor( context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR,
+                                               SPACE_FILLING_CURVE_SETTINGS, CONFIGURATION, tokenNameLookup );
     }
 
     @Override
     IndexCapability indexCapability()
     {
-        return indexCapability;
+        return INDEX_CAPABILITY;
     }
 
     @Override
@@ -83,19 +87,19 @@ class NativeIndexAccessorTest extends GenericNativeIndexAccessorTests<BtreeKey>
     @Override
     ValueCreatorUtil<BtreeKey> createValueCreatorUtil()
     {
-        return new ValueCreatorUtil<>( indexDescriptor, supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
+        return new ValueCreatorUtil<>( INDEX_DESCRIPTOR, SUPPORTED_TYPES, FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override
     IndexDescriptor indexDescriptor()
     {
-        return indexDescriptor;
+        return INDEX_DESCRIPTOR;
     }
 
     @Override
-    IndexLayout<BtreeKey> createLayout()
+    GenericLayout layout()
     {
-        return indexLayoutFactory.create();
+        return LAYOUT;
     }
 
     @Test

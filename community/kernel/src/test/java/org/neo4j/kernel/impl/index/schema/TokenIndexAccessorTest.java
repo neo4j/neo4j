@@ -105,7 +105,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
     }
 
     @Override
-    TokenScanLayout createLayout()
+    TokenScanLayout layout()
     {
         return new TokenScanLayout();
     }
