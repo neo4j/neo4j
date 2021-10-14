@@ -86,10 +86,7 @@ public class NamedThreadFactory implements ThreadFactory
     public NamedThreadFactory( String threadNamePrefix, int priority, Monitor monitor, boolean daemon )
     {
         this.threadNamePrefix = threadNamePrefix;
-        SecurityManager securityManager = System.getSecurityManager();
-        group = (securityManager != null) ?
-                securityManager.getThreadGroup() :
-                Thread.currentThread().getThreadGroup();
+        group = Thread.currentThread().getThreadGroup();
         this.priority = priority;
         this.daemon = daemon;
         this.monitor = monitor;
