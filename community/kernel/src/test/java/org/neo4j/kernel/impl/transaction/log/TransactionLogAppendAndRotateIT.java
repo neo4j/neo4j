@@ -58,6 +58,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -112,19 +113,22 @@ class TransactionLogAppendAndRotateIT
     {
         // GIVEN
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+        Monitors monitors = new Monitors();
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( logVersionRepository )
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
+                .withMonitors( monitors )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogEntryReader( logEntryReader() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
         final AtomicBoolean end = new AtomicBoolean();
-        AllTheMonitoring monitoring = new AllTheMonitoring( end, 100 );
+        TestLogFileMonitor monitoring = new TestLogFileMonitor( end, 100, logFiles.getLogFile() );
+        monitors.addMonitorListener( monitoring );
+
         TransactionIdStore txIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-        monitoring.setLogFile( logFiles.getLogFile() );
         Health health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         final TransactionAppender appender =
                 life.add( createBatchAppender( logFiles, txIdStore, metadataCache, health, jobScheduler, Config.defaults() ) );
@@ -143,7 +147,6 @@ class TransactionLogAppendAndRotateIT
                     }
                     catch ( Exception e )
                     {
-                        e.printStackTrace( System.out );
                         end.set( true );
                         fail( e.getMessage(), e );
                     }
@@ -163,7 +166,7 @@ class TransactionLogAppendAndRotateIT
         return createTransactionAppender( logFiles, txIdStore, metadataCache, config, health, jobScheduler, NullLogProvider.getInstance() );
     }
 
-    private static Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end, AllTheMonitoring monitoring )
+    private static Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end, TestLogFileMonitor monitoring )
     {
         return () ->
         {
@@ -224,22 +227,17 @@ class TransactionLogAppendAndRotateIT
         return tx;
     }
 
-    private static class AllTheMonitoring extends LogRotationMonitorAdapter
+    private static class TestLogFileMonitor extends LogRotationMonitorAdapter
     {
         private final AtomicBoolean end;
         private final int maxNumberOfRotations;
+        private final LogFile logFile;
         private final AtomicInteger rotations = new AtomicInteger();
 
-        private volatile LogFile logFile;
-
-        AllTheMonitoring( AtomicBoolean end, int maxNumberOfRotations )
+        TestLogFileMonitor( AtomicBoolean end, int maxNumberOfRotations, LogFile logFile )
         {
             this.end = end;
             this.maxNumberOfRotations = maxNumberOfRotations;
-        }
-
-        void setLogFile( LogFile logFile )
-        {
             this.logFile = logFile;
         }
 

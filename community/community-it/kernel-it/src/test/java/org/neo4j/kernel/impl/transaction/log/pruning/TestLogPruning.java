@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -42,7 +41,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -57,17 +55,10 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class TestLogPruning
 {
-
     private DatabaseManagementService managementService;
-
-    private interface Extractor
-    {
-        int extract( long fromVersion ) throws IOException;
-    }
-
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
-    private LogFiles files;
+    private LogFiles logFiles;
     private int rotateEveryNTransactions;
     private int performedTransactions;
 
@@ -91,7 +82,7 @@ class TestLogPruning
             doTransaction();
         }
 
-        LogFile logFile = files.getLogFile();
+        LogFile logFile = logFiles.getLogFile();
         long currentVersion = logFile.getHighestLogVersion();
         for ( long version = 0; version < currentVersion; version++ )
         {
@@ -166,7 +157,7 @@ class TestLogPruning
             doTransaction();
         }
         // and the log gets rotated, which means we have a new one with no txs in it
-        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
+        rotate();
         /*
          * if we hadn't rotated after the txs went through, we would need to change the assertion to be at least 1 tx
          * instead of exactly one.
@@ -181,13 +172,11 @@ class TestLogPruning
     {
         this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();
-        TestDatabaseManagementServiceBuilder gdf = new TestDatabaseManagementServiceBuilder();
-        gdf.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
-        DatabaseManagementServiceBuilder builder = gdf.impermanent();
-        builder.setConfig( keep_logical_logs, logPruning );
-        managementService = builder.build();
+        managementService = new TestDatabaseManagementServiceBuilder()
+                                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) ).impermanent()
+                                .setConfig( keep_logical_logs, logPruning ).build();
         this.db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        files = db.getDependencyResolver().resolveDependency( LogFiles.class );
+        logFiles = db.getDependencyResolver().resolveDependency( LogFiles.class );
         return db;
     }
 
@@ -195,7 +184,7 @@ class TestLogPruning
     {
         if ( ++performedTransactions >= rotateEveryNTransactions )
         {
-            db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
+            rotate();
             performedTransactions = 0;
         }
 
@@ -206,6 +195,11 @@ class TestLogPruning
             tx.commit();
         }
         checkPoint();
+    }
+
+    private void rotate() throws IOException
+    {
+        logFiles.getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
     }
 
     private void checkPoint() throws IOException
@@ -219,13 +213,13 @@ class TestLogPruning
         db = newDb( "true", 5 );
         doTransaction();
         managementService.shutdown();
-        return (int) fs.getFileSize( files.getLogFile().getLogFileForVersion( 0 ) );
+        return (int) fs.getFileSize( logFiles.getLogFile().getLogFileForVersion( 0 ) );
     }
 
     private int aggregateLogData( Extractor extractor ) throws IOException
     {
         int total = 0;
-        LogFile logFile = files.getLogFile();
+        LogFile logFile = logFiles.getLogFile();
         for ( long i = logFile.getHighestLogVersion(); i >= 0; i-- )
         {
             if ( logFile.versionExists( i ) )
@@ -247,7 +241,7 @@ class TestLogPruning
 
     private int logFileSize() throws IOException
     {
-        return aggregateLogData( from -> (int) fs.getFileSize( files.getLogFile().getLogFileForVersion( from ) ) );
+        return aggregateLogData( from -> (int) fs.getFileSize( logFiles.getLogFile().getLogFileForVersion( from ) ) );
     }
 
     private int transactionCount() throws IOException
@@ -256,12 +250,12 @@ class TestLogPruning
         {
             int counter = 0;
             LogVersionBridge bridge = LogVersionBridge.NO_MORE_CHANNELS;
-            LogVersionedStoreChannel versionedStoreChannel = files.getLogFile().openForVersion( version );
+            LogVersionedStoreChannel versionedStoreChannel = logFiles.getLogFile().openForVersion( version );
+            StorageEngineFactory storageEngineFactory = db.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
             try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, INSTANCE ) )
             {
                 try ( PhysicalTransactionCursor physicalTransactionCursor =
-                        new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader( db.getDependencyResolver().resolveDependency(
-                                StorageEngineFactory.class ).commandReaderFactory() ) ) )
+                        new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() ) ) )
                 {
                     while ( physicalTransactionCursor.next() )
                     {
@@ -271,5 +265,11 @@ class TestLogPruning
             }
             return counter;
         } );
+    }
+
+    @FunctionalInterface
+    private interface Extractor
+    {
+        int extract( long fromVersion ) throws IOException;
     }
 }
