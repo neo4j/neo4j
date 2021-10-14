@@ -24,6 +24,7 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -44,9 +45,11 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import static java.lang.Long.min;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_ACCEPTED;
+import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static java.net.HttpURLConnection.HTTP_GATEWAY_TIMEOUT;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -66,22 +69,38 @@ public class HttpCopier implements PushToCloudCommand.Copier
     static final String ERROR_REASON_UNSUPPORTED_INDEXES = "LegacyIndexes";
     static final String ERROR_REASON_EXCEEDS_MAX_SIZE = "ImportExceedsMaxSize";
     private static final long POSITION_UPLOAD_COMPLETED = -1;
-    private static final long MAXIMUM_RETRY_BACKOFF = SECONDS.toMillis( 64 );
+    private static final long DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS = SECONDS.toMillis( 64 );
+    private static final long DEFAULT_MAXIMUM_RETRIES = 50;
 
     private final ExecutionContext ctx;
     private final Sleeper sleeper;
     private final ProgressListenerFactory progressListenerFactory;
+    private final long maxResumeUploadRetries;
+    private final long maximumBackoff;
 
     HttpCopier( ExecutionContext ctx )
     {
-        this( ctx, Thread::sleep, ( text, length ) -> ProgressMonitorFactory.textual( ctx.out() ).singlePart( text, length ) );
+        this( ctx, Thread::sleep, ( text, length ) -> ProgressMonitorFactory.textual( ctx.out() ).singlePart( text, length ),
+                DEFAULT_MAXIMUM_RETRIES, DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS );
+    }
+
+    HttpCopier( ExecutionContext ctx, long maximumRetries, long maximumBackoff )
+    {
+        this( ctx, Thread::sleep, ( text, length ) -> ProgressMonitorFactory.textual( ctx.out() ).singlePart( text, length ), maximumRetries, maximumBackoff );
     }
 
     HttpCopier( ExecutionContext ctx, Sleeper sleeper, ProgressListenerFactory progressListenerFactory )
     {
+        this( ctx, sleeper, progressListenerFactory, DEFAULT_MAXIMUM_RETRIES, DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS );
+    }
+
+    HttpCopier( ExecutionContext ctx, Sleeper sleeper, ProgressListenerFactory progressListenerFactory, long maxResumeUploadRetries, long maximumBackoff )
+    {
         this.ctx = ctx;
         this.sleeper = sleeper;
         this.progressListenerFactory = progressListenerFactory;
+        this.maxResumeUploadRetries = maxResumeUploadRetries;
+        this.maximumBackoff = maximumBackoff;
     }
 
     private static void safeSkip( InputStream sourceStream, long position ) throws IOException
@@ -98,7 +117,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
      * "bytes=x-y" and since we always ask from 0 then we're interested in y, more specifically y+1 since x-y means that bytes in the range x-y have been
      * received so we want to start sending from y+1.
      */
-    private static long parseResumablePosition( String range ) throws CommandFailedException
+    private static long parseResumablePosition( String range )
     {
         int dashIndex = range.indexOf( '-' );
         if ( !range.startsWith( "bytes=" ) || dashIndex == -1 )
@@ -141,19 +160,19 @@ public class HttpCopier implements PushToCloudCommand.Copier
      */
     @Override
     public void copy( boolean verbose, String consoleURL, String boltUri, PushToCloudCommand.Source source, boolean deleteSourceAfterImport,
-            String bearerToken ) throws CommandFailedException
+                      String bearerToken )
     {
         try
         {
             String bearerTokenHeader = "Bearer " + bearerToken;
             long crc32Sum = source.crc32Sum();
-            URL signedURL = initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, source.size(), bearerTokenHeader );
-            URL uploadLocation = initiateResumableUpload( verbose, signedURL );
+            URL signedURL = retryOnUnavailable( () -> initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, source.size(), bearerTokenHeader ) );
+            URL uploadLocation = retryOnUnavailable( () -> initiateResumableUpload( verbose, signedURL ) );
             long sourceLength = ctx.fs().getFileSize( source.path() );
 
             // Enter the resume:able upload loop
             long position = 0;
-            int retries = 0;
+            int resumeUploadRetries = 0;
             ThreadLocalRandom random = ThreadLocalRandom.current();
             ProgressTrackingOutputStream.Progress
                     uploadProgress = new ProgressTrackingOutputStream.Progress( progressListenerFactory.create( "Upload", sourceLength ), position );
@@ -168,12 +187,12 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 }
 
                 // Truncated exponential backoff
-                if ( retries > 50 )
+                if ( resumeUploadRetries > maxResumeUploadRetries )
                 {
                     throw new CommandFailedException( "Upload failed after numerous attempts." );
                 }
-                long backoffFromRetryCount = SECONDS.toMillis( 1 << retries++ ) + random.nextInt( 1_000 );
-                sleeper.sleep( min( backoffFromRetryCount, MAXIMUM_RETRY_BACKOFF ) );
+                long backoffFromRetryCount = SECONDS.toMillis( 1 << resumeUploadRetries++ ) + random.nextInt( 1_000 );
+                sleeper.sleep( min( backoffFromRetryCount, maximumBackoff ) );
             }
             uploadProgress.done();
 
@@ -187,7 +206,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             }
             else
             {
-                ctx.out().printf("It is safe to delete the dump file now: %s%n", source.path().toAbsolutePath() );
+                ctx.out().printf( "It is safe to delete the dump file now: %s%n", source.path().toAbsolutePath() );
             }
         }
         catch ( InterruptedException | IOException e )
@@ -199,45 +218,98 @@ public class HttpCopier implements PushToCloudCommand.Copier
     @Override
     public void checkSize( boolean verbose, String consoleURL, long size, String bearerToken )
     {
-        try
+        retryOnUnavailable( () ->
+                            {
+                                doCheckSize( verbose, consoleURL, size, bearerToken );
+                                return null;
+                            } );
+    }
+
+    static class RetryableHttpException extends RuntimeException
+    {
+        RetryableHttpException( CommandFailedException e )
         {
-            URL url = safeUrl( consoleURL + "/import/size" );
-            String bearerTokenHeader = "Bearer " + bearerToken;
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            super( e );
+        }
+    }
+
+    private interface IOExceptionSupplier<T>
+    {
+        T get() throws IOException;
+    }
+
+    <T> T retryOnUnavailable( IOExceptionSupplier<T> runnableCommand )
+    {
+        int attempt = 0;
+        RetryableHttpException lastException = null;
+        while ( true )
+        {
             try
             {
-                connection.setDoOutput( true );
-                connection.setRequestMethod( "POST" );
-                connection.setRequestProperty( "Authorization", bearerTokenHeader );
-                connection.setRequestProperty( "Content-Type", "application/json" );
-                try ( OutputStream postData = connection.getOutputStream() )
-                {
-                    postData.write( String.format( "{\"FullSize\":%d}", size ).getBytes( UTF_8 ) );
-                }
-                int responseCode = connection.getResponseCode();
-                switch ( responseCode )
-                {
-                case HTTP_UNPROCESSABLE_ENTITY:
-                    throw validationFailureErrorResponse( verbose, connection, size );
-                case HTTP_OK:
-                    return;
-                default:
-                    throw unexpectedResponse( verbose, connection, "Size check" );
-                }
+                return runnableCommand.get();
             }
-            finally
+            catch ( RetryableHttpException e )
             {
-                connection.disconnect();
+                if ( attempt >= maxResumeUploadRetries ) // Will retry one more, so in the end we have 1 + (n+1) retries
+                {
+                    break;
+                }
+                // Truncated exponential backoff
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+                long backoffFromRetryCount = SECONDS.toMillis( 1 << attempt++ ) + random.nextInt( 1_000 );
+                try
+                {
+                    sleeper.sleep( min( backoffFromRetryCount, maximumBackoff ) );
+                }
+                catch ( InterruptedException ex )
+                {
+                    throw new CommandFailedException( e.getMessage(), e );
+                }
+                lastException = e;
+            }
+            catch ( IOException e )
+            {
+                throw new CommandFailedException( e.getMessage(), e );
             }
         }
-        catch ( IOException e )
+
+        throw (RuntimeException) lastException.getCause();
+    }
+
+    private void doCheckSize( boolean verbose, String consoleURL, long size, String bearerToken ) throws IOException
+    {
+        URL url = safeUrl( consoleURL + "/import/size" );
+        String bearerTokenHeader = "Bearer " + bearerToken;
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        try ( Closeable c = connection::disconnect )
         {
-            throw new CommandFailedException( e.getMessage(), e );
+            connection.setDoOutput( true );
+            connection.setRequestMethod( "POST" );
+            connection.setRequestProperty( "Authorization", bearerTokenHeader );
+            connection.setRequestProperty( "Content-Type", "application/json" );
+            try ( OutputStream postData = connection.getOutputStream() )
+            {
+                postData.write( String.format( "{\"FullSize\":%d}", size ).getBytes( UTF_8 ) );
+            }
+            int responseCode = connection.getResponseCode();
+            switch ( responseCode )
+            {
+            case HTTP_UNPROCESSABLE_ENTITY:
+                throw validationFailureErrorResponse( verbose, connection, size );
+            case HTTP_OK:
+                return;
+            case HTTP_GATEWAY_TIMEOUT:
+            case HTTP_BAD_GATEWAY:
+            case HTTP_UNAVAILABLE:
+                throw new RetryableHttpException( unexpectedResponse( verbose, connection, "Size check" ) );
+            default:
+                throw unexpectedResponse( verbose, connection, "Size check" );
+            }
         }
     }
 
     private void doStatusPolling( boolean verbose, String consoleURL, String bearerToken, long fileSize )
-            throws IOException, InterruptedException, CommandFailedException
+            throws InterruptedException
     {
         ctx.out().println( "We have received your export and it is currently being loaded into your Aura instance." );
         ctx.out().println( "You can wait here, or abort this command and head over to the console to be notified of when your database is running." );
@@ -296,7 +368,6 @@ public class HttpCopier implements PushToCloudCommand.Copier
     }
 
     int importStatusProgressEstimate( String databaseStatus, long elapsed, long importTimeEstimateMillis )
-            throws CommandFailedException
     {
         switch ( databaseStatus )
         {
@@ -315,61 +386,59 @@ public class HttpCopier implements PushToCloudCommand.Copier
     }
 
     @Override
-    public String authenticate( boolean verbose, String consoleUrl, String username, char[] password, boolean consentConfirmed ) throws CommandFailedException
+    public String authenticate( boolean verbose, String consoleUrl, String username, char[] password, boolean consentConfirmed )
     {
-        try
+        return retryOnUnavailable( () -> doAuthenticate( verbose, consoleUrl, username, password, consentConfirmed ) );
+    }
+
+    private String doAuthenticate( boolean verbose, String consoleUrl, String username, char[] password, boolean consentConfirmed )
+            throws IOException
+    {
+        URL url = safeUrl( consoleUrl + "/import/auth" );
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        try ( Closeable c = connection::disconnect )
         {
-            URL url = safeUrl( consoleUrl + "/import/auth" );
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            try
+            connection.setRequestMethod( "POST" );
+            connection.setRequestProperty( "Authorization", "Basic " + base64Encode( username, password ) );
+            connection.setRequestProperty( "Accept", "application/json" );
+            connection.setRequestProperty( "Confirmed", String.valueOf( consentConfirmed ) );
+            int responseCode = connection.getResponseCode();
+            switch ( responseCode )
             {
-                connection.setRequestMethod( "POST" );
-                connection.setRequestProperty( "Authorization", "Basic " + base64Encode( username, password ) );
-                connection.setRequestProperty( "Accept", "application/json" );
-                connection.setRequestProperty( "Confirmed", String.valueOf( consentConfirmed ) );
-                int responseCode = connection.getResponseCode();
-                switch ( responseCode )
+            case HTTP_NOT_FOUND:
+                throw errorResponse( verbose, connection, "We encountered a problem while contacting your Neo4j Aura instance, " +
+                                                          "please check your Bolt URI" );
+            case HTTP_MOVED_PERM:
+                throw updatePluginErrorResponse( connection );
+            case HTTP_UNAUTHORIZED:
+                throw errorResponse( verbose, connection, "Invalid username/password credentials" );
+            case HTTP_FORBIDDEN:
+                throw errorResponse( verbose, connection, "The credentials provided do not give administrative access to the target database" );
+            case HTTP_CONFLICT:
+                throw errorResponse( verbose, connection, "No consent to overwrite database. Aborting" );
+            case HTTP_GATEWAY_TIMEOUT:
+            case HTTP_BAD_GATEWAY:
+            case HTTP_UNAVAILABLE:
+                throw new RetryableHttpException( unexpectedResponse( verbose, connection, "Authorization" ) );
+            case HTTP_OK:
+                try ( InputStream responseData = connection.getInputStream() )
                 {
-                case HTTP_NOT_FOUND:
-                    throw errorResponse( verbose, connection, "We encountered a problem while contacting your Neo4j Aura instance, " +
-                                                              "please check your Bolt URI" );
-                case HTTP_MOVED_PERM:
-                    throw updatePluginErrorResponse( connection );
-                case HTTP_UNAUTHORIZED:
-                    throw errorResponse( verbose, connection, "Invalid username/password credentials" );
-                case HTTP_FORBIDDEN:
-                    throw errorResponse( verbose, connection, "The credentials provided do not give administrative access to the target database" );
-                case HTTP_CONFLICT:
-                    throw errorResponse( verbose, connection, "No consent to overwrite database. Aborting" );
-                case HTTP_OK:
-                    try ( InputStream responseData = connection.getInputStream() )
-                    {
-                        String json = new String( toByteArray( responseData ), UTF_8 );
-                        return parseJsonUsingJacksonParser( json, TokenBody.class ).Token;
-                    }
-                default:
-                    throw unexpectedResponse( verbose, connection, "Authorization" );
+                    String json = new String( toByteArray( responseData ), UTF_8 );
+                    return parseJsonUsingJacksonParser( json, TokenBody.class ).Token;
                 }
+            default:
+                throw unexpectedResponse( verbose, connection, "Authorization" );
             }
-            finally
-            {
-                connection.disconnect();
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new CommandFailedException( e.getMessage(), e );
         }
     }
 
     /**
      * Communication with Neo4j's cloud console, resulting in some signed URI to do the actual upload to.
      */
-    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, long size, String bearerToken )
-            throws IOException, CommandFailedException
+    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, long size, String bearerToken ) throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
-        try
+        try ( Closeable c = connection::disconnect )
         {
             // POST the request
             connection.setRequestMethod( "POST" );
@@ -377,6 +446,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             connection.setRequestProperty( "Authorization", bearerToken );
             connection.setRequestProperty( "Accept", "application/json" );
             connection.setDoOutput( true );
+
             try ( OutputStream postData = connection.getOutputStream() )
             {
                 postData.write( String.format( "{\"Crc32\":%d, \"FullSize\":%d}", crc32Sum, size ).getBytes( UTF_8 ) );
@@ -384,6 +454,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
 
             // Read the response
             int responseCode = connection.getResponseCode();
+
             switch ( responseCode )
             {
             case HTTP_NOT_FOUND:
@@ -394,6 +465,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw errorResponse( verbose, connection, "The given authorization token is invalid or has expired" );
             case HTTP_UNPROCESSABLE_ENTITY:
                 throw validationFailureErrorResponse( verbose, connection, size );
+            case HTTP_GATEWAY_TIMEOUT:
+            case HTTP_BAD_GATEWAY:
+            case HTTP_UNAVAILABLE:
+                throw new RetryableHttpException( unexpectedResponse( verbose, connection, "Initiating upload target" ) );
             case HTTP_ACCEPTED:
                 // the import request was accepted, and the server has not seen this dump file, meaning the import request is a new operation.
                 return safeUrl( extractSignedURIFromResponse( verbose, connection ) );
@@ -401,21 +476,18 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw unexpectedResponse( verbose, connection, "Initiating upload target" );
             }
         }
-        finally
-        {
-            connection.disconnect();
-        }
     }
 
     /**
      * Makes initial contact with the signed URL we got back when talking to the Neo4j cloud console. This will create yet another URL which will be used to
      * upload the source to, potentially resumed if it gets interrupted in the middle.
      */
-    private URL initiateResumableUpload( boolean verbose, URL signedURL ) throws IOException, CommandFailedException
+    private URL initiateResumableUpload( boolean verbose, URL signedURL ) throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) signedURL.openConnection();
-        try
+        try ( Closeable c = connection::disconnect )
         {
+
             connection.setRequestMethod( "POST" );
             connection.setRequestProperty( "Content-Length", "0" );
             connection.setFixedLengthStreamingMode( 0 );
@@ -425,15 +497,17 @@ public class HttpCopier implements PushToCloudCommand.Copier
             connection.setRequestProperty( "Content-Type", "" );
             connection.setDoOutput( true );
             int responseCode = connection.getResponseCode();
-            if ( responseCode != HTTP_CREATED )
+            switch ( responseCode )
             {
+            case HTTP_CREATED:
+                return safeUrl( connection.getHeaderField( "Location" ) );
+            case HTTP_GATEWAY_TIMEOUT:
+            case HTTP_BAD_GATEWAY:
+            case HTTP_UNAVAILABLE:
+                throw new RetryableHttpException( unexpectedResponse( verbose, connection, "Initiating database upload" ) );
+            default:
                 throw unexpectedResponse( verbose, connection, "Initiating database upload" );
             }
-            return safeUrl( connection.getHeaderField( "Location" ) );
-        }
-        finally
-        {
-            connection.disconnect();
         }
     }
 
@@ -442,10 +516,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
      */
     private boolean resumeUpload( boolean verbose, Path source, String boltUri, long sourceLength, long position, URL uploadLocation,
                                   ProgressTrackingOutputStream.Progress uploadProgress )
-            throws IOException, CommandFailedException
+            throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) uploadLocation.openConnection();
-        try
+        try ( Closeable c = connection::disconnect )
         {
             connection.setRequestMethod( "PUT" );
             long contentLength = sourceLength - position;
@@ -471,23 +545,21 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 return true; // the file is now uploaded, all good
             case HTTP_INTERNAL_ERROR:
             case HTTP_UNAVAILABLE:
+            case HTTP_BAD_GATEWAY:
+            case HTTP_GATEWAY_TIMEOUT:
                 debugErrorResponse( verbose, connection );
                 return false;
             default:
                 throw resumePossibleErrorResponse( connection, source, boltUri );
             }
         }
-        finally
-        {
-            connection.disconnect();
-        }
     }
 
     private void triggerImportProtocol( boolean verbose, URL importURL, String boltUri, Path source, long crc32Sum, String bearerToken )
-            throws IOException, CommandFailedException
+            throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
-        try
+        try ( Closeable c = connection::disconnect )
         {
             connection.setRequestMethod( "POST" );
             connection.setRequestProperty( "Content-Type", "application/json" );
@@ -517,17 +589,17 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw resumePossibleErrorResponse( connection, source, boltUri );
             }
         }
-        finally
-        {
-            connection.disconnect();
-        }
     }
 
     private StatusBody getDatabaseStatus( boolean verbose, URL statusURL, String bearerToken )
-            throws IOException, CommandFailedException
+    {
+        return retryOnUnavailable( () -> doGetDatabaseStatus( verbose, statusURL, bearerToken ) );
+    }
+
+    private StatusBody doGetDatabaseStatus( boolean verbose, URL statusURL, String bearerToken ) throws  IOException
     {
         HttpURLConnection connection = (HttpURLConnection) statusURL.openConnection();
-        try
+        try ( Closeable c = connection::disconnect )
         {
             connection.setRequestMethod( "GET" );
             connection.setRequestProperty( "Authorization", bearerToken );
@@ -547,13 +619,13 @@ public class HttpCopier implements PushToCloudCommand.Copier
                     //debugResponse( verbose, json, connection, false );
                     return parseJsonUsingJacksonParser( json, StatusBody.class );
                 }
+            case HTTP_GATEWAY_TIMEOUT:
+            case HTTP_BAD_GATEWAY:
+            case HTTP_UNAVAILABLE:
+                throw new RetryableHttpException( unexpectedResponse( verbose, connection, "Trigger import/restore after successful upload" ) );
             default:
                 throw unexpectedResponse( verbose, connection, "Trigger import/restore after successful upload" );
             }
-        }
-        finally
-        {
-            connection.disconnect();
         }
     }
 
@@ -561,12 +633,12 @@ public class HttpCopier implements PushToCloudCommand.Copier
      * Asks about how far the upload has gone so far, typically after being interrupted one way or another. The result of this method can be fed into {@link
      * #resumeUpload(boolean, Path, String, long, long, URL, ProgressTrackingOutputStream.Progress)} to resume an upload.
      */
-    private long getResumablePosition( boolean verbose, long sourceLength, URL uploadLocation ) throws IOException, CommandFailedException
+    private long getResumablePosition( boolean verbose, long sourceLength, URL uploadLocation ) throws IOException
     {
-        debug( verbose, "Asking about resumable position for the upload" );
         HttpURLConnection connection = (HttpURLConnection) uploadLocation.openConnection();
-        try
+        try ( Closeable c = connection::disconnect )
         {
+            debug( verbose, "Asking about resumable position for the upload" );
             connection.setRequestMethod( "PUT" );
             connection.setRequestProperty( "Content-Length", "0" );
             connection.setFixedLengthStreamingMode( 0 );
@@ -579,6 +651,10 @@ public class HttpCopier implements PushToCloudCommand.Copier
             case HTTP_CREATED:
                 debug( verbose, "Upload seems to be completed got " + responseCode );
                 return POSITION_UPLOAD_COMPLETED;
+            case HTTP_GATEWAY_TIMEOUT:
+            case HTTP_BAD_GATEWAY:
+            case HTTP_UNAVAILABLE:
+                throw new RetryableHttpException( unexpectedResponse( verbose, connection, "Acquire resumable upload position" ) );
             case HTTP_RESUME_INCOMPLETE:
                 String range = connection.getHeaderField( "Range" );
                 debug( verbose, "Upload not completed got " + range );
@@ -590,13 +666,9 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw unexpectedResponse( verbose, connection, "Acquire resumable upload position" );
             }
         }
-        finally
-        {
-            connection.disconnect();
-        }
     }
 
-    private String extractSignedURIFromResponse( boolean verbose, HttpURLConnection connection ) throws IOException, CommandFailedException
+    private String extractSignedURIFromResponse( boolean verbose, HttpURLConnection connection ) throws IOException
     {
         try ( InputStream responseData = connection.getInputStream() )
         {
@@ -684,7 +756,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             if ( ERROR_REASON_EXCEEDS_MAX_SIZE.equals( errorBody.getReason() ) )
             {
                 String trimmedMessage = StringUtils.removeEnd( message, "." );
-                message = format( "%s. Minimum storage space required: %s", trimmedMessage, PushToCloudCommand.sizeText( size) );
+                message = format( "%s. Minimum storage space required: %s", trimmedMessage, PushToCloudCommand.sizeText( size ) );
             }
 
             return formatCommandFailedExceptionError( message, errorBody.getUrl() );
