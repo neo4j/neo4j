@@ -187,8 +187,6 @@ public class FullCheckIntegrationTest
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";
     private static final Object VALUE2 = "value2";
-    private static final Object VALUE3 = "value3";
-    private static final Object VALUE4 = "value4";
     private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
     @Inject
@@ -745,9 +743,9 @@ public class FullCheckIntegrationTest
         switch ( indexRule.schema().getPropertyIds().length )
         {
         case 1:
-            return Iterators.array( Values.of( VALUE3 ) );
+            return Iterators.array( Values.of( VALUE2 ) );
         case 2:
-            return Iterators.array( Values.of( VALUE3 ), Values.of( VALUE4 ) );
+            return Iterators.array( Values.of( VALUE2 ), Values.of( VALUE1 ) );
         default:
             throw new UnsupportedOperationException();
         }

@@ -395,9 +395,10 @@ public class IndexChecker implements Checker
         int checksum = 0;
         if ( values != null )
         {
-            for ( Value value : values )
+            // Include ordinal in checksum to be able to find entities with switched order of the values.
+            for ( int i = 0; i < values.length; i++ )
             {
-                checksum ^= value.hashCode();
+                checksum ^= values[i].hashCode() * (i + 1 );
             }
         }
         int twoByteChecksum = (checksum >>> Short.SIZE) ^ (checksum & 0xFF);
