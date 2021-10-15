@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.index.schema.BuiltInDelegatingIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -266,7 +267,7 @@ class FusionIndexRecoveryIT
     private void rotateLogsAndCheckPoint() throws IOException
     {
         DependencyResolver resolver = db.getDependencyResolver();
-        resolver.resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
+        resolver.resolveDependency( LogFiles.class ).getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
         resolver.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
     }
 

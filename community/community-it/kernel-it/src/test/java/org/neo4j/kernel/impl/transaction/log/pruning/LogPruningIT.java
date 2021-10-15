@@ -51,7 +51,7 @@ class LogPruningIT
     @Inject
     private GraphDatabaseAPI db;
     @Inject
-    private LogRotation logRotation;
+    private LogFiles logFiles;
     @Inject
     private CheckPointer checkPointer;
     @Inject
@@ -95,13 +95,13 @@ class LogPruningIT
             tx.createNode();
             tx.commit();
         }
-        logRotation.rotateLogFile( LogAppendEvent.NULL );
+        logFiles.getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
         try ( Transaction tx = db.beginTx() )
         {
             tx.createNode();
             tx.commit();
         }
-        logRotation.rotateLogFile( LogAppendEvent.NULL );
+        logFiles.getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
         try ( Transaction tx = db.beginTx() )
         {
             tx.createNode();

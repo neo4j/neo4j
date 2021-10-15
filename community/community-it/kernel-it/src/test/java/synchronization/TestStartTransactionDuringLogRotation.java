@@ -35,6 +35,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
@@ -120,7 +121,7 @@ public class TestStartTransactionDuringLogRotation
                 tx.commit();
             }
 
-            db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
+            db.getDependencyResolver().resolveDependency( LogFiles.class ).getLogFile().getLogRotation().rotateLogFile( LogAppendEvent.NULL );
             return null;
         };
     }
