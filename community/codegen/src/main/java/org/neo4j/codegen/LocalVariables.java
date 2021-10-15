@@ -62,7 +62,7 @@ public class LocalVariables
     {
         LocalVariables variables = new LocalVariables();
         variables.counter.set( original.counter.get() );
-        original.localVariables.forEach( variables.localVariables::put );
+        variables.localVariables.putAll( original.localVariables );
         return variables;
     }
 }
