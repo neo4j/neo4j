@@ -81,6 +81,12 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction
         return handle != null ? handle.pid() : null;
     }
 
+    @Override
+    boolean isRunning( long pid )
+    {
+        return getProcessIfAlive( pid ) != null;
+    }
+
     private ProcessHandle getProcessIfAlive( Long pid )
     {
         if ( pid != null )

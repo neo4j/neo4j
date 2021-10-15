@@ -174,7 +174,7 @@ class Bootloader
         int printCount = 0;
         do
         {
-            if ( os.getPidIfRunning() == null )
+            if ( !os.isRunning( pid ) )
             {
                 ctx.out.println( " stopped." );
                 return EXIT_CODE_OK;

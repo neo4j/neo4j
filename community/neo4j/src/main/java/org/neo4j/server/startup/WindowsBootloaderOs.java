@@ -186,6 +186,12 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
     }
 
     @Override
+    boolean isRunning( long pid )
+    {
+        return getPidIfRunning() != null;
+    }
+
+    @Override
     boolean serviceInstalled()
     {
         return StringUtils.isNotEmpty( getStatus() );

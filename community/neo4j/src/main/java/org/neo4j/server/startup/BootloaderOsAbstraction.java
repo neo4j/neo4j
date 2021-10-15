@@ -61,6 +61,8 @@ abstract class BootloaderOsAbstraction
 
     abstract Long getPidIfRunning();
 
+    abstract boolean isRunning( long pid );
+
     abstract long start() throws BootFailureException;
 
     abstract void stop( long pid ) throws BootFailureException;

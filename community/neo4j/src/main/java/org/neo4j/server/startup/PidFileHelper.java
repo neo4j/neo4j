@@ -21,6 +21,7 @@ package org.neo4j.server.startup;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -36,6 +37,9 @@ public class PidFileHelper
             try
             {
                 return Long.parseLong( Files.readString( pidFile ).trim() );
+            }
+            catch ( NoSuchFileException ignored )
+            { //In case file was concurrently deleted between the existence check and the read
             }
             catch ( NumberFormatException e )
             {
