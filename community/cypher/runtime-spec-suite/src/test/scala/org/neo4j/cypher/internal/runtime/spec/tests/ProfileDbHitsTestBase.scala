@@ -1549,6 +1549,37 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
   }
 
+  test("should profile db hits on set node properties") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .setNodeProperties("n", ("prop",  "42"), ("foo", "1"))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val setPropertiesProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
+
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val setPropertyDbHits = sizeHint
+        val tokenDbHits = sizeHint * 2
+        setPropertyDbHits + tokenDbHits
+      }
+      else {
+        sizeHint + 6
+      }
+
+    setPropertiesProfile.dbHits() shouldBe expectedDbHits
+  }
+
   test("should profile db hits on set relationship properties from map") {
     // given
     val relationships = given {
@@ -1581,6 +1612,40 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     }
 
     setPropertiesFromMapProfile.dbHits() shouldBe expectedDbHits
+  }
+
+  test("should profile db hits on set relationship properties") {
+    // given
+    val relationships = given {
+      val (_, rels) = circleGraph(sizeHint)
+      rels
+    }
+    val relationshipCount = relationships.size
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .setRelationshipProperties("r",("prop", "42"), ("foo", "1"))
+      .expandAll("(n)-[r]->()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val setPropertiesProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
+
+    val expectedDbHits =
+      if (useWritesWithProfiling & canFuseOverPipelines) {
+        val setPropertyDbHits = relationshipCount
+        val tokenDbHits = relationshipCount * 2
+        setPropertyDbHits + tokenDbHits
+      }
+      else {
+        sizeHint + 6
+      }
+
+    setPropertiesProfile.dbHits() shouldBe expectedDbHits
   }
 
   protected def propertiesString(properties: Map[String, Any]): String = {

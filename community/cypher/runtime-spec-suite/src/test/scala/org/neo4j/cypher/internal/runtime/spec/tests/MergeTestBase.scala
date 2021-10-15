@@ -25,8 +25,11 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -1306,6 +1309,65 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
     val drunkNode = Iterators.single(tx.findNodes(label("Drunk"), "prop", "hello"))
     val childNode = Iterators.single(tx.findNodes(label("Child"), "prop", "hello"))
     runtimeResult should beColumns("d", "c").withSingleRow(drunkNode, childNode).withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
+  }
+
+  test("merge with setNodeProperties") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n")), onCreate = Seq(setNodeProperties("n", ("p1", "42"), ("p2", "43"))))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    node.getProperty("p1") should equal(42)
+    node.getProperty("p2") should equal(43)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, propertiesSet = 2)
+  }
+
+  test("merge with setProperties") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n")), onCreate = Seq(setProperties("n", ("p1", "42"), ("p2", "43"))))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    node.getProperty("p1") should equal(42)
+    node.getProperty("p2") should equal(43)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, propertiesSet = 2)
+  }
+
+  test("merge with setRelationshipProperties") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")),
+        onCreate = Seq(setRelationshipProperties("r", ("p1", "42"), ("p2", "43"))))
+      .expand("(n)-[r:R]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    rel.getProperty("p1") should equal(42)
+    rel.getProperty("p2") should equal(43)
+    runtimeResult should beColumns("r").withSingleRow(rel).withStatistics(nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 2)
   }
 }
 

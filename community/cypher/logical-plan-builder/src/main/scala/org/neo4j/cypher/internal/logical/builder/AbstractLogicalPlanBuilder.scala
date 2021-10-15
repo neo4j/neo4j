@@ -61,10 +61,13 @@ import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
@@ -1382,17 +1385,26 @@ object AbstractLogicalPlanBuilder {
   def setNodeProperty(node: String, key: String, value: String): SetMutatingPattern =
     SetNodePropertyPattern(node, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
 
+  def setNodeProperties(node: String, items: (String, String)*): SetMutatingPattern =
+    SetNodePropertiesPattern(node, items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2))))
+
   def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
     SetNodePropertiesFromMapPattern(node, Parser.parseExpression(map), removeOtherProps)
 
   def setRelationshipProperty(relationship: String, key: String, value: String): SetMutatingPattern =
     SetRelationshipPropertyPattern(relationship, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
 
+  def setRelationshipProperties(rel: String, items: (String, String)*): SetMutatingPattern =
+    SetRelationshipPropertiesPattern(rel, items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2))))
+
   def setRelationshipPropertiesFromMap(node: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
     SetRelationshipPropertiesFromMapPattern(node, Parser.parseExpression(map), removeOtherProps)
 
   def setProperty(entity: String, key: String, value: String): SetMutatingPattern =
     SetPropertyPattern(Parser.parseExpression(entity), PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
+
+  def setProperties(entity: String, items: (String, String)*): SetMutatingPattern =
+    SetPropertiesPattern(Parser.parseExpression(entity), items.map(i => (PropertyKeyName(i._1)(InputPosition.NONE), Parser.parseExpression(i._2))))
 
   def setPropertyFromMap(entity: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
     SetPropertiesFromMapPattern(Parser.parseExpression(entity), Parser.parseExpression(map), removeOtherProps)
