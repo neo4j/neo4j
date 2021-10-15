@@ -89,7 +89,7 @@
       -Dorg.neo4j.bolt.transport.NettyServer.shutdownQuietPeriod=0
       -Dorg.neo4j.bolt.transport.NettyServer.shutdownTimeout=3
       -Djunit.jupiter.extensions.autodetection.enabled=true
-      -Djunit.jupiter.execution.parallel.enabled=true
+      -Djunit.jupiter.execution.parallel.enabled=${parallel.tests}
       -Djunit.jupiter.execution.timeout.default=${default.jupiter.test.timeout}
       -Djunit.jupiter.execution.parallel.mode.classes.default=${default.jupiter.test.mode}
       -XX:+UnlockExperimentalVMOptions
@@ -101,7 +101,8 @@
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
-    <forkCounts>0</forkCounts>
+    <forkCounts>1</forkCounts>
+    <parallel.tests>false</parallel.tests>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
 
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
@@ -888,6 +889,7 @@
       </activation>
       <properties>
         <forkCounts>1C</forkCounts>
+        <parallel.tests>true</parallel.tests>
       </properties>
     </profile>
 
