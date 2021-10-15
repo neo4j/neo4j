@@ -1000,9 +1000,18 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .enablePlanningTextIndexes()
       .build()
 
+    val queryStr = (op: String, arg: String) => s"MATCH (a:A) WHERE a.prop $op $arg RETURN a, a.prop"
+
+    // sanity check
+    val indexPlan = cfg.plan(queryStr("=", "'string'")).stripProduceResults
+    indexPlan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .nodeIndexOperator("a:A(prop = 'string')", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+      .build()
+
     for (arg <- List("3", "a.prop2", "[\"a\", \"b\", \"c\"]", "$param")) {
       for (op <- List("<", "<=", ">", ">=", "=")) {
-        val query = s"MATCH (a:A) WHERE a.prop $op $arg RETURN a, a.prop"
+        val query = queryStr(op, arg)
         val plan = cfg.plan(query).stripProduceResults
         withClue(query) {
           plan shouldEqual cfg.subPlanBuilder()
@@ -1050,9 +1059,18 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .enablePlanningTextIndexes()
       .build()
 
+    val queryStr = (op: String, arg: String) => s"MATCH (a)-[r:R]->(b) WHERE r.prop $op $arg RETURN r, r.prop"
+
+    // sanity check
+    val indexPlan = cfg.plan(queryStr("=", "'string'")).stripProduceResults
+    indexPlan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheR[r.prop] AS `r.prop`")
+      .relationshipIndexOperator("(a)-[r:R(prop = 'string')]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+      .build()
+
     for (arg <- List("3", "a.prop2", "[\"a\", \"b\", \"c\"]", "$param")) {
       for (op <- List("<", "<=", ">", ">=", "=")) {
-        val query = s"MATCH (a)-[r:R]->(b) WHERE r.prop $op $arg RETURN r, r.prop"
+        val query = queryStr(op, arg)
         val plan = cfg.plan(query).stripProduceResults
         withClue(query) {
           plan shouldEqual cfg.subPlanBuilder()
