@@ -435,9 +435,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (n) WHERE n.prop >= point({x:0, y:0}) RETURN n",
       "RETURN point({x:0, y:0}) < point({x:0, y:0}) <= point({x:0, y:0})"
     )
-    val newSyntax = Seq(" MATCH (n) WHERE point.distance(n.prop, point({x:0, y:0})) < 10 RETURN n")
-    val detail = NotificationDetail.Factory.deprecatedName("distance", "point.distance")
-
     assertNotificationInSupportedVersions(deprecated, DEPRECATED_POINTS_COMPARE)
   }
 
