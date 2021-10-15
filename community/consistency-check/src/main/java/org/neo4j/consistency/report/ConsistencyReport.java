@@ -583,6 +583,18 @@ public interface ConsistencyReport
         @Documented( "This index entry refers to a relationship that does not have the expected relationship type." )
         void relationshipDoesNotHaveExpectedRelationshipType( RelationshipRecord referredRelationshipRecord, long expectedRelationshipTypeId );
 
+        @Documented( "This index entry refers to a node that shouldn't be in the index." )
+        void nodeIndexedWhenShouldNot( NodeRecord referredNodeRecord );
+
+        @Documented( "This index entry refers to a relationship that shouldn't be in the index." )
+        void relationshipIndexedWhenShouldNot( RelationshipRecord referredRelationshipRecord );
+
+        @Documented( "This index entry does not have the same values as the referred node." )
+        void nodeIndexedWithWrongValues( NodeRecord referredNodeRecord, Object[] propertyValues );
+
+        @Documented( "This index entry does not have the same values as the referred relationship." )
+        void relationshipIndexedWithWrongValues( RelationshipRecord referredRelationshipRecord, Object[] propertyValues );
+
         @Override
         @Documented( "This node record has a label that is not found in the index for this node" )
         void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );

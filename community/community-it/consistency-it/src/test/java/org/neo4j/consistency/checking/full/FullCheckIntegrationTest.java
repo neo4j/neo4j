@@ -62,6 +62,7 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -186,6 +187,8 @@ public class FullCheckIntegrationTest
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";
     private static final Object VALUE2 = "value2";
+    private static final Object VALUE3 = "value3";
+    private static final Object VALUE4 = "value4";
     private final TokenNameLookup tokenNameLookup = SIMPLE_NAME_LOOKUP;
 
     @Inject
@@ -633,6 +636,121 @@ public class FullCheckIntegrationTest
         on( stats ).verify( RecordType.RELATIONSHIP, 6 )
                 // 1 relationship missing from 1 index + 1 relationship missing from 2 indexes (for both RANGE and BTREE)
                 .andThatsAllFolks();
+    }
+
+    @ParameterizedTest
+    @EnumSource( IndexSize.class )
+    void shouldReportNodesThatAreIndexedWhenTheyShouldNotBe( IndexSize indexSize ) throws Exception
+    {
+        indexSize.createAdditionalData( fixture );
+
+        // given
+        long newNode = createOneNode();
+
+        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
+        while ( indexDescriptorIterator.hasNext() )
+        {
+            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+            if ( indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique() )
+            {
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                {
+                    updater.process( IndexEntryUpdate.add( newNode, indexDescriptor, values( indexDescriptor ) ) );
+                }
+            }
+        }
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.INDEX, 4 ) // 2 BTREE and 2 RANGE indexes
+                .andThatsAllFolks();
+    }
+
+    @ParameterizedTest
+    @EnumSource( IndexSize.class )
+    void shouldReportNodesThatAreIndexedWithTheWrongValues( IndexSize indexSize ) throws Exception
+    {
+        indexSize.createAdditionalData( fixture );
+
+        // given
+        final AtomicLong id = new AtomicLong();
+        fixture.apply( tx ->
+        {
+            Node node = set( tx.createNode( label( "label3" ) ), property( PROP1, VALUE1 ), property(  PROP2, VALUE2 ) );
+            id.set( node.getId() );
+        } );
+
+        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
+        while ( indexDescriptorIterator.hasNext() )
+        {
+            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+            if ( indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique() )
+            {
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                {
+                    updater.process( IndexEntryUpdate.change( id.get(), indexDescriptor, values( indexDescriptor ), otherValues( indexDescriptor ) ) );
+                }
+            }
+        }
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        RecordType expectedType = indexSize == IndexSize.SMALL_INDEX ? RecordType.NODE : RecordType.INDEX;
+        on( stats ).verify( expectedType, 4 ) // 2 BTREE and 2 RANGE indexes
+                .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportRelationshipsThatAreIndexedWithTheWrongValues() throws Exception
+    {
+        // given
+        final AtomicLong id = new AtomicLong();
+        fixture.apply( tx ->
+        {
+            Node node = tx.createNode();
+            Relationship relationship = set( node.createRelationshipTo( node, withName( "C" ) ), property( PROP1, VALUE1 ), property(  PROP2, VALUE2 ) );
+            id.set( relationship.getId() );
+        } );
+
+        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
+        while ( indexDescriptorIterator.hasNext() )
+        {
+            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+            if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP )
+            {
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                {
+                    updater.process( IndexEntryUpdate.change( id.get(), indexDescriptor, values( indexDescriptor ), otherValues( indexDescriptor ) ) );
+                }
+            }
+        }
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP, 4 ) // 2 BTREE and 2 RANGE indexes
+                .andThatsAllFolks();
+    }
+
+    Value[] otherValues( IndexDescriptor indexRule )
+    {
+        switch ( indexRule.schema().getPropertyIds().length )
+        {
+        case 1:
+            return Iterators.array( Values.of( VALUE3 ) );
+        case 2:
+            return Iterators.array( Values.of( VALUE3 ), Values.of( VALUE4 ) );
+        default:
+            throw new UnsupportedOperationException();
+        }
     }
 
     @ParameterizedTest

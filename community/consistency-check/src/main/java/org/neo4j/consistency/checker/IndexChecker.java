@@ -309,7 +309,8 @@ public class IndexChecker implements Checker
                                 }
                                 else if ( !nodeShouldBeInIndex && nodeIsInIndex )
                                 {
-                                    getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor, new Object[0] );
+                                    reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeIndexedWhenShouldNot(
+                                            context.recordLoader.node( entityId, storeCursors ) );
                                 }
                             }
                             else
@@ -328,8 +329,9 @@ public class IndexChecker implements Checker
                                         int actualChecksum = checksum( values );
                                         if ( cachedChecksum != actualChecksum )
                                         {
-                                            getReporter( context.recordLoader.node( entityId, storeCursors ) ).notIndexed( descriptor,
-                                                    Values.asObjects( values ) );
+                                            reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
+                                                    .nodeIndexedWithWrongValues( context.recordLoader.node( entityId, storeCursors ),
+                                                            Values.asObjects( values ) );
                                         }
                                     }
                                 }
@@ -337,7 +339,7 @@ public class IndexChecker implements Checker
                                 {
                                     if ( nodeIsInIndex )
                                     {
-                                        reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
+                                        reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeIndexedWhenShouldNot(
                                                 context.recordLoader.node( entityId, storeCursors ) );
                                     }
                                 }
