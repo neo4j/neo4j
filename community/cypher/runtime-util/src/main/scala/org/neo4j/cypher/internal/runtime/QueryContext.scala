@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.net.URL
-import java.util.Optional
-
+import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -78,6 +77,8 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
+import java.net.URL
+import java.util.Optional
 import scala.collection.Iterator
 
 /*
@@ -423,6 +424,10 @@ trait WriteQueryContext {
   def getDatabaseManager: DatabaseManager[DatabaseContext]
 
   def getConfig: Config
+
+  def nodeApplyChanges(node: Long, addedLabels: IntSet, removedLabels: IntSet, properties: IntObjectMap[Value]): Unit
+
+  def relationshipApplyChanges(relationship: Long, properties: IntObjectMap[Value]): Unit
 }
 
 trait ReadOperations[T, CURSOR] {
@@ -474,6 +479,8 @@ trait WriteOperations[T, CURSOR] {
   def delete(id: Long): Boolean
 
   def setProperty(obj: Long, propertyKeyId: Int, value: Value): Unit
+
+  def setProperties(obj: Long, properties: IntObjectMap[Value]): Unit
 
   def removeProperty(obj: Long, propertyKeyId: Int): Boolean
 }

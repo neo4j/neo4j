@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.api.set.primitive.IntSet
+import org.eclipse.collections.impl.factory.primitive.IntSets
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
@@ -357,6 +360,17 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
 
   override def getConfig: Config =
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[Config])
+  override def nodeApplyChanges(node: Long,
+                                addedLabels: IntSet,
+                                removedLabels: IntSet,
+                                properties: IntObjectMap[Value]): Unit = {
+    writes().nodeApplyChanges(node, addedLabels, removedLabels, properties)
+  }
+
+  override def relationshipApplyChanges(relationship: Long,
+                                        properties: IntObjectMap[Value]): Unit = {
+    writes().relationshipApplyChanges(relationship, properties)
+  }
 
   class NodeWriteOperations extends NodeReadOperations with org.neo4j.cypher.internal.runtime.NodeOperations {
 
@@ -379,6 +393,15 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
         case _: api.exceptions.EntityNotFoundException => //ignore
       }
     }
+
+    override def setProperties(obj: Long,
+                               properties: IntObjectMap[Value]): Unit = {
+      try {
+        writes().nodeApplyChanges(obj, IntSets.immutable.empty(), IntSets.immutable.empty(), properties)
+      } catch {
+        case _: api.exceptions.EntityNotFoundException => //ignore
+      }
+    }
   }
 
   class RelationshipWriteOperations extends RelationshipReadOperations with org.neo4j.cypher.internal.runtime.RelationshipOperations {
@@ -397,6 +420,15 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
     override def setProperty(id: Long, propertyKeyId: Int, value: Value): Unit = {
       try {
         writes().relationshipSetProperty(id, propertyKeyId, value)
+      } catch {
+        case _: api.exceptions.EntityNotFoundException => //ignore
+      }
+    }
+
+    override def setProperties(obj: Long,
+                               properties: IntObjectMap[Value]): Unit = {
+      try {
+        writes().relationshipApplyChanges(obj, properties)
       } catch {
         case _: api.exceptions.EntityNotFoundException => //ignore
       }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.planning
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -492,6 +494,16 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends
 
   override def getConfig: Config = translateException(tokenNameLookup, inner.getConfig)
 
+  override def nodeApplyChanges(id: Long,
+                                addedLabels: IntSet,
+                                removedLabels: IntSet,
+                                properties: IntObjectMap[Value]): Unit =
+    translateException(tokenNameLookup, inner.nodeApplyChanges(id, addedLabels, removedLabels, properties))
+
+  override def relationshipApplyChanges(relationship: Long,
+                                        properties: IntObjectMap[Value]): Unit =
+    translateException(tokenNameLookup, inner.relationshipApplyChanges(relationship, properties))
+
   class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
     extends ExceptionTranslatingReadOperations[T, CURSOR](inner) with Operations[T, CURSOR] {
 
@@ -500,6 +512,9 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends
 
     override def setProperty(id: Long, propertyKey: Int, value: Value): Unit =
       translateException(tokenNameLookup, inner.setProperty(id, propertyKey, value))
+
+    override def setProperties(obj: Long,
+                               properties: IntObjectMap[Value]): Unit = translateException(tokenNameLookup, inner.setProperties(obj, properties))
 
     override def removeProperty(id: Long, propertyKeyId: Int): Boolean =
       translateException(tokenNameLookup, inner.removeProperty(id, propertyKeyId))

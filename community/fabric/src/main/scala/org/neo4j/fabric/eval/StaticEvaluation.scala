@@ -19,6 +19,8 @@
  */
 package org.neo4j.fabric.eval
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.DependencyResolver
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
@@ -324,6 +326,14 @@ object StaticEvaluation {
     override def detachDeleteNode(id: Long): Int = notAvailable()
 
     override def assertSchemaWritesAllowed(): Unit = notAvailable()
+
+    override def nodeApplyChanges(node: Long,
+                                  addedLabels: IntSet,
+                                  removedLabels: IntSet,
+                                  properties: IntObjectMap[Value]): Unit = notAvailable()
+
+    override def relationshipApplyChanges(relationship: Long,
+                                          properties: IntObjectMap[Value]): Unit = notAvailable()
 
     override def assertShowIndexAllowed(): Unit = notAvailable()
 

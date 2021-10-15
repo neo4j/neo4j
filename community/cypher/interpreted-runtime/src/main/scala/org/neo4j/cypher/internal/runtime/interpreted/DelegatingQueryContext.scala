@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -408,6 +410,16 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
+  override def nodeApplyChanges(node: Long,
+                                addedLabels: IntSet,
+                                removedLabels: IntSet,
+                                properties: IntObjectMap[Value]): Unit =
+    inner.nodeApplyChanges(node, addedLabels, removedLabels, properties)
+
+  override def relationshipApplyChanges(relationship: Long,
+                                        properties: IntObjectMap[Value]): Unit =
+    inner.relationshipApplyChanges(relationship, properties)
+
   override def assertShowIndexAllowed(): Unit = inner.assertShowIndexAllowed()
 
   override def assertShowConstraintAllowed(): Unit = inner.assertShowConstraintAllowed()
@@ -480,6 +492,9 @@ class DelegatingOperations[T, CURSOR](override protected val inner: Operations[T
 
   override def setProperty(obj: Long, propertyKey: Int, value: Value): Unit =
     singleDbHit(inner.setProperty(obj, propertyKey, value))
+
+  override def setProperties(obj: Long,
+                             properties: IntObjectMap[Value]): Unit = singleDbHit(inner.setProperties(obj, properties))
 
   override def removeProperty(obj: Long, propertyKeyId: Int): Boolean = singleDbHit(inner.removeProperty(obj, propertyKeyId))
 
