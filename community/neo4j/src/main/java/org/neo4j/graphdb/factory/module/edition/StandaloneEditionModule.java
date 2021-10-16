@@ -19,10 +19,8 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -45,6 +43,7 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -86,9 +85,9 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     public abstract DatabaseManager<? extends StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule );
 
     protected static ReadOnlyDatabases createGlobalReadOnlyChecker( DatabaseManager<?> databaseManager, Config globalConfig,
-            GlobalTransactionEventListeners txListeners, LifeSupport globalLife )
+            GlobalTransactionEventListeners txListeners, LifeSupport globalLife, LogProvider logProvider )
     {
-        var systemGraphReadOnlyLookup = new SystemGraphReadOnlyDatabaseLookupFactory( databaseManager );
+        var systemGraphReadOnlyLookup = new SystemGraphReadOnlyDatabaseLookupFactory( databaseManager, logProvider );
         var configReadOnlyLookup = new ConfigBasedLookupFactory( globalConfig );
         var globalChecker = new ReadOnlyDatabases( systemGraphReadOnlyLookup, configReadOnlyLookup );
         var configListener = new ConfigReadOnlyDatabaseListener( globalChecker, globalConfig );

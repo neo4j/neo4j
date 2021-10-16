@@ -21,10 +21,10 @@ package org.neo4j.dbms.database;
 
 import com.neo4j.test.extension.EnterpriseDbmsExtension;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,7 +47,7 @@ public class SystemGraphReadOnlyDatabaseLookupIT
         var fooId = databaseManager.getDatabaseContext( "foo" )
                                    .map( db -> db.databaseFacade().databaseId() )
                                    .orElseThrow();
-        var lookupFactory = new SystemGraphReadOnlyDatabaseLookupFactory( databaseManager );
+        var lookupFactory = new SystemGraphReadOnlyDatabaseLookupFactory( databaseManager, NullLogProvider.getInstance() );
 
         var originalLookup = lookupFactory.lookupReadOnlyDatabases();
 

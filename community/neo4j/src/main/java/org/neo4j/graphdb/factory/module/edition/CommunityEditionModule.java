@@ -170,7 +170,8 @@ public class CommunityEditionModule extends StandaloneEditionModule
         globalModule.getGlobalDependencies().satisfyDependency( databaseStateService );
 
         globalReadOnlyChecker = createGlobalReadOnlyChecker( databaseManager, globalModule.getGlobalConfig(),
-                                                             globalModule.getTransactionEventListeners(), globalModule.getGlobalLife() );
+                                                             globalModule.getTransactionEventListeners(), globalModule.getGlobalLife(),
+                                                             globalModule.getLogService().getInternalLogProvider() );
 
         return databaseManager;
     }

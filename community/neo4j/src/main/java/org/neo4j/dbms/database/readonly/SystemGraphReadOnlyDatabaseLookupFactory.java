@@ -29,20 +29,27 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphDbmsModel;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyDatabases.LookupFactory
 {
     private final DatabaseManager<?> databaseManager;
+    private final Log log;
 
-    public SystemGraphReadOnlyDatabaseLookupFactory( DatabaseManager<?> databaseManager )
+    private volatile SystemGraphLookup previousLookup;
+
+    public SystemGraphReadOnlyDatabaseLookupFactory( DatabaseManager<?> databaseManager, LogProvider logProvider )
     {
         this.databaseManager = databaseManager;
+        this.previousLookup = SystemGraphLookup.ALWAYS_READONLY;
+        this.log = logProvider.getLog( getClass() );
     }
 
     private Optional<GraphDatabaseFacade> systemDatabase()
     {
         var systemDb = databaseManager.getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID );
-        var started = systemDb.map( db -> db.database().isStarted() ).orElse( false );
+        var started = systemDb.map( db -> db.databaseFacade().isAvailable( 0 ) ).orElse( false );
 
         if ( started )
         {
@@ -54,10 +61,24 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
     @Override
     public ReadOnlyDatabases.Lookup lookupReadOnlyDatabases()
     {
-        return systemDatabase()
-                .map( this::lookupReadOnlyDatabases )
-                .map( dbs -> new SystemGraphLookup( dbs, false ) )
-                .orElse( SystemGraphLookup.ALWAYS_READONLY );
+        var previous = previousLookup;
+        var next = previous;
+
+        try
+        {
+            next = systemDatabase()
+                    .map( this::lookupReadOnlyDatabases )
+                    .map( dbs -> new SystemGraphLookup( dbs, false ) )
+                    .orElse( previous );
+        }
+        catch ( Exception e )
+        {
+            log.warn( "Unable to lookup readonly databases from the system database due to error!" +
+                      " Using previous lookup %s.%nUnderlying error: %s", previous, e.getMessage() );
+        }
+
+        this.previousLookup = next;
+        return next;
     }
 
     private Set<NamedDatabaseId> lookupReadOnlyDatabases( GraphDatabaseFacade db )
@@ -90,6 +111,15 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
         public boolean databaseIsReadOnly( NamedDatabaseId databaseId )
         {
             return alwaysReadOnly || lookup.contains( databaseId );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "SystemGraphLookup{" +
+                   "readOnlyDatabases=" + lookup +
+                   ", alwaysReadOnly=" + alwaysReadOnly +
+                   '}';
         }
     }
 }
