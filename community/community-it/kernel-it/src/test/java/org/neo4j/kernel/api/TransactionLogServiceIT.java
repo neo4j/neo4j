@@ -276,6 +276,34 @@ class TransactionLogServiceIT
     }
 
     @Test
+    void setsLastTransactionIdCorrectlyForAllFiles() throws IOException
+    {
+        var propertyValue = randomAscii( (int) THRESHOLD / 2 );
+
+        int numberOfTransactions = 40;
+        for ( int i = 0; i < numberOfTransactions; i++ )
+        {
+            executeTransaction( propertyValue );
+        }
+
+        int initialTxId = 17;
+        try ( TransactionLogChannels logReaders = logService.logFilesChannels( initialTxId ) )
+        {
+            List<LogChannel> logFileChannels = logReaders.getChannels();
+            assertThat( logFileChannels ).hasSize( 14 );
+
+            var channelIterator = logFileChannels.iterator();
+            assertEquals( initialTxId + 1, channelIterator.next().getLastTxId() );
+            int subsequentLastTxId = 20;
+            while ( channelIterator.hasNext() )
+            {
+                assertEquals( subsequentLastTxId, channelIterator.next().getLastTxId() );
+                subsequentLastTxId += 2;
+            }
+        }
+    }
+
+    @Test
     void endOffsetPositionedToEndOfFileOrLastClosedTransaction() throws IOException
     {
         var propertyValue = randomAscii( (int) THRESHOLD );

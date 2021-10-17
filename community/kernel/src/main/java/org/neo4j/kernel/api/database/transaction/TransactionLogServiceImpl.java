@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 
 import static org.neo4j.util.Preconditions.checkState;
@@ -73,10 +74,8 @@ public class TransactionLogServiceImpl implements TransactionLogService
         try
         {
             long minimalVersion = minimalLogPosition.getLogVersion();
-            var logFile = logFiles.getLogFile();
             var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-            var highestLogPosition = lastClosedTransaction.getLogPosition();
-            var channels = collectChannels( startingTxId, minimalLogPosition, minimalVersion, logFile, highestLogPosition );
+            var channels = collectChannels( startingTxId, minimalLogPosition, minimalVersion, lastClosedTransaction );
             return new TransactionLogChannels( channels );
         }
         finally
@@ -99,16 +98,18 @@ public class TransactionLogServiceImpl implements TransactionLogService
         logFile.truncate( position );
     }
 
-    private ArrayList<LogChannel> collectChannels( long startingTxId, LogPosition minimalLogPosition, long minimalVersion, LogFile logFile,
-                                                   LogPosition highestLogPosition ) throws IOException
+    private ArrayList<LogChannel> collectChannels( long startingTxId, LogPosition minimalLogPosition, long minimalVersion,
+                                                   ClosedTransactionMetadata lastClosedTransaction ) throws IOException
     {
+        var highestLogPosition = lastClosedTransaction.getLogPosition();
+        var highestTxId = lastClosedTransaction.getTransactionId();
         var highestLogVersion = highestLogPosition.getLogVersion();
         int exposedChannels = (int) ((highestLogVersion - minimalVersion) + 1);
         var channels = new ArrayList<LogChannel>( exposedChannels );
         var internalChannels = LongObjectMaps.mutable.<StoreChannel>ofInitialCapacity( exposedChannels );
         for ( long version = minimalVersion; version <= highestLogVersion; version++ )
         {
-            var startPositionTxId = logFileTransactionId( startingTxId, minimalVersion, logFile, version );
+            var startPositionTxId = logFileTransactionId( startingTxId, minimalVersion, version );
             var readOnlyStoreChannel = new ReadOnlyStoreChannel( logFile, version );
             if ( version == minimalVersion )
             {
@@ -116,15 +117,21 @@ public class TransactionLogServiceImpl implements TransactionLogService
             }
             internalChannels.put( version, readOnlyStoreChannel );
             var endOffset = version < highestLogVersion ? readOnlyStoreChannel.size() : highestLogPosition.getByteOffset();
-            channels.add( new LogChannel( startPositionTxId, readOnlyStoreChannel, endOffset ) );
+            var lastTxId = version < highestLogVersion ? getHeaderLastCommittedTx( version + 1 ) : highestTxId;
+            channels.add( new LogChannel( startPositionTxId, readOnlyStoreChannel, endOffset, lastTxId ) );
         }
         logFile.registerExternalReaders( internalChannels );
         return channels;
     }
 
-    private long logFileTransactionId( long startingTxId, long minimalVersion, LogFile logFile, long version ) throws IOException
+    private long logFileTransactionId( long startingTxId, long minimalVersion, long version ) throws IOException
     {
-        return version == minimalVersion ? startingTxId : logFile.extractHeader( version ).getLastCommittedTxId() + 1;
+        return version == minimalVersion ? startingTxId : getHeaderLastCommittedTx( version ) + 1;
+    }
+
+    private long getHeaderLastCommittedTx( long version ) throws IOException
+    {
+        return logFile.extractHeader( version ).getLastCommittedTxId();
     }
 
     private LogPosition getLogPosition( long startingTxId ) throws IOException

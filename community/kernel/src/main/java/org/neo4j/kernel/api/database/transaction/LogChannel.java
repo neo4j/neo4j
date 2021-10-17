@@ -26,12 +26,14 @@ public class LogChannel implements AutoCloseable
     private final long startTxId;
     private final StoreChannel channel;
     private final long endOffset;
+    private final long lastTxId;
 
-    public LogChannel( long startTxId, StoreChannel channel, long endOffset )
+    public LogChannel( long startTxId, StoreChannel channel, long endOffset, long lastTxId )
     {
         this.startTxId = startTxId;
         this.channel = channel;
         this.endOffset = endOffset;
+        this.lastTxId = lastTxId;
     }
 
     public long getStartTxId()
@@ -50,6 +52,11 @@ public class LogChannel implements AutoCloseable
     public long getEndOffset()
     {
         return endOffset;
+    }
+
+    public long getLastTxId()
+    {
+        return lastTxId;
     }
 
     @Override
