@@ -360,7 +360,7 @@ class TransactionLogServiceIT
 
         // pruning is also not here since metadata store is not upgraded
         Path[] matchedFiles = logFiles.getLogFile().getMatchedFiles();
-        assertThat( matchedFiles ).hasSize( (int) (logVersionBefore + appendIterations + 1) );
+        assertThat( matchedFiles ).hasSize( (int) (logVersionBefore + appendIterations) );
     }
 
     @Test
@@ -444,7 +444,7 @@ class TransactionLogServiceIT
         }
 
         List<Long> observedVersions = monitorListener.getObservedVersions();
-        assertThat( observedVersions ).hasSize( 100 ).containsExactlyElementsOf( LongStream.range( 0, 100 ).boxed().collect( Collectors.toList() ) );
+        assertThat( observedVersions ).hasSize( 99 ).containsExactlyElementsOf( LongStream.range( 0, 99 ).boxed().collect( Collectors.toList() ) );
     }
 
     @Test
@@ -464,7 +464,9 @@ class TransactionLogServiceIT
             appendData.rewind();
         }
 
-        assertEquals( appendIterations, databaseTracers.getDatabaseTracer().numberOfLogRotations() );
+        // first append is not rotated
+        var expectedRotations = appendIterations - 1;
+        assertEquals( expectedRotations, databaseTracers.getDatabaseTracer().numberOfLogRotations() );
     }
 
     @Test
@@ -538,10 +540,11 @@ class TransactionLogServiceIT
             }
             appendData.rewind();
         }
+        assertThat( logFiles.getLogFile().getHighestLogVersion() ).isGreaterThanOrEqualTo( firstPosition.getLogVersion() );
         logService.restore( firstPosition );
 
         assertEquals( firstPosition, logService.append( appendData, OptionalLong.of( 5 ) ) );
-        assertEquals( logVersionBefore + 1, logFiles.getLogFile().getHighestLogVersion() );
+        assertEquals( logVersionBefore, logFiles.getLogFile().getHighestLogVersion() );
     }
 
     private ByteBuffer readTransactionIntoBuffer( GraphDatabaseAPI db, LogPosition positionBeforeTransaction, LogPosition positionAfterTransaction )
