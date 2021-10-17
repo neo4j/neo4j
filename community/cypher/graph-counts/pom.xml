@@ -49,7 +49,7 @@
     <dependencies>
         <dependency>
             <groupId>org.json4s</groupId>
-            <artifactId>json4s-native_2.12</artifactId>
+            <artifactId>json4s-native_${scala.binary.version}</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>

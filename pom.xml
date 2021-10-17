@@ -1236,7 +1236,7 @@
       </dependency>
       <dependency>
         <groupId>org.json4s</groupId>
-        <artifactId>json4s-native_2.12</artifactId>
+        <artifactId>json4s-native_${scala.binary.version}</artifactId>
         <version>3.6.5</version>
         <scope>test</scope>
       </dependency>
