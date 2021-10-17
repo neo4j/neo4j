@@ -23,20 +23,20 @@ import org.neo4j.io.fs.StoreChannel;
 
 public class LogChannel implements AutoCloseable
 {
-    private final long lastCommittedTxId;
+    private final long startTxId;
     private final StoreChannel channel;
     private final long endOffset;
 
-    public LogChannel( long lastCommittedTxId, StoreChannel channel, long endOffset )
+    public LogChannel( long startTxId, StoreChannel channel, long endOffset )
     {
-        this.lastCommittedTxId = lastCommittedTxId;
+        this.startTxId = startTxId;
         this.channel = channel;
         this.endOffset = endOffset;
     }
 
-    public long getLastCommittedTxId()
+    public long getStartTxId()
     {
-        return lastCommittedTxId;
+        return startTxId;
     }
 
     public StoreChannel getChannel()

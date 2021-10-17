@@ -108,7 +108,7 @@ public class TransactionLogServiceImpl implements TransactionLogService
         var internalChannels = LongObjectMaps.mutable.<StoreChannel>ofInitialCapacity( exposedChannels );
         for ( long version = minimalVersion; version <= highestLogVersion; version++ )
         {
-            var lastCommittedTxId = logFileTransactionId( startingTxId, minimalVersion, logFile, version );
+            var startPositionTxId = logFileTransactionId( startingTxId, minimalVersion, logFile, version );
             var readOnlyStoreChannel = new ReadOnlyStoreChannel( logFile, version );
             if ( version == minimalVersion )
             {
@@ -116,7 +116,7 @@ public class TransactionLogServiceImpl implements TransactionLogService
             }
             internalChannels.put( version, readOnlyStoreChannel );
             var endOffset = version < highestLogVersion ? readOnlyStoreChannel.size() : highestLogPosition.getByteOffset();
-            channels.add( new LogChannel( lastCommittedTxId, readOnlyStoreChannel, endOffset ) );
+            channels.add( new LogChannel( startPositionTxId, readOnlyStoreChannel, endOffset ) );
         }
         logFile.registerExternalReaders( internalChannels );
         return channels;
@@ -124,7 +124,7 @@ public class TransactionLogServiceImpl implements TransactionLogService
 
     private long logFileTransactionId( long startingTxId, long minimalVersion, LogFile logFile, long version ) throws IOException
     {
-        return version == minimalVersion ? startingTxId : logFile.extractHeader( version ).getLastCommittedTxId();
+        return version == minimalVersion ? startingTxId : logFile.extractHeader( version ).getLastCommittedTxId() + 1;
     }
 
     private LogPosition getLogPosition( long startingTxId ) throws IOException

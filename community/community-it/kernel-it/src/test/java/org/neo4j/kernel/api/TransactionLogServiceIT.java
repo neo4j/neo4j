@@ -235,7 +235,7 @@ class TransactionLogServiceIT
             assertThat( logFileChannels ).hasSize( 1 );
 
             LogChannel channel = logFileChannels.get( 0 );
-            assertEquals( 2, channel.getLastCommittedTxId() );
+            assertEquals( 2, channel.getStartTxId() );
 
             StoreChannel storeChannel = channel.getChannel();
             assertThrows( UnsupportedOperationException.class, () -> storeChannel.writeAll( ByteBuffers.allocate( 1, INSTANCE ) ) );
@@ -248,7 +248,7 @@ class TransactionLogServiceIT
     }
 
     @Test
-    void logFileHeaderIdReportedForChannelExceptFirst() throws IOException
+    void setsStartingTransactionIdCorrectlyForAllFiles() throws IOException
     {
         var propertyValue = randomAscii( (int) THRESHOLD / 2 );
 
@@ -265,11 +265,11 @@ class TransactionLogServiceIT
             assertThat( logFileChannels ).hasSize( 14 );
 
             var channelIterator = logFileChannels.iterator();
-            assertEquals( initialTxId, channelIterator.next().getLastCommittedTxId() );
-            int subsequentTxId = 18;
+            assertEquals( initialTxId, channelIterator.next().getStartTxId() );
+            int subsequentTxId = 19;
             while ( channelIterator.hasNext() )
             {
-                assertEquals( subsequentTxId, channelIterator.next().getLastCommittedTxId() );
+                assertEquals( subsequentTxId, channelIterator.next().getStartTxId() );
                 subsequentTxId += 2;
             }
         }
