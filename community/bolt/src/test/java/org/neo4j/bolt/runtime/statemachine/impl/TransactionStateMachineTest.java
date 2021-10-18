@@ -38,7 +38,6 @@ import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.TransactionStateMachine.MutableTransactionState;
 import org.neo4j.bolt.runtime.statemachine.impl.TransactionStateMachine.StatementOutcome;
-import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -84,27 +83,13 @@ class TransactionStateMachineTest
             throw new RuntimeException( "some error" );
         }
     };
-    private static final AuthenticationResult AUTH_DISABLED = new AuthenticationResult()
-    {
-        @Override
-        public LoginContext getLoginContext()
-        {
-            return LoginContext.AUTH_DISABLED;
-        }
-
-        @Override
-        public boolean credentialsExpired()
-        {
-            return false;
-        }
-    };
 
     @BeforeEach
     void createMocks()
     {
         FakeClock clock = new FakeClock();
         stateMachineSPI = mock( TransactionStateMachineSPI.class );
-        mutableState = new MutableTransactionState( AUTH_DISABLED, clock, null );
+        mutableState = new MutableTransactionState( LoginContext.AUTH_DISABLED, clock, null );
     }
 
     @Test
@@ -461,7 +446,7 @@ class TransactionStateMachineTest
 
     private static TransactionStateMachine newTransactionStateMachine( TransactionStateMachineSPI stateMachineSPI )
     {
-        return new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, new FakeClock(), null, "123" );
+        return new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, LoginContext.AUTH_DISABLED, new FakeClock(), null, "123" );
     }
 
     private static MapValue map( Object... keyValues )

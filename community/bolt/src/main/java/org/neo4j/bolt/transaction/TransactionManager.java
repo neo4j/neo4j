@@ -28,6 +28,7 @@ import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.values.virtual.MapValue;
 
 /**
@@ -39,24 +40,26 @@ public interface TransactionManager
     /**
      * Begin a new transaction.
      *
+     * @param loginContext        authentication information for this transaction.
      * @param defaultDb           the default database to execute the transaction against.
      * @param bookmarks           the bookmark requested to use for this transaction.
      * @param isReadOnly          whether the transaction is read-only or not.
      * @param transactionMetadata metadata for this transaction.
-     * @param transactionTimeout  how long to wait before this transaction will timeout.
+     * @param transactionTimeout  how long to wait before this transaction will time out.
      * @param connectionId        the connection that this transaction is tied to (for future removal).
      * @return the id that uniquely identifies the transaction.
      * @throws KernelException General error that can occur during transaction creation.
-     * @deprecated currently requires {@code connectionId} which will be replaced with {@link #begin(String, List, boolean, Map, Duration)}.
+     * @deprecated currently requires {@code connectionId} which will be replaced with {@link #begin(String, List, boolean, Map, Duration, LoginContext)}.
      */
     @Deprecated
-    String begin( String defaultDb, List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> transactionMetadata, Duration transactionTimeout,
-                  String connectionId )
+    String begin( LoginContext loginContext, String defaultDb, List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> transactionMetadata,
+                  Duration transactionTimeout, String connectionId )
             throws KernelException;
 
     /**
      * Begin a new transaction.
      *
+     * @param loginContext        authentication information for this transaction.
      * @param defaultDb           the default database to execute the transaction against.
      * @param bookmarks           the bookmark requested to use for this transaction.
      * @param isReadOnly          whether the transaction is read-only or not.
@@ -65,14 +68,15 @@ public interface TransactionManager
      * @return the id that uniquely identifies the transaction.
      * @throws KernelException General error that can occur during transaction creation.
      */
-    default String begin( String defaultDb, List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> transactionMetadata, Duration transactionTimeout )
-            throws KernelException
+    default String begin( LoginContext loginContext, String defaultDb, List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> transactionMetadata,
+                          Duration transactionTimeout ) throws KernelException
     {
         throw new UnsupportedOperationException( "Not Implemented" );
     }
 
     /**
      * Commit a transaction.
+     *
      * @param txId the identifier of the transaction to be committed.
      * @return A {@link Bookmark} marking the position at which the transaction was committed.
      * @throws KernelException A general error which can occur on committing the transaction.
@@ -82,27 +86,31 @@ public interface TransactionManager
 
     /**
      * Run a "Cypher Program" outside of transactional context.
+     * <p>
      * Executing Cypher this way allows the Cypher engine to manage the transaction itself.
-     * @param programId provided UUID to execute this program under. The caller should pass a value here so that
-     *                  they may later cancel the program whilst it is running.
-     * @param defaultDb the default database to use for this program.
-     * @param cypherProgram the cypher program to be executed.
-     * @param params the parameters to use in the cypher program.
-     * @param bookmarks the bookmark requested to use for this program.
-     * @param isReadOnly whether the program is read-only or not.
+     *
+     * @param programId       provided UUID to execute this program under. The caller should pass a value here so that they may later cancel the program whilst
+     *                        it is running.
+     * @param loginContext    authentication information for this transaction.
+     * @param defaultDb       the default database to use for this program.
+     * @param cypherProgram   the cypher program to be executed.
+     * @param params          the parameters to use in the cypher program.
+     * @param bookmarks       the bookmark requested to use for this program.
+     * @param isReadOnly      whether the program is read-only or not.
      * @param programMetadata metadata for this program.
-     * @param programTimeout how long to wait before this program will timeout.
-     * @param connectionId the connection that this transaction is tied to (for future removal).
-     * @return A {@link DefaultProgramResultReference} which contains the transaction identifier associated with this program and a
-     * {@link StatementMetadata} with details of program that are known at execution time.
+     * @param programTimeout  how long to wait before this program will timeout.
+     * @param connectionId    the connection that this transaction is tied to (for future removal).
+     * @return A {@link DefaultProgramResultReference} which contains the transaction identifier associated with this program and a {@link StatementMetadata}
+     * with details of program that are known at execution time.
      * @throws KernelException A general error which can occur on running a query within a transaction.
      */
-    ProgramResultReference runProgram( String programId, String defaultDb, String cypherProgram, MapValue params, List<Bookmark> bookmarks,
-                                       boolean isReadOnly, Map<String,Object> programMetadata, Duration programTimeout,
+    ProgramResultReference runProgram( String programId, LoginContext loginContext, String defaultDb, String cypherProgram, MapValue params,
+                                       List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> programMetadata, Duration programTimeout,
                                        String connectionId ) throws KernelException;
 
     /**
      * Rollback a transaction.
+     *
      * @param txId the identifier of the transaction to be rolled back.
      * @throws TransactionNotFoundException thrown if a transaction cannot be found in this transaction manager with the identifier provided.
      */
@@ -110,6 +118,7 @@ public interface TransactionManager
 
     /**
      * Run a query within a transactional context.
+     *
      * @param txId the transaction to execute the query in.
      * @param cypherQuery the cypher query string to be executed.
      * @param params the parameters to use in the cypherQuery
@@ -121,6 +130,7 @@ public interface TransactionManager
 
     /**
      * Process up to {@code numberToPull} items from a previously executed query and return them asynchronously to a consumer.
+     *
      * @param txId the transaction identifier to pull the data from.
      * @param statementId the statement identifier within the transaction to pull the data from.
      * @param numberToPull the number of data items to pull.
@@ -136,6 +146,7 @@ public interface TransactionManager
 
     /**
      * Process up to {@code numberToDiscard} items from a previously executed query and discard them. //todo replace consumer .Used here for `hasMore` callback.
+     *
      * @param txId the transaction identifier to discard the data from.
      * @param statementId the statement identifier within the transaction to discard the data from.
      * @param numberToDiscard the number of data items to discard.
@@ -151,6 +162,7 @@ public interface TransactionManager
 
     /**
      * Cancel all remaining data for a previously executed query.
+     *
      * @param txId the transaction identifier to cancel the data from.
      * @param statementId the statement identifier within the transaction to cancel the data from.
      * @throws ResultNotFoundException thrown if the provided statementId for this transaction was not found.
@@ -160,24 +172,28 @@ public interface TransactionManager
 
     /**
      * Mark a transaction for termination.
+     *
      * @param txId the transaction identifier to interrupt.
      */
     void interrupt( String txId );
 
     /**
-     * Return the status of a transaction
+     * Return the status of a transaction.
+     *
      * @return the current state of the transaction. See {@link TransactionStatus} for possible values.
      */
     TransactionStatus transactionStatus( String txId );
 
     /**
      * Initialized a resource to use in this Transaction Manager.
+     *
      * @param initializeContext context containing resources to be added.
      */
     void initialize( InitializeContext initializeContext );
 
     /**
-     * Clean up connection resources resources for this Transaction Manager.
+     * Clean up connection resources for this Transaction Manager.
+     *
      * @param cleanUpConnectionContext context containing the connectionId which needs to be cleaned up.
      * @deprecated currently needed for the link with connectionId and can be removed after it is no
      * longer needed.
@@ -187,6 +203,7 @@ public interface TransactionManager
 
     /**
      * Clean up transaction resources for this Transaction Manager.
+     *
      * @param cleanUpTransactionContext context containing the transactionId which needs to be cleaned up.
      */
     void cleanUp( CleanUpTransactionContext cleanUpTransactionContext );

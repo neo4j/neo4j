@@ -39,10 +39,16 @@ public class BeginMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.Beg
     }
 
     @Override
-    protected RequestMessage newBeginMessage( MapValue metadata, List<Bookmark> bookmarks, Duration txTimeout,
-            AccessMode accessMode, Map<String,Object> txMetadata ) throws BoltIOException
+    protected final RequestMessage newBeginMessage( MapValue metadata, List<Bookmark> bookmarks, Duration txTimeout,
+                                              AccessMode accessMode, Map<String,Object> txMetadata ) throws BoltIOException
     {
         var databaseName = MessageMetadataParser.parseDatabaseName( metadata );
+        return this.newBeginMessage( metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName );
+    }
+
+    protected RequestMessage newBeginMessage( MapValue metadata, List<Bookmark> bookmarks, Duration txTimeout,
+                                              AccessMode accessMode, Map<String,Object> txMetadata, String databaseName ) throws BoltIOException
+    {
         return new BeginMessage( metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName ); // v4 Begin Message
     }
 }

@@ -28,9 +28,10 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.bolt.transaction.ProgramResultReference;
 import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -49,7 +50,7 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter
     private static final String SYSTEM_DB_NAME = GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
     @Override
-    public CompletableFuture<MapValue> get( String programId, TransactionManager transactionManager, MapValue routingContext,
+    public CompletableFuture<MapValue> get( String programId, LoginContext loginContext, TransactionManager transactionManager, MapValue routingContext,
                                             List<Bookmark> bookmarks, String databaseName, String connectionId )
     {
         var params = getParams( routingContext, databaseName );
@@ -58,7 +59,7 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter
         try
         {
             ProgramResultReference programResultReference =
-                    transactionManager.runProgram( programId, SYSTEM_DB_NAME, GET_ROUTING_TABLE_STATEMENT, params, emptyList(),
+                    transactionManager.runProgram( programId, loginContext, SYSTEM_DB_NAME, GET_ROUTING_TABLE_STATEMENT, params, emptyList(),
                                                    true, Map.of(), null, connectionId );
 
             transactionManager.pullData( programId, programResultReference.statementMetadata().queryId(), -1,

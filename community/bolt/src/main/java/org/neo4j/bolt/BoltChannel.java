@@ -23,7 +23,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 
 import java.net.SocketAddress;
-import java.util.function.Supplier;
 
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;

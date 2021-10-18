@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
@@ -102,7 +102,7 @@ public class InTransactionState extends AbstractStreamingState
         return this;
     }
 
-    private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
+    protected BoltStateMachineState processCommitMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
     {
         Bookmark bookmark = context.getTransactionManager().commit( context.connectionState().getCurrentTransactionId() );
         context.connectionState().clearCurrentTransactionId();
@@ -110,7 +110,7 @@ public class InTransactionState extends AbstractStreamingState
         return readyState;
     }
 
-    private BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
+    protected BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
     {
         context.getTransactionManager().rollback( context.connectionState().getCurrentTransactionId() );
         context.connectionState().clearCurrentTransactionId();

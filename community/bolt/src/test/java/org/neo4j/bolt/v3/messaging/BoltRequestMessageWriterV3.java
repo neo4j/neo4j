@@ -207,7 +207,7 @@ public class BoltRequestMessageWriterV3 implements BoltRequestMessageWriter
     {
         try
         {
-            packer.packStructHeader( 0, HelloMessage.SIGNATURE );
+            packer.packStructHeader( 1, HelloMessage.SIGNATURE );
             packer.pack( ValueUtils.asMapValue( message.meta() ) );
         }
         catch ( IOException e )

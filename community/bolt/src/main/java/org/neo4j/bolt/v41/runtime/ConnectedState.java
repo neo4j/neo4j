@@ -66,9 +66,10 @@ public class ConnectedState implements BoltStateMachineState
             Map<String,Object> authToken = helloMessage.authToken();
             RoutingContext routingContext = helloMessage.routingContext();
 
-            if ( processAuthentication( userAgent, authToken, context, routingContext ) )
+            if ( processAuthentication( userAgent, authToken, context ) )
             {
-                context.resolveDefaultDatabase();
+                context.initStatementProcessorProvider( routingContext );
+
                 context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.utf8Value( context.connectionId() ) );
                 context.connectionState().onMetadata( "hints", hints );
                 return readyState;

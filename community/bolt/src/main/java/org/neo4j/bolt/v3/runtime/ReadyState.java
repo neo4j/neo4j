@@ -89,8 +89,9 @@ public class ReadyState extends FailSafeBoltStateMachineState
         long start = context.clock().millis();
         var programId = UUID.randomUUID().toString();
         context.connectionState().setCurrentTransactionId( programId );
-        var result = context.getTransactionManager().runProgram( programId, ABSENT_DB_NAME, message.statement(), message.params(),
-                                                                 message.bookmarks(), message.getAccessMode().equals( AccessMode.READ ),
+        var result = context.getTransactionManager().runProgram( programId, context.getLoginContext(), ABSENT_DB_NAME,
+                                                                 message.statement(), message.params(), message.bookmarks(),
+                                                                 message.getAccessMode().equals( AccessMode.READ ),
                                                                  message.transactionMetadata(), message.transactionTimeout(), context.connectionId() );
         long end = context.clock().millis();
 
@@ -102,7 +103,8 @@ public class ReadyState extends FailSafeBoltStateMachineState
 
     protected BoltStateMachineState processBeginMessage( BeginMessage message, StateMachineContext context ) throws Exception
     {
-        String transactionId = context.getTransactionManager().begin( ABSENT_DB_NAME, message.bookmarks(), message.getAccessMode().equals( AccessMode.READ ),
+        String transactionId = context.getTransactionManager().begin( context.getLoginContext(), ABSENT_DB_NAME,
+                                                                      message.bookmarks(), message.getAccessMode().equals( AccessMode.READ ),
                                                                       message.transactionMetadata(), message.transactionTimeout(),
                                                                       context.connectionId() );
         context.connectionState().setCurrentTransactionId( transactionId );

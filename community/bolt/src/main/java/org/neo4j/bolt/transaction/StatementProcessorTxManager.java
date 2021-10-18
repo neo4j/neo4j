@@ -35,6 +35,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.runtime.statemachine.impl.StatementProcessorProvider;
 import org.neo4j.bolt.v4.messaging.DiscardResultConsumer;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.virtual.MapValue;
 
@@ -47,12 +48,12 @@ public class StatementProcessorTxManager implements TransactionManager
     private final Map<String,StatementProcessorProvider> statementProcessorProviders = new ConcurrentHashMap<>();
 
     @Override
-    public String begin( String defaultDb, List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> transactionMetadata, Duration transactionTimeout,
-                         String connectionId )
+    public String begin( LoginContext loginContext, String defaultDb, List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> transactionMetadata,
+                         Duration transactionTimeout, String connectionId )
             throws KernelException
     {
         String txId = UUID.randomUUID().toString();
-        StatementProcessor newTxProcessor = retrieveStatementProcessor( connectionId, defaultDb, txId );
+        StatementProcessor newTxProcessor = retrieveStatementProcessor( connectionId, loginContext, defaultDb, txId );
         var accessMode = isReadOnly ? AccessMode.READ : AccessMode.WRITE;
         newTxProcessor.beginTransaction( bookmarks, transactionTimeout, accessMode, transactionMetadata );
         statementProcessors.put( txId, newTxProcessor );
@@ -92,12 +93,11 @@ public class StatementProcessorTxManager implements TransactionManager
     }
 
     @Override
-    public ProgramResultReference runProgram( String programId, String defaultDb, String cypherProgram, MapValue params, List<Bookmark> bookmarks,
-                                              boolean isReadOnly, Map<String,Object> programMetadata, Duration programTimeout,
-                                              String connectionId )
-            throws KernelException
+    public ProgramResultReference runProgram( String programId, LoginContext loginContext, String defaultDb, String cypherProgram, MapValue params,
+                                              List<Bookmark> bookmarks, boolean isReadOnly, Map<String,Object> programMetadata, Duration programTimeout,
+                                              String connectionId ) throws KernelException
     {
-        var statementProcessor = retrieveStatementProcessor( connectionId, defaultDb, programId );
+        var statementProcessor = retrieveStatementProcessor( connectionId, loginContext, defaultDb, programId );
         statementProcessors.put( programId, statementProcessor );
         var accessMode = isReadOnly ? AccessMode.READ : AccessMode.WRITE;
         var metadata = statementProcessor.run( cypherProgram, params, bookmarks, programTimeout, accessMode, programMetadata );
@@ -207,13 +207,13 @@ public class StatementProcessorTxManager implements TransactionManager
         return statementProcessor;
     }
 
-    private StatementProcessor retrieveStatementProcessor( String connectionId, String databaseName, String txId )
+    private StatementProcessor retrieveStatementProcessor( String connectionId, LoginContext loginContext, String databaseName, String txId )
     {
         StatementProcessor statementProcessor;
         try
         {
             StatementProcessorProvider statementProcessorProvider = retrieveStatementProcessorProvider( connectionId );
-            statementProcessor = statementProcessorProvider.getStatementProcessor( databaseName, txId );
+            statementProcessor = statementProcessorProvider.getStatementProcessor( loginContext, databaseName, txId );
         }
         catch ( BoltProtocolBreachFatality | BoltIOException boltProtocolBreachFatality )
         {

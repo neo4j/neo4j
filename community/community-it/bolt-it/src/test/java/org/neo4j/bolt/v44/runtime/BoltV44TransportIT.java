@@ -51,9 +51,9 @@ import org.neo4j.bolt.v4.messaging.BeginMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
-import org.neo4j.bolt.v43.BoltProtocolV43ComponentFactory;
-import org.neo4j.bolt.v43.messaging.request.RouteMessage;
+import org.neo4j.bolt.v44.messaging.request.RouteMessage;
 import org.neo4j.bolt.v44.BoltProtocolV44;
+import org.neo4j.bolt.v44.BoltProtocolV44ComponentFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -133,7 +133,7 @@ public class BoltV44TransportIT
         negotiateBoltV44();
 
         connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(),
-                                                       List.of(), null ) ) );
+                                                       List.of(), null, null ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( metadata ->
@@ -159,7 +159,7 @@ public class BoltV44TransportIT
         var routeBookmark = new BookmarkWithDatabaseId( lastClosedTransactionId, getDatabaseId() );
 
         connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(),
-                                                       List.of( routeBookmark ), null ) ) );
+                                                       List.of( routeBookmark ), null, null ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( metadata ->
@@ -182,7 +182,7 @@ public class BoltV44TransportIT
         negotiateBoltV44();
 
         connection.send( util.chunk( new RouteMessage(
-                new MapValueBuilder().build(), List.of(), "DOESNT_EXIST!" ) ) );
+                new MapValueBuilder().build(), List.of(), "DOESNT_EXIST!", null ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure()
@@ -191,7 +191,7 @@ public class BoltV44TransportIT
         connection.send( util.chunk( ResetMessage.INSTANCE ) );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(), List.of(), null ) ) );
+        connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(), List.of(), null, null ) ) );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( metadata ->
                             {
@@ -484,7 +484,7 @@ public class BoltV44TransportIT
             @Override
             public byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException
             {
-                return BoltProtocolV43ComponentFactory.encode( neo4jPack, messages );
+                return BoltProtocolV44ComponentFactory.encode( neo4jPack, messages );
             }
 
             @Override

@@ -28,11 +28,11 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
-import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.transaction.CleanUpTransactionContext;
 import org.neo4j.bolt.transaction.InitializeContext;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -50,6 +50,12 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     private final TransactionManager transactionManager;
     private final MemoryTracker memoryTracker;
 
+    private String defaultDatabase;
+    private LoginContext primaryLoginContext;
+
+    private String impersonatedUser;
+    private LoginContext impersonationLoginContext;
+
     public BoltStateMachineContextImpl( BoltStateMachine machine, BoltChannel boltChannel, BoltStateMachineSPI spi, MutableConnectionState connectionState,
                                         Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
                                         MemoryTracker memoryTracker, TransactionManager transactionManager )
@@ -65,15 +71,46 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     }
 
     @Override
-    public void authenticatedAsUser( String username, String userAgent )
+    public void authenticatedAsUser( LoginContext loginContext, String userAgent )
     {
-        boltChannel.updateUser( username, userAgent );
+        this.primaryLoginContext = loginContext;
+
+        boltChannel.updateUser( loginContext.subject().authenticatedUser(), userAgent );
+
+        if ( this.defaultDatabase == null )
+        {
+            this.resolveDefaultDatabase();
+        }
     }
 
     @Override
-    public void resolveDefaultDatabase()
+    public void impersonateUser( LoginContext loginContext )
     {
-        boltChannel.updateDefaultDatabase( defaultDatabaseResolver.defaultDatabase( boltChannel.username() ) );
+        this.impersonationLoginContext = loginContext;
+        this.resolveDefaultDatabase();
+    }
+
+    @Override
+    public LoginContext getLoginContext()
+    {
+        if ( this.impersonationLoginContext != null )
+        {
+            return this.impersonationLoginContext;
+        }
+
+        return this.primaryLoginContext;
+    }
+
+    private void resolveDefaultDatabase()
+    {
+        var defaultDatabase = defaultDatabaseResolver.defaultDatabase( this.getLoginContext().subject().executingUser() );
+
+        if ( this.impersonationLoginContext == null )
+        {
+            this.defaultDatabase = defaultDatabase;
+        }
+
+        this.boltChannel.updateDefaultDatabase( defaultDatabase );
     }
 
     @Override
@@ -113,11 +150,10 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     }
 
     @Override
-    public void initStatementProcessorProvider( AuthenticationResult authResult, RoutingContext routingContext )
+    public void initStatementProcessorProvider( RoutingContext routingContext )
     {
         var transactionSpiProvider = spi.transactionStateMachineSPIProvider();
-        var statementProcessorProvider = new StatementProcessorProvider( authResult, transactionSpiProvider, clock,
-                                                                         this, routingContext, memoryTracker );
+        var statementProcessorProvider = new StatementProcessorProvider( transactionSpiProvider, clock, this, routingContext, memoryTracker );
         var initializeContext = new InitializeContext( connectionId(), statementProcessorProvider );
 
         transactionManager.initialize( initializeContext );
@@ -127,6 +163,12 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     public TransactionManager getTransactionManager()
     {
         return transactionManager;
+    }
+
+    @Override
+    public String getDefaultDatabase()
+    {
+        return this.defaultDatabase;
     }
 
     @Override

@@ -34,7 +34,7 @@ import org.neo4j.bolt.transport.AbstractBoltProtocol;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v41.messaging.BoltResponseMessageWriterV41;
-import org.neo4j.bolt.v43.messaging.BoltRequestMessageReaderV43;
+import org.neo4j.bolt.v44.messaging.BoltRequestMessageReaderV44;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
@@ -64,8 +64,8 @@ public class BoltProtocolV44 extends AbstractBoltProtocol
                                                             LogService logging, ChannelProtector channelProtector,
                                                             MemoryTracker memoryTracker )
     {
-        memoryTracker.allocateHeap( BoltRequestMessageReaderV43.SHALLOW_SIZE );
-        return new BoltRequestMessageReaderV43( connection, messageWriter, bookmarksParser, channelProtector, logging );
+        memoryTracker.allocateHeap( BoltRequestMessageReaderV44.SHALLOW_SIZE );
+        return new BoltRequestMessageReaderV44( connection, messageWriter, bookmarksParser, channelProtector, logging );
     }
 
     @Override

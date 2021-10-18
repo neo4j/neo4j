@@ -36,7 +36,6 @@ import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
-import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
@@ -62,11 +61,11 @@ public class TransactionStateMachine implements StatementProcessor
     private final String databaseName;
     private final String transactionId;
 
-    public TransactionStateMachine( String databaseName, TransactionStateMachineSPI spi, AuthenticationResult authenticationResult, Clock clock,
+    public TransactionStateMachine( String databaseName, TransactionStateMachineSPI spi, LoginContext loginContext, Clock clock,
                                     RoutingContext routingContext, String transactionId )
     {
         this.spi = spi;
-        ctx = new MutableTransactionState( authenticationResult, clock, routingContext );
+        ctx = new MutableTransactionState( loginContext, clock, routingContext );
         this.databaseName = databaseName;
         this.transactionId = transactionId;
     }
@@ -568,10 +567,10 @@ public class TransactionStateMachine implements StatementProcessor
 
         StatementMetadata lastStatementMetadata;
 
-        MutableTransactionState( AuthenticationResult authenticationResult, Clock clock, RoutingContext routingContext )
+        MutableTransactionState( LoginContext loginContext, Clock clock, RoutingContext routingContext )
         {
             this.clock = clock;
-            this.loginContext = authenticationResult.getLoginContext();
+            this.loginContext = loginContext;
             this.routingContext = routingContext;
         }
 

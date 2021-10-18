@@ -64,4 +64,10 @@ public class BasicAuthentication implements Authentication
             throw new AuthenticationException( e.status(), e.getMessage() );
         }
     }
+
+    @Override
+    public LoginContext impersonate( LoginContext context, String userToImpersonate ) throws AuthenticationException
+    {
+        return this.authManager.impersonate( context, userToImpersonate );
+    }
 }

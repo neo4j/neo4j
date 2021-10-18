@@ -17,24 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime.statemachine;
+package org.neo4j.bolt.v44.messaging.request;
 
-import java.util.Map;
+import java.util.List;
 
-import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.values.virtual.MapValue;
 
-public interface BoltStateMachineSPI
+public class RouteMessage extends org.neo4j.bolt.v43.messaging.request.RouteMessage
 {
-    TransactionStateMachineSPIProvider transactionStateMachineSPIProvider();
+    private final String impersonatedUser;
 
-    void reportError( Neo4jError err );
+    public RouteMessage( MapValue requestContext, List<Bookmark> bookmarks,
+                         String databaseName, String impersonatedUser )
+    {
+        super( requestContext, bookmarks, databaseName );
+        this.impersonatedUser = impersonatedUser;
+    }
 
-    AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException;
-
-    LoginContext impersonate( LoginContext context, String userToImpersonate ) throws AuthenticationException;
-
-    String version();
+    public String impersonatedUser()
+    {
+        return impersonatedUser;
+    }
 }

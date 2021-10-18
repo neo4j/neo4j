@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v4.messaging;
+package org.neo4j.bolt.v44.messaging.decoder;
 
 import java.time.Duration;
 import java.util.List;
@@ -29,27 +29,22 @@ import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BookmarksParser;
+import org.neo4j.bolt.v44.messaging.request.BeginMessage;
 import org.neo4j.values.virtual.MapValue;
 
-public class RunMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder
+public class BeginMessageDecoder extends org.neo4j.bolt.v4.messaging.BeginMessageDecoder
 {
-    public RunMessageDecoder( BoltResponseHandler responseHandler, BookmarksParser bookmarksParser )
+
+    public BeginMessageDecoder( BoltResponseHandler responseHandler, BookmarksParser bookmarksParser )
     {
         super( responseHandler, bookmarksParser );
     }
 
     @Override
-    protected final RequestMessage newRunMessage( String statement, MapValue params, MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
-                                                  AccessMode accessMode, Map<String,Object> txMetadata ) throws BoltIOException
+    protected RequestMessage newBeginMessage( MapValue metadata, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+                                              Map<String,Object> txMetadata, String databaseName ) throws BoltIOException
     {
-        var databaseName = MessageMetadataParser.parseDatabaseName( meta );
-        return this.newRunMessage( statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName );
-    }
-
-    protected RequestMessage newRunMessage( String statement, MapValue params, MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
-                                            AccessMode accessMode, Map<String,Object> txMetadata, String databaseName ) throws BoltIOException
-    {
-        return new RunMessage( statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName ); // v4 RUN message
+        var impersonatedUser = MessageMetadataParser.parseImpersonatedUser( metadata );
+        return new BeginMessage( metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser ); // v4.4 Begin Message
     }
 }
-

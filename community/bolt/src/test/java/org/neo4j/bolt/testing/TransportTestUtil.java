@@ -229,6 +229,12 @@ public class TransportTestUtil
     }
 
     @SafeVarargs
+    public final <T extends TransportConnection> Consumer<T> eventuallyReceives( boolean allowNoOp, Consumer<ResponseMessage>... messagesConsumers )
+    {
+        return eventuallyReceives( allowNoOp, () -> {}, messagesConsumers );
+    }
+
+    @SafeVarargs
     public final <T extends TransportConnection> Consumer<T> eventuallyReceives( boolean allowNoOp,
             Runnable noOpCallback, Consumer<ResponseMessage>... messagesConsumers )
     {

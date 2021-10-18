@@ -22,15 +22,17 @@ package org.neo4j.bolt.runtime.statemachine;
 import java.time.Clock;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
 public interface StateMachineContext
 {
-    void authenticatedAsUser( String username, String userAgent );
+    void authenticatedAsUser( LoginContext loginContext, String userAgent );
 
-    void resolveDefaultDatabase();
+    void impersonateUser( LoginContext loginContext );
+
+    LoginContext getLoginContext();
 
     void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality;
 
@@ -44,8 +46,9 @@ public interface StateMachineContext
 
     String connectionId();
 
-    void initStatementProcessorProvider( AuthenticationResult authResult, RoutingContext routingContext );
+    void initStatementProcessorProvider( RoutingContext routingContext );
 
     TransactionManager getTransactionManager();
 
+    String getDefaultDatabase();
 }

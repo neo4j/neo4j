@@ -28,6 +28,7 @@ import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
@@ -69,6 +70,12 @@ public class BoltStateMachineSPIImpl implements BoltStateMachineSPI
     public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
         return authentication.authenticate( authToken, boltChannel.info() );
+    }
+
+    @Override
+    public LoginContext impersonate( LoginContext context, String userToImpersonate ) throws AuthenticationException
+    {
+        return this.authentication.impersonate( context, userToImpersonate );
     }
 
     @Override

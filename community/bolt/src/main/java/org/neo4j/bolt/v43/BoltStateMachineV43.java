@@ -22,16 +22,16 @@ package org.neo4j.bolt.v43;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.bolt.routing.ProcedureRoutingTableGetter;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v4.runtime.AutoCommitState;
 import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v4.runtime.InTransactionState;
-import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.bolt.v41.runtime.ConnectedState;
-import org.neo4j.bolt.v43.runtime.RouteMessageHandleStateDecorator;
+import org.neo4j.bolt.v43.runtime.ReadyState;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -55,7 +55,7 @@ public class BoltStateMachineV43 extends AbstractBoltStateMachine
     protected States buildStates( MapValue connectionHints, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap(
-                ConnectedState.SHALLOW_SIZE + RouteMessageHandleStateDecorator.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE
+                ConnectedState.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE
                 + AutoCommitState.SHALLOW_SIZE + InTransactionState.SHALLOW_SIZE
                 + FailedState.SHALLOW_SIZE + InterruptedState.SHALLOW_SIZE );
 
@@ -63,18 +63,15 @@ public class BoltStateMachineV43 extends AbstractBoltStateMachine
         var autoCommitState = new AutoCommitState(); // v4
         var inTransaction = new InTransactionState(); // v4
         var failed = new FailedState(); // v4
-        var ready = RouteMessageHandleStateDecorator.decorate( new ReadyState(), failed ); // v4
+        var ready = new ReadyState( new ProcedureRoutingTableGetter() ); // v4.3
         var interrupted = new InterruptedState(); // v3
 
         connected.setReadyState( ready );
 
-        ready.apply( it ->
-                     {
-                         it.setTransactionReadyState( inTransaction );
-                         it.setStreamingState( autoCommitState );
-                         it.setFailedState( failed );
-                         it.setInterruptedState( interrupted );
-                     } );
+        ready.setTransactionReadyState( inTransaction );
+        ready.setStreamingState( autoCommitState );
+        ready.setFailedState( failed );
+        ready.setInterruptedState( interrupted );
 
         autoCommitState.setReadyState( ready );
         autoCommitState.setFailedState( failed );

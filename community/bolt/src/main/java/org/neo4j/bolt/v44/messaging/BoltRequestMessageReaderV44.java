@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v43.messaging;
+package org.neo4j.bolt.v44.messaging;
 
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -35,34 +34,28 @@ import org.neo4j.bolt.v3.messaging.decoder.CommitMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.GoodbyeMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.ResetMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RollbackMessageDecoder;
-import org.neo4j.bolt.v4.messaging.BeginMessageDecoder;
 import org.neo4j.bolt.v4.messaging.DiscardMessageDecoder;
 import org.neo4j.bolt.v4.messaging.PullMessageDecoder;
-import org.neo4j.bolt.v4.messaging.RunMessageDecoder;
 import org.neo4j.bolt.v41.messaging.decoder.HelloMessageDecoder;
-import org.neo4j.bolt.v43.messaging.decoder.RouteMessageDecoder;
+import org.neo4j.bolt.v43.messaging.BoltRequestMessageReaderV43;
+import org.neo4j.bolt.v44.messaging.decoder.BeginMessageDecoder;
+import org.neo4j.bolt.v44.messaging.decoder.RouteMessageDecoder;
+import org.neo4j.bolt.v44.messaging.decoder.RunMessageDecoder;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 
-/**
- * BoltRequestMessageReaderV43 is responsible for decoding the requests done for the bolt server using the protocol 4.3
- * <p>
- * This messages are used by states to provide the transitions on the state machine.
- * <p>
- * All the messages from the protocol 4.2 are supported on the 4.3 with the addition of the RouteMessage.
- */
-public class BoltRequestMessageReaderV43 extends BoltRequestMessageReader
+public class BoltRequestMessageReaderV44 extends BoltRequestMessageReaderV43
 {
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOf( BoltRequestMessageReaderV43.class );
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOf( BoltRequestMessageReaderV44.class );
 
-    protected BoltRequestMessageReaderV43( BoltConnection connection, BoltResponseHandler externalErrorResponseHandler,
+    protected BoltRequestMessageReaderV44( BoltConnection connection, BoltResponseHandler externalErrorResponseHandler,
                                            List<RequestMessageDecoder> decoders, ChannelProtector channelProtector )
     {
         super( connection, externalErrorResponseHandler, decoders, channelProtector );
     }
 
-    public BoltRequestMessageReaderV43( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, BookmarksParser bookmarksParser,
+    public BoltRequestMessageReaderV44( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, BookmarksParser bookmarksParser,
                                         ChannelProtector channelProtector, LogService logService )
     {
         this( connection, newSimpleResponseHandler( responseMessageWriter, connection, logService ),
@@ -72,21 +65,21 @@ public class BoltRequestMessageReaderV43 extends BoltRequestMessageReader
     private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
                                                               BookmarksParser bookmarksParser, LogService logService )
     {
-        BoltResponseHandler resultHandler = new ResultHandler( responseMessageWriter, connection, internalLog( logService ) );
-        BoltResponseHandler defaultHandler = newSimpleResponseHandler( responseMessageWriter, connection, logService );
+        var resultHandler = new ResultHandler( responseMessageWriter, connection, internalLog( logService ) );
+        var defaultHandler = newSimpleResponseHandler( responseMessageWriter, connection, logService );
 
         return Arrays.asList(
                 new HelloMessageDecoder( defaultHandler ),
-                new RunMessageDecoder( defaultHandler, bookmarksParser ),
                 new DiscardMessageDecoder( resultHandler ),
                 new PullMessageDecoder( resultHandler ),
-                new BeginMessageDecoder( defaultHandler, bookmarksParser ),
                 new CommitMessageDecoder( resultHandler ),
                 new RollbackMessageDecoder( resultHandler ),
                 new ResetMessageDecoder( connection, defaultHandler ),
                 new GoodbyeMessageDecoder( connection, defaultHandler ),
-                // New in 4.3
-                new RouteMessageDecoder( defaultHandler, bookmarksParser )
+                // New in 4.4
+                new RouteMessageDecoder( defaultHandler, bookmarksParser ),
+                new RunMessageDecoder( defaultHandler, bookmarksParser ),
+                new BeginMessageDecoder( defaultHandler, bookmarksParser )
         );
     }
 
@@ -98,6 +91,6 @@ public class BoltRequestMessageReaderV43 extends BoltRequestMessageReader
 
     private static Log internalLog( LogService logService )
     {
-        return logService.getInternalLog( BoltRequestMessageReaderV43.class );
+        return logService.getInternalLog( BoltRequestMessageReaderV44.class );
     }
 }

@@ -33,6 +33,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.transaction.DefaultProgramResultReference;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
@@ -67,19 +68,20 @@ class ProcedureRoutingTableGetterTest
     @Test
     void shouldRunTheStateWithTheCorrectParams() throws Exception
     {
+        var loginContext = LoginContext.AUTH_DISABLED;
         var transactionManager = mock( TransactionManager.class );
         var routingTableContext = getRoutingTableContext();
         var databaseName = "dbName";
         var metadata = mock( StatementMetadata.class );
         var programResult = new DefaultProgramResultReference( "123", metadata );
 
-        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), anyString(), anyString(), any(), any(),
+        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), any(), anyString(), anyString(), any(), any(),
                                                                          anyBoolean(), any(), any(), any() );
 
-        getter.get( "123", transactionManager, routingTableContext, List.of(), databaseName, "123" );
+        getter.get( "123", loginContext, transactionManager, routingTableContext, List.of(), databaseName, "123" );
 
         verify( transactionManager )
-                .runProgram( anyString(), eq( "system" ), eq("CALL dbms.routing.getRoutingTable($routingContext, $databaseName)" ),
+                .runProgram( anyString(), eq( loginContext ), eq( "system" ), eq( "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)" ),
                              eq( getExpectedParams( routingTableContext, databaseName ) ),
                              eq( emptyList() ), eq( true ), eq( Map.of() ), eq( null ), eq( "123" ) );
     }
@@ -87,6 +89,7 @@ class ProcedureRoutingTableGetterTest
     @Test
     void shouldCompleteWithOneRecordFromTheResultQuery() throws Throwable
     {
+        var loginContext = LoginContext.AUTH_DISABLED;
         var transactionManager = mock( TransactionManager.class );
         var queryId = 123;
         var statementMetadata = mock( StatementMetadata.class );
@@ -94,8 +97,9 @@ class ProcedureRoutingTableGetterTest
         var boltResult = mock( BoltResult.class );
         var expectedRoutingTable = routingTable();
 
-        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), anyString(), anyString(), any( MapValue.class ), anyList(), anyBoolean(),
-                                                                         anyMap(), any(), anyString() );
+        doReturn( programResult ).when( transactionManager )
+                                 .runProgram( anyString(), any(), anyString(), anyString(), any( MapValue.class ), anyList(), anyBoolean(), anyMap(), any(),
+                                              anyString() );
         doReturn( queryId ).when( statementMetadata ).queryId();
         doReturn( getFieldNames() ).when( boltResult ).fieldNames();
         mockStreamResult( transactionManager, boltResult, recordConsumer ->
@@ -106,7 +110,7 @@ class ProcedureRoutingTableGetterTest
             recordConsumer.endRecord();
         } );
 
-        var future = getter.get( "123", transactionManager, getRoutingTableContext(), List.of(),"dbName", "123" );
+        var future = getter.get( "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
 
         var routingTable = future.get( 100, TimeUnit.MILLISECONDS );
 
@@ -116,6 +120,7 @@ class ProcedureRoutingTableGetterTest
     @Test
     void shouldCompleteFailureIfSomeErrorOccurDuringRecordConsumer() throws Throwable
     {
+        var loginContext = LoginContext.AUTH_DISABLED;
         var transactionManager = mock( TransactionManager.class );
         var queryId = 123;
         var statementMetadata = mock( StatementMetadata.class );
@@ -123,7 +128,7 @@ class ProcedureRoutingTableGetterTest
         var boltResult = mock( BoltResult.class );
 
         doReturn( programResult ).when( transactionManager )
-                                 .runProgram( anyString(), anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any() );
+                                 .runProgram( anyString(), any(), anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any() );
         doReturn( queryId ).when( statementMetadata ).queryId();
         doReturn( getFieldNames() ).when( boltResult ).fieldNames();
         mockStreamResult( transactionManager, boltResult, recordConsumer ->
@@ -132,7 +137,7 @@ class ProcedureRoutingTableGetterTest
             recordConsumer.onError();
         } );
 
-        var future = getter.get( "123", transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
+        var future = getter.get( "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
 
         try
         {
@@ -148,13 +153,14 @@ class ProcedureRoutingTableGetterTest
     @Test
     void shouldCompleteWithFailureIfTheRunMethodThrowsException() throws Throwable
     {
+        var loginContext = LoginContext.AUTH_DISABLED;
         var transactionManager = mock( TransactionManager.class );
         var expectedException = new TransactionFailureException( "Something wrong", new RuntimeException() );
 
-        doThrow( expectedException ).when( transactionManager ).runProgram( anyString(), anyString(), anyString(), any(),
+        doThrow( expectedException ).when( transactionManager ).runProgram( anyString(), any(), anyString(), anyString(), any(),
                                                                             any(), anyBoolean(), any(), any(), any() );
 
-        var future = getter.get( "123", transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
+        var future = getter.get( "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
 
         try
         {
@@ -170,18 +176,19 @@ class ProcedureRoutingTableGetterTest
     @Test
     void shouldCompleteWithFailureIfTheStreamResultMethodThrowsException() throws Throwable
     {
+        var loginContext = LoginContext.AUTH_DISABLED;
         var transactionManager = mock( TransactionManager.class );
         var queryId = 123;
         var statementMetadata = mock( StatementMetadata.class );
         var programResult = new DefaultProgramResultReference( "123", statementMetadata );
         var expectedException = new RuntimeException( new TransactionFailureException( "Something wrong", new RuntimeException() ) );
 
-        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), anyString(), anyString(), any(),
+        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), any(), anyString(), anyString(), any(),
                                                                          any(), anyBoolean(), any(), any(), any() );
         doReturn( queryId ).when( statementMetadata ).queryId();
         doThrow( expectedException ).when( transactionManager ).pullData( anyString(), anyInt(), anyLong(), any( ResultConsumer.class ) );
 
-        var future = getter.get( "123", transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
+        var future = getter.get( "123", loginContext, transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
 
         try
         {

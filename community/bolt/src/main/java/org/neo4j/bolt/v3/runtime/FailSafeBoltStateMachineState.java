@@ -30,7 +30,7 @@ import static org.neo4j.util.Preconditions.checkState;
 
 public abstract class FailSafeBoltStateMachineState implements BoltStateMachineState
 {
-    private BoltStateMachineState failedState;
+    protected BoltStateMachineState failedState;
     private BoltStateMachineState interruptedState;
 
     @Override
