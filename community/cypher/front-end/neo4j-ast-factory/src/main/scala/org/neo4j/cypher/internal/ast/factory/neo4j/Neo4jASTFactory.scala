@@ -258,9 +258,13 @@ import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
+import org.neo4j.cypher.internal.ast.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingHint
+import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
+import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
@@ -277,6 +281,7 @@ import org.neo4j.cypher.internal.ast.factory.ActionType
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.ast.factory.ConstraintVersion
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes
+import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.ScopeType
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
@@ -540,11 +545,19 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                               v: Variable,
                               labelOrRelType: String,
                               properties: util.List[String],
-                              seekOnly: Boolean): UsingHint =
+                              seekOnly: Boolean,
+                              indexType: HintIndexType): UsingHint =
     ast.UsingIndexHint(v,
       LabelOrRelTypeName(labelOrRelType)(p),
       properties.asScala.toList.map(PropertyKeyName(_)(p)),
-      if (seekOnly) SeekOnly else SeekOrScan)(p)
+      if (seekOnly) SeekOnly else SeekOrScan,
+      usingIndexType(indexType))(p)
+
+  private def usingIndexType(indexType: HintIndexType): UsingIndexHintType = indexType match {
+    case HintIndexType.ANY   => UsingAnyIndexType
+    case HintIndexType.BTREE => UsingBtreeIndexType
+    case HintIndexType.TEXT  => UsingTextIndexType
+  }
 
   override def usingJoin(p: InputPosition, joinVariables: util.List[Variable]): UsingHint =
     UsingJoinHint(joinVariables.asScala.toList)(p)

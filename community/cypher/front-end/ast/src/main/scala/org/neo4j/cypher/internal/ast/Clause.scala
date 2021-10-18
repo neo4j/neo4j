@@ -325,14 +325,14 @@ case class Match(
 
   private def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
-      case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(labelOrRelTypeName), _, _)
+      case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(labelOrRelTypeName), _, _, _)
         if !containsLabelOrRelTypePredicate(variable, labelOrRelTypeName) =>
         SemanticError(
           s"""|Cannot use index hint in this context.
               | Must use label/relationship type '$labelOrRelTypeName' on node/relationship '$variable'
               | that this hint is referring to.
               | Did you choose the wrong variable or the wrong label/relationship type?""".stripLinesAndMargins, hint.position)
-      case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(_), properties, _)
+      case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(_), properties, _, _)
         if !containsPropertyPredicates(variable, properties) =>
         SemanticError(
           """|Cannot use index hint in this context.

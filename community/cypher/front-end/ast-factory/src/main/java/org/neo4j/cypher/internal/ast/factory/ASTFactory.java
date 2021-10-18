@@ -131,7 +131,7 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE matchClause( POS p, boolean optional, List<PATTERN> patterns, POS patternPos, List<HINT> hints, WHERE where );
 
-    HINT usingIndexHint( POS p, VARIABLE v, String labelOrRelType, List<String> properties, boolean seekOnly );
+    HINT usingIndexHint( POS p, VARIABLE v, String labelOrRelType, List<String> properties, boolean seekOnly, HintIndexType indexType );
 
     HINT usingJoin( POS p, List<VARIABLE> joinVariables );
 

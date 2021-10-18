@@ -59,16 +59,29 @@ case object SeekOrScan extends UsingIndexHintSpec {
   override def fulfilledByScan: Boolean = true
 }
 
+sealed trait UsingIndexHintType
+case object UsingAnyIndexType extends UsingIndexHintType
+case object UsingBtreeIndexType extends UsingIndexHintType
+case object UsingTextIndexType extends UsingIndexHintType
+
 case class UsingIndexHint(
                            variable: Variable,
                            labelOrRelType: LabelOrRelTypeName,
                            properties: Seq[PropertyKeyName],
-                           spec: UsingIndexHintSpec = SeekOrScan
+                           spec: UsingIndexHintSpec = SeekOrScan,
+                           indexType: UsingIndexHintType = UsingAnyIndexType,
                          )(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
 
-  override def toString: String = s"USING INDEX ${if (spec == SeekOnly) "SEEK " else ""}${variable.name}:${labelOrRelType.name}(${properties.map(_.name).mkString(", ")})"
+  override def toString: String = {
+    val kind = indexType match {
+      case UsingAnyIndexType   => "INDEX"
+      case UsingBtreeIndexType => "BTREE INDEX"
+      case UsingTextIndexType  => "TEXT INDEX"
+    }
+    s"USING $kind ${if (spec == SeekOnly) "SEEK " else ""}${variable.name}:${labelOrRelType.name}(${properties.map(_.name).mkString(", ")})"
+  }
 }
 
 case class UsingScanHint(variable: Variable, labelOrRelType: LabelOrRelTypeName)(val position: InputPosition) extends UsingHint with NodeHint {

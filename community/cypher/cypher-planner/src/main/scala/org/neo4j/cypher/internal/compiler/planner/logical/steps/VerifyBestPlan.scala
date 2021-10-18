@@ -145,13 +145,14 @@ object VerifyBestPlan {
         (context.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(relTypeName, propertyNames))
     }
 
+    // TODO: Use index type here
     query.allHints.flatMap {
       // using index name:label(property1,property2)
-      case UsingIndexHint(v, labelOrRelType, properties, _) if semanticTable.isNodeNoFail(v.name) && nodeIndexHintFulfillable(labelOrRelType, properties) =>
+      case UsingIndexHint(v, labelOrRelType, properties, _, _) if semanticTable.isNodeNoFail(v.name) && nodeIndexHintFulfillable(labelOrRelType, properties) =>
         None
 
       // using index name:relType(property1,property2)
-      case UsingIndexHint(v, labelOrRelType, properties, _) if semanticTable.isRelationshipNoFail(v.name) && relIndexHintFulfillable(labelOrRelType, properties) =>
+      case UsingIndexHint(v, labelOrRelType, properties, _, _) if semanticTable.isRelationshipNoFail(v.name) && relIndexHintFulfillable(labelOrRelType, properties) =>
         None
 
       // no such index exists

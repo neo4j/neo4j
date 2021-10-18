@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ast.factory.ActionType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintType;
 import org.neo4j.cypher.internal.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
+import org.neo4j.cypher.internal.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
@@ -193,7 +194,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL usingIndexHint( NULL p, Object v, String labelOrRelType, List<String> properties, boolean seekOnly )
+    public NULL usingIndexHint( NULL p, Object v, String labelOrRelType, List<String> properties, boolean seekOnly,
+            HintIndexType indexType )
     {
         throw new UnsupportedOperationException( "usingIndexHint is not a literal" );
     }
