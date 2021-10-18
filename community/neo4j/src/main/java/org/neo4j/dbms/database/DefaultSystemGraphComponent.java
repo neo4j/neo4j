@@ -20,8 +20,6 @@
 package org.neo4j.dbms.database;
 
 import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.function.Function;
