@@ -74,6 +74,7 @@ import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexType.BTREE
+import org.neo4j.internal.schema.IndexType.FULLTEXT
 import org.neo4j.internal.schema.IndexType.LOOKUP
 
 trait StatisticsBackedLogicalPlanningSupport {
@@ -417,20 +418,21 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
     val withIndexes = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
       graphCountData.indexes.foldLeft(builder) {
-        case (builder, i@Index(Some(Seq(label)), None, BTREE, properties, totalSize, estimatedUniqueSize, _)) =>
-          val existsSelectivity = totalSize / builder.cardinalities.labels(label)
-          val uniqueSelectivity = 1.0 / estimatedUniqueSize
-          val isUnique = matchingUniquenessConstraintExists(i)
-          builder.addNodeIndex(label, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH)
-        case (builder, i@Index(None, Some(Seq(relType)), BTREE, properties, totalSize, estimatedUniqueSize, _)) =>
-          val existsSelectivity = totalSize / builder.cardinalities.getRelCount(RelDef(None, Some(relType), None))
-          val uniqueSelectivity = 1.0 / estimatedUniqueSize
-          val isUnique = matchingUniquenessConstraintExists(i)
-          builder.addRelationshipIndex(relType, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH)
+        case (_, index@Index(_, _, FULLTEXT, _, _, _, _)) => throw new IllegalArgumentException(s"Unsupported index of type FULLTEXT: $index")
         case (builder, Index(Some(Seq()), None, LOOKUP, Seq(), _, _, _)) =>
           builder.addNodeLookupIndex()
         case (builder, Index(None, Some(Seq()), LOOKUP, Seq(), _, _, _)) =>
           builder.addRelationshipLookupIndex()
+        case (builder, i@Index(Some(Seq(label)), None, indexType, properties, totalSize, estimatedUniqueSize, _)) =>
+          val existsSelectivity = totalSize / builder.cardinalities.labels(label)
+          val uniqueSelectivity = 1.0 / estimatedUniqueSize
+          val isUnique = matchingUniquenessConstraintExists(i)
+          builder.addNodeIndex(label, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH, indexType.toPublicApi)
+        case (builder, i@Index(None, Some(Seq(relType)), indexType, properties, totalSize, estimatedUniqueSize, _)) =>
+          val existsSelectivity = totalSize / builder.cardinalities.getRelCount(RelDef(None, Some(relType), None))
+          val uniqueSelectivity = 1.0 / estimatedUniqueSize
+          val isUnique = matchingUniquenessConstraintExists(i)
+          builder.addRelationshipIndex(relType, properties, existsSelectivity, uniqueSelectivity, isUnique = isUnique, withValues = true, providesOrder = IndexOrderCapability.BOTH, indexType.toPublicApi)
         case (_, index) => throw new IllegalArgumentException(s"Unsupported index: $index")
       }
 

@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_e
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.GraphIcing
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
@@ -47,6 +48,43 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     list(res("data"), "relationships") should contain only Map("count" -> 0)
     list(res("data"), "indexes") should be(Nil)
     list(res("data"), "constraints") should be(Nil)
+  }
+
+  test("retrieve all index types") {
+    // all but FULLTEXT, as this is currently not exported.
+    graph.withTx( tx => {
+      tx.schema().getIndexes.iterator().asScala.foreach(index => index.drop())
+      tx.commit()
+    })
+
+    graph.createLookupIndex(isNodeIndex = true)
+    graph.createNodeIndex(IndexType.TEXT, "Label", "textProp")
+    graph.createNodeIndex(IndexType.BTREE, "Label", "btreeProp")
+    graph.createNodeIndex(IndexType.POINT, "Label", "pointProp")
+    graph.createNodeIndex(IndexType.RANGE, "Label", "rangeProp")
+
+    graph.createLookupIndex(isNodeIndex = false)
+    graph.createRelationshipIndex(IndexType.TEXT, "RelationshipType", "textProp")
+    graph.createRelationshipIndex(IndexType.BTREE, "RelationshipType", "btreeProp")
+    graph.createRelationshipIndex(IndexType.POINT, "RelationshipType", "pointProp")
+    graph.createRelationshipIndex(IndexType.RANGE, "RelationshipType", "rangeProp")
+
+    // when
+    val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
+
+    list(res("data"), "indexes") should contain only(
+      Map("totalSize" -> 0, "indexType" -> IndexType.LOOKUP.name, "properties" -> Seq.empty, "labels" -> Seq.empty, "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
+      Map("totalSize" -> 0, "indexType" -> IndexType.TEXT.name, "properties" -> Seq("textProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
+      Map("totalSize" -> 0, "indexType" -> IndexType.BTREE.name, "properties" -> Seq("btreeProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
+      Map("totalSize" -> 0, "indexType" -> IndexType.POINT.name, "properties" -> Seq("pointProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
+      Map("totalSize" -> 0, "indexType" -> IndexType.RANGE.name, "properties" -> Seq("rangeProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
+
+      Map("totalSize" -> 0, "indexType" -> IndexType.LOOKUP.name, "properties" -> Seq.empty, "relationshipTypes" -> Seq.empty, "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
+      Map("totalSize" -> 0, "indexType" -> IndexType.TEXT.name, "properties" -> Seq("textProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
+      Map("totalSize" -> 0, "indexType" -> IndexType.BTREE.name, "properties" -> Seq("btreeProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
+      Map("totalSize" -> 0, "indexType" -> IndexType.POINT.name, "properties" -> Seq("pointProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
+      Map("totalSize" -> 0, "indexType" -> IndexType.RANGE.name, "properties" -> Seq("rangeProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0)
+    )
   }
 
   test("retrieve nodes") {
