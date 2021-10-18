@@ -22,6 +22,7 @@ package org.neo4j.server.http;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpClient;
@@ -93,6 +94,9 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase
         finally
         {
             bootstrapper.stop();
+
+            // Make sure the log manager flushes everything.
+            LogManager.shutdown();
         }
         assertThat( response.statusCode() ).isEqualTo( 200 );
 
