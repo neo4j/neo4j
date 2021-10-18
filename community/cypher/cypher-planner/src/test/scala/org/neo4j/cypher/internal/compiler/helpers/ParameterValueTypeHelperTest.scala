@@ -19,14 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.OffsetTime
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper.asCypherTypeMap
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper.deriveCypherType
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -53,6 +45,14 @@ import org.neo4j.values.storable.TimeValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
+
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.OffsetTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 
 class ParameterValueTypeHelperTest extends CypherFunSuite {
 
@@ -138,8 +138,8 @@ class ParameterValueTypeHelperTest extends CypherFunSuite {
     deriveCypherType(VirtualValues.list(Values.floatValue(1))) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(Values.shortValue(1))) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(Values.byteValue(1))) should be(CTList(CTAny))
-    deriveCypherType(VirtualValues.list(Values.charValue('a'))) should be(CTList(CTAny))
-    deriveCypherType(VirtualValues.list(Values.stringValue("a"))) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(Values.charValue('a'))) should be(CTList(CTString))
+    deriveCypherType(VirtualValues.list(Values.stringValue("a"))) should be(CTList(CTString))
     deriveCypherType(VirtualValues.list(Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.7 ))) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(DateTimeValue.MAX_VALUE)) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(LocalDateTimeValue.MAX_VALUE)) should be(CTList(CTAny))

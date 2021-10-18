@@ -257,15 +257,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // second
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // third
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)", // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)", // String cache JIT compiles on the first hit
     ))
   }
 
@@ -326,15 +326,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // params2
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // params3
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss, // recompilation limit reached
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",  // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",  // String cache JIT compiles on the first hit
     ))
   }
 
@@ -355,14 +355,14 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // params2
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.UTF8StringValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.UTF8StringValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> String),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> String),false)",
     ))
   }
 
@@ -385,11 +385,11 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"String: cacheFlushDetected",
       s"AST:    cacheFlushDetected",
       // 1st run
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // 2nd run
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
     ))
   }
 
@@ -417,11 +417,11 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"String: cacheFlushDetected",
       s"AST:    cacheFlushDetected",
       // 1st run
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> Integer),false)",
       // 2nd run
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $actualQuery,Map(n -> Integer),false)",
     ))
   }
 
@@ -441,15 +441,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)",
       // 2nd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue),false)", // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $actualQuery,Map(m -> Integer, n -> Integer),false)", // String cache JIT compiles on the first hit
     ))
   }
 
@@ -551,15 +551,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // 2nd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,//JIT compilation forces us to miss here
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)", // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)", // String cache JIT compiles on the first hit
     ))
   }
 
@@ -577,8 +577,8 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
     ))
   }
 
@@ -603,19 +603,19 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
-      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheMiss: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
+      s"String: cacheCompile: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // 2nd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // 4th run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)",
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)",
       // 5th run
-      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> class org.neo4j.values.storable.LongValue),false)"))
+      s"String: cacheHit: CacheKey(CYPHER $currentVersion $query,Map(n -> Integer),false)"))
   }
 
   test("Different cypher version results in cache miss") {

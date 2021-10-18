@@ -73,7 +73,11 @@ object ParameterValueTypeHelper {
       case _: DateValue => CTDate
       case _: DurationValue => CTDuration
       case _: MapValue => CTMap
-      case _: ListValue => CTList(CTAny) // we don't care about lists in iBob
+      case l: ListValue =>
+        var isStringList = true
+        l.forEach(isStringList &= _.isInstanceOf[TextValue])
+        val innerType = if (l.length() > 0 && isStringList) CTString else CTAny
+        CTList(innerType)
       // all else
       case _ => CTAny
     }

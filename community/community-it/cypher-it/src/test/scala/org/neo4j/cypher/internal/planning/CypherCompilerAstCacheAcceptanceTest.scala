@@ -239,6 +239,41 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
   }
 
+  test("should keep different cache entries for lists where inner type is not string and where inner type is string") {
+    runQuery("MATCH (n:Label) WHERE n.prop IN ['1', '2', '3'] RETURN *")
+    runQuery("MATCH (n:Label) WHERE n.prop IN ['1', 2, 3] RETURN *")
+
+    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, compilations = 2))
+  }
+
+  test("should keep one entry for all lists where inner type is not string") {
+    runQuery("MATCH (n:Label) WHERE n.prop IN ['1', 2, 3] RETURN *")
+    runQuery("MATCH (n:Label) WHERE n.prop IN [1, 2, 3] RETURN *")
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+  }
+
+  test("should keep one entry for all lists where inner type is string") {
+    runQuery("MATCH (n:Label) WHERE n.prop IN ['1', '2', '3'] RETURN *")
+    runQuery("MATCH (n:Label) WHERE n.prop IN ['2', '3', '4'] RETURN *")
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+  }
+
+  test("should keep different cache entries for explicitly parametrized lists where inner type is not string and where inner type is string") {
+    runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("1", "2", "3")))
+    runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("1", 2, "3")))
+
+    counter.counts should equal(CacheCounts(misses = 2, flushes = 1, compilations = 2))
+  }
+
+  test("should keep one entry for all explicitly parametrized lists where inner type is string") {
+    runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("1", "2", "3")))
+    runQuery("MATCH (n:Label) WHERE n.prop IN $list RETURN *", params = Map("list" -> Seq("2", "3", "4")))
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+  }
+
   test("should recompile for auto-parameterized lists with different bucket size") {
     val listBucketSize1 = Seq(1).mkString("[", ",", "]")
     val listBucketSize10 = (1 to 5).mkString("[", ",", "]")

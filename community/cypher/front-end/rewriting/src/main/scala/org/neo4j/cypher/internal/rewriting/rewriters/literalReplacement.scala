@@ -108,8 +108,9 @@ object literalReplacement {
       acc =>
         if (acc.contains(l)) SkipChildren(acc) else {
           val literals = l.expressions.map(_.asInstanceOf[Literal])
+          val innerType = if (literals.nonEmpty && literals.forall(_.isInstanceOf[StringLiteral])) CTString else CTAny
           val bucket = ListSizeBucket.computeBucket(l.expressions.size)
-          val parameter = AutoExtractedParameter(s"  AUTOLIST${acc.size}", CTList(CTAny), ListOfLiteralWriter(literals), Some(bucket))(l.position)
+          val parameter = AutoExtractedParameter(s"  AUTOLIST${acc.size}", CTList(innerType), ListOfLiteralWriter(literals), Some(bucket))(l.position)
           SkipChildren(acc + (l -> LiteralReplacement(parameter, literals.map(_.value))))
         }
   }

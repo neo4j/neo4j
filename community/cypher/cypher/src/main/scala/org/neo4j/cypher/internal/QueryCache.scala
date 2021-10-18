@@ -25,8 +25,10 @@ import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
 import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
 import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
+import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
@@ -356,7 +358,7 @@ object QueryCache {
     * This class receives a hashCode which is precomputed by [[extractParameterTypeMap()]], because it
     * is much faster to pre-compute the hash than to call `resultMap.hashCode()`.
     */
-  class ParameterTypeMap private[QueryCache](private val resultMap: java.util.Map[String, Class[_]], _hashCode: Int) {
+  class ParameterTypeMap private[QueryCache](private val resultMap: java.util.Map[String, CypherType], _hashCode: Int) {
     override def hashCode(): Int = _hashCode
 
     override def equals(obj: Any): Boolean = {
@@ -390,13 +392,13 @@ object QueryCache {
    * Use this method to extract ParameterTypeMap from MapValue that represents parameters
    */
   def extractParameterTypeMap(mapValue: MapValue): ParameterTypeMap = {
-    val resultMap = new java.util.HashMap[String, Class[_]]
+    val resultMap = new java.util.HashMap[String, CypherType]
     var hashCode = 0
     mapValue.foreach(
       (key, value) => {
-        val valueClass = value.getClass
-        resultMap.put(key, valueClass)
-        hashCode = hashCode ^ (key.hashCode + 31 * valueClass.hashCode())
+        val valueType = ParameterValueTypeHelper.deriveCypherType(value)
+        resultMap.put(key, valueType)
+        hashCode = hashCode ^ (key.hashCode + 31 * valueType.hashCode())
       }
     )
     new ParameterTypeMap(resultMap, hashCode)
