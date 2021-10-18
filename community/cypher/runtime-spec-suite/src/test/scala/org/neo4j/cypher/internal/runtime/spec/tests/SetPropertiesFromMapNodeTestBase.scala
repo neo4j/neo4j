@@ -587,4 +587,56 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(propertiesSet = sizeHint)
     nodes.map(_.getProperty("prop")).foreach(i => i should equal(1))
   }
+
+  test("should set multiple properties without violating constraint (removeOtherProps = true)") {
+    val nodes = given {
+      uniqueIndex("L", "p1", "p2")
+
+      //p1 = 0, p2 = 0
+      //p1 = 1, p2 = 0
+      nodePropertyGraph(2, {case i => Map("p1" -> i, "p2" -> 0)}, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      //this could temporarily make the property pair non-unique
+      .setPropertiesFromMap("n", "{p1: 1, p2: 3}", removeOtherProps = true)
+      .filter("n.p1 = 0", "n.p2 = 0")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n")
+      .withSingleRow(nodes.head)
+      .withStatistics(propertiesSet = 2)
+  }
+
+  test("should set multiple properties without violating constraint (removeOtherProps = false)") {
+    val nodes = given {
+      uniqueIndex("L", "p1", "p2")
+
+      //p1 = 0, p2 = 0
+      //p1 = 1, p2 = 0
+      nodePropertyGraph(2, {case i => Map("p1" -> i, "p2" -> 0)}, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      //this could temporarily make the property pair non-unique
+      .setPropertiesFromMap("n", "{p1: 1, p2: 3}", removeOtherProps = false)
+      .filter("n.p1 = 0", "n.p2 = 0")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n")
+      .withSingleRow(nodes.head)
+      .withStatistics(propertiesSet = 2)
+  }
 }

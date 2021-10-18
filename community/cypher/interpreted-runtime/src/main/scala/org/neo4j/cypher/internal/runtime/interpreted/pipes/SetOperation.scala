@@ -346,13 +346,15 @@ abstract class AbstractSetPropertyFromMapOperation() extends SetOperation {
     val setValues = new ArrayBuffer[AnyValue]()
     var setCount = 0L
 
+    val propValues = IntObjectMaps.mutable.empty[Value]
+
     /*Set all map values on the property container*/
     map.foreach((k: String, v: AnyValue) => {
       if (v eq Values.NO_VALUE) {
         val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
         if (optPropertyKeyId.isDefined) {
           setCount += 1
-          ops.removeProperty(itemId, optPropertyKeyId.get)
+          propValues.put(optPropertyKeyId.get, Values.NO_VALUE)
         }
       }
       else {
@@ -365,7 +367,7 @@ abstract class AbstractSetPropertyFromMapOperation() extends SetOperation {
     // batch creation is way faster is graphs with many propertyKeyIds
     val propertyIds = qtx.getOrCreatePropertyKeyIds(setKeys.toArray)
     for (i <- propertyIds.indices) {
-      ops.setProperty(itemId, propertyIds(i), runtime.makeValueNeoSafe(setValues(i)))
+      propValues.put(propertyIds(i),  runtime.makeValueNeoSafe(setValues(i)))
       setCount += 1
     }
 
@@ -374,12 +376,11 @@ abstract class AbstractSetPropertyFromMapOperation() extends SetOperation {
       val seen = propertyIds.toSet
       val properties = ops.propertyKeyIds(itemId, entityCursor, propertyCursor).filterNot(seen.contains).toSet
       for (propertyKeyId <- properties) {
-        if (ops.removeProperty(itemId, propertyKeyId)) {
-          setCount += 1
-        }
+        propValues.put(propertyKeyId, Values.NO_VALUE)
       }
     }
 
+    ops.setProperties(itemId, propValues)
     setCount
   }
 }
