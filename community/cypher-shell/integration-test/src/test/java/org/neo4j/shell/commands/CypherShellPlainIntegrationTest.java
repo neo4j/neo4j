@@ -61,19 +61,6 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     }
 
     @Test
-    void periodicCommitWorks() throws CommandException
-    {
-        shell.execute( "USING PERIODIC COMMIT\n" +
-                       "LOAD CSV FROM 'https://neo4j.com/docs/cypher-refcard/4.3/csv/artists.csv' AS line\n" +
-                       "CREATE (:Artist {name: line[1], year: toInteger(line[2])});" );
-        linePrinter.clear();
-
-        shell.execute( "MATCH (a:Artist) WHERE a.name = 'Europe' RETURN a.name" );
-
-        assertThat( linePrinter.output(), containsString( "a.name" + NEWLINE + "\"Europe\"" ) );
-    }
-
-    @Test
     void cypherWithProfileStatements() throws CommandException
     {
         //when
