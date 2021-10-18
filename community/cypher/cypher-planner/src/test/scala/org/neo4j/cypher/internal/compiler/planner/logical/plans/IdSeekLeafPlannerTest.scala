@@ -274,7 +274,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // then
     resultPlans should equal(
       Set(Selection(
-        ands(equals(function("type", varFor("r")), literalString("X"))),
+        ands(in(function("type", varFor("r")), literalString("X"))),
         UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
       ))
     )
@@ -319,10 +319,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     resultPlans should equal(
       Set(Selection(
         ands(
-          ors(
-            equals(function("type", varFor("r")), literalString("X")),
-            equals(function("type", varFor("r")), literalString("Y"))
-          )
+          in(function("type", varFor("r")), listOf(literalString("X"), literalString("Y")))
         ),
         UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
       )))

@@ -155,6 +155,23 @@ abstract case class FunctionInfo(f: FunctionWithName) {
   override def toString: String = getFunctionName + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
 }
 
+/**
+ * Deterministic function, always produces the same output given the same input
+ * arguments and graph state.
+ *
+ * Allows us to find functions that might be duplicated and can be reduced to
+ * a single call.
+ */
+object DeterministicFunction {
+  def unapply(f: Function): Option[Function] = {
+    if (f == Rand || f == RandomUUID || f == UnresolvedFunction) {
+      None
+    } else {
+      Some(f)
+    }
+  }
+}
+
 abstract class Function extends FunctionWithName with TypeSignatures {
 
   def asFunctionName(implicit position: InputPosition): (Namespace, FunctionName) = {

@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.expressions.DeterministicFunctionInvocation
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.EqualityRewrittenToIn
@@ -41,10 +40,9 @@ import org.neo4j.cypher.internal.util.bottomUp
 case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
   override def instance(from: BaseState, ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
-    // id(a) = value => id(a) IN [value]
-    case predicate@Equals(func@FunctionInvocation(_, _, _, IndexedSeq(idExpr)), idValueExpr)
-      if func.function == functions.Id =>
-      In(func, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
+    // if f is deterministic: f(a) = value => f(a) IN [value]
+    case predicate@Equals(DeterministicFunctionInvocation(invocation), value) =>
+      In(invocation, ListLiteral(Seq(value))(value.position))(predicate.position)
 
     // Equality between two property lookups should not be rewritten
     case predicate@Equals(_: Property, _: Property) =>

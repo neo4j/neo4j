@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionAndRelationshipLeafPlan
-import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -101,13 +101,13 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     relTypes match {
       case Seq(tpe) =>
         val relTypeExpr = relTypeAsStringLiteral(tpe)
-        Some(Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position))
+        Some(In(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position))
 
       case _ :: _ =>
         val relTypeExprs = relTypes.map(relTypeAsStringLiteral)
         val invocation = typeOfRelExpr(idExpr)
         val idPos = idExpr.position
-        Some(Ors(relTypeExprs.map { expr => Equals(invocation, expr)(idPos) } )(idPos))
+        Some(In(invocation, ListLiteral(relTypeExprs)(relTypeExprs.head.position))(idPos))
 
       case _ =>
         None

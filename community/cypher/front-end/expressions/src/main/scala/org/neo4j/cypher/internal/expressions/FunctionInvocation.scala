@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -30,6 +31,18 @@ object FunctionInvocation {
     FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(expression))(name.position)
   def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])(position: InputPosition): FunctionInvocation =
   FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
+}
+
+/**
+ * Deterministic function invocation, see [[DeterministicFunction]].
+ */
+object DeterministicFunctionInvocation {
+  def unapply(expr: FunctionInvocation): Option[FunctionInvocation] = {
+    expr.function match {
+      case DeterministicFunction(_) => Some(expr)
+      case _ => None
+    }
+  }
 }
 
 case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
