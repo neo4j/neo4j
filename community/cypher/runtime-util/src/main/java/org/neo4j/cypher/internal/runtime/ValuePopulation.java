@@ -43,10 +43,11 @@ import org.neo4j.values.virtual.VirtualValues;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.EMPTY_TEXT_ARRAY;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
-import static org.neo4j.values.virtual.VirtualValues.MISSING_NODE;
 
 public final class ValuePopulation
 {
+    private static final NodeValue MISSING_NODE = VirtualValues.nodeValue( -1L, EMPTY_TEXT_ARRAY, EMPTY_MAP );
+
     private ValuePopulation()
     {
         throw new UnsupportedOperationException( "Do not instantiate" );
