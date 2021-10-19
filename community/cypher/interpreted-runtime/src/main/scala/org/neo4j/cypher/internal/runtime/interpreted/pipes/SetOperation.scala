@@ -376,7 +376,10 @@ abstract class AbstractSetPropertyFromMapOperation() extends SetOperation {
       val seen = propertyIds.toSet
       val properties = ops.propertyKeyIds(itemId, entityCursor, propertyCursor).filterNot(seen.contains).toSet
       for (propertyKeyId <- properties) {
-        propValues.put(propertyKeyId, Values.NO_VALUE)
+        if (!propValues.containsKey(propertyKeyId)) {
+          setCount += 1
+          propValues.put(propertyKeyId, Values.NO_VALUE)
+        }
       }
     }
 
