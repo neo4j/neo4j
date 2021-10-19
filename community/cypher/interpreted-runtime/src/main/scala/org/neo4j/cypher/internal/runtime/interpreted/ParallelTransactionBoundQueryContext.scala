@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.common.EntityType
-import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -37,8 +36,8 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.Iterator
 
@@ -59,9 +58,8 @@ object ParallelTransactionBoundQueryContext {
   sealed trait UnsupportedWriteQueryContext extends WriteQueryContext {
     override def nodeWriteOps: NodeOperations = new UnsupportedNodeOperations
     override def relationshipWriteOps: RelationshipOperations = new UnsupportedRelationshipOperations
-    override def createNode(labels: Array[Int]): NodeValue = unsupported()
     override def createNodeId(labels: Array[Int]): Long = unsupported()
-    override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = unsupported()
+    override def createRelationshipId(start: Long, end: Long, relType: Int): Long = unsupported()
     override def getOrCreateRelTypeId(relTypeName: String): Int = unsupported()
     override def getOrCreateLabelId(labelName: String): Int = unsupported()
     override def getOrCreateTypeId(relTypeName: String): Int = unsupported()
@@ -98,17 +96,16 @@ object ParallelTransactionBoundQueryContext {
     override def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] = unsupported()
     override def getById(id: Long): T = unsupported()
     override def isDeletedInThisTx(id: Long): Boolean = unsupported()
-    override def all: ClosingIterator[T] = unsupported()
-    override def allPrimitive: ClosingLongIterator = unsupported()
+    override def all: ClosingLongIterator = unsupported()
     override def acquireExclusiveLock(obj: Long): Unit = unsupported()
     override def releaseExclusiveLock(obj: Long): Unit = unsupported()
-    override def getByIdIfExists(id: Long): Option[T] = unsupported()
+    override def entityExists(id: Long): Boolean = unsupported()
     override def delete(id: Long): Boolean = unsupported()
     override def setProperty(obj: Long, propertyKeyId: Int, value: Value): Unit = unsupported()
     override def removeProperty(obj: Long, propertyKeyId: Int): Boolean = unsupported()
   }
-  private sealed class UnsupportedNodeOperations extends UnsupportedOperations[NodeValue, NodeCursor] with NodeOperations
-  private sealed class UnsupportedRelationshipOperations extends UnsupportedOperations[RelationshipValue, RelationshipScanCursor] with RelationshipOperations
+  private sealed class UnsupportedNodeOperations extends UnsupportedOperations[VirtualNodeValue, NodeCursor] with NodeOperations
+  private sealed class UnsupportedRelationshipOperations extends UnsupportedOperations[VirtualRelationshipValue, RelationshipScanCursor] with RelationshipOperations
 
   private def unsupported(): Nothing = {
     throw new UnsupportedOperationException("Not supported with parallel runtime.")
