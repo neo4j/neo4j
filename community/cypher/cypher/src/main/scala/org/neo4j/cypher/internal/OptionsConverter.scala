@@ -98,6 +98,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   val EXISTING_SEED_INSTANCE = "existingDataSeedInstance"
   val NUM_PRIMARIES = "primaries"
   val NUM_SECONDARIES = "secondaries"
+  val STORAGE_ENGINE = "storageEngine"
   val VISIBLE_PERMITTED_OPTIONS = s"'$EXISTING_DATA', '$EXISTING_SEED_INSTANCE'"
 
   //existing Data values
@@ -105,7 +106,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
 
   override def convert(map: MapValue): CreateDatabaseOptions = {
 
-      map.foldLeft(CreateDatabaseOptions(None, None, None, None)) { case (ops, (key, value)) =>
+      map.foldLeft(CreateDatabaseOptions(None, None, None, None, None)) { case (ops, (key, value)) =>
       //existingData
       if (key.equalsIgnoreCase(EXISTING_DATA)) {
         value match {
@@ -136,6 +137,13 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
           case number: IntegralValue if number.longValue() >= 0 => ops.copy(secondaries = Some(number.longValue().intValue()))
           case _ =>
             throw new InvalidArgumentsException(s"Could not create database with specified $NUM_SECONDARIES '$value'. Expected non-negative integer number of secondaries.")
+        }
+        //storageEngine
+      } else if (key.equalsIgnoreCase(STORAGE_ENGINE)) {
+        value match {
+          case storageEngine: TextValue => ops.copy(storageEngine = Some(storageEngine.stringValue()))
+          case _ =>
+            throw new InvalidArgumentsException(s"Could not create database with specified $STORAGE_ENGINE '$value', String expected.")
         }
       } else {
         throw new InvalidArgumentsException(s"Could not create database with unrecognised option: '$key'. Expected $VISIBLE_PERMITTED_OPTIONS.")
@@ -566,7 +574,8 @@ case class CreateWithNoOptions()
 case class CreateIndexProviderOnlyOptions(provider: Option[IndexProviderDescriptor])
 case class CreateIndexWithStringProviderOptions(provider: Option[String], config: IndexConfig)
 case class CreateIndexWithProviderDescriptorOptions(provider: Option[IndexProviderDescriptor], config: IndexConfig)
-case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String], primaries: Option[Integer], secondaries: Option[Integer])
+case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String],
+                                 primaries: Option[Integer], secondaries: Option[Integer], storageEngine: Option[String])
 
 object MapValueOps {
 
