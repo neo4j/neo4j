@@ -27,6 +27,14 @@ case class HasLabels(expression: Expression, labels: Seq[LabelName])(val positio
 }
 
 /*
+ * Checks if expression has any of the specified labels
+ */
+case class HasAnyLabel(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends BooleanExpression {
+
+  override def asCanonicalStringVal = s"${expression.asCanonicalStringVal}${labels.map(_.asCanonicalStringVal).mkString(":", "|", "")}"
+}
+
+/*
  * Checks if expression has all labels OR all types
  */
 case class HasLabelsOrTypes(expression: Expression, labelsOrTypes: Seq[LabelOrRelTypeName])(val position: InputPosition) extends BooleanExpression {

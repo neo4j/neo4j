@@ -68,7 +68,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     useTop,
     skipInPartialSort,
     simplifySelections,
-    limitNestedPlanExpressions(cardinalities, otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders))
+    limitNestedPlanExpressions(cardinalities, otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders)),
+    combineHasLabels
   ))
 
   override def preConditions: Set[StepSequencer.Condition] = Set(

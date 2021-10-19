@@ -1023,6 +1023,20 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
+    public static boolean hasAnyLabel( AnyValue entity, int[] labels, DbAccess access, NodeCursor nodeCursor )
+    {
+        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( entity instanceof VirtualNodeValue )
+        {
+            return access.isAnyLabelSetOnNode( labels, ((VirtualNodeValue) entity).id(), nodeCursor );
+        }
+        else
+        {
+            throw new CypherTypeException( "Expected a Node, got: " + entity );
+        }
+    }
+
     public static TextValue type( AnyValue item, DbAccess access, RelationshipScanCursor relCursor )
     {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";

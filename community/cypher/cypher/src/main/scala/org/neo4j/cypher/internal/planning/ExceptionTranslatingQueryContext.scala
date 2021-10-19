@@ -244,6 +244,9 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean =
     translateException(tokenNameLookup, inner.isLabelSetOnNode(label, node, nodeCursor))
 
+  override def isAnyLabelSetOnNode(labels: Array[Int], node: Long, nodeCursor: NodeCursor): Boolean =
+    translateException(tokenNameLookup, inner.isAnyLabelSetOnNode(labels, node, nodeCursor))
+
   override def isTypeSetOnRelationship(typ: Int, relationship: Long, relationshipCursor: RelationshipScanCursor): Boolean =
     translateException(tokenNameLookup, inner.isTypeSetOnRelationship(typ, relationship, relationshipCursor))
 

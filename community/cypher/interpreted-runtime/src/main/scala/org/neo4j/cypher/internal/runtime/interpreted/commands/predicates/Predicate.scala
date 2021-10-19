@@ -469,6 +469,29 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
   override def containsIsNull = false
 }
 
+case class HasAnyLabel(entity: Expression, labels: Seq[KeyToken]) extends Predicate {
+
+  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+    case IsNoValue() =>
+      None
+
+    case value =>
+      val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
+      val tokens = labels.flatMap(_.getOptId(state.query)).toArray
+      Some(state.query.isAnyLabelSetOnNode(tokens, nodeId, state.cursors.nodeCursor))
+  }
+
+  override def toString = s"$entity:${labels.mkString("|")}"
+
+  override def rewrite(f: Expression => Expression): Expression = f(HasAnyLabel(entity.rewrite(f), labels.map(_.typedRewrite[KeyToken](f))))
+
+  override def children: Seq[Expression] = labels :+ entity
+
+  override def arguments: Seq[Expression] = Seq(entity)
+
+  override def containsIsNull = false
+}
+
 case class HasType(entity: Expression, typ: KeyToken) extends Predicate {
 
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {

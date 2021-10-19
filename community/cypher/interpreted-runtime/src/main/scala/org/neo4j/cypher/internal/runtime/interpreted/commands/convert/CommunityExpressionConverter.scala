@@ -200,6 +200,11 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
         .ShortestPathExpression(e.pattern.asLegacyPatterns(id, None, self, anonymousVariableNameGenerator).head, operatorId = id)
       case e: internal.expressions.HasLabelsOrTypes => hasLabelsOrTypes(id, e, self)
       case e: internal.expressions.HasLabels => hasLabels(id, e, self)
+      case e: internal.expressions.HasAnyLabel =>
+        predicates.HasAnyLabel(
+          self.toCommandExpression(id, e.expression),
+          e.labels.map(l => commands.values.KeyToken.Unresolved(l.name, commands.values.TokenType.Label))
+        )
       case e: internal.expressions.HasTypes => hasTypes(id, e, self)
       case e: internal.expressions.ListLiteral => commands.expressions.ListLiteral(toCommandExpression(id, e.expressions, self): _*)
       case e: internal.expressions.MapExpression => commands.expressions.LiteralMap(mapItems(id, e.items, self))

@@ -210,6 +210,37 @@ public final class CursorUtils
     }
 
     /**
+     * Returns true if any of the specified labels are set on the node with id `node`.
+     */
+    public static boolean nodeHasAnyLabel( Read read, NodeCursor nodeCursor, long node, int[] labels )
+    {
+        read.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            return false;
+        }
+
+        return nodeHasAnyLabel( nodeCursor, labels );
+    }
+
+    /**
+     * Returns true if any of the specified labels are set on the node that `cursor` is pointing at.
+     */
+    public static boolean nodeHasAnyLabel( NodeCursor cursor, int[] labels )
+    {
+        var nodeLabels = cursor.labels();
+
+        for ( int label : labels )
+        {
+            if ( nodeLabels.contains( label ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Checks if given relationship has a given type.
      *
      * @param read The current Read instance

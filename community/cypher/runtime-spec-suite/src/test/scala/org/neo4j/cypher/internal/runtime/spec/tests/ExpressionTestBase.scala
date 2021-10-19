@@ -635,6 +635,83 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
     an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(runtimeResult)
   }
+
+  test("should filter with has any label predicate") {
+    // given
+    val size = 100
+    val nodes = given {
+      Range(0, size).map {
+        case i if i % 5 == 0 => runtimeTestSupport.tx.createNode()
+        case i if i % 5 == 1 => runtimeTestSupport.tx.createNode(label("A"))
+        case i if i % 5 == 2 => runtimeTestSupport.tx.createNode(label("B"))
+        case i if i % 5 == 3 => runtimeTestSupport.tx.createNode(label("C"))
+        case i if i % 5 == 4 => runtimeTestSupport.tx.createNode(label("A"), label("B"), label("C"))
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .filterExpression(hasAnyLabel(varFor("n"), "C", "B"))
+      .allNodeScan("n")
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    val expected = nodes.filter(n => n.hasLabel(label("C")) || n.hasLabel(label("B")))
+    result should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should filter with has any label predicate and input nodes") {
+    // given
+    val size = 100
+    val nodes = given {
+      Range(0, size).map {
+        case i if i % 5 == 0 => runtimeTestSupport.tx.createNode()
+        case i if i % 5 == 1 => runtimeTestSupport.tx.createNode(label("A"))
+        case i if i % 5 == 2 => runtimeTestSupport.tx.createNode(label("B"))
+        case i if i % 5 == 3 => runtimeTestSupport.tx.createNode(label("C"))
+        case i if i % 5 == 4 => runtimeTestSupport.tx.createNode(label("A"), label("B"), label("C"))
+      }
+    }
+
+    val input = inputValues(nodes.map(r => Array[Any](r)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .filterExpression(hasAnyLabel(varFor("n"), "C", "B"))
+      .input(nodes = Seq("n"))
+      .build()
+
+    val result = execute(logicalQuery, runtime, input)
+    consume(result)
+
+    // then
+    val expected = nodes.filter(n => n.hasLabel(label("C")) || n.hasLabel(label("B")))
+    result should beColumns("n").withRows(singleColumn(expected))
+  }
+
+  test("should handle non-existing node with has any label expression") {
+    // given
+    given { tx.createNode(label("Label")) }
+    val node = mock[Node]
+    when(node.getId).thenReturn(1337L)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .filterExpression(hasAnyLabel("n", "Label"))
+      .input(nodes = Seq("n"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(node)))
+
+    // then
+    runtimeResult should beColumns("n").withNoRows()
+  }
 }
 
 // Supported by all non-parallel runtimes
@@ -881,5 +958,23 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
       case i if i % 3 == 1 => false
       case _ => null
     }))
+  }
+
+  test("should handle deleted node with has any label expression") {
+    // given
+    val node = given { tx.createNode(label("Label")) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasLabel")
+      .projection(Map("hasLabel" -> hasAnyLabel("x", "Label")))
+      .input(nodes = Seq("x"))
+      .build()
+
+    node.delete()
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(node)))
+
+    // then
+    runtimeResult should beColumns("hasLabel").withRows(singleColumn(Seq(false)))
   }
 }

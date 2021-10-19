@@ -436,6 +436,10 @@ sealed class TransactionBoundReadQueryContext(val transactionalContext: Transact
     CursorUtils.nodeHasLabel(reads(), nodeCursor, node, label)
   }
 
+  override def isAnyLabelSetOnNode(labels: Array[Int], id: Long, nodeCursor: NodeCursor): Boolean = {
+    CursorUtils.nodeHasAnyLabel(reads(), nodeCursor, id, labels)
+  }
+
   override def isTypeSetOnRelationship(typ: Int, id: Long, relationshipCursor: RelationshipScanCursor): Boolean = {
     CursorUtils.relationshipHasType(reads(), relationshipCursor, id, typ)
   }
