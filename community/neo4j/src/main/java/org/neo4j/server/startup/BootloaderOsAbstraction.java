@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileUtils;
@@ -44,6 +45,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.server.startup.Bootloader.ENV_HEAP_SIZE;
+import static org.neo4j.server.startup.Bootloader.ENV_JAVA_OPTS;
 import static org.neo4j.server.startup.Bootloader.PROP_JAVA_CP;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
 import static org.neo4j.server.startup.ProcessManager.behaviour;
@@ -202,6 +204,28 @@ abstract class BootloaderOsAbstraction
 
     protected List<String> getJvmOpts()
     {
+        // If JAVA_OPTS is provided, it has the highest priority
+        // and we just use that as it is without any modification
+        // or added logic
+        String envJavaOptions = ctx.getEnv( ENV_JAVA_OPTS );
+        if ( isNotEmpty( envJavaOptions ) )
+        {
+            if ( isNotEmpty( ctx.getEnv( ENV_HEAP_SIZE ) ) )
+            {
+                ctx.err.println( "WARNING! HEAP_SIZE is ignored, because JAVA_OPTS is set" );
+            }
+
+            // We need to turn a list of JVM options provided as one string into a list of individual options.
+            // We don't have a code that does exactly that, but SettingValueParsers.JVM_ADDITIONAL turns
+            // options provided as one string into a 'list' of individual options separated by a new line.
+            return List.of( SettingValueParsers.JVM_ADDITIONAL.parse( envJavaOptions ).split( System.lineSeparator() ) );
+        }
+
+        return buildJvmOpts();
+    }
+
+    private List<String> buildJvmOpts()
+    {
         MutableList<String> opts = Lists.mutable.empty();
         String xmsValue;
         String xmxValue;
@@ -209,7 +233,7 @@ abstract class BootloaderOsAbstraction
         Configuration config = ctx.config();
         if ( isNotEmpty( envHeapSize ) )
         {
-            // HEAP_SIZE env. variable has highest prio
+            // HEAP_SIZE env. variable has highest priority
             xmsValue = envHeapSize;
             xmxValue = envHeapSize;
         }

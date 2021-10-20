@@ -133,6 +133,18 @@ class Neo4jAdminCommandTest
             }
         }
 
+        @Test
+        void shouldUseEnvironmentJavaOptionsWhenGiven() throws Exception
+        {
+            if ( fork.run( () -> execute( "test-command" ), Map.of( Bootloader.ENV_JAVA_OPTS, "-XX:+UseG1GC -Xlog:gc" ) ) )
+            {
+                // The JVM needs to accept '-Xlog:gc' in order to print which GC it is using
+                // and it needs to accept '-XX:+UseG1GC' in order to print 'Using G1',
+                // so testing presence of 'Using G1' really verifies that both options are in use.
+                assertThat( out.toString() ).containsSubsequence( "Using G1" );
+            }
+        }
+
         @Override
         protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
                 Runtime.Version version )
@@ -206,6 +218,47 @@ class Neo4jAdminCommandTest
             addConf( BootloaderSettings.initial_heap_size, "222m" );
             assertThat( execute( "test-command" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).doesNotContain( "-Xms" );
+        }
+
+        @Test
+        void shouldUseEnvironmentJavaOptionsWhenGiven()
+        {
+            assertThat( execute( List.of( "test-command" ), Map.of( Bootloader.ENV_JAVA_OPTS, "-XX:+UseZGC -Xlog:gc" ) ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( out.toString() )
+                    .contains( "-XX:+UseZGC" )
+                    .contains( "-Xlog:gc" )
+                    // parallel GC is used by default by admin commands,
+                    // this JVM option should be overridden by the passed JAVA_OPTS
+                    .doesNotContain( "-XX:+UseParallelGC" );
+        }
+
+        @Test
+        void shouldIgnoreJvmOptionsFromConfigWhenJavaOptionsVariablePresent()
+        {
+            addConf( BootloaderSettings.additional_jvm, "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005" );
+            assertThat( execute( List.of( "test-command" ), Map.of( Bootloader.ENV_JAVA_OPTS, "-XX:+UseZGC -Xlog:gc" ) ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( out.toString() )
+                    .contains( "-XX:+UseZGC" )
+                    .contains( "-Xlog:gc" )
+                    // parallel GC is used by default by admin commands,
+                    // this JVM option should be overridden by the passed JAVA_OPTS
+                    .doesNotContain( "-XX:+UseParallelGC" )
+                    .doesNotContain( "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005" );
+        }
+
+        @Test
+        void shouldIgnoreHeapSizeWhenJavaOptionsVariablePresent()
+        {
+            assertThat( execute( List.of( "test-command" ),
+                    Map.of( Bootloader.ENV_JAVA_OPTS, "-XX:+UseZGC -Xlog:gc", Bootloader.ENV_HEAP_SIZE, "666m" ) ) )
+                    .isEqualTo( EXIT_CODE_OK );
+            assertThat( out.toString() )
+                    .contains( "-XX:+UseZGC" )
+                    .contains( "-Xlog:gc" )
+                    .doesNotContain( "-Xmx666m" )
+                    .doesNotContain( "-Xms666m" );
+            assertThat( err.toString() )
+                    .contains( "WARNING! HEAP_SIZE is ignored, because JAVA_OPTS is set" );
         }
 
         @Test

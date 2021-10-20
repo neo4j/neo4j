@@ -86,6 +86,9 @@
                             <id>neo4j-admin</id>
                         </program>
                     </programs>
+                    <!-- The used template is the default one with JAVA_OPS removed.
+                        neo4j-admin uses JAVA_OPS, so we don't want the bootstrap JVM reacting to that variable -->
+                    <unixScriptTemplate>${basedir}/src/main/appassembler/unix-template</unixScriptTemplate>
                 </configuration>
             </plugin>
             <plugin>

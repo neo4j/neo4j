@@ -51,7 +51,10 @@ import static picocli.CommandLine.IVersionProvider;
                 "  NEO4J_CONF    Path to directory which contains neo4j.conf.",
                 "  NEO4J_DEBUG   Set to anything to enable debug output.",
                 "  NEO4J_HOME    Neo4j home directory.",
-                "  HEAP_SIZE     Set JVM maximum heap size during command execution. Takes a number and a unit, for example 512m." }
+                "  HEAP_SIZE     Set JVM maximum heap size during command execution. Takes a number and a unit, for example 512m.",
+                "  JAVA_OPTS     Used to pass custom setting to Java Virtual Machine. Refer to JVM documentation about the exact format. " +
+                        "This variable is incompatible with HEAP_SIZE and takes precedence over HEAP_SIZE."
+        }
 )
 public final class AdminTool
 {

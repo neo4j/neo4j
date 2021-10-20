@@ -46,8 +46,7 @@ class Bootloader
     static final String ENV_NEO4J_SHUTDOWN_TIMEOUT = "NEO4J_SHUTDOWN_TIMEOUT";
     static final String ENV_NEO4J_START_WAIT = "NEO4J_START_WAIT";
     static final String ENV_HEAP_SIZE = "HEAP_SIZE";
-    static final String ENV_JAVA_HOME = "JAVA_HOME";
-    static final String ENV_JAVA_CMD = "JAVA_CMD";
+    static final String ENV_JAVA_OPTS = "JAVA_OPTS";
     static final String PROP_JAVA_CP = "java.class.path";
     static final String PROP_VM_NAME = "java.vm.name";
     static final String PROP_VM_VENDOR = "java.vm.vendor";
