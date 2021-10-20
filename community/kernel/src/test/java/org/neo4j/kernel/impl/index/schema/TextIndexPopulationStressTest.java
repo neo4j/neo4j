@@ -20,30 +20,33 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
+import org.neo4j.monitoring.Monitors;
 
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.values.storable.ValueType.CARTESIAN_POINT;
-import static org.neo4j.values.storable.ValueType.CARTESIAN_POINT_3D;
-import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT;
-import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT_3D;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
+import static org.neo4j.values.storable.ValueType.CHAR;
+import static org.neo4j.values.storable.ValueType.STRING;
+import static org.neo4j.values.storable.ValueType.STRING_ALPHANUMERIC;
+import static org.neo4j.values.storable.ValueType.STRING_ASCII;
+import static org.neo4j.values.storable.ValueType.STRING_BMP;
 
-class PointIndexPopulationStressTest extends IndexPopulationStressTest
+class TextIndexPopulationStressTest extends IndexPopulationStressTest
 {
-
-    PointIndexPopulationStressTest()
+    TextIndexPopulationStressTest()
     {
-        super( true, randomValues -> randomValues.nextValueOfTypes( GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_3D, CARTESIAN_POINT, CARTESIAN_POINT_3D ), test ->
+        super( true, randomValues -> randomValues.nextValueOfTypes( CHAR, STRING, STRING_ALPHANUMERIC, STRING_ASCII, STRING_BMP ), test ->
         {
             DatabaseIndexContext context = DatabaseIndexContext.builder( test.pageCache, test.fs, DEFAULT_DATABASE_NAME ).build();
-            return new PointIndexProvider( context, test.directory(), immediate(), defaults() );
+            return new TextIndexProvider( context.fileSystem, directoryFactory( false ), test.directory(), new Monitors(), defaults(), writable() );
         } );
     }
 
     @Override
     IndexType indexType()
     {
-        return IndexType.POINT;
+        return IndexType.TEXT;
     }
 }

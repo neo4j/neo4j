@@ -26,9 +26,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -36,6 +40,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -50,12 +55,18 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
+import org.neo4j.storageengine.api.schema.SimpleEntityClient;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -64,18 +75,17 @@ import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueTuple;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
@@ -85,6 +95,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
@@ -109,10 +120,10 @@ abstract class IndexPopulationStressTest
     @Inject
     private TestDirectory testDirectory;
 
+    private final Scheduler scheduler = new Scheduler();
     private final boolean hasValues;
-    private final Function<RandomValues, Value> valueGenerator;
-    private final Function<IndexPopulationStressTest, IndexProvider> providerCreator;
-
+    private final Function<RandomValues,Value> valueGenerator;
+    private final Function<IndexPopulationStressTest,IndexProvider> providerCreator;
     private IndexDescriptor descriptor;
     private IndexDescriptor descriptor2;
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( 1000, 0.2, true );
@@ -154,13 +165,15 @@ abstract class IndexPopulationStressTest
     }
 
     @AfterEach
-    void teardown()
+    void tearDown() throws Exception
     {
         UnsafeUtil.exchangeNativeAccessCheckEnabled( prevAccessCheck );
         if ( populator != null )
         {
             populator.close( true, NULL );
         }
+
+        scheduler.shutdown();
     }
 
     @Test
@@ -181,35 +194,44 @@ abstract class IndexPopulationStressTest
         race.addContestant( updater( lastBatches, insertersDone, updateLock, updates ) );
 
         race.go();
+        populator.scanCompleted( nullInstance, scheduler, NULL);
         populator.close( true, NULL );
         populator = null; // to let the after-method know that we've closed it ourselves
 
         // then assert that a tree built by a single thread ends up exactly the same
         buildReferencePopulatorSingleThreaded( generators, updates );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
-              IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig, tokenNameLookup );
-              var reader = accessor.newValueReader();
-              var referenceReader = referenceAccessor.newValueReader() )
+                IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig, tokenNameLookup );
+                var reader = accessor.newValueReader();
+                var referenceReader = referenceAccessor.newValueReader() )
         {
-            SimpleEntityValueClient entries = new SimpleEntityValueClient();
-            SimpleEntityValueClient referenceEntries = new SimpleEntityValueClient();
-            reader.query( entries, NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
-            referenceReader.query( referenceEntries, NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
-            while ( referenceEntries.next() )
-            {
-                assertTrue( entries.next() );
-                assertEquals( referenceEntries.reference, entries.reference );
-                if ( hasValues )
-                {
-                    assertEquals( ValueTuple.of( referenceEntries.values ), ValueTuple.of( entries.values ) );
-                }
-            }
-            assertFalse( entries.next() );
+            RecordingClient entries = new RecordingClient();
+            RecordingClient referenceEntries = new RecordingClient();
+            reader.query( entries, NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), allEntries() );
+            referenceReader.query( referenceEntries, NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), allEntries() );
+
+            exhaustAndSort( referenceEntries );
+            exhaustAndSort( entries );
+
+            // a sanity check that we actually collected something
+            assertFalse( entries.records.isEmpty() );
+
+            assertThat( entries.records ).isEqualTo( referenceEntries.records );
         }
     }
 
+    private void exhaustAndSort( RecordingClient client )
+    {
+        while ( client.next() )
+        {
+
+        }
+
+        client.records.sort( Comparator.comparingLong( o -> o.entityId ) );
+    }
+
     private Runnable updater( AtomicReferenceArray<List<ValueIndexEntryUpdate<?>>> lastBatches, CountDownLatch insertersDone, ReadWriteLock updateLock,
-        Collection<ValueIndexEntryUpdate<?>> updates )
+            Collection<ValueIndexEntryUpdate<?>> updates )
     {
         return throwing( () ->
         {
@@ -277,7 +299,7 @@ abstract class IndexPopulationStressTest
                 Generator generator = generators[slot] = new Generator( MAX_BATCH_SIZE, random.seed() + slot, slot * worstCaseEntriesPerThread );
                 for ( int j = 0; j < BATCHES_PER_THREAD; j++ )
                 {
-                    List<ValueIndexEntryUpdate<?>> batch = generator.batch();
+                    List<ValueIndexEntryUpdate<?>> batch = generator.batch( descriptor );
                     updateLock.readLock().lock();
                     try
                     {
@@ -312,7 +334,7 @@ abstract class IndexPopulationStressTest
                 generator.reset();
                 for ( int i = 0; i < BATCHES_PER_THREAD; i++ )
                 {
-                    referencePopulator.add( generator.batch(), NULL );
+                    referencePopulator.add( generator.batch( descriptor2 ), NULL );
                 }
             }
             try ( IndexUpdater updater = referencePopulator.newPopulatingUpdater( nodePropertyAccessor, NULL ) )
@@ -323,6 +345,7 @@ abstract class IndexPopulationStressTest
                 }
             }
             referenceSuccess = true;
+            referencePopulator.scanCompleted( nullInstance, scheduler, NULL );
         }
         finally
         {
@@ -354,7 +377,7 @@ abstract class IndexPopulationStressTest
             nextEntityId = startEntityId;
         }
 
-        List<ValueIndexEntryUpdate<?>> batch()
+        List<ValueIndexEntryUpdate<?>> batch( IndexDescriptor descriptor )
         {
             int n = randomValues.nextInt( maxBatchSize ) + 1;
             List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>( n );
@@ -363,6 +386,84 @@ abstract class IndexPopulationStressTest
                 updates.add( add( nextEntityId++, descriptor, valueGenerator.apply( randomValues ) ) );
             }
             return updates;
+        }
+    }
+
+    private static class Scheduler implements IndexPopulator.PopulationWorkScheduler
+    {
+        private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+
+        @Override
+        public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
+        {
+            return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, new JobMonitoringParams( null, null, null ), job );
+        }
+
+        void shutdown() throws Exception
+        {
+            jobScheduler.shutdown();
+        }
+    }
+
+    private static class RecordingClient extends SimpleEntityClient implements IndexProgressor.EntityValueClient
+    {
+        final List<IndexRecord> records = new ArrayList<>();
+
+        @Override
+        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, AccessMode accessMode,
+                boolean indexIncludesTransactionState, IndexQueryConstraints constraints, PropertyIndexQuery... query )
+        {
+            initialize( progressor );
+        }
+
+        @Override
+        public boolean acceptEntity( long reference, float score, Value... values )
+        {
+            acceptEntity( reference );
+            records.add( new IndexRecord( reference, values ) );
+            return true;
+        }
+
+        @Override
+        public boolean needsValues()
+        {
+            return true;
+        }
+    }
+
+    private static class IndexRecord
+    {
+        private final long entityId;
+        private final Value[] values;
+
+        IndexRecord( long entityId, Value[] values )
+        {
+            this.entityId = entityId;
+            this.values = values;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            IndexRecord that = (IndexRecord) o;
+            return entityId == that.entityId &&
+                    Arrays.equals( values, that.values );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = Objects.hash( entityId );
+            result = 31 * result + Arrays.hashCode( values );
+            return result;
         }
     }
 }
