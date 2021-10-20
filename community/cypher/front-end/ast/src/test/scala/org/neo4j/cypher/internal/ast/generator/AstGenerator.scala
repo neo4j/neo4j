@@ -1710,11 +1710,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     wait <- _waitUntilComplete
   } yield DropDatabase(dbName, ifExists, additionalAction, wait)(pos)
 
+  /* TODO: Add these when all generated identifiers are parsed in JavaCC
   def _alterDatabase: Gen[AlterDatabase] = for {
     dbName <- _nameAsEither
     ifExists <- boolean
     access <- _access
   } yield AlterDatabase(dbName, ifExists, access)(pos)
+   */
 
   def _startDatabase: Gen[StartDatabase] = for {
     dbName <- _nameAsEither
@@ -1730,7 +1732,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _showDatabase,
     _createDatabase,
     _dropDatabase,
-    _alterDatabase,
     _startDatabase,
     _stopDatabase
   )
