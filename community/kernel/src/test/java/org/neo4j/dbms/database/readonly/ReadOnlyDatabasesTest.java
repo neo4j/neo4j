@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration.database.readonly;
+package org.neo4j.dbms.database.readonly;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +28,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -213,5 +215,19 @@ class ReadOnlyDatabasesTest
 
         // then
         assertTrue( readOnly.isReadOnly( bar ) );
+    }
+
+    @Test
+    void refreshShouldIncrementUpdateId()
+    {
+        // given
+        var readOnlyDatabases = new ReadOnlyDatabases();
+        var originalUpdateId = readOnlyDatabases.updateId();
+
+        // when
+        readOnlyDatabases.refresh();
+
+        // then
+        assertThat( readOnlyDatabases.updateId() ).isEqualTo( originalUpdateId + 1 );
     }
 }

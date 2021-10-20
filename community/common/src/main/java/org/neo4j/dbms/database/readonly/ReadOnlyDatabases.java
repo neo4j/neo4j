@@ -31,12 +31,14 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 public class ReadOnlyDatabases
 {
     private volatile Set<Lookup> readOnlyDatabases;
+    private volatile long updateId;
     private final Set<LookupFactory> readOnlyDatabasesLookupFactories;
 
     public ReadOnlyDatabases( LookupFactory... readOnlyDatabasesLookupFactories )
     {
         this.readOnlyDatabasesLookupFactories = Set.of( readOnlyDatabasesLookupFactories );
         this.readOnlyDatabases = Set.of();
+        this.updateId = -1;
     }
 
     /**
@@ -56,6 +58,14 @@ public class ReadOnlyDatabases
         }
 
         return readOnlyDatabases.stream().anyMatch( l -> l.databaseIsReadOnly( namedDatabaseId ) );
+    }
+
+    /**
+     * @return a numeric value which increases monotonically with each call to {@link #refresh()}. Used by {@link DatabaseReadOnlyChecker} for caching.
+     */
+    long updateId()
+    {
+        return updateId;
     }
 
     /**
@@ -85,6 +95,7 @@ public class ReadOnlyDatabases
      */
     public synchronized void refresh()
     {
+        this.updateId++;
         this.readOnlyDatabases = readOnlyDatabasesLookupFactories.stream()
                                                                  .map( LookupFactory::lookupReadOnlyDatabases )
                                                                  .collect( Collectors.toUnmodifiableSet() );

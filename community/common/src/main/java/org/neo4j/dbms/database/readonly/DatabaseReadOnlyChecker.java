@@ -22,8 +22,6 @@ package org.neo4j.dbms.database.readonly;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-import static java.util.Objects.requireNonNull;
-
 public interface DatabaseReadOnlyChecker
 {
     static DatabaseReadOnlyChecker writable()
@@ -48,19 +46,29 @@ public interface DatabaseReadOnlyChecker
 
     class Default implements DatabaseReadOnlyChecker
     {
+        private volatile long lastUpdated;
+        private volatile boolean readOnly;
         private final ReadOnlyDatabases dbmsChecker;
         private final NamedDatabaseId namedDatabaseId;
 
         Default( ReadOnlyDatabases readOnlyDatabases, NamedDatabaseId namedDatabaseId )
         {
+            this.lastUpdated = -1;
+            this.readOnly = false;
             this.dbmsChecker = readOnlyDatabases;
             this.namedDatabaseId = namedDatabaseId;
         }
 
         @Override
-        public boolean isReadOnly()
+        public synchronized boolean isReadOnly()
         {
-            return dbmsChecker.isReadOnly( namedDatabaseId );
+            var globalUpdate = dbmsChecker.updateId();
+            if ( lastUpdated < globalUpdate )
+            {
+                readOnly = dbmsChecker.isReadOnly( namedDatabaseId);
+                lastUpdated = globalUpdate;
+            }
+            return readOnly;
         }
 
         @Override

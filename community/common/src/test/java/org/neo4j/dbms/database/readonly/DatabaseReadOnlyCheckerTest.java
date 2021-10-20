@@ -34,6 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.atMostOnce;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 
@@ -72,5 +76,37 @@ class DatabaseReadOnlyCheckerTest
         databases.add( bar );
         globalChecker.refresh();
         assertTrue( barChecker.isReadOnly() );
+    }
+
+    @Test
+    void databaseCheckerShouldCacheLookupsFromGlobalChecker()
+    {
+        var foo = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
+        var bar = DatabaseIdFactory.from( "bar", UUID.randomUUID() );
+        var databases = new HashSet<NamedDatabaseId>();
+        databases.add( foo );
+        var globalChecker = spy( new ReadOnlyDatabases( () -> {
+            var snapshot = Set.copyOf( databases );
+            return snapshot::contains;
+        } ) );
+        var fooChecker = globalChecker.forDatabase( foo );
+        var barChecker = globalChecker.forDatabase( bar );
+
+        // when
+        assertTrue( fooChecker.isReadOnly() );
+        assertTrue( fooChecker.isReadOnly() );
+
+        // then
+        verify( globalChecker, atMostOnce() ).isReadOnly( foo );
+
+        // when
+        databases.add( bar );
+        globalChecker.refresh();
+
+        assertTrue( barChecker.isReadOnly() );
+        assertTrue( fooChecker.isReadOnly() );
+
+        // then
+        verify( globalChecker, times( 2 ) ).isReadOnly( foo );
     }
 }
