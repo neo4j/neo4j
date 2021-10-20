@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
+import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.String.format;
@@ -58,7 +59,7 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
     }
 
     @Override
-    protected LogTailInformation findLogTail()
+    protected LogTailInformation findLogTail( Log log )
     {
         LogFile logFile = logFiles.getLogFile();
         long highestLogVersion = logFile.getHighestLogVersion();

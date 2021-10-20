@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
+import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -53,6 +54,11 @@ public class LegacyCheckpointLogFile
     public Optional<CheckpointInfo> findLatestCheckpoint()
     {
         return Optional.ofNullable( getTailInformation().lastCheckPoint );
+    }
+
+    public Optional<CheckpointInfo> findLatestCheckpoint( Log log )
+    {
+        return Optional.ofNullable( getTailInformation( log ).lastCheckPoint );
     }
 
     public List<CheckpointInfo> reachableCheckpoints() throws IOException
@@ -91,6 +97,11 @@ public class LegacyCheckpointLogFile
             }
         }
         return checkpoints;
+    }
+
+    public LogTailInformation getTailInformation( Log log )
+    {
+        return logTailScanner.getTailInformation( log );
     }
 
     public LogTailInformation getTailInformation()

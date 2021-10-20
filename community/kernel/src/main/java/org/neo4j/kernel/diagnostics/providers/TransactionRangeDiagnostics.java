@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
+import org.neo4j.logging.NullLog;
 
 public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
 {
@@ -79,7 +80,7 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
     {
         logger.log( "Checkpoint log files:" );
         logger.log( " - existing checkpoint log versions " + checkpointFile.getLowestLogVersion() + "-" + checkpointFile.getHighestLogVersion() );
-        checkpointFile.findLatestCheckpoint().ifPresentOrElse(
+        checkpointFile.findLatestCheckpoint( NullLog.getInstance() ).ifPresentOrElse(
                 checkpoint -> logger.log( " - last checkpoint: " + checkpoint ),
                 () -> logger.log( " - no checkpoints found" ) );
     }

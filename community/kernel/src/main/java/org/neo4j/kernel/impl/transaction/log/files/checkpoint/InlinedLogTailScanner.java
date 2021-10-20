@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -76,7 +77,7 @@ public class InlinedLogTailScanner extends AbstractLogTailScanner
                 context.getMemoryTracker() );
     }
 
-    protected LogTailInformation findLogTail() throws IOException
+    protected LogTailInformation findLogTail( Log log ) throws IOException
     {
         LogFile logFile = logFiles.getLogFile();
         final long highestLogVersion = logFile.getHighestLogVersion();

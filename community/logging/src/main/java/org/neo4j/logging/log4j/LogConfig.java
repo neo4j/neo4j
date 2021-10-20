@@ -53,7 +53,7 @@ public final class LogConfig
         Log4jPluginLoadingWorkaround.doLog4jPluginLoadingWorkaround();
     }
 
-    private static final String APPENDER_NAME = "log";
+    private static final String APPENDER_NAME = "neo4jLog";
 
     private LogConfig()
     {
@@ -135,12 +135,10 @@ public final class LogConfig
 
     private static Appender getAppender( Builder builder, Layout<String> layout )
     {
-        OutputStream outputStream = builder.outputStream;
-
         if ( builder.logToSystemOut )
         {
             return ConsoleAppender.newBuilder()
-                    .setName( APPENDER_NAME )
+                    .setName( APPENDER_NAME + ".system.out" )
                     .setLayout( layout )
                     .setTarget( ConsoleAppender.Target.SYSTEM_OUT )
                     .build();
@@ -151,8 +149,8 @@ public final class LogConfig
             // reconfigure between with and without rotation.
             return createRollingFileAppender( builder, layout );
         }
-        return ((OutputStreamAppender.Builder<?>) OutputStreamAppender.newBuilder().setName( APPENDER_NAME ).setLayout( layout ))
-                .setTarget( outputStream ).build();
+        return ((OutputStreamAppender.Builder<?>) OutputStreamAppender.newBuilder().setName( APPENDER_NAME + ".stream" ).setLayout( layout ))
+                .setTarget( builder.outputStream ).build();
     }
 
     private static Appender createRollingFileAppender( Builder builder, Layout<String> layout )
@@ -173,7 +171,7 @@ public final class LogConfig
                 DefaultRolloverStrategy.newBuilder().withMax( String.valueOf( maxArchives ) ).withFileIndex( "min" ).build();
 
         return RollingFileAppender.newBuilder()
-                .setName( APPENDER_NAME )
+                .setName( APPENDER_NAME + "." + builder.logPath.getFileName().toString() )
                 .setLayout( layout )
                 .withCreateOnDemand( builder.createOnDemand )
                 .withFileName( builder.logPath.toString() )

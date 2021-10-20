@@ -58,7 +58,7 @@ public abstract class AbstractLogTailScanner
     protected final LogFiles logFiles;
     protected final LogEntryReader logEntryReader;
     protected final LogTailScannerMonitor monitor;
-    protected final Log log;
+    private final Log log;
     protected final MemoryTracker memoryTracker;
     private LogTailInformation logTailInformation;
 
@@ -73,7 +73,7 @@ public abstract class AbstractLogTailScanner
         this.memoryTracker = memoryTracker;
     }
 
-    protected abstract LogTailInformation findLogTail() throws IOException;
+    protected abstract LogTailInformation findLogTail( Log log ) throws IOException;
 
     protected void verifyReaderPosition( long version, LogPosition logPosition ) throws IOException
     {
@@ -234,11 +234,16 @@ public abstract class AbstractLogTailScanner
      */
     public LogTailInformation getTailInformation() throws UnderlyingStorageException
     {
+        return getTailInformation( log );
+    }
+
+    public LogTailInformation getTailInformation( Log log ) throws UnderlyingStorageException
+    {
         if ( logTailInformation == null )
         {
             try
             {
-                logTailInformation = findLogTail();
+                logTailInformation = findLogTail( log );
             }
             catch ( IOException e )
             {

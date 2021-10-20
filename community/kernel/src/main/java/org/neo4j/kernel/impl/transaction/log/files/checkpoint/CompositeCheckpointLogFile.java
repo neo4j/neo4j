@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 
 /**
  * Only writes detached checkpoints.
@@ -56,6 +57,17 @@ public class CompositeCheckpointLogFile extends LifecycleAdapter implements Chec
     public void shutdown() throws Exception
     {
         checkpointLogFile.shutdown();
+    }
+
+    @Override
+    public Optional<CheckpointInfo> findLatestCheckpoint( Log log ) throws IOException
+    {
+        Optional<CheckpointInfo> latestCheckpoint = checkpointLogFile.findLatestCheckpoint( log );
+        if ( latestCheckpoint.isEmpty() )
+        {
+            latestCheckpoint = legacyCheckpointLogFile.findLatestCheckpoint( log );
+        }
+        return latestCheckpoint;
     }
 
     @Override

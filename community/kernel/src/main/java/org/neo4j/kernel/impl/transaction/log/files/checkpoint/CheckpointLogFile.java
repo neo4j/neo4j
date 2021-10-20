@@ -93,6 +93,12 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     @Override
     public Optional<CheckpointInfo> findLatestCheckpoint() throws IOException
     {
+        return findLatestCheckpoint( log );
+    }
+
+    @Override
+    public Optional<CheckpointInfo> findLatestCheckpoint( Log log ) throws IOException
+    {
         var versionVisitor = new RangeLogVersionVisitor();
         fileHelper.accept( versionVisitor );
         long highestVersion = versionVisitor.getHighestVersion();

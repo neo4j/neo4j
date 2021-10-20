@@ -54,11 +54,11 @@ public class DbmsDiagnosticsManager
     private static final int CONCISE_DATABASE_NAMES_PER_ROW = 5;
     private final Dependencies dependencies;
     private final boolean enabled;
-    private final Log log;
+    private final Log internalLog;
 
     public DbmsDiagnosticsManager( Dependencies dependencies, LogService logService )
     {
-        this.log = logService.getInternalLog( DiagnosticsManager.class );
+        this.internalLog = logService.getInternalLog( DiagnosticsManager.class );
         this.dependencies = dependencies;
         this.enabled = dependencies.resolveDependency( Config.class ).get( GraphDatabaseInternalSettings.dump_diagnostics );
     }
@@ -67,7 +67,7 @@ public class DbmsDiagnosticsManager
     {
         if ( enabled )
         {
-            dumpSystemDiagnostics( log );
+            dumpSystemDiagnostics( internalLog );
         }
     }
 
@@ -75,13 +75,13 @@ public class DbmsDiagnosticsManager
     {
         if ( enabled )
         {
-            dumpDatabaseDiagnostics( database, log, false );
+            dumpDatabaseDiagnostics( database, internalLog, false );
         }
     }
 
     public void dumpAll()
     {
-        dumpAll( log );
+        dumpAll( internalLog );
     }
 
     public void dumpAll( Log log )
@@ -192,7 +192,7 @@ public class DbmsDiagnosticsManager
 
     private static void dumpAsSingleMessage( Log log, Consumer<StringJoiner> dumpFunction )
     {
-                dumpAsSingleMessageWithPrefix( log, dumpFunction, "" );
+        dumpAsSingleMessageWithPrefix( log, dumpFunction, "" );
     }
 
     /**

@@ -51,7 +51,7 @@ public class RotatingLogFileWriter implements Closeable
         Log4jPluginLoadingWorkaround.doLog4jPluginLoadingWorkaround();
     }
 
-    private static final String APPENDER_NAME = "log";
+    private static final String APPENDER_NAME = "rotatingWriter";
 
     private final Logger log;
     private final Neo4jLoggerContext ctx;
@@ -104,7 +104,7 @@ public class RotatingLogFileWriter implements Closeable
             if ( fileSystemAbstraction instanceof DefaultFileSystemAbstraction )
             {
                 appender = RollingFileAppender.newBuilder()
-                        .setName( APPENDER_NAME )
+                        .setName( APPENDER_NAME + "." + logPath.getFileName().toString() )
                         .setLayout( layout )
                         .withFileName( logPath.toString() )
                         .withFilePattern( logPath + ".%i" + fileSuffix )
@@ -119,8 +119,9 @@ public class RotatingLogFileWriter implements Closeable
                 fileSystemAbstraction.mkdirs( logPath.getParent() );
                 OutputStream outputStream = fileSystemAbstraction.openAsOutputStream( logPath, true );
                 additionalCloseable = outputStream;
-                appender = ((OutputStreamAppender.Builder<?>) OutputStreamAppender.newBuilder().setName( APPENDER_NAME ).setLayout( layout ))
-                        .setTarget( outputStream ).build();
+                appender = ((OutputStreamAppender.Builder<?>) OutputStreamAppender.newBuilder()
+                                                                                  .setName( APPENDER_NAME + "." + logPath.getFileName().toString() )
+                                                                                  .setLayout( layout ) ).setTarget( outputStream ).build();
             }
             appender.start();
             configuration.addAppender( appender );
