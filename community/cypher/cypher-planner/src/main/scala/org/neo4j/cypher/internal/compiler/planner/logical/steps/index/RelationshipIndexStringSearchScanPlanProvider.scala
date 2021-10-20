@@ -48,6 +48,10 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
           }
           val singlePredicateSet = indexMatch.predicateSet(Seq(indexPredicate), exactPredicatesCanGetValue = false)
 
+          val hint = singlePredicateSet
+            .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)
+            .headOption
+
           val plan = context.logicalPlanProducer.planRelationshipIndexStringSearchScan(
             idName = indexMatch.variableName,
             relationshipType = indexMatch.relationshipTypeToken,
@@ -55,7 +59,7 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
             properties = singlePredicateSet.indexedProperties(context),
             stringSearchMode = stringSearchMode,
             solvedPredicates = singlePredicateSet.allSolvedPredicates,
-            solvedHint = singlePredicateSet.matchingHints(hints).find(_.spec.fulfilledByScan),
+            solvedHint = hint,
             valueExpr = valueExpr,
             argumentIds = argumentIds,
             providedOrder = indexMatch.providedOrder,

@@ -62,7 +62,10 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
                             context: LogicalPlanningContext): LogicalPlan = {
 
     val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(predicateSet.propertyPredicates)
-    val hint = predicateSet.matchingHints(hints).headOption
+
+    val hint = predicateSet
+      .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = false)
+      .headOption
 
     context.logicalPlanProducer.planRelationshipIndexSeek(
       idName = indexMatch.variableName,

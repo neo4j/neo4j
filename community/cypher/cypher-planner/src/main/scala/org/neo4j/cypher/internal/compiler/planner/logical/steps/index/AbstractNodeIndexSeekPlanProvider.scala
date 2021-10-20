@@ -64,7 +64,9 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
 
       val properties = predicateSet.indexedProperties(context)
 
-      val hint = predicateSet.matchingHints(hints).headOption
+      val hint = predicateSet
+        .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = false)
+        .headOption
 
       Some(Solution(
         indexMatch.variableName,

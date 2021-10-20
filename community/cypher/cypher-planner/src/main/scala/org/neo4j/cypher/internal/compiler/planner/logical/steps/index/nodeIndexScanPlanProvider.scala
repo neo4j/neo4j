@@ -76,7 +76,9 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
   private def createSolution(indexMatch: NodeIndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Solution[NodeIndexScanParameters] = {
     val predicateSet = indexMatch.predicateSet(predicatesForIndexScan(indexMatch.propertyPredicates), exactPredicatesCanGetValue = false)
 
-    val hint = predicateSet.matchingHints(hints).find(_.spec.fulfilledByScan)
+    val hint = predicateSet
+      .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)
+      .headOption
 
     Solution(
       NodeIndexScanParameters(

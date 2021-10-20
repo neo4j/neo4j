@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -91,6 +92,7 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
+import org.neo4j.exceptions.HintException
 import org.neo4j.graphdb.schema.IndexType
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp with LogicalPlanningIntegrationTestSupport {
@@ -673,6 +675,180 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  private object nodeIndexHints {
+    val config: StatisticsBackedLogicalPlanningConfigurationBuilder =
+      plannerBuilder()
+        .enablePlanningTextIndexes()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("A", 1)
+        .setLabelCardinality("B", 1000)
+        .setAllRelationshipsCardinality(10)
+        .setRelationshipCardinality("()-[:R]->()", 10)
+        .setRelationshipCardinality("(:A)-[:R]->()", 10)
+        .setRelationshipCardinality("(:A)<-[:R]-()", 0)
+        .setRelationshipCardinality("()-[:R]->(:B)", 10)
+        .setRelationshipCardinality("()<-[:R]-(:B)", 0)
+        .setRelationshipCardinality("(:A)-[:R]->(:B)", 10)
+        .setRelationshipCardinality("(:A)<-[:R]-(:B)", 0)
+
+    def query(hint: String): String =
+      s"""MATCH (a:A)-[r:R]->(b:B) $hint
+         |WHERE b.prop STARTS WITH 'x'
+         |RETURN a""".stripMargin
+  }
+
+  test("should not plan node index for this query without hints") {
+
+    val planner = nodeIndexHints.config
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .build()
+
+    planner.plan(nodeIndexHints.query(""))
+      .shouldEqual(
+        planner.planBuilder()
+          .produceResults("a")
+          .filter("b.prop STARTS WITH 'x'", "b:B")
+          .expandAll("(a)-[r:R]->(b)")
+          .nodeByLabelScan("a", "A", IndexOrderNone)
+          .build()
+      )
+  }
+
+  test("should plan text node index when index hint has unspecified type") {
+
+    val planner = nodeIndexHints.config
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .build()
+
+    planner.plan(nodeIndexHints.query("USING INDEX b:B(prop)"))
+      .shouldEqual(
+        planner.planBuilder()
+          .produceResults("a")
+          .filter("a:A")
+          .expandAll("(b)<-[r:R]-(a)")
+          .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.TEXT)
+          .build()
+      )
+  }
+
+  test("should plan btree node index when index hint has btree type") {
+
+    val planner = nodeIndexHints.config
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .build()
+
+    planner.plan(nodeIndexHints.query("USING BTREE INDEX b:B(prop)"))
+      .shouldEqual(
+        planner.planBuilder()
+          .produceResults("a")
+          .filter("a:A")
+          .expandAll("(b)<-[r:R]-(a)")
+          .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.BTREE)
+          .build()
+      )
+  }
+
+  test("should plan text node index when index hint has text type") {
+
+    val planner = nodeIndexHints.config
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .build()
+
+    planner.plan(nodeIndexHints.query("USING TEXT INDEX b:B(prop)"))
+      .shouldEqual(
+        planner.planBuilder()
+          .produceResults("a")
+          .filter("a:A")
+          .expandAll("(b)<-[r:R]-(a)")
+          .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.TEXT)
+          .build()
+      )
+  }
+
+  test("should fail planning when index hint has btree type but the only matching index is text") {
+
+    val planner = nodeIndexHints.config
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .build()
+
+    the[HintException]
+      .thrownBy(planner.plan(nodeIndexHints.query("USING BTREE INDEX b:B(prop)")))
+      .getMessage.should(include("USING BTREE INDEX b:B(prop)"))
+  }
+
+  test("should fail planning when index hint has text type but the only matching index is btree") {
+
+    val planner = nodeIndexHints.config
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .build()
+
+    the[HintException]
+      .thrownBy(planner.plan(nodeIndexHints.query("USING TEXT INDEX b:B(prop)")))
+      .getMessage.should(include("USING TEXT INDEX b:B(prop)"))
+  }
+
+  private object relIndexHints {
+    val config: StatisticsBackedLogicalPlanningConfigurationBuilder =
+      plannerBuilder()
+        .enablePlanningTextIndexes()
+        .setAllNodesCardinality(10)
+        .setAllRelationshipsCardinality(100000)
+        .setRelationshipCardinality("()-[:R]->()", 100000)
+
+    def query(hint: String): String =
+      s"""MATCH (a)-[r:R]->(b) $hint
+         |WHERE r.prop STARTS WITH ''
+         |RETURN a""".stripMargin
+  }
+
+  test("should not plan relationship index for this query without hints") {
+
+    val planner = relIndexHints.config
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .build()
+
+    planner.plan(relIndexHints.query(""))
+      .shouldEqual(
+        planner.planBuilder()
+          .produceResults("a")
+          .filter("r.prop STARTS WITH ''")
+          .expandAll("(b)<-[r:R]-(a)")
+          .allNodeScan("b")
+          .build()
+      )
+  }
+
+  test("should fail planning when index hint has text type but the only matching index is btree rel index") {
+
+    val planner = relIndexHints.config
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .build()
+
+    the[HintException]
+      .thrownBy(planner.plan(relIndexHints.query("USING TEXT INDEX r:R(prop)")))
+      .getMessage.should(include("USING TEXT INDEX r:R(prop)"))
+  }
+
+  test("should plan text relationship index when index hint has text type") {
+
+    val planner = relIndexHints.config
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
+      .build()
+
+    planner.plan(relIndexHints.query("USING TEXT INDEX r:R(prop)"))
+      .shouldEqual(
+        planner.planBuilder()
+          .produceResults("a")
+          .relationshipIndexOperator("(a)-[r:R(prop STARTS WITH '')]->(b)", indexType = IndexType.TEXT)
+          .build()
+      )
+  }
+
   test("should plan node by ID seek based on a predicate with an id collection variable as the rhs") {
     val plan = new given {
       cost =  {
@@ -856,7 +1032,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   private val expandConfig: StatisticsBackedLogicalPlanningConfiguration = plannerBuilder()
     .setAllNodesCardinality(100)
     .setRelationshipCardinality("()-[:REL]->()", 1000)
-    .enablePrintCostComparisons()
     .build()
 
   test("should plan relationship type scan with inlined type predicate") {

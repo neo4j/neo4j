@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -270,13 +273,25 @@ trait PredicateSet {
       IndexedProperty(PropertyKeyToken(propertyName, context.semanticTable.id(propertyName).head), getValue, getEntityType)
   }
 
-  def matchingHints(hints: Set[Hint]): Set[UsingIndexHint] = {
+  private def matchingHints(hints: Set[Hint]): Set[UsingIndexHint] = {
     val propertyNames = propertyPredicates.map(_.propertyKeyName.name)
     val localVariableName = variableName
     val entityTypeName = symbolicName.name
     hints.collect {
-      case hint@UsingIndexHint(Variable(`localVariableName`), LabelOrRelTypeName(`entityTypeName`), propertyKeyNames, _)
+      case hint@UsingIndexHint(Variable(`localVariableName`), LabelOrRelTypeName(`entityTypeName`), propertyKeyNames, _, _)
         if propertyKeyNames.map(_.name) == propertyNames => hint
     }
   }
+
+  private def fulfilledByIndexType(indexType: IndexType)(hint: UsingIndexHint): Boolean = (hint.indexType, indexType) match {
+    case (UsingAnyIndexType, _)                 => true
+    case (UsingBtreeIndexType, IndexType.Btree) => true
+    case (UsingTextIndexType, IndexType.Text)   => true
+    case _                                      => false
+  }
+
+  def fulfilledHints(allHints: Set[Hint], indexType: IndexType, planIsScan: Boolean): Set[UsingIndexHint] =
+    matchingHints(allHints)
+      .filter(fulfilledByIndexType(indexType))
+      .filter(!planIsScan || _.spec.fulfilledByScan)
 }
