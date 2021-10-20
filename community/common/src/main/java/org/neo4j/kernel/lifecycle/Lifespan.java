@@ -23,7 +23,7 @@ package org.neo4j.kernel.lifecycle;
  * Convenient use of a {@link LifeSupport}, effectively making one or more {@link Lifecycle} look and feel
  * like one {@link AutoCloseable}.
  */
-public class Lifespan implements AutoCloseable
+public class Lifespan extends LifeSupport implements AutoCloseable
 {
     private final LifeSupport life = new LifeSupport();
 
