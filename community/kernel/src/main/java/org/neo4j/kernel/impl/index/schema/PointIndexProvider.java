@@ -184,9 +184,8 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
         @Override
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            return areValueCategoriesAccepted( valueCategories )
-                   ? IndexValueCapability.YES
-                   : IndexValueCapability.NO;
+            // The point index has values for all the queries it supports.
+            return IndexValueCapability.YES;
         }
 
         @Override

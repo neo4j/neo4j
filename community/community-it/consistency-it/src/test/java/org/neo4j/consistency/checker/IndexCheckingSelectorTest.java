@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -64,6 +65,8 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -251,6 +254,30 @@ class IndexCheckingSelectorTest
         // is an IndexChecker variant that can handle relationship indexes.
         assertThat( output.toString() )
                 .containsPattern( "RelationshipChecker\\[highId:..,indexesToCheck:2\\]" );
+    }
+
+    @Test
+    void checkLargePointIndexesWithIndexChecker() throws ConsistencyCheckIncompleteException
+    {
+        // An index is considered large if it contains more than 5% of the nodes.
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode( label1 );
+            node.setProperty( property1, Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 2.0 ) );
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().indexFor( label1 ).on( property1 ).withIndexType( IndexType.POINT ).create();
+            tx.commit();
+        }
+
+        runConsistencyCheck();
+
+        assertThat( output.toString() )
+                .contains( "IndexChecker[entityType:NODE,indexesToCheck:1]" )
+                .containsPattern( "NodeChecker\\[highId:.,indexesToCheck:0\\]" );
     }
 
     private void runConsistencyCheck() throws ConsistencyCheckIncompleteException
