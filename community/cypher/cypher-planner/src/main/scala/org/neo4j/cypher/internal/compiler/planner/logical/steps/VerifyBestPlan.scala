@@ -21,8 +21,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -129,30 +133,43 @@ object VerifyBestPlan {
     val planContext = context.planContext
     val semanticTable = context.semanticTable
     
-    def nodeIndexHintFulfillable(labelOrRelType: LabelOrRelTypeName, properties: Seq[PropertyKeyName]): Boolean = {
+    def nodeIndexHintFulfillable(labelOrRelType: LabelOrRelTypeName, properties: Seq[PropertyKeyName], indexHintType: UsingIndexHintType): Boolean = {
       val labelName = labelOrRelType.name
       val propertyNames = properties.map(_.name)
 
-      planContext.btreeIndexExistsForLabelAndProperties(labelName, propertyNames) ||
-        (context.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(labelName, propertyNames))
+      def btreeExists = planContext.btreeIndexExistsForLabelAndProperties(labelName, propertyNames)
+      def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(labelName, propertyNames)
+
+      indexHintType match {
+        case UsingAnyIndexType   => btreeExists || textExists
+        case UsingBtreeIndexType => btreeExists
+        case UsingTextIndexType  => textExists
+      }
     }
 
-    def relIndexHintFulfillable(labelOrRelType: LabelOrRelTypeName, properties: Seq[PropertyKeyName]): Boolean = {
+    def relIndexHintFulfillable(labelOrRelType: LabelOrRelTypeName, properties: Seq[PropertyKeyName], indexHintType: UsingIndexHintType): Boolean = {
       val relTypeName = labelOrRelType.name
       val propertyNames = properties.map(_.name)
 
-      planContext.btreeIndexExistsForRelTypeAndProperties(relTypeName, propertyNames) ||
-        (context.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(relTypeName, propertyNames))
+      def btreeExists = planContext.btreeIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
+      def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
+
+      indexHintType match {
+        case UsingAnyIndexType   => btreeExists || textExists
+        case UsingBtreeIndexType => btreeExists
+        case UsingTextIndexType  => textExists
+      }
     }
 
-    // TODO: Use index type here
     query.allHints.flatMap {
       // using index name:label(property1,property2)
-      case UsingIndexHint(v, labelOrRelType, properties, _, _) if semanticTable.isNodeNoFail(v.name) && nodeIndexHintFulfillable(labelOrRelType, properties) =>
+      case UsingIndexHint(v, labelOrRelType, properties, _, indexHintType)
+        if semanticTable.isNodeNoFail(v.name) && nodeIndexHintFulfillable(labelOrRelType, properties, indexHintType) =>
         None
 
       // using index name:relType(property1,property2)
-      case UsingIndexHint(v, labelOrRelType, properties, _, _) if semanticTable.isRelationshipNoFail(v.name) && relIndexHintFulfillable(labelOrRelType, properties) =>
+      case UsingIndexHint(v, labelOrRelType, properties, _, indexHintType)
+        if semanticTable.isRelationshipNoFail(v.name) && relIndexHintFulfillable(labelOrRelType, properties, indexHintType) =>
         None
 
       // no such index exists
