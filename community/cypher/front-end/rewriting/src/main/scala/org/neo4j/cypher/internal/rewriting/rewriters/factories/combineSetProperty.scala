@@ -62,6 +62,9 @@ object combineSetProperty extends Rewriter with StepSequencer.Step with ASTRewri
       val newItems = ArrayBuffer.empty[SetItem]
       val itemsArray = items.toArray
 
+      //find all contiguous blocks of SetPropertyItem on the same item, e.g., SET n.p1 = 1, n.p2 = 2
+      //we are not allowed to change the order of the SET operations so it is only safe to combine
+      //contiguous blocks.
       var i = 0
       while (i < itemsArray.length) {
         val item = itemsArray(i)
