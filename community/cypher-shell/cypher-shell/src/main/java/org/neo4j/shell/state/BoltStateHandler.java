@@ -608,9 +608,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         }
     }
 
-    /**
-     * Used for testing purposes
-     */
+    @Override
     public void disconnect()
     {
         reset();

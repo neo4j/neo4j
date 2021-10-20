@@ -63,9 +63,10 @@ class MainIntegrationTest
     private static final String USER = "neo4j";
     private static final String PASSWORD = "neo";
     private static final String newLine = System.lineSeparator();
+    private static final String GOOD_BYE = format( ":exit%n%nBye!%n" );
 
     private final int majorServerVersion = majorVersion( runInSystemDbAndReturn( CypherShell::getServerVersion ) );
-    private final Matcher<String> endsWithInteractiveExit = endsWith( format( "> :exit%n%nBye!%n" ) );
+    private final Matcher<String> endsWithInteractiveExit = endsWith( format( "> %s", GOOD_BYE ) );
 
     private Matcher<String> returned42AndExited()
     {
@@ -268,6 +269,71 @@ class MainIntegrationTest
             .run()
             .assertSuccessAndConnected()
             .assertThatOutput( containsString( "> :source " + file + format( "%nresult%n42" ) ), endsWithInteractiveExit );
+    }
+
+    @Test
+    void shouldDisconnect() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", ":exit" )
+                .run()
+                .assertSuccessAndDisconnected()
+                .assertThatOutput( containsString( "> :disconnect " + format("%nDisconnected>")), endsWith( GOOD_BYE ) );
+    }
+
+    @Test
+    void shouldNotBeAbleToRunQueryWhenDisconnected() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", "RETURN 42 AS x;", ":exit" )
+                .run()
+                .assertThatErrorOutput( containsString( "Not connected to Neo4j" ) )
+                .assertThatOutput( containsString( "> :disconnect " + format("%nDisconnected>")), endsWith( GOOD_BYE ) );
+    }
+
+    @Test
+    void shouldDisconnectAndHelp() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", ":help", ":exit" )
+                .run()
+                .assertSuccessAndDisconnected()
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format("%nDisconnected> :help")),
+                        containsString( format("%nAvailable commands:") ),
+                        endsWith( GOOD_BYE ) );
+    }
+
+    @Test
+    void shouldDisconnectAndHistory() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", ":history", ":exit" )
+                .run()
+                .assertSuccessAndDisconnected()
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format("%nDisconnected> :history")),
+                        containsString( "1  :disconnect" ),
+                        containsString( "2  :history" ),
+                        endsWith( GOOD_BYE ) );
+    }
+
+    @Test
+    void shouldDisconnectAndSource() throws Exception
+    {
+        var file = fileFromResource( "exit.cypher" );
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", ":source " + file )
+                .run()
+                .assertSuccessAndDisconnected()
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format("%nDisconnected> :source %s", file)),
+                        endsWith( format( "Bye!%n" ) ) );
     }
 
     @Test

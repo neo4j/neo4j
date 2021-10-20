@@ -48,6 +48,7 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.shell.Main.EXIT_FAILURE;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
@@ -103,9 +104,20 @@ public class AssertableMain
         return assertSuccess( isErrorOutputEmpty );
     }
 
+    public AssertableMain assertSuccessAndDisconnected( boolean isErrorOutputEmpty )
+    {
+        assertFalse( shell.isConnected(), "Shell is connected" );
+        return assertSuccess( isErrorOutputEmpty );
+    }
+
     public AssertableMain assertSuccessAndConnected()
     {
         return assertSuccessAndConnected( true );
+    }
+
+    public AssertableMain assertSuccessAndDisconnected()
+    {
+        return assertSuccessAndDisconnected( true );
     }
 
     public AssertableMain assertSuccess()

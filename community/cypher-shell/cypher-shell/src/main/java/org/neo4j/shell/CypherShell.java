@@ -294,9 +294,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         boltStateHandler.changePassword( connectionConfig, newPassword );
     }
 
-    /**
-     * Used for testing purposes
-     */
+    @Override
     public void disconnect()
     {
         boltStateHandler.disconnect();

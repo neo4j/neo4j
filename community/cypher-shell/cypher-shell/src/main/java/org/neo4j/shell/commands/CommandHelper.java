@@ -93,6 +93,7 @@ public class CommandHelper
         registerCommand( new Param( cypherShell.getParameterMap() ) );
         registerCommand( new Params( logger, cypherShell.getParameterMap() ) );
         registerCommand( new Source( cypherShell, new ShellStatementParser() ) );
+        registerCommand( new Disconnect( cypherShell ) );
     }
 
     private void registerCommand( final Command command ) throws DuplicateCommandException
