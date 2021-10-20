@@ -59,8 +59,14 @@ public interface DatabaseReadOnlyChecker
             this.namedDatabaseId = namedDatabaseId;
         }
 
+        /**
+         *  Note: this method should *not* be synchronized, for performance reasons.
+         *  There exists a race whereby a database checker will observe an earlier update, but a later readOnly value.
+         *  However, such a race just means that subsequent checks will fall through to {@code dbmsChecker.isReadOnly()} when they did not need to.
+         *  In other words, the race is benign.
+         */
         @Override
-        public synchronized boolean isReadOnly()
+        public boolean isReadOnly()
         {
             var globalUpdate = dbmsChecker.updateId();
             if ( lastUpdated < globalUpdate )
