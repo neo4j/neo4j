@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.shell.ConnectionConfig;
+import org.neo4j.shell.Connector;
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.Main;
@@ -68,10 +69,12 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
     private final StatementExecuter executer;
     private final UserMessagesHandler userMessagesHandler;
     private final ConnectionConfig connectionConfig;
+    private final Connector connector;
 
     public InteractiveShellRunner( StatementExecuter executer,
                                    TransactionHandler txHandler,
                                    DatabaseManager databaseManager,
+                                   Connector connector,
                                    Logger logger,
                                    CypherShellTerminal terminal,
                                    UserMessagesHandler userMessagesHandler,
@@ -83,6 +86,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         this.executer = executer;
         this.txHandler = txHandler;
         this.databaseManager = databaseManager;
+        this.connector = connector;
         this.logger = logger;
         this.terminal = terminal;
         this.connectionConfig = connectionConfig;
@@ -185,10 +189,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
                            errorSuffix.length() +
                            FRESH_PROMPT.length();
 
-        AnsiFormattedText prePrompt = AnsiFormattedText.s().bold()
-                                                       .append( connectionConfig.username() )
-                                                       .append( "@" )
-                                                       .append( databaseName );
+        AnsiFormattedText prePrompt = getPrePrompt( databaseName );
 
         // If we encountered an error with the connection ping query we display it in the prompt in RED
         if ( !errorSuffix.isEmpty() )
@@ -207,6 +208,24 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
                     .appendNewLine()
                     .append( txHandler.isTransactionOpen() ? TRANSACTION_PROMPT : FRESH_PROMPT );
         }
+    }
+
+    private AnsiFormattedText getPrePrompt( String databaseName )
+    {
+        AnsiFormattedText prePrompt = AnsiFormattedText.s().bold();
+
+        if ( connector.isConnected() )
+        {
+            prePrompt
+                    .append( connectionConfig.username() )
+                    .append( "@" )
+                    .append( databaseName );
+        }
+        else
+        {
+            prePrompt.append( "Disconnected" );
+        }
+        return prePrompt;
     }
 
     private static String getErrorPrompt( String errorCode )

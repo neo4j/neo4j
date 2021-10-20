@@ -138,7 +138,8 @@ public interface ShellRunner
             if ( shouldBeInteractive( cliArgs, terminal.isInteractive() ) )
             {
                 var userMessagesHandler = new UserMessagesHandler( connectionConfig, shell.getProtocolVersion() );
-                return new InteractiveShellRunner( shell, shell, shell, logger, terminal, userMessagesHandler, connectionConfig, cliArgs.getHistoryFile() );
+                return new InteractiveShellRunner( shell, shell, shell, shell, logger, terminal, userMessagesHandler, connectionConfig,
+                                                   cliArgs.getHistoryFile() );
             }
             else
             {

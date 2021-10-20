@@ -66,7 +66,7 @@ class CommandHelperTest
         // Given
         AnsiLogger logger = new AnsiLogger( false );
         CommandHelper commandHelper =
-                new CommandHelper( logger, Historian.empty, new CypherShell( logger, PrettyConfig.DEFAULT, false, new ShellParameterMap() ) );
+                new CommandHelper( logger, Historian.empty, new CypherShell( logger, PrettyConfig.DEFAULT, false, new ShellParameterMap() ), null, null );
 
         // When
         Command begin = commandHelper.getCommand( ":BEGIN" );

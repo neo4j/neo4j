@@ -37,6 +37,7 @@ import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.shell.ConnectionConfig;
+import org.neo4j.shell.Connector;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.Historian;
@@ -92,6 +93,7 @@ class InteractiveShellRunnerTest
     private TransactionHandler txHandler;
     private DatabaseManager databaseManager;
     private ClientException badLineError;
+    private Connector connector;
     private UserMessagesHandler userMessagesHandler;
     private ConnectionConfig connectionConfig;
     private ByteArrayOutputStream out;
@@ -106,6 +108,7 @@ class InteractiveShellRunnerTest
         connectionConfig = mock( ConnectionConfig.class );
         historyFile = new File( temp, "test" );
         badLineError = new ClientException( "Found a bad line" );
+        connector = mock( Connector.class );
         userMessagesHandler = mock( UserMessagesHandler.class );
         out = new ByteArrayOutputStream();
         when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( "mydb" );
@@ -529,13 +532,12 @@ class InteractiveShellRunnerTest
 
         Logger logger = new AnsiLogger( false, Format.VERBOSE, new PrintStream( output ), new PrintStream( error ) );
 
-        OfflineTestShell offlineTestShell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
-        CommandHelper commandHelper = new CommandHelper( logger, Historian.empty, offlineTestShell );
-        offlineTestShell.setCommandHelper( commandHelper );
-
         var in = new ByteArrayInputStream( input.getBytes( UTF_8 ) );
         var terminal = terminalBuilder().dumb().streams( in, output ).interactive( true ).logger( logger ).build();
-        var runner = new InteractiveShellRunner( offlineTestShell, offlineTestShell, offlineTestShell, logger,
+        OfflineTestShell offlineTestShell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
+        CommandHelper commandHelper = new CommandHelper( logger, Historian.empty, offlineTestShell, connectionConfig, terminal );
+        offlineTestShell.setCommandHelper( commandHelper );
+        var runner = new InteractiveShellRunner( offlineTestShell, offlineTestShell, offlineTestShell, offlineTestShell, logger,
                                                  terminal, userMessagesHandler, connectionConfig, historyFile );
 
         return new TestInteractiveShellRunner( runner, output, error, mockedBoltStateHandler );
@@ -616,13 +618,13 @@ class InteractiveShellRunnerTest
 
     private InteractiveShellRunner runner( String input )
     {
-        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, logger,
+        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, logger,
                                            testTerminal( input ), userMessagesHandler, connectionConfig, historyFile );
     }
 
     private InteractiveShellRunner runner( CypherShellTerminal terminal )
     {
-        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, logger,
+        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, logger,
                                            terminal, userMessagesHandler, connectionConfig, historyFile );
     }
 

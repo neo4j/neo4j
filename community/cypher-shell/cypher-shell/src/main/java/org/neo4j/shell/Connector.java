@@ -50,6 +50,8 @@ public interface Connector
      */
     ConnectionConfig connect( ConnectionConfig connectionConfig, ThrowingAction<CommandException> action ) throws CommandException;
 
+    void disconnect();
+
     /**
      * Returns the version of Neo4j which the shell is connected to. If the version is before 3.1.0-M09, or we are not connected yet, this returns the empty
      * string.

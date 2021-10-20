@@ -114,4 +114,9 @@ public class ConnectionConfig
     {
         this.password = password;
     }
+
+    public void setDatabase( String database )
+    {
+        this.database = fallbackToEnvVariable( database, DATABASE_ENV_VAR );
+    }
 }

@@ -40,6 +40,7 @@ import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.state.ListBoltResult;
+import org.neo4j.shell.terminal.CypherShellTerminal;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -75,7 +76,8 @@ class CypherShellTest
         doReturn( System.out ).when( logger ).getOutputStream();
         offlineTestShell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
 
-        CommandHelper commandHelper = new CommandHelper( logger, Historian.empty, offlineTestShell );
+        CommandHelper commandHelper =
+                new CommandHelper( logger, Historian.empty, offlineTestShell, mock( ConnectionConfig.class ), mock( CypherShellTerminal.class ) );
 
         offlineTestShell.setCommandHelper( commandHelper );
     }

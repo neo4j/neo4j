@@ -162,7 +162,7 @@ public class Main
 
                 // Construct shellrunner after connecting, due to interrupt handling
                 ShellRunner shellRunner = runnerFactory.create( args, shell, logger, newConnectionConfig, terminal );
-                CommandHelper commandHelper = new CommandHelper( logger, shellRunner.getHistorian(), shell );
+                CommandHelper commandHelper = new CommandHelper( logger, shellRunner.getHistorian(), shell, newConnectionConfig, terminal );
 
                 shell.setCommandHelper( commandHelper );
 

@@ -336,6 +336,116 @@ class MainIntegrationTest
                         endsWith( format( "Bye!%n" ) ) );
     }
 
+
+    @Test
+    void shouldDisconnectAndConnectWithUsernamePasswordAndDatabase() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", format(":connect -u %s -p %s -d %s", USER, PASSWORD, SYSTEM_DB_NAME ), ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format("%nDisconnected> :connect -u %s -p %s -d %s", USER, PASSWORD, SYSTEM_DB_NAME ) ),
+                        endsWith( format("neo4j@system> %s", GOOD_BYE ) ) );
+    }
+
+    @Test
+    void shouldDisconnectAndConnectWithUsernamePasswordAndDatabaseWithFullArguments() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", format(":connect --username %s --password %s --database %s", USER, PASSWORD, SYSTEM_DB_NAME ), ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format("%nDisconnected> :connect --username %s --password %s --database %s", USER, PASSWORD, SYSTEM_DB_NAME ) ),
+                        endsWith( format("neo4j@system> %s", GOOD_BYE ) ) );
+    }
+
+    @Test
+    void shouldFailIfConnectingWithInvalidPassword() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", format( ":connect -u %s -p %s -d %s", USER, "wut!", SYSTEM_DB_NAME ), ":exit" )
+                .run()
+                .assertSuccessAndDisconnected( false )
+                .assertThatErrorOutput( containsString( "The client is unauthorized due to authentication failure." ) )
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format( "%nDisconnected> :connect -u %s -p %s -d %s", USER, "wut!", SYSTEM_DB_NAME ) ),
+                        endsWith( GOOD_BYE ) );
+    }
+
+    @Test
+    void shouldFailIfConnectingWithInvalidUser() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", format( ":connect -u %s -p %s -d %s", "Paul Westerberg", PASSWORD, SYSTEM_DB_NAME ), ":exit" )
+                .run()
+                .assertSuccessAndDisconnected( false )
+                .assertThatErrorOutput( containsString( "The client is unauthorized due to authentication failure." ) )
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format( "%nDisconnected> :connect -u %s -p %s -d %s", "Paul Westerberg", PASSWORD, SYSTEM_DB_NAME ) ),
+                        endsWith( GOOD_BYE ) );
+    }
+
+    @Test
+    void shouldDisconnectAndConnectWithUsernameAndPassword() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", format(":connect -u %s -p %s", USER, PASSWORD ), ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format("%nDisconnected> :connect -u %s -p %s", USER, PASSWORD ) ),
+                        endsWith( format("neo4j@neo4j> %s", GOOD_BYE ) ) );
+    }
+
+    @Test
+    void shouldPromptForUsernameAndPasswordIfOnlyDBProvided() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", format(":connect -d %s", SYSTEM_DB_NAME ), USER, PASSWORD, ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME ) ),
+                        containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" )),
+                        endsWith( format("neo4j@system> %s", GOOD_BYE ) ) );
+    }
+
+    @Test
+    void shouldPromptForPasswordIfOnlyUserProvided() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", format(":connect -d %s", SYSTEM_DB_NAME ), USER, PASSWORD, ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME ) ),
+                        containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" )),
+                        endsWith( format("neo4j@system> %s", GOOD_BYE ) ) );
+    }
+
+    @Test
+    void shouldPromptForUsernameAndPasswordIfNoArgumentsProvided() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":disconnect ", ":connect", USER, PASSWORD, ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString( "> :disconnect " + format("%nDisconnected> :connect") ),
+                        containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" )),
+                        endsWith( GOOD_BYE ) );
+    }
+
     @Test
     void shouldReadMultipleCypherStatementsFromFileInteractively() throws Exception
     {
