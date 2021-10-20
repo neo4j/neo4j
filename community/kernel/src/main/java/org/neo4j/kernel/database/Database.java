@@ -629,7 +629,7 @@ public class Database extends LifecycleAdapter
         msgLog.warn( "Exception occurred while starting the database. Trying to stop already started components.", e );
         try
         {
-            safeCleanup();
+            shutdown();
         }
         catch ( Exception closeException )
         {
