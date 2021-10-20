@@ -1286,11 +1286,15 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
 
     val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val propertyTokenDbHits = sizeHint * 3 * 2
+      val propertyTokenDbHits = sizeHint * 3
       val writeNodePropertyDbHits = sizeHint * 3 * 2
       propertyTokenDbHits + writeNodePropertyDbHits
-    } else {
+    } else if (useWritesWithProfiling) {
       val setPropertyDbHits = sizeHint * 3 * 2
+      val tokenDbHits = sizeHint * 2 * 3 * costOfPropertyToken
+      setPropertyDbHits + tokenDbHits
+    } else {
+      val setPropertyDbHits = sizeHint * 3
       val tokenDbHits = sizeHint * 2 * 3 * costOfPropertyToken
       setPropertyDbHits + tokenDbHits
     }
@@ -1324,8 +1328,12 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
       val setPropertyDbHits = relationshipCount * 3 * 2
       val tokenDbHits = relationshipCount * 3 * 2
       setPropertyDbHits + tokenDbHits
-    } else {
+    } else if (useWritesWithProfiling) {
       val setPropertyDbHits = relationshipCount * 3 * 2
+      val tokenDbHits = relationshipCount * 3 * 2 * costOfPropertyToken
+      setPropertyDbHits + tokenDbHits
+    } else {
+      val setPropertyDbHits = relationshipCount * 3
       val tokenDbHits = relationshipCount * 3 * 2 * costOfPropertyToken
       setPropertyDbHits + tokenDbHits
     }
@@ -1537,11 +1545,15 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
 
     val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val setPropertyDbHits = sizeHint * 2
+      val setPropertyDbHits = sizeHint
       val tokenDbHits = sizeHint * 2
       setPropertyDbHits + tokenDbHits
-    } else {
+    } else if (useWritesWithProfiling) {
       val setPropertyDbHits = sizeHint * 2
+      val tokenDbHits = sizeHint * 2 * costOfPropertyToken
+      setPropertyDbHits + tokenDbHits
+    } else {
+      val setPropertyDbHits = sizeHint
       val tokenDbHits = sizeHint * 2 * costOfPropertyToken
       setPropertyDbHits + tokenDbHits
     }
@@ -1572,6 +1584,8 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
         val setPropertyDbHits = sizeHint
         val tokenDbHits = sizeHint * 2
         setPropertyDbHits + tokenDbHits
+      } else if (useWritesWithProfiling) {
+        sizeHint * 2
       }
       else {
         sizeHint + 6
@@ -1605,8 +1619,12 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
       val setPropertyDbHits = relationshipCount * 2
       val tokenDbHits = relationshipCount * 2
       setPropertyDbHits + tokenDbHits
-    } else {
+    } else if (useWritesWithProfiling) {
       val setPropertyDbHits = relationshipCount * 2
+      val tokenDbHits = relationshipCount * 2 * costOfPropertyToken
+      setPropertyDbHits + tokenDbHits
+    } else {
+      val setPropertyDbHits = relationshipCount
       val tokenDbHits = relationshipCount * 2 * costOfPropertyToken
       setPropertyDbHits + tokenDbHits
     }
@@ -1640,9 +1658,10 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
         val setPropertyDbHits = relationshipCount
         val tokenDbHits = relationshipCount * 2
         setPropertyDbHits + tokenDbHits
-      }
-      else {
-        sizeHint + 6
+      } else if (useWritesWithProfiling) {
+        relationshipCount * 2
+      } else {
+        relationshipCount + 6
       }
 
     setPropertiesProfile.dbHits() shouldBe expectedDbHits
