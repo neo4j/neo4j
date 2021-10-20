@@ -336,7 +336,6 @@ class MainIntegrationTest
                         endsWith( format( "Bye!%n" ) ) );
     }
 
-
     @Test
     void shouldDisconnectAndConnectWithUsernamePasswordAndDatabase() throws Exception
     {
@@ -347,7 +346,7 @@ class MainIntegrationTest
                 .assertSuccessAndConnected()
                 .assertThatOutput(
                         containsString( "> :disconnect " + format("%nDisconnected> :connect -u %s -p %s -d %s", USER, PASSWORD, SYSTEM_DB_NAME ) ),
-                        endsWith( format("neo4j@system> %s", GOOD_BYE ) ) );
+                        endsWith( format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
     }
 
     @Test
@@ -359,8 +358,9 @@ class MainIntegrationTest
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format("%nDisconnected> :connect --username %s --password %s --database %s", USER, PASSWORD, SYSTEM_DB_NAME ) ),
-                        endsWith( format("neo4j@system> %s", GOOD_BYE ) ) );
+                        containsString( "> :disconnect " +
+                                        format( "%nDisconnected> :connect --username %s --password %s --database %s", USER, PASSWORD, SYSTEM_DB_NAME ) ),
+                        endsWith( format( "%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
     }
 
     @Test
@@ -387,7 +387,8 @@ class MainIntegrationTest
                 .assertSuccessAndDisconnected( false )
                 .assertThatErrorOutput( containsString( "The client is unauthorized due to authentication failure." ) )
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format( "%nDisconnected> :connect -u %s -p %s -d %s", "Paul Westerberg", PASSWORD, SYSTEM_DB_NAME ) ),
+                        containsString(
+                                "> :disconnect " + format( "%nDisconnected> :connect -u %s -p %s -d %s", "Paul Westerberg", PASSWORD, SYSTEM_DB_NAME ) ),
                         endsWith( GOOD_BYE ) );
     }
 
@@ -401,7 +402,7 @@ class MainIntegrationTest
                 .assertSuccessAndConnected()
                 .assertThatOutput(
                         containsString( "> :disconnect " + format("%nDisconnected> :connect -u %s -p %s", USER, PASSWORD ) ),
-                        endsWith( format("neo4j@neo4j> %s", GOOD_BYE ) ) );
+                        endsWith( format("%s@%s> %s",USER, DEFAULT_DEFAULT_DB_NAME, GOOD_BYE ) ) );
     }
 
     @Test
@@ -415,7 +416,7 @@ class MainIntegrationTest
                 .assertThatOutput(
                         containsString( "> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME ) ),
                         containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" )),
-                        endsWith( format("neo4j@system> %s", GOOD_BYE ) ) );
+                        endsWith( format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
     }
 
     @Test
@@ -429,7 +430,7 @@ class MainIntegrationTest
                 .assertThatOutput(
                         containsString( "> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME ) ),
                         containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" )),
-                        endsWith( format("neo4j@system> %s", GOOD_BYE ) ) );
+                        endsWith( format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
     }
 
     @Test
