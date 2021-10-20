@@ -443,7 +443,9 @@ trait UpdateGraph {
 
       def extractPropertyKey(patterns: Seq[SetMutatingPattern]): CreatesPropertyKeys = patterns.collect {
         case SetNodePropertyPattern(_, key, _) => CreatesKnownPropertyKeys(key)
+        case SetNodePropertiesPattern(_, items) => CreatesKnownPropertyKeys(items.map(_._1).toSet)
         case SetNodePropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+        case SetPropertiesPattern(_, items) => CreatesPropertyKeys(items.map(_._2):_*)
         case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
       }.foldLeft[CreatesPropertyKeys](CreatesNoPropertyKeys)(_ + _)
 
@@ -452,6 +454,8 @@ trait UpdateGraph {
         case SetNodePropertiesFromMapPattern(_, expression, _)  => CreatesPropertyKeys(expression)
         case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
         case SetNodePropertyPattern(_, key, _)  => toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
+        case SetNodePropertiesPattern(_, items)  => toNodePropertyPattern(patterns.tail, acc + CreatesPropertyKeys(items.map(_._2):_*))
+        case SetPropertiesPattern(_, items)  => toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
         case MergeNodePattern(_, _, onCreate, onMatch) =>
           toNodePropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
         case MergeRelationshipPattern(_, _, _, onCreate, onMatch) =>
@@ -476,7 +480,9 @@ trait UpdateGraph {
 
       def extractPropertyKey(patterns: Seq[SetMutatingPattern]): CreatesPropertyKeys = patterns.collect {
         case SetRelationshipPropertyPattern(_, key, _) => CreatesKnownPropertyKeys(key)
+        case SetRelationshipPropertiesPattern(_, items) => CreatesKnownPropertyKeys(items.map(_._1).toSet)
         case SetRelationshipPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
+        case SetPropertiesPattern(_, items) => CreatesPropertyKeys(items.map(_._2):_*)
         case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
       }.foldLeft[CreatesPropertyKeys](CreatesNoPropertyKeys)(_ + _)
 
@@ -486,6 +492,10 @@ trait UpdateGraph {
         case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
         case SetRelationshipPropertyPattern(_, key, _) =>
           toRelPropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
+        case SetRelationshipPropertiesPattern(_, items) =>
+          toRelPropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
+        case SetPropertiesPattern(_, items) =>
+          toRelPropertyPattern(patterns.tail, acc + CreatesPropertyKeys(items.map(_._2):_*))
         case MergeNodePattern(_, _, onCreate, onMatch) =>
           toRelPropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
         case MergeRelationshipPattern(_, _, _, onCreate, onMatch) =>
