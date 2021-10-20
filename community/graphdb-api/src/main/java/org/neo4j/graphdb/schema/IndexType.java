@@ -42,6 +42,7 @@ public enum IndexType
      *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
      * </ul>
      */
+    @Deprecated( since = "4.4", forRemoval = true )
     BTREE,
     /**
      * For full-text indexes. These indexes only index string values, and cannot answer all types of queries.
