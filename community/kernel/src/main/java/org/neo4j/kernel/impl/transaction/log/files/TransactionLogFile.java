@@ -261,19 +261,12 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public synchronized Path rotate() throws IOException
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_LOG_FILE_ROTATION_TAG ) ) )
-        {
-            channel = rotate( channel, cursorContext );
-            writer.setChannel( channel );
-            return channel.getPath();
-        }
+        return rotate( context::committingTransactionId );
     }
 
-    public synchronized Path batchedRotate( long currentVersion, long lastTransactionId ) throws IOException
+    public synchronized Path rotate( long lastTransactionId ) throws IOException
     {
-        channel = rotateToNewVersion( channel, currentVersion + 1, () -> lastTransactionId );
-        writer.setChannel( channel );
-        return channel.getPath();
+        return rotate( () -> lastTransactionId );
     }
 
     @Override
@@ -600,6 +593,16 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
         return externalFileReaders;
     }
 
+    private synchronized Path rotate( LongSupplier committedTransactIdSupplier ) throws IOException
+    {
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_LOG_FILE_ROTATION_TAG ) ) )
+        {
+            channel = rotate( channel, cursorContext, committedTransactIdSupplier );
+            writer.setChannel( channel );
+            return channel.getPath();
+        }
+    }
+
     /**
      * Rotates the current log file, continuing into next (version) log file.
      * This method must be recovery safe, which means a crash at any point should be recoverable.
@@ -643,19 +646,15 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
      * @return the channel of the newly opened/created log file.
      * @throws IOException if an error regarding closing or opening log files occur.
      */
-    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog, CursorContext cursorContext ) throws IOException
+    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog, CursorContext cursorContext, LongSupplier lastTransactionIdSupplier )
+            throws IOException
     {
         /*
          * The store is now flushed. If we fail now the recovery code will open the
          * current log file and replay everything. That's unnecessary but totally ok.
          */
         long newLogVersion = logVersionRepository.incrementAndGetVersion( cursorContext );
-        return rotateToNewVersion( currentLog, newLogVersion, context::committingTransactionId );
-    }
 
-    private PhysicalLogVersionedStoreChannel rotateToNewVersion( LogVersionedStoreChannel currentLog, long newLogVersion,
-            LongSupplier lastTransactionIdSupplier ) throws IOException
-    {
         /*
          * Rotation can happen at any point, although not concurrently with an append,
          * although an append may have (most likely actually) left at least some bytes left

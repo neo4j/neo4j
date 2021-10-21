@@ -101,7 +101,7 @@ public class FileLogRotation implements LogRotation
                 {
                     TransactionLogFile logFile = (TransactionLogFile) rotatableFile;
                     long version = logFile.getHighestLogVersion();
-                    doRotate( logRotateEvents, lastTransactionId, () -> version, () -> logFile.batchedRotate( version, lastTransactionId ) );
+                    doRotate( logRotateEvents, lastTransactionId, () -> version, () -> logFile.rotate( lastTransactionId ) );
                     return true;
                 }
                 return false;

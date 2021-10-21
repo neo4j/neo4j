@@ -368,7 +368,7 @@ class TransactionLogServiceIT
     }
 
     @Test
-    void bulkAppendWithRotationDoesNotChangeLastClosedMetadataAndLogVersion() throws IOException
+    void bulkAppendWithRotationDoesNotChangeLastClosedMetadata() throws IOException
     {
         availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
 
@@ -383,12 +383,31 @@ class TransactionLogServiceIT
             appendData.rewind();
         }
 
-        assertEquals( logVersionBefore, metadataProvider.getCurrentLogVersion() );
         assertEquals( metadataBefore, metadataProvider.getLastClosedTransaction() );
 
         // pruning is also not here since metadata store is not upgraded
         Path[] matchedFiles = logFiles.getLogFile().getMatchedFiles();
         assertThat( matchedFiles ).hasSize( (int) (logVersionBefore + appendIterations) );
+    }
+
+    @Test
+    void bulkAppendWithRotationUpdatesMetadataProviderLogVersion() throws IOException
+    {
+        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+
+        long logVersionBefore = metadataProvider.getCurrentLogVersion();
+
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        int appendIterations = 100;
+        for ( int i = 0; i < appendIterations; i++ )
+        {
+            logService.append( appendData, OptionalLong.of( i ) );
+            appendData.rewind();
+        }
+
+        var logVersionAfter = metadataProvider.getCurrentLogVersion();
+        assertThat( logVersionAfter ).isEqualTo( logVersionBefore + appendIterations - 1 )
+                                     .isNotEqualTo( logVersionBefore );
     }
 
     @Test
