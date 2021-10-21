@@ -71,7 +71,7 @@ public class RelationshipIndexTxStateUpdaterTest extends IndexTxStateUpdaterTest
         map.put( PROP_ID_2, Values.of( "hi2" ) );
         map.put( PROP_ID_3, Values.of( "hi3" ) );
 
-        when( relationship.relationshipReference() ).thenReturn( (long) REL_ID );
+        when( relationship.reference() ).thenReturn( (long) REL_ID );
         doAnswer( invocationOnMock ->
         {
             invocationOnMock.getArgument( 0, StubPropertyCursor.class ).init( map, invocationOnMock.getArgument( 1, PropertySelection.class ) );

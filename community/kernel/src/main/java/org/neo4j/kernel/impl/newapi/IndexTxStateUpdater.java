@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.kernel.api.EntityCursor;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -93,7 +94,7 @@ public class IndexTxStateUpdater
             {
                 MemoryTracker memoryTracker = read.txState().memoryTracker();
                 int[] indexPropertyIds = index.schema().getPropertyIds();
-                Value[] values = getValueTuple( new NodeCursorWrapper( node ), propertyCursor, NO_SUCH_PROPERTY_KEY, NO_VALUE, indexPropertyIds,
+                Value[] values = getValueTuple( node, propertyCursor, NO_SUCH_PROPERTY_KEY, NO_VALUE, indexPropertyIds,
                         materializedProperties, memoryTracker );
                 ValueTuple valueTuple = ValueTuple.of( values );
                 memoryTracker.allocateHeap( valueTuple.getShallowSize() );
@@ -115,47 +116,47 @@ public class IndexTxStateUpdater
 
     void onPropertyAdd( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value value )
     {
-        onPropertyAdd( new NodeCursorWrapper( node ), propertyCursor, labels, propertyKeyId, existingPropertyKeyIds, value );
+        onPropertyAdd( node, NODE, propertyCursor, labels, propertyKeyId, existingPropertyKeyIds, value );
     }
 
     void onPropertyRemove( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value value )
     {
-        onPropertyRemove( new NodeCursorWrapper( node ), propertyCursor, labels, propertyKeyId, existingPropertyKeyIds, value );
+        onPropertyRemove( node, NODE, propertyCursor, labels, propertyKeyId, existingPropertyKeyIds, value );
     }
 
     void onPropertyChange( NodeCursor node, PropertyCursor propertyCursor, long[] labels, int propertyKeyId, int[] existingPropertyKeyIds, Value beforeValue,
             Value afterValue )
     {
-        onPropertyChange( new NodeCursorWrapper( node ), propertyCursor, labels, propertyKeyId, existingPropertyKeyIds, beforeValue, afterValue );
+        onPropertyChange( node, NODE, propertyCursor, labels, propertyKeyId, existingPropertyKeyIds, beforeValue, afterValue );
     }
 
     void onPropertyAdd( RelationshipScanCursor relationship, PropertyCursor propertyCursor, int type, int propertyKeyId, int[] existingPropertyKeyIds,
             Value value )
     {
-        onPropertyAdd( new RelationshipCursorWrapper( relationship ), propertyCursor, new long[]{type}, propertyKeyId, existingPropertyKeyIds, value );
+        onPropertyAdd( relationship, RELATIONSHIP, propertyCursor, new long[]{type}, propertyKeyId, existingPropertyKeyIds, value );
     }
 
     void onPropertyRemove( RelationshipScanCursor relationship, PropertyCursor propertyCursor, int type, int propertyKeyId, int[] existingPropertyKeyIds,
             Value value )
     {
-        onPropertyRemove( new RelationshipCursorWrapper( relationship ), propertyCursor, new long[]{type}, propertyKeyId, existingPropertyKeyIds, value );
+        onPropertyRemove( relationship, RELATIONSHIP, propertyCursor, new long[]{type}, propertyKeyId, existingPropertyKeyIds, value );
     }
 
     void onPropertyChange( RelationshipScanCursor relationship, PropertyCursor propertyCursor, int type, int propertyKeyId, int[] existingPropertyKeyIds,
             Value beforeValue, Value afterValue )
     {
-        onPropertyChange( new RelationshipCursorWrapper( relationship ), propertyCursor, new long[]{type}, propertyKeyId, existingPropertyKeyIds, beforeValue,
+        onPropertyChange( relationship, RELATIONSHIP, propertyCursor, new long[]{type}, propertyKeyId, existingPropertyKeyIds, beforeValue,
                 afterValue );
     }
 
     void onDeleteUncreated( NodeCursor node, PropertyCursor propertyCursor )
     {
-        onDeleteUncreated( new NodeCursorWrapper( node ), propertyCursor, node.labels().all() );
+        onDeleteUncreated( node, NODE, propertyCursor, node.labels().all() );
     }
 
     void onDeleteUncreated( RelationshipScanCursor relationship, PropertyCursor propertyCursor )
     {
-        onDeleteUncreated( new RelationshipCursorWrapper( relationship ), propertyCursor, new long[]{relationship.type()} );
+        onDeleteUncreated( relationship, RELATIONSHIP, propertyCursor, new long[]{relationship.type()} );
     }
 
     private boolean noSchemaChangedInTx()
@@ -173,7 +174,7 @@ public class IndexTxStateUpdater
      * @param propertyCursor property cursor for accessing the properties of the entity.
      * @param tokens the entity tokens this entity has.
      */
-    private void onDeleteUncreated( EntityCursor entity, PropertyCursor propertyCursor, long[] tokens )
+    private void onDeleteUncreated( EntityCursor entity, EntityType entityType, PropertyCursor propertyCursor, long[] tokens )
     {
         assert noSchemaChangedInTx();
         entity.properties( propertyCursor, PropertySelection.ALL_PROPERTY_KEYS );
@@ -183,7 +184,7 @@ public class IndexTxStateUpdater
             propertyKeyList.add( propertyCursor.propertyKey() );
         }
         int[] propertyKeyIds = propertyKeyList.toArray();
-        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyIds, entity.entityType() );
+        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyIds, entityType );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
@@ -201,11 +202,11 @@ public class IndexTxStateUpdater
         }
     }
 
-    private void onPropertyAdd( EntityCursor entity, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId, int[] existingPropertyKeyIds,
-            Value value )
+    private void onPropertyAdd( EntityCursor entity, EntityType entityType, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId,
+            int[] existingPropertyKeyIds, Value value )
     {
         assert noSchemaChangedInTx();
-        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyId, entity.entityType() );
+        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyId, entityType );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
@@ -224,11 +225,11 @@ public class IndexTxStateUpdater
         }
     }
 
-    private void onPropertyRemove( EntityCursor entity, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId, int[] existingPropertyKeyIds,
-            Value value )
+    private void onPropertyRemove( EntityCursor entity, EntityType entityType, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId,
+            int[] existingPropertyKeyIds, Value value )
     {
         assert noSchemaChangedInTx();
-        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyId, entity.entityType() );
+        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyId, entityType );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
@@ -246,11 +247,11 @@ public class IndexTxStateUpdater
         }
     }
 
-    private void onPropertyChange( EntityCursor entity, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId, int[] existingPropertyKeyIds,
-            Value beforeValue, Value afterValue )
+    private void onPropertyChange( EntityCursor entity, EntityType entityType, PropertyCursor propertyCursor, long[] tokens, int propertyKeyId,
+            int[] existingPropertyKeyIds, Value beforeValue, Value afterValue )
     {
         assert noSchemaChangedInTx();
-        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyId, entity.entityType() );
+        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyId, entityType );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
@@ -320,75 +321,5 @@ public class IndexTxStateUpdater
         }
 
         return values;
-    }
-
-    /**
-     * A common interface for operations needed from both node and relationship cursors.
-     */
-    private interface EntityCursor
-    {
-        long reference();
-
-        void properties( PropertyCursor cursor, PropertySelection propertySelection );
-
-        EntityType entityType();
-    }
-
-    private static class NodeCursorWrapper implements EntityCursor
-    {
-
-        private final NodeCursor node;
-
-        private NodeCursorWrapper( NodeCursor node )
-        {
-            this.node = node;
-        }
-
-        @Override
-        public long reference()
-        {
-            return node.nodeReference();
-        }
-
-        @Override
-        public void properties( PropertyCursor cursor, PropertySelection propertySelection )
-        {
-            node.properties( cursor, propertySelection );
-        }
-
-        @Override
-        public EntityType entityType()
-        {
-            return NODE;
-        }
-    }
-
-    private static class RelationshipCursorWrapper implements EntityCursor
-    {
-
-        private final RelationshipScanCursor relationship;
-
-        private RelationshipCursorWrapper( RelationshipScanCursor relationship )
-        {
-            this.relationship = relationship;
-        }
-
-        @Override
-        public long reference()
-        {
-            return relationship.relationshipReference();
-        }
-
-        @Override
-        public void properties( PropertyCursor cursor, PropertySelection propertySelection )
-        {
-            relationship.properties( cursor, propertySelection );
-        }
-
-        @Override
-        public EntityType entityType()
-        {
-            return RELATIONSHIP;
-        }
     }
 }

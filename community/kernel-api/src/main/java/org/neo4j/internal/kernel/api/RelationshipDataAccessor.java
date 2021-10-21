@@ -24,6 +24,12 @@ package org.neo4j.internal.kernel.api;
  */
 public interface RelationshipDataAccessor extends EntityCursor
 {
+    @Override
+    default long reference()
+    {
+        return relationshipReference();
+    }
+
     long relationshipReference(); // not sure relationships will have independent references,
     // so exposing this might be leakage.
 

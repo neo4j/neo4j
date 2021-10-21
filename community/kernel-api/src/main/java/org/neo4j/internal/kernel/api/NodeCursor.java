@@ -27,6 +27,12 @@ import org.neo4j.storageengine.api.RelationshipSelection;
  */
 public interface NodeCursor extends EntityCursor
 {
+    @Override
+    default long reference()
+    {
+        return nodeReference();
+    }
+
     long nodeReference();
 
     TokenSet labels();
