@@ -414,11 +414,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                 addedLabels: IntSet,
                                 removedLabels: IntSet,
                                 properties: IntObjectMap[Value]): Unit =
-    inner.nodeApplyChanges(node, addedLabels, removedLabels, properties)
+    singleDbHit(inner.nodeApplyChanges(node, addedLabels, removedLabels, properties))
 
   override def relationshipApplyChanges(relationship: Long,
                                         properties: IntObjectMap[Value]): Unit =
-    inner.relationshipApplyChanges(relationship, properties)
+    singleDbHit(inner.relationshipApplyChanges(relationship, properties))
 
   override def assertShowIndexAllowed(): Unit = inner.assertShowIndexAllowed()
 

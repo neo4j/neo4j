@@ -253,14 +253,14 @@ case class SetRelationshipPropertiesOperation(relName: String,
                                               needsExclusiveLock: Boolean = true)
   extends SetEntityPropertiesOperation[VirtualRelationshipValue](relName, keys, values) {
 
-  override def name = "SetNodeProperties"
+  override def name = "SetRelationshipProperties"
 
   override protected def id(item: Any): Long = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
 
   override protected def operations(qtx: QueryContext): RelationshipOperations = qtx.relationshipWriteOps
 
   override protected def invalidateCachedProperties(executionContext: CypherRow, id: Long): Unit =
-    executionContext.invalidateCachedNodeProperties(id)
+    executionContext.invalidateCachedRelationshipProperties(id)
 }
 
 case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropertyKey, expression: Expression)
@@ -302,7 +302,7 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
 case class SetPropertiesOperation(entityExpr: Expression,keys: Array[LazyPropertyKey], values: Array[Expression])
   extends AbstractSetPropertyOperation {
 
-  override def name: String = "SetProperty"
+  override def name: String = "SetProperties"
 
   override def set(executionContext: CypherRow, state: QueryState): Long = {
     val resolvedEntity = entityExpr(executionContext, state)

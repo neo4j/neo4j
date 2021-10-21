@@ -48,7 +48,7 @@ object combineSetProperty extends Rewriter with StepSequencer.Step with ASTRewri
 
   override def apply(input: AnyRef): AnyRef = instance(input)
 
-  private def onSameEntity(seitItem: SetItem, entity: Expression) = seitItem match {
+  private def onSameEntity(setItem: SetItem, entity: Expression) = setItem match {
     case SetPropertyItem(Property(map, _), _) => map == entity
     case _ => false
   }
