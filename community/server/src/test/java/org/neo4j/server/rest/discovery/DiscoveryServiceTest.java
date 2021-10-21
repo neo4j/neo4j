@@ -46,9 +46,10 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
 import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
 import org.neo4j.server.rest.repr.Representation;
-
+import org.neo4j.server.config.AuthConfigProvider;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -175,7 +176,8 @@ public class DiscoveryServiceTest
     private DiscoveryService testDiscoveryService()
     {
         Config config = mockConfig();
-        return new DiscoveryService( config, communityDiscoverableURIs( config, portRegistry ), mock( ServerVersionAndEdition.class ) );
+        return new DiscoveryService( config, communityDiscoverableURIs( config, portRegistry ), mock( ServerVersionAndEdition.class ),
+                                     new CommunityAuthConfigProvider() );
     }
 
     @ParameterizedTest( name = "{0}" )
@@ -255,7 +257,8 @@ public class DiscoveryServiceTest
         Config config = Config.defaults( ServerSettings.browser_path, URI.create( "/browser/" ) );
 
         baseUri = "http://www.example.com:5435";
-        DiscoveryService ds = new DiscoveryService( config, communityDiscoverableURIs( config, null ), mock( ServerVersionAndEdition.class ) );
+        DiscoveryService ds = new DiscoveryService( config, communityDiscoverableURIs( config, null ), mock( ServerVersionAndEdition.class ),
+                                                    mock( AuthConfigProvider.class ) );
 
         var request = mock( Request.class );
         when( request.selectVariant( anyList() ) ).thenReturn( Variant.mediaTypes( MediaType.TEXT_HTML_TYPE ).build().get( 0 ) );

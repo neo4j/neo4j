@@ -32,6 +32,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
+import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
@@ -65,7 +66,7 @@ public class DBMSModuleTest
         when( config.get( ServerSettings.http_paths_blacklist ) ).thenReturn( emptyList() );
 
         var module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder().build(),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), new CommunityAuthConfigProvider() );
 
         module.start();
 

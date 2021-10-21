@@ -89,6 +89,9 @@ Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
 
+Eclipse Public License v2.0
+  javax.ws.rs-api
+
 MIT License
   SLF4J API Module
 

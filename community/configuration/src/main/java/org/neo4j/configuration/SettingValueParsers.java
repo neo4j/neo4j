@@ -29,8 +29,10 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -889,6 +891,39 @@ public final class SettingValueParsers
         public Class<GlobbingPattern> getType()
         {
             return GlobbingPattern.class;
+        }
+    };
+
+    public static final SettingValueParser<Map<String,String>> MAP_PATTERN = new SettingValueParser<>()
+    {
+        @Override
+        public Map<String,String> parse( String value )
+        {
+            String[] splitString = value.split( ";" );
+            var settingMap = new HashMap<String,String>();
+            Arrays.stream( splitString ).forEach( entry ->
+                                                  {
+                                                      var keyValueSplit = entry.split( "=" );
+                                                      if ( keyValueSplit.length != 2 )
+                                                      {
+                                                          throw new IllegalArgumentException(
+                                                                  format( "'%s' map element does not follow k1=v1 format.", entry ) );
+                                                      }
+                                                      settingMap.put( keyValueSplit[0], keyValueSplit[1] );
+                                                  } );
+            return settingMap;
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return "A simple key value map pattern  k1=v1;k2=v2";
+        }
+
+        @Override
+        public Class<Map<String,String>> getType()
+        {
+            return (Class<Map<String,String>>) (Class) Map.class;
         }
     };
 

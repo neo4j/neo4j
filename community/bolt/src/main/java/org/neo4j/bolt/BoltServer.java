@@ -79,6 +79,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
@@ -275,7 +276,8 @@ public class BoltServer extends LifecycleAdapter
         long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
         return new SocketTransport( BoltConnector.NAME, internalListenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator, boltMemoryPool );
+                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator, boltMemoryPool,
+                                    dependencyResolver.resolveDependency( AuthConfigProvider.class ), config );
     }
 
     private ProtocolInitializer createLoopbackProtocolInitializer( BoltProtocolFactory boltProtocolFactory,
@@ -317,7 +319,7 @@ public class BoltServer extends LifecycleAdapter
 
             return new SocketTransport( BoltConnectorInternalSettings.LOOPBACK_NAME, loopbackListenAddress, null, false, logService.getInternalLogProvider(),
                                         throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator,
-                                        boltMemoryPool );
+                                        boltMemoryPool, dependencyResolver.resolveDependency( AuthConfigProvider.class ), config );
         }
         else
         {
@@ -368,7 +370,8 @@ public class BoltServer extends LifecycleAdapter
         long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
         return new SocketTransport( BoltConnector.NAME, listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator, boltMemoryPool );
+                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator, boltMemoryPool,
+                                    dependencyResolver.resolveDependency( AuthConfigProvider.class ), config );
     }
 
     private ByteBufAllocator getBufferAllocator()

@@ -33,6 +33,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.server.NeoWebServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
+import org.neo4j.server.config.AuthConfigProvider;
 
 /**
  * Used to discover the rest of the server URIs through a HTTP GET request to the server root (/).
@@ -43,19 +44,23 @@ public class DiscoveryService
     private final Config config;
     private final DiscoverableURIs uris;
     private final ServerVersionAndEdition serverInfo;
+    private final AuthConfigProvider authConfigProvider;
 
     // Your IDE might tell you to make this less visible than public. Don't. JAX-RS demands is to be public.
-    public DiscoveryService( @Context Config config, @Context DiscoverableURIs uris, @Context NeoWebServer neoWebServer )
+    public DiscoveryService( @Context Config config, @Context DiscoverableURIs uris, @Context NeoWebServer neoWebServer,
+                             @Context AuthConfigProvider authConfigProvider )
     {
-        this( config, uris, new ServerVersionAndEdition( neoWebServer ) );
+        this( config, uris, new ServerVersionAndEdition( neoWebServer ), authConfigProvider );
     }
 
     // Used in internal unit test to avoid providing a neo server
-    DiscoveryService( Config config, DiscoverableURIs uris, ServerVersionAndEdition serverInfo )
+    DiscoveryService( Config config, DiscoverableURIs uris, ServerVersionAndEdition serverInfo,
+                      AuthConfigProvider authConfigProvider )
     {
         this.config = config;
         this.uris = uris;
         this.serverInfo = serverInfo;
+        this.authConfigProvider = authConfigProvider;
     }
 
     @GET
@@ -72,7 +77,8 @@ public class DiscoveryService
         else if ( v.getMediaType() == MediaType.APPLICATION_JSON_TYPE )
         {
             responseBuilder = Response.ok()
-                                      .entity( new DiscoveryRepresentation( uris.update( uriInfo.getBaseUri() ), serverInfo ) )
+                                      .entity( new DiscoveryRepresentation( uris.update( uriInfo.getBaseUri() ), serverInfo,
+                                                                            authConfigProvider.getRepresentation() ) )
                                       .variant( v );
         }
         else

@@ -68,9 +68,11 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final Log log;
     private final ChannelProtector channelProtector;
     private final MemoryTracker memoryTracker;
+    private final DiscoveryResponseHandler discoveryResponseHandler;
 
     TransportSelectionHandler( BoltChannel boltChannel, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
-                               BoltProtocolFactory boltProtocolFactory, ChannelProtector channelProtector, MemoryTracker memoryTracker )
+                               BoltProtocolFactory boltProtocolFactory, ChannelProtector channelProtector, MemoryTracker memoryTracker,
+                               DiscoveryResponseHandler discoveryResponseHandler )
     {
         this.boltChannel = boltChannel;
         this.sslCtx = sslCtx;
@@ -81,6 +83,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         this.log = logging.getLog( TransportSelectionHandler.class );
         this.channelProtector = channelProtector;
         this.memoryTracker = memoryTracker;
+        this.discoveryResponseHandler = discoveryResponseHandler;
     }
 
     @Override
@@ -184,7 +187,8 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
         p.addLast(
-                new TransportSelectionHandler( boltChannel, null, encryptionRequired, true, logging, boltProtocolFactory, channelProtector, memoryTracker ) );
+                new TransportSelectionHandler( boltChannel, null, encryptionRequired, true, logging, boltProtocolFactory,
+                                               channelProtector, memoryTracker, discoveryResponseHandler ) );
         p.remove( this );
     }
 
@@ -209,6 +213,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         p.addLast(
                 new HttpServerCodec(),
                 new HttpObjectAggregator( MAX_WEBSOCKET_HANDSHAKE_SIZE ),
+                discoveryResponseHandler,
                 new WebSocketServerProtocolHandler( "/", null, false, MAX_WEBSOCKET_FRAME_SIZE ),
                 new WebSocketFrameAggregator( MAX_WEBSOCKET_FRAME_SIZE ),
                 new WebSocketFrameTranslator(),

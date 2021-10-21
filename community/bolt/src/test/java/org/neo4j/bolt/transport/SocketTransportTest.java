@@ -28,11 +28,13 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 
 import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutHandler;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.server.config.AuthConfigProvider;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -103,6 +105,7 @@ class SocketTransportTest
         return new SocketTransport( "bolt", new InetSocketAddress( "localhost", 7687 ), null, false,
                                     NullLogProvider.getInstance(), throttleGroup,
                                     mock( BoltProtocolFactory.class ), connectionTracker, Duration.ZERO,
-                                    -1, PooledByteBufAllocator.DEFAULT, mock( MemoryPool.class ) );
+                                    -1, PooledByteBufAllocator.DEFAULT, mock( MemoryPool.class ), mock( AuthConfigProvider.class ),
+                                    mock( Config.class ) );
     }
 }

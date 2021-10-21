@@ -82,6 +82,8 @@ import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
 import org.neo4j.server.CommunityNeoWebServer;
+import org.neo4j.server.config.AuthConfigProvider;
+import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.systemgraph.CommunityDefaultDatabaseResolver;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
@@ -126,6 +128,8 @@ public class CommunityEditionModule extends StandaloneEditionModule
         this.sslPolicyLoader = SslPolicyLoader.create( globalConfig, logService.getInternalLogProvider() );
         globalDependencies.satisfyDependency( sslPolicyLoader ); // for bolt and web server
         globalDependencies.satisfyDependency( new DatabaseOperationCounts.Counter() ); // for global metrics
+
+        globalDependencies.satisfyDependency( createAuthConfigProvider( globalModule ) );
 
         identityModule = DefaultIdentityModule.fromGlobalModule( globalModule );
         globalDependencies.satisfyDependency( identityModule );
@@ -241,6 +245,12 @@ public class CommunityEditionModule extends StandaloneEditionModule
         Config config = globalModule.getGlobalConfig();
         LogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
         return new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider );
+    }
+
+    @Override
+    protected AuthConfigProvider createAuthConfigProvider( GlobalModule globalModule )
+    {
+        return new CommunityAuthConfigProvider();
     }
 
     @Override

@@ -30,13 +30,14 @@ import java.time.Duration;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.UnauthenticatedChannelProtector;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryTracker;
-
+import org.neo4j.server.config.AuthConfigProvider;
 /**
  * Implements a transport for the Neo4j Messaging Protocol that uses good old regular sockets.
  */
@@ -54,11 +55,13 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final long maxMessageSize;
     private final ByteBufAllocator allocator;
     private final MemoryPool memoryPool;
+    private final AuthConfigProvider authConfigProvider;
+    private final Config config;
 
     public SocketTransport( String connector, SocketAddress address, SslContext sslCtx, boolean encryptionRequired, LogProvider logging,
                             TransportThrottleGroup throttleGroup, BoltProtocolFactory boltProtocolFactory,
                             NetworkConnectionTracker connectionTracker, Duration channelTimeout, long maxMessageSize,
-                            ByteBufAllocator allocator, MemoryPool memoryPool )
+                            ByteBufAllocator allocator, MemoryPool memoryPool, AuthConfigProvider authConfigProvider, Config config )
     {
         this.connector = connector;
         this.address = address;
@@ -72,6 +75,8 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         this.maxMessageSize = maxMessageSize;
         this.allocator = allocator;
         this.memoryPool = memoryPool;
+        this.authConfigProvider = authConfigProvider;
+        this.config = config;
     }
 
     @Override
@@ -102,9 +107,11 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
                 ch.closeFuture().addListener( future -> throttleGroup.uninstall( ch ) );
 
                 memoryTracker.allocateHeap( TransportSelectionHandler.SHALLOW_SIZE );
+                var discoveryServiceHandler = new DiscoveryResponseHandler( authConfigProvider );
                 TransportSelectionHandler transportSelectionHandler =
                         new TransportSelectionHandler( boltChannel, sslCtx,
-                                                       encryptionRequired, false, logging, boltProtocolFactory, channelProtector, memoryTracker );
+                                                       encryptionRequired, false, logging, boltProtocolFactory, channelProtector, memoryTracker,
+                                                       discoveryServiceHandler );
                 ch.pipeline().addLast( transportSelectionHandler );
             }
         };

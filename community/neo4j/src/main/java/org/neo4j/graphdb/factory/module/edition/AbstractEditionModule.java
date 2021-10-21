@@ -75,6 +75,7 @@ import org.neo4j.procedure.builtin.routing.ServerSideRoutingTableProvider;
 import org.neo4j.procedure.builtin.routing.SimpleClientRoutingDomainChecker;
 import org.neo4j.procedure.builtin.routing.SingleAddressRoutingTableProvider;
 import org.neo4j.procedure.impl.ProcedureConfig;
+import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.io.layout.CommonDatabaseFile.LABEL_SCAN_STORE;
@@ -131,6 +132,8 @@ public abstract class AbstractEditionModule
 
     protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
                                                                                           ClientRoutingDomainChecker clientRoutingDomainChecker );
+
+    protected abstract AuthConfigProvider createAuthConfigProvider( GlobalModule globalModule );
 
     public abstract <DB extends DatabaseContext> DatabaseManager<DB> createDatabaseManager( GlobalModule globalModule );
 

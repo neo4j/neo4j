@@ -363,6 +363,14 @@ class SettingTest
     }
 
     @Test
+    void testStringMap()
+    {
+        var setting = (SettingImpl<Map<String,String>>) setting( "setting", SettingValueParsers.MAP_PATTERN );
+        assertEquals( Map.of( "k1", "v1", "k2", "v2" ), setting.parse( "k1=v1;k2=v2" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "k1=v1=v2" ) );
+    }
+
+    @Test
     void testNormalizedRelativeURI()
     {
         var setting = (SettingImpl<URI>) setting( "setting", NORMALIZED_RELATIVE_URI );

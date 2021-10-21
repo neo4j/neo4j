@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.modules.AuthorizationModule;
@@ -96,7 +97,8 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer
         // Bolt port isn't available until runtime, so defer loading until then
         Supplier<DiscoverableURIs> discoverableURIs =
                 () -> communityDiscoverableURIs( getConfig(), connectorPortRegister );
-        return new DBMSModule( webServer, getConfig(), discoverableURIs, userLogProvider );
+        var authConfigProvider = getGlobalDependencies().resolveDependency( AuthConfigProvider.class );
+        return new DBMSModule( webServer, getConfig(), discoverableURIs, userLogProvider, authConfigProvider );
     }
 
     protected AuthorizationModule createAuthorizationModule()

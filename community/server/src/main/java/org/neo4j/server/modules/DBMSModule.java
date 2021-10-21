@@ -31,6 +31,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.discovery.DiscoveryService;
+import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.rest.web.AccessiblePathFilter;
 import org.neo4j.server.rest.web.CorsFilter;
 import org.neo4j.server.web.WebServer;
@@ -49,15 +50,17 @@ public class DBMSModule implements ServerModule
     private final WebServer webServer;
     private final Config config;
     private final Supplier<DiscoverableURIs> discoverableURIs;
-    private LogProvider logProvider;
+    private final LogProvider logProvider;
+    private final AuthConfigProvider authConfigProvider;
 
     public DBMSModule( WebServer webServer, Config config, Supplier<DiscoverableURIs> discoverableURIs,
-            LogProvider logProvider )
+            LogProvider logProvider, AuthConfigProvider authConfigProvider )
     {
         this.webServer = webServer;
         this.config = config;
         this.discoverableURIs = discoverableURIs;
         this.logProvider = logProvider;
+        this.authConfigProvider = authConfigProvider;
     }
 
     @Override
@@ -65,7 +68,8 @@ public class DBMSModule implements ServerModule
     {
         webServer.addJAXRSClasses(
                 singletonList( DiscoveryService.class ), ROOT_PATH,
-                singletonList( injectable( DiscoverableURIs.class, discoverableURIs.get() ) ) );
+                List.of( injectable( DiscoverableURIs.class, discoverableURIs.get() ),
+                    injectable( AuthConfigProvider.class, authConfigProvider ) ) );
 
         webServer.addJAXRSClasses( jaxRsClasses(), ROOT_PATH, null );
 

@@ -55,7 +55,7 @@ class TransportSelectionHandlerTest
         AssertableLogProvider logging = new AssertableLogProvider();
         var memoryTracker = mock( MemoryTracker.class );
 
-        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null, null, memoryTracker );
+        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null, null, memoryTracker, null );
 
         // When
         Throwable cause = new Throwable( "Oh no!" );
@@ -75,7 +75,7 @@ class TransportSelectionHandlerTest
         AssertableLogProvider logging = new AssertableLogProvider();
         var memoryTracker = mock( MemoryTracker.class );
 
-        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null, null, memoryTracker );
+        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null, null, memoryTracker, null );
 
         IOException connResetError = new IOException( "Connection reset by peer" );
 
@@ -98,7 +98,7 @@ class TransportSelectionHandlerTest
         SslContext sslCtx = mock( SslContext.class );
         var memoryTracker = mock( MemoryTracker.class );
 
-        TransportSelectionHandler handler = new TransportSelectionHandler( null, sslCtx, false, false, logging, null, null, memoryTracker );
+        TransportSelectionHandler handler = new TransportSelectionHandler( null, sslCtx, false, false, logging, null, null, memoryTracker, null );
 
         final ByteBuf payload = Unpooled.wrappedBuffer(new byte[] { 22, 3, 1, 0, 5 }); //encrypted
 
@@ -119,7 +119,7 @@ class TransportSelectionHandlerTest
         var logging = new AssertableLogProvider();
         var memoryTracker = mock( MemoryTracker.class );
 
-        var handler = new TransportSelectionHandler( null, null, false, false, logging, null, null, memoryTracker );
+        var handler = new TransportSelectionHandler( null, null, false, false, logging, null, null, memoryTracker, null );
 
         handler.handlerRemoved0( ctx );
 
@@ -136,7 +136,7 @@ class TransportSelectionHandlerTest
 
         var payload = Unpooled.wrappedBuffer( new byte[]{22, 3, 1, 0, 5} );
 
-        var handler = new TransportSelectionHandler( null, sslCtx, false, false, logging, null, null, memoryTracker );
+        var handler = new TransportSelectionHandler( null, sslCtx, false, false, logging, null, null, memoryTracker, null );
 
         handler.decode( ctx, payload, new ArrayList<>() );
 
@@ -153,7 +153,7 @@ class TransportSelectionHandlerTest
 
         var payload = Unpooled.wrappedBuffer( "GET /\r\n".getBytes( StandardCharsets.UTF_8 ) );
 
-        var channel = new EmbeddedChannel( new TransportSelectionHandler( null, sslCtx, false, false, logging, null, null, memoryTracker ) );
+        var channel = new EmbeddedChannel( new TransportSelectionHandler( null, sslCtx, false, false, logging, null, null, memoryTracker, null ) );
         channel.writeInbound( payload );
 
         verify( memoryTracker ).allocateHeap(

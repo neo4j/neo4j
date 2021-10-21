@@ -29,6 +29,7 @@ import org.neo4j.server.rest.discovery.ServerVersionAndEdition;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.repr.Serializer.joinBaseWithRelativePath;
 
@@ -47,7 +48,7 @@ class DiscoveryRepresentationTest
                         .addEndpoint( "data", dataUri )
                         .addBoltEndpoint( config, mock( ConnectorPortRegister.class ) )
                         .build()
-                        .update( baseUri ), mock( ServerVersionAndEdition.class ) );
+                        .update( baseUri ), mock( ServerVersionAndEdition.class ), new AuthConfigRepresentation() );
 
         var mapOfUris = RepresentationTestAccess.serialize( dr );
 
@@ -68,18 +69,20 @@ class DiscoveryRepresentationTest
     void shouldCreateAMapContainingServerVersionAndEditionInfo()
     {
         var serverInfo = new ServerVersionAndEdition( "myVersion", "myEdition" );
-        var dr = new DiscoveryRepresentation( mock( DiscoverableURIs.class ), serverInfo );
+        var dr = new DiscoveryRepresentation( mock( DiscoverableURIs.class ), serverInfo, new AuthConfigRepresentation() );
 
         var mapOfUris = RepresentationTestAccess.serialize( dr );
 
         var version = mapOfUris.get( "neo4j_version" );
         var edition = mapOfUris.get( "neo4j_edition" );
+        var authConfig = mapOfUris.get( "auth_config" );
 
         assertNotNull( version );
         assertNotNull( edition );
 
         assertEquals( "myVersion", version.toString() );
         assertEquals( "myEdition", edition.toString() );
+        assertNull( authConfig ); //No auth_config for community.
     }
 
 }
