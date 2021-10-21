@@ -44,7 +44,8 @@ import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.memory.MemoryTracker
 
-class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalContext) extends TransactionalContextWrapper {
+class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalContext,
+                                          private[this] val threadSafeCursors: CursorFactory) extends TransactionalContextWrapper {
   private[this] val kernelExecutionContext: ExecutionContext = tc.kernelTransaction.createExecutionContext()
 
   override def createKernelExecutionContext(): ExecutionContext = tc.kernelTransaction.createExecutionContext()
@@ -53,7 +54,9 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
 
   override def kernelQueryContext: QueryContext = kernelExecutionContext.queryContext
 
-  override def cursors: CursorFactory = kernelExecutionContext.cursors()
+  // TODO: We eventually want to use kernelExecutionContext.cursors() when they are safe
+  //       and then we can remove threadSafeCursors
+  override def cursors: CursorFactory = threadSafeCursors // kernelExecutionContext.cursors()
 
   override def cursorContext: CursorContext = kernelExecutionContext.cursorContext
 
@@ -88,7 +91,7 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
   override def close(): Unit = {
     kernelExecutionContext.complete()
     kernelExecutionContext.close()
-    // tc needs to be closed by external owner
+    // tc and threadSafeCursors needs to be closed by external owner
   }
 
   override def kernelStatisticProvider: KernelStatisticProvider = ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
@@ -118,6 +121,11 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
 
   private def unsupported(): Nothing = {
     throw new UnsupportedOperationException("Not supported in parallel runtime.")
+  }
+
+  override def createParallelTransactionalContext(): ParallelTransactionalContextWrapper = {
+    require(threadSafeCursors != null)
+    new ParallelTransactionalContextWrapper(kernelTransactionalContext, threadSafeCursors)
   }
 }
 

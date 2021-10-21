@@ -60,9 +60,7 @@ abstract class TransactionalContextWrapper extends QueryTransactionalContext {
 
   def contextWithNewTransaction: TransactionalContextWrapper
 
-  def createParallelTransactionalContext(): ParallelTransactionalContextWrapper = {
-    new ParallelTransactionalContextWrapper(kernelTransactionalContext)
-  }
+  def createParallelTransactionalContext(): ParallelTransactionalContextWrapper
 }
 
 class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, threadSafeCursors: CursorFactory = null) extends TransactionalContextWrapper {
@@ -141,6 +139,11 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
   override def thawLocks(): Unit = tc.kernelTransaction.thawLocks()
 
   override def validateSameDB[E <: Entity](entity: E): E = tc.transaction().validateSameDB(entity)
+
+  override def createParallelTransactionalContext(): ParallelTransactionalContextWrapper = {
+    require(threadSafeCursors != null)
+    new ParallelTransactionalContextWrapper(kernelTransactionalContext, threadSafeCursors)
+  }
 }
 
 object TransactionalContextWrapper {
