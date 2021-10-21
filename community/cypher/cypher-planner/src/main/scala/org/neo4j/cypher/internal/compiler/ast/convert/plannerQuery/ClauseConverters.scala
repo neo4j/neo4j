@@ -502,7 +502,7 @@ object ClauseConverters {
     case SetPropertyItem(Property(entityExpr, propertyKey), expr) =>
       SetPropertyPattern(entityExpr, propertyKey, expr)
 
-    case SetPropertyItems(Property(entityExpr, propertyKey), items) =>
+    case SetPropertyItems(entityExpr, items) =>
       SetPropertiesPattern(entityExpr, items)
 
     case SetExactPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>

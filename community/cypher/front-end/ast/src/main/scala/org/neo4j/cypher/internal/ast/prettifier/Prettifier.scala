@@ -155,6 +155,7 @@ import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.SetPropertyItems
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
@@ -864,6 +865,7 @@ case class Prettifier(
     def asString(s: SetClause): String = {
       val items = s.items.map {
         case SetPropertyItem(prop, exp)                       => s"${expr(prop)} = ${expr(exp)}"
+        case SetPropertyItems(entity, items)                  => items.map(i =>  s"${expr(entity)}.${i._1.name} = ${expr(i._2)}").mkString(", ")
         case SetLabelItem(variable, labels)                   => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
         case SetIncludingPropertiesFromMapItem(variable, exp) => s"${expr(variable)} += ${expr(exp)}"
         case SetExactPropertiesFromMapItem(variable, exp)     => s"${expr(variable)} = ${expr(exp)}"

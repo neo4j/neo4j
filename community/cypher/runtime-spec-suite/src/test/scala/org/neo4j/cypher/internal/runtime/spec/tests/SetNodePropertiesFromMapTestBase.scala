@@ -593,7 +593,7 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
 
       //p1 = 0, p2 = 0
       //p1 = 1, p2 = 0
-      nodePropertyGraph(2, {case i => Map("p1" -> i, "p2" -> 0)}, "L")
+      nodePropertyGraph(2, {case i => Map("p1" -> i, "p2" -> 0, "toBeRemoved" -> 1337)}, "L")
     }
 
     // when
@@ -610,7 +610,9 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withSingleRow(nodes.head)
-      .withStatistics(propertiesSet = 2)
+      .withStatistics(propertiesSet = 3)
+    //should have removed property from the first node
+    nodes.foreach(n => n.hasProperty("toBeRemoved") shouldBe n.getId != nodes.head.getId)
   }
 
   test("should set multiple properties without violating constraint (removeOtherProps = false)") {

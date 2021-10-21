@@ -1325,7 +1325,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
 
     val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val setPropertyDbHits = relationshipCount * 3 * 2
+      val setPropertyDbHits = relationshipCount * 3
       val tokenDbHits = relationshipCount * 3 * 2
       setPropertyDbHits + tokenDbHits
     } else if (useWritesWithProfiling) {
@@ -1585,9 +1585,16 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
         val tokenDbHits = sizeHint * 2
         setPropertyDbHits + tokenDbHits
       } else if (useWritesWithProfiling) {
+        //In non-fused pipeline we only count the number of set properties
         sizeHint * 2
       }
       else {
+        //In interpreted runtimes we use lazy property types which will amount
+        // to the following count:
+        // - first time we will try to read the two props, 2 db hits
+        // - since the props are not there we will create the two, +2 db hits
+        // - second time we will try reading them again, +2 db hits
+        // - now the ints are cached and subsequent calls will not be counted.
         sizeHint + 6
       }
 
@@ -1616,7 +1623,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val setPropertiesFromMapProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
 
     val expectedDbHits = if (useWritesWithProfiling & canFuseOverPipelines) {
-      val setPropertyDbHits = relationshipCount * 2
+      val setPropertyDbHits = relationshipCount
       val tokenDbHits = relationshipCount * 2
       setPropertyDbHits + tokenDbHits
     } else if (useWritesWithProfiling) {
@@ -1659,8 +1666,15 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
         val tokenDbHits = relationshipCount * 2
         setPropertyDbHits + tokenDbHits
       } else if (useWritesWithProfiling) {
+        //In non-fused pipeline we only count the number of set properties
         relationshipCount * 2
       } else {
+        //In interpreted runtimes we use lazy property types which will amount
+        // to the following count:
+        // - first time we will try to read the two props, 2 db hits
+        // - since the props are not there we will create the two, +2 db hits
+        // - second time we will try reading them again, +2 db hits
+        // - now the ints are cached and subsequent calls will not be counted.
         relationshipCount + 6
       }
 
