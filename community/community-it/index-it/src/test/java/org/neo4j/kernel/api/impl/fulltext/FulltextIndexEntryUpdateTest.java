@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -40,7 +41,9 @@ import java.util.stream.Stream;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -58,6 +61,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
@@ -84,6 +88,8 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -123,7 +129,10 @@ class FulltextIndexEntryUpdateTest
     @BeforeEach
     final void setup()
     {
-        final var readOnlyChecker = new DatabaseReadOnlyChecker.Default( CONFIG, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        var configBasedLookup = new ConfigBasedLookupFactory( CONFIG );
+        var readOnlyDatabases = new ReadOnlyDatabases( configBasedLookup );
+        var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
+        final var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         provider = new FulltextIndexProviderFactory().create( pageCache, fs, NullLogService.getInstance(), new Monitors(), CONFIG, readOnlyChecker,
                                                               DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(), PageCacheTracer.NULL, databaseLayout,
