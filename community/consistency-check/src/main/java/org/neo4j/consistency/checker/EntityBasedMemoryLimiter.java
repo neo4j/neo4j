@@ -33,6 +33,10 @@ import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
+/**
+ * Even though this memory limiter handles ranges for both nodes and relationships, it bases the range size on the number of nodes
+ * to not make relationship heavy stores allocate a lot more memory.
+ */
 public class EntityBasedMemoryLimiter extends PrefetchingIterator<EntityBasedMemoryLimiter.CheckRange>
 {
     public static final Factory DEFAULT = new DefaultFactory( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor.defaultValue() );
@@ -85,7 +89,7 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<EntityBasedMem
         this.highNodeId = highNodeId;
         this.highRelationshipId = highRelationshipId;
         this.highEntityId = max( highNodeId, highRelationshipId );
-        this.entitiesPerRange = max( 1, min( highEntityId, availableMemory / requiredMemoryPerEntity ) );
+        this.entitiesPerRange = max( 1, min( highNodeId, availableMemory / requiredMemoryPerEntity ) );
         this.currentRangeStart = 0;
         this.currentRangeEnd = min( this.highEntityId, entitiesPerRange );
     }
