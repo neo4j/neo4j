@@ -87,10 +87,10 @@ public class IndexChecker implements Checker
         this.indexes = context.indexSizes.largeIndexes( entityType );
         long totalSize = indexes.stream().mapToLong( context.indexSizes::getEstimatedIndexSize ).sum();
         int rounds = (indexes.size() - 1) / NUM_INDEXES_IN_CACHE + 1;
-        this.scanProgress = context.progressReporter( this, "Node index checking", rounds * context.neoStores.getNodeStore().getHighId() );
-        // The caching of indexes is generally so much quicker than other things and is based on estimates so dividing by 10
+        this.scanProgress = context.roundInsensitiveProgressReporter( this, "Node index checking", rounds * context.neoStores.getNodeStore().getHighId() );
+        // The caching of indexes is generally so much quicker than other things and is based on estimates so dividing by 3
         // makes the progress more even and any estimation flaws less visible.
-        this.cacheProgress = context.progressReporter( this, "Node index caching", totalSize / 3 );
+        this.cacheProgress = context.roundInsensitiveProgressReporter( this, "Node index caching", totalSize / INDEX_CACHING_PROGRESS_FACTOR );
     }
 
     @Override
