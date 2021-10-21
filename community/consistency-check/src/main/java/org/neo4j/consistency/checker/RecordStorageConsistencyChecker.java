@@ -171,7 +171,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                 {
                     LongRange relationshipRange = range.getRelationshipRange();
                     context.runIfAllowed( relationshipIndexChecker, relationshipRange );
-                    cacheAccess.clearCache();
+                    // We don't clear the cache here since it will be cleared before it is used again:
+                    // either in NodeIndexChecker, explicitly a few rows down before NodeChecker, or in next range of RelationshipIndexChecker.
                 }
 
                 if ( range.applicableForNodeBasedChecks() )

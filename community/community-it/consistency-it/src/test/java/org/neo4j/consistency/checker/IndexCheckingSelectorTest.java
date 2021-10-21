@@ -144,7 +144,7 @@ class IndexCheckingSelectorTest
         runConsistencyCheck();
 
         assertThat( output.toString() )
-                .contains( "IndexChecker[entityType:NODE,indexesToCheck:1]" )
+                .contains( "NodeIndexChecker[entityType:NODE,indexesToCheck:1]" )
                 .containsPattern( "NodeChecker\\[highId:.,indexesToCheck:0\\]" );
     }
 
@@ -173,7 +173,7 @@ class IndexCheckingSelectorTest
         runConsistencyCheck();
 
         assertThat( output.toString() )
-                .contains( "IndexChecker[entityType:NODE,indexesToCheck:0]" )
+                .doesNotContain( "NodeIndexChecker" )
                 .containsPattern( "NodeChecker\\[highId:..,indexesToCheck:1\\]" );
     }
 
@@ -219,7 +219,7 @@ class IndexCheckingSelectorTest
         assertTrue( result.isSuccessful() );
 
         assertThat( output.toString() )
-                .contains( "IndexChecker[entityType:NODE,indexesToCheck:1]" )
+                .contains( "NodeIndexChecker[entityType:NODE,indexesToCheck:1]" )
                 .containsPattern( "NodeChecker\\[highId:.,indexesToCheck:0\\]" )
                 .contains( "RelationshipIndexChecker[entityType:RELATIONSHIP,indexesToCheck:1]" )
                 .containsPattern( "RelationshipChecker\\[highId:.,indexesToCheck:0\\]" );
@@ -275,7 +275,7 @@ class IndexCheckingSelectorTest
         runConsistencyCheck();
 
         assertThat( output.toString() )
-                .contains( "RelationshipIndexChecker[entityType:RELATIONSHIP,indexesToCheck:0]" )
+                .doesNotContain( "RelationshipIndexChecker[entityType:RELATIONSHIP,indexesToCheck:0]" )
                 .containsPattern( "RelationshipChecker\\[highId:..,indexesToCheck:1\\]" );
     }
 
@@ -299,7 +299,7 @@ class IndexCheckingSelectorTest
         runConsistencyCheck();
 
         assertThat( output.toString() )
-                .contains( "IndexChecker[entityType:NODE,indexesToCheck:1]" )
+                .contains( "NodeIndexChecker[entityType:NODE,indexesToCheck:1]" )
                 .containsPattern( "NodeChecker\\[highId:.,indexesToCheck:0\\]" );
     }
 
