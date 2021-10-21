@@ -176,22 +176,6 @@ public class StoreUpgraderTest
 
     @ParameterizedTest
     @MethodSource( "versions" )
-    void shouldUpgradeIfUpgradeConfigurationVetoIsOverriddenByForce( RecordFormats formats ) throws IOException
-    {
-        init( formats );
-        Config deniedMigrationConfig = Config.newBuilder()
-                .set( GraphDatabaseSettings.allow_upgrade, false ) // Upgrade is not allowed.
-                .set( GraphDatabaseSettings.record_format, Standard.LATEST_NAME )
-                .build();
-        StoreVersionCheck check = getVersionCheck( pageCache );
-
-        // Must not throw, because 'forceUpgrade' is 'true'.
-        newUpgrader( check, pageCache, deniedMigrationConfig, SILENT, NULL ).migrateIfNeeded( databaseLayout, true );
-        verifyStoreUpgradedWithin( 1, MINUTES );
-    }
-
-    @ParameterizedTest
-    @MethodSource( "versions" )
     void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly( RecordFormats formats ) throws IOException
     {
         init( formats );
