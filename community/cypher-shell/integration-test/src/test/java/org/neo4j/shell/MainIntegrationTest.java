@@ -382,13 +382,13 @@ class MainIntegrationTest
     {
         buildTest()
                 .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-                .userInputLines( ":disconnect ", format( ":connect -u %s -p %s -d %s", "Paul Westerberg", PASSWORD, SYSTEM_DB_NAME ), ":exit" )
+                .userInputLines( ":disconnect ", format( ":connect -u %s -p %s -d %s", "PaulWesterberg", PASSWORD, SYSTEM_DB_NAME ), ":exit" )
                 .run()
                 .assertSuccessAndDisconnected( false )
                 .assertThatErrorOutput( containsString( "The client is unauthorized due to authentication failure." ) )
                 .assertThatOutput(
                         containsString(
-                                "> :disconnect " + format( "%nDisconnected> :connect -u %s -p %s -d %s", "Paul Westerberg", PASSWORD, SYSTEM_DB_NAME ) ),
+                                "> :disconnect " + format( "%nDisconnected> :connect -u %s -p %s -d %s", "PaulWesterberg", PASSWORD, SYSTEM_DB_NAME ) ),
                         endsWith( GOOD_BYE ) );
     }
 

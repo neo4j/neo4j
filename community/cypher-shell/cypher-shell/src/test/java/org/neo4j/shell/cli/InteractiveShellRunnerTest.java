@@ -109,6 +109,7 @@ class InteractiveShellRunnerTest
         historyFile = new File( temp, "test" );
         badLineError = new ClientException( "Found a bad line" );
         connector = mock( Connector.class );
+        when( connector.isConnected() ).thenReturn( true );
         userMessagesHandler = mock( UserMessagesHandler.class );
         out = new ByteArrayOutputStream();
         when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( "mydb" );
@@ -278,6 +279,19 @@ class InteractiveShellRunnerTest
 
         // when
         assertThat( out.toString(), equalTo( "myusername@mydb>    \r\n                    \r\n                 bla bla;\r\nmyusername@mydb> \r\n" ) );
+    }
+
+    @Test
+    void testDisconnectedPrompt()
+    {
+        // given
+        var runner = runner( lines( "bla bla;" ) );
+        when( txHandler.isTransactionOpen() ).thenReturn( false );
+        when( connector.isConnected() ).thenReturn( false );
+        runner.runUntilEnd();
+
+        // when
+        assertThat( out.toString(), equalTo( "Disconnected> bla bla;\r\nDisconnected> \r\n" ) );
     }
 
     @Test
@@ -527,6 +541,7 @@ class InteractiveShellRunnerTest
 
         BoltStateHandler mockedBoltStateHandler = mock( BoltStateHandler.class );
         when( mockedBoltStateHandler.getProtocolVersion() ).thenReturn( "" );
+        when( mockedBoltStateHandler.isConnected() ).thenReturn( true );
 
         final PrettyPrinter mockedPrettyPrinter = mock( PrettyPrinter.class );
 
