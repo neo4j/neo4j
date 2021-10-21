@@ -153,9 +153,7 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
       textIndexOn("Awesome", "prop")
       indexOn("Awesome", "foo", "bar")
       indexOn("Awesome", "aaa", "bbb", "ccc")
-    }.withLogicalPlanningContext { (cfg, c) =>
-
-      val ctx = c.copy(planningTextIndexesEnabled = true)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
 
       // when
       val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
@@ -247,9 +245,7 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
 
       textIndexOn("Awesome", "prop")
 
-    }.withLogicalPlanningContext { (cfg, c) =>
-
-      val ctx = c.copy(planningTextIndexesEnabled = true)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
 
       // when
       val restriction = LeafPlanRestrictions.NoRestrictions

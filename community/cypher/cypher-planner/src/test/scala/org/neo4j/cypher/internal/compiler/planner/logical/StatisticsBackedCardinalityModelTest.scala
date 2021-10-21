@@ -660,7 +660,6 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", aNodeCount)
       .addNodeIndex("A", Seq("prop"), existsSelectivity = textIndexSelectivity, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .enablePlanningTextIndexes()
       .build()
 
     for (op <- Seq("STARTS WITH", "ENDS WITH", "CONTAINS")) withClue(op) {

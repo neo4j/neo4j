@@ -247,6 +247,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     when(planContext.textIndexExistsForLabelAndProperties(any(), any())).thenReturn(true)
 
     val context = newMockedLogicalPlanningContext(planContext = planContext, semanticTable = getSemanticTable, useErrorsOverWarnings = true)
+      .copy(planningTextIndexesEnabled = false)
 
     the [IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
@@ -258,7 +259,6 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     when(planContext.textIndexExistsForLabelAndProperties(any(), any())).thenReturn(true)
 
     val context = newMockedLogicalPlanningContext(planContext = planContext, semanticTable = getSemanticTable, useErrorsOverWarnings = true)
-      .copy(planningTextIndexesEnabled = true)
 
     a [HintException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
@@ -270,6 +270,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     when(planContext.textIndexExistsForRelTypeAndProperties(any(), any())).thenReturn(true)
 
     val context = newMockedLogicalPlanningContext(planContext = planContext, semanticTable = getSemanticTable, useErrorsOverWarnings = true)
+      .copy(planningTextIndexesEnabled = false)
 
     the [IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
@@ -281,7 +282,6 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     when(planContext.textIndexExistsForRelTypeAndProperties(any(), any())).thenReturn(true)
 
     val context = newMockedLogicalPlanningContext(planContext = planContext, semanticTable = getSemanticTable, useErrorsOverWarnings = true)
-      .copy(planningTextIndexesEnabled = true)
 
     a [HintException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)

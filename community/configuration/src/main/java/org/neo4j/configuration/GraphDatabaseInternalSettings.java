@@ -753,7 +753,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
 
     @Internal
     @Description( "Feature flag to enable/disable planning use of text indexes." )
-    public static final Setting<Boolean> planning_text_indexes_enabled = newBuilder( "unsupported.cypher.planning_text_indexes_enabled", BOOL, false ).build();
+    public static final Setting<Boolean> planning_text_indexes_enabled = newBuilder( "unsupported.cypher.planning_text_indexes_enabled", BOOL, true ).build();
 
     @Internal
     @Description( "Feature flag to enable/disable planning use of range indexes." )

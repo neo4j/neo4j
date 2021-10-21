@@ -156,9 +156,7 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
       relationshipTextIndexOn("Awesome", "prop")
       relationshipIndexOn("Awesome", "foo", "bar")
       relationshipIndexOn("Awesome", "aaa", "bbb", "ccc")
-    }.withLogicalPlanningContext { (cfg, baseCtx) =>
-
-      val ctx = baseCtx.copy(planningTextIndexesEnabled = true)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
 
       // when
       val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
@@ -242,9 +240,7 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
 
       relationshipTextIndexOn("REL", "prop")
 
-    }.withLogicalPlanningContext { (cfg, baseCtx) =>
-
-      val ctx = baseCtx.copy(planningTextIndexesEnabled = true)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
 
       // when
       val restriction = LeafPlanRestrictions.NoRestrictions
