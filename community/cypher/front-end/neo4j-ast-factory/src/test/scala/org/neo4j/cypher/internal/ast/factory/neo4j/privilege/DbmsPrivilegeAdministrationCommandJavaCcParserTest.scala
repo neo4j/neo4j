@@ -39,7 +39,7 @@ class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserCompariso
 
   protected val pos: InputPosition = DummyPosition(0)
 
-  type dbmsPrivilegeFunc = (DbmsAction, Seq[Either[String, Parameter]]) =>  ast.Statement
+  type DbmsPrivilegeFunc = (DbmsAction, Seq[Either[String, Parameter]]) =>  ast.Statement
 
   def grantDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): ast.Statement =
     ast.GrantPrivilege.dbmsAction(a, r)(pos)
@@ -56,7 +56,7 @@ class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserCompariso
   def revokeDbmsPrivilege(a: DbmsAction, r: Seq[Either[String, Parameter]]): ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeBothType()(pos))(pos)
 
-  def privilegeTests(command: String, preposition: String, privilegeFunc: dbmsPrivilegeFunc): Unit = {
+  def privilegeTests(command: String, preposition: String, privilegeFunc: DbmsPrivilegeFunc): Unit = {
     val offset = command.length + 1
 
     val privilegesSupportedInParboiled = Seq(

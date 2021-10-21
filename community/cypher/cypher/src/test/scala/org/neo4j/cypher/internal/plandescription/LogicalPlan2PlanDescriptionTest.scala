@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
+import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -1659,6 +1660,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(DropDatabase(privLhsLP, util.Left("db1"), DumpData), 1.0), adminPlanDescription)
 
     assertGood(attach(AlterDatabase(privLhsLP, util.Left("db1"), ReadOnlyAccess), 1.0), adminPlanDescription)
+
+    assertGood(attach(AlterDatabase(privLhsLP, util.Left("db1"), ReadWriteAccess), 1.0), adminPlanDescription)
 
     assertGood(attach(StartDatabase(privLhsLP, util.Left("db1")), 1.0), adminPlanDescription)
 

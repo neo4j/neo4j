@@ -25,7 +25,7 @@ import org.neo4j.monitoring.Monitors;
 
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 import static org.neo4j.values.storable.ValueType.CHAR;
 import static org.neo4j.values.storable.ValueType.STRING;

@@ -452,7 +452,6 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
     assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))")
   }
 
-  // TODO why do we allow "." here?
   test("ALTER DATABASE foo") {
     assertJavaCCException(testName, "Invalid input '': expected \".\", \"IF\" or \"SET\" (line 1, column 19 (offset: 18))")
   }
@@ -461,7 +460,6 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
     assertJavaCCException(testName, "Invalid input 'READ': expected \"ACCESS\" (line 1, column 24 (offset: 23))")
   }
 
-  // TODO why do we allow "." here?
   test("ALTER DATABASE foo ACCESS READ WRITE") {
     assertJavaCCException(testName, "Invalid input 'ACCESS': expected \".\", \"IF\" or \"SET\" (line 1, column 20 (offset: 19))")
   }
