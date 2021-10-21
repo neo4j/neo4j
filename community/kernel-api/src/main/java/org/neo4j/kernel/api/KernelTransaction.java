@@ -523,19 +523,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      */
     interface ExecutionContext extends AutoCloseable
     {
-        //---------------------------------------------------------------------
-        // TODO: TBD. This is an API suggestion of what we additionally need from the Cypher runtime-side
-        //---------------------------------------------------------------------
-        Read dataRead();
-        TokenRead tokenRead();
-        QueryContext queryContext();
-        CursorFactory cursors();
-        Locks locks();
-        Procedures procedures();
-        SecurityContext securityContext();
-        SecurityAuthorizationHandler securityAuthorizationHandler();
-        MemoryTracker memoryTracker();
-
         /**
          * Execution context cursor tracer. Page cache statistic recorded during execution reported back to owning transaction only when context is closed.
          * @return execution context cursor tracer.

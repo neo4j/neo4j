@@ -46,29 +46,30 @@ import org.neo4j.memory.MemoryTracker
 
 class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalContext,
                                           private[this] val threadSafeCursors: CursorFactory) extends TransactionalContextWrapper {
+  // TODO: Make parallel transaction use safe.
+  //       We want all methods going through kernelExecutionContext when it is supported instead of through tc.kernelTransaction, which is not thread-safe
   private[this] val kernelExecutionContext: ExecutionContext = tc.kernelTransaction.createExecutionContext()
 
   override def createKernelExecutionContext(): ExecutionContext = tc.kernelTransaction.createExecutionContext()
 
   override def commitTransaction(): Unit = unsupported
 
-  override def kernelQueryContext: QueryContext = kernelExecutionContext.queryContext
+  override def kernelQueryContext: QueryContext = tc.kernelTransaction.queryContext() // kernelExecutionContext.queryContext
 
-  // TODO: We eventually want to use kernelExecutionContext.cursors() when they are safe
-  //       and then we can remove threadSafeCursors
+  // TODO: We eventually want to use kernelExecutionContext.cursors() when it is supported and then we can remove threadSafeCursors
   override def cursors: CursorFactory = threadSafeCursors // kernelExecutionContext.cursors()
 
   override def cursorContext: CursorContext = kernelExecutionContext.cursorContext
 
-  override def memoryTracker: MemoryTracker = kernelExecutionContext.memoryTracker()
+  override def memoryTracker: MemoryTracker = tc.kernelTransaction.memoryTracker() // kernelExecutionContext.memoryTracker()
 
-  override def locks: Locks = kernelExecutionContext.locks()
+  override def locks: Locks = tc.kernelTransaction.locks() // kernelExecutionContext.locks()
 
-  override def dataRead: Read = kernelExecutionContext.dataRead()
+  override def dataRead: Read = tc.kernelTransaction.dataRead() // kernelExecutionContext.dataRead()
 
   override def dataWrite: Write = unsupported()
 
-  override def tokenRead: TokenRead = kernelExecutionContext.tokenRead()
+  override def tokenRead: TokenRead = tc.kernelTransaction.tokenRead() // kernelExecutionContext.tokenRead()
 
   override def tokenWrite: TokenWrite = unsupported()
 
@@ -78,11 +79,11 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
 
   override def schemaWrite: SchemaWrite = unsupported()
 
-  override def procedures: Procedures = kernelExecutionContext.procedures()
+  override def procedures: Procedures = tc.kernelTransaction.procedures() // kernelExecutionContext.procedures()
 
-  override def securityContext: SecurityContext = kernelExecutionContext.securityContext()
+  override def securityContext: SecurityContext = tc.kernelTransaction.securityContext() // kernelExecutionContext.securityContext()
 
-  override def securityAuthorizationHandler: SecurityAuthorizationHandler = kernelExecutionContext.securityAuthorizationHandler()
+  override def securityAuthorizationHandler: SecurityAuthorizationHandler = tc.kernelTransaction.securityAuthorizationHandler() // kernelExecutionContext.securityAuthorizationHandler()
 
   override def commitAndRestartTx(): Unit = unsupported()
 
