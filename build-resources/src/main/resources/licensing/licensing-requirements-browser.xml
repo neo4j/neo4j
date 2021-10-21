@@ -194,7 +194,7 @@
     <artifact id="har-schema" name="har-schema">
       <license>ISC</license>
     </artifact>
-    <artifact id="har-remoteSeedValidator" name="har-remoteSeedValidator">
+    <artifact id="har-validator" name="har-validator">
       <license>ISC</license>
     </artifact>
     <artifact id="has-unicode" name="has-unicode">
