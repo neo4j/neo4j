@@ -40,16 +40,17 @@ import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
@@ -134,7 +135,7 @@ public abstract class StringLengthIndexValidationIT
     void txMustFailIfExceedingIndexKeySizeLimit()
     {
         long indexId = createIndex( propKey );
-        long nodeId = -1;
+        long nodeId;
 
         // Write
         try ( Transaction tx = db.beginTx() )
@@ -142,11 +143,8 @@ public abstract class StringLengthIndexValidationIT
             String propValue = getString( random, singleKeySizeLimit + 1 );
             Node node = tx.createNode( LABEL_ONE );
             nodeId = node.getId();
-            node.setProperty( propKey, propValue );
-            tx.commit();
-        }
-        catch ( IllegalArgumentException e )
-        {
+
+            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> node.setProperty( propKey, propValue ) );
             assertThat( e.getMessage() ).contains( String.format(
                     "Property value is too large to index, please see index documentation for limitations. " +
                     "Index: Index( id=%d, name='index_71616483', type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='%s' ), entity id: %d",
@@ -246,21 +244,22 @@ public abstract class StringLengthIndexValidationIT
     public void assertIndexFailToComeOnline( long indexId, long entityId )
     {
         // Waiting for it to come online should fail
-        try ( Transaction tx = db.beginTx() )
+        IllegalStateException e = assertThrows( IllegalStateException.class, () ->
         {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
-            tx.commit();
-        }
-        catch ( IllegalStateException e )
-        {
-            GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
-            assertThat( e.getMessage() ).contains(
-                    String.format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
-                                    "(Index( id=%d, name='index_71616483', type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) " +
-                                    "entered a FAILED state.",
-                            indexId, schemaIndex.providerName() ),
-                    expectedPopulationFailureCauseMessage( indexId, entityId ) );
-        }
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.schema().awaitIndexesOnline( 2, MINUTES );
+                tx.commit();
+            }
+        } );
+
+        GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
+        assertThat( e.getMessage() ).contains(
+                String.format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
+                               "(Index( id=%d, name='index_71616483', type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) " +
+                               "entered a FAILED state.",
+                        indexId, schemaIndex.providerName() ),
+                expectedPopulationFailureCauseMessage( indexId, entityId ) );
     }
 
     public void assertIndexInFailedState( long indexId, long entityId )
