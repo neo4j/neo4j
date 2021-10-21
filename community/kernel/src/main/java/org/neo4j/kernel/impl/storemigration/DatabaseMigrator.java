@@ -88,9 +88,8 @@ public class DatabaseMigrator
     public void migrate( boolean forceUpgrade ) throws IOException
     {
         StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, pageCacheTracer );
-        LogsUpgrader logsUpgrader = new LogsUpgrader(
-                fs, storageEngineFactory, databaseLayout, pageCache, legacyLogsLocator, config, dependencyResolver, pageCacheTracer, memoryTracker,
-                databaseHealth, forceUpgrade );
+        var logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, databaseLayout, pageCache, legacyLogsLocator, config, dependencyResolver,
+                                                      pageCacheTracer, memoryTracker, databaseHealth );
         Log userLog = logService.getUserLog( DatabaseMigrator.class );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( userLog );
         LogProvider logProvider = logService.getInternalLogProvider();

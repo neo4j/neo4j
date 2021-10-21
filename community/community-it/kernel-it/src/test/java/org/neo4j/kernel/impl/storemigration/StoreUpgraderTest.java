@@ -186,7 +186,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // Must not throw, because 'forceUpgrade' is 'true'.
-        newUpgrader( check, pageCache, deniedMigrationConfig, SILENT, NULL, true ).migrateIfNeeded( databaseLayout, true );
+        newUpgrader( check, pageCache, deniedMigrationConfig, SILENT, NULL ).migrateIfNeeded( databaseLayout, true );
         verifyStoreUpgradedWithin( 1, MINUTES );
     }
 
@@ -549,17 +549,16 @@ public class StoreUpgraderTest
     private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
             PageCacheTracer pageCacheTracer )
     {
-        return newUpgrader( storeVersionCheck, pageCache, config, SILENT, pageCacheTracer, false );
+        return newUpgrader( storeVersionCheck, pageCache, config, SILENT, pageCacheTracer );
     }
 
     private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config, MigrationProgressMonitor progressMonitor )
     {
-        return newUpgrader( storeVersionCheck, pageCache, config, progressMonitor, NULL, false );
+        return newUpgrader( storeVersionCheck, pageCache, config, progressMonitor, NULL );
     }
 
-    private StoreUpgrader newUpgrader(
-            StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
-            MigrationProgressMonitor progressMonitor, PageCacheTracer pageCacheTracer, boolean forceUpgrade )
+    private StoreUpgrader newUpgrader( StoreVersionCheck storeVersionCheck, PageCache pageCache, Config config,
+            MigrationProgressMonitor progressMonitor, PageCacheTracer pageCacheTracer )
     {
         NullLogService instance = NullLogService.getInstance();
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
@@ -573,8 +572,8 @@ public class StoreUpgraderTest
         DatabaseHealth databaseHealth = new DatabaseHealth( NO_OP, NullLog.getInstance() );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new Monitors() );
-        LogsUpgrader logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache,
-                                                      logsLocator, config, dependencies, pageCacheTracer, INSTANCE, databaseHealth, forceUpgrade );
+        var logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache,
+                                             logsLocator, config, dependencies, pageCacheTracer, INSTANCE, databaseHealth );
         StoreUpgrader upgrader =
                 new StoreUpgrader( storageEngineFactory, storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader,
                         pageCacheTracer );

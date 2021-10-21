@@ -275,7 +275,7 @@ public class StoreUpgraderInterruptionTestIT
         RecordStorageEngineFactory storageEngineFactory = new RecordStorageEngineFactory();
         var databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
         LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator,
-                config, dependencies, NULL, INSTANCE, databaseHealth, false );
+                config, dependencies, NULL, INSTANCE, databaseHealth );
         StoreUpgrader upgrader =
                 new StoreUpgrader( storageEngineFactory, versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader, NULL );
         for ( StoreMigrationParticipant participant : participants )

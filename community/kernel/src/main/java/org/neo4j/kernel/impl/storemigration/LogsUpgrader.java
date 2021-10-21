@@ -69,8 +69,7 @@ public class LogsUpgrader
             DependencyResolver dependencyResolver,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
-            DatabaseHealth databaseHealth,
-            boolean forceUpgrade )
+            DatabaseHealth databaseHealth )
     {
         this.fs = fs;
         this.storageEngineFactory = storageEngineFactory;
