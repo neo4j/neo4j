@@ -111,7 +111,8 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
 
   override def kernelTransaction: KernelTransaction = unsupported
 
-  override def kernelTransactionalContext: TransactionalContext = tc // TODO: FIXME PARALLEL
+  // TODO: Make parallel transaction use safe. We do not want to support this in parallel, since it exposes non-thread safe APIs
+  override def kernelTransactionalContext: TransactionalContext = tc
 
   override def graph: GraphDatabaseQueryService = unsupported
 

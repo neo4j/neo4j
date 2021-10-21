@@ -158,7 +158,7 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
   private def tokenWrite = transactionalContext.tokenWrite
 
   override def createParallelQueryContext(): QueryContext = {
-    // TODO: Create a single-threaded copy of ResourceManager attach to the ThreadSafeResourceManager coming in
+    // TODO: As an optimization, create a single-threaded copy of ResourceManager attach to the ThreadSafeResourceManager coming in
     val parallelTransactionalContext = transactionalContext.createParallelTransactionalContext()
     new ParallelTransactionBoundQueryContext(parallelTransactionalContext, resources, closeable)(indexSearchMonitor)
   }
@@ -412,8 +412,10 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
 
   override val nodeReadOps: NodeReadOperations = new NodeReadOperations
   override val relationshipReadOps: RelationshipReadOperations = new RelationshipReadOperations
-  private[internal] lazy val entityAccessor: TransactionalEntityFactory = transactionalContext.kernelTransactionalContext.transaction() // TODO: FIXME PARALLEL
-  private[internal] lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(transactionalContext.kernelTransactionalContext.transaction()) // TODO: FIXME PARALLEL
+
+  // TODO: Make parallel transaction use safe. Entity values hold a reference to InternalTransaction, which is not thread-safe.
+  private[internal] lazy val entityAccessor: TransactionalEntityFactory = transactionalContext.kernelTransactionalContext.transaction()
+  private[internal] lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(transactionalContext.kernelTransactionalContext.transaction())
 
   //We cannot assign to value because of periodic commit
   protected def reads(): Read = transactionalContext.dataRead
