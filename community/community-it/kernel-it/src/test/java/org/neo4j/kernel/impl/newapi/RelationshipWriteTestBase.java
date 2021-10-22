@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
@@ -27,7 +30,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,8 +47,14 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "Duplicates" )
+@ExtendWith( RandomExtension.class )
 public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
+    protected static final RelationshipType TYPE = RelationshipType.withName( "R" );
+
+    @Inject
+    private RandomSupport random;
+
     @Test
     void shouldCreateRelationship() throws Exception
     {
@@ -123,7 +137,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Node node2 = tx.createNode();
 
             n1 = node1.getId();
-            r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
+            r = node1.createRelationshipTo( node2, TYPE ).getId();
 
             tx.commit();
         }
@@ -195,7 +209,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Node node1 = tx.createNode();
             Node node2 = tx.createNode();
 
-            relationshipId = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
+            relationshipId = node1.createRelationshipTo( node2, TYPE ).getId();
 
             tx.commit();
         }
@@ -226,7 +240,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Node node1 = tx.createNode();
             Node node2 = tx.createNode();
 
-            Relationship r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+            Relationship r = node1.createRelationshipTo( node2, TYPE );
             r.setProperty( propertyKey, 42 );
             relationshipId = r.getId();
 
@@ -259,7 +273,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Node node1 = tx.createNode();
             Node node2 = tx.createNode();
 
-            Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+            Relationship proxy = node1.createRelationshipTo( node2, TYPE );
             relationshipId = proxy.getId();
             proxy.setProperty( propertyKey, 42 );
             tx.commit();
@@ -291,7 +305,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Node node1 = tx.createNode();
             Node node2 = tx.createNode();
 
-            Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+            Relationship proxy = node1.createRelationshipTo( node2, TYPE );
             relationshipId = proxy.getId();
             tx.commit();
         }
@@ -321,7 +335,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Node node1 = tx.createNode();
             Node node2 = tx.createNode();
 
-            Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+            Relationship proxy = node1.createRelationshipTo( node2, TYPE );
             relationshipId = proxy.getId();
             proxy.setProperty( propertyKey, 42 );
             tx.commit();
@@ -354,7 +368,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Node node1 = tx.createNode();
             Node node2 = tx.createNode();
 
-            relationshipId = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
+            relationshipId = node1.createRelationshipTo( node2, TYPE ).getId();
 
             tx.commit();
         }
@@ -389,7 +403,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Node node1 = ctx.createNode();
             Node node2 = ctx.createNode();
 
-            Relationship r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+            Relationship r = node1.createRelationshipTo( node2, TYPE );
 
             r.setProperty( propertyKey, theValue.asObject() );
             relationshipId = r.getId();
@@ -402,5 +416,183 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, property, theValue ) ).isEqualTo( theValue );
 
         assertThat( tx.commit() ).isEqualTo( KernelTransaction.READ_ONLY_ID );
+    }
+
+    @Test
+    void relationshipApplyChangesShouldAddProperty() throws Exception
+    {
+        // Given
+        long relationship = createRelationship( TYPE );
+        String keyName = "key";
+        Value value = intValue( 123 );
+
+        // When
+        int key;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            key = tx.tokenWrite().propertyKeyCreateForName( keyName, false );
+            tx.dataWrite().relationshipApplyChanges( relationship, IntObjectMaps.immutable.of( key, value ) );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            {
+                ktx.dataRead().singleRelationship( relationship, relationshipCursor );
+                relationshipCursor.next();
+                assertProperties( relationshipCursor, propertyCursor, IntObjectMaps.immutable.of( key, value ) );
+            }
+        } );
+    }
+
+    @Test
+    void relationshipApplyChangesShouldChangeProperty() throws Exception
+    {
+        // Given
+        String keyName = "key";
+        Value changedValue = stringValue( "value" );
+        long relationship = createRelationshipWithProperty( TYPE, keyName, 123 );
+
+        // When
+        int key;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            key = tx.tokenRead().propertyKey( keyName );
+            tx.dataWrite().relationshipApplyChanges( relationship, IntObjectMaps.immutable.of( key, changedValue ) );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            {
+                ktx.dataRead().singleRelationship( relationship, relationshipCursor );
+                relationshipCursor.next();
+                assertProperties( relationshipCursor, propertyCursor, IntObjectMaps.immutable.of( key, changedValue ) );
+            }
+        } );
+    }
+
+    @Test
+    void relationshipApplyChangesShouldRemoveProperty() throws Exception
+    {
+        // Given
+        String keyName = "key";
+        long relationship = createRelationshipWithProperty( TYPE, keyName, 123 );
+
+        // When
+        int key;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            key = tx.tokenRead().propertyKey( keyName );
+            tx.dataWrite().relationshipApplyChanges( relationship, IntObjectMaps.immutable.of( key, NO_VALUE ) );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            {
+                ktx.dataRead().singleRelationship( relationship, relationshipCursor );
+                relationshipCursor.next();
+                assertProperties( relationshipCursor, propertyCursor, IntObjectMaps.immutable.empty() );
+            }
+        } );
+    }
+
+    @Test
+    void relationshipApplyChangesShouldSetAndRemoveMultipleProperties() throws Exception
+    {
+        // Given
+        long relationship;
+        int[] keys = new int[10];
+        MutableIntObjectMap<Value> initialProperties = IntObjectMaps.mutable.empty();
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            for ( int i = 0; i < keys.length; i++ )
+            {
+                keys[i] = tx.tokenWrite().propertyKeyGetOrCreateForName( "key" + i );
+            }
+            var sourceNode = tx.dataWrite().nodeCreate();
+            var targetNode = tx.dataWrite().nodeCreate();
+            var type = tx.tokenWrite().relationshipTypeGetOrCreateForName( TYPE.name() );
+            relationship = tx.dataWrite().relationshipCreate( sourceNode, type, targetNode );
+            for ( int key : random.selection( keys, 0, keys.length, false ) )
+            {
+                Value value = random.nextValue();
+                initialProperties.put( key, value );
+                tx.dataWrite().relationshipSetProperty( relationship, key, value );
+            }
+            tx.commit();
+        }
+
+        // When
+        MutableIntObjectMap<Value> propertyChanges = IntObjectMaps.mutable.empty();
+        for ( int key : random.selection( keys, 1, keys.length, false ) )
+        {
+            propertyChanges.put( key, random.nextValue() );
+        }
+        for ( int key : random.selection( keys, 1, keys.length, false ) )
+        {
+            propertyChanges.put( key, NO_VALUE );
+        }
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            tx.dataWrite().relationshipApplyChanges( relationship, propertyChanges );
+            tx.commit();
+        }
+
+        // Then
+        MutableIntObjectMap<Value> expectedProperties = IntObjectMaps.mutable.empty();
+        expectedProperties.putAll( initialProperties );
+        propertyChanges.forEachKeyValue( ( key, value ) ->
+        {
+            if ( value == NO_VALUE )
+            {
+                expectedProperties.remove( key );
+            }
+            else
+            {
+                expectedProperties.put( key, value );
+            }
+        } );
+        transaction( ktx ->
+        {
+            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            {
+                ktx.dataRead().singleRelationship( relationship, relationshipCursor );
+                assertThat( relationshipCursor.next() ).isTrue();
+                assertProperties( relationshipCursor, propertyCursor, expectedProperties );
+            }
+        } );
+    }
+
+    private static long createRelationship( RelationshipType type )
+    {
+        try ( var ctx = graphDb.beginTx() )
+        {
+            var relationship = ctx.createNode().createRelationshipTo( ctx.createNode(), type ).getId();
+            ctx.commit();
+            return relationship;
+        }
+    }
+
+    private static long createRelationshipWithProperty( RelationshipType type, String key, Object value )
+    {
+        try ( var ctx = graphDb.beginTx() )
+        {
+            var relationship = ctx.createNode().createRelationshipTo( ctx.createNode(), type );
+            relationship.setProperty( key, value );
+            ctx.commit();
+            return relationship.getId();
+        }
     }
 }

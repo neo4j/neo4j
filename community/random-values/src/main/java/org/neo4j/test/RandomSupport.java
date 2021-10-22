@@ -213,6 +213,16 @@ public class RandomSupport
         return randoms.selection( among, min, max, allowDuplicates );
     }
 
+    public int[] selection( int[] among, int min, int max, boolean allowDuplicates )
+    {
+        return randoms.selection( among, min, max, allowDuplicates );
+    }
+
+    public long[] selection( long[] among, int min, int max, boolean allowDuplicates )
+    {
+        return randoms.selection( among, min, max, allowDuplicates );
+    }
+
     @SafeVarargs
     public final <T> T among( T... among )
     {

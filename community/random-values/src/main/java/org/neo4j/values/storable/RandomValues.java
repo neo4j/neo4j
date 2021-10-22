@@ -39,6 +39,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import static java.lang.Math.abs;
 import static java.time.LocalDate.ofEpochDay;
@@ -1659,6 +1661,34 @@ public class RandomValues
             }
         }
         return result;
+    }
+
+    /**
+     * Returns a random selection of the provided int array.
+     *
+     * @param among the array to pick elements from
+     * @param min the minimum number of elements to choose
+     * @param max the maximum number of elements to choose
+     * @param allowDuplicates if {@code true} the same element can be chosen multiple times
+     * @return a random selection of the provided int array.
+     */
+    public int[] selection( int[] among, int min, int max, boolean allowDuplicates )
+    {
+        return Arrays.stream( selection( IntStream.of( among ).boxed().toArray( Integer[]::new ), min, max, allowDuplicates ) ).mapToInt( v -> v ).toArray();
+    }
+
+    /**
+     * Returns a random selection of the provided long array.
+     *
+     * @param among the array to pick elements from
+     * @param min the minimum number of elements to choose
+     * @param max the maximum number of elements to choose
+     * @param allowDuplicates if {@code true} the same element can be chosen multiple times
+     * @return a random selection of the provided long array.
+     */
+    public long[] selection( long[] among, int min, int max, boolean allowDuplicates )
+    {
+        return Arrays.stream( selection( LongStream.of( among ).boxed().toArray( Long[]::new ), min, max, allowDuplicates ) ).mapToLong( v -> v ).toArray();
     }
 
     private int maxArray()

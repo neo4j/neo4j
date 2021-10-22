@@ -19,10 +19,14 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
+
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 /**
  * Defines the write operations of the Kernel API.
@@ -110,6 +114,29 @@ public interface Write
      */
     Value nodeSetProperty( long node, int propertyKey, Value value )
             throws KernelException;
+
+    /**
+     * Applies multiple label and property changes to a node in one call, checking constraints on the resulting data, not the intermediary state,
+     * which would have been the case if multiple changes gets applied individually via e.g. {@link #nodeSetProperty(long, int, Value)}
+     * and {@link #nodeAddLabel(long, int)}.
+     *
+     * @param node the internal node id.
+     * @param addedLabels added labels, applied idempotently.
+     * @param removedLabels removed labels, applied idempotently.
+     * @param properties added/changed/removed properties. A value of {@link Values#NO_VALUE} means the property should be removed.
+     */
+    void nodeApplyChanges( long node, IntSet addedLabels, IntSet removedLabels, IntObjectMap<Value> properties )
+            throws EntityNotFoundException, ConstraintValidationException;
+
+    /**
+     * Applies multiple property changes to a relationship in one call, checking constraints on the resulting data, not the intermediary state,
+     * which would have been the case if multiple properties would have been applied individually via e.g. {@link #relationshipSetProperty(long, int, Value)}.
+     *
+     * @param relationship the internal relationship id.
+     * @param properties added/changed/removed properties. A value of {@link Values#NO_VALUE} means the property should be removed.
+     */
+    void relationshipApplyChanges( long relationship, IntObjectMap<Value> properties )
+            throws EntityNotFoundException;
 
     /**
      * Remove a property from a node

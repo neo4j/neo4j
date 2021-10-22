@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +50,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.KernelVersion;
@@ -65,6 +68,7 @@ import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.SecurityLogHelper;
@@ -84,14 +88,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.logging.SecurityLogHelper.line;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.values.storable.Values.intValue;
 
 abstract class OperationsTest
 {
@@ -242,6 +249,44 @@ abstract class OperationsTest
                       .source( ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails() )
                       .message( expected )
         );
+    }
+
+    @Test
+    void nodeApplyChangesShouldLockNodeAndLabels() throws Exception
+    {
+        // given
+        when( nodeCursor.next() ).thenReturn( true );
+        when( nodeCursor.labels() ).thenReturn( Labels.from( 1, 2 ) );
+        long node = 1;
+
+        // when
+        operations.nodeApplyChanges( node, IntSets.immutable.of( 3 ), IntSets.immutable.of( 1 ), IntObjectMaps.immutable.of( 1, intValue( 10 )) );
+
+        // then
+        verify( locks ).acquireExclusive( any(), eq( ResourceTypes.NODE ), eq( 1L )  );
+        verify( locks ).acquireShared( any(), eq( ResourceTypes.LABEL ), eq( 1L )  );
+        verify( locks ).acquireShared( any(), eq( ResourceTypes.LABEL ), eq( 3L )  );
+        verify( locks ).acquireShared( any(), eq( ResourceTypes.LABEL ), eq( SchemaDescriptorImplementation.TOKEN_INDEX_LOCKING_ID ) );
+        verify( locks ).acquireShared( any(), eq( ResourceTypes.LABEL ), eq( 1L ), eq( 2L ) );
+        verify( storageLocks ).acquireNodeLabelChangeLock( any(), eq( node ), eq( 1 ) );
+        verify( storageLocks ).acquireNodeLabelChangeLock( any(), eq( node ), eq( 3 ) );
+    }
+
+    @Test
+    void relationshipApplyChangesShouldLockRelationshipAndType() throws Exception
+    {
+        // given
+        int type = 5;
+        when( relationshipCursor.next() ).thenReturn( true );
+        when( relationshipCursor.type() ).thenReturn( type );
+        long relationship = 1;
+
+        // when
+        operations.relationshipApplyChanges( relationship, IntObjectMaps.immutable.of( 1, intValue( 10 ) ) );
+
+        // then
+        verify( locks ).acquireExclusive( any(), eq( ResourceTypes.RELATIONSHIP ), eq( 1L )  );
+        verify( locks ).acquireShared( any(), eq( ResourceTypes.RELATIONSHIP_TYPE ), eq( (long) type )  );
     }
 
     protected String runForSecurityLevel( Executable executable, AccessMode mode, boolean shoudldBeAuthorized ) throws Exception

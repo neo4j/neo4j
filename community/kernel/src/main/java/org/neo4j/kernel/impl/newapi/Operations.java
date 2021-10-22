@@ -20,7 +20,18 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.RichIterable;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,6 +58,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -107,10 +119,16 @@ import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.contains;
+import static org.apache.commons.lang3.ArrayUtils.indexOf;
+import static org.apache.commons.lang3.ArrayUtils.remove;
+import static org.neo4j.collection.PrimitiveArrays.intersect;
+import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
@@ -592,6 +610,53 @@ public class Operations implements Write, SchemaWrite
     }
 
     /**
+     * Fetch the property values for all properties in schema for a given node. Return these as an exact predicate
+     * array. This is run with no security check.
+     */
+    private PropertyIndexQuery.ExactPredicate[] getAllPropertyValues( SchemaDescriptor schema, IntObjectMap<Value> changedProperties )
+    {
+        int[] schemaPropertyIds = schema.getPropertyIds();
+        PropertyIndexQuery.ExactPredicate[] values = new PropertyIndexQuery.ExactPredicate[schemaPropertyIds.length];
+
+        int nMatched = 0;
+        nodeCursor.properties( propertyCursor, PropertySelection.selection( schemaPropertyIds ) );
+        while ( propertyCursor.next() )
+        {
+            int nodePropertyId = propertyCursor.propertyKey();
+            int k = ArrayUtils.indexOf( schemaPropertyIds, nodePropertyId );
+            if ( k >= 0 )
+            {
+                if ( nodePropertyId != StatementConstants.NO_SUCH_PROPERTY_KEY )
+                {
+                    values[k] = PropertyIndexQuery.exact( nodePropertyId, propertyCursor.propertyValue() );
+                }
+                nMatched++;
+            }
+        }
+
+        //This is true if we are adding a property
+        for ( IntObjectPair<Value> changedProperty : changedProperties.keyValuesView() )
+        {
+            int changedPropertyKeyId = changedProperty.getOne();
+            if ( changedPropertyKeyId != NO_SUCH_PROPERTY_KEY )
+            {
+                int k = ArrayUtils.indexOf( schemaPropertyIds, changedPropertyKeyId );
+                if ( k >= 0 )
+                {
+                    values[k] = PropertyIndexQuery.exact( changedPropertyKeyId, changedProperty.getTwo() );
+                    nMatched++;
+                }
+            }
+        }
+
+        if ( nMatched < values.length )
+        {
+            return null;
+        }
+        return values;
+    }
+
+    /**
      * Check so that there is not an existing node with the exact match of label and property
      */
     private void validateNoExistingNodeWithExactValues( IndexBackedConstraintDescriptor constraint,
@@ -621,11 +686,14 @@ public class Operations implements Write, SchemaWrite
             );
 
             allStoreHolder.nodeIndexSeekWithFreshIndexReader( valueCursor, indexReaders.createReader(), propertyValues );
-            if ( valueCursor.next() && valueCursor.nodeReference() != modifiedNode )
+            while ( valueCursor.next() )
             {
-                throw new UniquePropertyValueValidationException( constraint, VALIDATION,
-                        new IndexEntryConflictException( valueCursor.nodeReference(), NO_SUCH_NODE,
-                                PropertyIndexQuery.asValueTuple( propertyValues ) ), token );
+                if ( valueCursor.nodeReference() != modifiedNode )
+                {
+                    throw new UniquePropertyValueValidationException( constraint, VALIDATION,
+                            new IndexEntryConflictException( valueCursor.nodeReference(), NO_SUCH_NODE,
+                                    PropertyIndexQuery.asValueTuple( propertyValues ) ), token );
+                }
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
@@ -718,6 +786,319 @@ public class Operations implements Write, SchemaWrite
             }
         }
         return existingValue;
+    }
+
+    @Override
+    public void nodeApplyChanges( long node, IntSet addedLabels, IntSet removedLabels, IntObjectMap<Value> properties )
+            throws EntityNotFoundException, ConstraintValidationException
+    {
+        // TODO there are some aspects that could be improved, e.g. index tx state updates are done per label/property change and could
+        //      benefit from being done more bulky on the whole change instead.
+
+        assert intersect( intsToLongs( addedLabels.toSortedArray() ), intsToLongs( removedLabels.toSortedArray() ) ).length == 0;
+
+        ktx.assertOpen();
+
+        // lock
+        if ( !addedLabels.isEmpty() || !removedLabels.isEmpty() )
+        {
+            addedLabels.forEach( addedLabelId ->
+            {
+                sharedSchemaLock( ResourceTypes.LABEL, addedLabelId );
+                storageLocks.acquireNodeLabelChangeLock( ktx.lockTracer(), node, addedLabelId );
+            } );
+            removedLabels.forEach( removedLabelId ->
+            {
+                sharedSchemaLock( ResourceTypes.LABEL, removedLabelId );
+                storageLocks.acquireNodeLabelChangeLock( ktx.lockTracer(), node, removedLabelId );
+            } );
+            sharedTokenSchemaLock( ResourceTypes.LABEL );
+        }
+        acquireExclusiveNodeLock( node );
+
+        // create a view of labels/properties as it will look after the changes would have been applied
+        singleNode( node );
+        long[] existingLabels = acquireSharedNodeLabelLocks();
+        long[] labelsAfter = combineLabelIds( existingLabels, addedLabels, removedLabels );
+        int[] existingPropertyKeyIds = loadSortedNodePropertyKeyList();
+        MutableIntSet afterPropertyKeyIdsSet = IntSets.mutable.of( existingPropertyKeyIds );
+        boolean hasPropertyRemovals = false;
+        boolean hasPropertyAdditions = false;
+        RichIterable<IntObjectPair<Value>> propertiesKeyValueView = properties.keyValuesView();
+        for ( IntObjectPair<Value> property : propertiesKeyValueView )
+        {
+            if ( property.getTwo() == NO_VALUE )
+            {
+                hasPropertyRemovals = true;
+                afterPropertyKeyIdsSet.remove( property.getOne() );
+            }
+            else
+            {
+                hasPropertyAdditions = true;
+                afterPropertyKeyIdsSet.add( property.getOne() );
+            }
+        }
+        int[] afterPropertyKeyIds = afterPropertyKeyIdsSet.toSortedArray();
+
+        // check uniqueness constraints
+        Collection<IndexBackedConstraintDescriptor> uniquenessConstraints =
+                storageReader.uniquenessConstraintsGetRelated( labelsAfter, afterPropertyKeyIds, NODE );
+        SchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), TokenConstants.ANY_PROPERTY_KEY, afterPropertyKeyIds, constraint ->
+                validateNoExistingNodeWithExactValues( constraint, storageReader.indexGetForName( constraint.getName() ),
+                        getAllPropertyValues( constraint.schema(), properties ), node ) );
+
+        // read all changed property values in one go, to speed up changes below
+        MutableIntObjectMap<Value> existingValuesForChangedProperties = null;
+        if ( !properties.isEmpty() )
+        {
+            existingValuesForChangedProperties = IntObjectMaps.mutable.empty();
+            nodeCursor.properties( propertyCursor, PropertySelection.selection( properties.keySet().toArray() ) );
+            while ( propertyCursor.next() )
+            {
+                existingValuesForChangedProperties.put( propertyCursor.propertyKey(), propertyCursor.propertyValue() );
+            }
+        }
+
+        // remove labels
+        if ( !removedLabels.isEmpty() )
+        {
+            LongSet added = ktx.txState().nodeStateLabelDiffSets( node ).getAdded();
+            IntIterator removedLabelsIterator = removedLabels.intIterator();
+            while ( removedLabelsIterator.hasNext() )
+            {
+                int removedLabelId = removedLabelsIterator.next();
+                if ( !added.contains( removedLabelId ) )
+                {
+                    ktx.securityAuthorizationHandler().assertAllowsRemoveLabel( ktx.securityContext(), token::labelGetName, removedLabelId );
+                }
+                if ( contains( existingLabels, removedLabelId ) )
+                {
+                    ktx.txState().nodeDoRemoveLabel( removedLabelId, node );
+                    if ( storageReader.hasRelatedSchema( removedLabelId, NODE ) )
+                    {
+                        updater.onLabelChange( nodeCursor, propertyCursor, REMOVED_LABEL,
+                                storageReader.valueIndexesGetRelated( new long[]{removedLabelId}, existingPropertyKeyIds, NODE ) );
+                    }
+                }
+            }
+        }
+        // remove properties
+        if ( hasPropertyRemovals )
+        {
+            long[] existingLabelsMinusRemovedArray =
+                    removedLabels.isEmpty() ? existingLabels : combineLabelIds( existingLabels, IntSets.immutable.empty(), removedLabels );
+            TokenSet existingLabelsMinusRemoved = Labels.from( existingLabelsMinusRemovedArray );
+            for ( IntObjectPair<Value> property : propertiesKeyValueView )
+            {
+                int key = property.getOne();
+                Value value = property.getTwo();
+                if ( value != NO_VALUE )
+                {
+                    continue;
+                }
+                int existingPropertyKeyIdIndex = indexOf( existingPropertyKeyIds, key );
+                if ( existingPropertyKeyIdIndex >= 0 )
+                {
+                    // removal of existing property
+                    Value existingValue = existingValuesForChangedProperties.getIfAbsent( key, () -> NO_VALUE );
+                    ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, existingLabelsMinusRemoved,
+                            key );
+                    ktx.txState().nodeDoRemoveProperty( node, key );
+                    existingPropertyKeyIds = ArrayUtils.remove( existingPropertyKeyIds, existingPropertyKeyIdIndex );
+                    if ( storageReader.hasRelatedSchema( existingLabelsMinusRemovedArray, key, NODE ) )
+                    {
+                        updater.onPropertyRemove( nodeCursor, propertyCursor, existingLabelsMinusRemovedArray, key, existingPropertyKeyIds, existingValue );
+                    }
+                }
+            }
+        }
+
+        // add labels
+        if ( !addedLabels.isEmpty() )
+        {
+            IntIterator addedLabelsIterator = addedLabels.intIterator();
+            while ( addedLabelsIterator.hasNext() )
+            {
+                int addedLabelId = addedLabelsIterator.next();
+                if ( !contains( existingLabels, addedLabelId ) )
+                {
+                    LongSet removed = ktx.txState().nodeStateLabelDiffSets( node ).getRemoved();
+                    if ( !removed.contains( addedLabelId ) )
+                    {
+                        ktx.securityAuthorizationHandler().assertAllowsSetLabel( ktx.securityContext(), token::labelGetName, addedLabelId );
+                    }
+                    ktx.txState().nodeDoAddLabel( addedLabelId, node );
+                    if ( storageReader.hasRelatedSchema( addedLabelId, NODE ) )
+                    {
+                        updater.onLabelChange( nodeCursor, propertyCursor, ADDED_LABEL,
+                                storageReader.valueIndexesGetRelated( new long[]{addedLabelId}, existingPropertyKeyIds, NODE ) );
+                    }
+                }
+            }
+        }
+        // add/change properties
+        if ( hasPropertyAdditions )
+        {
+            Labels labelsAfterSet = Labels.from( labelsAfter );
+            for ( IntObjectPair<Value> property : propertiesKeyValueView )
+            {
+                int key = property.getOne();
+                Value value = property.getTwo();
+                if ( value != NO_VALUE )
+                {
+                    Value existingValue = existingValuesForChangedProperties.getIfAbsent( key, () -> NO_VALUE );
+                    if ( existingValue == NO_VALUE )
+                    {
+                        // adding of new property
+                        ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, labelsAfterSet, key );
+                        ktx.txState().nodeDoAddProperty( node, key, value );
+                        boolean hasRelatedSchema = storageReader.hasRelatedSchema( labelsAfter, key, NODE );
+                        if ( hasRelatedSchema )
+                        {
+                            updater.onPropertyAdd( nodeCursor, propertyCursor, labelsAfter, key, afterPropertyKeyIds, value );
+                        }
+                    }
+                    else if ( propertyHasChanged( existingValue, value ) )
+                    {
+                        // changing of existing property
+                        ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, labelsAfterSet, key );
+                        ktx.txState().nodeDoChangeProperty( node, key, value );
+                        boolean hasRelatedSchema = storageReader.hasRelatedSchema( labelsAfter, key, NODE );
+                        if ( hasRelatedSchema )
+                        {
+                            updater.onPropertyChange( nodeCursor, propertyCursor, labelsAfter, key, afterPropertyKeyIds, existingValue, value );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void relationshipApplyChanges( long relationship, IntObjectMap<Value> properties )
+            throws EntityNotFoundException
+    {
+        // TODO there are some aspects that could be improved, e.g. index tx state updates are done per property change and could
+        //      benefit from being done more bulky on the whole change instead.
+
+        ktx.assertOpen();
+
+        // lock
+        acquireExclusiveRelationshipLock( relationship );
+        if ( properties.isEmpty() )
+        {
+            return;
+        }
+
+        // create a view of labels/properties as it will look after the changes would have been applied
+        singleRelationship( relationship );
+        int type = acquireSharedRelationshipTypeLock();
+        int[] existingPropertyKeyIds = loadSortedRelationshipPropertyKeyList();
+        MutableIntSet afterPropertyKeyIdsSet = IntSets.mutable.of( existingPropertyKeyIds );
+        boolean hasPropertyRemovals = false;
+        boolean hasPropertyAdditions = false;
+        RichIterable<IntObjectPair<Value>> propertiesKeyValueView = properties.keyValuesView();
+        for ( IntObjectPair<Value> property : propertiesKeyValueView )
+        {
+            if ( property.getTwo() == NO_VALUE )
+            {
+                hasPropertyRemovals = true;
+                afterPropertyKeyIdsSet.remove( property.getOne() );
+            }
+            else
+            {
+                hasPropertyAdditions = true;
+                afterPropertyKeyIdsSet.add( property.getOne() );
+            }
+        }
+        int[] afterPropertyKeyIds = afterPropertyKeyIdsSet.toSortedArray();
+
+        // read all changed property values in one go, to speed up changes below
+        MutableIntObjectMap<Value> existingValuesForChangedProperties = IntObjectMaps.mutable.empty();
+        relationshipCursor.properties( propertyCursor, PropertySelection.selection( properties.keySet().toArray() ) );
+        while ( propertyCursor.next() )
+        {
+            existingValuesForChangedProperties.put( propertyCursor.propertyKey(), propertyCursor.propertyValue() );
+        }
+
+        // remove properties
+        if ( hasPropertyRemovals )
+        {
+            for ( IntObjectPair<Value> property : propertiesKeyValueView )
+            {
+                int key = property.getOne();
+                Value value = property.getTwo();
+                if ( value != NO_VALUE )
+                {
+                    continue;
+                }
+                int existingPropertyKeyIdIndex = indexOf( existingPropertyKeyIds, key );
+                if ( existingPropertyKeyIdIndex >= 0 )
+                {
+                    // removal of existing property
+                    Value existingValue = existingValuesForChangedProperties.getIfAbsent( key, () -> NO_VALUE );
+                    ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, type, key );
+                    ktx.txState().relationshipDoRemoveProperty( relationship, type, relationshipCursor.sourceNodeReference(),
+                            relationshipCursor.targetNodeReference(), key );
+                    existingPropertyKeyIds = remove( existingPropertyKeyIds, existingPropertyKeyIdIndex );
+                    if ( storageReader.hasRelatedSchema( new long[]{type}, key, RELATIONSHIP ) )
+                    {
+                        updater.onPropertyRemove( relationshipCursor, propertyCursor, type, key, existingPropertyKeyIds, existingValue );
+                    }
+                }
+            }
+        }
+
+        // add/change properties
+        if ( hasPropertyAdditions )
+        {
+            for ( IntObjectPair<Value> property : propertiesKeyValueView )
+            {
+                int key = property.getOne();
+                Value value = property.getTwo();
+                if ( value != NO_VALUE )
+                {
+                    Value existingValue = existingValuesForChangedProperties.getIfAbsent( key, () -> NO_VALUE );
+                    if ( existingValue == NO_VALUE )
+                    {
+                        // adding of new property
+                        ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, type, key );
+                        ktx.txState().relationshipDoReplaceProperty( relationship, relationshipCursor.type(), relationshipCursor.sourceNodeReference(),
+                                relationshipCursor.targetNodeReference(), key, NO_VALUE, value );
+                        boolean hasRelatedSchema = storageReader.hasRelatedSchema( new long[]{type}, key, RELATIONSHIP );
+                        if ( hasRelatedSchema )
+                        {
+                            updater.onPropertyAdd( relationshipCursor, propertyCursor, type, key, afterPropertyKeyIds, value );
+                        }
+                    }
+                    else if ( propertyHasChanged( existingValue, value ) )
+                    {
+                        // changing of existing property
+                        ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, type, key );
+                        ktx.txState().relationshipDoReplaceProperty( relationship, relationshipCursor.type(), relationshipCursor.sourceNodeReference(),
+                                relationshipCursor.targetNodeReference(), key, existingValue, value );
+                        boolean hasRelatedSchema = storageReader.hasRelatedSchema( new long[]{type}, key, RELATIONSHIP );
+                        if ( hasRelatedSchema )
+                        {
+                            updater.onPropertyChange( relationshipCursor, propertyCursor, type, key, afterPropertyKeyIds, existingValue, value );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static long[] combineLabelIds( long[] existingLabels, IntSet addedLabels, IntSet removedLabels )
+    {
+        if ( addedLabels.isEmpty() && removedLabels.isEmpty() )
+        {
+            return existingLabels;
+        }
+
+        MutableLongSet result = LongSets.mutable.of( existingLabels );
+        addedLabels.forEach( result::add );
+        removedLabels.forEach( result::remove );
+        return result.toSortedArray();
     }
 
     private String resolvePropertyKey( long propertyKey )

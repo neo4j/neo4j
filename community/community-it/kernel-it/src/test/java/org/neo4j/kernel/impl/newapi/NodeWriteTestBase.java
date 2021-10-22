@@ -19,19 +19,40 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Arrays.stream;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,15 +60,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "Duplicates" )
+@ExtendWith( RandomExtension.class )
 public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     private static final String propertyKey = "prop";
     private static final String labelName = "Town";
+
+    @Inject
+    private RandomSupport random;
 
     @Test
     void shouldCreateNode() throws Exception
@@ -149,7 +175,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     @Test
     void shouldAddLabelNodeOnce() throws Exception
     {
-        long node = createNodeWithLabel( labelName );
+        long node = createNodeWithLabels( labelName );
 
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -164,7 +190,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     @Test
     void shouldRemoveLabel() throws Exception
     {
-        long nodeId = createNodeWithLabel( labelName );
+        long nodeId = createNodeWithLabels( labelName );
 
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -192,7 +218,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     void shouldRemoveLabelOnce() throws Exception
     {
         int labelId;
-        long nodeId = createNodeWithLabel( labelName );
+        long nodeId = createNodeWithLabels( labelName );
 
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -427,7 +453,537 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         }
     }
 
+    @Test
+    void nodeApplyChangesShouldAddNonExistentLabel() throws Exception
+    {
+        // Given
+        long node = createNode();
+
+        // When
+        int label;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.of( label ), IntSets.immutable.empty(), IntObjectMaps.immutable.empty() );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                assertThat( nodeCursor.next() ).isTrue();
+                assertThat( nodeCursor.labels().all() ).isEqualTo( new long[]{label} );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldNotAddExistingLabel() throws Exception
+    {
+        // Given
+        String labelName = "Label";
+        long node = createNodeWithLabels( labelName );
+
+        // When
+        int label;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            label = tx.tokenRead().nodeLabel( labelName );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.of( label ), IntSets.immutable.empty(), IntObjectMaps.immutable.empty() );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                assertThat( nodeCursor.next() ).isTrue();
+                assertThat( nodeCursor.labels().all() ).isEqualTo( new long[]{label} );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldRemoveExistingLabel() throws Exception
+    {
+        // Given
+        String labelName = "Label";
+        long node = createNodeWithLabels( labelName );
+
+        // When
+        int label;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            label = tx.tokenRead().nodeLabel( labelName );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.empty(), IntSets.immutable.of( label ), IntObjectMaps.immutable.empty() );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                assertThat( nodeCursor.next() ).isTrue();
+                assertThat( nodeCursor.labels().all() ).isEqualTo( EMPTY_LONG_ARRAY );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldNotRemoveNonExistentLabel() throws Exception
+    {
+        // Given
+        String labelName = "Label";
+        long node = createNodeWithLabels( labelName );
+
+        // When
+        int label;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            label = tx.tokenRead().nodeLabel( labelName );
+            int otherLabel = tx.tokenWrite().labelGetOrCreateForName( "OtherLabel" );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.empty(), IntSets.immutable.of( otherLabel ), IntObjectMaps.immutable.empty() );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                assertThat( nodeCursor.next() ).isTrue();
+                assertThat( nodeCursor.labels().all() ).isEqualTo( new long[]{label} );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldAddMultipleLabels() throws Exception
+    {
+        // Given
+        long node = createNode();
+
+        // When
+        int label1;
+        int label2;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            label1 = tx.tokenWrite().labelGetOrCreateForName( "Label1" );
+            label2 = tx.tokenWrite().labelGetOrCreateForName( "Label2" );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.of( label1, label2 ), IntSets.immutable.empty(), IntObjectMaps.immutable.empty() );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                assertThat( nodeCursor.next() ).isTrue();
+                assertThat( nodeCursor.labels().all() ).isEqualTo( new long[]{label1, label2} );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldRemoveMultipleLabels() throws Exception
+    {
+        // Given
+        String labelName1 = "Label1";
+        String labelName2 = "Label2";
+        String labelName3 = "Label3";
+        long node = createNodeWithLabels( labelName1, labelName2, labelName3 );
+
+        // When
+        int label1;
+        int label2;
+        int label3;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            label1 = tx.tokenRead().nodeLabel( labelName1 );
+            label2 = tx.tokenRead().nodeLabel( labelName2 );
+            label3 = tx.tokenRead().nodeLabel( labelName3 );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.empty(), IntSets.immutable.of( label1, label2 ), IntObjectMaps.immutable.empty() );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                assertThat( nodeCursor.next() ).isTrue();
+                assertThat( nodeCursor.labels().all() ).isEqualTo( new long[]{label3} );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldAddAndRemoveMultipleLabels() throws Exception
+    {
+        // Given
+        long node;
+        int[] labels = new int[10];
+        int[] initialLabels;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            for ( int i = 0; i < labels.length; i++ )
+            {
+                labels[i] = tx.tokenWrite().labelGetOrCreateForName( "Label" + i );
+            }
+            initialLabels = random.selection( labels, 0, labels.length, false );
+            node = tx.dataWrite().nodeCreateWithLabels( initialLabels );
+            tx.commit();
+        }
+
+        // When
+        int[] addedLabels = random.selection( labels, 1, labels.length, false );
+        int[] removedLabels = random.selection( labels, 1, labels.length, false );
+        removedLabels = stream( removedLabels ).filter( label -> !contains( addedLabels, label ) ).toArray();
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.of( addedLabels ), IntSets.immutable.of( removedLabels ),
+                    IntObjectMaps.immutable.empty() );
+            tx.commit();
+        }
+
+        // Then
+        MutableLongSet expectedLabels = LongSets.mutable.empty();
+        stream( initialLabels ).forEach( expectedLabels::add );
+        stream( addedLabels ).forEach( expectedLabels::add );
+        stream( removedLabels ).forEach( expectedLabels::remove );
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                assertThat( nodeCursor.next() ).isTrue();
+                assertThat( nodeCursor.labels().all() ).isEqualTo( expectedLabels.toSortedArray() );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldAddProperty() throws Exception
+    {
+        // Given
+        long node = createNode();
+        String keyName = "key";
+        Value value = intValue( 123 );
+
+        // When
+        int key;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            key = tx.tokenWrite().propertyKeyCreateForName( keyName, false );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.empty(), IntSets.immutable.empty(), IntObjectMaps.immutable.of( key, value ) );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                nodeCursor.next();
+                assertProperties( nodeCursor, propertyCursor, IntObjectMaps.immutable.of( key, value ) );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldChangeProperty() throws Exception
+    {
+        // Given
+        String keyName = "key";
+        Value changedValue = stringValue( "value" );
+        long node = createNodeWithProperty( keyName, 123 );
+
+        // When
+        int key;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            key = tx.tokenRead().propertyKey( keyName );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.empty(), IntSets.immutable.empty(), IntObjectMaps.immutable.of( key, changedValue ) );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                nodeCursor.next();
+                assertProperties( nodeCursor, propertyCursor, IntObjectMaps.immutable.of( key, changedValue ) );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldRemoveProperty() throws Exception
+    {
+        // Given
+        String keyName = "key";
+        long node = createNodeWithProperty( keyName, 123 );
+
+        // When
+        int key;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            key = tx.tokenRead().propertyKey( keyName );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.empty(), IntSets.immutable.empty(), IntObjectMaps.immutable.of( key, NO_VALUE ) );
+            tx.commit();
+        }
+
+        // Then
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                nodeCursor.next();
+                assertProperties( nodeCursor, propertyCursor, IntObjectMaps.immutable.empty() );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldSetAndRemoveMultipleProperties() throws Exception
+    {
+        // Given
+        long node;
+        int[] keys = new int[10];
+        MutableIntObjectMap<Value> initialProperties = IntObjectMaps.mutable.empty();
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            for ( int i = 0; i < keys.length; i++ )
+            {
+                keys[i] = tx.tokenWrite().propertyKeyGetOrCreateForName( "key" + i );
+            }
+            node = tx.dataWrite().nodeCreate();
+            for ( int key : random.selection( keys, 0, keys.length, false ) )
+            {
+                Value value = random.nextValue();
+                initialProperties.put( key, value );
+                tx.dataWrite().nodeSetProperty( node, key, value );
+            }
+            tx.commit();
+        }
+
+        // When
+        MutableIntObjectMap<Value> propertyChanges = IntObjectMaps.mutable.empty();
+        for ( int key : random.selection( keys, 1, keys.length, false ) )
+        {
+            propertyChanges.put( key, random.nextValue() );
+        }
+        for ( int key : random.selection( keys, 1, keys.length, false ) )
+        {
+            propertyChanges.put( key, NO_VALUE );
+        }
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.empty(), IntSets.immutable.empty(), propertyChanges );
+            tx.commit();
+        }
+
+        // Then
+        MutableIntObjectMap<Value> expectedProperties = IntObjectMaps.mutable.empty();
+        expectedProperties.putAll( initialProperties );
+        propertyChanges.forEachKeyValue( ( key, value ) ->
+        {
+            if ( value == NO_VALUE )
+            {
+                expectedProperties.remove( key );
+            }
+            else
+            {
+                expectedProperties.put( key, value );
+            }
+        } );
+        transaction( ktx ->
+        {
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            {
+                ktx.dataRead().singleNode( node, nodeCursor );
+                assertThat( nodeCursor.next() ).isTrue();
+                assertProperties( nodeCursor, propertyCursor, expectedProperties );
+            }
+        } );
+    }
+
+    @Test
+    void nodeApplyChangesShouldApplyAllTypesOfChanges() throws Exception
+    {
+        // Given
+        int[] possibleLabelIds = new int[20];
+        int[] possiblePropertyKeyIds = new int[possibleLabelIds.length];
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            for ( int i = 0; i < possibleLabelIds.length; i++ )
+            {
+                possibleLabelIds[i] = tx.tokenWrite().labelGetOrCreateForName( "Label" + i );
+                possiblePropertyKeyIds[i] = tx.tokenWrite().propertyKeyGetOrCreateForName( "Key" + i );
+            }
+        }
+        IntSet initialLabels = IntSets.immutable.of( random.selection( possibleLabelIds, 0, possibleLabelIds.length / 2, false ) );
+        MutableIntObjectMap<Value> initialProperties = IntObjectMaps.mutable.empty();
+        long nodeId;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            nodeId = tx.dataWrite().nodeCreateWithLabels( initialLabels.toArray() );
+            for ( int key : random.selection( possiblePropertyKeyIds, 0, possiblePropertyKeyIds.length, false ) )
+            {
+                Value value = random.nextValue();
+                initialProperties.put( key, value );
+                tx.dataWrite().nodeSetProperty( nodeId, key, value );
+            }
+            tx.commit();
+        }
+
+        // When
+        MutableIntSet addedLabels = IntSets.mutable.empty();
+        int numAddedLabels = random.nextInt( possibleLabelIds.length / 2 );
+        for ( int i = 0; i < numAddedLabels; i++ )
+        {
+            int labelId;
+            do
+            {
+                labelId = random.among( possibleLabelIds );
+            }
+            while ( initialLabels.contains( labelId ) || !addedLabels.add( labelId ) );
+        }
+        IntSet removedLabels = IntSets.immutable.of( random.selection( initialLabels.toArray(), 0, initialLabels.size(), false ) );
+        MutableIntObjectMap<Value> changedProperties = IntObjectMaps.mutable.empty();
+        int numChangedProperties = random.nextInt( possiblePropertyKeyIds.length );
+        for ( int i = 0; i < numChangedProperties; i++ )
+        {
+            int key;
+            do
+            {
+                key = random.among( possiblePropertyKeyIds );
+            }
+            while ( changedProperties.containsKey( key ) );
+
+            boolean remove = changedProperties.containsKey( key ) && random.nextBoolean();
+            changedProperties.put( key, remove ? NO_VALUE : random.nextValue() );
+        }
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            tx.dataWrite().nodeApplyChanges( nodeId, addedLabels, removedLabels, changedProperties );
+            tx.commit();
+        }
+
+        // Then
+        MutableIntSet expectedLabels = IntSets.mutable.of( initialLabels.toArray() );
+        expectedLabels.addAll( addedLabels );
+        expectedLabels.removeAll( removedLabels );
+        MutableIntObjectMap<Value> expectedProperties = IntObjectMaps.mutable.ofAll( initialProperties );
+        changedProperties.forEachKeyValue( ( key, value ) ->
+        {
+            if ( value == NO_VALUE )
+            {
+                expectedProperties.remove( key );
+            }
+            else
+            {
+                expectedProperties.put( key, value );
+            }
+        } );
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            // A bit cheesy cast to get the cursor factory
+            CursorFactory cursorFactory = cursorFactory( tx );
+            try ( NodeCursor nodeCursor = cursorFactory.allocateNodeCursor( CursorContext.NULL );
+                    PropertyCursor propertyCursor = cursorFactory.allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            {
+                tx.dataRead().singleNode( nodeId, nodeCursor );
+                assertThat( nodeCursor.next() ).isTrue();
+                assertLabels( nodeCursor, expectedLabels );
+                assertProperties( nodeCursor, propertyCursor, expectedProperties );
+            }
+        }
+    }
+
+    @Test
+    void nodeApplyChangesShouldCheckUniquenessAfterAllChanges() throws Exception
+    {
+        // Given
+        Label label = Label.label( "Label" );
+        String key1Name = "key1";
+        String key2Name = "key2";
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( key1Name ).assertPropertyIsUnique( key2Name );
+            tx.commit();
+        }
+        long node;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            Node n1 = tx.createNode( label );
+            n1.setProperty( key1Name, "A" );
+            n1.setProperty( key2Name, "B" );
+            node = n1.getId();
+            Node n2 = tx.createNode( label );
+            n2.setProperty( key1Name, "A" );
+            n2.setProperty( key2Name, "C" );
+            tx.commit();
+        }
+
+        // When
+        int key1;
+        int key2;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            key1 = tx.tokenRead().propertyKey( key1Name );
+            key2 = tx.tokenRead().propertyKey( key2Name );
+            MutableIntObjectMap<Value> propertyChanges = IntObjectMaps.mutable.empty();
+            propertyChanges.put( key1, stringValue( "D" ) );
+            propertyChanges.put( key2, stringValue( "C" ) );
+            tx.dataWrite().nodeApplyChanges( node, IntSets.immutable.empty(), IntSets.immutable.empty(), propertyChanges );
+            tx.commit();
+        }
+
+        // Then
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            try ( ResourceIterator<Node> nodes = tx.findNodes( label, map( key1Name, "D", key2Name, "C" ) ) )
+            {
+                assertThat( nodes.hasNext() ).isTrue();
+                assertThat( nodes.next().getId() ).isEqualTo( node );
+                assertThat( nodes.hasNext() ).isFalse();
+            }
+        }
+    }
+
     // HELPERS
+
+    private void assertLabels( NodeCursor nodeCursor, IntSet expectedLabels )
+    {
+        MutableIntSet readLabels = IntSets.mutable.empty();
+        TokenSet labels = nodeCursor.labels();
+        for ( int i = 0; i < labels.numberOfTokens(); i++ )
+        {
+            readLabels.add( labels.token( i ) );
+        }
+        assertThat( readLabels ).isEqualTo( expectedLabels );
+    }
 
     private static long createNode()
     {
@@ -449,12 +1005,12 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         }
     }
 
-    private static long createNodeWithLabel( String labelName )
+    private static long createNodeWithLabels( String... labelNames )
     {
         long node;
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
-            node = ctx.createNode( label( labelName ) ).getId();
+            node = ctx.createNode( stream( labelNames ).map( Label::label ).toArray( Label[]::new ) ).getId();
             ctx.commit();
         }
         return node;

@@ -19,13 +19,20 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.EntityCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
@@ -34,11 +41,14 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.storable.Value;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
@@ -117,5 +127,30 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         KernelTransaction kernelTransaction = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );
         new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
         return kernelTransaction;
+    }
+
+    protected static void transaction( ThrowingConsumer<KernelTransaction,Exception> action ) throws Exception
+    {
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            action.accept( tx );
+            tx.commit();
+        }
+    }
+
+    protected static CursorFactory cursorFactory( KernelTransaction ktx )
+    {
+        return ((Read) ktx.dataRead()).cursors();
+    }
+
+    protected void assertProperties( EntityCursor entityCursor, PropertyCursor propertyCursor, IntObjectMap<Value> expectedProperties )
+    {
+        entityCursor.properties( propertyCursor, PropertySelection.ALL_PROPERTIES );
+        MutableIntObjectMap<Value> readProperties = IntObjectMaps.mutable.empty();
+        while ( propertyCursor.next() )
+        {
+            readProperties.put( propertyCursor.propertyKey(), propertyCursor.propertyValue() );
+        }
+        assertThat( readProperties ).isEqualTo( expectedProperties );
     }
 }
