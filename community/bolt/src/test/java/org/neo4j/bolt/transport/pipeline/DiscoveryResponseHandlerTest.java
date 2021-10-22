@@ -21,10 +21,10 @@ package org.neo4j.bolt.transport.pipeline;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import org.junit.jupiter.api.Test;
@@ -50,11 +50,16 @@ public class DiscoveryResponseHandlerTest
 
         channel.writeInbound( payload );
 
-        var discoveryResponse = (HttpResponse) channel.readOutbound();
+        var discoveryResponse = (FullHttpResponse) channel.readOutbound();
 
         assertThat( discoveryResponse.status() ).isEqualTo( HttpResponseStatus.OK );
         assertThat( discoveryResponse.protocolVersion() ).isEqualTo( HttpVersion.HTTP_1_1 );
-        assertThat( discoveryResponse.headers().contains(  HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON, false ) ).isTrue();
+        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON, false ) ).isTrue();
+        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*", false ) ).isTrue();
+        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.VARY, "Accept", false ) ).isTrue();
+        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.CONTENT_LENGTH, String.valueOf( discoveryResponse.content().readableBytes() ),
+                                                          false ) ).isTrue();
+        assertThat( discoveryResponse.headers().contains( HttpHeaderNames.DATE ) ).isTrue();
 
         assertThat( channel.pipeline().get( DiscoveryResponseHandler.class ) ).isNull();
     }

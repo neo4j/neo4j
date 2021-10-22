@@ -29,6 +29,10 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpUtil;
+import io.netty.util.AsciiString;
+
+import java.util.Date;
 
 import org.neo4j.server.config.AuthConfigProvider;
 
@@ -54,7 +58,7 @@ public class DiscoveryResponseHandler extends ChannelInboundHandlerAdapter
             var discoveryResponse =
                     new DefaultFullHttpResponse( httpMessage.protocolVersion(), HttpResponseStatus.OK,
                                                  Unpooled.copiedBuffer( authConfigProvider.getRepresentationAsBytes() ) );
-            discoveryResponse.headers().add( HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON );
+            addHeaders( discoveryResponse );
             ctx.writeAndFlush( discoveryResponse )
                .addListener( ChannelFutureListener.CLOSE );
         }
@@ -63,6 +67,16 @@ public class DiscoveryResponseHandler extends ChannelInboundHandlerAdapter
             ctx.pipeline().remove( this );
             ctx.fireChannelRead( msg );
         }
+    }
+
+    private void addHeaders( FullHttpMessage discoveryResponse )
+    {
+        discoveryResponse.headers().add( HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON );
+        discoveryResponse.headers().add( HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, AsciiString.cached( "*" ) );
+        discoveryResponse.headers().add( HttpHeaderNames.VARY, AsciiString.cached( "Accept" ) );
+        discoveryResponse.headers().add( HttpHeaderNames.CONTENT_LENGTH, discoveryResponse.content().readableBytes() );
+        discoveryResponse.headers().add( HttpHeaderNames.DATE, new Date() );
+        HttpUtil.setContentLength( discoveryResponse, discoveryResponse.content().readableBytes() );
     }
 
     private static boolean isWebsocketUpgrade( HttpHeaders headers )
