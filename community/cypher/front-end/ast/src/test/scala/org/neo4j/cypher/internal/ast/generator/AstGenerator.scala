@@ -272,10 +272,13 @@ import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
+import org.neo4j.cypher.internal.ast.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
+import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
@@ -1106,7 +1109,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     labelOrRelType <- _labelOrTypeName
     properties <- oneOrMore(_propertyKeyName)
     spec <- oneOf(SeekOnly, SeekOrScan)
-  } yield UsingIndexHint(variable, labelOrRelType, properties, spec)(pos)
+    indexType <- oneOf(UsingAnyIndexType, UsingBtreeIndexType, UsingTextIndexType)
+  } yield UsingIndexHint(variable, labelOrRelType, properties, spec, indexType)(pos)
 
   def _usingJoinHint: Gen[UsingJoinHint] = for {
     variables <- oneOrMore(_variable)

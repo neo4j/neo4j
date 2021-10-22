@@ -698,7 +698,7 @@ case class Prettifier(
           t match {
             case UsingAnyIndexType   => "INDEX "
             case UsingBtreeIndexType => "BTREE INDEX "
-            case UsingTextIndexType  => "TEXT INDEX"
+            case UsingTextIndexType  => "TEXT INDEX "
           },
           if (s == SeekOnly) "SEEK " else "",
           expr(v), ":", expr(l),
