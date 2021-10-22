@@ -334,7 +334,7 @@ private object Ast {
         } yield AliasedReturnItem(
           expression = Parameter(parName, CTAny)(pos),
           variable = variable(varName, pos),
-        )(pos)
+        )(pos, isAutoAliased = false)
       )(pos))(pos)
     )
 
@@ -362,7 +362,7 @@ private object Ast {
       } yield AliasedReturnItem(
         expression = variable(name, pos),
         variable = variable(name, pos),
-      )(pos)
+      )(pos, isAutoAliased = true)
     )(pos))(pos)
 
   def withoutGraphSelection(clauses: Seq[Clause]): Seq[Clause] =

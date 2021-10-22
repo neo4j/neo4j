@@ -73,8 +73,8 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
         Return(distinct = false,
           ReturnItems(includeExisting = false,
             Seq(
-              AliasedReturnItem(varFor("x"), varFor("x"))(pos),
-              AliasedReturnItem(varFor("y"), varFor("y"))(pos)))(pos),
+              AliasedReturnItem(varFor("x"), varFor("x"))(pos, isAutoAliased = false),
+              AliasedReturnItem(varFor("y"), varFor("y"))(pos, isAutoAliased = false)))(pos),
           None, None, None)(pos)))(pos))(pos)
 
     rewritten should equal(expected)

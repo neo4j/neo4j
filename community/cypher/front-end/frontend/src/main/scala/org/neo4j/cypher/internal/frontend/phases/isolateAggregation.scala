@@ -74,14 +74,14 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
 
           val withReturnItems: Set[ReturnItem] = expressionsToIncludeInWith.map {
             e =>
-              AliasedReturnItem(e, Variable(from.anonymousVariableNameGenerator.nextName)(e.position))(e.position)
+              AliasedReturnItem(e, Variable(from.anonymousVariableNameGenerator.nextName)(e.position))(e.position, isAutoAliased = true)
           }
           val pos = clause.position
           val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toIndexedSeq)(pos), None, None, None, None)(pos)
 
           val expressionRewriter = createRewriterFor(withReturnItems)
           val newReturnItems = clauseReturnItems.map {
-            case ri@AliasedReturnItem(expression, _) => ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position)
+            case ri@AliasedReturnItem(expression, _) => ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position, ri.isAutoAliased)
             case ri@UnaliasedReturnItem(expression, _) => ri.copy(expression = expression.endoRewrite(expressionRewriter))(ri.position)
           }
           val resultClause = clause.withReturnItems(newReturnItems)
@@ -98,7 +98,7 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
     def inner = Rewriter.lift {
       case original: Expression =>
         val rewrittenExpression = withReturnItems.collectFirst {
-          case item@AliasedReturnItem(expression, variable) if original == expression =>
+          case item@AliasedReturnItem(expression, _) if original == expression =>
             item.alias.get.copyId
         }
         rewrittenExpression getOrElse original

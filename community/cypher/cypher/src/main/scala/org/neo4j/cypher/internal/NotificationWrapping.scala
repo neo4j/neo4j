@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotifi
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
+import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.DeprecatedCatalogKeywordForAdminCommandSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedCreateConstraintOnAssertSyntax
@@ -185,6 +186,11 @@ object NotificationWrapping {
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.shadowingVariable(varName))
     case MissingAliasNotification(pos) =>
       NotificationCode.MISSING_ALIAS.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedAmbiguousGroupingNotification(pos, maybeHint) =>
+      maybeHint match {
+        case Some(hint) => NotificationCode.DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION
+          .notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.message("Hint", s"Hint: $hint"))
+        case _ => NotificationCode.DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION.notification(pos.withOffset(offset).asInputPosition)      }
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: InputPosition) {

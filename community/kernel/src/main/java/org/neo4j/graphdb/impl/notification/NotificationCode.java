@@ -205,6 +205,15 @@ public enum NotificationCode
             "The behavior when comparing spatial points with '<', '<=', '>', and '>=` will change. Please use the 'point.withinBBox' or 'point.distance'" +
             " for seeking spatial points within a specific range."
     ),
+    DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "Aggregation column contains implicit grouping expressions. " +
+            "Aggregation expressions with implicit grouping keys are deprecated and will be removed in a future version. " +
+            "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b', " +
+            "and this expression is now deprecated. " +
+            "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause."
+    ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
         Status.Statement.EagerOperatorWarning,

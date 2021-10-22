@@ -45,8 +45,8 @@ case class rewriteOrderById(semanticState: SemanticState) extends Rewriter {
       semanticState.expressionType(expr).actual == CTRelationship.invariant
 
   private val instance = bottomUp(Rewriter.lift {
-    case si@AscSortItem(Id(v)) if isEntity(v) => AscSortItem(v)(si.position)
-    case si@DescSortItem(Id(v)) if isEntity(v) => DescSortItem(v)(si.position)
+    case si@AscSortItem(Id(v)) if isEntity(v) => AscSortItem(v)(si.position, si.originalExpression)
+    case si@DescSortItem(Id(v)) if isEntity(v) => DescSortItem(v)(si.position, si.originalExpression)
   })
 
   override def apply(v: AnyRef): AnyRef = instance(v)

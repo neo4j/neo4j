@@ -223,7 +223,8 @@ object CNFNormalizerTest {
  */
 object TestStatement {
   def apply(e: Expression): Statement = {
-    val returnClause = Return(ReturnItems(includeExisting = false, Seq(AliasedReturnItem(e, Variable("")(InputPosition.NONE))(InputPosition.NONE)))(InputPosition.NONE))(InputPosition.NONE)
+    val returnClause = Return(ReturnItems(includeExisting = false, Seq(AliasedReturnItem(e, Variable("")(InputPosition.NONE))
+    (InputPosition.NONE, isAutoAliased = false)))(InputPosition.NONE))(InputPosition.NONE)
     Query(None, SingleQuery(Seq(returnClause))(InputPosition.NONE))(InputPosition.NONE)
   }
 

@@ -783,6 +783,7 @@ sealed trait ProjectionClause extends HorizonClause {
 
       def runChecks(scopeInUse: Scope): SemanticCheck = innerState => (
         returnItems.declareVariables(scopeInUse) chain
+          orderBy.foldSemanticCheck(_.checkAmbiguousOrdering(returnItems, if (isReturn) "RETURN" else "WITH")) chain
           orderBy.semanticCheck chain
           checkSkip chain
           checkLimit chain
@@ -918,7 +919,8 @@ case class With(distinct: Boolean,
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      ProjectionClause.checkAliasedReturnItems(returnItems, "WITH") chain
+      ReturnItems.checkAmbiguousGrouping(returnItems, name) chain
+      ProjectionClause.checkAliasedReturnItems(returnItems, name) chain
       SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems, this.position)
 
   override def withReturnItems(items: Seq[ReturnItem]): With =
@@ -948,6 +950,7 @@ case class Return(distinct: Boolean,
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       checkVariableScope chain
+      ReturnItems.checkAmbiguousGrouping(returnItems, name) chain
       ProjectionClause.checkAliasedReturnItems(returnItems, "CALL { RETURN ... }") chain
       SemanticPatternCheck.checkValidPropertyKeyNamesInReturnItems(returnItems, this.position)
 
@@ -956,7 +959,6 @@ case class Return(distinct: Boolean,
 
   def withReturnItems(returnItems: ReturnItems): Return =
     this.copy(returnItems = returnItems)(this.position)
-
 
   private def checkVariableScope: SemanticState => Seq[SemanticError] = s =>
     returnItems match {

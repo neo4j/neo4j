@@ -158,7 +158,7 @@ trait Clauses extends Parser
   )
 
   private def ReturnItem: Rule1[ast.ReturnItem] = rule(
-    group(Expression ~~ keyword("AS") ~~ Variable) ~~>> (ast.AliasedReturnItem(_, _))
+    group(Expression ~~ keyword("AS") ~~ Variable) ~~>> ((v, alias) => ast.AliasedReturnItem(v, alias)(_, isAutoAliased = false))
       | group(Expression ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
 
@@ -176,9 +176,8 @@ trait Clauses extends Parser
     keyword("*") ~~~> ast.ReturnItems(includeExisting = true, List())
       | oneOrMore(YieldItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))
   )
-
   private def YieldItem: Rule1[ast.ReturnItem] = rule(
-    group(Variable ~~ keyword("AS") ~~ Variable) ~~>> (ast.AliasedReturnItem(_, _))
+    group(Variable ~~ keyword("AS") ~~ Variable) ~~>> ((expr, alias) => ast.AliasedReturnItem(expr, alias)(_, isAutoAliased = false))
       | group(Variable ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
 
@@ -187,8 +186,8 @@ trait Clauses extends Parser
   }
 
   private def SortItem: Rule1[ast.SortItem] = rule(
-    group(Expression ~~ (keyword("DESCENDING") | keyword("DESC"))) ~~>> (ast.DescSortItem(_))
-      | group(Expression ~~ optional(keyword("ASCENDING") | keyword("ASC"))) ~~>> (ast.AscSortItem(_))
+    group(Expression ~~ (keyword("DESCENDING") | keyword("DESC"))) ~~>> (expr => ast.DescSortItem(expr)(_))
+      | group(Expression ~~ optional(keyword("ASCENDING") | keyword("ASC"))) ~~>> (expr => ast.AscSortItem(expr)(_))
   )
 
   private def Skip: Rule1[ast.Skip] = rule("SKIP") {

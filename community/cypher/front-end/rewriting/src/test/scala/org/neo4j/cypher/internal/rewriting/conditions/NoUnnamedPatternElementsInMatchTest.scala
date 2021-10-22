@@ -44,7 +44,7 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
     val nodePattern: NodePattern = node(None)
     val ast: ASTNode = SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), nodePattern), relationship(Some(varFor("r"))), node(Some(varFor("m")))))))_, Seq.empty, None)_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
+      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false)))_, None, None, None)_
     ))_
 
     condition(ast) shouldBe Seq(s"NodePattern at ${nodePattern.position} is unnamed")
@@ -54,7 +54,7 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
     val relationshipPattern: RelationshipPattern = relationship(None)
     val ast: ASTNode = SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))), relationshipPattern, node(Some(varFor("m")))))))_, Seq.empty, None)_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
+      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false)))_, None, None, None)_
     ))_
 
     condition(ast) shouldBe Seq(s"RelationshipPattern at ${relationshipPattern.position} is unnamed")
@@ -65,7 +65,7 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
     val relationshipPattern: RelationshipPattern = relationship(None)
     val ast: ASTNode = SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationshipPattern, node(Some(varFor("k")))), relationship(Some(varFor("r"))), nodePattern))))_, Seq.empty, None)_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
+      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false)))_, None, None, None)_
     ))_
 
     condition(ast) shouldBe Seq(s"NodePattern at ${nodePattern.position} is unnamed", s"RelationshipPattern at ${relationshipPattern.position} is unnamed")
@@ -74,7 +74,7 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
   test("happy when all elements in pattern are named") {
     val ast: ASTNode = SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))), relationship(Some(varFor("r"))), node(Some(varFor("m")))))))_, Seq.empty, None)_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
+      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false)))_, None, None, None)_
     ))_
 
     condition(ast) shouldBe empty
@@ -84,7 +84,7 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
     val where: Where = Where(PatternExpression(RelationshipsPattern(chain(node(None), relationship(None), node(None)))_)(Set.empty, "", ""))_
     val ast: ASTNode = SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))), relationship(Some(varFor("r"))), node(Some(varFor("m")))))))_, Seq.empty, Some(where))_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
+      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false)))_, None, None, None)_
     ))_
 
     condition(ast) shouldBe empty

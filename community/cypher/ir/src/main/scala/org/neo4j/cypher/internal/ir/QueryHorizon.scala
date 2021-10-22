@@ -141,7 +141,7 @@ object QueryProjection {
 
   def forIds(coveredIds: Set[String]) =
     coveredIds.toIndexedSeq.map(idName =>
-      AliasedReturnItem(Variable(idName)(null), Variable(idName)(null))(null))
+      AliasedReturnItem(Variable(idName)(null), Variable(idName)(null))(null, false))
 
   def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {
     case (left: RegularQueryProjection, right: RegularQueryProjection) =>

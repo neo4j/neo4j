@@ -77,7 +77,7 @@ class PeriodicCommitHintTest extends CypherFunSuite with Positional {
     val periodicCommitPos: InputPosition = pos
     val hint = PeriodicCommitHint(Some(value))(periodicCommitPos)
     val literal: StringLiteral = StringLiteral("Hello world!")(pos)
-    val returnItem = AliasedReturnItem(literal, Variable("Hello world!")(pos))(pos)
+    val returnItem = AliasedReturnItem(literal, Variable("Hello world!")(pos))(pos, isAutoAliased = false)
     val returnItems = ReturnItems(includeExisting = false, Seq(returnItem))(pos)
     val returns: Return = Return(distinct = false, returnItems, None, None, None)(pos)
     val queryPart = SingleQuery(Seq(returns))(pos)

@@ -80,10 +80,6 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
     }
     def withInsertedWith(query: SingleQuery, wizz: With): Projectibles = copy(insertedWiths = insertedWiths + (query -> wizz))
 
-    def returnItems: IndexedSeq[AliasedReturnItem] = paths.map {
-      case (ident, pathExpr) => AliasedReturnItem(pathExpr, ident)(ident.position)
-    }.toIndexedSeq
-
     def withVariableRewritesForExpression(expr: Expression): Projectibles =
       expr.treeFold(self) {
         case ident: Variable =>
@@ -166,7 +162,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
             val returnItemsWithVariablesFromPaths: Seq[AliasedReturnItem] =
                 acc.paths.collect {
                   case (variable, pathExpression) if pathReturnItems.exists(_.expression == variable) => pathExpression.step.dependencies
-                }.flatten.map(v => ast.AliasedReturnItem(v, v)(InputPosition.NONE)).toSeq
+                }.flatten.map(v => ast.AliasedReturnItem(v, v)(InputPosition.NONE, isAutoAliased = true)).toSeq
 
             val newImportingWith: Option[With] = {
               if (returnItemsWithVariablesFromPaths.isEmpty) {

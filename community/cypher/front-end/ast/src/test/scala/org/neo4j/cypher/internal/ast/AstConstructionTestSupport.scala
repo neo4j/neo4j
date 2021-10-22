@@ -459,7 +459,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def aliasedReturnItem(variable: Variable): AliasedReturnItem = AliasedReturnItem(variable)
 
-  def aliasedReturnItem(originalName: String, newName: String): AliasedReturnItem = AliasedReturnItem(varFor(originalName), varFor(newName))(pos)
+  def aliasedReturnItem(originalName: String, newName: String): AliasedReturnItem = AliasedReturnItem(varFor(originalName), varFor(newName))(pos, isAutoAliased = false)
 
   def orderBy(items: SortItem*): OrderBy =
     OrderBy(items)(pos)
@@ -506,14 +506,14 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     Length3_5(argument)(pos)
 
   implicit class ExpressionOps(expr: Expression) {
-    def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos)
+    def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos, isAutoAliased = false)
 
     def asc: AscSortItem = AscSortItem(expr)(pos)
     def desc: DescSortItem = DescSortItem(expr)(pos)
   }
 
   implicit class VariableOps(v: Variable) {
-    def aliased: AliasedReturnItem = AliasedReturnItem(v, v)(pos)
+    def aliased: AliasedReturnItem = AliasedReturnItem(v, v)(pos, isAutoAliased = true)
   }
 
   implicit class NumberLiteralOps(nl: NumberLiteral) {

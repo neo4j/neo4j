@@ -109,7 +109,7 @@ trait RewriteProcedureCalls {
         includeExisting = false,
         items = newResolved.callResults.map(item => AliasedReturnItem(
           item.variable.copyId,
-          item.variable.copyId)(resolved.position))
+          item.variable.copyId)(resolved.position, isAutoAliased = true))
       )(resolved.position),
       None, None, None
     )(resolved.position)

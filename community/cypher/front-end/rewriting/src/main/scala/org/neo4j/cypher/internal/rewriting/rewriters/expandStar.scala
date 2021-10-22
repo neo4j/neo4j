@@ -78,7 +78,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
       // If the position was one of previous declaration, that could destroy scoping.
       val expr = Variable(id)(clausePos)
       val alias = expr.copyId
-      AliasedReturnItem(expr, alias)(clausePos)
+      AliasedReturnItem(expr, alias)(clausePos, isAutoAliased = true)
     }
 
     val newItems = expandedItems ++ listedItems

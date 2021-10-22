@@ -80,3 +80,5 @@ case class DeprecatedPointsComparison(position: InputPosition) extends InternalN
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
 
 case class MissingAliasNotification(pos: InputPosition) extends InternalNotification
+
+case class DeprecatedAmbiguousGroupingNotification(pos: InputPosition, hint: Option[String]) extends InternalNotification

@@ -919,7 +919,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     variable <- _variable
     item <- oneOf(
       UnaliasedReturnItem(expr, "")(pos),
-      AliasedReturnItem(expr, variable)(pos)
+      AliasedReturnItem(expr, variable)(pos, isAutoAliased = false)
     )
   } yield item
 

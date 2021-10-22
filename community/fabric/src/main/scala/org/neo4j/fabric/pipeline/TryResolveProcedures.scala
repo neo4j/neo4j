@@ -61,7 +61,7 @@ case class TryResolveProcedures(signatures: ProcedureSignatureResolver) extends 
           val aliases = expanded.callResults.map { item =>
             val copy1 = Variable(item.variable.name)(item.variable.position)
             val copy2 = Variable(item.variable.name)(item.variable.position)
-            AliasedReturnItem(copy1, copy2)(resolved.position)
+            AliasedReturnItem(copy1, copy2)(resolved.position, isAutoAliased = true)
           }
           val projection = Return(distinct = false, ReturnItems(includeExisting = false, aliases)(resolved.position),
             None, None, None)(resolved.position)

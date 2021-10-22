@@ -78,7 +78,7 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
     val logicalPlan = ProduceResult(unwind, Seq("col"))
 
     val variable = Variable("col")(pos)
-    val returnItem = AliasedReturnItem(variable, variable)(pos)
+    val returnItem = AliasedReturnItem(variable, variable)(pos, isAutoAliased = true)
     val returnClause = Return(distinct = false, ReturnItems(includeExisting = false, Seq(returnItem))(pos), None, None, None, Set.empty)(pos)
     val newStatement = Query(None, SingleQuery(Seq(returnClause))(pos))(pos)
     val newReturnColumns = Seq("col")

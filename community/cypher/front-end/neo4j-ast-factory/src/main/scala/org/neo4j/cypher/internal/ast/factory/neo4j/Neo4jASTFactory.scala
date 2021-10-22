@@ -502,7 +502,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   }
 
   override def newReturnItem(p: InputPosition, e: Expression, v: Variable): ReturnItem = {
-    AliasedReturnItem(e, v)(p)
+    AliasedReturnItem(e, v)(p, isAutoAliased = false)
   }
 
   override def newReturnItem(p: InputPosition,

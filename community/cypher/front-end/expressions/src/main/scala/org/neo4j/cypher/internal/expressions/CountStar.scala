@@ -18,4 +18,6 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class CountStar()(val position: InputPosition) extends Expression
+case class CountStar()(val position: InputPosition) extends Expression {
+  override def asCanonicalStringVal: String = "count(*)"
+}

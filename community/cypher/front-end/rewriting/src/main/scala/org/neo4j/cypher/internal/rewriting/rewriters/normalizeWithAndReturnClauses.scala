@@ -157,7 +157,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
               Variable(i.name)(i.expression.position)
           }
 
-          AliasedReturnItem(i.expression, alias)(i.position)
+          AliasedReturnItem(i.expression, alias)(i.position, isAutoAliased = true)
         case x => x
       }
     ri.copy(items = aliasedReturnItems)(ri.position)
@@ -171,7 +171,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
     val newItems =
       ri.items.map {
         case i: UnaliasedReturnItem if i.alias.isDefined =>
-          AliasedReturnItem(i.expression, i.alias.get)(i.position)
+          AliasedReturnItem(i.expression, i.alias.get)(i.position, isAutoAliased = true)
         case x => x
       }
     ri.copy(items = newItems)(ri.position)
@@ -211,8 +211,8 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
    */
   private def aliasSortItem(existingAliases: Map[Expression, LogicalVariable], sortItem: SortItem): SortItem = {
     sortItem match {
-      case AscSortItem(expression) => AscSortItem(aliasExpression(existingAliases, expression))(sortItem.position)
-      case DescSortItem(expression) => DescSortItem(aliasExpression(existingAliases, expression))(sortItem.position)
+      case AscSortItem(expression) => AscSortItem(aliasExpression(existingAliases, expression))(sortItem.position, sortItem.originalExpression)
+      case DescSortItem(expression) => DescSortItem(aliasExpression(existingAliases, expression))(sortItem.position, sortItem.originalExpression)
     }
   }
 

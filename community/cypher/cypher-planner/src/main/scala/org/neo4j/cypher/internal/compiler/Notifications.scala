@@ -29,10 +29,6 @@ case class SuboptimalIndexForEndsWithQueryNotification(variableName: String, lab
 
 case object StartUnavailableFallback extends InternalNotification
 
-case class CreateUniqueUnavailableFallback(position: InputPosition) extends InternalNotification
-
-case class CreateUniqueDeprecated(position: InputPosition) extends InternalNotification
-
 case class RuntimeUnsupportedNotification(msg: String) extends InternalNotification
 
 case class IndexHintUnfulfillableNotification(variableName: String, labelOrRelType: String, propertyKeys: Seq[String], entityType: EntityType) extends InternalNotification
