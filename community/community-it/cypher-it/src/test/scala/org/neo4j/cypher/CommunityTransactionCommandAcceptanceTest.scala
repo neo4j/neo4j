@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.auth_enabled
 import org.neo4j.cypher.internal.RewindableExecutionResult
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.TransientTransactionFailureException
@@ -93,8 +94,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // GIVEN
     createUser()
     val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(SYSTEM_DATABASE_NAME, username, password, threading, "SHOW DATABASES")
+    val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
+    tx.execute(username, password, threading, "SHOW DATABASES")
     latch.startAndWaitForAllToStart()
 
     // WHEN
@@ -246,8 +247,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val latch = new DoubleLatch(4)
     val (user1Query, user2Query1) = setupTwoUsersAndOneTransactionEach(latch)
     val user2Query2 = "SHOW DATABASES"
-    val tx = ThreadedTransaction(latch)
-    tx.execute(SYSTEM_DATABASE_NAME, username2, password, threading, user2Query2)
+    val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
+    tx.execute(username2, password, threading, user2Query2)
     latch.startAndWaitForAllToStart()
 
     // WHEN
@@ -301,8 +302,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val latch = new DoubleLatch(4)
     val (user1Query, user2Query1) = setupTwoUsersAndOneTransactionEach(latch)
     val user2Query2 = "SHOW DATABASES"
-    val tx = ThreadedTransaction(latch)
-    tx.execute(SYSTEM_DATABASE_NAME, username2, password, threading, user2Query2)
+    val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
+    tx.execute(username2, password, threading, user2Query2)
     latch.startAndWaitForAllToStart()
 
     // WHEN
@@ -338,8 +339,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     createUser()
     val userQuery = "SHOW DATABASES"
     val latch = new DoubleLatch(2)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(SYSTEM_DATABASE_NAME, username, password, threading, userQuery)
+    val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
+    tx.execute(username, password, threading, userQuery)
     latch.startAndWaitForAllToStart()
 
     // WHEN
@@ -546,8 +547,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val latch = new DoubleLatch(3)
     val tx1 = ThreadedTransaction(latch)
     tx1.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
-    val tx2 = ThreadedTransaction(latch)
-    tx2.execute(SYSTEM_DATABASE_NAME, username2, password, threading, "SHOW DATABASES")
+    val tx2 = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
+    tx2.execute(username2, password, threading, "SHOW DATABASES")
     latch.startAndWaitForAllToStart()
 
     // WHEN
@@ -655,8 +656,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // GIVEN
     createUser()
     val latch = new DoubleLatch(2, true)
-    val tx = ThreadedTransaction(latch)
-    tx.execute(SYSTEM_DATABASE_NAME, username, password, threading, s"CREATE USER $username2 SET PASSWORD '$password'")
+    val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
+    tx.execute(username, password, threading, s"CREATE USER $username2 SET PASSWORD '$password'")
     latch.startAndWaitForAllToStart()
 
     try {
@@ -1004,21 +1005,13 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     }
   }
 
-  case class ThreadedTransaction(latch: DoubleLatch) {
-    def execute(database: String, username: String, password: String, threading: Threading, query: String): Unit =
-      doExecute(threading, login(username, password), database, query)
+  case class ThreadedTransaction(latch: DoubleLatch, database: String = DEFAULT_DATABASE_NAME) {
+    private val graphService = new GraphDatabaseCypherService(managementService.database(database))
 
-    def execute(username: String, password: String, threading: Threading, query: String): Unit =
-      doExecute(threading, login(username, password), DEFAULT_DATABASE_NAME, query)
-
-    private def doExecute(threading: Threading,
-                          subject: LoginContext,
-                          database: String,
-                          query: String): Unit = {
+    def execute(username: String, password: String, threading: Threading, query: String): Unit = {
       val startTransaction = new NamedFunction[LoginContext, Throwable]("threaded-transaction-" + util.Arrays.hashCode(query.toCharArray)) {
         override def apply(subject: LoginContext): Throwable = try {
-          selectDatabase(database)
-          val tx = graph.beginTransaction(Type.EXPLICIT, subject)
+          val tx = graphService.beginTransaction(Type.EXPLICIT, subject)
 
           try {
             var result: Result = null
@@ -1042,6 +1035,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
           }
         }
       }
+      val subject = login(username, password)
       threading.execute(startTransaction, subject)
     }
   }
