@@ -176,7 +176,7 @@ public class DiscoveryServiceTest
     private DiscoveryService testDiscoveryService()
     {
         Config config = mockConfig();
-        return new DiscoveryService( config, communityDiscoverableURIs( config, portRegistry ), mock( ServerVersionAndEdition.class ),
+        return new DiscoveryService( config, communityDiscoverableURIs( config, portRegistry, null ), mock( ServerVersionAndEdition.class ),
                                      new CommunityAuthConfigProvider() );
     }
 
@@ -257,7 +257,7 @@ public class DiscoveryServiceTest
         Config config = Config.defaults( ServerSettings.browser_path, URI.create( "/browser/" ) );
 
         baseUri = "http://www.example.com:5435";
-        DiscoveryService ds = new DiscoveryService( config, communityDiscoverableURIs( config, null ), mock( ServerVersionAndEdition.class ),
+        DiscoveryService ds = new DiscoveryService( config, communityDiscoverableURIs( config, null, null ), mock( ServerVersionAndEdition.class ),
                                                     mock( AuthConfigProvider.class ) );
 
         var request = mock( Request.class );

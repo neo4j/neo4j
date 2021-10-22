@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
@@ -94,9 +95,11 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer
 
     protected DBMSModule createDBMSModule()
     {
+        var globalDependencies = getGlobalDependencies();
+        var clientRoutingDomainChecker = globalDependencies.resolveDependency( ClientRoutingDomainChecker.class );
         // Bolt port isn't available until runtime, so defer loading until then
         Supplier<DiscoverableURIs> discoverableURIs =
-                () -> communityDiscoverableURIs( getConfig(), connectorPortRegister );
+                () -> communityDiscoverableURIs( getConfig(), connectorPortRegister, clientRoutingDomainChecker );
         var authConfigProvider = getGlobalDependencies().resolveDependency( AuthConfigProvider.class );
         return new DBMSModule( webServer, getConfig(), discoverableURIs, userLogProvider, authConfigProvider );
     }

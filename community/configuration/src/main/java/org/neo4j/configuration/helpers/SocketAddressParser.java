@@ -19,6 +19,7 @@
  */
 package org.neo4j.configuration.helpers;
 
+import java.net.URI;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,6 +62,13 @@ public class SocketAddressParser
                 "Setting \"%s\" must be in the format " +
                 "\"hostname:port\" or \":port\". \"%s\" does not conform to these formats",
                 settingName, settingValue ) );
+    }
+
+    public static <T extends SocketAddress> T socketAddress( URI uri, int defaultPort,
+                                                             BiFunction<String,Integer,T> constructor )
+    {
+        int port = uri.getPort();
+        return constructor.apply( uri.getHost(), port > 0 ? port : defaultPort );
     }
 
     public static <T extends SocketAddress> T socketAddress( String settingValue,

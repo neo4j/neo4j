@@ -47,7 +47,7 @@ class DiscoverableURIsTest
     @Test
     void shouldNotInvokeConsumerWhenEmpty()
     {
-        DiscoverableURIs empty = new DiscoverableURIs.Builder().build();
+        DiscoverableURIs empty = new DiscoverableURIs.Builder( null ).build();
 
         empty.forEach( consumer );
 
@@ -57,7 +57,7 @@ class DiscoverableURIsTest
     @Test
     void shouldInvokeConsumerForEachKey()
     {
-        var discoverables = new DiscoverableURIs.Builder()
+        var discoverables = new DiscoverableURIs.Builder( null )
                 .addEndpoint( "a", "/test" )
                 .addEndpoint( "b", "/data" )
                 .addEndpoint( "c", "/{name}/data" )
@@ -74,7 +74,7 @@ class DiscoverableURIsTest
     void shouldSetBoltPort()
     {
         var config = configWithBoltEnabled();
-        var discoverables = new DiscoverableURIs.Builder()
+        var discoverables = new DiscoverableURIs.Builder( null )
                 .addBoltEndpoint( config, portRegister )
                 .build();
 
@@ -94,7 +94,7 @@ class DiscoverableURIsTest
         var register = new ConnectorPortRegister();
         register.register( BoltConnector.NAME, new InetSocketAddress( 1337 ) );
 
-        var discoverables = new DiscoverableURIs.Builder()
+        var discoverables = new DiscoverableURIs.Builder( null )
                 .addBoltEndpoint( config, register )
                 .build();
 
@@ -111,7 +111,7 @@ class DiscoverableURIsTest
                 Map.of( BoltConnector.enabled, true,
                         GraphDatabaseSettings.default_advertised_address, new SocketAddress( "myCat.com" ) ) )
                 .build();
-        var discoverables = new DiscoverableURIs.Builder()
+        var discoverables = new DiscoverableURIs.Builder( null )
                 .addBoltEndpoint( config, portRegister )
                 .build();
 
@@ -128,7 +128,7 @@ class DiscoverableURIsTest
                 Map.of( BoltConnector.enabled, true,
                         BoltConnector.advertised_address, new SocketAddress( 1234 ) ) )
                 .build();
-        var discoverables = new DiscoverableURIs.Builder()
+        var discoverables = new DiscoverableURIs.Builder( null )
                 .addBoltEndpoint( config, portRegister )
                 .build();
 
@@ -145,7 +145,7 @@ class DiscoverableURIsTest
                 Map.of( BoltConnector.enabled, true,
                         BoltConnector.advertised_address, new SocketAddress( "myCat.com", 1234 ) ) )
                 .build();
-        var discoverables = new DiscoverableURIs.Builder()
+        var discoverables = new DiscoverableURIs.Builder( null )
                 .addBoltEndpoint( config, portRegister )
                 .build();
 
@@ -163,7 +163,7 @@ class DiscoverableURIsTest
                         GraphDatabaseSettings.default_advertised_address, new SocketAddress( "myDog.com" ),
                         BoltConnector.advertised_address, new SocketAddress( "myCat.com", 1234 ) ) )
                 .build();
-        var discoverables = new DiscoverableURIs.Builder()
+        var discoverables = new DiscoverableURIs.Builder( null )
                 .addBoltEndpoint( config, portRegister )
                 .build();
 
@@ -184,7 +184,7 @@ class DiscoverableURIsTest
                         ServerSettings.bolt_routing_discoverable_address, URI.create( "cat://myCat.com" ) ) )
                 .build();
 
-        var discoverables = new DiscoverableURIs.Builder()
+        var discoverables = new DiscoverableURIs.Builder( null )
                 .addBoltEndpoint( config, portRegister )
                 .build();
 
@@ -201,7 +201,7 @@ class DiscoverableURIsTest
                 Map.of( BoltConnector.enabled, true,
                         ServerSettings.bolt_discoverable_address, URI.create( "dog://myDog.com" ) ) )
                 .build();
-        var discoverables = new DiscoverableURIs.Builder()
+        var discoverables = new DiscoverableURIs.Builder( null )
                 .addEndpoint( "a", "/test" )
                 .addEndpoint( "b", "/{name}/data" )
                 .addBoltEndpoint( config, portRegister )

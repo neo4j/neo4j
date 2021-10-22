@@ -23,12 +23,16 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.server.rest.repr.Serializer.joinBaseWithRelativePath;
@@ -51,8 +55,7 @@ public class DiscoverableURIs
     }
 
     /**
-     * Update http/https by adding the scheme, host, port
-     * Update bolt if host is not explicitly set.
+     * Update http/https by adding the scheme, host, port Update bolt if host is not explicitly set.
      */
     public DiscoverableURIs update( URI baseUri )
     {
@@ -90,6 +93,33 @@ public class DiscoverableURIs
         }
     }
 
+    private static class ConditionalURIBasedURITemplate implements URITemplate
+    {
+        private URI uri;
+        private final Predicate<URI> isHostOverridable;
+
+        private ConditionalURIBasedURITemplate( URI uri, Predicate<URI> isHostOverridable )
+        {
+            this.uri = uri;
+            this.isHostOverridable = isHostOverridable;
+        }
+
+        @Override
+        public String uriString()
+        {
+            return uri.toASCIIString();
+        }
+
+        @Override
+        public void update( URI baseUri )
+        {
+            if ( isHostOverridable.test( baseUri ) )
+            {
+                uri = URI.create( String.format( "%s://%s:%s", uri.getScheme(), baseUri.getHost(), uri.getPort() ) );
+            }
+        }
+    }
+
     private static class URIBasedURITemplate implements URITemplate
     {
         private URI uri;
@@ -120,15 +150,17 @@ public class DiscoverableURIs
     public static class Builder
     {
         private final Map<String,URITemplate> entries;
+        private final ClientRoutingDomainChecker clientRoutingDomainChecker;
 
-        public Builder()
+        public Builder( ClientRoutingDomainChecker clientRoutingDomainChecker )
         {
+            this.clientRoutingDomainChecker = clientRoutingDomainChecker;
             entries = new HashMap<>();
         }
 
         /**
-         * http and/or https endpoints are always relative.
-         * The full path will be completed with users' request base uri with {@link DiscoverableURIs#update} method.
+         * http and/or https endpoints are always relative. The full path will be completed with users' request base uri with {@link DiscoverableURIs#update}
+         * method.
          */
         public Builder addEndpoint( String key, String endpoint )
         {
@@ -170,11 +202,26 @@ public class DiscoverableURIs
                 var address = config.get( BoltConnector.advertised_address );
                 var port = address.getPort() == 0 ? portRegister.getLocalAddress( BoltConnector.NAME ).getPort() : address.getPort();
                 var host = address.getHostname();
+                URI uri = URI.create( String.format( "%s://%s:%s", scheme, host, port ) );
 
-                path = new URIBasedURITemplate( URI.create( String.format( "%s://%s:%s", scheme, host, port ) ), !isBoltHostNameExplicitlySet( config ) );
+                if ( config.get( GraphDatabaseSettings.routing_default_router ) == GraphDatabaseSettings.RoutingMode.SERVER )
+                {
+                    path = new ConditionalURIBasedURITemplate(
+                            uri,
+                            baseUri -> !(isBoltHostNameExplicitlySet( config ) && shouldHostGetClientSideRouting( port, baseUri )) );
+                }
+                else
+                {
+                    path = new URIBasedURITemplate( uri, !isBoltHostNameExplicitlySet( config ) );
+                }
             }
 
             entries.put( key, path );
+        }
+
+        private boolean shouldHostGetClientSideRouting( int port, URI uri )
+        {
+            return clientRoutingDomainChecker.shouldGetClientRouting( SocketAddressParser.socketAddress( uri, port, SocketAddress::new ) );
         }
 
         private static boolean isBoltHostNameExplicitlySet( Config config )

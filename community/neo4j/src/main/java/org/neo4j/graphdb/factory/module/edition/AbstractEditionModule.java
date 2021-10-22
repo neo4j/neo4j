@@ -117,15 +117,18 @@ public abstract class AbstractEditionModule
         registerTemporalFunctions( globalProcedures, procedureConfig );
 
         registerEditionSpecificProcedures( globalProcedures, databaseManager );
-        AbstractRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller( globalModule, databaseManager,
-                                                                                                       createClientRoutingDomainChecker( globalModule ) );
+        AbstractRoutingProcedureInstaller routingProcedureInstaller =
+                createRoutingProcedureInstaller( globalModule, databaseManager,
+                                                 globalModule.getGlobalDependencies().resolveDependency( ClientRoutingDomainChecker.class ) );
         routingProcedureInstaller.install( globalProcedures );
     }
 
-    protected ClientRoutingDomainChecker createClientRoutingDomainChecker( GlobalModule globalModule )
+    public ClientRoutingDomainChecker createClientRoutingDomainChecker( GlobalModule globalModule )
     {
         Config config = globalModule.getGlobalConfig();
-        return SimpleClientRoutingDomainChecker.fromConfig( config, globalModule.getLogService().getInternalLogProvider() );
+        var domainChecker = SimpleClientRoutingDomainChecker.fromConfig( config, globalModule.getLogService().getInternalLogProvider() );
+        globalModule.getGlobalDependencies().satisfyDependencies( domainChecker );
+        return domainChecker;
     }
 
     protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager )

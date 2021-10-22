@@ -65,7 +65,7 @@ public class DBMSModuleTest
         when( config.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( true );
         when( config.get( ServerSettings.http_paths_blacklist ) ).thenReturn( emptyList() );
 
-        var module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder().build(),
+        var module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder( null ).build(),
                 NullLogProvider.getInstance(), new CommunityAuthConfigProvider() );
 
         module.start();

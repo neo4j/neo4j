@@ -75,6 +75,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
+import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.procedure.impl.ProcedureLoginContextTransformer;
@@ -278,6 +279,9 @@ public class DatabaseManagementServiceFactory
     @SuppressWarnings( "unused" )
     private static void setupProcedures( GlobalModule globalModule, AbstractEditionModule editionModule, DatabaseManager<?> databaseManager )
     {
+        tryResolveOrCreate( ClientRoutingDomainChecker.class, globalModule.getGlobalDependencies(),
+                            () -> editionModule.createClientRoutingDomainChecker( globalModule ) );
+
         Supplier<GlobalProcedures> procedureInitializer = () ->
         {
             Config globalConfig = globalModule.getGlobalConfig();

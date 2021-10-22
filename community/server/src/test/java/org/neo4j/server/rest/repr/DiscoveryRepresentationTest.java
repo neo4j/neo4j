@@ -43,7 +43,7 @@ class DiscoveryRepresentationTest
         var dataUri = "/data";
         var config = Config.defaults( BoltConnector.enabled, true );
         var dr = new DiscoveryRepresentation(
-                new DiscoverableURIs.Builder()
+                new DiscoverableURIs.Builder( null )
                         .addEndpoint( "management", managementUri )
                         .addEndpoint( "data", dataUri )
                         .addBoltEndpoint( config, mock( ConnectorPortRegister.class ) )
