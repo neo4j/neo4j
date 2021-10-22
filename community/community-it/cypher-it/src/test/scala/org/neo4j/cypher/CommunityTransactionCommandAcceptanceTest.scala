@@ -990,6 +990,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   private def createUser(username: String = username, password: String = password): Unit = {
     selectDatabase(SYSTEM_DATABASE_NAME)
     execute(s"CREATE USER $username SET PASSWORD '$password' CHANGE NOT REQUIRED")
+    selectDatabase(DEFAULT_DATABASE_NAME)
   }
 
   private def executeAs(username: String, password: String, queryText: String): RewindableExecutionResult = {
