@@ -131,5 +131,11 @@ public final class TestDatabaseIdRepository
         {
             return Map.of();
         }
+
+        @Override
+        public Set<NamedDatabaseId> getAllDatabaseIds()
+        {
+            return Set.of();
+        }
     }
 }

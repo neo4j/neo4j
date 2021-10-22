@@ -39,12 +39,14 @@ object Catalog {
     def name: Option[String]
   }
 
+  sealed trait ConcreteGraph extends Graph
+
   case class InternalGraph(
     id: Long,
     uuid: UUID,
     graphName: NormalizedGraphName,
     databaseName: NormalizedDatabaseName
-  ) extends Graph {
+  ) extends ConcreteGraph {
     def name: Option[String] = Some(graphName.name())
     override def toString: String = s"internal graph $id" + name.map(n => s" ($n)").getOrElse("")
   }
@@ -53,8 +55,18 @@ object Catalog {
     id: Long,
     name: Option[String],
     uuid: UUID
-  ) extends Graph {
+  ) extends ConcreteGraph {
     override def toString: String = s"external graph $id" + name.map(n => s" ($n)").getOrElse("")
+  }
+
+  case class GraphAlias(
+    id: Long,
+    uuid: UUID,
+    graphName: NormalizedGraphName,
+    databaseName: NormalizedDatabaseName
+  ) extends Graph {
+    def name: Option[String] = Some(graphName.name())
+    override def toString: String = s"graph alias $id" + name.map(n => s" ($n)").getOrElse("")
   }
 
   trait View extends Entry {
@@ -85,16 +97,19 @@ object Catalog {
 
   case class Arg[T <: AnyValue](name: String, tpe: Class[T])
 
-  def create(internalGraphs: Seq[Graph], externalGraphs: Seq[Graph], fabricNamespace: Option[String]): Catalog = {
+  def create(internalGraphs: Seq[Graph], externalGraphs: Seq[Graph], graphAliases: Seq[Graph], fabricNamespace: Option[String]): Catalog = {
     if (fabricNamespace.isEmpty) {
-      byName(internalGraphs)
+      val internalByName = byName(internalGraphs)
+      val aliasesByName = byName(graphAliases)
+      internalByName ++ aliasesByName
     } else {
       val allGraphs = externalGraphs ++ internalGraphs
       val byId = byIdView(allGraphs, fabricNamespace.get)
       val externalByName = byName(externalGraphs, fabricNamespace.get)
       val internalByName = byName(internalGraphs)
+      val aliasesByName = byName(graphAliases)
 
-      byId ++ externalByName ++ internalByName
+      byId ++ externalByName ++ internalByName ++ aliasesByName
     }
   }
 
@@ -109,7 +124,7 @@ object Catalog {
     Catalog(Map(
       CatalogName(namespace, "graph") -> View1(Arg("gid", classOf[IntegralValue]))(gid =>
         lookupIn
-          .collectFirst { case g: ExternalGraph if g.id == gid.longValue() => g }
+          .collectFirst { case g: ConcreteGraph if g.id == gid.longValue() => g }
           .getOrElse(Errors.entityNotFound("Graph", show(gid)))
       )
     ))

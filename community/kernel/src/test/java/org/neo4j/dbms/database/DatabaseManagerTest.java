@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.UUID;
 
@@ -109,6 +110,12 @@ class DatabaseManagerTest
                 public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
                 {
                     return Map.of();
+                }
+
+                @Override
+                public Set<NamedDatabaseId> getAllDatabaseIds()
+                {
+                    return Set.of();
                 }
             };
         }

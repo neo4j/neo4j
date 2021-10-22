@@ -20,12 +20,14 @@
 package org.neo4j.fabric.eval
 
 import org.neo4j.configuration.helpers.NormalizedGraphName
+import org.neo4j.fabric.eval.Catalog.GraphAlias
 import org.neo4j.fabric.eval.Catalog.InternalGraph
 import org.neo4j.fabric.executor.Location
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.event.TransactionData
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter
 import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners
 
 class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: GlobalTransactionEventListeners) extends CatalogManager {
@@ -76,12 +78,26 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
     }
   }
   
-  protected def createCatalog(): Catalog = Catalog.create(asInternal().toSeq, Seq.empty, None)
+  protected def createCatalog(): Catalog = {
+    val internals = getInternals()
+    val maxId = internals.map(_.id).reduceOption(_ max _).getOrElse(-1L)
+    val aliases = getAliases(maxId+1)
+    Catalog.create(internals.toSeq, Seq.empty, aliases.toSeq, None)
+  }
 
-  protected def asInternal(firstId: Long = 0) = for {
-    ((databaseName, databaseId), idx) <- databaseLookup.databaseReferences.zip(Stream.iterate(firstId)(_ + 1))
+  protected def getInternals(firstId: Long = 0) = for {
+    (databaseId, idx) <- databaseLookup.databaseIds zip indicesFrom(firstId)
+    graphName = new NormalizedGraphName(databaseId.name)
+    databaseName = new NormalizedDatabaseName(databaseId.name)
+  } yield InternalGraph(idx, databaseId.databaseId.uuid, graphName, databaseName)
+
+  protected def getAliases(firstId: Long) = for {
+    ((databaseName, databaseId), idx) <- databaseLookup.databaseReferences zip indicesFrom(firstId)
+    if databaseName.name != databaseId.name // Filter out true names/primary aliases
     graphName = new NormalizedGraphName(databaseName.name)
-  } yield InternalGraph(idx, databaseId.databaseId().uuid(), graphName, databaseName)
+  } yield GraphAlias(idx, databaseId.databaseId.uuid, graphName, databaseName)
+
+  private def indicesFrom(firstId: Long) = Stream.iterate(firstId)(_ + 1)
 
   override def locationOf(sessionDatabase: NamedDatabaseId, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
     case Catalog.InternalGraph(id, uuid, _, databaseName) =>

@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -148,8 +149,18 @@ class MapCachingDatabaseIdRepositoryTest
     {
         var aliasSnapshots = Stream.generate( databaseIdRepository::getAllDatabaseAliases );
         var n = 10;
-        aliasSnapshots.limit( n ).collect( Collectors.toList() );
+        aliasSnapshots.limit( n ).forEach( ignored -> {} );
 
         verify( delegate, times( n ) ).getAllDatabaseAliases();
+    }
+
+    @Test
+    void shouldAlwaysDelegateGetAllIds()
+    {
+        var idSnapshots = Stream.generate( databaseIdRepository::getAllDatabaseIds );
+        var n = 10;
+        idSnapshots.limit( n ).forEach( ignored -> {} );
+
+        verify( delegate, times( n ) ).getAllDatabaseIds();
     }
 }

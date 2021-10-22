@@ -134,8 +134,33 @@ public interface TopologyGraphDbmsModel
     Label DATABASE_ALIAS_LABEL = Label.label( "DatabaseAlias" );
     RelationshipType TARGETS_DATABASE_RELATIONSHIP = RelationshipType.withName( "TARGETS_DATABASE" );
 
+    /**
+     * Fetch the set of all known {@link NamedDatabaseId}s in the DBMS.
+     */
     Set<NamedDatabaseId> getAllDatabaseIds();
+
+    /**
+     * Fetches the {@link NamedDatabaseId} corresponding to the provided alias, if one exists in this DBMS.
+     *
+     * Note: The returned id will have its *true* name (primary alias), rather than the provided databaseName, which may be an (secondary) alias.
+     *
+     * @param databaseName the database alias to resolve a {@link NamedDatabaseId} for.
+     * @return the corresponding {@link NamedDatabaseId}
+     */
     Optional<NamedDatabaseId> getDatabaseIdByAlias( String databaseName );
+
+    /**
+     * Fetches the {@link NamedDatabaseId} corresponding to the provided id, if one exists in this DBMS.
+     *
+     * @param uuid the uuid to resolve a {@link NamedDatabaseId} for.
+     * @return the corresponding {@link NamedDatabaseId}
+     */
     Optional<NamedDatabaseId> getDatabaseIdByUUID( UUID uuid );
+
+    /**
+     * Fetches all known database aliases in the DBMS, along with their associated {@link NamedDatabaseId}s.
+     *
+     * @return the aliases and associated ids
+     */
     Map<String,NamedDatabaseId> getAllDatabaseAliases();
 }

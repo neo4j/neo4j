@@ -24,6 +24,8 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 
 import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.collection.JavaConverters.asScalaSetConverter
+import scala.collection.SortedSet
 import scala.collection.immutable.SortedMap
 
 trait DatabaseLookup {
@@ -35,18 +37,31 @@ trait DatabaseLookup {
     */
   def databaseReferences: SortedMap[NormalizedDatabaseName,NamedDatabaseId]
 
+  /**
+   * Returns all known database Ids for this DBMS.
+   *
+   * Note: returned set is sorted lexicographically by `NamedDatabaseId#name`, to provide stable iteration order.
+   */
+  def databaseIds: SortedSet[NamedDatabaseId]
+
   def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId]
 }
 
 object DatabaseLookup {
 
-  implicit val databaseNameOrdering: Ordering[NormalizedDatabaseName] = Ordering.by(_.name())
+  implicit val databaseNameOrdering: Ordering[NormalizedDatabaseName] = Ordering.by(_.name)
+  implicit val databaseIdOrdering: Ordering[NamedDatabaseId] = Ordering.by(_.name)
 
   class Default(databaseIdRepository: DatabaseIdRepository) extends DatabaseLookup {
 
     def databaseReferences: SortedMap[NormalizedDatabaseName,NamedDatabaseId] = {
       val unsortedMap = databaseIdRepository.getAllDatabaseAliases.asScala
       SortedMap.empty[NormalizedDatabaseName,NamedDatabaseId] ++ unsortedMap
+    }
+
+    def databaseIds: SortedSet[NamedDatabaseId] = {
+      val unsortedSet = databaseIdRepository.getAllDatabaseIds.asScala
+      SortedSet.empty[NamedDatabaseId] ++ unsortedSet
     }
 
     def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] = {

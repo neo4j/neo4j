@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -57,6 +58,12 @@ public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository
         return aliases.entrySet().stream()
                       .map( e -> Map.entry( new NormalizedDatabaseName( e.getKey() ), e.getValue() ) )
                       .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+    }
+
+    @Override
+    public Set<NamedDatabaseId> getAllDatabaseIds()
+    {
+        return execute( TopologyGraphDbmsModel::getAllDatabaseIds );
     }
 
     private <T>  T execute( Function<TopologyGraphDbmsModel,T> operation )
