@@ -99,6 +99,7 @@ public enum Group
     RAFT_LOG_PRUNING( "RaftLogPruning" ),
     RAFT_HANDLER( "RaftBatchHandler" ),
     RAFT_READER_POOL_PRUNER( "RaftReaderPoolPruner" ),
+    RAFT_LOG_PREFETCH( "RaftLogPrefetch" ),
     LEADER_TRANSFER_SERVICE( "LeaderTransferService" ),
     CORE_STATE_APPLIER( "CoreStateApplier" ),
     AKKA_HELPER( "AkkaActorSystemRestarter" ),
