@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -29,6 +30,8 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.WriteQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ParallelTransactionBoundQueryContext.UnsupportedWriteQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.dbms.database.DatabaseContext
+import org.neo4j.dbms.database.DatabaseManager
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
@@ -86,6 +89,8 @@ object ParallelTransactionBoundQueryContext {
     override def dropNamedConstraint(name: String): Unit = unsupported()
     override def detachDeleteNode(id: Long): Int = unsupported()
     override def assertSchemaWritesAllowed(): Unit = unsupported()
+    override def getDatabaseManager: DatabaseManager[DatabaseContext] = unsupported()
+    override def getConfig: Config = unsupported()
   }
 
   private sealed class UnsupportedOperations[T, CURSOR] extends Operations[T, CURSOR] {
