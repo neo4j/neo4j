@@ -117,12 +117,12 @@ import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.impl.util.DefaultValueMapper
-import org.neo4j.logging.LogProvider
-import org.neo4j.logging.internal.LogService
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue
 import org.neo4j.kernel.impl.util.PathWrappingPathValue
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.logging.LogProvider
+import org.neo4j.logging.internal.LogService
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
@@ -138,9 +138,9 @@ import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
+
 import java.net.URL
 import java.util.NoSuchElementException
-
 import scala.collection.Iterator
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -360,6 +360,7 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
 
   override def getConfig: Config =
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[Config])
+
   override def nodeApplyChanges(node: Long,
                                 addedLabels: IntSet,
                                 removedLabels: IntSet,

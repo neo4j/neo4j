@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
@@ -91,6 +93,12 @@ object ParallelTransactionBoundQueryContext {
     override def assertSchemaWritesAllowed(): Unit = unsupported()
     override def getDatabaseManager: DatabaseManager[DatabaseContext] = unsupported()
     override def getConfig: Config = unsupported()
+    override def nodeApplyChanges(node: Long,
+                                  addedLabels: IntSet,
+                                  removedLabels: IntSet,
+                                  properties: IntObjectMap[Value]): Unit = unsupported()
+    override def relationshipApplyChanges(relationship: Long,
+                                          properties: IntObjectMap[Value]): Unit = unsupported()
   }
 
   private sealed class UnsupportedOperations[T, CURSOR] extends Operations[T, CURSOR] {
@@ -108,6 +116,8 @@ object ParallelTransactionBoundQueryContext {
     override def delete(id: Long): Boolean = unsupported()
     override def setProperty(obj: Long, propertyKeyId: Int, value: Value): Unit = unsupported()
     override def removeProperty(obj: Long, propertyKeyId: Int): Boolean = unsupported()
+    override def setProperties(obj: Long,
+                               properties: IntObjectMap[Value]): Unit = unsupported()
   }
   private sealed class UnsupportedNodeOperations extends UnsupportedOperations[VirtualNodeValue, NodeCursor] with NodeOperations
   private sealed class UnsupportedRelationshipOperations extends UnsupportedOperations[VirtualRelationshipValue, RelationshipScanCursor] with RelationshipOperations
