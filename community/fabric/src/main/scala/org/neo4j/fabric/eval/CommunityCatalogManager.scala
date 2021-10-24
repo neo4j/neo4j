@@ -102,6 +102,8 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
   override def locationOf(sessionDatabase: NamedDatabaseId, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
     case Catalog.InternalGraph(id, uuid, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
+    case Catalog.GraphAlias(id, uuid, _, databaseName) =>
+      new Location.Local(id, uuid, databaseName.name())
     case _ => throw new IllegalArgumentException( s"Unexpected graph type $graph" )
   }
 }

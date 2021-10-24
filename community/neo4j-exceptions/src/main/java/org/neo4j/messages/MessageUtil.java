@@ -27,6 +27,7 @@ import java.util.TreeSet;
  */
 public class MessageUtil
 {
+    // autentication
     private static final String CREATE_NODE_WITH_LABELS_DENIED = "Create node with labels '%s' on database '%s' is not allowed for %s.";
     private static final String WITH_USER = "user '%s' with %s";
     private static final String OVERRIDEN_MODE = "%s overridden by %s";

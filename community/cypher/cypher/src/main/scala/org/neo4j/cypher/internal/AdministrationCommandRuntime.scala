@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.string.UTF8
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.ByteArray
@@ -150,7 +151,7 @@ object AdministrationCommandRuntime {
     val uuidKey = internalKey("uuid")
     val homeDatabaseFields = defaultDatabase.map {
       case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
-      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name)
+      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name, s => new NormalizedDatabaseName(s).name())
     }
     val userNameFields = getNameFields("username", userName)
     val credentials = getPasswordExpression(userName.toOption, password, isEncryptedPassword)
@@ -206,7 +207,7 @@ object AdministrationCommandRuntime {
     val userNameFields = getNameFields("username", userName)
     val homeDatabaseFields = defaultDatabase.map {
       case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
-      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name)
+      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name, s => new NormalizedDatabaseName(s).name())
     }
     val maybePw = password.map(p => getPasswordExpression(userName.toOption, p, isEncryptedPassword.getOrElse(false)))
     val params = Seq(

@@ -35,14 +35,18 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 /**
@@ -79,6 +83,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
     @Override
     protected void initializeSystemGraphConstraints( Transaction tx )
     {
+        initializeSystemGraphConstraint( tx, DATABASE_NAME_LABEL, NAME_PROPERTY );
         initializeSystemGraphConstraint( tx, DATABASE_LABEL, DATABASE_NAME_PROPERTY );
     }
 
@@ -206,13 +211,18 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
 
     protected Node createDatabaseNode( Transaction tx, String databaseName, boolean defaultDb, UUID uuid, ZonedDateTime now )
     {
-        var node = tx.createNode( DATABASE_LABEL );
-        node.setProperty( DATABASE_NAME_PROPERTY, databaseName );
-        node.setProperty( DATABASE_UUID_PROPERTY, uuid.toString() );
-        node.setProperty( DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.online.name() );
-        node.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
-        node.setProperty( DATABASE_CREATED_AT_PROPERTY, now );
-        node.setProperty( DATABASE_STARTED_AT_PROPERTY, now );
-        return node;
+        var databaseNode = tx.createNode( DATABASE_LABEL );
+        databaseNode.setProperty( DATABASE_NAME_PROPERTY, databaseName );
+        databaseNode.setProperty( DATABASE_UUID_PROPERTY, uuid.toString() );
+        databaseNode.setProperty( DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.online.name() );
+        databaseNode.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
+        databaseNode.setProperty( DATABASE_CREATED_AT_PROPERTY, now );
+        databaseNode.setProperty( DATABASE_STARTED_AT_PROPERTY, now );
+
+        Node nameNode = tx.createNode( DATABASE_NAME_LABEL );
+        nameNode.setProperty( NAME_PROPERTY, databaseName );
+        nameNode.setProperty( PRIMARY_PROPERTY, true );
+        nameNode.createRelationshipTo( databaseNode, TARGETS_RELATIONSHIP );
+        return databaseNode;
     }
 }

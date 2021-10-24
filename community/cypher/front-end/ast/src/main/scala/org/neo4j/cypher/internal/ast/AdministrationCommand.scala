@@ -515,6 +515,7 @@ object ShowDatabase {
     val showColumns = List(
       // (column, brief)
       (ShowColumn("name")(position), true),
+      (ShowColumn("aliases")(position), true),
       (ShowColumn("access")(position), true),
       (ShowColumn("databaseID")(position), false),
       (ShowColumn("serverID")(position), false),
@@ -641,3 +642,38 @@ case object ReadWriteAccess extends Access
 sealed abstract class DropDatabaseAdditionalAction(val name: String)
 case object DumpData extends DropDatabaseAdditionalAction("DUMP DATA")
 case object DestroyData extends DropDatabaseAdditionalAction("DESTROY DATA")
+
+final case class CreateDatabaseAlias(aliasName: Either[String, Parameter],
+                                     targetName: Either[String, Parameter],
+                                     ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
+  override def name: String = ifExistsDo match {
+    case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE ALIAS"
+    case _ => "CREATE ALIAS"
+  }
+
+  override def semanticCheck: SemanticCheck = ifExistsDo match {
+    case IfExistsInvalidSyntax => error(s"Failed to create the specified alias '${Prettifier.escapeName(aliasName)}': cannot have both `OR REPLACE` and `IF NOT EXISTS`.", position)
+    case _ =>
+      super.semanticCheck chain
+        SemanticState.recordCurrentScope(this)
+  }
+}
+
+final case class AlterDatabaseAlias(aliasName: Either[String, Parameter], targetName: Either[String, Parameter], ifExists: Boolean)
+                                   (val position: InputPosition) extends WriteAdministrationCommand {
+
+  override def name = "ALTER ALIAS"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
+final case class DropDatabaseAlias(aliasName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition) extends WriteAdministrationCommand {
+
+  override def name = "DROP ALIAS"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}

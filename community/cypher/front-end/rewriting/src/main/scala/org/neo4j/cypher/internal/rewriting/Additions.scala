@@ -18,10 +18,12 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
+import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
@@ -38,6 +40,7 @@ import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
+import org.neo4j.cypher.internal.ast.DropDatabaseAlias
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
@@ -289,6 +292,14 @@ object Additions {
       case c: TerminateTransactionsClause =>
         throw cypherExceptionFactory.syntaxException("`TERMINATE TRANSACTIONS` is not supported in this Cypher version.", c.position)
 
+      // CREATE ALIAS [name] FOR DATABASE [name]
+      case c@CreateDatabaseAlias(_, _, _) => throw cypherExceptionFactory.syntaxException("Create alias is not supported in this Cypher version.", c.position)
+
+      // ALTER ALIAS [name] FOR SET DATABASE TARGET [name]
+      case c@AlterDatabaseAlias(_, _, _) => throw cypherExceptionFactory.syntaxException("Alter alias is not supported in this Cypher version.", c.position)
+
+      // DROP ALIAS [name] FOR DATABASE
+      case c@DropDatabaseAlias(_, _) => throw cypherExceptionFactory.syntaxException("Drop alias is not supported in this Cypher version.", c.position)
     }
 
     private def hasRangeOptions(options: Options): Boolean = options match {

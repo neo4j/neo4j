@@ -53,6 +53,14 @@ object NameValidator {
     true
   }
 
+  def assertValidAliasName(name: String): Boolean = {
+    if (name == null || name.isEmpty)
+      throw new InvalidArgumentException("The provided alias is empty.")
+    if (name.length > 65534)
+      throw new InvalidArgumentException("The provided alias is to long, maximum characters are 65534.")
+    true
+  }
+
   def assertUnreservedRoleName(verb: String, name: String, newName: Option[String] = None): Boolean =
     if (reservedRoleName.equals(name)) {
       throw new InvalidArgumentException(s"Failed to $verb the specified role '$name': '$name' is a reserved role.")

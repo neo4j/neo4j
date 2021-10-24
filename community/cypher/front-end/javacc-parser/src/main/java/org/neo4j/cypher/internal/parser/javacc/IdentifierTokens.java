@@ -25,6 +25,7 @@ import java.util.Set;
 
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ACCESS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ACTIVE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALIAS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL_SHORTEST_PATH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALTER;
@@ -169,6 +170,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STARTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STATUS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STOP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SUSPENDED;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TARGET;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TERMINATE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TEXT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.THEN;
@@ -203,6 +205,7 @@ public class IdentifierTokens
             //keywords
             ACCESS,
             ACTIVE,
+            ALIAS,
             ALL_SHORTEST_PATH,
             ALL,
             ALTER,
@@ -346,6 +349,7 @@ public class IdentifierTokens
             STATUS,
             STOP,
             SUSPENDED,
+            TARGET,
             TERMINATE,
             TEXT,
             THEN,

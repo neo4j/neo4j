@@ -636,7 +636,9 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   // Helper methods
 
   private def db(name: String, home: Boolean = false, default: Boolean = false): Map[String, Any] =
-    Map("name" -> name,
+    Map(
+      "name" -> name,
+      "aliases" -> Seq.empty,
       "access" -> accessString,
       "address" -> localHostString,
       "role" -> "standalone",
@@ -647,8 +649,9 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "home" -> home
     )
 
-  private def homeOrdefaultDb(name: String): Map[String, String] =
+  private def homeOrdefaultDb(name: String): Map[String, Any] =
     Map("name" -> name,
+      "aliases" -> Seq.empty,
       "access" -> accessString,
       "address" -> localHostString,
       "role" -> "standalone",

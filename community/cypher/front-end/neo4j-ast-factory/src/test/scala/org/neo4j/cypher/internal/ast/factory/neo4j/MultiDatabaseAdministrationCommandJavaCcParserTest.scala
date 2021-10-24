@@ -253,7 +253,7 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
   }
 
   test("CATALOG CREATE DATABASE") {
-    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 24 (offset: 23))")
+    assertJavaCCException(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column 24 (offset: 23))""")
   }
 
   test("CATALOG CREATE DATABASE _foo-bar42 IF NOT EXISTS") {
@@ -294,7 +294,7 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
   }
 
   test("CREATE OR REPLACE DATABASE") {
-    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))")
+    assertJavaCCException(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))""")
   }
 
   test("CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'}") {
@@ -314,9 +314,29 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
       CreateDatabase(Left("foo"), IfExistsThrowError, OptionsParam(parameter("param", CTMap)), NoWait)(pos))
   }
 
+  test("CREATE DATABASE alias") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE DATABASE alias IF EXISTS") {
+    assertSameAST(testName)
+  }
+
   // DROP DATABASE
 
   test("DROP DATABASE foo") {
+    assertSameAST(testName)
+  }
+
+  test("DROP DATABASE alias") {
+    assertSameAST(testName)
+  }
+
+  test("DROP DATABASE alias WAIT") {
+    assertSameAST(testName)
+  }
+
+  test("DROP DATABASE alias NOWAIT") {
     assertSameAST(testName)
   }
 
@@ -389,7 +409,7 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
   }
 
   test("DROP DATABASE") {
-    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))")
+    assertJavaCCException(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))""")
   }
 
   test("DROP DATABASE  IF EXISTS") {
@@ -502,7 +522,7 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
 
   // ALTER OR REPLACE
   test("ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE") {
-    assertJavaCCException(testName, "Invalid input 'OR': expected \"CURRENT\", \"DATABASE\" or \"USER\" (line 1, column 7 (offset: 6))")
+    assertJavaCCException(testName, "Invalid input 'OR': expected \"ALIAS\", \"CURRENT\", \"DATABASE\" or \"USER\" (line 1, column 7 (offset: 6))")
   }
 
   // START DATABASE

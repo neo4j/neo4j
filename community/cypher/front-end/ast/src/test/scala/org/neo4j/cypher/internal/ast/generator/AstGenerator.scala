@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
+import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -61,6 +62,7 @@ import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateElementAction
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
@@ -101,6 +103,7 @@ import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
+import org.neo4j.cypher.internal.ast.DropDatabaseAlias
 import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropIndexOnName
@@ -1563,7 +1566,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     ImpersonateUserAction,
     AllUserActions, ShowUserAction, CreateUserAction, RenameUserAction, SetUserStatusAction, SetUserHomeDatabaseAction, SetPasswordsAction, AlterUserAction, DropUserAction,
     AllRoleActions, ShowRoleAction, CreateRoleAction, RenameRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
-    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction, AlterDatabaseAction, SetDatabaseAccessAction,
+    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,/* AlterDatabaseAction ,*/ SetDatabaseAccessAction,  //TODO: Add these when all generated identifiers are parsed in JavaCC
     AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
   )
 
@@ -1774,6 +1777,31 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     timeout <- posNum[Long]
     wait <- oneOf(NoWait, IndefiniteWait, TimeoutAfter(timeout))
   } yield wait
+
+  /* TODO: Add these when all generated identifiers are parsed in JavaCC
+  def _aliasCommands: Gen[AdministrationCommand] = oneOf(
+    _createAlias,
+    _dropAlias,
+    _alterAlias
+  )
+
+  def _createAlias: Gen[CreateDatabaseAlias] = for {
+    aliasName <- _nameAsEither
+    targetName <- _nameAsEither
+    ifExistsDo <- _ifExistsDo
+  } yield CreateDatabaseAlias(aliasName, targetName, ifExistsDo)(pos)
+
+  def _dropAlias: Gen[DropDatabaseAlias] = for {
+    aliasName <- _nameAsEither
+    ifExists <- boolean
+  } yield DropDatabaseAlias(aliasName, ifExists)(pos)
+
+  def _alterAlias: Gen[AlterDatabaseAlias] = for {
+    aliasName <- _nameAsEither
+    targetName <- _nameAsEither
+    ifExists <- boolean
+  } yield AlterDatabaseAlias(aliasName, targetName, ifExists)(pos)
+   */
 
   // Top level administration command
 

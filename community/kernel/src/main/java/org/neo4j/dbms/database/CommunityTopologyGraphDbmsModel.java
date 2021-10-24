@@ -92,7 +92,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 
     private Map<String,NamedDatabaseId> getAllDatabaseAliases0()
     {
-        return tx.findNodes( DATABASE_ALIAS_LABEL ).stream()
+        return tx.findNodes( DATABASE_NAME_LABEL ).stream()
                  .flatMap( alias -> getTargetedDatabase( alias )
                          .map( db -> aliasDatabaseIdPair( alias, db ) ).stream() )
                  .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
@@ -100,13 +100,13 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 
     private Map.Entry<String,NamedDatabaseId> aliasDatabaseIdPair( Node alias, NamedDatabaseId targetedDatabase )
     {
-        var aliasName = getPropertyOnNode( DATABASE_ALIAS_LABEL.name(), alias, DATABASE_NAME_PROPERTY );
+        var aliasName = getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY );
         return Map.entry( aliasName, targetedDatabase );
     }
 
     private Optional<NamedDatabaseId> getDatabaseIdByAlias0( String databaseName )
     {
-        var node = Optional.ofNullable( tx.findNode( DATABASE_ALIAS_LABEL, DATABASE_NAME_PROPERTY, databaseName ) );
+        var node = Optional.ofNullable( tx.findNode( DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName ) );
         return node.flatMap( CommunityTopologyGraphDbmsModel::getTargetedDatabase );
     }
 
@@ -138,7 +138,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 
     private static Optional<NamedDatabaseId> getTargetedDatabase( Node aliasNode )
     {
-        var targetDatabases = StreamSupport.stream( aliasNode.getRelationships( Direction.OUTGOING, TARGETS_DATABASE_RELATIONSHIP ).spliterator(), false )
+        var targetDatabases = StreamSupport.stream( aliasNode.getRelationships( Direction.OUTGOING, TARGETS_RELATIONSHIP ).spliterator(), false )
                                            .collect( Collectors.toList() ); // Must be collected to exhaust the underlying iterator
 
         var targetDatabase = targetDatabases.stream().findFirst();

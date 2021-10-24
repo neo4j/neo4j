@@ -49,8 +49,12 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 
 @TestDirectoryExtension
 @TestInstance( PER_CLASS )
@@ -174,6 +178,70 @@ class CommunityTopologyGraphComponentTest
             String systemDbAccess = systemDbNode.getProperty( DATABASE_ACCESS_PROPERTY ).toString();
             assertThat( systemDbAccess ).isEqualTo( READ_WRITE.toString() );
         } );
+    }
+
+    @Test
+    void shouldHavePrimaryAliasOnInitialization() throws Exception
+    {
+        // GIVEN
+        initializeSystem();
+        CommunityTopologyGraphComponent component = new CommunityTopologyGraphComponent( Config.defaults(), NullLogProvider.getInstance() );
+
+        // WHEN
+        component.initializeSystemGraph( system, true );
+
+        // THEN
+        inTx( tx ->
+              {
+                  // Default db
+                  shouldHavePrimaryAlias(DEFAULT_DATABASE_NAME, tx);
+
+                  // System db
+                  shouldHavePrimaryAlias(SYSTEM_DATABASE_NAME, tx);
+              } );
+    }
+
+    @Test
+    void shouldHavePrimaryAliasOnUpgrade() throws Exception
+    {
+        // GIVEN
+        initializeSystem();
+
+        // Simulate that we are upgrading from an earlier version with more databases
+        inTx( tx ->
+              {
+                  Node dbNode = tx.createNode( DATABASE_LABEL );
+                  dbNode.setProperty( DATABASE_NAME_PROPERTY, "custom" );
+              } );
+
+        CommunityTopologyGraphComponent component = new CommunityTopologyGraphComponent( Config.defaults(), NullLogProvider.getInstance() );
+
+        // WHEN
+        component.initializeSystemGraph( system, true );
+
+        // THEN
+        inTx( tx ->
+              {
+                  // Custom db
+                  shouldHavePrimaryAlias( "custom", tx );
+
+                  // Default db
+                  shouldHavePrimaryAlias( DEFAULT_DATABASE_NAME, tx );
+
+                  // System db
+                  shouldHavePrimaryAlias( SYSTEM_DATABASE_NAME, tx );
+              } );
+    }
+
+    private static void shouldHavePrimaryAlias( String dbName, Transaction tx )
+    {
+        Node dbAlias =
+                tx.findNode( DATABASE_NAME_LABEL, DATABASE_NAME_PROPERTY, dbName );
+        assertThat( dbAlias.getProperty( PRIMARY_PROPERTY ) ).isEqualTo( true );
+        dbAlias.getRelationships( TARGETS_RELATIONSHIP )
+               .forEach( target ->
+                                 assertThat( target.getEndNode().hasLabel( DATABASE_LABEL ) ).isTrue()
+               );
     }
 
     private static void initializeSystem() throws Exception

@@ -91,7 +91,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private DatabaseManagementService managementService;
     // number of new indexes dbms will create on its own for internal purposes, like system database
     // and two token indexes for system database.
-    private static final int NUMBER_OF_SYSTEM_INDEXES = 2 + 2;
+    private static final int NUMBER_OF_SYSTEM_INDEXES = 2 + 3;
 
     private enum Provider
     {

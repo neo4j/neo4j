@@ -36,20 +36,28 @@ import org.neo4j.values.virtual.VirtualValues
 
 case class EnsureNodeExistsExecutionPlanner(normalExecutionEngine: ExecutionEngine, securityAuthorizationHandler: SecurityAuthorizationHandler) {
 
-  def planEnsureNodeExists(label: String, name: Either[String, Parameter], valueMapper: String => String, sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
+  def planEnsureNodeExists(label: String,
+                           name: Either[String, Parameter],
+                           valueMapper: String => String,
+                           extraFilter: String => String,
+                           labelDescription: String,
+                           action:String,
+                           sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
     val nameFields = getNameFields("name", name, valueMapper = valueMapper)
     UpdatingSystemCommandExecutionPlan("EnsureNodeExists",
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""MATCH (node:$label {name: $$`${nameFields.nameKey}`})
+         |${extraFilter("node")}
          |RETURN node""".stripMargin,
       VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
       QueryHandler
-        .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $label does not exist.")))
+        .handleNoResult(p => Some(new InvalidArgumentException(
+          s"Failed to $action the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $labelDescription does not exist.")))
         .handleError {
           case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-            new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
-          case (error, p) => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
+            new DatabaseAdministrationOnFollowerException(s"Failed to $action the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
+          case (error, p) => new IllegalStateException(s"Failed to $action the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
         },
       sourcePlan,
       parameterConverter = nameFields.nameConverter

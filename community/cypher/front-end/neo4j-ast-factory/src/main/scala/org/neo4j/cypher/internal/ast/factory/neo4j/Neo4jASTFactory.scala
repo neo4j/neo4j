@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
+import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -59,6 +60,7 @@ import org.neo4j.cypher.internal.ast.ConstraintVersion0
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
@@ -99,6 +101,7 @@ import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DestroyData
+import org.neo4j.cypher.internal.ast.DropDatabaseAlias
 import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
@@ -1651,6 +1654,27 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     } else {
       IndefiniteWait
     }
+  }
+
+  // Database commands
+
+  override def createDatabaseAlias(p: InputPosition,
+                           replace: Boolean,
+                           aliasName: SimpleEither[String, Parameter],
+                           targetName: SimpleEither[String, Parameter],
+                           ifNotExists: Boolean): CreateDatabaseAlias = {
+    CreateDatabaseAlias(aliasName.asScala, targetName.asScala, ifExistsDo(replace, ifNotExists))(p)
+  }
+
+  override def alterDatabaseAlias(p: InputPosition,
+                                  aliasName: SimpleEither[String, Parameter],
+                                  targetName: SimpleEither[String, Parameter],
+                                  ifExists: Boolean): AlterDatabaseAlias = {
+    AlterDatabaseAlias(aliasName.asScala, targetName.asScala, ifExists)(p)
+  }
+
+  override def dropAlias(p: InputPosition, aliasName: SimpleEither[String, Parameter], ifExists: Boolean): DropDatabaseAlias = {
+    DropDatabaseAlias(aliasName.asScala, ifExists)(p)
   }
 
   private def ifExistsDo(replace: Boolean, ifNotExists: Boolean): IfExistsDo = {

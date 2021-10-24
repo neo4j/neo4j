@@ -797,6 +797,26 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL createDatabaseAlias( NULL p, boolean replace, SimpleEither<String,Object> aliasName, SimpleEither<String,Object> targetName,
+                                     boolean ifNotExists )
+    {
+        throw new UnsupportedOperationException( "createDatabaseAlias is not a literal" );
+    }
+
+    @Override
+    public NULL alterDatabaseAlias( NULL p, SimpleEither<String,Object> aliasName, SimpleEither<String,Object> targetName, boolean ifExists )
+    {
+        throw new UnsupportedOperationException( "alterDatabaseAlias is not a literal" );
+    }
+
+    @Override
+    public NULL dropAlias( NULL p, SimpleEither<String,Object> aliasName, boolean ifExists )
+    {
+
+        throw new UnsupportedOperationException( "dropAlias is not a literal" );
+    }
+
+    @Override
     public Object newVariable( NULL p, String name )
     {
         throw new UnsupportedOperationException( "newVariable is not a literal" );

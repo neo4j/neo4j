@@ -68,6 +68,13 @@ class JavaCCPrettifierIT extends CypherFunSuite {
 
     "alteR databaSe foo if EXISTS SEt access read WRITE" ->
       "ALTER DATABASE foo IF EXISTS SET ACCESS READ WRITE".stripMargin,
+
+    "create alias alias FOR database database" -> "CREATE ALIAS alias FOR DATABASE database",
+    "create alias alias if not exists for database database" -> "CREATE ALIAS alias IF NOT EXISTS FOR DATABASE database",
+    "alter alias alias if exists set database target database" -> "ALTER ALIAS alias IF EXISTS SET DATABASE TARGET database",
+    "alter alias alias set database target database" -> "ALTER ALIAS alias SET DATABASE TARGET database",
+    "drop alias alias for database" -> "DROP ALIAS alias FOR DATABASE",
+    "drop alias alias if exists for database" -> "DROP ALIAS alias IF EXISTS FOR DATABASE"
   ) ++
   (
     Seq(

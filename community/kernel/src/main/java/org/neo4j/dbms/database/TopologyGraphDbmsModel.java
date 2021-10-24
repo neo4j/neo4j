@@ -90,6 +90,7 @@ public interface TopologyGraphDbmsModel
     }
 
     Label DATABASE_LABEL = Label.label( "Database" );
+    String DATABASE = DATABASE_LABEL.name();
     Label DELETED_DATABASE_LABEL = Label.label( "DeletedDatabase" );
     String DATABASE_UUID_PROPERTY = "uuid";
     String DATABASE_NAME_PROPERTY = "name";
@@ -112,6 +113,14 @@ public interface TopologyGraphDbmsModel
     String DELETED_DATABASE_DUMP_DATA_PROPERTY = "dump_data";
     String DELETED_DATABASE_DELETED_AT_PROPERTY = "deleted_at";
 
+    Label DATABASE_NAME_LABEL = Label.label( "DatabaseName" );
+    String DATABASE_NAME = DATABASE_NAME_LABEL.name();
+    String DATABASE_NAME_LABEL_DESCRIPTION = "Database alias";
+    String NAME_PROPERTY = "name";
+    RelationshipType TARGETS_RELATIONSHIP = RelationshipType.withName( "TARGETS" );
+    String TARGETS = TARGETS_RELATIONSHIP.name();
+    String PRIMARY_PROPERTY = "primary";
+
     Label INSTANCE_LABEL = Label.label( "Instance" );
     Label REMOVED_INSTANCE_LABEL = Label.label( "RemovedInstance" );
     String INSTANCE_UUID_PROPERTY = "uuid";
@@ -131,12 +140,6 @@ public interface TopologyGraphDbmsModel
     Label TOPOLOGY_GRAPH_SETTINGS_LABEL = Label.label( "TopologyGraphSettings" );
     String TOPOLOGY_GRAPH_SETTINGS_ALLOCATOR_PROPERTY = "allocator";
 
-    Label DATABASE_ALIAS_LABEL = Label.label( "DatabaseAlias" );
-    RelationshipType TARGETS_DATABASE_RELATIONSHIP = RelationshipType.withName( "TARGETS_DATABASE" );
-
-    /**
-     * Fetch the set of all known {@link NamedDatabaseId}s in the DBMS.
-     */
     Set<NamedDatabaseId> getAllDatabaseIds();
 
     /**

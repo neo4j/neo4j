@@ -417,4 +417,17 @@ public interface ASTFactory<STATEMENT,
     DATABASE_SCOPE databaseScope( POS p, SimpleEither<String,PARAMETER> databaseName, boolean isDefault, boolean isHome );
 
     WAIT_CLAUSE wait( boolean wait, long seconds );
+
+    // Alias Administration Commands
+    ADMINISTRATION_COMMAND createDatabaseAlias( POS p,
+                                        boolean replace,
+                                        SimpleEither<String,PARAMETER> aliasName,
+                                        SimpleEither<String,PARAMETER> targetName,
+                                        boolean ifNotExists );
+
+    ADMINISTRATION_COMMAND alterDatabaseAlias( POS p, SimpleEither<String,PARAMETER> aliasName, SimpleEither<String,PARAMETER> targetName,
+                                               boolean ifExists );
+
+    ADMINISTRATION_COMMAND dropAlias( POS p, SimpleEither<String,PARAMETER> aliasName, boolean ifExists );
+
 }

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AllQualifier
 import org.neo4j.cypher.internal.ast.AllRelationships
 import org.neo4j.cypher.internal.ast.AlterDatabase
+import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateDatabase
+import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
@@ -67,6 +69,7 @@ import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
+import org.neo4j.cypher.internal.ast.DropDatabaseAlias
 import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
@@ -559,6 +562,20 @@ case class Prettifier(
 
       case x @ StopDatabase(dbName, waitUntilComplete) =>
         s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"
+
+      case x @ CreateDatabaseAlias(aliasName, targetName, ifExistsDo) =>
+        ifExistsDo match {
+          case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(aliasName)} IF NOT EXISTS FOR DATABASE ${Prettifier.escapeName(targetName)}"
+          case _                                         => s"${x.name} ${Prettifier.escapeName(aliasName)} FOR DATABASE ${Prettifier.escapeName(targetName)}"
+        }
+
+      case x @ DropDatabaseAlias(aliasName, ifExists) =>
+        if (ifExists) s"${x.name} ${Prettifier.escapeName(aliasName)} IF EXISTS FOR DATABASE"
+        else s"${x.name} ${Prettifier.escapeName(aliasName)} FOR DATABASE"
+
+      case x @ AlterDatabaseAlias(aliasName, targetName, ifExists) =>
+        if (ifExists) s"${x.name} ${Prettifier.escapeName(aliasName)} IF EXISTS SET DATABASE TARGET ${Prettifier.escapeName(targetName)}"
+        else s"${x.name} ${Prettifier.escapeName(aliasName)} SET DATABASE TARGET ${Prettifier.escapeName(targetName)}"
     }
     useString + commandString
   }

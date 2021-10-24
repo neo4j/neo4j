@@ -306,6 +306,7 @@ TOKEN [IGNORE_CASE] :
 {
     < ACCESS: "ACCESS" >
     | < ACTIVE: "ACTIVE" >
+    | < ALIAS: "ALIAS" >
     | < ALL_SHORTEST_PATH: "allShortestPaths" >
     | < ALL: "ALL" >
     | < ALTER: "ALTER" >
@@ -471,6 +472,7 @@ TOKEN [IGNORE_CASE] :
     | < STATUS: "STATUS" >
     | < STOP: "STOP">
     | < SUSPENDED: "SUSPENDED">
+    | < TARGET: "TARGET" >
     | < TERMINATE: "TERMINATE">
     | < TEXT: "TEXT">
     | < THEN: "THEN" >
@@ -2835,6 +2837,7 @@ STATEMENT_WITH_GRAPH CreateCommand( USE_CLAUSE useClause ) throws Exception:
         | statement=CreateDatabase( start, replace )
         | statement=CreateConstraint( start, replace )
         | statement=CreateIndex( start, replace )
+        | statement=CreateAlias( start, replace )
     )
     {
         return astFactory.useGraph( statement, useClause );
@@ -2890,6 +2893,7 @@ STATEMENT_WITH_GRAPH DropCommand() throws Exception:
         | s=DropDatabase( start )
         | s=DropConstraint( start )
         | s=DropIndex( start )
+        | s=DropAlias( start )
     )
     {
         return s;
@@ -2898,13 +2902,14 @@ STATEMENT_WITH_GRAPH DropCommand() throws Exception:
 
 STATEMENT_WITH_GRAPH AlterCommand() throws Exception:
 {
-    Token start;
+    Token start = null;
     STATEMENT_WITH_GRAPH s;
 }
 {
     start=<ALTER>
     (
         s=AlterDatabase( start )
+        | s=AlterAlias( start )
         | s=AlterCurrentUser( start )
         | s=AlterUser( start )
     )
@@ -4596,8 +4601,7 @@ ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ):
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
-    <DATABASE>
-    databaseName=SymbolicDatabaseNameStringOrParameter()
+    <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
     ( options=Options() )?
     ( wait = WaitClause() )?
@@ -4625,8 +4629,7 @@ ADMINISTRATION_COMMAND DropDatabase( Token start ):
     boolean dumpData = false;
 }
 {
-    <DATABASE>
-    databaseName=SymbolicDatabaseNameStringOrParameter()
+    <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter()
     ( <IF> <EXISTS> { ifExists = true; } )?
     ( ( <DUMP> { dumpData = true; } | <DESTROY> ) <DATA> )?
     ( wait = WaitClause() )?
@@ -4767,6 +4770,53 @@ List<GRAPH_SCOPE> graphScopeList():
     }
 }
 
+ADMINISTRATION_COMMAND CreateAlias( Token start, boolean replace ):
+{
+    SimpleEither<String, PARAMETER> aliasName = null;
+    SimpleEither<String, PARAMETER> targetName = null;
+    boolean ifNotExists = false;
+}
+{
+    <ALIAS>
+    aliasName=SymbolicDatabaseNameStringOrParameter()
+    ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
+    <FOR> <DATABASE> targetName=SymbolicDatabaseNameStringOrParameter()
+    {
+       return astFactory.createDatabaseAlias( pos( start ), replace, aliasName, targetName, ifNotExists );
+    }
+}
+
+ADMINISTRATION_COMMAND DropAlias( Token start ):
+{
+    SimpleEither<String, PARAMETER> aliasName = null;
+    boolean ifExists = false;
+}
+{
+    <ALIAS> aliasName=SymbolicDatabaseNameStringOrParameter()
+    (<IF> <EXISTS> { ifExists = true; })?
+    <FOR> <DATABASE>
+    {
+        return astFactory.dropAlias( pos( start ), aliasName, ifExists );
+    }
+}
+
+
+ADMINISTRATION_COMMAND AlterAlias( Token start ):
+{
+    SimpleEither<String, PARAMETER> aliasName = null;
+    SimpleEither<String, PARAMETER> targetName = null;
+        boolean ifExists = false;
+}
+{
+    <ALIAS> aliasName=SymbolicDatabaseNameStringOrParameter()
+    (<IF> <EXISTS> { ifExists = true; })?
+    <SET> <DATABASE> <TARGET> targetName=SymbolicDatabaseNameStringOrParameter()
+    {
+        return astFactory.alterDatabaseAlias( pos( start ), aliasName, targetName, ifExists );
+    }
+}
+
+
 List<SimpleEither<String, PARAMETER>> SymbolicDatabaseNameStringOrParameterList():
 {
     SimpleEither<String, PARAMETER> dbSymbol = null;
@@ -4892,6 +4942,7 @@ Token SymbolicNameString() :
         //list of allowed keywords
         | t=<ACCESS>
         | t=<ACTIVE>
+        | t=<ALIAS>
         | t=<ALL_SHORTEST_PATH>
         | t=<ALL>
         | t=<ALTER>
@@ -5033,6 +5084,7 @@ Token SymbolicNameString() :
         | t=<STATUS>
         | t=<STOP>
         | t=<SUSPENDED>
+        | t=<TARGET>
         | t=<TERMINATE>
         | t=<TEXT>
         | t=<THEN>

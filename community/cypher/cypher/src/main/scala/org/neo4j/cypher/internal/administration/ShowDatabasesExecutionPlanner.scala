@@ -24,7 +24,6 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.IdentityConverter
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getNameFields
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
-import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
 import org.neo4j.cypher.internal.AdministrationShowCommandUtils
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -44,6 +43,10 @@ import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
@@ -61,14 +64,12 @@ import org.neo4j.storageengine.api.StoreIdProvider
 import org.neo4j.storageengine.util.StoreIdDecodeUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Optional
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.JavaConverters.setAsJavaSetConverter
 import scala.util.Try
@@ -84,6 +85,7 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
   def planShowDatabases(scope: DatabaseScope, verbose: Boolean, symbols: List[String], yields: Option[Yield], returns: Option[Return]): ExecutionPlan = {
       val usernameKey = internalKey("username")
       val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, yields, verbose)
+
       val (extraFilter, params, paramConverter) = scope match {
         // show default database
         case _: DefaultDatabaseScope => (s"WHERE default = true", VirtualValues.EMPTY_MAP, IdentityConverter)
@@ -92,41 +94,55 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
         // show database name
         case NamedDatabaseScope(p) =>
           val nameFields = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
-          val combinedConverter: (Transaction, MapValue) => MapValue = (tx, m) => {
-            val normalizedName = new NormalizedDatabaseName(runtimeStringValue(p, m)).name()
-            val filteredDatabases = VirtualValues.fromList(m.get(accessibleDbsKey).asInstanceOf[ListValue].asScala
-              .filter { case db: MapValue => Values.stringValue(normalizedName).equals(db.get("name")) }.toList.asJava
-            )
-            nameFields.nameConverter(tx, m.updatedWith(accessibleDbsKey, filteredDatabases))
-          }
-          (s"WHERE name = $$`${nameFields.nameKey}`", VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)), combinedConverter)
+          (
+            s"WHERE $$`${nameFields.nameKey}` IN aliases",
+            VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
+            nameFields.nameConverter
+          )
         // show all databases
         case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter)
       }
 
       val verboseColumns = if (verbose) ", props.databaseID as databaseID, props.serverID as serverID, props.lastCommittedTxn as lastCommittedTxn, props.replicationLag as replicationLag" else ""
+      val verboseNames = if (verbose) ", databaseID, serverID, lastCommittedTxn, replicationLag" else ""
       val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
 
-      val query = s"""// First resolve which database is the home database
-                     |OPTIONAL MATCH (default:$DATABASE_LABEL {$DATABASE_DEFAULT_PROPERTY: true})
-                     |OPTIONAL MATCH (user:User {$DATABASE_NAME_PROPERTY: $$`$usernameKey`})
-                     |WITH coalesce(user.homeDatabase, default.$DATABASE_NAME_PROPERTY) as homeDbName
-                     |
-                     |UNWIND $$`$accessibleDbsKey` AS props
-                     |MATCH (d:$DATABASE_LABEL)
-                     |WHERE d.$DATABASE_NAME_PROPERTY = props.name
-                     |WITH d.$DATABASE_NAME_PROPERTY as name,
-                     |props.access as access,
-                     |props.address as address,
-                     |props.role as role,
-                     |d.$DATABASE_STATUS_PROPERTY as requestedStatus,
-                     |props.status as currentStatus,
-                     |props.error as error,
-                     |d.$DATABASE_DEFAULT_PROPERTY as default,
-                     |coalesce(d.$DATABASE_NAME_PROPERTY = homeDbName, false) as home
-                     |$verboseColumns
-                     |$extraFilter
-                     |$returnClause""".stripMargin
+      val query = Predef.augmentString(
+        s"""// First resolve which database is the home database
+           |OPTIONAL MATCH (default:$DATABASE_LABEL {$DATABASE_DEFAULT_PROPERTY: true})
+           |OPTIONAL MATCH (user:User {$DATABASE_NAME_PROPERTY: $$`$usernameKey`})
+           |WITH coalesce(user.homeDatabase, default.$DATABASE_NAME_PROPERTY) as homeDbName
+           |
+           |UNWIND $$`$accessibleDbsKey` AS props
+           |MATCH (d:$DATABASE)<-[:$TARGETS]-(:$DATABASE_NAME {$NAME_PROPERTY: props.name})
+           |WITH d, props, homeDbName
+           |MATCH (d)<-[:$TARGETS]-(a:$DATABASE_NAME)
+           |WITH d, props, homeDbName, a.name as aliasName ORDER BY aliasName
+           |WITH d.name as name,
+           |collect(aliasName) as aliases,
+           |props.access as access,
+           |props.address as address,
+           |props.role as role,
+           |d.$DATABASE_STATUS_PROPERTY as requestedStatus,
+           |props.status as currentStatus,
+           |props.error as error,
+           |d.$DATABASE_DEFAULT_PROPERTY as default,
+           |coalesce( homeDbName in collect(aliasName), false) as home
+           |$verboseColumns
+           |$extraFilter
+           |
+           |WITH name,
+           |[alias in aliases where name <> alias] as aliases,
+           |access,
+           |address,
+           |role,
+           |requestedStatus,
+           |currentStatus,
+           |error,
+           |default,
+           |home
+           |$verboseNames
+           |$returnClause""").stripMargin
       SystemCommandExecutionPlan(scope.showCommandName,
         normalExecutionEngine,
         securityAuthorizationHandler,

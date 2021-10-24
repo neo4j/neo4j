@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
+import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
@@ -30,6 +32,7 @@ import org.neo4j.cypher.internal.ast.ClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CommandClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUser
@@ -41,6 +44,7 @@ import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
+import org.neo4j.cypher.internal.ast.DropDatabaseAlias
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUser
@@ -107,6 +111,11 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL_DESCRIPTION
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY
 import org.neo4j.kernel.database.NormalizedDatabaseName
 
 /**
@@ -140,7 +149,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
     def getSourceForCreateRole(roleName: Either[String, Parameter], ifExistsDo: IfExistsDo): plans.SecurityAdministrationLogicalPlan = ifExistsDo match {
       case IfExistsReplace => plans.DropRole(plans.AssertAllowedDbmsActions(None, Seq(DropRoleAction, CreateRoleAction)), roleName)
-      case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(CreateRoleAction), "Role", roleName)
+      case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(CreateRoleAction), "Role", "Role", roleName)
       case _ => plans.AssertAllowedDbmsActions(CreateRoleAction)
     }
 
@@ -161,7 +170,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@CreateUser(userName, isEncryptedPassword, initialPassword, userOptions, ifExistsDo) =>
         val source = ifExistsDo match {
           case IfExistsReplace => plans.DropUser(plans.AssertNotCurrentUser(plans.AssertAllowedDbmsActions(None, Seq(DropUserAction, CreateUserAction)), userName, "replace", "Deleting yourself is not allowed"), userName)
-          case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(CreateUserAction), "User", userName)
+          case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(CreateUserAction), "User", "User", userName)
           case _ => plans.AssertAllowedDbmsActions(CreateUserAction)
         }
         Some(plans.LogSystemCommand(
@@ -171,13 +180,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // RENAME USER foo [IF EXISTS] TO bar
       case c@RenameUser(fromUserName, toUserName, ifExists) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(RenameUserAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "User", fromUserName, "rename") else assertAllowed
+        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "User", "User", fromUserName, "rename") else assertAllowed
         Some(plans.LogSystemCommand(plans.RenameUser(source, fromUserName, toUserName), prettifier.asString(c)))
 
       // DROP USER foo [IF EXISTS]
       case c@DropUser(userName, ifExists) =>
         val assertAllowed = plans.AssertNotCurrentUser(plans.AssertAllowedDbmsActions(DropUserAction), userName, "delete", "Deleting yourself is not allowed")
-        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "User", userName, "delete") else plans.EnsureNodeExists(assertAllowed, "User", userName)
+        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "User", "User", userName, "delete")
+        else plans.EnsureNodeExists(assertAllowed, "User", userName, labelDescription = "User", action = "delete")
         Some(plans.LogSystemCommand(plans.DropUser(source, userName), prettifier.asString(c)))
 
       // ALTER USER foo
@@ -193,7 +203,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val assertionSubPlan =
           if(userOptions.suspended.isDefined) plans.AssertNotCurrentUser(assertAllowed, userName, "alter", "Changing your own activation status is not allowed")
           else assertAllowed
-        val ifExistsSubPlan = if (ifExists) plans.DoNothingIfNotExists(assertionSubPlan, "User", userName, "alter") else assertionSubPlan
+        val ifExistsSubPlan = if (ifExists) plans.DoNothingIfNotExists(assertionSubPlan, "User", "User", userName, "alter") else assertionSubPlan
         Some(plans.LogSystemCommand(
           plans.AlterUser(ifExistsSubPlan, userName, isEncryptedPassword, initialPassword, userOptions.requirePasswordChange, userOptions.suspended, userOptions.homeDatabase),
           prettifier.asString(c)))
@@ -231,13 +241,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // RENAME ROLE foo [IF EXISTS] TO bar
       case c@RenameRole(fromRoleName, toRoleName, ifExists) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(RenameRoleAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Role", fromRoleName, "rename") else assertAllowed
+        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Role", "Role", fromRoleName, "rename") else assertAllowed
         Some(plans.LogSystemCommand(plans.RenameRole(source, fromRoleName, toRoleName), prettifier.asString(c)))
 
       // DROP ROLE foo [IF EXISTS]
       case c@DropRole(roleName, ifExists) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(DropRoleAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Role", roleName, "delete") else plans.EnsureNodeExists(assertAllowed, "Role", roleName)
+        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Role", "Role", roleName, "delete")
+        else plans.EnsureNodeExists(assertAllowed, "Role", roleName, labelDescription = "Role", action = "delete")
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users
@@ -390,31 +401,41 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case c@CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
-        val source = ifExistsDo match {
+        (ifExistsDo match {
           case IfExistsReplace =>
-            plans.DropDatabase(plans.AssertAllowedDbmsActions(Some(plans.AssertNotBlocked(CreateDatabaseAction)), Seq(DropDatabaseAction, CreateDatabaseAction)),
-              dbName, DestroyData)
-
+            Some(plans.AssertNotBlocked(CreateDatabaseAction))
+              .map(p => plans.AssertAllowedDbmsActions(Some(p), Seq(DropDatabaseAction, CreateDatabaseAction)))
+              .map(plans.EnsureDatabaseHasNoAliases(_, dbName))
+              .map(plans.DropDatabase(_, dbName, DestroyData, Some(ifExistsDo)))
           case IfExistsDoNothing =>
-            plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(CreateDatabaseAction), CreateDatabaseAction),
-              "Database", dbName, s => new NormalizedDatabaseName(s).name())
-
-          case _ => plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(CreateDatabaseAction), CreateDatabaseAction)
-        }
-        val plan = wrapInWait(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName, options)), dbName, waitUntilComplete)
-        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+            Some(plans.AssertNotBlocked(CreateDatabaseAction))
+              .map(plans.AssertAllowedDbmsActions(_, CreateDatabaseAction))
+              .map(plans.DoNothingIfExists(_, DATABASE_NAME, DATABASE, dbName, s => new NormalizedDatabaseName(s).name()))
+          case _ =>
+            Some(plans.AssertNotBlocked(CreateDatabaseAction))
+              .map(plans.AssertAllowedDbmsActions(_, CreateDatabaseAction))
+        }).map(plans.CreateDatabase(_, dbName, options))
+          .map(plans.EnsureValidNumberOfDatabases(_))
+          .map(wrapInWait(_, dbName, waitUntilComplete))
+          .map(plans.LogSystemCommand(_, prettifier.asString(c)))
 
       // DROP DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
       case c@DropDatabase(dbName, ifExists, additionalAction, waitUntilComplete) =>
-        val assertAllowed = plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(DropDatabaseAction),DropDatabaseAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Database", dbName, "delete", s => new NormalizedDatabaseName(s).name()) else assertAllowed
-        val plan = wrapInWait(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction), dbName, waitUntilComplete)
-        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+        Some(plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(DropDatabaseAction),DropDatabaseAction))
+          .map(assertAllowed =>
+            if (ifExists)
+              plans.DoNothingIfNotExists(assertAllowed, DATABASE_NAME, DATABASE, dbName, "delete", s => new NormalizedDatabaseName(s).name())
+            else assertAllowed)
+          .map(plans.EnsureDatabaseHasNoAliases(_, dbName))
+          .map(plans.EnsureValidNonSystemDatabase(_, dbName, "delete"))
+          .map(plans.DropDatabase(_, dbName, additionalAction))
+          .map(wrapInWait(_, dbName, waitUntilComplete))
+          .map(plans.LogSystemCommand(_, prettifier.asString(c)))
 
       // ALTER DATABASE foo [IF EXISTS] SET ACCESS {READ ONLY | READ WRITE}
       case c@AlterDatabase(dbName, ifExists, access) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(AlterDatabaseAction),SetDatabaseAccessAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Database", dbName, "alter", s => new NormalizedDatabaseName(s).name()) else assertAllowed
+        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, DATABASE_NAME, DATABASE, dbName, "alter", s => new NormalizedDatabaseName(s).name()) else assertAllowed
         val plan = plans.AlterDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "alter"), dbName, access)
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -429,6 +450,37 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val assertAllowed = plans.AssertAllowedDatabaseAction(StopDatabaseAction, dbName, Some(plans.AssertNotBlocked(StopDatabaseAction)))
         val plan = wrapInWait(plans.StopDatabase(plans.EnsureValidNonSystemDatabase(assertAllowed, dbName, "stop"), dbName), dbName, waitUntilComplete)
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // CREATE DATABASE ALIAS
+      case c@CreateDatabaseAlias(aliasName, targetName, ifExistsDo) =>
+        val assertNotBlocked = Some(plans.AssertNotBlocked(CreateDatabaseAction))
+        val source = ifExistsDo match {
+          case IfExistsReplace => plans.DropDatabaseAlias(plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(AllDatabaseManagementActions, DropDatabaseAction)), aliasName)
+          case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(AllDatabaseManagementActions, CreateDatabaseAction)),
+            DATABASE_NAME, DATABASE_NAME_LABEL_DESCRIPTION, aliasName)
+          case _ => plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(AllDatabaseManagementActions, CreateDatabaseAction))
+        }
+        Some(plans.LogSystemCommand(plans.CreateDatabaseAlias(plans.EnsureValidNonSystemDatabase(source, targetName, "create", Some(aliasName)), aliasName, targetName), prettifier.asString(c)))
+
+      // DROP DATABASE ALIAS foo [IF EXISTS]
+      case c@DropDatabaseAlias(aliasName, ifExists) =>
+        val assertAllowed = plans.AssertAllowedDbmsActions(None, Seq(AllDatabaseManagementActions, DropDatabaseAction))
+        val source =
+          if (ifExists) plans.DoNothingIfNotExists(assertAllowed, DATABASE_NAME, DATABASE_NAME_LABEL_DESCRIPTION, aliasName, "delete")
+          else plans.EnsureNodeExists(assertAllowed, DATABASE_NAME, aliasName,
+            new NormalizedDatabaseName(_).name(), node => s"WHERE $node.$PRIMARY_PROPERTY = false", DATABASE_NAME_LABEL_DESCRIPTION, "delete")
+
+        Some(plans.LogSystemCommand(plans.DropDatabaseAlias(source, aliasName), prettifier.asString(c)))
+
+      // ALTER DATABASE ALIAS foo
+      case c@AlterDatabaseAlias(aliasName, targetName, ifExists) =>
+        val assertAllowed = plans.AssertAllowedDbmsActions(None, Seq(AllDatabaseManagementActions, AlterDatabaseAction))
+        val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, DATABASE_NAME, DATABASE_NAME_LABEL_DESCRIPTION, aliasName, "alter")
+        else plans.EnsureNodeExists(assertAllowed, DATABASE_NAME, aliasName, new NormalizedDatabaseName(_).name(),
+          node => s"WHERE $node.$PRIMARY_PROPERTY = false", DATABASE_NAME_LABEL_DESCRIPTION, "alter")
+        Some(plans.LogSystemCommand(plans.AlterDatabaseAlias(
+          plans.EnsureValidNonSystemDatabase(source, targetName, "alter", Some(aliasName)), aliasName, targetName),
+          prettifier.asString(c)))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(None, SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>

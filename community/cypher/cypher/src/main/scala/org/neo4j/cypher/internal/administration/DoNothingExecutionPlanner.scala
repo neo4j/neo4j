@@ -37,6 +37,7 @@ import org.neo4j.values.virtual.VirtualValues
 case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine, securityAuthorizationHandler: SecurityAuthorizationHandler) {
 
   def planDoNothingIfNotExists(label: String,
+                               labelDescription: String,
                                name: Either[String, Parameter],
                                valueMapper: String => String,
                                operation: String,
@@ -45,16 +46,16 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine, sec
       label, name, valueMapper,
       QueryHandler
         .ignoreNoResult()
-        .handleError(handleErrorFn(operation, label, name)),
+        .handleError(handleErrorFn(operation, label, labelDescription, name)),
       sourcePlan
     )
 
-  def planDoNothingIfExists(label: String, name: Either[String, Parameter], valueMapper: String => String, sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
+  def planDoNothingIfExists(label: String, labelDescription: String, name: Either[String, Parameter], valueMapper: String => String, sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
     planDoNothing("DoNothingIfExists",
       label, name, valueMapper,
       QueryHandler
         .ignoreOnResult()
-        .handleError(handleErrorFn("create", label, name)),
+        .handleError(handleErrorFn("create", label, labelDescription, name)),
       sourcePlan)
 
   private def planDoNothing(planName: String,
@@ -78,10 +79,10 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine, sec
     )
   }
 
-  private def handleErrorFn(operation: String, label: String, name: Either[String, Parameter]): (Throwable, MapValue) => Throwable = {
+  private def handleErrorFn(operation: String, label: String, labelDescription: String, name: Either[String, Parameter]): (Throwable, MapValue) => Throwable = {
     case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-      new DatabaseAdministrationOnFollowerException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
-    case (error, p) => new IllegalStateException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
+      new DatabaseAdministrationOnFollowerException(s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
+    case (error, p) => new IllegalStateException(s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
   }
 
 }
