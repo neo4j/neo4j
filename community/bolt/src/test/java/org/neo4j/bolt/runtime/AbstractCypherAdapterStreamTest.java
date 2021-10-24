@@ -62,7 +62,7 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-class AbstractCypherAdapterStreamTest
+public class AbstractCypherAdapterStreamTest
 {
     @Test
     void shouldPullAll() throws Throwable
@@ -189,8 +189,6 @@ class AbstractCypherAdapterStreamTest
         when( queryStatistics.getConstraintsRemoved() ).thenReturn( 9 );
         when( queryStatistics.getLabelsAdded() ).thenReturn( 10 );
         when( queryStatistics.getLabelsRemoved() ).thenReturn( 11 );
-        when( queryStatistics.containsUpdates() ).thenReturn( true );
-        when( queryStatistics.containsSystemUpdates() ).thenReturn( false );
 
         QueryExecution result = mock( QueryExecution.class );
         BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
@@ -212,8 +210,7 @@ class AbstractCypherAdapterStreamTest
         assertThat( meta.get( "stats" ) ).isEqualTo(
                 mapValues( "nodes-created", intValue( 1 ), "nodes-deleted", intValue( 2 ), "relationships-created", intValue( 3 ), "relationships-deleted",
                         intValue( 4 ), "properties-set", intValue( 5 ), "indexes-added", intValue( 6 ), "indexes-removed", intValue( 7 ), "constraints-added",
-                        intValue( 8 ), "constraints-removed", intValue( 9 ), "labels-added", intValue( 10 ), "labels-removed", intValue( 11 ),
-                           "contains-updates", booleanValue( true ), "contains-system-updates", booleanValue( false ) ) );
+                        intValue( 8 ), "constraints-removed", intValue( 9 ), "labels-added", intValue( 10 ), "labels-removed", intValue( 11 ) ) );
     }
 
     @Test
@@ -333,7 +330,7 @@ class AbstractCypherAdapterStreamTest
         assertMapEqualsWithDelta( (MapValue) meta.get( "profile" ),  expectedProfile, 0.0001 );
     }
 
-    private static MapValue mapValues( Object... values )
+    protected static MapValue mapValues( Object... values )
     {
         int i = 0;
         MapValueBuilder builder = new MapValueBuilder();
@@ -388,7 +385,7 @@ class AbstractCypherAdapterStreamTest
         assertThat( meta.get( "notifications" ) ).isEqualTo( list( msg1, msg2 ) );
     }
 
-    private static MapValue metadataOf( AbstractCypherAdapterStream stream ) throws Throwable
+    protected static MapValue metadataOf( AbstractCypherAdapterStream stream ) throws Throwable
     {
         final MapValueBuilder meta = new MapValueBuilder();
         stream.handleRecords( new BoltResult.DiscardingRecordConsumer()

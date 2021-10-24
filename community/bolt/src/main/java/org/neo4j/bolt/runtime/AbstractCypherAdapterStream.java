@@ -165,16 +165,16 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         }
     }
 
-    private static void addQueryStatistics( QueryStatistics statistics, RecordConsumer recordConsumer )
+    private void addQueryStatistics( QueryStatistics statistics, RecordConsumer recordConsumer )
     {
         if ( statistics.containsUpdates() )
         {
-            MapValue stats = queryStats( statistics );
+            MapValue stats = queryStats( statistics ).build();
             recordConsumer.addMetadata( STATS, stats );
         }
         else if ( statistics.containsSystemUpdates() )
         {
-            MapValue stats = systemQueryStats( statistics );
+            MapValue stats = systemQueryStats( statistics ).build();
             recordConsumer.addMetadata( STATS, stats );
         }
     }
@@ -186,7 +186,7 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
                '}';
     }
 
-    private static MapValue queryStats( QueryStatistics queryStatistics )
+    protected MapValueBuilder queryStats( QueryStatistics queryStatistics )
     {
         MapValueBuilder builder = new MapValueBuilder();
         addIfNonZero( builder, "nodes-created", queryStatistics.getNodesCreated() );
@@ -200,23 +200,29 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         addIfNonZero( builder, "indexes-removed", queryStatistics.getIndexesRemoved() );
         addIfNonZero( builder, "constraints-added", queryStatistics.getConstraintsAdded() );
         addIfNonZero( builder, "constraints-removed", queryStatistics.getConstraintsRemoved() );
-        builder.add( "contains-updates", booleanValue( queryStatistics.containsUpdates() ) );
-        builder.add( "contains-system-updates", booleanValue( queryStatistics.containsSystemUpdates() ) );
-        return builder.build();
+        return builder;
     }
 
-    private static MapValue systemQueryStats( QueryStatistics queryStatistics )
+    protected MapValueBuilder systemQueryStats( QueryStatistics queryStatistics )
     {
         MapValueBuilder builder = new MapValueBuilder();
         addIfNonZero( builder, "system-updates", queryStatistics.getSystemUpdates() );
-        return builder.build();
+        return builder;
     }
 
-    private static void addIfNonZero( MapValueBuilder builder, String name, int count )
+    protected static void addIfNonZero( MapValueBuilder builder, String name, int count )
     {
         if ( count > 0 )
         {
             builder.add( name, intValue( count ) );
+        }
+    }
+
+    protected static void addIfTrue( MapValueBuilder builder, String name, boolean value )
+    {
+        if ( value )
+        {
+            builder.add( name, booleanValue( true ) );
         }
     }
 
