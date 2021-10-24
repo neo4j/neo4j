@@ -971,7 +971,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
       .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
       .build()
 
     for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS", "<", "<=", ">", ">=")) {
@@ -987,6 +986,39 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
         .nodeIndexOperator(s"a:A(prop $op 'hello')", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+        .build()
+    }
+  }
+
+  test("should prefer node text index usage over btree only for ENDS WITH and CONTAINS") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
+      .build()
+
+    for (op <- List("ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("a.prop AS `a.prop`")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.TEXT)
+        .build()
+    }
+
+    for (op <- List("STARTS WITH", "<", "<=", ">", ">=")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("a.prop AS `a.prop`")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.BTREE)
+        .build()
+    }
+
+    for (op <- List("=")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheN[a.prop] AS `a.prop`")
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", getValue = Map("prop" -> GetValue), indexType = IndexType.BTREE)
         .build()
     }
   }
@@ -1027,7 +1059,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
       .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
       .build()
 
     for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS", "<", "<=", ">", ">=")) {
@@ -1043,6 +1074,39 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+        .build()
+    }
+  }
+
+  test("should prefer relationship text index usage over btree only for ENDS WITH and CONTAINS") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 200)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
+      .build()
+
+    for (op <- List("ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("r.prop AS `r.prop`")
+        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.TEXT)
+        .build()
+    }
+
+    for (op <- List("STARTS WITH", "<", "<=", ">", ">=")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("r.prop AS `r.prop`")
+        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.BTREE)
+        .build()
+    }
+
+    for (op <- List("=")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", getValue = Map("prop" -> GetValue), indexType = IndexType.BTREE)
         .build()
     }
   }
