@@ -111,7 +111,8 @@ public enum NotificationCode
     DEPRECATED_BTREE_INDEX_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "Btree indexes are deprecated and will need migration before upgrading to 5.0"
+            "B-tree indexes are deprecated, partially replaced by text indexes and will be fully replaced later on. " +
+                    "For now, b-tree indexes are still the correct alternative to use."
     ),
     DEPRECATED_DROP_INDEX_SYNTAX(
             SeverityLevel.WARNING,
