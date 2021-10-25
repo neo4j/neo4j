@@ -20,19 +20,30 @@
 package org.neo4j.server.http.cypher;
 
 import java.net.URI;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 
+import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
+import org.neo4j.bolt.transaction.ResultNotFoundException;
+import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.Neo4jException;
-import org.neo4j.graphdb.Result;
+import org.neo4j.fabric.executor.FabricException;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryPool;
+import org.neo4j.server.http.cypher.consumer.OutputEventStreamResultConsumer;
+import org.neo4j.server.http.cypher.consumer.SingleNodeResultConsumer;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.InputFormatException;
@@ -67,7 +78,7 @@ class Invocation
     private final Log log;
     private final TransactionHandle transactionHandle;
     private final InputEventStream inputEventStream;
-    private final boolean finishWithCommit;
+    private boolean finishWithCommit;
     private final URI commitUri;
     private final MemoryPool memoryPool;
 
@@ -288,41 +299,66 @@ class Invocation
 
         hasPrevious = true;
 
-        Result result;
-        try
-        {
-            result = transactionHandle.executeStatement( statement, periodicCommit );
-        }
-        finally
-        {
-            if ( periodicCommit )
-            {
-                transactionHandle.reopenAfterPeriodicCommit();
-            }
-        }
+        StatementMetadata result;
 
-        writeResult( result, statement );
+        result = transactionHandle.executeStatement( statement, periodicCommit );
+
+        writeResult( statement, result );
+
+        if ( periodicCommit )
+        {
+            transactionHandle.reopenAfterPeriodicCommit();
+        }
     }
 
-    private void writeResult( Result result, Statement statement )
+    private void writeResult( Statement statement, StatementMetadata statementMetadata ) throws TransactionNotFoundException, ResultNotFoundException
     {
+        var cacheWriter = new CachingWriter( new DefaultValueMapper( null ) );
+        cacheWriter.setGetNodeById( createGetNodeByIdFunction( cacheWriter ) );
+        var valueMapper = new TransactionIndependentValueMapper( cacheWriter );
         try
         {
-            outputEventStream.writeStatementStart( statement, result.columns() );
+            var resultConsumer = new OutputEventStreamResultConsumer( outputEventStream, statement, statementMetadata, valueMapper );
 
-            result.accept( row ->
-            {
-                outputEventStream.writeRecord( result.columns(), row::get );
-                return true;
-            } );
-
-            outputEventStream.writeStatementEnd( result.getQueryExecutionType(), result.getQueryStatistics(), result.getExecutionPlanDescription(),
-                    result.getNotifications() );
+            transactionHandle.transactionManager().pullData( transactionHandle.getTxManagerTxId(), statementMetadata.queryId(), -1, resultConsumer );
         }
         catch ( ConnectionException | OutputFormatException e )
         {
             handleOutputError( e );
         }
+    }
+
+    private BiFunction<Long,Boolean,Optional<Node>> createGetNodeByIdFunction( CachingWriter cachingWriter )
+    {
+        return ( id, isDeleted ) ->
+        {
+            var nodeReference = new AtomicReference<Node>();
+
+            if ( !isDeleted )
+            {
+                try
+                {
+                    var statement = createGetNodeByIdStatement( id );
+                    var statementMetadata = transactionHandle.executeStatement( statement, transactionHandle.isPeriodicCommit( statement.getStatement() ) );
+                    transactionHandle.transactionManager().pullData( transactionHandle.getTxManagerTxId(), statementMetadata.queryId(), -1,
+                                                                     new SingleNodeResultConsumer( cachingWriter, nodeReference::set ) );
+                }
+                catch ( TransactionNotFoundException e )
+                {
+                    handleNeo4jError( Status.Transaction.TransactionNotFound, e );
+                }
+                catch ( ResultNotFoundException e )
+                {
+                    handleNeo4jError( Status.Statement.EntityNotFound, e );
+                }
+                catch ( KernelException e )
+                {
+                    handleNeo4jError( Status.General.UnknownError, e );
+                }
+            }
+
+            return Optional.ofNullable( nodeReference.get() );
+        };
     }
 
     private void handleOutputError( RuntimeException e )
@@ -339,16 +375,40 @@ class Invocation
 
     private void handleNeo4jError( Status status, Throwable cause )
     {
-        neo4jError = new Neo4jError( status, cause );
+
+        if ( cause instanceof FabricException )
+        {
+            // unwrap FabricException where possible.
+            var rootCause = ((FabricException) cause).status();
+            if ( cause.getCause() != null &&
+                 cause.getCause().getMessage().equals( "Executing queries that use periodic commit in an open transaction is not possible." ) )
+            {
+                neo4jError = new Neo4jError( Status.Request.Invalid,
+                                             "Routing of PERIODIC COMMIT is not currently supported. Please retry your request against the cluster leader" );
+            }
+            else
+            {
+                neo4jError = new Neo4jError( rootCause, cause.getCause() != null ? cause.getCause() : cause );
+            }
+        }
+        else
+        {
+            neo4jError = new Neo4jError( status, cause );
+        }
 
         try
         {
-            outputEventStream.writeFailure( status, neo4jError.getMessage() );
+            outputEventStream.writeFailure( neo4jError.status(), neo4jError.getMessage() );
         }
         catch ( ConnectionException | OutputFormatException e )
         {
             handleOutputError( e );
         }
+    }
+
+    private Statement createGetNodeByIdStatement( Long id )
+    {
+        return new Statement( "MATCH (n) WHERE id(n) = $id RETURN n;", Map.of( "id", id ) );
     }
 
     private void sendTransactionStateInformation()

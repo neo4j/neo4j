@@ -39,8 +39,6 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.server.http.cypher.TransactionHandle;
-import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.FailureEvent;
 import org.neo4j.server.http.cypher.format.api.OutputEvent;
@@ -66,7 +64,6 @@ class ExecutionResultSerializer
 
     private final JsonGenerator jsonGenerator;
     private final URI baseUri;
-    private final TransactionHandle transactionHandle;
     private final List<Notification> notifications = new ArrayList<>();
     private final List<FailureEvent> errors = new ArrayList<>();
     private final OutputStream output;
@@ -83,15 +80,14 @@ class ExecutionResultSerializer
     // from the JSON Factory in such a way that the state management does not leak into other classes.
     // For example, if we would rely on the JAX-RS facing JSON Body writer, we would have no meaningful
     // test whether the state handling works or not.
-    ExecutionResultSerializer( TransactionHandle transactionHandle, Map<String,Object> parameters, URI baseUri,
+    ExecutionResultSerializer( Map<String,Object> parameters, URI baseUri,
                                Class<? extends ObjectCodec> classOfCodec, JsonFactory jsonFactory, OutputStream output )
     {
         this.parameters = parameters;
         this.baseUri = baseUri;
-        this.transactionHandle = transactionHandle;
         this.output = output;
 
-        ObjectCodec codec = instantiateCodec( transactionHandle, classOfCodec );
+        ObjectCodec codec = instantiateCodec( classOfCodec );
         this.jsonGenerator = createGenerator( jsonFactory, codec, output );
     }
 
@@ -124,12 +120,12 @@ class ExecutionResultSerializer
         }
     }
 
-    private static ObjectCodec instantiateCodec( TransactionHandle transactionHandle, Class<? extends ObjectCodec> classOfCodec )
+    private static ObjectCodec instantiateCodec( Class<? extends ObjectCodec> classOfCodec )
     {
         try
         {
-            var ctor = classOfCodec.getConstructor( TransactionHandle.class );
-            return ctor.newInstance( transactionHandle );
+            var ctor = classOfCodec.getConstructor();
+            return ctor.newInstance();
         }
         catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e )
         {
@@ -176,12 +172,10 @@ class ExecutionResultSerializer
     {
         try
         {
-            TransactionStateChecker txStateChecker = TransactionStateChecker.create( transactionHandle.getContext() );
-
             jsonGenerator.writeStartObject();
             try
             {
-                writer.write( jsonGenerator, recordEvent, txStateChecker );
+                writer.write( jsonGenerator, recordEvent );
             }
             finally
             {

@@ -22,6 +22,7 @@ package org.neo4j.server;
 import java.util.ArrayList;
 import java.util.function.Supplier;
 
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -43,15 +44,17 @@ import org.neo4j.server.modules.TransactionModule;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 public class CommunityNeoWebServer extends AbstractNeoWebServer
 {
     public CommunityNeoWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
-                                  LogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools )
+                                  LogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools, TransactionManager transactionManager,
+                                  SystemNanoClock clock )
     {
-        super( managementService, globalDependencies, config, userLogProvider, dbmsInfo, memoryPools );
+        super( managementService, globalDependencies, config, userLogProvider, dbmsInfo, memoryPools, transactionManager, clock );
     }
 
     @Override
@@ -66,8 +69,8 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer
 
             if ( enabledModules.contains( ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS ) )
             {
-                serverModules.add( new TransactionModule( webServer, config ) );
-                serverModules.add( new LegacyTransactionModule( webServer, config ) );
+                serverModules.add( new TransactionModule( webServer, config, clock ) );
+                serverModules.add( new LegacyTransactionModule( webServer, config, clock ) );
             }
             if ( enabledModules.contains( ConfigurableServerModules.UNMANAGED_EXTENSIONS ) )
             {

@@ -28,18 +28,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.server.http.cypher.entity.HttpNode;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContentWriter;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class RestRepresentationWriterIT
 {
@@ -51,7 +47,6 @@ class RestRepresentationWriterIT
     void createOutputFormat() throws Exception
     {
         stream = new ByteArrayOutputStream();
-        JsonGenerator g = DefaultJsonFactory.INSTANCE.get().createGenerator( stream );
         this.jsonGenerator = DefaultJsonFactory.INSTANCE.get().createGenerator( stream );
         this.contentWriter = ResultDataContent.rest.writer( new URI( "http://localhost/" ) );
     }
@@ -59,22 +54,14 @@ class RestRepresentationWriterIT
     @Test
     void canFormatNode() throws IOException
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction transaction = db.beginTx() )
-        {
-            final Node n = transaction.createNode();
-            RecordEvent recordEvent = new RecordEvent( Collections.singletonList( "key" ), k -> n );
-            jsonGenerator.writeStartObject();
-            this.contentWriter.write( jsonGenerator, recordEvent, null );
-            jsonGenerator.writeEndObject();
-            jsonGenerator.flush();
-            jsonGenerator.close();
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
+        final Node n = new HttpNode( 0 );
+        RecordEvent recordEvent = new RecordEvent( Collections.singletonList( "key" ), k -> n );
+        jsonGenerator.writeStartObject();
+        this.contentWriter.write( jsonGenerator, recordEvent );
+        jsonGenerator.writeEndObject();
+        jsonGenerator.flush();
+        jsonGenerator.close();
+
         assertTrue( stream.toString().matches( ".*\"self\"\\w*:\\w*\"http://localhost/node/0\",.*" ) );
     }
 }

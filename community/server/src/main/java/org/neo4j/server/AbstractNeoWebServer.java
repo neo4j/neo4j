@@ -33,6 +33,8 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -68,6 +70,7 @@ import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toUnmodifiableList;
@@ -102,6 +105,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     private final DatabaseManagementService databaseManagementService;
     private final Dependencies globalDependencies;
     private final Config config;
+    private final TransactionManager transactionManager;
+    private final BoltGraphDatabaseManagementServiceSPI boltSPI;
     private final LifeSupport life = new LifeSupport();
     private final boolean httpEnabled;
     private final boolean httpsEnabled;
@@ -116,6 +121,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     private final Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
     private final HttpTransactionManager httpTransactionManager;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
+    protected final SystemNanoClock clock;
 
     protected ConnectorPortRegister connectorPortRegister;
     private RotatingRequestLog requestLog;
@@ -125,14 +131,17 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     protected abstract WebServer createWebServer();
 
     public AbstractNeoWebServer( DatabaseManagementService databaseManagementService, Dependencies globalDependencies, Config config,
-                                 LogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools )
+                                 LogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools, TransactionManager transactionManager,
+                                 SystemNanoClock clock )
     {
         this.databaseManagementService = databaseManagementService;
         this.globalDependencies = globalDependencies;
+        this.transactionManager = transactionManager;
         this.config = config;
         this.userLogProvider = userLogProvider;
         this.log = userLogProvider.getLog( getClass() );
         this.dbmsInfo = dbmsInfo;
+        this.clock = clock;
         log.info( NEO4J_IS_STARTING_MESSAGE );
 
         byteBufferPool = new ArrayByteBufferPool();
@@ -160,6 +169,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
 
         this.authWhitelist = parseAuthWhitelist( config );
         authManagerSupplier = globalDependencies.provideDependency( AuthManager.class );
+        boltSPI = globalDependencies.resolveDependency( BoltGraphDatabaseManagementServiceSPI.class );
         sslPolicyFactorySupplier = globalDependencies.provideDependency( SslPolicyLoader.class );
         connectorPortRegister = globalDependencies.resolveDependency( ConnectorPortRegister.class );
         httpTransactionManager = createHttpTransactionManager();
@@ -206,7 +216,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         JobScheduler jobScheduler = globalDependencies.resolveDependency( JobScheduler.class );
         Clock clock = Clocks.systemClock();
         Duration transactionTimeout = getTransactionTimeout();
-        return new HttpTransactionManager( databaseManagementService, transactionMemoryPool, jobScheduler, clock, transactionTimeout, userLogProvider );
+        return new HttpTransactionManager( databaseManagementService, transactionMemoryPool, jobScheduler, clock, transactionTimeout,
+                                           userLogProvider, transactionManager, boltSPI, authManagerSupplier.get() );
     }
 
     /**

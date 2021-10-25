@@ -62,7 +62,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.TransitionalTxManagementKernelTransaction;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
@@ -102,20 +101,14 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private LineDelimitedEventSourceJoltSerializer serializer;
-    private final TransactionHandle transactionHandle = mock( TransactionHandle.class );
-    private InternalTransaction internalTransaction;
 
     @BeforeEach
     void init()
     {
         var context = mock( TransitionalTxManagementKernelTransaction.class );
-        internalTransaction = mock( InternalTransaction.class );
         var kernelTransaction = mock( KernelTransactionImplementation.class );
 
-        when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
-        when( context.getInternalTransaction() ).thenReturn( internalTransaction );
-        when( transactionHandle.getContext() ).thenReturn( context );
-        serializer = getSerializerWith( transactionHandle, output );
+        serializer = getSerializerWith( output );
     }
 
     @Test
@@ -336,8 +329,6 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
                                      property( "e", new String[]{"a", "b", "ääö"} ) ) );
         var row = Map.of( "node", node );
 
-        when( internalTransaction.getNodeById( 1 ) ).thenReturn( node );
-
         // when
         writeStatementStart( serializer, "node" );
         writeRecord( serializer, row, "node" );
@@ -369,16 +360,14 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
             var localContext = mock( TransitionalTxManagementKernelTransaction.class );
             var localInternalTransaction = mock( InternalTransaction.class );
             var localKernelTransaction = mock( KernelTransactionImplementation.class );
-            var localTransactionHandle = mock( TransactionHandle.class );
 
             when( localInternalTransaction.getNodeById( 1 ) ).thenReturn( node );
             when( localInternalTransaction.kernelTransaction() ).thenReturn( localKernelTransaction );
             when( localContext.getInternalTransaction() ).thenReturn( localInternalTransaction );
-            when( localTransactionHandle.getContext() ).thenReturn( localContext );
 
             // when
             final ByteArrayOutputStream output = new ByteArrayOutputStream();
-            LineDelimitedEventSourceJoltSerializer serializer = getSerializerWith( localTransactionHandle, output );
+            LineDelimitedEventSourceJoltSerializer serializer = getSerializerWith( output );
 
             writeStatementStart( serializer, "node" );
             writeRecord( serializer, Collections.singletonMap( "node", node ), "node" );
@@ -428,9 +417,6 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
         var a = node( 1, properties( property( "foo", 12 ) ) );
         var b = node( 2, properties( property( "bar", false ) ) );
         var r = relationship( 1, properties( property( "baz", "quux" ) ), a, "FRAZZLE", b );
-        when( internalTransaction.getRelationshipById( 1 ) ).thenReturn( r );
-        when( internalTransaction.getNodeById( 1 ) ).thenReturn( a );
-        when( internalTransaction.getNodeById( 2 ) ).thenReturn( b );
         var row = Map.of(
                 "nested", new TreeMap<>( Map.of( "node", a, "edge", r, "path", path( a, link( r, b ) ) ) ) );
 
@@ -462,9 +448,6 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
         var startNode = path.startNode();
         var endNode = path.endNode();
         var rel = path.lastRelationship();
-        when( internalTransaction.getRelationshipById( 1L ) ).thenReturn( rel );
-        when( internalTransaction.getNodeById( 1L ) ).thenReturn( startNode );
-        when( internalTransaction.getNodeById( 2L ) ).thenReturn( endNode );
 
         // when
         writeStatementStart( serializer, "path" );
@@ -583,7 +566,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
     void shouldSerializePlanWithoutChildButAllKindsOfSupportedArguments() throws Exception
     {
         // given
-        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
+        serializer = getSerializerWith( output );
 
         String operatorType = "Ich habe einen Plan!";
 
@@ -625,7 +608,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
     void shouldSerializePlanWithoutChildButWithIdentifiers() throws Exception
     {
         // given
-        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
+        serializer = getSerializerWith( output );
 
         String operatorType = "Ich habe einen Plan";
         String id1 = "id1";
@@ -657,7 +640,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
     void shouldSerializePlanWithChildren() throws Exception
     {
         // given
-        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
+        serializer = getSerializerWith( output );
 
         String leftId = "leftId";
         String rightId = "rightId";
@@ -794,13 +777,8 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
                 result );
     }
 
-    protected static LineDelimitedEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
+    protected static LineDelimitedEventSourceJoltSerializer getSerializerWith( OutputStream output )
     {
-        return new LineDelimitedEventSourceJoltSerializer( transactionHandle, Collections.emptyMap(), JoltCodec.class, true, JSON_FACTORY, output );
-    }
-
-    protected static LineDelimitedEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
-    {
-        return getSerializerWith( transactionHandle, output, null );
+        return new LineDelimitedEventSourceJoltSerializer( Collections.emptyMap(), JoltCodec.class, true, JSON_FACTORY, output );
     }
 }

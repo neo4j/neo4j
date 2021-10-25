@@ -51,13 +51,11 @@ public class JsonMessageBodyWriter implements MessageBodyWriter<OutputEventSourc
     public void writeTo( OutputEventSource outputEventSource, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String,Object> httpHeaders, OutputStream entityStream ) throws WebApplicationException
     {
-        var transaction = outputEventSource.getTransactionHandle();
         var parameters = outputEventSource.getParameters();
         var uriInfo = outputEventSource.getUriInfo();
 
         var jsonFactory = DefaultJsonFactory.INSTANCE.get();
-        var serializer = new ExecutionResultSerializer( transaction, parameters, uriInfo.dbUri(),
-            Neo4jJsonCodec.class, jsonFactory, entityStream );
+        var serializer = new ExecutionResultSerializer( parameters, uriInfo.dbUri(), Neo4jJsonCodec.class, jsonFactory, entityStream );
 
         outputEventSource.produceEvents( serializer::handleEvent );
     }

@@ -51,7 +51,7 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         }
         else
         {
-            writer.writeRelationship( id, startNodeId(), endNodeId(), type(), properties() );
+            writer.writeRelationship( id, startNode().id(), endNode().id(), type(), properties(), isDeleted() );
         }
     }
 
@@ -136,6 +136,7 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         private final VirtualNodeValue endNode;
         private final TextValue type;
         private final MapValue properties;
+        private final boolean isDeleted;
 
         DirectRelationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type, MapValue properties )
         {
@@ -146,6 +147,19 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
             this.endNode = endNode;
             this.type = type;
             this.properties = properties;
+            this.isDeleted = false;
+        }
+
+        DirectRelationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type, MapValue properties, boolean isDeleted )
+        {
+            super( id, startNode.id(), endNode.id() );
+            assert properties != null;
+
+            this.startNode = startNode;
+            this.endNode = endNode;
+            this.type = type;
+            this.properties = properties;
+            this.isDeleted = isDeleted;
         }
 
         @Override
@@ -180,6 +194,12 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
                     endNode.estimatedHeapUsage() +
                     type.estimatedHeapUsage() +
                     properties.estimatedHeapUsage();
+        }
+
+        @Override
+        public boolean isDeleted()
+        {
+            return isDeleted;
         }
     }
 }

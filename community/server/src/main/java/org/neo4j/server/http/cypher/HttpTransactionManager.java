@@ -23,9 +23,11 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 
-import org.neo4j.common.DependencyResolver;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
@@ -33,7 +35,6 @@ import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.time.Clocks;
 
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -47,12 +48,26 @@ public class HttpTransactionManager
     private final TransactionHandleRegistry transactionRegistry;
     private final DatabaseManagementService managementService;
     private final JobScheduler jobScheduler;
+    private final TransactionManager transactionManager;
+    private final BoltGraphDatabaseManagementServiceSPI boltSPI;
+    private final LogProvider userLogProvider;
+    private final MemoryPool memoryPool;
+    private final AuthManager authManager;
+    private final Clock clock;
 
     public HttpTransactionManager( DatabaseManagementService managementService, MemoryPool memoryPool,
-                                   JobScheduler jobScheduler, Clock clock, Duration transactionTimeout, LogProvider userLogProvider )
+                                   JobScheduler jobScheduler, Clock clock, Duration transactionTimeout,
+                                   LogProvider userLogProvider, TransactionManager transactionManager, BoltGraphDatabaseManagementServiceSPI boltSPI,
+                                   AuthManager authManager  )
     {
         this.managementService = managementService;
         this.jobScheduler = jobScheduler;
+        this.transactionManager = transactionManager;
+        this.boltSPI = boltSPI;
+        this.userLogProvider = userLogProvider;
+        this.memoryPool = memoryPool;
+        this.authManager = authManager;
+        this.clock = clock;
 
         transactionRegistry = new TransactionHandleRegistry( clock, transactionTimeout, userLogProvider, memoryPool );
         scheduleTransactionTimeout( transactionTimeout );
@@ -83,19 +98,18 @@ public class HttpTransactionManager
         return transactionRegistry;
     }
 
-    public TransactionFacade createTransactionFacade( GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker )
+    public TransactionFacade createTransactionFacade( GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker, String databaseName )
     {
-        DependencyResolver dependencyResolver = databaseAPI.getDependencyResolver();
+        var dependencyResolver = databaseAPI.getDependencyResolver();
 
         memoryTracker.allocateHeap( TransactionFacade.SHALLOW_SIZE );
-        return new TransactionFacade( databaseAPI,
-                dependencyResolver.resolveDependency( QueryExecutionEngine.class ), transactionRegistry );
+        return new TransactionFacade( databaseName,
+                dependencyResolver.resolveDependency( QueryExecutionEngine.class ), transactionRegistry,
+                                      transactionManager, userLogProvider, boltSPI, authManager );
     }
 
     private void scheduleTransactionTimeout( Duration timeout )
     {
-        Clock clock = Clocks.systemClock();
-
         long timeoutMillis = timeout.toMillis();
         long runEvery = round( timeoutMillis / 2.0 );
         jobScheduler.scheduleRecurring( Group.SERVER_TRANSACTION_TIMEOUT, systemJob( "Timeout of HTTP transactions" ), () ->

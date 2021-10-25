@@ -31,15 +31,14 @@ import javax.ws.rs.core.MediaType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.NodeRepresentation;
-import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
 import org.neo4j.server.rest.repr.PathRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
 import org.neo4j.server.rest.repr.RepresentationFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
@@ -53,8 +52,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
     }
 
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker )
-            throws IOException
+    public void write( JsonGenerator out, RecordEvent recordEvent ) throws IOException
     {
         WriteThroughJsonFormat format = new WriteThroughJsonFormat( out );
         out.writeArrayFieldStart( "rest" );
@@ -62,7 +60,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
         {
             for ( String key : recordEvent.getColumns() )
             {
-                write( out, format, recordEvent.getValue( key ), txStateChecker );
+                write( out, format, recordEvent.getValue( key ) );
             }
         }
         finally
@@ -72,17 +70,15 @@ class RestRepresentationWriter implements ResultDataContentWriter
     }
 
     /**
-     * Recursively walks through the {@literal value}. We can't use {@literal ObjectToRepresentationConverter} for converting everything into a {@link
-     * Representation} as we need to set the {@link TransactionStateChecker} on nodes and relationships.
+     * Recursively walks through the {@literal value}. We can't use {@literal ObjectToRepresentationConverter}
+     * for converting everything into a {@link Representation}.
      *
      * @param out
      * @param format
      * @param value
-     * @param checker
      * @throws IOException
      */
-    private void write( JsonGenerator out, WriteThroughJsonFormat format, Object value, TransactionStateChecker checker )
-            throws IOException
+    private void write( JsonGenerator out, WriteThroughJsonFormat format, Object value ) throws IOException
     {
         if ( value instanceof Map<?,?> )
         {
@@ -92,7 +88,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
                 for ( Map.Entry<String,?> entry : ((Map<String,?>) value).entrySet() )
                 {
                     out.writeFieldName( entry.getKey() );
-                    write( out, format, entry.getValue(), checker );
+                    write( out, format, entry.getValue() );
                 }
             }
             finally
@@ -111,7 +107,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
             {
                 for ( Object item : (Iterable<?>) value )
                 {
-                    write( out, format, item, checker );
+                    write( out, format, item );
                 }
             }
             finally
@@ -122,13 +118,11 @@ class RestRepresentationWriter implements ResultDataContentWriter
         else if ( value instanceof Node )
         {
             NodeRepresentation representation = new NodeRepresentation( (Node) value );
-            representation.setTransactionStateChecker( checker );
             RepresentationBasedMessageBodyWriter.serialize( representation, format, baseUri );
         }
         else if ( value instanceof Relationship )
         {
             RelationshipRepresentation representation = new RelationshipRepresentation( (Relationship) value );
-            representation.setTransactionStateChecker( checker );
             RepresentationBasedMessageBodyWriter.serialize( representation, format, baseUri );
         }
         else

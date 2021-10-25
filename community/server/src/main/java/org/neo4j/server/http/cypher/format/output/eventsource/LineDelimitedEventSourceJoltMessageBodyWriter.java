@@ -27,7 +27,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 
-import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
 
 @Provider
@@ -46,9 +45,9 @@ public class LineDelimitedEventSourceJoltMessageBodyWriter extends AbstractEvent
     }
 
     @Override
-    protected LineDelimitedEventSourceJoltSerializer createSerializer( OutputStream outputStream, JsonFactory jsonFactory, TransactionHandle transaction,
+    protected LineDelimitedEventSourceJoltSerializer createSerializer( OutputStream outputStream, JsonFactory jsonFactory,
                                                                        Map<String,Object> parameters, boolean strict )
     {
-        return new LineDelimitedEventSourceJoltSerializer( transaction, parameters, JoltCodec.class, strict, jsonFactory, outputStream );
+        return new LineDelimitedEventSourceJoltSerializer( parameters, JoltCodec.class, strict, jsonFactory, outputStream );
     }
 }

@@ -31,11 +31,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.time.Clocks;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -58,8 +62,10 @@ class LegacyTransactionServiceTest
     {
         request = mock( HttpServletRequest.class );
         databaseResolver = mock( DefaultDatabaseResolver.class );
-        httpTransactionManager = spy( new HttpTransactionManager(
-                null, mock( MemoryPool.class ), mock( JobScheduler.class ), Clock.systemUTC(), Duration.ofMinutes( 2 ), mock( LogProvider.class ) ) );
+        httpTransactionManager = spy( new HttpTransactionManager( null, mock( MemoryPool.class ), mock( JobScheduler.class ), Clock.systemUTC(),
+                Duration.ofMinutes( 2 ), mock( LogProvider.class ), mock( TransactionManager.class ), mock( BoltGraphDatabaseManagementServiceSPI.class ), mock(
+                AuthManager.class )
+        ) );
         uriInfo = mock( UriInfo.class );
         log = mock( Log.class );
 
@@ -91,7 +97,8 @@ class LegacyTransactionServiceTest
                 .thenReturn( "db-" + user );
 
         // When
-        var transactionService = new LegacyTransactionService( request, databaseResolver, httpTransactionManager, uriInfo, mock( MemoryPool.class ), log );
+        var transactionService = new LegacyTransactionService( request, databaseResolver, httpTransactionManager, uriInfo, mock( MemoryPool.class ), log,
+                                                               Clocks.nanoClock() );
         transactionService.rollbackTransaction( 42 );
 
         // Verify

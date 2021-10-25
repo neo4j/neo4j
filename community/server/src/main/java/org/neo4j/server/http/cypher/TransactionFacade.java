@@ -19,13 +19,17 @@
  */
 package org.neo4j.server.http.cypher;
 
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * Transactional actions contains the business logic for executing statements against Neo4j across long-running
@@ -51,24 +55,37 @@ class TransactionFacade
 {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionFacade.class );
 
-    private final GraphDatabaseAPI databaseAPI;
+    private final String databaseName;
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
+    private final TransactionManager transactionManager;
+    private final LogProvider logProvider;
+    private final BoltGraphDatabaseManagementServiceSPI boltSPI;
+    private final AuthManager authManager;
 
-    TransactionFacade( GraphDatabaseAPI databaseAPI, QueryExecutionEngine engine, TransactionRegistry registry )
+    TransactionFacade( String databaseName, QueryExecutionEngine engine, TransactionRegistry registry,
+                       TransactionManager transactionManager, LogProvider logProvider, BoltGraphDatabaseManagementServiceSPI boltSPI,
+                       AuthManager authManager )
     {
-        this.databaseAPI = databaseAPI;
+        this.databaseName = databaseName;
         this.engine = engine;
         this.registry = registry;
+        this.transactionManager = transactionManager;
+        this.logProvider = logProvider;
+        this.boltSPI = boltSPI;
+        this.authManager = authManager;
     }
 
     TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,
-            LoginContext loginContext, ClientConnectionInfo connectionInfo, MemoryTracker memoryTracker, long customTransactionTimeout )
+                                            LoginContext loginContext, ClientConnectionInfo clientConnectionInfo,
+                                            MemoryTracker memoryTracker, long customTransactionTimeout,
+                                            SystemNanoClock clock )
     {
         memoryTracker.allocateHeap( TransactionHandle.SHALLOW_SIZE );
 
-        return new TransactionHandle( databaseAPI, engine, registry, uriScheme, implicitTransaction,
-                loginContext, connectionInfo, customTransactionTimeout );
+        return new TransactionHandle( databaseName, engine, registry, uriScheme, implicitTransaction,
+                                      loginContext, clientConnectionInfo, customTransactionTimeout, transactionManager, logProvider, boltSPI, memoryTracker,
+                                      authManager, clock );
     }
 
     TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException

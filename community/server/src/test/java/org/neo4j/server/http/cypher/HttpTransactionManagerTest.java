@@ -25,9 +25,12 @@ import org.mockito.Answers;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -57,8 +60,12 @@ class HttpTransactionManagerTest
         var managementService = mock( DatabaseManagementService.class );
         JobScheduler jobScheduler = mock( JobScheduler.class );
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        var transactionManager = mock( TransactionManager.class );
+        var boltSPI = mock( BoltGraphDatabaseManagementServiceSPI.class );
+        var authManager = mock( AuthManager.class );
 
-        new HttpTransactionManager( managementService, mock( MemoryPool.class ), jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ), logProvider );
+        new HttpTransactionManager( managementService, mock( MemoryPool.class ), jobScheduler, Clocks.systemClock(),
+                                    Duration.ofMinutes( 1 ), logProvider, transactionManager, boltSPI, authManager );
 
         long runEvery = Math.round( Duration.ofMinutes( 1 ).toMillis() / 2.0 );
         verify( jobScheduler ).scheduleRecurring( eq( Group.SERVER_TRANSACTION_TIMEOUT ), any( JobMonitoringParams.class ), any(), eq( runEvery ),
@@ -71,10 +78,13 @@ class HttpTransactionManagerTest
         var managementService = mock( DatabaseManagementService.class );
         JobScheduler jobScheduler = mock( JobScheduler.class );
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        var transactionManager = mock( TransactionManager.class );
+        var boltSPI = mock( BoltGraphDatabaseManagementServiceSPI.class );
+        var authManager = mock( AuthManager.class );
 
         var manager =
                 new HttpTransactionManager( managementService, mock( MemoryPool.class ), jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ),
-                                            logProvider );
+                                            logProvider, transactionManager, boltSPI, authManager );
 
         assertNotNull( manager.getTransactionHandleRegistry() );
     }
@@ -136,7 +146,7 @@ class HttpTransactionManagerTest
         when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) )
                 .thenReturn( queryExecutionEngine );
 
-        var facade = manager.createTransactionFacade( graphDatabase, memoryTracker );
+        var facade = manager.createTransactionFacade( graphDatabase, memoryTracker, "neo4j" );
 
         verify( memoryTracker ).allocateHeap( TransactionFacade.SHALLOW_SIZE );
         verifyNoMoreInteractions( memoryTracker );
@@ -147,6 +157,9 @@ class HttpTransactionManagerTest
     private static HttpTransactionManager newTransactionManager( DatabaseManagementService managementService, MemoryPool memoryPool )
     {
         JobScheduler jobScheduler = mock( JobScheduler.class );
+        var transactionManager = mock( TransactionManager.class );
+        var boltSPI = mock( BoltGraphDatabaseManagementServiceSPI.class );
+        var authManager = mock( AuthManager.class );
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         var defaultDatabase = "neo4j";
         when( managementService.database( any( String.class ) ) ).thenAnswer( invocation -> {
@@ -163,8 +176,8 @@ class HttpTransactionManagerTest
             }
 
         } );
-        return new HttpTransactionManager( managementService, memoryPool, jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ),
-                                           logProvider );
+        return new HttpTransactionManager( managementService, memoryPool, jobScheduler, Clocks.systemClock(),
+                                           Duration.ofMinutes( 1 ), logProvider, transactionManager, boltSPI, authManager );
     }
 
     private static GraphDatabaseFacade graphWithName( String name )

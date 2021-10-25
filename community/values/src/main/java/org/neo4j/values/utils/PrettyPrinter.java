@@ -98,7 +98,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray labels, MapValue properties )
+    public void writeNode( long nodeId, TextArray labels, MapValue properties, boolean ignored )
     {
         append( "(id=" );
         append( String.valueOf( nodeId ) );
@@ -128,7 +128,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored )
     {
         append( "-[id=" );
         append( String.valueOf( relId ) );
