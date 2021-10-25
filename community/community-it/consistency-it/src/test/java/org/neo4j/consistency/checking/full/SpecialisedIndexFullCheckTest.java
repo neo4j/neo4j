@@ -34,10 +34,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.RecordType;
@@ -65,6 +65,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
@@ -217,6 +218,46 @@ class SpecialisedIndexFullCheckTest
             assertThat( stats.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP ) ).isEqualTo( 3 );
         }
 
+        @ParameterizedTest
+        @EnumSource( IndexSize.class )
+        void shouldReportNodesThatAreIndexedWhenTheyShouldNotBe( IndexSize indexSize ) throws Exception
+        {
+            indexSize.createAdditionalData( fixture );
+
+            // given
+            long newNode = createOneNode();
+
+            Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
+            while ( indexDescriptorIterator.hasNext() )
+            {
+                IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+                if ( indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique() )
+                {
+                    IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
+                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                    {
+                        updater.process( IndexEntryUpdate.add( newNode, indexDescriptor, values( indexDescriptor ) ) );
+                    }
+                }
+            }
+
+            // when
+            ConsistencySummaryStatistics stats = check();
+
+            assertFalse( stats.isConsistent() );
+            assertThat( stats.getInconsistencyCountForRecordType( RecordType.INDEX) ).isEqualTo( 2 );
+        }
+
+        Value[] values( IndexDescriptor indexRule )
+        {
+            switch ( indexRule.schema().getPropertyIds().length )
+            {
+            case 1: return Iterators.array( Values.of( indexedValue() ) );
+            case 2: return Iterators.array( Values.of( indexedValue() ), Values.of( anotherIndexedValue() ) );
+            default: throw new UnsupportedOperationException();
+            }
+        }
+
         private Iterator<IndexDescriptor> getValueIndexDescriptors()
         {
             return Iterators.filter( descriptor -> !descriptor.isTokenIndex(), fixture.getIndexDescriptors() );
@@ -289,6 +330,16 @@ class SpecialisedIndexFullCheckTest
                     return settings;
                 }
             };
+        }
+
+        protected long createOneNode()
+        {
+            final AtomicLong id = new AtomicLong();
+            fixture.apply( tx ->
+            {
+                id.set( tx.createNode().getId() );
+            } );
+            return id.get();
         }
     }
 
@@ -393,7 +444,7 @@ class SpecialisedIndexFullCheckTest
                         fixture.apply( tx ->
                         {
                             // Create more nodes so our indexes will be considered to be small indexes (less than 5% of nodes in index).
-                            for ( int i = 0; i < 60; i++ )
+                            for ( int i = 0; i < 80; i++ )
                             {
                                 tx.createNode();
                             }
