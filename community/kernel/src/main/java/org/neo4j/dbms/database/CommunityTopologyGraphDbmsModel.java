@@ -25,11 +25,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -94,14 +97,17 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     {
         return tx.findNodes( DATABASE_NAME_LABEL ).stream()
                  .flatMap( alias -> getTargetedDatabase( alias )
-                         .map( db -> aliasDatabaseIdPair( alias, db ) ).stream() )
+                         .flatMap( db -> aliasDatabaseIdPair( alias, db ) ).stream() )
                  .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
     }
 
-    private Map.Entry<String,NamedDatabaseId> aliasDatabaseIdPair( Node alias, NamedDatabaseId targetedDatabase )
+    private Optional<Map.Entry<String,NamedDatabaseId>> aliasDatabaseIdPair( Node alias, NamedDatabaseId targetedDatabase )
     {
-        var aliasName = getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY );
-        return Map.entry( aliasName, targetedDatabase );
+        return ignoreConcurrentDeletes( () ->
+        {
+            var aliasName = getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY );
+            return Optional.of( Map.entry( aliasName, targetedDatabase ) );
+        } );
     }
 
     private Optional<NamedDatabaseId> getDatabaseIdByAlias0( String databaseName )
@@ -136,13 +142,22 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
         }
     }
 
+    /**
+     * *Note* may return `Optional.empty`.
+     *
+     * It s semantically invalid for an alias to *not* have target, but we ignore it because of the possibility of concurrent deletes.
+     */
     private static Optional<NamedDatabaseId> getTargetedDatabase( Node aliasNode )
     {
-        var targetDatabases = StreamSupport.stream( aliasNode.getRelationships( Direction.OUTGOING, TARGETS_RELATIONSHIP ).spliterator(), false )
-                                           .collect( Collectors.toList() ); // Must be collected to exhaust the underlying iterator
+        return ignoreConcurrentDeletes( () ->
+        {
+            var targetDatabases = StreamSupport.stream( aliasNode.getRelationships( Direction.OUTGOING, TARGETS_RELATIONSHIP ).spliterator(), false )
+                                               .collect( Collectors.toList() ); // Must be collected to exhaust the underlying iterator
 
-        var targetDatabase = targetDatabases.stream().findFirst();
-        return targetDatabase.map( r -> getDatabaseId( r.getOtherNode( aliasNode ) ) );
+            return targetDatabases.stream().findFirst()
+                                  .map( Relationship::getEndNode )
+                                  .map( CommunityTopologyGraphDbmsModel::getDatabaseId );
+        } );
     }
 
     private static NamedDatabaseId getDatabaseId( Node databaseNode )
@@ -164,5 +179,17 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
             throw new IllegalStateException( String.format( "%s has non String property %s.", labelName, key ) );
         }
         return (String) value;
+    }
+
+    private static <T> Optional<T> ignoreConcurrentDeletes( Supplier<Optional<T>> operation )
+    {
+        try
+        {
+            return operation.get();
+        }
+        catch ( NotFoundException e )
+        {
+            return Optional.empty();
+        }
     }
 }
