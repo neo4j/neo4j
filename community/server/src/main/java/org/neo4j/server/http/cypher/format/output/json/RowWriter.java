@@ -23,13 +23,14 @@ import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.IOException;
 
+import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 
 class RowWriter implements ResultDataContentWriter
 {
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent )
+    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker )
             throws IOException
     {
         out.writeArrayFieldStart( "row" );

@@ -22,12 +22,9 @@ package org.neo4j.server.http.cypher.format.output.json;
 import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
@@ -35,29 +32,24 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
+import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
-
-import static org.neo4j.server.http.cypher.entity.Predicates.isDeleted;
-import static org.neo4j.server.http.cypher.entity.Predicates.isFullNode;
 
 class GraphExtractionWriter implements ResultDataContentWriter
 {
     @Override
-    public void write( JsonGenerator out, RecordEvent recordEvent ) throws IOException
+    public void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker )
+            throws IOException
     {
-        var nodesMap = new HashMap<Long,Node>();
-        var relationshipList = new ArrayList<Relationship>();
-
-        extract( nodesMap, relationshipList, map( recordEvent ) );
-
-        Set<Node> nodes = new HashSet<>( nodesMap.values() );
-        Set<Relationship> relationships = new HashSet<>( relationshipList );
+        Set<Node> nodes = new HashSet<>();
+        Set<Relationship> relationships = new HashSet<>();
+        extract( nodes, relationships, map( recordEvent ) );
 
         out.writeObjectFieldStart( "graph" );
         try
         {
-            writeNodes( out, nodes );
-            writeRelationships( out, relationships );
+            writeNodes( out, nodes, txStateChecker );
+            writeRelationships( out, relationships, txStateChecker );
         }
         finally
         {
@@ -65,7 +57,7 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private static void writeNodes( JsonGenerator out, Iterable<Node> nodes )
+    private static void writeNodes( JsonGenerator out, Iterable<Node> nodes, TransactionStateChecker txStateChecker )
             throws IOException
     {
         out.writeArrayFieldStart( "nodes" );
@@ -78,7 +70,7 @@ class GraphExtractionWriter implements ResultDataContentWriter
                 {
                     long nodeId = node.getId();
                     out.writeStringField( "id", Long.toString( nodeId ) );
-                    if ( isDeleted( node ) )
+                    if ( txStateChecker.isNodeDeletedInCurrentTx( nodeId ) )
                     {
                         markDeleted( out );
                     }
@@ -116,7 +108,8 @@ class GraphExtractionWriter implements ResultDataContentWriter
         out.writeBooleanField( "deleted", Boolean.TRUE );
     }
 
-    private static void writeRelationships( JsonGenerator out, Iterable<Relationship> relationships ) throws IOException
+    private static void writeRelationships( JsonGenerator out, Iterable<Relationship> relationships,
+            TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeArrayFieldStart( "relationships" );
         try
@@ -128,15 +121,15 @@ class GraphExtractionWriter implements ResultDataContentWriter
                 {
                     long relationshipId = relationship.getId();
                     out.writeStringField( "id", Long.toString( relationshipId ) );
-                    if ( isDeleted( relationship ) )
+                    if ( txStateChecker.isRelationshipDeletedInCurrentTx( relationshipId ) )
                     {
                         markDeleted( out );
                     }
                     else
                     {
                         out.writeStringField( "type", relationship.getType().name() );
-                        out.writeStringField( "startNode", Long.toString( relationship.getStartNodeId() ) );
-                        out.writeStringField( "endNode", Long.toString( relationship.getEndNodeId() ) );
+                        out.writeStringField( "startNode", Long.toString( relationship.getStartNode().getId() ) );
+                        out.writeStringField( "endNode", Long.toString( relationship.getEndNode().getId() ) );
                         writeProperties( out, relationship );
                     }
                 }
@@ -169,28 +162,27 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private static void extract( Map<Long,Node> nodes, ArrayList<Relationship> relationships, Iterable<?> source ) throws IOException
+    private static void extract( Set<Node> nodes, Set<Relationship> relationships, Iterable<?> source )
     {
         for ( Object item : source )
         {
             if ( item instanceof Node )
             {
-                Node node = (Node) item;
-                addNode( nodes, node.getId(), () -> node );
+                nodes.add( (Node) item );
             }
             else if ( item instanceof Relationship )
             {
                 Relationship relationship = (Relationship) item;
                 relationships.add( relationship );
-                addNode( nodes, relationship.getStartNodeId(), relationship::getStartNode );
-                addNode( nodes, relationship.getEndNodeId(), relationship::getEndNode );
+                nodes.add( relationship.getStartNode() );
+                nodes.add( relationship.getEndNode() );
             }
             if ( item instanceof Path )
             {
                 Path path = (Path) item;
                 for ( Node node : path.nodes() )
                 {
-                    addNode( nodes, node.getId(), () -> node );
+                    nodes.add( node );
                 }
                 for ( Relationship relationship : path.relationships() )
                 {
@@ -199,30 +191,12 @@ class GraphExtractionWriter implements ResultDataContentWriter
             }
             else if ( item instanceof Map<?, ?> )
             {
-                extract( nodes, relationships, ((Map<?,?>) item).values() );
+                extract( nodes, relationships, ((Map<?, ?>) item).values() );
             }
             else if ( item instanceof Iterable<?> )
             {
                 extract( nodes, relationships, (Iterable<?>) item );
             }
-        }
-    }
-
-    private static void addNode( Map<Long,Node> nodes, Long id, Supplier<Node> nodeSupplier ) throws IOException
-    {
-        if ( nodes.containsKey( id ) )
-        {
-            Node existingNode = nodes.get( id );
-
-            if ( !isDeleted( existingNode ) && !isFullNode( existingNode ) )
-            {
-                nodes.remove( id );
-                nodes.put( id, nodeSupplier.get() );
-            }
-        }
-        else
-        {
-            nodes.put( id, nodeSupplier.get() );
         }
     }
 

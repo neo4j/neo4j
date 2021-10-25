@@ -130,7 +130,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeNode( long nodeId, TextArray labels, MapValue properties, boolean ignored ) throws IOException
+        public void writeNode( long nodeId, TextArray labels, MapValue properties ) throws IOException
         {
             packStructHeader( NODE_SIZE, NODE );
             pack( nodeId );
@@ -149,7 +149,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeRelationship( long relationshipId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored )
+        public void writeRelationship( long relationshipId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
                 throws IOException
         {
             packStructHeader( RELATIONSHIP_SIZE, RELATIONSHIP );

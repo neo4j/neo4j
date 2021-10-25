@@ -23,10 +23,11 @@ import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.IOException;
 
+import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 
 @FunctionalInterface
 public interface ResultDataContentWriter
 {
-    void write( JsonGenerator out, RecordEvent recordEvent ) throws IOException;
+    void write( JsonGenerator out, RecordEvent recordEvent, TransactionStateChecker txStateChecker ) throws IOException;
 }

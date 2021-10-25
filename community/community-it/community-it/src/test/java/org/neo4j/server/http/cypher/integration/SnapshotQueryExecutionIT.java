@@ -113,10 +113,8 @@ class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
         lastTransactionIdSource = () -> 1;
         HTTP.Response response = executeOverHTTP( "MATCH (n:toRetry) CREATE () RETURN n.c" );
         Map<String,List<Map<String,String>>> content = response.content();
-        //todo query string returned is different bug? 'MATCH (`n`:`toRetry`)
-        //CREATE ()
-        //RETURN (`n`).`c` AS `n.c`' that performs updates.
-        assertThat( content.get( "errors" ).get( 0 ).get( "message" ) ).startsWith( "Unable to get clean data snapshot for query" );
+        assertEquals( "Unable to get clean data snapshot for query 'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.",
+                      content.get( "errors" ).get( 0 ).get( "message" ) );
     }
 
     private TestVersionContext findCorrespondingContext()

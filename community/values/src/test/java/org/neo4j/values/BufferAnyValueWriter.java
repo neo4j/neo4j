@@ -103,7 +103,7 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray labels, MapValue properties, boolean ignored ) throws RuntimeException
+    public void writeNode( long nodeId, TextArray labels, MapValue properties ) throws RuntimeException
     {
         buffer.add( Specials.writeNode( nodeId, labels, properties ) );
     }
@@ -115,7 +115,7 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored )
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
             throws RuntimeException
     {
         buffer.add( Specials.writeRelationship( relId, startNodeId, endNodeId, type, properties ) );

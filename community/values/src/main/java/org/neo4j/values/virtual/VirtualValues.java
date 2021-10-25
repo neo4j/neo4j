@@ -216,20 +216,9 @@ public final class VirtualValues
         return new NodeValue.DirectNodeValue( id, labels, properties );
     }
 
-    public static NodeValue nodeValue( long id, TextArray labels, MapValue properties, boolean isDeleted )
-    {
-        return new NodeValue.DirectNodeValue( id, labels, properties, isDeleted );
-    }
-
     public static RelationshipValue relationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type,
             MapValue properties )
     {
         return new RelationshipValue.DirectRelationshipValue( id, startNode, endNode, type, properties );
-    }
-
-    public static RelationshipValue relationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type,
-                                                       MapValue properties, boolean isDeleted )
-    {
-        return new RelationshipValue.DirectRelationshipValue( id, startNode, endNode, type, properties, isDeleted );
     }
 }

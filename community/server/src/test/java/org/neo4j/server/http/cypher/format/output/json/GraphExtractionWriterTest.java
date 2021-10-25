@@ -32,46 +32,40 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.server.http.cypher.entity.HttpNode;
-import org.neo4j.server.http.cypher.entity.HttpRelationship;
+import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.mockito.mock.Properties;
 import org.neo4j.test.mockito.mock.Property;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.mockito.mock.GraphMock.labels;
+import static org.neo4j.test.mockito.mock.GraphMock.node;
 import static org.neo4j.test.mockito.mock.GraphMock.path;
+import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Link.link;
 import static org.neo4j.test.mockito.mock.Properties.properties;
 import static org.neo4j.test.mockito.mock.Property.property;
 
 class GraphExtractionWriterTest
 {
-    private final Node n1 = new HttpNode( 17, List.of( label( "Foo" ) ), Map.of( "name", "n1" ), false );
-    private final Node n2 = new HttpNode( 666, emptyList(), Map.of( "name", "n2" ), false );
-    private final Node n3 = new HttpNode( 42, List.of( label( "Foo" ), label( "Bar" ) ), Map.of( "name", "n3" ), false );
-
-    private final Map<Long,Node> nodes = Map.of( n1.getId(), n1, n2.getId(), n2, n3.getId(), n3 );
-
-    private final Relationship r1 = new HttpRelationship( 7, 17, 666, "ONE", Map.of( "name", "r1" ), false, this::getNodeById );
-    private final Relationship r2 = new HttpRelationship( 8, 17, 42, "TWO", Map.of( "name", "r2" ), false, this::getNodeById );
+    private final Node n1 = node( 17, properties( property( "name", "n1" ) ), "Foo" );
+    private final Node n2 = node( 666, properties( property( "name", "n2" ) ) );
+    private final Node n3 = node( 42, properties( property( "name", "n3" ) ), "Foo", "Bar" );
+    private final Relationship r1 = relationship( 7, n1, "ONE", n2, property( "name", "r1" ) );
+    private final Relationship r2 = relationship( 8, n1, "TWO", n3, property( "name", "r2" ) );
+    private final TransactionStateChecker checker = new TransactionStateChecker( id -> false, id -> false );
     private final JsonFactory jsonFactory = new JsonFactory();
 
     @Test
     void shouldExtractNodesFromRow() throws Exception
     {
         // given
-        Map<String,Object> row = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
         row.put( "n1", n1 );
         row.put( "n2", n2 );
         row.put( "n3", n3 );
@@ -90,7 +84,7 @@ class GraphExtractionWriterTest
     void shouldExtractRelationshipsFromRowAndNodesFromRelationships() throws Exception
     {
         // given
-        Map<String,Object> row = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
         row.put( "r1", r1 );
         row.put( "r2", r2 );
 
@@ -106,7 +100,7 @@ class GraphExtractionWriterTest
     void shouldExtractPathFromRowAndExtractNodesAndRelationshipsFromPath() throws Exception
     {
         // given
-        Map<String,Object> row = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
         row.put( "p", path( n2, link( r1, n1 ), link( r2, n3 ) ) );
 
         // when
@@ -121,8 +115,8 @@ class GraphExtractionWriterTest
     void shouldExtractGraphFromMapInTheRow() throws Exception
     {
         // given
-        Map<String,Object> row = new HashMap<>();
-        Map<String,Object> map = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         row.put( "map", map );
         map.put( "r1", r1 );
         map.put( "r2", r2 );
@@ -139,7 +133,7 @@ class GraphExtractionWriterTest
     void shouldExtractGraphFromListInTheRow() throws Exception
     {
         // given
-        Map<String,Object> row = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
         List<Object> list = new ArrayList<>();
         row.put( "list", list );
         list.add( r1 );
@@ -157,8 +151,8 @@ class GraphExtractionWriterTest
     void shouldExtractGraphFromListInMapInTheRow() throws Exception
     {
         // given
-        Map<String,Object> row = new HashMap<>();
-        Map<String,Object> map = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         List<Object> list = new ArrayList<>();
         map.put( "list", list );
         row.put( "map", map );
@@ -177,8 +171,8 @@ class GraphExtractionWriterTest
     void shouldExtractGraphFromMapInListInTheRow() throws Exception
     {
         // given
-        Map<String,Object> row = new HashMap<>();
-        Map<String,Object> map = new HashMap<>();
+        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         List<Object> list = new ArrayList<>();
         list.add( map );
         row.put( "list", list );
@@ -195,7 +189,7 @@ class GraphExtractionWriterTest
 
     // The code under test
 
-    private JsonNode write( Map<String,Object> row ) throws IOException, JsonParseException
+    private JsonNode write( Map<String, Object> row ) throws IOException, JsonParseException
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         JsonGenerator json = jsonFactory.createGenerator( out );
@@ -203,7 +197,7 @@ class GraphExtractionWriterTest
         try
         {
             RecordEvent recordEvent = new RecordEvent( new ArrayList<>( row.keySet() ), row::get );
-            new GraphExtractionWriter().write( json, recordEvent );
+            new GraphExtractionWriter().write( json, recordEvent , checker );
         }
         finally
         {
@@ -305,20 +299,5 @@ class GraphExtractionWriterTest
             }
         }
         return null;
-    }
-
-    private HttpNode node( long id, Properties properties, String... labels )
-    {
-        return new HttpNode( id, asList( labels( labels ) ), properties.getProperties(), false );
-    }
-
-    private HttpRelationship relationship( long id, Node start, String type, Node end, Property... properties )
-    {
-        return new HttpRelationship( id, start.getId(), end.getId(), type, properties( properties ).getProperties(), false, this::getNodeById );
-    }
-
-    private Optional<Node> getNodeById( Long id, Boolean isDeleted )
-    {
-        return Optional.ofNullable( nodes.getOrDefault( id, null ) );
     }
 }

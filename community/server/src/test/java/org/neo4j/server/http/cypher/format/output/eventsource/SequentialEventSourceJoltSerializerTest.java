@@ -33,6 +33,7 @@ import java.util.Map;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.TransitionalTxManagementKernelTransaction;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
@@ -50,6 +51,7 @@ public class SequentialEventSourceJoltSerializerTest extends AbstractEventSource
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private SequentialEventSourceJoltSerializer serializer;
+    private final TransactionHandle transactionHandle = mock( TransactionHandle.class );
 
     @BeforeEach
     void init()
@@ -60,7 +62,8 @@ public class SequentialEventSourceJoltSerializerTest extends AbstractEventSource
 
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
         when( context.getInternalTransaction() ).thenReturn( internalTransaction );
-        serializer = getSerializerWith( output );
+        when( transactionHandle.getContext() ).thenReturn( context );
+        serializer = getSerializerWith( transactionHandle, output );
     }
 
     @Test
@@ -99,8 +102,13 @@ public class SequentialEventSourceJoltSerializerTest extends AbstractEventSource
                       "\u001E{\"summary\":{}}\n", result );
     }
 
-    protected static SequentialEventSourceJoltSerializer getSerializerWith( OutputStream output )
+    protected static SequentialEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
     {
-        return new SequentialEventSourceJoltSerializer( Collections.emptyMap(), JoltCodec.class, true, JSON_FACTORY, output );
+        return new SequentialEventSourceJoltSerializer( transactionHandle, Collections.emptyMap(), JoltCodec.class, true, JSON_FACTORY, output );
+    }
+
+    protected static SequentialEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
+    {
+        return getSerializerWith( transactionHandle, output, null );
     }
 }

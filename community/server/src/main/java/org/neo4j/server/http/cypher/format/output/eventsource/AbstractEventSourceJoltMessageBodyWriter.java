@@ -32,6 +32,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.http.cypher.format.api.OutputEventSource;
 
@@ -48,11 +49,12 @@ public abstract class AbstractEventSourceJoltMessageBodyWriter implements Messag
     public void writeTo( OutputEventSource outputEventSource, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
                          MultivaluedMap<String,Object> httpHeaders, OutputStream output ) throws WebApplicationException
     {
+        var transaction = outputEventSource.getTransactionHandle();
         var parameters = outputEventSource.getParameters();
         var joltStrictModeEnabled = isJoltStrictModeEnabled( httpHeaders );
 
         var jsonFactory = DefaultJsonFactory.INSTANCE.get();
-        var serializer = this.createSerializer( output, jsonFactory, parameters, joltStrictModeEnabled );
+        var serializer = this.createSerializer( output, jsonFactory, transaction, parameters, joltStrictModeEnabled );
 
         outputEventSource.produceEvents( serializer::handleEvent );
     }
@@ -71,5 +73,5 @@ public abstract class AbstractEventSourceJoltMessageBodyWriter implements Messag
     protected abstract MediaType getMediaType();
 
     protected abstract EventSourceSerializer createSerializer(
-            OutputStream outputStream, JsonFactory jsonFactory, Map<String,Object> parameters, boolean strict );
+            OutputStream outputStream, JsonFactory jsonFactory, TransactionHandle transaction, Map<String,Object> parameters, boolean strict );
 }

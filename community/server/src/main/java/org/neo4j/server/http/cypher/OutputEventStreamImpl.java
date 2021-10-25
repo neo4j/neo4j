@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import javax.ws.rs.core.HttpHeaders;
+
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
@@ -46,12 +48,15 @@ class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
 
     private final Consumer<OutputEventStream> startListener;
     private final Map<String,Object> parameters;
+    private final TransactionHandle transactionHandle;
     private final TransactionUriScheme uriInfo;
     private Consumer<OutputEvent> eventListener;
 
-    OutputEventStreamImpl( Map<String,Object> parameters, TransactionUriScheme uriInfo, Consumer<OutputEventStream> startListener )
+    OutputEventStreamImpl( Map<String,Object> parameters, TransactionHandle transactionHandle, TransactionUriScheme uriInfo,
+            Consumer<OutputEventStream> startListener )
     {
         this.parameters = parameters;
+        this.transactionHandle = transactionHandle;
         this.startListener = startListener;
         this.uriInfo = uriInfo;
     }
@@ -109,5 +114,11 @@ class OutputEventStreamImpl implements OutputEventSource, OutputEventStream
     public TransactionUriScheme getUriInfo()
     {
         return uriInfo;
+    }
+
+    @Override
+    public TransactionHandle getTransactionHandle()
+    {
+        return transactionHandle;
     }
 }

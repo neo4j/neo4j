@@ -29,12 +29,20 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.repr.NodeRepresentation;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 
@@ -64,7 +72,7 @@ class RestRepresentationWriterTest
 
         json.writeStartObject();
         // RETURN {one:{two:[true, {three: 42}]}}
-        resultDataContentWriter.write( json, recordEvent );
+        resultDataContentWriter.write( json, recordEvent, null );
         json.writeEndObject();
         json.flush();
         json.close();

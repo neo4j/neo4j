@@ -32,7 +32,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.time.SystemNanoClock;
 
 @Path( CypherResource.DB_TRANSACTION_PATH )
 public class CypherResource extends AbstractCypherResource
@@ -48,10 +47,9 @@ public class CypherResource extends AbstractCypherResource
                            @Context Log log,
                            @Context HttpHeaders headers,
                            @Context HttpServletRequest request,
-                           @PathParam( DB_PATH_PARAM_NAME ) String databaseName,
-                           @Context SystemNanoClock clock )
+                           @PathParam( DB_PATH_PARAM_NAME ) String databaseName )
     {
-        super( httpTransactionManager, uriInfo, memoryPool, log, databaseName, clock );
+        super( httpTransactionManager, uriInfo, memoryPool, log, databaseName );
     }
 
     @Override

@@ -35,12 +35,12 @@ import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
 /**
  * An output stream that can be used to create and send {@link OutputEvent}s.
  */
-public interface OutputEventStream
+interface OutputEventStream
 {
     void writeStatementStart( Statement statement, List<String> columns );
 
     void writeStatementEnd( QueryExecutionType queryExecutionType, QueryStatistics queryStatistics, ExecutionPlanDescription executionPlanDescription,
-                            Iterable<Notification> notifications );
+            Iterable<Notification> notifications );
 
     void writeRecord( List<String> columns, Function<String,Object> valueSupplier );
 

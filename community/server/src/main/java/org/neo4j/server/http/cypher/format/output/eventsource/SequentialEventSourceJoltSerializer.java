@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 
+import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.OutputEvent;
 import org.neo4j.server.http.cypher.format.api.OutputEventSource;
@@ -43,10 +44,10 @@ public class SequentialEventSourceJoltSerializer extends LineDelimitedEventSourc
 
     private static final byte RECORD_SEPARATOR = 0x1E;
 
-    public SequentialEventSourceJoltSerializer( Map<String,Object> parameters, Class<? extends ObjectCodec> classOfCodec,
+    public SequentialEventSourceJoltSerializer( TransactionHandle transactionHandle, Map<String,Object> parameters, Class<? extends ObjectCodec> classOfCodec,
                                                 boolean isStrictMode, JsonFactory jsonFactory, OutputStream output )
     {
-        super( parameters, classOfCodec, isStrictMode, jsonFactory, output );
+        super( transactionHandle, parameters, classOfCodec, isStrictMode, jsonFactory, output );
     }
 
     private void writeRecordSeparator()

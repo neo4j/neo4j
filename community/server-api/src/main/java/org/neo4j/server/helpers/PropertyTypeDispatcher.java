@@ -22,7 +22,6 @@ package org.neo4j.server.helpers;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -103,10 +102,6 @@ public abstract class PropertyTypeDispatcher<K, T>
         {
             return dispatchTemporalAmountArrayProperty( (TemporalAmount[]) property, param );
         }
-        else if ( property instanceof List )
-        {
-            return dispatchList( (List) property, param );
-        }
         else if ( property instanceof Object[] )
         {
             return dispatchOtherArray( (Object[]) property, param );
@@ -123,80 +118,6 @@ public abstract class PropertyTypeDispatcher<K, T>
                 return dispatchOtherProperty( property );
             }
         }
-    }
-
-    private T dispatchList( List propertyList, K param )
-    {
-        var peekedItem = propertyList.get( 0 );
-
-        if ( peekedItem == null )
-        {
-            return dispatchNullProperty();
-        }
-        else if ( peekedItem instanceof String )
-        {
-            var convertedArray = new String[propertyList.size()];
-            for ( int i = 0; i < propertyList.size(); i++ )
-            {
-                convertedArray[i] = (String) propertyList.get( i );
-            }
-            return dispatch( convertedArray, param );
-        }
-        else if ( peekedItem instanceof Number )
-        {
-            var convertedArray = new Number[propertyList.size()];
-            for ( int i = 0; i < propertyList.size(); i++ )
-            {
-                convertedArray[i] = (Number) propertyList.get( i );
-            }
-            return dispatch( convertedArray, param );
-        }
-        else if ( peekedItem instanceof Boolean )
-        {
-            var convertedArray = new Boolean[propertyList.size()];
-            for ( int i = 0; i < propertyList.size(); i++ )
-            {
-                convertedArray[i] = (Boolean) propertyList.get( i );
-            }
-            return dispatch( convertedArray, param );
-        }
-        else if ( peekedItem instanceof Character )
-        {
-            var convertedArray = new Character[propertyList.size()];
-            for ( int i = 0; i < propertyList.size(); i++ )
-            {
-                convertedArray[i] = (Character) propertyList.get( i );
-            }
-            return dispatch( convertedArray, param );
-        }
-        else if ( peekedItem instanceof Point )
-        {
-            var convertedArray = new Point[propertyList.size()];
-            for ( int i = 0; i < propertyList.size(); i++ )
-            {
-                convertedArray[i] = (Point) propertyList.get( i );
-            }
-            return dispatch( convertedArray, param );
-        }
-        else if ( peekedItem instanceof Temporal )
-        {
-            var convertedArray = new Temporal[propertyList.size()];
-            for ( int i = 0; i < propertyList.size(); i++ )
-            {
-                convertedArray[i] = (Temporal) propertyList.get( i );
-            }
-            return dispatch( convertedArray, param );
-        }
-        else if ( peekedItem instanceof TemporalAmount )
-        {
-            var convertedArray = new TemporalAmount[propertyList.size()];
-            for ( int i = 0; i < propertyList.size(); i++ )
-            {
-                convertedArray[i] = (TemporalAmount) propertyList.get( i );
-            }
-            return dispatch( convertedArray, param );
-        }
-        return dispatchOtherProperty( propertyList );
     }
 
     private T dispatchPrimitiveArray( Object property, K param )

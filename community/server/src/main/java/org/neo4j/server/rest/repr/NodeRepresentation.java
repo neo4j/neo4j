@@ -25,18 +25,24 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.server.http.cypher.entity.HttpNode;
+import org.neo4j.server.http.cypher.TransactionStateChecker;
 
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 public final class NodeRepresentation extends ObjectRepresentation implements ExtensibleRepresentation, EntityRepresentation
 {
     private final Node node;
+    private TransactionStateChecker checker;
 
     public NodeRepresentation( Node node )
     {
         super( RepresentationType.NODE );
         this.node = node;
+    }
+
+    public void setTransactionStateChecker( TransactionStateChecker checker )
+    {
+        this.checker = checker;
     }
 
     @Override
@@ -64,12 +70,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
 
     static String path( Node node )
     {
-        return path( node.getId() );
-    }
-
-    static String path( long nodeId )
-    {
-        return "node/" + nodeId;
+        return "node/" + node.getId();
     }
 
     @Mapping( "create_relationship" )
@@ -167,7 +168,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
 
     private boolean isDeleted()
     {
-        return ((HttpNode) node).isDeleted();
+        return checker != null && checker.isNodeDeletedInCurrentTx( node.getId() );
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.server.http.cypher;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +30,7 @@ import org.neo4j.memory.MemoryPool;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;

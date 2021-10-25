@@ -41,6 +41,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.util.Collections.unmodifiableMap;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_ENCODING;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;

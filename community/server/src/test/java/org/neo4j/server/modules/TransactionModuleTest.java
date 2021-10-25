@@ -47,7 +47,7 @@ public class TransactionModuleTest
         Config config = Config.defaults( ServerSettings.db_api_path, URI.create( "/db/data" ) );
 
         // When
-        TransactionModule module = new TransactionModule( webServer, config, null );
+        TransactionModule module = new TransactionModule( webServer, config );
         module.start();
 
         // Then

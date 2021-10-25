@@ -21,19 +21,17 @@ package org.neo4j.server.rest.repr;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import org.neo4j.server.http.cypher.entity.HttpNode;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
+import static org.neo4j.test.mockito.mock.GraphMock.node;
+import static org.neo4j.test.mockito.mock.Properties.properties;
 
 class NodeRepresentationTest
 {
@@ -122,7 +120,7 @@ class NodeRepresentationTest
 
     private static NodeRepresentation noderep( long id )
     {
-        return new NodeRepresentation( new HttpNode( id, List.of( label( "Label" ) ), Collections.emptyMap(), false ) );
+        return new NodeRepresentation( node( id, properties(), "Label" ) );
     }
 
     static void verifySerialisation( Map<String,Object> noderep )

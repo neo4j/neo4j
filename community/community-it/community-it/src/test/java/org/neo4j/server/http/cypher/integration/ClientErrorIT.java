@@ -66,7 +66,7 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                 ),
                 Arguments.of(
                         "SHOW DATABASES",
-                        Status.Transaction.ForbiddenDueToTransactionType
+                        Status.Statement.NotSystemDatabaseError
                 ),
                 Arguments.of(
                         "CREATE INDEX FOR (n:Person) ON (n.name)",

@@ -249,8 +249,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
                                       LogProvider userLogProvider, DbmsInfo dbmsInfo )
     {
-        return new CommunityNeoWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo,
-                                          globalModule.getMemoryPools(), globalModule.getTransactionManager(), globalModule.getGlobalClock() );
+        return new CommunityNeoWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo, globalModule.getMemoryPools() );
     }
 
     @Override

@@ -44,7 +44,6 @@ import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.server.rest.Neo4jError;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
-import org.neo4j.time.SystemNanoClock;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNullElse;
@@ -57,17 +56,14 @@ public abstract class AbstractCypherResource
     private final MemoryPool memoryPool;
     private final Log log;
     private final String databaseName;
-    private final SystemNanoClock clock;
 
-    AbstractCypherResource( HttpTransactionManager httpTransactionManager, UriInfo uriInfo, MemoryPool memoryPool, Log log, String databaseName,
-                            SystemNanoClock clock )
+    AbstractCypherResource( HttpTransactionManager httpTransactionManager, UriInfo uriInfo, MemoryPool memoryPool, Log log, String databaseName )
     {
         this.httpTransactionManager = httpTransactionManager;
         this.databaseName = databaseName;
         this.uriScheme = new TransactionUriBuilder( dbUri( uriInfo, databaseName ), cypherUri( uriInfo, databaseName ) );
         this.memoryPool = memoryPool;
         this.log = log;
-        this.clock = clock;
     }
 
     protected abstract URI dbUri( UriInfo uriInfo, String databaseName );
@@ -81,41 +77,30 @@ public abstract class AbstractCypherResource
         {
             InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-            try
-            {
-                var graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
-                return graphDatabaseAPI.map(
-                        databaseAPI ->
+            var graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+            return graphDatabaseAPI.map(
+                    databaseAPI ->
+                    {
+                        if ( isDatabaseNotAvailable( databaseAPI ) )
                         {
-                            if ( isDatabaseNotAvailable( databaseAPI ) )
-                            {
-                                return createNonAvailableDatabaseResponse( inputStream.getParameters() );
-                            }
+                            return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+                        }
 
-                            memoryTracker.allocateHeap( Invocation.SHALLOW_SIZE );
+                        memoryTracker.allocateHeap( Invocation.SHALLOW_SIZE );
 
-                            final TransactionFacade transactionFacade =
-                                    httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker, databaseName );
-                            TransactionHandle transactionHandle =
-                                    createNewTransactionHandle( transactionFacade, request, headers, memoryTracker, false );
+                        final TransactionFacade transactionFacade =
+                                httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker );
+                        TransactionHandle transactionHandle =
+                                createNewTransactionHandle( transactionFacade, request, headers, memoryTracker, false );
 
-                            Invocation invocation =
-                                    new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), memoryPool, inputStream,
-                                                    false );
-                            OutputEventStreamImpl outputStream =
-                                    new OutputEventStreamImpl( inputStream.getParameters(), uriScheme, invocation::execute );
-                            return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
-                        } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
-            }
-            catch ( RuntimeException ex )
-            {
-                if ( ex instanceof Status.HasStatus )
-                {
-                    return createGenericErrorDatabaseResponse( inputStream.getParameters(), ((Status.HasStatus) ex).status(), ex.getMessage() );
-                }
-
-                throw ex;
-            }
+                        Invocation invocation =
+                                new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), memoryPool, inputStream,
+                                                false );
+                        OutputEventStreamImpl outputStream =
+                                new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme,
+                                                           invocation::execute );
+                        return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
+                    } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
         }
     }
 
@@ -147,38 +132,26 @@ public abstract class AbstractCypherResource
         {
             InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-            try
-            {
-                Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
-                return graphDatabaseAPI.map(
-                        databaseAPI ->
+            Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+            return graphDatabaseAPI.map(
+                    databaseAPI ->
+                    {
+                        if ( isDatabaseNotAvailable( databaseAPI ) )
                         {
-                            if ( isDatabaseNotAvailable( databaseAPI ) )
-                            {
-                                return createNonAvailableDatabaseResponse( inputStream.getParameters() );
-                            }
+                            return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+                        }
 
-                            memoryTracker.allocateHeap( Invocation.SHALLOW_SIZE );
+                        memoryTracker.allocateHeap( Invocation.SHALLOW_SIZE );
 
-                            final TransactionFacade transactionFacade =
-                                    httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker, databaseName );
-                            TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, request, headers, memoryTracker, true );
+                        final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker );
+                        TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, request, headers, memoryTracker, true );
 
-                            Invocation invocation = new Invocation( log, transactionHandle, null, memoryPool, inputStream, true );
-                            OutputEventStreamImpl outputStream =
-                                    new OutputEventStreamImpl( inputStream.getParameters(), uriScheme, invocation::execute );
-                            return Response.ok( outputStream ).build();
-                        } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
-            }
-            catch ( RuntimeException ex )
-            {
-                if ( ex instanceof Status.HasStatus )
-                {
-                    return createGenericErrorDatabaseResponse( inputStream.getParameters(), ((Status.HasStatus) ex).status(), ex.getMessage() );
-                }
-
-                throw ex;
-            }
+                        Invocation invocation = new Invocation( log, transactionHandle, null, memoryPool, inputStream, true );
+                        OutputEventStreamImpl outputStream =
+                                new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme,
+                                                           invocation::execute );
+                        return Response.ok( outputStream ).build();
+                    } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
         }
     }
 
@@ -199,7 +172,7 @@ public abstract class AbstractCypherResource
 
                         memoryTracker.allocateHeap( RollbackInvocation.SHALLOW_SIZE );
 
-                        final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker, databaseName );
+                        final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker );
 
                         TransactionHandle transactionHandle;
                         try
@@ -213,18 +186,9 @@ public abstract class AbstractCypherResource
 
                         RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
                         OutputEventStreamImpl outputEventStream =
-                                new OutputEventStreamImpl( emptyMap(), uriScheme, invocation::execute );
+                                new OutputEventStreamImpl( emptyMap(), null, uriScheme, invocation::execute );
                         return Response.ok().entity( outputEventStream ).build();
                     } ).orElse( createNonExistentDatabaseResponse( emptyMap() ) );
-        }
-        catch ( RuntimeException ex )
-        {
-            if ( ex instanceof Status.HasStatus )
-            {
-                return createGenericErrorDatabaseResponse( emptyMap(), ((Status.HasStatus) ex).status(), ex.getMessage() );
-            }
-
-            throw ex;
         }
     }
 
@@ -244,8 +208,7 @@ public abstract class AbstractCypherResource
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = getTransactionTimeout( headers, log );
         return transactionFacade
-                .newTransactionHandle( uriScheme, implicitTransaction, loginContext, loginContext.connectionInfo(), memoryTracker, customTransactionTimeout,
-                                       clock );
+                .newTransactionHandle( uriScheme, implicitTransaction, loginContext, loginContext.connectionInfo(), memoryTracker, customTransactionTimeout );
     }
 
     private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, MemoryTracker memoryTracker,
@@ -253,57 +216,45 @@ public abstract class AbstractCypherResource
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        try
-        {
-            Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
-            return graphDatabaseAPI.map(
-                    databaseAPI ->
+        Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+        return graphDatabaseAPI.map(
+                databaseAPI ->
+                {
+                    if ( isDatabaseNotAvailable( databaseAPI ) )
                     {
-                        if ( isDatabaseNotAvailable( databaseAPI ) )
-                        {
-                            return createNonAvailableDatabaseResponse( inputStream.getParameters() );
-                        }
+                        return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+                    }
 
-                        memoryTracker.allocateHeap( Invocation.SHALLOW_SIZE );
+                    memoryTracker.allocateHeap( Invocation.SHALLOW_SIZE );
 
-                        final TransactionFacade transactionFacade =
-                                httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker, databaseName );
+                    final TransactionFacade transactionFacade =
+                            httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker );
 
-                        TransactionHandle transactionHandle;
-                        try
-                        {
-                            transactionHandle = transactionFacade.findTransactionHandle( transactionId );
-                        }
-                        catch ( TransactionLifecycleException e )
-                        {
-                            return invalidTransaction( e, inputStream.getParameters() );
-                        }
+                    TransactionHandle transactionHandle;
+                    try
+                    {
+                        transactionHandle = transactionFacade.findTransactionHandle( transactionId );
+                    }
+                    catch ( TransactionLifecycleException e )
+                    {
+                        return invalidTransaction( e, inputStream.getParameters() );
+                    }
 
-                        Invocation invocation =
-                                new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), memoryPool, inputStream,
-                                                finishWithCommit );
-                        OutputEventStreamImpl outputEventStream =
-                                new OutputEventStreamImpl( inputStream.getParameters(), uriScheme, invocation::execute );
+                    Invocation invocation =
+                            new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), memoryPool, inputStream,
+                                            finishWithCommit );
+                    OutputEventStreamImpl outputEventStream =
+                            new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
 
-                        return Response.ok( outputEventStream ).build();
-                    } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
-        }
-        catch ( RuntimeException ex )
-        {
-            if ( ex instanceof Status.HasStatus )
-            {
-                return createGenericErrorDatabaseResponse( inputStream.getParameters(), ((Status.HasStatus) ex).status(), ex.getMessage() );
-            }
-
-            throw ex;
-        }
+                    return Response.ok( outputEventStream ).build();
+                } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
 
     private Response invalidTransaction( TransactionLifecycleException e, Map<String,Object> parameters )
     {
         ErrorInvocation errorInvocation = new ErrorInvocation( e.toNeo4jError() );
         return Response.status( Response.Status.NOT_FOUND ).entity(
-                new OutputEventStreamImpl( parameters, uriScheme, errorInvocation::execute ) ).build();
+                new OutputEventStreamImpl( parameters, null, uriScheme, errorInvocation::execute ) ).build();
     }
 
     private static InputEventStream ensureNotNull( InputEventStream inputEventStream )
@@ -311,31 +262,20 @@ public abstract class AbstractCypherResource
         return requireNonNullElse( inputEventStream, InputEventStream.EMPTY );
     }
 
-    private Response createGenericErrorDatabaseResponse( Map<String,Object> parameters, Status status, String msg )
-    {
-        ErrorInvocation errorInvocation = new ErrorInvocation( new Neo4jError( status, msg ) );
-        return Response.ok( new OutputEventStreamImpl( parameters, uriScheme, errorInvocation::execute ) )
-                       .build();
-    }
-
     private Response createNonExistentDatabaseResponse( Map<String,Object> parameters )
     {
         ErrorInvocation errorInvocation = new ErrorInvocation( new Neo4jError( Status.Database.DatabaseNotFound,
-                                                                               String.format(
-                                                                                       "The database requested does not exists. Requested database name: '%s'.",
-                                                                                       databaseName ) ) );
+                String.format( "The database requested does not exists. Requested database name: '%s'.", databaseName ) ) );
         return Response.status( Response.Status.NOT_FOUND ).entity(
-                new OutputEventStreamImpl( parameters, uriScheme, errorInvocation::execute ) ).build();
+                new OutputEventStreamImpl( parameters, null, uriScheme, errorInvocation::execute ) ).build();
     }
 
     private Response createNonAvailableDatabaseResponse( Map<String,Object> parameters )
     {
         ErrorInvocation errorInvocation = new ErrorInvocation( new Neo4jError( Status.Database.DatabaseUnavailable,
-                                                                               String.format(
-                                                                                       "Requested database is not available. Requested database name: '%s'.",
-                                                                                       databaseName ) ) );
+                String.format( "Requested database is not available. Requested database name: '%s'.", databaseName ) ) );
         return Response.status( Response.Status.NOT_FOUND ).entity(
-                new OutputEventStreamImpl( parameters, uriScheme, errorInvocation::execute ) ).build();
+                new OutputEventStreamImpl( parameters, null, uriScheme, errorInvocation::execute ) ).build();
     }
 
     private static class TransactionUriBuilder implements TransactionUriScheme

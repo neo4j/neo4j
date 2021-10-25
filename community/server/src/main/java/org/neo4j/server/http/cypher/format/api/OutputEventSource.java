@@ -22,6 +22,8 @@ package org.neo4j.server.http.cypher.format.api;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.server.http.cypher.TransactionHandle;
+
 /**
  * A representation of a source of events that are produced by Cypher resource.
  * <p>
@@ -49,6 +51,8 @@ public interface OutputEventSource
      * @return parameters.
      */
     Map<String,Object> getParameters();
+
+    TransactionHandle getTransactionHandle();
 
     TransactionUriScheme getUriInfo();
 }
