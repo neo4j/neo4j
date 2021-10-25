@@ -11,7 +11,12 @@ Apache Software License, Version 2.0
   Java Agent for Memory Measurements
   Java Native Access
   Jettison
-  Netty/All-in-One
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
 ------------------------------------------------------------------------------
 
                                  Apache License
