@@ -183,7 +183,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
                                                   useErrorsOverWarnings = false)
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE, UsingAnyIndexType))
   }
 
   test("should issue warning when finding plan that contains unfulfillable relationship index hint") {
@@ -194,7 +194,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       useErrorsOverWarnings = false)
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP, UsingAnyIndexType))
   }
 
   test("should issue warning when finding plan that contains unfulfillable node text index hint") {
@@ -205,7 +205,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
                                                   useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(UsingTextIndexType), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE, UsingTextIndexType))
   }
 
   test("should issue warning when finding plan that contains unfulfillable relationship text index hint") {
@@ -216,7 +216,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
                                                   useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(UsingTextIndexType), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP, UsingTextIndexType))
   }
 
   test("should issue warning when finding plan that contains unfulfillable node btree index hint") {
@@ -227,7 +227,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
                                                   useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(UsingBtreeIndexType), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE, UsingBtreeIndexType))
   }
 
   test("should issue warning when finding plan that contains unfulfillable relationship btree index hint") {
@@ -238,7 +238,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
                                                   useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
 
     VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(UsingBtreeIndexType), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP))
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP, UsingBtreeIndexType))
   }
 
   test("should issue warning when finding plan that contains unfulfillable join hint") {

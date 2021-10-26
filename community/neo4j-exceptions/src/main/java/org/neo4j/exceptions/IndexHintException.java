@@ -27,13 +27,20 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class IndexHintException extends Neo4jException
 {
+    public enum IndexHintIndexType
+    {
+        ANY,
+        BTREE,
+        TEXT
+    }
 
     public IndexHintException( String variableName,
                                String labelOrRelType,
                                List<String> properties,
-                               EntityType entityType )
+                               EntityType entityType,
+                               IndexHintIndexType indexType )
     {
-        super( msg( variableName, labelOrRelType, properties, entityType ) );
+        super( msg( variableName, labelOrRelType, properties, entityType, indexType ) );
     }
 
     @Override
@@ -45,15 +52,17 @@ public class IndexHintException extends Neo4jException
     private static String msg( String variableName,
                                String labelOrRelType,
                                List<String> properties,
-                               EntityType entityType )
+                               EntityType entityType,
+                               IndexHintIndexType indexType )
     {
-        return String.format( "No such index: %s", indexFormatString( variableName, labelOrRelType, properties, entityType ) );
+        return String.format( "No such index: %s", indexFormatString( variableName, labelOrRelType, properties, entityType, indexType ) );
     }
 
     public static String indexFormatString( String variableName,
                                             String labelOrRelType,
                                             List<String> properties,
-                                            EntityType entityType )
+                                            EntityType entityType,
+                                            IndexHintIndexType indexType )
     {
         String escapedVarName = escape( variableName );
 
@@ -64,14 +73,28 @@ public class IndexHintException extends Neo4jException
                 .map( propertyName -> escapedVarName + "." + escape( propertyName ) )
                 .collect( Collectors.joining( ", " ) );
 
+        String typeString;
+        switch ( indexType )
+        {
+        case BTREE:
+            typeString = "BTREE ";
+            break;
+        case TEXT:
+            typeString = "TEXT ";
+            break;
+        default:
+            typeString = "";
+            break;
+        }
+
         String indexFormatString;
         switch ( entityType )
         {
         case NODE:
-            indexFormatString = String.format( "INDEX FOR (%s:%s) ON (%s)", escapedVarName, escapedLabelOrRelTypeName, propertyNames );
+            indexFormatString = String.format( "%sINDEX FOR (%s:%s) ON (%s)", typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames );
             break;
         case RELATIONSHIP:
-            indexFormatString = String.format( "INDEX FOR ()-[%s:%s]-() ON (%s)", escapedVarName, escapedLabelOrRelTypeName, propertyNames );
+            indexFormatString = String.format( "%sINDEX FOR ()-[%s:%s]-() ON (%s)", typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames );
             break;
         default:
             indexFormatString = "";

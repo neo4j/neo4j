@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -93,7 +94,10 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.neo4j.exceptions.HintException
+import org.neo4j.exceptions.IndexHintException
 import org.neo4j.graphdb.schema.IndexType
+
+import java.lang.Boolean.TRUE
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp with LogicalPlanningIntegrationTestSupport {
 
@@ -768,26 +772,27 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )
   }
 
-  test("should fail planning when index hint has btree type but the only matching index is text") {
+  test("should warn when index hint has btree type but the only matching index is text") {
 
     val planner = nodeIndexHints.config
+      .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
       .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
       .build()
 
-    the[HintException]
+    the[Exception]
       .thrownBy(planner.plan(nodeIndexHints.query("USING BTREE INDEX b:B(prop)")))
-      .getMessage.should(include("USING BTREE INDEX b:B(prop)"))
+      .getMessage.should(include("No such index: BTREE INDEX FOR (`b`:`B`) ON (`b`.`prop`)"))
   }
 
-  test("should fail planning when index hint has text type but the only matching index is btree") {
-
+  test("should warn when index hint has text type but the only matching index is btree") {
     val planner = nodeIndexHints.config
+      .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
       .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
       .build()
 
-    the[HintException]
+    the[IndexHintException]
       .thrownBy(planner.plan(nodeIndexHints.query("USING TEXT INDEX b:B(prop)")))
-      .getMessage.should(include("USING TEXT INDEX b:B(prop)"))
+      .getMessage.should(include("No such index: TEXT INDEX FOR (`b`:`B`) ON (`b`.`prop`)"))
   }
 
   private object relIndexHints {
@@ -822,15 +827,16 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )
   }
 
-  test("should fail planning when index hint has text type but the only matching index is btree rel index") {
+  test("should warn when index hint has text type but the only matching index is btree rel index") {
 
     val planner = relIndexHints.config
+      .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
       .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
       .build()
 
-    the[HintException]
+    the[IndexHintException]
       .thrownBy(planner.plan(relIndexHints.query("USING TEXT INDEX r:R(prop)")))
-      .getMessage.should(include("USING TEXT INDEX r:R(prop)"))
+      .getMessage.should(include("No such index: TEXT INDEX FOR ()-[`r`:`R`]-() ON (`r`.`prop`)"))
   }
 
   test("should plan text relationship index when index hint has text type") {

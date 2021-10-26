@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 
@@ -31,7 +32,7 @@ case object StartUnavailableFallback extends InternalNotification
 
 case class RuntimeUnsupportedNotification(msg: String) extends InternalNotification
 
-case class IndexHintUnfulfillableNotification(variableName: String, labelOrRelType: String, propertyKeys: Seq[String], entityType: EntityType) extends InternalNotification
+case class IndexHintUnfulfillableNotification(variableName: String, labelOrRelType: String, propertyKeys: Seq[String], entityType: EntityType, indexType: UsingIndexHintType) extends InternalNotification
 
 case class JoinHintUnfulfillableNotification(identified: Seq[String]) extends InternalNotification
 

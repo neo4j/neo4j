@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.IndexHintException;
+import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 
 public interface NotificationDetail
 {
@@ -43,21 +44,64 @@ public interface NotificationDetail
             return createDeprecationNotificationDetail( oldName, newName );
         }
 
-        public static NotificationDetail nodeIndex( final String variableName, final String labelName, final String... propertyKeyNames )
+        public static NotificationDetail nodeAnyIndex( final String variableName, final String labelName, final String... propertyKeyNames )
         {
             String indexFormatString = IndexHintException.indexFormatString( variableName,
                                                                              labelName,
                                                                              Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.NODE );
+                                                                             EntityType.NODE,
+                                                                             IndexHintIndexType.ANY );
             return createNotificationDetail( "index", indexFormatString, true );
         }
 
-        public static NotificationDetail relationshipIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
+        public static NotificationDetail nodeBtreeIndex( final String variableName, final String labelName, final String... propertyKeyNames )
+        {
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             labelName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.NODE,
+                                                                             IndexHintIndexType.BTREE );
+            return createNotificationDetail( "index", indexFormatString, true );
+        }
+
+        public static NotificationDetail nodeTextIndex( final String variableName, final String labelName, final String... propertyKeyNames )
+        {
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             labelName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.NODE,
+                                                                             IndexHintIndexType.TEXT );
+            return createNotificationDetail( "index", indexFormatString, true );
+        }
+
+        public static NotificationDetail relationshipAnyIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
         {
             String indexFormatString = IndexHintException.indexFormatString( variableName,
                                                                              relationshipTypeName,
                                                                              Arrays.asList( propertyKeyNames ),
-                                                                             EntityType.RELATIONSHIP );
+                                                                             EntityType.RELATIONSHIP,
+                                                                             IndexHintIndexType.ANY );
+            return createNotificationDetail( "index", indexFormatString, true );
+        }
+
+        public static NotificationDetail relationshipBtreeIndex( final String variableName, final String relationshipTypeName,
+                                                                 final String... propertyKeyNames )
+        {
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             relationshipTypeName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.RELATIONSHIP,
+                                                                             IndexHintIndexType.BTREE );
+            return createNotificationDetail( "index", indexFormatString, true );
+        }
+
+        public static NotificationDetail relationshipTextIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
+        {
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             relationshipTypeName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.RELATIONSHIP,
+                                                                             IndexHintIndexType.TEXT );
             return createNotificationDetail( "index", indexFormatString, true );
         }
 
@@ -109,9 +153,9 @@ public interface NotificationDetail
                 builder.append( identifier );
             }
             return createNotificationDetail(
-                singular ? "hinted join key identifier" : "hinted join key identifiers",
-                builder.toString(),
-                singular
+                    singular ? "hinted join key identifier" : "hinted join key identifiers",
+                    builder.toString(),
+                    singular
             );
         }
 
@@ -188,10 +232,10 @@ public interface NotificationDetail
                 {
                     return String.format(
                             "Binding a variable length relationship pattern to a variable ('%s') is deprecated and "
-                                    + "will be unsupported in a future version. The recommended way is to bind the "
-                                    + "whole path to a variable, then extract the relationships:%n"
-                                    + "\tMATCH p = (...)-[...]-(...)%n"
-                                    + "\tWITH *, relationships(p) AS %s",
+                            + "will be unsupported in a future version. The recommended way is to bind the "
+                            + "whole path to a variable, then extract the relationships:%n"
+                            + "\tMATCH p = (...)-[...]-(...)%n"
+                            + "\tWITH *, relationships(p) AS %s",
                             element, element );
                 }
 
@@ -204,7 +248,7 @@ public interface NotificationDetail
         }
 
         private static NotificationDetail createNotificationDetail( Set<String> elements, String singularTerm,
-                String pluralTerm )
+                                                                    String pluralTerm )
         {
             StringBuilder builder = new StringBuilder();
             builder.append( '(' );
@@ -221,7 +265,7 @@ public interface NotificationDetail
         }
 
         private static NotificationDetail createNotificationDetail( final String name, final String value,
-                final boolean singular )
+                                                                    final boolean singular )
         {
             return new NotificationDetail()
             {

@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,7 +37,8 @@ class IndexHintExceptionTest
         String actual = IndexHintException.indexFormatString( "person",
                                                               "Person",
                                                               Collections.singletonList( "name" ),
-                                                              EntityType.NODE );
+                                                              EntityType.NODE,
+                                                              IndexHintIndexType.ANY );
         String expected = "INDEX FOR (`person`:`Person`) ON (`person`.`name`)";
         assertEquals( expected, actual );
     }
@@ -47,7 +49,8 @@ class IndexHintExceptionTest
         String actual = IndexHintException.indexFormatString( "person",
                                                               "Person",
                                                               Arrays.asList( "name", "surname" ),
-                                                              EntityType.NODE );
+                                                              EntityType.NODE,
+                                                              IndexHintIndexType.ANY );
         String expected = "INDEX FOR (`person`:`Person`) ON (`person`.`name`, `person`.`surname`)";
         assertEquals( expected, actual );
     }
@@ -58,7 +61,8 @@ class IndexHintExceptionTest
         String actual = IndexHintException.indexFormatString( "person",
                                                               "Person",
                                                               Collections.singletonList( "name" ),
-                                                              EntityType.RELATIONSHIP );
+                                                              EntityType.RELATIONSHIP,
+                                                              IndexHintIndexType.ANY );
         String expected = "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)";
         assertEquals( expected, actual );
     }
@@ -69,7 +73,8 @@ class IndexHintExceptionTest
         String actual = IndexHintException.indexFormatString( "person",
                                                               "Person",
                                                               Arrays.asList( "name", "surname" ),
-                                                              EntityType.RELATIONSHIP );
+                                                              EntityType.RELATIONSHIP,
+                                                              IndexHintIndexType.ANY );
         String expected = "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`, `person`.`surname`)";
         assertEquals( expected, actual );
     }
@@ -80,7 +85,8 @@ class IndexHintExceptionTest
         String actual = IndexHintException.indexFormatString( "pers`on",
                                                               "Person",
                                                               Collections.singletonList( "name" ),
-                                                              EntityType.NODE );
+                                                              EntityType.NODE,
+                                                              IndexHintIndexType.ANY );
         String expected = "INDEX FOR (`pers``on`:`Person`) ON (`pers``on`.`name`)";
         assertEquals( expected, actual );
     }
@@ -91,7 +97,8 @@ class IndexHintExceptionTest
         String actual = IndexHintException.indexFormatString( "person",
                                                               "Pers`on",
                                                               Collections.singletonList( "name" ),
-                                                              EntityType.NODE );
+                                                              EntityType.NODE,
+                                                              IndexHintIndexType.ANY );
         String expected = "INDEX FOR (`person`:`Pers``on`) ON (`person`.`name`)";
         assertEquals( expected, actual );
     }
@@ -102,7 +109,8 @@ class IndexHintExceptionTest
         String actual = IndexHintException.indexFormatString( "person",
                                                               "Pers`on",
                                                               Collections.singletonList( "name" ),
-                                                              EntityType.RELATIONSHIP );
+                                                              EntityType.RELATIONSHIP,
+                                                              IndexHintIndexType.ANY );
         String expected = "INDEX FOR ()-[`person`:`Pers``on`]-() ON (`person`.`name`)";
         assertEquals( expected, actual );
     }
@@ -113,8 +121,33 @@ class IndexHintExceptionTest
         String actual = IndexHintException.indexFormatString( "person",
                                                               "Person",
                                                               Arrays.asList( "nam`e", "s`urname" ),
-                                                              EntityType.NODE );
+                                                              EntityType.NODE,
+                                                              IndexHintIndexType.ANY );
         String expected = "INDEX FOR (`person`:`Person`) ON (`person`.`nam``e`, `person`.`s``urname`)";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void indexFormatStringForBtreeIndex()
+    {
+        String actual = IndexHintException.indexFormatString( "person",
+                                                              "Person",
+                                                              Collections.singletonList( "name" ),
+                                                              EntityType.NODE,
+                                                              IndexHintIndexType.BTREE );
+        String expected = "BTREE INDEX FOR (`person`:`Person`) ON (`person`.`name`)";
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void indexFormatStringForTextIndex()
+    {
+        String actual = IndexHintException.indexFormatString( "person",
+                                                              "Person",
+                                                              Collections.singletonList( "name" ),
+                                                              EntityType.NODE,
+                                                              IndexHintIndexType.TEXT );
+        String expected = "TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`)";
         assertEquals( expected, actual );
     }
 }

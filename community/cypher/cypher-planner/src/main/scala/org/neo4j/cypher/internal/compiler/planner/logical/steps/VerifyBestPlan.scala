@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.HintException
 import org.neo4j.exceptions.IndexHintException
+import org.neo4j.exceptions.IndexHintException.IndexHintIndexType
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.JoinHintException
 
@@ -105,12 +106,10 @@ object VerifyBestPlan {
     if (hints.nonEmpty) {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
-        val UnfulfillableIndexHint(firstIndexHint, entityType) = hints.head
-        throw new IndexHintException(firstIndexHint.variable.name, firstIndexHint.labelOrRelType.name, firstIndexHint.properties.map(_.name).asJava, entityType)
+        throw hints.head.toException
       } else {
-        hints.foreach {
-          case UnfulfillableIndexHint(hint, entityType) =>
-            context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.variable.name, hint.labelOrRelType.name, hint.properties.map(_.name), entityType))
+        hints.foreach { hint =>
+            context.notificationLogger.log(hint.toNotification)
         }
       }
     }
@@ -129,7 +128,19 @@ object VerifyBestPlan {
     }
   }
 
-  case class UnfulfillableIndexHint(hint: UsingIndexHint, entityType: EntityType)
+  case class UnfulfillableIndexHint(hint: UsingIndexHint, entityType: EntityType) {
+    def toNotification: IndexHintUnfulfillableNotification =
+      IndexHintUnfulfillableNotification(hint.variable.name, hint.labelOrRelType.name, hint.properties.map(_.name), entityType, hint.indexType)
+
+    def toException: IndexHintException = {
+      val exceptionIndexType = hint.indexType match {
+        case UsingAnyIndexType => IndexHintIndexType.ANY
+        case UsingBtreeIndexType => IndexHintIndexType.BTREE
+        case UsingTextIndexType => IndexHintIndexType.TEXT
+      }
+      new IndexHintException(hint.variable.name, hint.labelOrRelType.name, hint.properties.map(_.name).asJava, entityType, exceptionIndexType)
+    }
+  }
 
   private def findUnfulfillableIndexHints(query: PlannerQueryPart, context: LogicalPlanningContext): Set[UnfulfillableIndexHint] = {
     

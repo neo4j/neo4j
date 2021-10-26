@@ -42,7 +42,8 @@ import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CS
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.UNBOUNDED_SHORTEST_PATH;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.nodeIndex;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.nodeAnyIndex;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.nodeTextIndex;
 
 class NotificationAcceptanceTest extends NotificationTestSupport
 {
@@ -90,18 +91,24 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     void shouldWarnOnceWhenSingleIndexHintCannotBeFulfilled()
     {
         shouldNotifyInStreamWithDetail( " EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", InputPosition.empty,
-                                        INDEX_HINT_UNFULFILLABLE, nodeIndex( "n", "Person", "name" ) );
+                                        INDEX_HINT_UNFULFILLABLE, nodeAnyIndex( "n", "Person", "name" ) );
     }
 
     @Test
     void shouldWarnOnEachUnfulfillableIndexHint()
     {
-        String query = " EXPLAIN MATCH (n:Person), (m:Party), (k:Animal) " + "USING INDEX n:Person(name) " + "USING INDEX m:Party(city) " +
-                "USING INDEX k:Animal(species) " + "WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth' " + "RETURN n";
+        String query = " EXPLAIN MATCH (n:Person), (m:Party), (k:Animal), (o:Other)"
+                       + "USING INDEX n:Person(name) "
+                       + "USING INDEX m:Party(city) "
+                       + "USING INDEX k:Animal(species) "
+                       + "USING TEXT INDEX o:Other(text)"
+                       + "WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth' AND o.text STARTS WITH 'a' "
+                       + "RETURN n";
 
-        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "n", "Person", "name" ) );
-        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "m","Party", "city" ) );
-        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "k", "Animal", "species" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeAnyIndex( "n", "Person", "name" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeAnyIndex( "m", "Party", "city" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeAnyIndex( "k", "Animal", "species" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeTextIndex( "o", "Other", "text" ) );
     }
 
     @Test

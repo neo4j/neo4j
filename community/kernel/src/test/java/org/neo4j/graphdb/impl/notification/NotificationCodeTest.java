@@ -41,7 +41,7 @@ class NotificationCodeTest
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_index()
     {
-        NotificationDetail indexDetail = NotificationDetail.Factory.nodeIndex( "person", "Person", "name" );
+        NotificationDetail indexDetail = NotificationDetail.Factory.nodeAnyIndex( "person", "Person", "name" );
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
 
         assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
@@ -53,9 +53,37 @@ class NotificationCodeTest
     }
 
     @Test
+    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_btree_index()
+    {
+        NotificationDetail indexDetail = NotificationDetail.Factory.nodeBtreeIndex( "person", "Person", "name" );
+        Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
+
+        assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
+        assertThat( notification.getSeverity() ).isEqualTo( SeverityLevel.WARNING );
+        assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
+        assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
+        assertThat( notification.getDescription() ).isEqualTo(
+                "The hinted index does not exist, please check the schema (index is: BTREE INDEX FOR (`person`:`Person`) ON (`person`.`name`))" );
+    }
+
+    @Test
+    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_text_index()
+    {
+        NotificationDetail indexDetail = NotificationDetail.Factory.nodeTextIndex( "person", "Person", "name" );
+        Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
+
+        assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
+        assertThat( notification.getSeverity() ).isEqualTo( SeverityLevel.WARNING );
+        assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
+        assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
+        assertThat( notification.getDescription() ).isEqualTo(
+                "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`))" );
+    }
+
+    @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_index()
     {
-        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipIndex( "person","Person", "name" );
+        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipAnyIndex( "person", "Person", "name" );
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
 
         assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
@@ -64,6 +92,34 @@ class NotificationCodeTest
         assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
         assertThat( notification.getDescription() ).isEqualTo(
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))" );
+    }
+
+    @Test
+    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_btree_index()
+    {
+        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipBtreeIndex( "person", "Person", "name" );
+        Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
+
+        assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
+        assertThat( notification.getSeverity() ).isEqualTo( SeverityLevel.WARNING );
+        assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
+        assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
+        assertThat( notification.getDescription() ).isEqualTo(
+                "The hinted index does not exist, please check the schema (index is: BTREE INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))" );
+    }
+
+    @Test
+    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_text_index()
+    {
+        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipTextIndex( "person","Person", "name" );
+        Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
+
+        assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
+        assertThat( notification.getSeverity() ).isEqualTo( SeverityLevel.WARNING );
+        assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
+        assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
+        assertThat( notification.getDescription() ).isEqualTo(
+                "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))" );
     }
 
     @Test

@@ -20,6 +20,9 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
+import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.compiler.CodeGenerationFailedNotification
 import org.neo4j.cypher.internal.compiler.DeprecatedFieldNotification
 import org.neo4j.cypher.internal.compiler.DeprecatedProcedureNotification
@@ -86,10 +89,18 @@ object NotificationWrapping {
       NotificationCode.LENGTH_ON_NON_PATH.notification(pos.withOffset(offset).asInputPosition)
     case RuntimeUnsupportedNotification(msg) =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Runtime unsupported", msg))
-    case IndexHintUnfulfillableNotification(variableName, label, propertyKeys, entityType) =>
+    case IndexHintUnfulfillableNotification(variableName, label, propertyKeys, entityType, indexType) =>
       val detail = entityType match {
-        case EntityType.NODE => NotificationDetail.Factory.nodeIndex(variableName, label, propertyKeys: _*)
-        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipIndex(variableName, label, propertyKeys: _*)
+        case EntityType.NODE => indexType match {
+            case UsingAnyIndexType => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
+            case UsingBtreeIndexType => NotificationDetail.Factory.nodeBtreeIndex(variableName, label, propertyKeys: _*)
+            case UsingTextIndexType => NotificationDetail.Factory.nodeTextIndex(variableName, label, propertyKeys: _*)
+          }
+        case EntityType.RELATIONSHIP => indexType match {
+          case UsingAnyIndexType => NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
+          case UsingBtreeIndexType => NotificationDetail.Factory.relationshipBtreeIndex(variableName, label, propertyKeys: _*)
+          case UsingTextIndexType => NotificationDetail.Factory.relationshipTextIndex(variableName, label, propertyKeys: _*)
+        }
       }
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, detail)
     case JoinHintUnfulfillableNotification(variables) =>
@@ -154,14 +165,14 @@ object NotificationWrapping {
       NotificationCode.EXPERIMENTAL_FEATURE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("PARALLEL", msg))
     case SuboptimalIndexForConstainsQueryNotification(variableName, label, propertyKeys, entityType) =>
       val detail = entityType match {
-        case EntityType.NODE => NotificationDetail.Factory.nodeIndex(variableName, label, propertyKeys: _*)
-        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipIndex(variableName, label, propertyKeys: _*)
+        case EntityType.NODE => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
+        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
       }
       NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(graphdb.InputPosition.empty, detail)
     case SuboptimalIndexForEndsWithQueryNotification(variableName, label, propertyKeys, entityType) =>
       val detail = entityType match {
-        case EntityType.NODE => NotificationDetail.Factory.nodeIndex(variableName, label, propertyKeys: _*)
-        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipIndex(variableName, label, propertyKeys: _*)
+        case EntityType.NODE => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
+        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
       }
       NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(graphdb.InputPosition.empty, detail)
     case MissingParametersNotification(names) =>

@@ -34,7 +34,7 @@ class NotificationDetailTest
     @Test
     void shouldConstructNodeIndexDetails()
     {
-        NotificationDetail detail = NotificationDetail.Factory.nodeIndex("person", "Person", "name" );
+        NotificationDetail detail = NotificationDetail.Factory.nodeAnyIndex( "person", "Person", "name" );
 
         assertThat( detail.name() ).isEqualTo( "index" );
         assertThat( detail.value() ).isEqualTo( "INDEX FOR (`person`:`Person`) ON (`person`.`name`)" );
@@ -44,7 +44,7 @@ class NotificationDetailTest
     @Test
     void shouldConstructRelationshipIndexDetails()
     {
-        NotificationDetail detail = NotificationDetail.Factory.relationshipIndex( "person", "Person", "name" );
+        NotificationDetail detail = NotificationDetail.Factory.relationshipAnyIndex( "person", "Person", "name" );
 
         assertThat( detail.name() ).isEqualTo( "index" );
         assertThat( detail.value() ).isEqualTo( "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" );
