@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
+import org.neo4j.cypher.internal.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -43,6 +44,8 @@ import org.neo4j.exceptions.JoinHintException
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
 object VerifyBestPlan {
+  private val prettifier = Prettifier(ExpressionStringifier())
+
   def apply(plan: LogicalPlan, expected: PlannerQueryPart, context: LogicalPlanningContext): Unit = {
     val constructed: PlannerQueryPart = context.planningAttributes.solveds.get(plan.id)
 
@@ -71,7 +74,7 @@ object VerifyBestPlan {
           val solvedInAddition = actualHints.diff(expectedHints)
           val inventedHintsAndThenSolvedThem = solvedInAddition.exists(!expectedHints.contains(_))
           if (missing.nonEmpty || inventedHintsAndThenSolvedThem) {
-            def out(h: Set[Hint]) = h.mkString("`", ", ", "`")
+            def out(h: Set[Hint]) = h.map(prettifier.asString).mkString("`", ", ", "`")
 
             val details = if (missing.isEmpty)
               s"""Expected:
