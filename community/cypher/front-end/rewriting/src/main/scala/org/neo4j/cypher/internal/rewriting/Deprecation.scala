@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
@@ -342,6 +343,12 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedPeriodicCommit(p.position))
+        )
+
+      case h@ast.UsingIndexHint(_, _, _, _, UsingBtreeIndexType) =>
+        Deprecation(
+          None,
+          Some(DeprecatedBtreeIndexSyntax(h.position))
         )
 
       // distance -> point.distance

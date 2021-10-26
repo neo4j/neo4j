@@ -438,6 +438,26 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotificationInSupportedVersions(deprecated, DEPRECATED_POINTS_COMPARE)
   }
 
+  test("btree index hint") {
+    val deprecated = Seq(
+      "MATCH (n:Label) USING BTREE INDEX n:Label(prop) WHERE n.prop > 5 RETURN n",
+      "MATCH (n:Label) USING BTREE INDEX SEEK n:Label(prop) WHERE n.prop > 5 RETURN n",
+      "MATCH ()-[r:REL]->() USING BTREE INDEX r:REL(prop) WHERE r.prop > 5 RETURN r",
+      "MATCH ()-[r:REL]->() USING BTREE INDEX SEEK r:REL(prop) WHERE r.prop > 5 RETURN r",
+    )
+
+    val notDeprecated = Seq(
+      "MATCH (n:Label) USING INDEX n:Label(prop) WHERE n.prop > 5 RETURN n",
+      "MATCH ()-[r:REL]->() USING TEXT INDEX r:REL(prop) WHERE r.prop > 5 RETURN r",
+      "MATCH (n:Label) USING TEXT INDEX SEEK n:Label(prop) WHERE n.prop > 5 RETURN n",
+      "MATCH ()-[r:REL]->() USING INDEX SEEK r:REL(prop) WHERE r.prop > 5 RETURN r",
+    )
+
+    assertNotificationInSupportedVersions(deprecated, DEPRECATED_BTREE_INDEX_SYNTAX)
+
+    assertNoNotificationInSupportedVersions(notDeprecated, DEPRECATED_BTREE_INDEX_SYNTAX)
+  }
+
   // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 
   test("deprecated toInt") {
