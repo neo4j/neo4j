@@ -49,7 +49,6 @@ import org.neo4j.cypher.internal.runtime.ResourceMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
-import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.QueryProfile
@@ -120,6 +119,12 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   def restartTx(transactionType: KernelTransaction.Type = getTransactionType): Unit = {
     _txContext.close()
     _tx.commit()
+    _tx = cypherGraphDb.beginTransaction(transactionType, LoginContext.AUTH_DISABLED)
+    _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+  }
+  def rollbackAndRestartTx(transactionType: KernelTransaction.Type = getTransactionType): Unit = {
+    _txContext.close()
+    _tx.rollback()
     _tx = cypherGraphDb.beginTransaction(transactionType, LoginContext.AUTH_DISABLED)
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }

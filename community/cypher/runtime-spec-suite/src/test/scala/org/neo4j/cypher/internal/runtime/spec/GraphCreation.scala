@@ -82,6 +82,14 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
+   * This method performs some actions and then does a rollback on the transaction
+   */
+  def rollback(f: => Unit): Unit = {
+    f
+    runtimeTestSupport.rollbackAndRestartTx()
+  }
+
+  /**
    * This method should be invoked with the complete graph setup given as a block, if the graph is not needed later on (e.g. for assertions).
    * It creates a new transaction with the supplied transactionType.
    * It could be overridden to simply call `f` to test the case where the data is created in the same transaction

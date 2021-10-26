@@ -1208,6 +1208,28 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     produceResultProfile.rows() shouldBe sizeHint
     produceResultProfile.dbHits() shouldBe sizeHint * 2
   }
+
+  test("merge on the RHS of an apply with Unwind on top of apply") {
+    //given empty database
+
+    //when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("idB")
+      .nonFuseable()
+      .unwind("[1,2,3] AS idB")
+      .apply()
+      .|.merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{id: idA}")))
+      .|.filter("n.id = idA")
+      .|.allNodeScan("n")
+      .unwind("[1,2] AS idA")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("idB").withRows(Seq(Array(1), Array(2), Array(3), Array(1), Array(2), Array(3))).withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
+  }
 }
 
 // Supported by pipelined only
