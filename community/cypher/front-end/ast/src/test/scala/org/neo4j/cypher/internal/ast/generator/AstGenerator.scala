@@ -1566,7 +1566,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     ImpersonateUserAction,
     AllUserActions, ShowUserAction, CreateUserAction, RenameUserAction, SetUserStatusAction, SetUserHomeDatabaseAction, SetPasswordsAction, AlterUserAction, DropUserAction,
     AllRoleActions, ShowRoleAction, CreateRoleAction, RenameRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
-    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,/* AlterDatabaseAction ,*/ SetDatabaseAccessAction,  //TODO: Add these when all generated identifiers are parsed in JavaCC
+    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,/* AlterDatabaseAction , SetDatabaseAccessAction,*/  //TODO: Add these when all generated identifiers are parsed in JavaCC
     AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
   )
 
