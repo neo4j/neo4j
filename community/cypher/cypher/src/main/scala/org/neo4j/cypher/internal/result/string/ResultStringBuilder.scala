@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.result.string
 
-import java.io.PrintWriter
-
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
@@ -34,6 +32,7 @@ import org.neo4j.graphdb.Result.ResultRow
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.impl.query.TransactionalContext
 
+import java.io.PrintWriter
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -143,7 +142,7 @@ class ResultStringBuilder private(columns: Array[String],
     val scalaValue = scalaValues.asShallowScalaValue(a)
     scalaValue match {
       case node: Node => s"Node[${node.getId}]${props(node)}"
-      case relationship: Relationship => s":${relationship.getType.name()}[${relationship.getId}]${props(relationship)}"
+      case relationship: Relationship => s"${relationshipType(relationship)}[${relationship.getId}]${props(relationship)}"
       case path: Path => pathAsTextValue(path)
       case map: Map[_, _] => makeString(map)
       case opt: Option[_] => opt.map(asTextValue).getOrElse("None")
@@ -201,6 +200,20 @@ class ResultStringBuilder private(columns: Array[String],
     if (deletedInTx.relationship(r.getId))
       "{deleted}"
     else entityProps(r)
+  }
+
+  private def relationshipType(r: Relationship): String = {
+    if (deletedInTx.relationship(r.getId)) {
+      // deleted in this tx
+      ""
+    } else {
+      try {
+        ":" + r.getType.name()
+      } catch {
+        // deleted in another tx
+        case _: NotFoundException => ""
+      }
+    }
   }
 
   private def entityProps(e: Entity): String = {
