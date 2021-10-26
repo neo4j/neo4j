@@ -46,17 +46,17 @@ public class LogChannel implements AutoCloseable
         return channel;
     }
 
+    public long getLastTxId()
+    {
+        return lastTxId;
+    }
+
     /**
      * @return a known transaction-ending aligned offset for this channel.
      */
     public long getEndOffset()
     {
         return endOffset;
-    }
-
-    public long getLastTxId()
-    {
-        return lastTxId;
     }
 
     @Override
