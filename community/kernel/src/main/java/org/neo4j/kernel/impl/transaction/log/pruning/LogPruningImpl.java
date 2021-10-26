@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.concurrent.locks.Lock;
 import java.util.function.LongConsumer;
 
@@ -32,7 +33,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.time.SystemNanoClock;
 
 import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
@@ -48,7 +48,7 @@ public class LogPruningImpl implements LogPruning
     private final LogFiles logFiles;
     private final Log log;
     private final LogPruneStrategyFactory strategyFactory;
-    private final SystemNanoClock clock;
+    private final Clock clock;
     private final LogProvider logProvider;
     private final int checkpointFilesToKeep;
     private volatile LogPruneStrategy pruneStrategy;
@@ -57,7 +57,7 @@ public class LogPruningImpl implements LogPruning
                            LogFiles logFiles,
                            LogProvider logProvider,
                            LogPruneStrategyFactory strategyFactory,
-                           SystemNanoClock clock,
+                           Clock clock,
                            Config config,
                            Lock pruneLock )
     {

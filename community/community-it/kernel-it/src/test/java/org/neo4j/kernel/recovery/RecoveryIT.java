@@ -31,12 +31,15 @@ import java.lang.reflect.InvocationHandler;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
@@ -137,6 +140,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_ST
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
+import static org.neo4j.kernel.recovery.Recovery.performRecoveryWithLogPruning;
 import static org.neo4j.kernel.recovery.facade.RecoveryCriteria.ALL;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -868,6 +872,28 @@ class RecoveryIT
     }
 
     @Test
+    void shouldPruneLogsIfSpecified() throws Throwable
+    {
+        GraphDatabaseAPI db = createDatabase( ByteUnit.kibiBytes( 128 ) );
+        RecordDatabaseLayout layout = RecordDatabaseLayout.cast( db.databaseLayout() );
+        for ( int i = 0; i < 10; i++ )
+        {
+            generateSomeData( db );
+        }
+        managementService.shutdown();
+
+        assertThat( Arrays.stream( fileSystem.listFiles( layout.getTransactionLogsDirectory() ) ).filter( path -> path.toString().contains( "transaction.db" ) )
+                .count() ).isGreaterThan( 2 );
+        fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
+        assertTrue( isRecoveryRequired( layout ) );
+
+        Config config = defaults( Map.of( GraphDatabaseSettings.keep_logical_logs, "keep_none" ));
+        performRecoveryWithLogPruning( fileSystem, pageCache, EMPTY, config, layout, INSTANCE );
+        assertThat( Arrays.stream( fileSystem.listFiles( layout.getTransactionLogsDirectory() ) ).filter( path -> path.toString().contains( "transaction.db" ) )
+                .count() ).isEqualTo( 2 );
+    }
+
+    @Test
     void recoverDatabaseWithoutIdFiles() throws Throwable
     {
         GraphDatabaseAPI db = createDatabase();
@@ -1533,6 +1559,7 @@ class RecoveryIT
                     .setConfig( preallocate_logical_logs, false )
                     .setClock( fakeClock )
                     .setInternalLogProvider( logProvider )
+                    .setConfig( GraphDatabaseSettings.keep_logical_logs, "keep_all" )
                     .setConfig( logical_log_rotation_threshold, logThreshold );
             builder = additionalConfiguration( builder );
         }

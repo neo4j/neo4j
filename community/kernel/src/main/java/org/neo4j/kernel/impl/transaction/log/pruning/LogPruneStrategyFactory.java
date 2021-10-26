@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.time.Clock;
+
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -67,7 +68,7 @@ public class LogPruneStrategyFactory
      *   <li>1k hours - For keeping last 1000 hours worth of log data</li>
      * </ul>
      */
-    LogPruneStrategy strategyFromConfigValue( FileSystemAbstraction fileSystem, LogFiles logFiles, LogProvider logProvider, SystemNanoClock clock,
+    LogPruneStrategy strategyFromConfigValue( FileSystemAbstraction fileSystem, LogFiles logFiles, LogProvider logProvider, Clock clock,
             String configValue )
     {
         ThresholdConfigValue value = parse( configValue );
@@ -82,7 +83,7 @@ public class LogPruneStrategyFactory
     }
 
     @VisibleForTesting
-    static Threshold getThresholdByType( FileSystemAbstraction fileSystem, LogProvider logProvider, SystemNanoClock clock, ThresholdConfigValue value,
+    static Threshold getThresholdByType( FileSystemAbstraction fileSystem, LogProvider logProvider, Clock clock, ThresholdConfigValue value,
             String originalConfigValue )
     {
         long thresholdValue = value.value;

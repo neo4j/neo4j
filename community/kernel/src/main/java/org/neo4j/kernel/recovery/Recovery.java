@@ -25,14 +25,15 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.DatabasePageCache;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -80,7 +81,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -244,6 +247,33 @@ public final class Recovery
     }
 
     /**
+     * Performs recovery of database described by provided layout with Log pruning as specified by the provided config.
+     * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
+     * If recovery is not required - nothing will be done to the database or logs.
+     *
+     * @param fs database filesystem
+     * @param pageCache page cache used to perform database recovery.
+     * @param config custom configuration
+     * @param databaseLayout database to recover layout.
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
+     */
+    public static void performRecoveryWithLogPruning( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
+            Config config, DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
+    {
+        StorageEngineFactory storageEngineFactory = selectStorageEngine( fs, databaseLayout, pageCache, config );
+        requireNonNull( fs );
+        requireNonNull( pageCache );
+        requireNonNull( config );
+        requireNonNull( databaseLayout );
+        requireNonNull( storageEngineFactory );
+        //remove any custom logical logs location
+        Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
+        performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, storageEngineFactory, false,
+                NullLogProvider.getInstance(), new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock(),
+                RecoveryPredicate.ALL, true );
+    }
+
+    /**
      * Performs recovery of database described by provided layout.
      * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
      * If recovery is not required - nothing will be done to the database or logs.
@@ -392,7 +422,40 @@ public final class Recovery
             Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery,
             LogProvider logProvider, Monitors globalMonitors,
             Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogFiles> providedLogFiles,
-            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock, RecoveryPredicate recoveryPredicate ) throws IOException
+            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock, RecoveryPredicate recoveryPredicate )
+            throws IOException
+    {
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, forceRunRecovery, logProvider, globalMonitors,
+                extensionFactories, providedLogFiles, startupChecker, memoryTracker, clock, recoveryPredicate, false );
+    }
+
+    /**
+     * Performs recovery of database described by provided layout.
+     *
+     * @param fs database filesystem
+     * @param pageCache page cache used to perform database recovery.
+     * @param tracers underlying operation tracers
+     * @param config custom configuration
+     * @param databaseLayout database to recover layout.
+     * @param storageEngineFactory {@link StorageEngineFactory} for the storage to recover.
+     * @param logProvider log provider
+     * @param globalMonitors global server monitors
+     * @param extensionFactories extension factories for extensions that should participate in recovery
+     * @param providedLogFiles log files from database
+     * @param forceRunRecovery to force recovery to run even if the usual checks indicates that it's not required.
+     * In specific cases, like after store copy there's always a need for doing a recovery or at least to start the db, checkpoint and shut down,
+     * even if the normal "is recovery required" checks says that recovery isn't required.
+     * @param recoveryPredicate predicate for transactions that recovery should recover. We always replay everything, but can do early termination
+     * based on predicate for point in time recovery
+     * @param pruneLogs Do log pruning as specified by the provided config
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
+     */
+    public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
+            Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery,
+            LogProvider logProvider, Monitors globalMonitors,
+            Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogFiles> providedLogFiles,
+            RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock, RecoveryPredicate recoveryPredicate, boolean pruneLogs )
+            throws IOException
     {
         Log recoveryLog = logProvider.getLog( Recovery.class );
         if ( !forceRunRecovery && !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogFiles, memoryTracker ) )
@@ -487,8 +550,11 @@ public final class Recovery
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
+        LogPruning logPruning = pruneLogs
+                                ? new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, new ReentrantLock() )
+                                : LogPruning.NO_PRUNING;
         CheckPointerImpl checkPointer =
-                new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, checkpointAppender,
+                new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, logPruning, checkpointAppender,
                         databaseHealth, logProvider, tracers, IOController.DISABLED, new StoreCopyCheckPointMutex(), versionContextSupplier, clock );
         recoveryLife.add( storageEngine );
         recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logFiles, recoveryLog ) );
