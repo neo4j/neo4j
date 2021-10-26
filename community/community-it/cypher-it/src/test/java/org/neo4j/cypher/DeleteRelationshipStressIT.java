@@ -81,7 +81,7 @@ class DeleteRelationshipStressIT
     void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r" );
+        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() return r" );
         Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When
@@ -93,7 +93,7 @@ class DeleteRelationshipStressIT
     void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r.prop" );
+        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() return r.prop" );
         Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When
@@ -105,8 +105,7 @@ class DeleteRelationshipStressIT
     void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 =
-                executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r.prop IS NOT NULL" );
+        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() return r.prop IS NOT NULL" );
         Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         query1.get();
@@ -117,7 +116,7 @@ class DeleteRelationshipStressIT
     void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() REMOVE r.prop" );
+        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() REMOVE r.prop" );
         Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When
@@ -129,7 +128,7 @@ class DeleteRelationshipStressIT
     void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() SET r.foo = 'bar'" );
+        Future query1 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()--() SET r.foo = 'bar'" );
         Future query2 = executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) DELETE r" );
 
         // When
