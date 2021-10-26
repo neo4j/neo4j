@@ -73,22 +73,11 @@ case class UsingIndexHint(
                          )(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
-
-  override def toString: String = {
-    val kind = indexType match {
-      case UsingAnyIndexType   => "INDEX"
-      case UsingBtreeIndexType => "BTREE INDEX"
-      case UsingTextIndexType  => "TEXT INDEX"
-    }
-    s"USING $kind ${if (spec == SeekOnly) "SEEK " else ""}${variable.name}:${labelOrRelType.name}(${properties.map(_.name).mkString(", ")})"
-  }
 }
 
 case class UsingScanHint(variable: Variable, labelOrRelType: LabelOrRelTypeName)(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
-
-  override def toString: String = s"USING SCAN ${variable.name}:${labelOrRelType.name}"
 }
 
 object UsingJoinHint {
@@ -99,8 +88,6 @@ object UsingJoinHint {
 case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {
   def semanticCheck =
     variables.map { variable => ensureDefined(variable) chain expectType(CTNode.covariant, variable) }.reduceLeft(_ chain _)
-
-  override def toString: String = s"USING JOIN ON ${variables.map(_.name).toIndexedSeq.mkString(", ")}"
 }
 
 // start items
