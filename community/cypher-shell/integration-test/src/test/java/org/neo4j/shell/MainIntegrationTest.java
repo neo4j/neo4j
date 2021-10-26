@@ -91,11 +91,11 @@ class MainIntegrationTest
 
         testWithUser( "bob", "expired", true )
             .args( "--format verbose" )
-            .userInputLines( "bob", "expired", "newpass", "return 42 as x;", ":exit" )
+            .userInputLines( "bob", "expired", "newpass", "newpass", "return 42 as x;", ":exit" )
             .run()
             .assertSuccess()
             .assertThatOutput(
-                startsWith( format( "username: bob%npassword: *******%nPassword change required%nnew password: *******%n" ) ),
+                startsWith( format( "username: bob%npassword: *******%nPassword change required%nnew password: *******%nnew password again: *******%n" ) ),
                 returned42AndExited()
             );
     }
@@ -149,7 +149,7 @@ class MainIntegrationTest
 
         testWithUser( "bruce", "expired", true )
             .args( "-u bruce -p expired -d neo4j" ).addArgs( "match (n) return n;" )
-            .userInputLines( "newpass" )
+            .userInputLines( "newpass", "newpass" )
             .run()
             .assertSuccess();
 
@@ -586,10 +586,10 @@ class MainIntegrationTest
     {
         testWithUser( "kate", "bush", false )
             .args( "--change-password" )
-            .userInputLines( "kate", "bush", "betterpassword" )
+            .userInputLines( "kate", "bush", "betterpassword", "betterpassword" )
             .run()
             .assertSuccess()
-            .assertOutputLines( "username: kate", "password: ****", "new password: **************" );
+            .assertOutputLines( "username: kate", "password: ****", "new password: **************", "new password again: **************" );
 
         assertUserCanConnectAndRunQuery( "kate", "betterpassword" );
     }
@@ -599,10 +599,10 @@ class MainIntegrationTest
     {
         testWithUser( "paul", "simon", true )
             .args( "--change-password" )
-            .userInputLines( "paul", "simon", "newpassword" )
+            .userInputLines( "paul", "simon", "newpassword", "newpassword" )
             .run()
             .assertSuccess()
-            .assertOutputLines( "username: paul", "password: *****", "new password: ***********" );
+            .assertOutputLines( "username: paul", "password: *****", "new password: ***********", "new password again: ***********" );
 
         assertUserCanConnectAndRunQuery( "paul", "newpassword" );
     }
@@ -612,10 +612,10 @@ class MainIntegrationTest
     {
         testWithUser( "mike", "oldfield", false )
             .args( "-u mike --change-password" )
-            .userInputLines( "oldfield", "newfield" )
+            .userInputLines( "oldfield", "newfield", "newfield" )
             .run()
             .assertSuccess()
-            .assertOutputLines( "password: ********", "new password: ********" );
+            .assertOutputLines( "password: ********", "new password: ********", "new password again: ********" );
 
         assertUserCanConnectAndRunQuery( "mike", "newfield" );
     }
@@ -625,11 +625,11 @@ class MainIntegrationTest
     {
         testWithUser( "led", "zeppelin", false )
             .args( "-u led --change-password" )
-            .userInputLines( "FORGOT MY PASSWORD", "robert" )
+            .userInputLines( "FORGOT MY PASSWORD", "robert", "robert" )
             .run()
             .assertFailure()
             .assertThatErrorOutput( startsWith( "Failed to change password" ) )
-            .assertOutputLines( "password: ******************", "new password: ******" );
+            .assertOutputLines( "password: ******************", "new password: ******", "new password again: ******" );
     }
 
     @Test

@@ -261,8 +261,14 @@ public class Main
             connectionConfig.setPassword( promptForText( "password", '*' ) );
         }
         String newPassword = isOutputInteractive ?
-                promptForNonEmptyText( "new password", '*' ) :
-                promptForText( "new password", '*' );
+                             promptForNonEmptyText( "new password", '*' ) :
+                             promptForText( "new password", '*' );
+        String reenteredNewPassword = promptForText( "new password again", '*' );
+
+        if ( !reenteredNewPassword.equals( newPassword ) )
+        {
+            throw new CommandException( "Passwords are not matching." );
+        }
 
         shell.changePassword( connectionConfig, newPassword );
         connectionConfig.setPassword( newPassword );

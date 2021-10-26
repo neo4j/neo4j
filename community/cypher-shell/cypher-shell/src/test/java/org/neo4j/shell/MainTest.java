@@ -169,12 +169,12 @@ class MainTest
     void promptsForNewPasswordIfPasswordChangeRequiredCannotBeEmpty() throws Exception
     {
         testWithMockUser( "expired_bob", "newpassword", "oldpassword" )
-            .userInputLines( "expired_bob", "oldpassword", "", "newpassword" )
+            .userInputLines( "expired_bob", "oldpassword", "", "newpassword", "newpassword" )
             .run()
             .assertSuccess()
             .assertOutputLines(
                 "username: expired_bob", "password: ***********", "Password change required", "new password: ",
-                "new password cannot be empty", "", "new password: ***********"
+                "new password cannot be empty", "","new password: ***********", "new password again: ***********"
             );
 
         verify( mockShell, times( 3 ) ).connect( any(), any() );
