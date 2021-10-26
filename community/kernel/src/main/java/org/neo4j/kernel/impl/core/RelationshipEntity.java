@@ -243,7 +243,12 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     public RelationshipType getType()
     {
         internalTransaction.checkInTransaction();
-        return internalTransaction.getRelationshipTypeById( typeId() );
+        int typeId = typeId();
+        if ( typeId == NO_ID )
+        {
+            throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, id ) );
+        }
+        return internalTransaction.getRelationshipTypeById( typeId );
     }
 
     private PropertyCursor initializePropertyCursor( PropertyCursor properties, KernelTransaction transaction, PropertySelection selection )
