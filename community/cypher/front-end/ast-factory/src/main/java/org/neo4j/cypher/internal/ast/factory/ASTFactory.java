@@ -197,6 +197,7 @@ public interface ASTFactory<STATEMENT,
                                      List<StringPos<POS>> relTypes,
                                      PATH_LENGTH pathLength,
                                      EXPRESSION properties,
+                                     EXPRESSION predicate,
                                      boolean legacyTypeSeparator );
 
     /**

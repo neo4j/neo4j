@@ -129,7 +129,7 @@ object Deprecations {
         )
 
       // var-length binding
-      case p@RelationshipPattern(Some(variable), _, Some(_), _, _, _) =>
+      case p@RelationshipPattern(Some(variable), _, Some(_), _, _, _, _) =>
         Deprecation(
           None,
           Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
@@ -437,9 +437,9 @@ object Deprecations {
       def isDefinition(variable: LogicalVariable): Boolean = allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
 
       val (declaredVariables, referencedVariables) = pattern.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-        case NodePattern(maybeVariable, _, maybeProperties, _)               => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-        case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-        case NamedPatternPart(variable, _)                                   => acc => TraverseChildren((acc._1 + variable, acc._2))
+        case NodePattern(maybeVariable, _, maybeProperties, _)                  => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+        case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+        case NamedPatternPart(variable, _)                                      => acc => TraverseChildren((acc._1 + variable, acc._2))
       }
 
       (declaredVariables & referencedVariables).nonEmpty
@@ -541,7 +541,7 @@ object Deprecations {
         )
 
       // legacy type separator
-      case p@RelationshipPattern(variable, _, length, properties, _, true) if variable.isDefined || length.isDefined || properties.isDefined =>
+      case p@RelationshipPattern(variable, _, length, properties, _, _, true) if variable.isDefined || length.isDefined || properties.isDefined =>
         Deprecation(
           Some(Ref(p) -> p.copy(legacyTypeSeparator = false)(p.position)),
           Some(DeprecatedRelTypeSeparatorNotification(p.position))

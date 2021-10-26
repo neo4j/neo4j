@@ -41,9 +41,6 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
-import org.neo4j.cypher.internal.ast.AlterDatabase
-import org.neo4j.cypher.internal.ast.AlterDatabaseAction
-import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -62,7 +59,6 @@ import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
-import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateElementAction
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
@@ -103,7 +99,6 @@ import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
-import org.neo4j.cypher.internal.ast.DropDatabaseAlias
 import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropIndexOnName
@@ -878,7 +873,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     length <- option(option(_range))
     properties <- option(oneOf(_map, _parameter))
     direction <- _semanticDirection
-  } yield RelationshipPattern(variable, types, length, properties, direction, legacyTypeSeparator = false)(pos)
+    predicate <- variable match {
+      case None => const(None)
+      case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
+    }
+  } yield RelationshipPattern(variable, types, length, properties, predicate, direction, legacyTypeSeparator = false)(pos)
 
   def _relationshipChain: Gen[RelationshipChain] = for {
     element <- _patternElement

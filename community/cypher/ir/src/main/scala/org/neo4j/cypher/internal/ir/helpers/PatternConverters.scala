@@ -59,7 +59,7 @@ object PatternConverters {
     def destructedRelationshipChain: DestructResult = chain match {
       // (a)->[r]->(b)
       case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None, None),
-                             RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
+                             RelationshipPattern(Some(relId), relTypes, length, None, None, direction, _),
                              NodePattern(Some(rightNodeId), Seq(), None, None)) =>
         val leftNode = leftNodeId.name
         val rightNode = rightNodeId.name
@@ -68,7 +68,7 @@ object PatternConverters {
 
       // ...->[r]->(b)
       case RelationshipChain(relChain: RelationshipChain,
-                             RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
+                             RelationshipPattern(Some(relId), relTypes, length, None, None, direction, _),
                              NodePattern(Some(rightNodeId), Seq(), None, None)) =>
         val destructed = relChain.destructedRelationshipChain
         val leftNode = destructed.rels.last.right

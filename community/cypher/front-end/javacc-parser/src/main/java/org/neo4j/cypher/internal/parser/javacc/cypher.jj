@@ -2012,6 +2012,7 @@ REL_PATTERN RelationshipPattern() :
     boolean legacyTypeSeparator = false;
     PATH_LENGTH pathLength = null;
     EXPRESSION properties = null;
+    EXPRESSION predicate = null;
 }
 {
     ( LeftArrow() { left = true; })? ArrowLine()
@@ -2025,11 +2026,12 @@ REL_PATTERN RelationshipPattern() :
         )?
         ( pathLength=PathLength() )?
         ( properties=Properties() )?
+        ( <WHERE> predicate=Expression() )?
         <RBRACKET>
     )?
     ArrowLine() ( RightArrow() { right = true; } )?
     {
-        return astFactory.relationshipPattern( pos( firstToken ), left, right, v, relTypes, pathLength, properties, legacyTypeSeparator );
+        return astFactory.relationshipPattern( pos( firstToken ), left, right, v, relTypes, pathLength, properties, predicate, legacyTypeSeparator );
     }
 }
 

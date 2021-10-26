@@ -208,7 +208,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
       case np@NodePattern(node, _, _, _) =>
         NodePathStep(node.get.copyId, step)(np.position)
 
-      case rc@RelationshipChain(leftSide, RelationshipPattern(rel, _, length, _, direction, _), to) => length match {
+      case rc@RelationshipChain(leftSide, RelationshipPattern(rel, _, length, _, _, direction, _), to) => length match {
         case None =>
           flip(leftSide, SingleRelationshipPathStep(rel.get.copyId, direction, to.variable.map(_.copyId), step)(rc.position))
 

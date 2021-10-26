@@ -48,7 +48,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None, None)_,
-        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        RelationshipPattern(None, Seq.empty, None, None, None, SemanticDirection.OUTGOING)_,
         NodePattern(Some(varFor("k")), Seq.empty, None, None)_
       )_
     )_
@@ -67,7 +67,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None, None)_,
-        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        RelationshipPattern(None, Seq.empty, None, None, None, SemanticDirection.OUTGOING)_,
         NodePattern(Some(varFor("k")), Seq.empty, None, None)_
       )_
     )_
@@ -92,7 +92,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None, None)_,
-        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        RelationshipPattern(None, Seq.empty, None, None, None, SemanticDirection.OUTGOING)_,
         NodePattern(Some(varFor("k")), Seq.empty, None, None)_
       )_
     )_
@@ -111,7 +111,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH (n) WHERE EXISTS { (n)-[r]->(p) WHERE n.prop = p.prop }
     val relChain = RelationshipChain(
       NodePattern(Some(varFor("n")), Seq.empty, None, None)_,
-      RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+      RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.OUTGOING)_,
       NodePattern(Some(varFor("p")), Seq.empty, None, None)_
     )_
 
@@ -128,7 +128,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH (n)-[r1]->(p1) WHERE EXISTS { (n)-[r2]->(p2) WHERE r1.prop = r2.prop }
     val relChain = RelationshipChain(
       NodePattern(Some(varFor("n")), Seq.empty, None, None)_,
-      RelationshipPattern(Some(varFor("r2")), Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+      RelationshipPattern(Some(varFor("r2")), Seq.empty, None, None, None, SemanticDirection.OUTGOING)_,
       NodePattern(Some(varFor("p2")), Seq.empty, None, None)_
     )_
 
@@ -163,7 +163,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val pat = PatternExpression(RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None, None)_,
-        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
+        RelationshipPattern(None, Seq.empty, None, None, None, SemanticDirection.OUTGOING)_,
         NodePattern(Some(varFor("k")), Seq.empty, None, None)_
       )_
     )_)(Set.empty, "", "")

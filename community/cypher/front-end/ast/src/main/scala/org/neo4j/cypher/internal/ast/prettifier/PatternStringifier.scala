@@ -46,14 +46,21 @@ case class PatternStringifier(expr: ExpressionStringifier) {
   }
 
   def apply(nodePattern: NodePattern): String = {
-    val name = nodePattern.variable.map(expr(_)).getOrElse("")
-    val labels = if (nodePattern.labels.isEmpty) "" else
-      nodePattern.labels.map(expr(_)).mkString(":", ":", "")
-    val nameLabelsAndProperties = props(s"$name$labels", nodePattern.properties)
-    val predicate = nodePattern.predicate.map { p =>
-      s" WHERE ${expr(p)}"
-    }.getOrElse("")
-    s"($nameLabelsAndProperties$predicate)"
+    val variable = nodePattern.variable.map(expr(_))
+
+    val labels =
+      Some(nodePattern.labels)
+        .filter(_.nonEmpty)
+        .map(_.map(expr(_)).mkString(":", ":", ""))
+
+    val body =
+      concatenate(" ", Seq(
+        concatenate("", Seq(variable, labels)),
+        nodePattern.properties.map(expr(_)),
+        nodePattern.predicate.map(stringifyPredicate),
+      )).getOrElse("")
+
+    s"($body)"
   }
 
   def apply(relationshipChain: RelationshipChain): String = {
@@ -65,33 +72,44 @@ case class PatternStringifier(expr: ExpressionStringifier) {
   }
 
   def apply(relationship: RelationshipPattern): String = {
-    val lArrow = if (relationship.direction == SemanticDirection.INCOMING) "<" else ""
-    val rArrow = if (relationship.direction == SemanticDirection.OUTGOING) ">" else ""
-    val types = if (relationship.types.isEmpty)
-      ""
-    else
-      relationship.types.map(expr(_)).mkString(":", "|", "")
-    val name = relationship.variable.map(expr(_)).getOrElse("")
+    val variable = relationship.variable.map(expr(_))
+
+    val types =
+      Some(relationship.types)
+        .filter(_.nonEmpty)
+        .map(_.map(expr(_)).mkString(":", "|", ""))
+
     val length = relationship.length match {
-      case None              => ""
-      case Some(None)        => "*"
-      case Some(Some(range)) => apply(range)
-
+      case None => None
+      case Some(None) => Some("*")
+      case Some(Some(range)) => Some(stringifyRange(range))
     }
-    val info = props(s"$name$types$length", relationship.properties)
-    if (info == "")
-      s"$lArrow--$rArrow"
-    else
-      s"$lArrow-[$info]-$rArrow"
+
+    val body = concatenate(" ", Seq(
+      concatenate("", Seq(variable, types, length)),
+      relationship.properties.map(expr(_)),
+      relationship.predicate.map(stringifyPredicate),
+    )).fold("")(inner => s"[$inner]")
+
+    relationship.direction match {
+      case SemanticDirection.OUTGOING => s"-$body->"
+      case SemanticDirection.INCOMING => s"<-$body-"
+      case SemanticDirection.BOTH => s"-$body-"
+    }
   }
 
-  private def apply(r: Range) =
-    s"*${r.lower.map(_.stringVal).getOrElse("")}..${r.upper.map(_.stringVal).getOrElse("")}"
+  def concatenate(separator: String, fragments: Seq[Option[String]]): Option[String] =
+    Some(fragments.flatten)
+      .filter(_.nonEmpty) // ensures that there is at least one fragment
+      .map(_.mkString(separator))
 
-  private def props(prepend: String, e: Option[Expression]): String = {
-    e.map(e => {
-      val separator = if (prepend.isEmpty) "" else " "
-      s"$prepend$separator${expr(e)}"
-    }).getOrElse(prepend)
+  private def stringifyRange(range: Range): String = {
+    val lower = range.lower.fold("")(_.stringVal)
+    val upper = range.upper.fold("")(_.stringVal)
+    s"*$lower..$upper"
   }
+
+  private def stringifyPredicate(predicate: Expression): String =
+    s"WHERE ${expr(predicate)}"
+
 }

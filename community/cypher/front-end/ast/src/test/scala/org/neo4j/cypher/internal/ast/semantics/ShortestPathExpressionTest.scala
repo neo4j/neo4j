@@ -68,7 +68,7 @@ class ShortestPathExpressionTest extends SemanticFunSuite {
   }
 
   private def relationship(id: Option[Variable]): RelationshipPattern = {
-    RelationshipPattern(id, Seq.empty, None, None, SemanticDirection.OUTGOING)(pos)
+    RelationshipPattern(id, Seq.empty, None, None, None, SemanticDirection.OUTGOING)(pos)
   }
 
   private def node(id: Option[Variable]): NodePattern = {

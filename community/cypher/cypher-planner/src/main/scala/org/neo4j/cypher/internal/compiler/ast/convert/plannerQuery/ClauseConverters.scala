@@ -384,7 +384,7 @@ object ClauseConverters {
 
     //CREATE ()-[:R]->()
     //Semantic checking enforces types.size == 1
-    case RelationshipChain(leftNode@NodePattern(Some(leftVar), _, _, _), RelationshipPattern(Some(relVar), Seq(relType), _, properties, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
+    case RelationshipChain(leftNode@NodePattern(Some(leftVar), _, _, _), RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
       (Vector(
         createNodeCommand(leftNode),
         createNodeCommand(rightNode)
@@ -393,7 +393,7 @@ object ClauseConverters {
       ))
 
     //CREATE ()->[:R]->()-[:R]->...->()
-    case RelationshipChain(left, RelationshipPattern(Some(relVar), Seq(relType), _, properties, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
+    case RelationshipChain(left, RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
       val (nodes, rels) = allCreatePatterns(left)
       (nodes :+
         createNodeCommand(rightNode)

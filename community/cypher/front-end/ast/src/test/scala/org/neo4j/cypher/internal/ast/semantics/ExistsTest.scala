@@ -32,7 +32,7 @@ class ExistsTest extends SemanticFunSuite {
 
   val n: NodePattern = NodePattern(Some(variable("n")), Seq.empty, None, None)(pos)
   val x: NodePattern = expressions.NodePattern(Some(variable("x")), Seq.empty, None, None)(pos)
-  val r: RelationshipPattern = RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)(pos)
+  val r: RelationshipPattern = RelationshipPattern(None, Seq.empty, None, None, None, SemanticDirection.OUTGOING)(pos)
   val pattern:Pattern = Pattern(Seq(EveryPath(RelationshipChain(n, r, x)(pos))))(pos)
   val property: Property = Property(variable("x"), PropertyKeyName("prop")(pos))(pos)
   val failingProperty: Property = Property(variable("missing"), PropertyKeyName("prop")(pos))(pos)

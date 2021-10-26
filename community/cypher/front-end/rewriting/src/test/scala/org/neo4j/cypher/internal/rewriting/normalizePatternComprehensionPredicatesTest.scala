@@ -44,4 +44,11 @@ class normalizePatternComprehensionPredicatesTest extends CypherFunSuite with Re
       "RETURN [(a)-->(b) WHERE (a.prop < 123 AND b.prop > 42) AND a.prop <> b.prop | a] AS result"
     )
   }
+
+  test("move single relationship pattern predicate from relationship to WHERE") {
+    assertRewrite(
+      "RETURN [(a)-[r WHERE r.prop > 123]->(b) | r] AS result",
+      "RETURN [(a)-[r]->(b) WHERE r.prop > 123 | r] AS result"
+    )
+  }
 }

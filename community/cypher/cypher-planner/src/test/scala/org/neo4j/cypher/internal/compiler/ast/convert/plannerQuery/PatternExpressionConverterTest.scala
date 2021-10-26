@@ -39,7 +39,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
 
   private val aNode = NodePattern(Some(varFor("a")), Seq.empty, None, None)_
   private val bNode = NodePattern(Some(varFor("b")), Seq.empty, None, None)_
-  private val rRel = RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING)_
+  private val rRel = RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.OUTGOING)_
   private val TYP: RelTypeName = RelTypeName("TYP")_
   private val dependencies = Set("a", "r", "b")
 

@@ -337,7 +337,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
 
     @Override
     public NULL relationshipPattern( NULL p, boolean left, boolean right, Object v, List<StringPos<NULL>> relTypes, NULL aNull, Object properties,
-                                     boolean legacyTypeSeparator )
+                                     Object predicate, boolean legacyTypeSeparator )
     {
         throw new UnsupportedOperationException( "relationshipPattern is not a literal" );
     }

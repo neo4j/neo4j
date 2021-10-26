@@ -158,7 +158,7 @@ class ResolveTokensTest extends CypherFunSuite {
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
             NodePattern(None, Seq(), None, None),
-            RelationshipPattern(None, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING, _),
+            RelationshipPattern(None, Seq(relTypeToken), None, None, None, SemanticDirection.OUTGOING, _),
             NodePattern(None, Seq(), None, None)
           )))),
           Seq(),
@@ -185,7 +185,7 @@ class ResolveTokensTest extends CypherFunSuite {
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
             NodePattern(None, Seq(), None, None),
-            RelationshipPattern(None, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING, _),
+            RelationshipPattern(None, Seq(relTypeToken), None, None, None, SemanticDirection.OUTGOING, _),
             NodePattern(None, Seq(), None, None)
           )))),
           Seq(),

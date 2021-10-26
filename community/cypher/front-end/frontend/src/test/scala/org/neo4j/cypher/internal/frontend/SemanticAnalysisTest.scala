@@ -576,6 +576,118 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
+  test("should allow relationship pattern predicates in MATCH") {
+    val query = "WITH 123 AS minValue MATCH (n)-[r:Relationship {prop: 42} WHERE r.otherProp > minValue]->(m) RETURN r AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("should not allow relationship pattern predicates in MATCH to refer to nodes") {
+    val query = "MATCH (n)-[r:Relationship WHERE n.prop = 42]->(m:Label) RETURN r AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Variable `n` not defined"
+    )
+  }
+
+  test("should not allow relationship pattern predicates in CREATE") {
+    val query = "CREATE (n)-[r:Relationship WHERE r.prop = 42]->(m)"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Relationship pattern predicates are not allowed in CREATE, but only in MATCH clause or inside a pattern comprehension"
+    )
+  }
+
+  test("should not allow relationship pattern predicates in MERGE") {
+    val query = "MERGE (n)-[r:Relationship WHERE r.prop = 42]->(m)"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Relationship pattern predicates are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension"
+    )
+  }
+
+  test("should allow relationship pattern predicates in pattern comprehension") {
+    val query = "WITH 123 AS minValue RETURN [(n)-[r:Relationship {prop: 42} WHERE r.otherProp > minValue]->(m) | r] AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("should not allow relationship pattern predicates in pattern comprehension to refer to nodes") {
+    val query = "RETURN [(n)-[r:Relationship WHERE n.prop = 42]->(m:Label) | r] AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Variable `n` not defined"
+    )
+  }
+
+  test("should not allow relationship pattern predicates in pattern expression") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |RETURN exists((a)-[r WHERE r.prop > 123]->(b)) AS result""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Relationship pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension"
+    )
+  }
+
+  test("should allow relationship pattern predicates in MATCH with shortestPath") {
+    val query =
+      """
+        |WITH 123 AS minValue
+        |MATCH p = shortestPath((n)-[r:Relationship WHERE r.prop > minValue]->(m))
+        |RETURN r AS result
+        |""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("should not allow relationship pattern predicates in MATCH with shortestPath to refer to nodes") {
+    val query =
+      """
+        |MATCH p = shortestPath((n)-[r:Relationship WHERE n.prop > 42]->(m))
+        |RETURN n AS result""".stripMargin
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Variable `n` not defined"
+    )
+  }
+
   test("CALL IN TRANSACTIONS with batchSize 1") {
     val query =
       """CALL {

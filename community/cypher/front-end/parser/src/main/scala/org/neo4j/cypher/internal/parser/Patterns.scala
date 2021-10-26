@@ -23,7 +23,7 @@ import org.parboiled.scala.EMPTY
 import org.parboiled.scala.Parser
 import org.parboiled.scala.ReductionRule1
 import org.parboiled.scala.Rule1
-import org.parboiled.scala.Rule4
+import org.parboiled.scala.Rule5
 import org.parboiled.scala.group
 
 import scala.language.postfixOps
@@ -80,22 +80,24 @@ trait Patterns extends Parser
       | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.INCOMING)
       | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(SemanticDirection.OUTGOING)
       | Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.BOTH)
-    ) ~~>> ((variable, relTypes, range, props, dir) => expressions.RelationshipPattern(variable, relTypes.types, range,
-      props, dir, relTypes.legacySeparator))
+    ) ~~>> ((variable, relTypes, range, props, predicate, dir) =>
+      expressions.RelationshipPattern(variable, relTypes.types, range, props, predicate, dir, relTypes.legacySeparator))
   }
 
-  private def RelationshipDetail: Rule4[
+  private def RelationshipDetail: Rule5[
       Option[expressions.Variable],
       MaybeLegacyRelTypes,
       Option[Option[expressions.Range]],
+      Option[expressions.Expression],
       Option[expressions.Expression]] = rule("[") {
     (
         "[" ~~
           MaybeVariable ~~
           RelationshipTypes ~~ MaybeVariableLength ~
           MaybeProperties ~~
+          MaybeWereSubClause ~~
         "]"
-      | EMPTY ~ push(None) ~ push(MaybeLegacyRelTypes()) ~ push(None) ~ push(None)
+      | EMPTY ~ push(None) ~ push(MaybeLegacyRelTypes()) ~ push(None) ~ push(None) ~ push(None)
     )
   }
 

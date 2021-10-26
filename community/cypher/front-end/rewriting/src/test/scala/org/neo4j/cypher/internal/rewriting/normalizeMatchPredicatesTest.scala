@@ -22,10 +22,6 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
-import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
-import org.neo4j.cypher.internal.rewriting.rewriters.NodePatternPredicateNormalizer
-import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -48,7 +44,6 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
 
   private def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
-    rewriter(SemanticChecker.check(original).state)
     val result = original.endoRewrite(rewriter(SemanticChecker.check(original).state))
     val expected = parseForRewriting(expectedQuery)
     //For the test sake we need to rewrite away HasLabelsOrTypes to HasLabels alse on the expected
@@ -198,5 +193,11 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
     assertRewrite(
       "MATCH (n WHERE n.prop > 123)-->(m WHERE m.prop < 42 AND m.otherProp = 'hello') WHERE n.prop <> m.prop RETURN n",
       "MATCH (n)-->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') AND n.prop <> m.prop RETURN n")
+  }
+
+  test("move single relationship pattern predicate from relationship to WHERE") {
+    assertRewrite(
+      "MATCH (n)-[r WHERE r.prop > 123]->() RETURN r",
+      "MATCH (n)-[r]->() WHERE r.prop > 123 RETURN r")
   }
 }

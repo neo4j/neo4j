@@ -74,6 +74,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     part match {
       case x: RelationshipChain =>
         checkElementPredicates(ctx, x.element) chain
+          checkRelationshipPatternPredicates(ctx, x.relationship) chain
           checkElementPredicates(ctx, x.rightNode)
 
       case x: NodePattern =>
@@ -85,6 +86,16 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
               Where.checkExpression(predicate)
           }
         }
+    }
+
+  def checkRelationshipPatternPredicates(ctx: SemanticContext, pattern: RelationshipPattern): SemanticCheck =
+    pattern.predicate.foldSemanticCheck { predicate =>
+      when (ctx != SemanticContext.Match) {
+        error(s"Relationship pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension", predicate.position)
+      } chain withScopedState {
+        declareVariables(ctx, pattern) chain
+          Where.checkExpression(predicate)
+      }
     }
 
   def declareVariables(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
@@ -252,10 +263,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         expectType(CTMap.covariant, x.properties)
 
     def checkForLegacyTypeSeparator: SemanticCheck = x match {
-      case RelationshipPattern(variable, _, length, properties, _, true) if (variable.isDefined && !variableIsGenerated(variable.get)) || length.isDefined || properties.isDefined =>
+      case RelationshipPattern(variable, _, length, properties, predicate, _, true)
+        if (variable.isDefined && !variableIsGenerated(variable.get)) || length.isDefined || properties.isDefined || predicate.isDefined =>
         error(
           """The semantics of using colon in the separation of alternative relationship types in conjunction with
-            |the use of variable binding, inlined property predicates, or variable length is no longer supported.
+            |the use of variable binding, inlined property predicates, relationship pattern predicates, or variable length is no longer supported.
             |Please separate the relationships types using `:A|B|C` instead""".stripMargin, x.position)
       case _ =>
         None

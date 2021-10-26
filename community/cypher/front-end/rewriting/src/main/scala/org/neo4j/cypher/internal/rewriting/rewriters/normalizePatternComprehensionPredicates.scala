@@ -45,7 +45,10 @@ object normalizePatternComprehensionPredicates extends Rewriter with StepSequenc
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val normalizer = NodePatternPredicateNormalizer
+  private val normalizer = MatchPredicateNormalizerChain(
+    NodePatternPredicateNormalizer,
+     RelationshipPatternPredicateNormalizer,
+  )
 
   private val rewriter = Rewriter.lift {
     case p: PatternComprehension =>

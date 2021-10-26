@@ -431,7 +431,7 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   private def relPattern(from: Option[String] = None, rel: Option[String] = None, to: Option[String] = None, relationships: Seq[String] = Seq.empty) = {
     RelationshipsPattern(RelationshipChain(NodePattern(Some(from.map(varFor).getOrElse(varFor("DEFAULT"))), Seq.empty, None, None)(pos),
-      RelationshipPattern(Some(varFor("r")), relationships.map(r => RelTypeName(r)(pos)), None, None, SemanticDirection.OUTGOING)(pos),
+      RelationshipPattern(Some(varFor("r")), relationships.map(r => RelTypeName(r)(pos)), None, None, None, SemanticDirection.OUTGOING)(pos),
       NodePattern(Some(to.map(varFor).getOrElse(varFor("DEFAULT"))), Seq.empty, None, None)(pos))(pos))(pos)
   }
 

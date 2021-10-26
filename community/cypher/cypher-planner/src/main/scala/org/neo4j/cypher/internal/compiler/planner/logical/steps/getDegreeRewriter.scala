@@ -123,7 +123,7 @@ object RelationshipsPatternSolvableByGetDegree {
         (NodePattern
           (Some(node), List(), None, None),
         RelationshipPattern
-          (Some(rel), types, None, None, dir, _),
+          (Some(rel), types, None, None, None, dir, _),
         NodePattern
           (Some(otherNode), List(), None, None))) =>
 

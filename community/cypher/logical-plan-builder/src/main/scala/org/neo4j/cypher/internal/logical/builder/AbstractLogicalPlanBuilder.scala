@@ -428,6 +428,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
           p.relTypes,
           length,
           None, // properties are not used at runtime
+          None,
           p.dir
         )(pos),
         NodePattern(Some(varFor(p.to)), Seq.empty, None, None)(pos) // labels, properties and predicates are not used at runtime

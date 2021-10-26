@@ -397,7 +397,7 @@ case class Match(
     }) ++ pattern.treeFold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop)), _) if variable == id =>
         acc => SkipChildren(acc ++ prop.map(_._1.name))
-      case RelationshipPattern(Some(Variable(id)), _, _, Some(MapExpression(prop)), _, _) if variable == id =>
+      case RelationshipPattern(Some(Variable(id)), _, _, Some(MapExpression(prop)), _, _, _) if variable == id =>
         acc => SkipChildren(acc ++ prop.map(_._1.name))
     }
 
@@ -423,7 +423,7 @@ case class Match(
         list => list ++ nodeLabels.map(_.name)
     }
     val inlinedRelTypes = pattern.fold(Seq.empty[String]) {
-      case RelationshipPattern(Some(Variable(id)), types, _, _, _, _) if variable == id =>
+      case RelationshipPattern(Some(Variable(id)), types, _, _, _, _, _) if variable == id =>
         list => list ++ types.map(_.name)
     }
     val (predicateLabels, predicateRelTypes) = where match {

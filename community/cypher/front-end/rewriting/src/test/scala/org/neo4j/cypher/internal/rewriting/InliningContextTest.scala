@@ -70,7 +70,7 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
   test("should inline aliases into relationship patterns") {
     val ctx = InliningContext(mapAtoN)
 
-    val expr: RelationshipPattern = RelationshipPattern(Some(identA), Seq(), None, None, SemanticDirection.OUTGOING)_
+    val expr: RelationshipPattern = RelationshipPattern(Some(identA), Seq(), None, None, None, SemanticDirection.OUTGOING)_
 
     expr.endoRewrite(ctx.patternRewriter).variable should equal(Some(identN))
   }

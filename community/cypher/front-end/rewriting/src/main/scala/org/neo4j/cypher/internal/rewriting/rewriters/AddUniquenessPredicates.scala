@@ -101,7 +101,7 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
       case _: ShortestPaths =>
         acc => SkipChildren(acc)
 
-      case RelationshipChain(_, patRel@RelationshipPattern(optIdent, types, _, _, _, _), _) =>
+      case RelationshipChain(_, patRel@RelationshipPattern(optIdent, types, _, _, _, _, _), _) =>
         acc => {
           val ident = optIdent.getOrElse(throw new IllegalStateException("This rewriter cannot work with unnamed patterns"))
           TraverseChildren(acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength))

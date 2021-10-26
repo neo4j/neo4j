@@ -398,4 +398,24 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   test("RETURN exists((n {prop: 'test'} WHERE n.otherProp = 123)-->(end WHERE end.prop = 42)) AS result") {
     assertSameAST(testName)
   }
+
+  test("MATCH ()-[r WHERE r.prop > 123]->()") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH ()-[r:R|S|T {prop: 42} WHERE r.otherProp > 123]->()") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH ()-[WHERE WHERE WHERE.prop > 123]->()") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN [()-[r:R WHERE r.prop > 123]->() | r]") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN exists(()-[r {prop: 'test'} WHERE r.otherProp = 123]->()) AS result") {
+    assertSameAST(testName)
+  }
 }
