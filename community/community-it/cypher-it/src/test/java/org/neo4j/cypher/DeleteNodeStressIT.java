@@ -72,7 +72,7 @@ class DeleteNodeStressIT
     void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) return n" );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () return n" );
         Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // Then
@@ -84,7 +84,7 @@ class DeleteNodeStressIT
     void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) RETURN n.prop IS NOT NULL" );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () RETURN n.prop IS NOT NULL" );
         Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // When
@@ -96,7 +96,7 @@ class DeleteNodeStressIT
     void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) REMOVE n.prop" );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () REMOVE n.prop" );
         Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // When
@@ -108,7 +108,7 @@ class DeleteNodeStressIT
     void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) SET n.foo = 'bar'" );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () SET n.foo = 'bar'" );
         Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // When
@@ -120,7 +120,7 @@ class DeleteNodeStressIT
     void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException, ExecutionException
     {
         // Given
-        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n RETURN labels(n)" );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH () RETURN labels(n)" );
         Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // When
