@@ -68,6 +68,14 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     runtimeTestSupport.restartTx()
   }
 
+  /**
+   * This method performs some actions and then does a rollback on the transaction
+   */
+  def rollback(f: => Unit): Unit = {
+    f
+    runtimeTestSupport.rollbackAndRestartTx()
+  }
+
   private val reattachEntitiesToNewTransaction: Rewriter = topDown {
     Rewriter.lift {
       case n: Node => runtimeTestSupport.tx.getNodeById(n.getId)
