@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
-import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -82,11 +81,10 @@ class QueryValidator
     static void validateCompositeQuery( PropertyIndexQuery[] predicates )
     {
         final var illegalQueryMessage = "Tried to query index with illegal composite query.";
-        final var types = Arrays.stream( predicates ).map( IndexQuery::type ).iterator();
         IndexQueryType prev = null;
-        while ( types.hasNext() )
+        for ( final var predicate : predicates )
         {
-            final var current = types.next();
+            final var current = predicate.type();
             if ( EnumSet.of( IndexQueryType.ALL_ENTRIES, IndexQueryType.STRING_CONTAINS, IndexQueryType.STRING_SUFFIX ).contains( current ) )
             {
                 if ( predicates.length > 1 )
