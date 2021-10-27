@@ -99,6 +99,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -142,8 +143,8 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
+import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
-import static org.neo4j.kernel.recovery.Recovery.performRecoveryWithLogPruning;
 import static org.neo4j.kernel.recovery.facade.RecoveryCriteria.ALL;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -868,14 +869,14 @@ class RecoveryIT
         fileSystem.deleteFileOrThrow( layout.idRelationshipStore() );
         assertTrue( isRecoveryRequired( layout ) );
 
-        performRecovery( fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE );
+        performRecovery( Recovery.context( fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE ) );
         assertFalse( isRecoveryRequired( layout ) );
 
         assertTrue( fileSystem.fileExists( layout.idRelationshipStore() ) );
     }
 
     @Test
-    void shouldPruneLogsIfSpecified() throws Throwable
+    void shouldPruneLogs() throws Throwable
     {
         GraphDatabaseAPI db = createDatabase( ByteUnit.kibiBytes( 128 ) );
         RecordDatabaseLayout layout = RecordDatabaseLayout.cast( db.databaseLayout() );
@@ -891,7 +892,7 @@ class RecoveryIT
         assertTrue( isRecoveryRequired( layout ) );
 
         Config config = defaults( Map.of( GraphDatabaseSettings.keep_logical_logs, "keep_none" ));
-        performRecoveryWithLogPruning( fileSystem, pageCache, EMPTY, config, layout, INSTANCE );
+        performRecovery( Recovery.context( fileSystem, pageCache, EMPTY, config, layout, INSTANCE ) );
         assertThat( Arrays.stream( fileSystem.listFiles( layout.getTransactionLogsDirectory() ) ).filter( path -> path.toString().contains( "transaction.db" ) )
                 .count() ).isEqualTo( 2 );
     }
@@ -1073,9 +1074,19 @@ class RecoveryIT
         };
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
-        Recovery.performRecovery( fileSystem, pageCache, EMPTY, Config.defaults(), layout, defaultStorageEngine(), true, NullLogProvider.getInstance(),
-                monitors, Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), null, INSTANCE, Clock.systemUTC(),
-                RecoveryPredicate.ALL );
+        Config config = Config.defaults();
+        StorageEngineFactory storageEngineFactory = defaultStorageEngine();
+
+        Recovery.performRecovery( Recovery.context( fileSystem, pageCache, EMPTY, config, layout, INSTANCE )
+                                          .storageEngineFactory( storageEngineFactory )
+                                          .log( NullLogProvider.getInstance() )
+                                          .recoveryPredicate( RecoveryPredicate.ALL )
+                                          .monitors( monitors )
+                                          .extensionFactories( Iterables.cast( Services.loadAll( ExtensionFactory.class ) ) )
+                                          .logFiles( Optional.empty() )
+                                          .startupChecker( null )
+                                          .clock( Clock.systemUTC() )
+                                          .force() );
 
         // then
         assertFalse( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE ) );
@@ -1408,9 +1419,10 @@ class RecoveryIT
         assertTrue( isRecoveryRequired( layout ) );
 
         LogFiles spiedLogFiles = Mockito.spy( buildLogFiles() );
-        performRecovery( fileSystem, pageCache, EMPTY, Config.newBuilder().build(), databaseLayout, defaultStorageEngine(), false, logProvider,
-                new Monitors(), Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.of( spiedLogFiles ),
-                RecoveryStartupChecker.EMPTY_CHECKER, INSTANCE, fakeClock, ALL.toPredicate() );
+        performRecovery( context( fileSystem, pageCache, EMPTY, Config.defaults(), databaseLayout, INSTANCE )
+                                 .log( logProvider )
+                                 .logFiles( Optional.of( spiedLogFiles ) )
+                                 .clock( fakeClock ) );
         verify( spiedLogFiles, times( 2 ) ).getTailInformation();
 
         assertFalse( isRecoveryRequired( layout ) );
@@ -1494,9 +1506,17 @@ class RecoveryIT
         Config config = Config.newBuilder().build();
         additionalConfiguration( config );
         assertTrue( isRecoveryRequired( databaseLayout, config ) );
-        performRecovery( fileSystem, pageCache, databaseTracers, config, databaseLayout, defaultStorageEngine(), false, logProvider, monitors,
-                Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), RecoveryStartupChecker.EMPTY_CHECKER, INSTANCE, fakeClock,
-                recoveryCriteria.toPredicate() );
+        StorageEngineFactory storageEngineFactory = defaultStorageEngine();
+
+        Recovery.performRecovery( Recovery.context( fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE )
+                                          .storageEngineFactory( storageEngineFactory )
+                                          .log( logProvider )
+                                          .recoveryPredicate( recoveryCriteria.toPredicate() )
+                                          .monitors( monitors )
+                                          .extensionFactories( Iterables.cast( Services.loadAll( ExtensionFactory.class ) ) )
+                                          .logFiles( Optional.empty() )
+                                          .startupChecker( RecoveryStartupChecker.EMPTY_CHECKER )
+                                          .clock( fakeClock ) );
         assertFalse( isRecoveryRequired( databaseLayout, config ) );
     }
 

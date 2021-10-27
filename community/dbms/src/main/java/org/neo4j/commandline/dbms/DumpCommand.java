@@ -33,7 +33,6 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.internal.helpers.ArrayUtil;
@@ -41,6 +40,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
@@ -111,7 +111,7 @@ public class DumpCommand extends AbstractCommand
 
         try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
-            checkDbState( databaseLayout, config, memoryTracker );
+            checkDbState( ctx.fs(), databaseLayout, config, memoryTracker );
             dump( databaseLayout, databaseName );
         }
         catch ( FileLockException e )
@@ -177,9 +177,9 @@ public class DumpCommand extends AbstractCommand
         return ArrayUtil.contains( names, path.getFileName().toString() );
     }
 
-    protected void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
+    protected void checkDbState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
     {
-        if ( checkRecoveryState( databaseLayout, additionalConfiguration, memoryTracker ) )
+        if ( checkRecoveryState( fs, databaseLayout, additionalConfiguration, memoryTracker ) )
         {
             throw new CommandFailedException( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
                     "Please recover database before running the dump.",
@@ -187,11 +187,12 @@ public class DumpCommand extends AbstractCommand
         }
     }
 
-    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
+    private static boolean checkRecoveryState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config additionalConfiguration,
+            MemoryTracker memoryTracker )
     {
         try
         {
-            return isRecoveryRequired( databaseLayout, additionalConfiguration, memoryTracker );
+            return isRecoveryRequired( fs, databaseLayout, additionalConfiguration, memoryTracker );
         }
         catch ( Exception e )
         {

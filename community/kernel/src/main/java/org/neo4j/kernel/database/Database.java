@@ -150,6 +150,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
+import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryPredicate;
 import org.neo4j.kernel.recovery.RecoveryStartupChecker;
 import org.neo4j.lock.LockService;
@@ -186,7 +187,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
-import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
 
 public class Database extends LifecycleAdapter
@@ -426,9 +426,15 @@ public class Database extends LifecycleAdapter
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             validateStoreAndTxLogs( logFiles, pageCacheTracer, storageExists );
 
-            performRecovery( fs, databasePageCache, tracers, databaseConfig, databaseLayout, storageEngineFactory, false, internalLogProvider, databaseMonitors,
-                    extensionFactories, Optional.of( logFiles ), new RecoveryStartupChecker( startupController, namedDatabaseId ),
-                    otherDatabaseMemoryTracker, clock, RecoveryPredicate.ALL );
+            Recovery.performRecovery( Recovery.context( fs, databasePageCache, tracers, databaseConfig, databaseLayout, otherDatabaseMemoryTracker )
+                            .storageEngineFactory( storageEngineFactory )
+                            .log( internalLogProvider )
+                            .recoveryPredicate( RecoveryPredicate.ALL )
+                            .monitors( databaseMonitors )
+                            .extensionFactories( extensionFactories )
+                            .logFiles( Optional.of( logFiles ) )
+                            .startupChecker( new RecoveryStartupChecker( startupController, namedDatabaseId ) )
+                            .clock( clock ) );
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );

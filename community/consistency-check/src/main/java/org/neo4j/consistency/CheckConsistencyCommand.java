@@ -130,7 +130,7 @@ public class CheckConsistencyCommand extends AbstractCommand
             checkDatabaseExistence( databaseLayout );
             try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
             {
-                checkDbState( databaseLayout, config, memoryTracker );
+                checkDbState( ctx.fs(), databaseLayout, config, memoryTracker );
                 // Only output progress indicator if a console receives the output
                 ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
                 if ( System.console() != null )
@@ -180,9 +180,9 @@ public class CheckConsistencyCommand extends AbstractCommand
         }
     }
 
-    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
+    private static void checkDbState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
     {
-        if ( checkRecoveryState( databaseLayout, additionalConfiguration, memoryTracker ) )
+        if ( checkRecoveryState( fs, databaseLayout, additionalConfiguration, memoryTracker ) )
         {
             throw new CommandFailedException( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
                     "Please recover database before running the consistency check.",
@@ -190,11 +190,12 @@ public class CheckConsistencyCommand extends AbstractCommand
         }
     }
 
-    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
+    private static boolean checkRecoveryState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config additionalConfiguration,
+            MemoryTracker memoryTracker )
     {
         try
         {
-            return isRecoveryRequired( databaseLayout, additionalConfiguration, memoryTracker );
+            return isRecoveryRequired( fs, databaseLayout, additionalConfiguration, memoryTracker );
         }
         catch ( Exception e )
         {

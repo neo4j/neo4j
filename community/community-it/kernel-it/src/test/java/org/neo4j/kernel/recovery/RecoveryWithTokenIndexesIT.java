@@ -312,7 +312,7 @@ class RecoveryWithTokenIndexesIT
     private void recoverDatabase( DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache ) throws Exception
     {
         assertTrue( Recovery.isRecoveryRequired( fs, layout, config, INSTANCE ) );
-        performRecovery( fs, cache, DatabaseTracers.EMPTY, config, layout, INSTANCE );
+        performRecovery( Recovery.context( fs, cache, DatabaseTracers.EMPTY, config, layout, INSTANCE ) );
         assertFalse( Recovery.isRecoveryRequired( fs, layout, config, INSTANCE ) );
     }
 
