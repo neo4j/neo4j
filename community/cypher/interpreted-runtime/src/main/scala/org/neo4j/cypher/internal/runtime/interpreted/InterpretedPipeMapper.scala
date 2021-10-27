@@ -220,6 +220,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeLeftOuterHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeRightOuterHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NonPipelinedTestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalPipe
@@ -478,7 +479,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         TestPipe(source)(id = id)
 
       case NonPipelined(_) =>
-        TestPipe(source)(id = id)
+        NonPipelinedTestPipe(source)(id = id)
 
       case Prober(_, probe) =>
         ProberPipe(source, probe)(id = id)
