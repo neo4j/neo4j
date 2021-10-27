@@ -61,6 +61,14 @@ public class ShellStatementParser implements StatementParser
     @Override
     public void parseMoreText( String line )
     {
+        if ( statementNotStarted() && line.isEmpty() )
+        {
+            // If input is empty line we want to get new prompt for input.
+            // This is a hack to not do query validation
+            parsedStatements.add( ";" );
+            return;
+        }
+
         // See if it could possibly be a shell command, only valid if not in a current statement
         if ( statementNotStarted() && SHELL_CMD_PATTERN.matcher( line ).find() )
         {

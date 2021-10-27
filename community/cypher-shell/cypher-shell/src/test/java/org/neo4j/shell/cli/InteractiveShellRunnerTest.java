@@ -66,6 +66,7 @@ import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -236,13 +237,13 @@ class InteractiveShellRunnerTest
     }
 
     @Test
-    void justNewLineThrowsNoMoreInput()
+    void justNewLineDoesNotThrowNoMoreInput()
     {
         // given
         var runner = runner( "\n" );
 
         // when
-        assertThrows( NoMoreInputException.class, runner::readUntilStatement );
+        assertDoesNotThrow( runner::readUntilStatement );
     }
 
     @Test

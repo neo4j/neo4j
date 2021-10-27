@@ -32,7 +32,22 @@ class ShellStatementParserTest
     private final ShellStatementParser parser = new ShellStatementParser();
 
     @Test
-    void parseEmptyLineDoesNothing()
+    void parseEmptyLineShouldStartNewRow()
+    {
+        // when
+        parser.parseMoreText( "" );
+
+        // then
+        assertFalse( parser.containsText() );
+        assertTrue( parser.hasStatements() );
+
+        List<String> statements = parser.consumeStatements();
+        assertEquals( 1, statements.size() );
+        assertEquals( ";", statements.get( 0 ) );
+    }
+
+    @Test
+    void parseNewLineDoesNothing()
     {
         // when
         parser.parseMoreText( "\n" );
