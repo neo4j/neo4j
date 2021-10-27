@@ -586,6 +586,18 @@ class SemanticAnalysisTest extends CypherFunSuite {
     context.errors shouldBe empty
   }
 
+  test("should not allow relationship pattern predicates in MATCH when path length is provided") {
+    val query = "WITH 123 AS minValue MATCH (n)-[r:Relationship*1..3 {prop: 42} WHERE r.otherProp > minValue]->(m) RETURN r AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "WHERE clauses are not allowed in a variable-length relationship pattern"
+    )
+  }
+
   test("should not allow relationship pattern predicates in MATCH to refer to nodes") {
     val query = "MATCH (n)-[r:Relationship WHERE n.prop = 42]->(m:Label) RETURN r AS result"
 
@@ -606,7 +618,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
-      "Relationship pattern predicates are not allowed in CREATE, but only in MATCH clause or inside a pattern comprehension"
+      "WHERE clauses in relationship patterns are not allowed in CREATE, but only in MATCH clause or inside a pattern comprehension"
     )
   }
 
@@ -618,7 +630,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
-      "Relationship pattern predicates are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension"
+      "WHERE clauses in relationship patterns are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension"
     )
   }
 
@@ -654,7 +666,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
-      "Relationship pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension"
+      "WHERE clauses in relationship patterns are not allowed in expression, but only in MATCH clause or inside a pattern comprehension"
     )
   }
 

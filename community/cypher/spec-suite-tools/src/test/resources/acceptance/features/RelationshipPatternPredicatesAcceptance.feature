@@ -42,28 +42,6 @@ Feature: RelationshipPatternPredicates
       | 3      |
     And no side effects
 
-#  Scenario: shortestPath with relationship pattern predicate
-#    Given an empty graph
-#    And having executed:
-#      """
-#      CREATE (start:Start)
-#      CREATE (start)-[:R]->()-[:R]->(:End {prop: 1})
-#      CREATE (start)-[:R]->()-[:R]->()-[:R]->(:End {prop: 2})
-#      CREATE (start)-[:R]->()-[:R]->()-[:R]->()-[:R]->(:End {prop: 2})
-#      CREATE (start)-[:R]->()-[:R]->()-[:R]->()-[:R]->(:End {prop: 3})
-#      """
-#    When executing query:
-#      """
-#      MATCH p = shortestPath((start:Start)-[:R*]->(end:End WHERE end.prop > 1))
-#      RETURN end.prop, length(p) AS len
-#      """
-#    Then the result should be, in any order:
-#      | end.prop | len |
-#      | 2        | 3   |
-#      | 2        | 4   |
-#      | 3        | 4   |
-#    And no side effects
-
   Scenario: Should not allow to reference other elements of the pattern
     Given any graph
     When executing query:
