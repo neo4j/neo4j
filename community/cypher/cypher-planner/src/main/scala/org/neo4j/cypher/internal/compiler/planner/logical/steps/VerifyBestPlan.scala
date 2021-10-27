@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
-import org.neo4j.cypher.internal.ast.prettifier.{ExpressionStringifier, Prettifier}
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
