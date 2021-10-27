@@ -25,6 +25,7 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
@@ -68,6 +69,19 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   private def getSimpleLogicalPlanWithAandB(context: LogicalPlanningContext) : LogicalPlan = {
     newMockedLogicalPlan(context.planningAttributes, "a", "b")
+  }
+
+  private def getSemanticTable: SemanticTable = {
+    val semanticTable = newMockedSemanticTable
+    when(semanticTable.isNodeNoFail("a")).thenReturn(true)
+    when(semanticTable.isNodeNoFail(varFor("a"))).thenReturn(true)
+
+    when(semanticTable.isNodeNoFail("b")).thenReturn(true)
+    when(semanticTable.isNodeNoFail(varFor("b"))).thenReturn(true)
+
+    when(semanticTable.isRelationshipNoFail("r")).thenReturn(true)
+    when(semanticTable.isRelationshipNoFail(varFor("r"))).thenReturn(true)
+    semanticTable
   }
 
   test("should throw when finding plan that does not solve all pattern nodes") {
@@ -162,7 +176,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("should throw when finding plan that does not contain a fulfillable index hint") {
-    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(true), useErrorsOverWarnings = false)
+    val context = newMockedLogicalPlanningContext(planContext = getPlanContext(true), semanticTable = getSemanticTable, useErrorsOverWarnings = false)
 
     a [HintException] should be thrownBy {
       verifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithIdxHint(), context)
