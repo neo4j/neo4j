@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.assertj.core.api.Assertions;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +38,8 @@ import java.util.function.LongSupplier;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.Node;
@@ -55,6 +56,7 @@ import org.neo4j.internal.recordstorage.CommandLockVerification;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
@@ -90,6 +92,7 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -175,6 +178,19 @@ public class NeoStoresTest
     private int createPropertyKeyToken( String name, boolean internal )
     {
         return (int) nextId( PropertyKeyTokenRecord.class );
+    }
+
+    @Test
+    void shouldCloseStoresOnInvalidStoreId() throws IOException
+    {
+        //Given
+        RecordStorageEngineFactory sef = new RecordStorageEngineFactory();
+        StoreFactory sf = getStoreFactory( Config.defaults(), databaseLayout, fs, NullLogProvider.getInstance() );
+        sef.setStoreId( fs, databaseLayout, pageCache, NULL, new StoreId( 123 ), 0, 0 );
+
+        //When
+        Assertions.assertThatCode( () -> sf.openAllNeoStores( true ) ).isInstanceOf( IllegalArgumentException.class );
+        //Should be able to close pagecache!
     }
 
     @Test
