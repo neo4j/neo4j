@@ -779,7 +779,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
       .build()
 
-    the[Exception]
+    the[IndexHintException]
       .thrownBy(planner.plan(nodeIndexHints.query("USING BTREE INDEX b:B(prop)")))
       .getMessage.should(include("No such index: BTREE INDEX FOR (`b`:`B`) ON (`b`.`prop`)"))
   }
