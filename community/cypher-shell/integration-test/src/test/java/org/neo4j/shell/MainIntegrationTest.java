@@ -95,7 +95,7 @@ class MainIntegrationTest
             .run()
             .assertSuccess()
             .assertThatOutput(
-                startsWith( format( "username: bob%npassword: *******%nPassword change required%nnew password: *******%nnew password again: *******%n" ) ),
+                startsWith( format( "username: bob%npassword: *******%nPassword change required%nnew password: *******%nconfirm password: *******%n" ) ),
                 returned42AndExited()
             );
     }
@@ -589,7 +589,7 @@ class MainIntegrationTest
             .userInputLines( "kate", "bush", "betterpassword", "betterpassword" )
             .run()
             .assertSuccess()
-            .assertOutputLines( "username: kate", "password: ****", "new password: **************", "new password again: **************" );
+            .assertOutputLines( "username: kate", "password: ****", "new password: **************", "confirm password: **************" );
 
         assertUserCanConnectAndRunQuery( "kate", "betterpassword" );
     }
@@ -602,7 +602,7 @@ class MainIntegrationTest
             .userInputLines( "paul", "simon", "newpassword", "newpassword" )
             .run()
             .assertSuccess()
-            .assertOutputLines( "username: paul", "password: *****", "new password: ***********", "new password again: ***********" );
+            .assertOutputLines( "username: paul", "password: *****", "new password: ***********", "confirm password: ***********" );
 
         assertUserCanConnectAndRunQuery( "paul", "newpassword" );
     }
@@ -615,7 +615,7 @@ class MainIntegrationTest
             .userInputLines( "oldfield", "newfield", "newfield" )
             .run()
             .assertSuccess()
-            .assertOutputLines( "password: ********", "new password: ********", "new password again: ********" );
+            .assertOutputLines( "password: ********", "new password: ********", "confirm password: ********" );
 
         assertUserCanConnectAndRunQuery( "mike", "newfield" );
     }
@@ -629,7 +629,7 @@ class MainIntegrationTest
             .run()
             .assertFailure()
             .assertThatErrorOutput( startsWith( "Failed to change password" ) )
-            .assertOutputLines( "password: ******************", "new password: ******", "new password again: ******" );
+            .assertOutputLines( "password: ******************", "new password: ******", "confirm password: ******" );
     }
 
     @Test

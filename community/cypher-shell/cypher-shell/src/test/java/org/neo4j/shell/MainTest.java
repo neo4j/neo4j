@@ -174,10 +174,24 @@ class MainTest
             .assertSuccess()
             .assertOutputLines(
                 "username: expired_bob", "password: ***********", "Password change required", "new password: ",
-                "new password cannot be empty", "","new password: ***********", "new password again: ***********"
+                "new password cannot be empty", "","new password: ***********", "confirm password: ***********"
             );
 
         verify( mockShell, times( 3 ) ).connect( any(), any() );
+    }
+
+    @Test
+    void promptsForConfirmPasswordIfPasswordChangeRequiredCanBeEmpty() throws Exception
+    {
+        testWithMockUser( "expired_bob", "newpassword", "oldpassword" )
+                .userInputLines( "expired_bob", "oldpassword", "newpassword", "" )
+                .run()
+                .assertFailure("Passwords are not matching.")
+                .assertOutputLines(
+                        "username: expired_bob", "password: ***********", "Password change required", "new password: ***********", "confirm password: "
+                );
+
+        verify( mockShell, times( 2 ) ).connect( any(), any() );
     }
 
     @Test

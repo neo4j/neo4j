@@ -263,7 +263,7 @@ public class Main
         String newPassword = isOutputInteractive ?
                              promptForNonEmptyText( "new password", '*' ) :
                              promptForText( "new password", '*' );
-        String reenteredNewPassword = promptForText( "new password again", '*' );
+        String reenteredNewPassword = promptForText( "confirm password", '*' );
 
         if ( !reenteredNewPassword.equals( newPassword ) )
         {
