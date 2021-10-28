@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -51,10 +50,10 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -76,7 +75,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.scheduler.GroupedDaemonThreadFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -144,9 +142,9 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildAll;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildAll;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -481,78 +479,6 @@ class IndexingServiceTest
                 "IndexingService.start: index 1 on (:LabelOne {propertyOne}) is ONLINE",
                 "IndexingService.start: index 2 on (:LabelOne {propertyTwo}) is POPULATING",
                 "IndexingService.start: index 3 on (:LabelTwo {propertyTwo}) is FAILED" );
-    }
-
-    @Disabled
-    @Test
-    void shouldLogDeprecatedIndexesOnStart() throws Exception
-    {
-        // given two indexes per available index provider
-        int id = 1;
-        List<IndexDescriptor> indexDescriptors = new ArrayList<>();
-        IndexProvider[] indexProviders = new IndexProvider[indexProviderDescriptors.length];
-        for ( int i = 0; i < indexProviderDescriptors.length; i++ )
-        {
-            IndexProviderDescriptor indexProviderDescriptor = indexProviderDescriptors[i];
-            IndexProvider indexProvider = mockIndexProviderWithAccessor( indexProviderDescriptor );
-            indexProviders[i] = indexProvider;
-
-            // Two indexes per provider
-            for ( int j = 0; j < 2; j++ )
-            {
-                IndexDescriptor index = storeIndex( id, 1, id, indexProviderDescriptor );
-                indexDescriptors.add( index );
-                when( indexProvider.getInitialState( eq( index ), any() ) ).thenReturn( ONLINE );
-                id++;
-            }
-        }
-
-        Config config = Config.defaults( default_schema_provider, nativeBtree10Descriptor.name() );
-        MockIndexProviderMap providerMap = new MockIndexProviderMap( mockIndexProviderWithAccessor(nativeBtree10Descriptor) );
-        providerMap.init();
-
-        when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 1, 1, 1 ) );
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
-                mock( JobScheduler.class ), providerMap, storeViewFactory, nameLookup,
-                indexDescriptors, internalLogProvider, userLogProvider,
-                IndexMonitor.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", writable() );
-
-        // when starting IndexingService
-        indexingService.init();
-        for ( IndexProviderDescriptor indexProviderDescriptor : indexProviderDescriptors )
-        {
-            onBothLogProviders( logProvider -> assertThat( logProvider ).doesNotContainMessage( indexProviderDescriptor.name() ) );
-        }
-
-        userLogProvider.clear();
-        indexingService.start();
-
-        // then we should see log messages about deprecated providers if any
-        for ( IndexProviderDescriptor indexProviderDescriptor : indexProviderDescriptors )
-        {
-            if ( isDeprecated( indexProviderDescriptor ) )
-            {
-                assertThat( userLogProvider ).containsMessages( "Deprecated index providers in use:",
-                        indexProviderDescriptor.name() + " (2 indexes)",
-                        "Use procedure 'db.indexes()' to see what indexes use which index provider." );
-            }
-            else
-            {
-                onBothLogProviders( logProvider -> assertThat( logProvider ).doesNotContainMessage( indexProviderDescriptor.name() ) );
-            }
-        }
-    }
-
-    private static boolean isDeprecated( IndexProviderDescriptor indexProviderDescriptor )
-    {
-        for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
-        {
-            if ( schemaIndex.providerName().equals( indexProviderDescriptor.name() ) )
-            {
-                return schemaIndex.deprecated();
-            }
-        }
-        return false;
     }
 
     @Test
