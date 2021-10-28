@@ -80,7 +80,12 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   magnolia
   mercator
-  Netty/All-in-One
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
   parboiled-core
   parboiled-scala
   picocli - a mighty tiny Command Line Interface
