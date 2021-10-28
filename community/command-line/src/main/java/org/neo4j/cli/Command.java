@@ -38,14 +38,14 @@ public interface Command extends Callable<Integer>
         DUMP,
         LOAD,
         ONLINE_BACKUP,
-        ONLINE_BACKUP_EXP,
+        ONLINE_BACKUP_NEXT,
         RESTORE_DB,
-        RESTORE_DB_EXP,
+        RESTORE_DB_NEXT,
         PREPARE_RESTORE,
         UNBIND,
         GET_SERVER_ID,
         PUSH_TO_CLOUD,
-        AGGREGATE_EXP,
+        AGGREGATE_NEXT,
         TEST //Used by test commands. Don't use this for any real command
     }
 }

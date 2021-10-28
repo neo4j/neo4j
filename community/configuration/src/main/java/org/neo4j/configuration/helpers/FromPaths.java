@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
+import static java.util.stream.Collectors.joining;
 import static org.neo4j.io.IOUtils.uncheckedFunction;
 
 public class FromPaths
@@ -142,5 +143,15 @@ public class FromPaths
         {
             throw new IllegalArgumentException( "The provided from parameter is empty." );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return paths == null ? "" : paths.stream()
+                                         .filter( Objects::nonNull )
+                                         .map( Path::toAbsolutePath )
+                                         .map( Object::toString )
+                                         .collect( joining( ", " ) );
     }
 }
