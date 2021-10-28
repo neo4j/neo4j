@@ -300,8 +300,7 @@ class FabricStitcherTest
         e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
       }
 
-      // TODO: Enable once SemanticFeature.CallSubqueryInTransactions is enabled
-      "disallows call in transactions as subquery call" ignore {
+      "disallows call in transactions as subquery call" in {
         val e = the[SyntaxException].thrownBy(
           stitching(
             init(defaultUse)
