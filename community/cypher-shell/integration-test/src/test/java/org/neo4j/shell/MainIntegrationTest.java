@@ -182,6 +182,24 @@ class MainIntegrationTest
     }
 
     @Test
+    void shouldHandleEmptyLine() throws Exception
+    {
+        var expectedPrompt = format(
+                "neo4j@neo4j> %n" +
+                "neo4j@neo4j> :exit");
+
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines(
+                        "",
+                        ":exit"
+                )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput( containsString(expectedPrompt), endsWithInteractiveExit );
+    }
+
+    @Test
     void wrongPortWithBolt() throws Exception
     {
         testWithUser( "leonard", "coen", false )
