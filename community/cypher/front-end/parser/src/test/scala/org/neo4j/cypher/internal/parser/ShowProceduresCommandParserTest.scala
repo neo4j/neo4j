@@ -43,6 +43,10 @@ class ShowProceduresCommandParserTest  extends ParserAstTest[ast.Statement]
       yields(_ => query(ast.ShowProceduresClause(Some(ast.User("user")), None, hasYield = false)(pos)))
     }
 
+    test(s"SHOW $procKeyword EXECUTABLE BY CURRENT") {
+      yields(_ => query(ast.ShowProceduresClause(Some(ast.User("CURRENT")), None, hasYield = false)(pos)))
+    }
+
     test(s"USE db SHOW $procKeyword") {
       yields(_ => query(use(varFor("db")), ast.ShowProceduresClause(None, None, hasYield = false)(pos)))
     }

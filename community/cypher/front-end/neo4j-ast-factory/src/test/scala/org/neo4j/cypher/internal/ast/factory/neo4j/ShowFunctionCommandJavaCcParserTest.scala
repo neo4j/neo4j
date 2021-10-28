@@ -55,6 +55,10 @@ class ShowFunctionCommandJavaCcParserTest extends ParserComparisonTestBase with 
         assertJavaCCAST(testName, query(ShowFunctionsClause(functionType, Some(User("user")), None, hasYield = false)(pos)))
       }
 
+      test(s"SHOW $typeString $funcKeyword EXECUTABLE BY CURRENT") {
+        assertJavaCCAST(testName, query(ShowFunctionsClause(functionType, Some(User("CURRENT")), None, hasYield = false)(pos)))
+      }
+
       test(s"USE db SHOW $typeString $funcKeyword") {
         assertJavaCCAST(testName, query(use(varFor("db")), ShowFunctionsClause(functionType, None, None, hasYield = false)(pos)))
       }

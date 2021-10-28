@@ -3002,7 +3002,7 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
     ( <PROCEDURE> | <PROCEDURES> )
     (
         <EXECUTABLE> { currentUser = true; } ( <BY>
-        ( <CURRENT> <USER> { currentUser = true; }
+        ( LOOKAHEAD(<CURRENT> <USER>) <CURRENT> <USER> { currentUser = true; }
         | userToken=SymbolicNameString() { user = userToken.image; currentUser = false; } ) )?
     )?
     (
@@ -3047,7 +3047,7 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, String functionType 
     ( <FUNCTION> | <FUNCTIONS> )
     (
         <EXECUTABLE> { currentUser = true; } ( <BY>
-        ( <CURRENT> <USER> { currentUser = true; }
+        ( LOOKAHEAD(<CURRENT> <USER>) <CURRENT> <USER> { currentUser = true; }
         | userToken=SymbolicNameString() { user = userToken.image; currentUser = false; } ) )?
     )?
     (
