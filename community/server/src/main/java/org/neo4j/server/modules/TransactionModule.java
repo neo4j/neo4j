@@ -28,7 +28,9 @@ import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
 import org.neo4j.server.http.cypher.format.output.eventsource.LineDelimitedEventSourceJoltMessageBodyWriter;
 import org.neo4j.server.http.cypher.format.output.eventsource.SequentialEventSourceJoltMessageBodyWriter;
 import org.neo4j.server.http.cypher.format.output.json.JsonMessageBodyWriter;
+import org.neo4j.server.web.Injectable;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * Mounts the transactional endpoint.
@@ -37,17 +39,19 @@ public class TransactionModule implements ServerModule
 {
     private final Config config;
     private final WebServer webServer;
+    private final SystemNanoClock clock;
 
-    public TransactionModule( WebServer webServer, Config config )
+    public TransactionModule( WebServer webServer, Config config, SystemNanoClock clock )
     {
         this.webServer = webServer;
         this.config = config;
+        this.clock = clock;
     }
 
     @Override
     public void start()
     {
-        webServer.addJAXRSClasses( jaxRsClasses(), mountPoint(), null );
+        webServer.addJAXRSClasses( jaxRsClasses(), mountPoint(), List.of( Injectable.injectable( SystemNanoClock.class, clock ) ) );
     }
 
     @Override

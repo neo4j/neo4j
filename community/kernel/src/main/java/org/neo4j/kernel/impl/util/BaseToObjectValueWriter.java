@@ -102,7 +102,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray ignore, MapValue properties )
+    public void writeNode( long nodeId, TextArray ignore, MapValue properties, boolean ignored )
     {
         if ( nodeId >= 0 )
         {
@@ -123,7 +123,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean ignored )
     {
         if ( relId >= 0 )
         {

@@ -26,7 +26,9 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.LegacyTransactionService;
 import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
 import org.neo4j.server.http.cypher.format.output.json.JsonMessageBodyWriter;
+import org.neo4j.server.web.Injectable;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * Mounts the legacy transaction module.
@@ -35,17 +37,19 @@ public class LegacyTransactionModule implements ServerModule
 {
     private final Config config;
     private final WebServer webServer;
+    private final SystemNanoClock clock;
 
-    public LegacyTransactionModule( WebServer webServer, Config config )
+    public LegacyTransactionModule( WebServer webServer, Config config, SystemNanoClock clock )
     {
         this.webServer = webServer;
         this.config = config;
+        this.clock = clock;
     }
 
     @Override
     public void start()
     {
-        webServer.addJAXRSClasses( jaxRsClasses(), mountPoint(), null );
+        webServer.addJAXRSClasses( jaxRsClasses(), mountPoint(), List.of( Injectable.injectable( SystemNanoClock.class, clock ) ) );
     }
 
     private static List<Class<?>> jaxRsClasses()

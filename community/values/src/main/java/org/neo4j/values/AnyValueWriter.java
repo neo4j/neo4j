@@ -45,20 +45,20 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
      *
      * A returned {@link EntityMode#FULL} signals to all entity-values that they can callback using either
      *      {@link #writeNodeReference(long)},
-     *      {@link #writeNode(long, TextArray, MapValue)},
+     *      {@link #writeNode(long, TextArray, MapValue, boolean)},
      *      {@link #writeRelationshipReference(long)}
-     *   or {@link #writeRelationship(long, long, long, TextValue, MapValue)}
+     *   or {@link #writeRelationship(long, long, long, TextValue, MapValue, boolean)}
      * depending on how much information is available to the value instance.
      */
     EntityMode entityMode();
 
     void writeNodeReference( long nodeId ) throws E;
 
-    void writeNode( long nodeId, TextArray labels, MapValue properties ) throws E;
+    void writeNode( long nodeId, TextArray labels, MapValue properties, boolean isDeleted ) throws E;
 
     void writeRelationshipReference( long relId ) throws E;
 
-    void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties ) throws E;
+    void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties, boolean isDeleted ) throws E;
 
     void beginMap( int size ) throws E;
 

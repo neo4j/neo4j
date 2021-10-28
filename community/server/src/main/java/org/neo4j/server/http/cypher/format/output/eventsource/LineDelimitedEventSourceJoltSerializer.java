@@ -38,8 +38,6 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.server.http.cypher.TransactionHandle;
-import org.neo4j.server.http.cypher.TransactionStateChecker;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.FailureEvent;
 import org.neo4j.server.http.cypher.format.api.OutputEvent;
@@ -60,7 +58,6 @@ import static org.neo4j.server.http.cypher.format.api.TransactionNotificationSta
 class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer
 {
     protected final JsonGenerator jsonGenerator;
-    protected final TransactionHandle transactionHandle;
     protected final List<Notification> notifications = new ArrayList<>();
     protected final List<FailureEvent> errors = new ArrayList<>();
     protected final OutputStream output;
@@ -73,11 +70,10 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer
     private final EventSourceWriter writer;
     private InputStatement inputStatement;
 
-    LineDelimitedEventSourceJoltSerializer( TransactionHandle transactionHandle, Map<String,Object> parameters, Class<? extends ObjectCodec> classOfCodec,
+    LineDelimitedEventSourceJoltSerializer( Map<String,Object> parameters, Class<? extends ObjectCodec> classOfCodec,
                                             boolean isStrictMode, JsonFactory jsonFactory, OutputStream output )
     {
         this.parameters = parameters;
-        this.transactionHandle = transactionHandle;
         this.output = output;
         this.writer = new EventSourceWriter();
 
@@ -170,13 +166,12 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer
     {
         try
         {
-            TransactionStateChecker txStateChecker = TransactionStateChecker.create( transactionHandle.getContext() );
             jsonGenerator.writeStartObject();
             jsonGenerator.writeFieldName( "data" );
 
             try
             {
-                writer.write( jsonGenerator, recordEvent, txStateChecker );
+                writer.write( jsonGenerator, recordEvent );
             }
             finally
             {

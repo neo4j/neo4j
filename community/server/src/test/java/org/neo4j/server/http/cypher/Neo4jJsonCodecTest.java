@@ -34,15 +34,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.Entity;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.server.http.cypher.entity.HttpNode;
+import org.neo4j.server.http.cypher.entity.HttpRelationship;
 import org.neo4j.server.http.cypher.format.common.Neo4jJsonCodec;
 import org.neo4j.test.mockito.mock.SpatialMocks;
 
@@ -65,7 +65,6 @@ class Neo4jJsonCodecTest
 {
     private Neo4jJsonCodec jsonCodec;
     private JsonGenerator jsonGenerator;
-    private final TransactionHandle transactionHandle = mock( TransactionHandle.class );
 
     @BeforeEach
     void init()
@@ -76,8 +75,7 @@ class Neo4jJsonCodecTest
 
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
         when( context.getInternalTransaction() ).thenReturn( internalTransaction );
-        when( transactionHandle.getContext() ).thenReturn( context );
-        jsonCodec = new Neo4jJsonCodec( transactionHandle );
+        jsonCodec = new Neo4jJsonCodec();
         jsonGenerator = mock( JsonGenerator.class );
     }
 
@@ -96,7 +94,7 @@ class Neo4jJsonCodecTest
     void testNodeWriting() throws IOException
     {
         //Given
-        Entity node = mock( Node.class );
+        Entity node = mock( HttpNode.class );
         when( node.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When
@@ -110,7 +108,8 @@ class Neo4jJsonCodecTest
     void testRelationshipWriting() throws IOException
     {
         //Given
-        Entity relationship = mock( Relationship.class );
+        HttpRelationship relationship = mock( HttpRelationship.class );
+        when( relationship.isDeleted() ).thenReturn( false );
         when( relationship.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When

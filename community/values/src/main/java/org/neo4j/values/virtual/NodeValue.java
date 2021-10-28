@@ -48,7 +48,7 @@ public abstract class NodeValue extends VirtualNodeValue
         }
         else
         {
-            writer.writeNode( id, labels(), properties() );
+            writer.writeNode( id, labels(), properties(), isDeleted() );
         }
     }
 
@@ -75,6 +75,7 @@ public abstract class NodeValue extends VirtualNodeValue
     {
         private final TextArray labels;
         private final MapValue properties;
+        private final boolean isDeleted;
 
         DirectNodeValue( long id, TextArray labels, MapValue properties )
         {
@@ -83,6 +84,17 @@ public abstract class NodeValue extends VirtualNodeValue
             assert properties != null;
             this.labels = labels;
             this.properties = properties;
+            this.isDeleted = false;
+        }
+
+        DirectNodeValue( long id, TextArray labels, MapValue properties, boolean isDeleted )
+        {
+            super( id );
+            assert labels != null;
+            assert properties != null;
+            this.labels = labels;
+            this.properties = properties;
+            this.isDeleted = isDeleted;
         }
 
         @Override
@@ -101,6 +113,12 @@ public abstract class NodeValue extends VirtualNodeValue
         public long estimatedHeapUsage()
         {
             return DIRECT_NODE_SHALLOW_SIZE + labels.estimatedHeapUsage() + properties.estimatedHeapUsage();
+        }
+
+        @Override
+        public boolean isDeleted()
+        {
+            return isDeleted;
         }
     }
 }

@@ -20,7 +20,7 @@
 package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.server.http.cypher.TransactionStateChecker;
+import org.neo4j.server.http.cypher.entity.HttpRelationship;
 
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
@@ -28,17 +28,11 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
         EntityRepresentation
 {
     private final Relationship rel;
-    private TransactionStateChecker checker;
 
     public RelationshipRepresentation( Relationship rel )
     {
         super( RepresentationType.RELATIONSHIP );
         this.rel = rel;
-    }
-
-    public void setTransactionStateChecker( TransactionStateChecker checker )
-    {
-        this.checker = checker;
     }
 
     @Override
@@ -78,13 +72,13 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     @Mapping( "start" )
     public ValueRepresentation startNodeUri()
     {
-        return ValueRepresentation.uri( NodeRepresentation.path( rel.getStartNode() ) );
+        return ValueRepresentation.uri( NodeRepresentation.path( rel.getStartNodeId() ) );
     }
 
     @Mapping( "end" )
     public ValueRepresentation endNodeUri()
     {
-        return ValueRepresentation.uri( NodeRepresentation.path( rel.getEndNode() ) );
+        return ValueRepresentation.uri( NodeRepresentation.path( rel.getEndNodeId() ) );
     }
 
     @Mapping( "properties" )
@@ -114,7 +108,7 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
 
     private boolean isDeleted()
     {
-        return checker != null && checker.isRelationshipDeletedInCurrentTx( rel.getId() );
+        return ((HttpRelationship) rel).isDeleted();
     }
 
     @Override

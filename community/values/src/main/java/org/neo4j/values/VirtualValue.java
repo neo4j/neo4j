@@ -80,4 +80,9 @@ public abstract class VirtualValue extends HashMemoizingAnyValue
     {
         return ValueRepresentation.UNKNOWN;
     }
+
+    public boolean isDeleted()
+    {
+        return false;
+    }
 }

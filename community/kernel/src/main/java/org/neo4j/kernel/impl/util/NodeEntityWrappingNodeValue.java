@@ -64,6 +64,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
         {
             TextArray l;
             MapValue p;
+            boolean isDeleted = false;
             try
             {
                 l = labels();
@@ -78,6 +79,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
                 // If it isn't a transient error then the node was deleted in the current transaction and we should write an 'empty' node.
                 l = Values.stringArray();
                 p = VirtualValues.EMPTY_MAP;
+                isDeleted = true;
             }
 
             if ( id() < 0 )
@@ -85,7 +87,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
                 writer.writeVirtualNodeHack( node );
             }
 
-            writer.writeNode( node.getId(), l, p );
+            writer.writeNode( node.getId(), l, p, isDeleted );
         }
     }
 

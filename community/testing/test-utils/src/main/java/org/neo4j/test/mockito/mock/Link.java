@@ -26,11 +26,11 @@ public class Link
 {
     public static Link link( Relationship relationship, Node node )
     {
-        if ( relationship.getStartNode().getId() == node.getId() )
+        if ( relationship.getStartNodeId() == node.getId() )
         {
             return new Link( node, relationship );
         }
-        if ( relationship.getEndNode().getId() == node.getId() )
+        if ( relationship.getEndNodeId() == node.getId() )
         {
             return new Link( relationship, node );
         }
@@ -59,14 +59,14 @@ public class Link
     {
         if ( isStartNode )
         {
-            if ( node.getId() != relationship.getEndNode().getId() )
+            if ( node.getId() != relationship.getEndNodeId() )
             {
                 throw illegalArgument( "%s is not the end node of %s", node, relationship );
             }
         }
         else
         {
-            if ( node.getId() != relationship.getStartNode().getId() )
+            if ( node.getId() != relationship.getStartNodeId() )
             {
                 throw illegalArgument( "%s is not the start node of %s", node, relationship );
             }

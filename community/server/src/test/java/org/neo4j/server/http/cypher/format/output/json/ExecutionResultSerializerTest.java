@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -68,7 +69,8 @@ import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.server.http.cypher.TransactionHandle;
+import org.neo4j.server.http.cypher.entity.HttpNode;
+import org.neo4j.server.http.cypher.entity.HttpRelationship;
 import org.neo4j.server.http.cypher.TransitionalTxManagementKernelTransaction;
 import org.neo4j.server.http.cypher.format.api.FailureEvent;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
@@ -84,6 +86,7 @@ import org.neo4j.test.mockito.mock.Link;
 import org.neo4j.test.mockito.mock.SpatialMocks;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -92,6 +95,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
@@ -100,7 +104,6 @@ import static org.neo4j.test.mockito.mock.GraphMock.node;
 import static org.neo4j.test.mockito.mock.GraphMock.path;
 import static org.neo4j.test.mockito.mock.GraphMock.relationship;
 import static org.neo4j.test.mockito.mock.Properties.properties;
-import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
@@ -110,12 +113,11 @@ class ExecutionResultSerializerTest
 {
     private static final Map<String,Object> NO_ARGS = Collections.emptyMap();
     private static final Set<String> NO_IDS = Collections.emptySet();
-    private static final List<ExecutionPlanDescription> NO_PLANS = Collections.emptyList();
+    private static final List<ExecutionPlanDescription> NO_PLANS = emptyList();
     private static final JsonFactory JSON_FACTORY = new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private ExecutionResultSerializer serializer;
-    private final TransactionHandle transactionHandle = mock( TransactionHandle.class );
     private InternalTransaction internalTransaction;
 
     @BeforeEach
@@ -127,8 +129,7 @@ class ExecutionResultSerializerTest
 
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
         when( context.getInternalTransaction() ).thenReturn( internalTransaction );
-        when( transactionHandle.getContext() ).thenReturn( context );
-        serializer = getSerializerWith( transactionHandle, output );
+        serializer = getSerializerWith( output );
     }
 
     @Test
@@ -326,42 +327,46 @@ class ExecutionResultSerializerTest
     }
 
     @Test
-    void shouldSerializeNodeAsMapOfProperties()
+    void shouldSerializeNodeAsMapOfProperties() throws JsonParseException
     {
         // given
-        var node = node( 1,
-                         properties( property( "a", 12 ),
-                                     property( "b", true ),
-                                     property( "c", new int[]{1, 0, 1, 2} ),
-                                     property( "d", new byte[]{1, 0, 1, 2} ),
-                                     property( "e", new String[]{"a", "b", "ääö"} ) ) );
-        var row = Map.of( "node", node );
+        var node = new HttpNode( 1, emptyList(),
+                                 Map.of( "a", 12,
+                                         "b", true,
+                                         "c", new int[]{1, 0, 1, 2},
+                                         "d", new byte[]{1, 0, 1, 2},
+                                         "e", new String[]{"a", "b", "ääö"} ),
+                                 false );
+        var record = Map.of( "node", node );
 
         when( internalTransaction.getNodeById( 1 ) ).thenReturn( node );
 
         // when
         writeStatementStart( serializer, "node" );
-        writeRecord( serializer, row, "node" );
+        writeRecord( serializer, record, "node" );
         writeStatementEnd( serializer );
         writeTransactionInfo( serializer );
 
         // then
-        String result = output.toString( UTF_8 );
-        assertEquals( "{\"results\":[{\"columns\":[\"node\"]," +
-                      "\"data\":[{\"row\":[{\"a\":12,\"b\":true,\"c\":[1,0,1,2],\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"]}]," +
-                      "\"meta\":[{\"id\":1,\"type\":\"node\",\"deleted\":false}]}]}]," +
-                      "\"errors\":[]}", result );
+        var result = output.toString( UTF_8 );
+        var json = jsonNode( result );
+        var results = json.get( "results" ).get( 0 );
+
+        var row = results.get( "data" ).get( 0 ).get( "row" ).get( 0 );
+        assertEquals( row, jsonNode( "{\"b\":true,\"c\":[1,0,1,2],\"d\":[1,0,1,2],\"e\":[\"a\",\"b\",\"ääö\"],\"a\":12}" ) );
+        var meta = results.get( "data" ).get( 0 ).get( "meta" );
+        assertEquals( meta, jsonNode( "[{\"id\":1,\"type\":\"node\",\"deleted\":false}]" ) );
     }
 
     @Test
-    void shouldHandleTransactionHandleStateCorrectly() throws Exception, InterruptedException
+    void shouldHandleTransactionHandleStateCorrectly() throws Exception
     {
 
         // The serializer is stateful, as the underlying Neo4jJsonCodec uses a handle to the transaction.
         // Therefore, the JSON Factory must not be reused respectively the codec used on a factory cannot be changed
         // Otherwise, we will end up with transaction handles belonging to other threads.
 
-        Function<Integer,Node> selectNode = i -> node( 1, properties( property( "i", i ) ) );
+        Function<Integer,Node> selectNode = i -> new HttpNode( 1, emptyList(), Map.of( "i", i ), false );
         Function<Integer,Callable<String>> callableProvider = selectNode.andThen( node -> () ->
         {
 
@@ -369,16 +374,14 @@ class ExecutionResultSerializerTest
             var localContext = mock( TransitionalTxManagementKernelTransaction.class );
             var localInternalTransaction = mock( InternalTransaction.class );
             var localKernelTransaction = mock( KernelTransactionImplementation.class );
-            var localTransactionHandle = mock( TransactionHandle.class );
 
             when( localInternalTransaction.getNodeById( 1 ) ).thenReturn( node );
             when( localInternalTransaction.kernelTransaction() ).thenReturn( localKernelTransaction );
             when( localContext.getInternalTransaction() ).thenReturn( localInternalTransaction );
-            when( localTransactionHandle.getContext() ).thenReturn( localContext );
 
             // when
             final ByteArrayOutputStream output = new ByteArrayOutputStream();
-            ExecutionResultSerializer serializer = getSerializerWith( localTransactionHandle, output );
+            ExecutionResultSerializer serializer = getSerializerWith( output );
 
             writeStatementStart( serializer, "node" );
             writeRecord( serializer, Collections.singletonMap( "node", node ), "node" );
@@ -410,6 +413,7 @@ class ExecutionResultSerializerTest
                 }
                 catch ( ExecutionException e )
                 {
+                    e.printStackTrace();
                     Assertions.fail( "At least one request failed " + e.getMessage() );
                 }
                 ++i;
@@ -425,12 +429,9 @@ class ExecutionResultSerializerTest
     void shouldSerializeNestedEntities()
     {
         // given
-        var a = node( 1, properties( property( "foo", 12 ) ) );
-        var b = node( 2, properties( property( "bar", false ) ) );
-        var r = relationship( 1, properties( property( "baz", "quux" ) ), a, "FRAZZLE", b );
-        when( internalTransaction.getRelationshipById( 1 ) ).thenReturn( r );
-        when( internalTransaction.getNodeById( 1 ) ).thenReturn( a );
-        when( internalTransaction.getNodeById( 2 ) ).thenReturn( b );
+        var a = new HttpNode( 1, List.of(), Map.of( "foo", 12 ), false );
+        var b = new HttpNode( 2, List.of(), Map.of( "bar", false ), false );
+        var r = new HttpRelationship( 1, 1, 2, "FRAZZLE", Map.of( "baz", "quux" ), false, ( ignoredA, ignoredB ) -> Optional.empty() );
         var row = Map.of(
                 "nested", new TreeMap<>( Map.of( "node", a, "edge", r, "path", path( a, link( r, b ) ) ) ) );
 
@@ -455,15 +456,8 @@ class ExecutionResultSerializerTest
     void shouldSerializePathAsListOfMapsOfProperties()
     {
         // given
-        var path = mockPath( Map.of( "key1", "value1" ), Map.of( "key2", "value2" ), Map.of( "key3", "value3" ) );
+        var path = mockPathWithHttpEntities( Map.of( "key1", "value1" ), Map.of( "key2", "value2" ), Map.of( "key3", "value3" ) );
         var row = Map.of( "path", path );
-
-        var startNode = path.startNode();
-        var endNode = path.endNode();
-        var rel = path.lastRelationship();
-        when( internalTransaction.getRelationshipById( 1L ) ).thenReturn( rel );
-        when( internalTransaction.getNodeById( 1L ) ).thenReturn( startNode );
-        when( internalTransaction.getNodeById( 2L ) ).thenReturn( endNode );
 
         // when
         writeStatementStart( serializer, "path" );
@@ -624,13 +618,17 @@ class ExecutionResultSerializerTest
     {
         // given
         Node[] node = {
-                node( 0, properties( property( "name", "node0" ) ), "Node" ),
-                node( 1, properties( property( "name", "node1" ) ) ),
-                node( 2, properties( property( "name", "node2" ) ), "This", "That" ),
-                node( 3, properties( property( "name", "node3" ) ), "Other" )};
+                new HttpNode( 0, List.of( label( "Node" ) ), Map.of( "name", "node0" ), false ),
+                new HttpNode( 1, emptyList(), Map.of( "name", "node1" ), false ),
+                new HttpNode( 2, List.of( label( "This" ), label( "That" ) ), Map.of( "name", "node2" ), false ),
+                new HttpNode( 3, List.of( label( "Other" ) ), Map.of( "name", "node3" ), false )
+        };
         Relationship[] rel = {
-                relationship( 0, node[0], "KNOWS", node[1], property( "name", "rel0" ) ),
-                relationship( 1, node[2], "LOVES", node[3], property( "name", "rel1" ) )};
+                new HttpRelationship( 0, 0, 1, "KNOWS", Map.of( "name", "rel0" ), false,
+                                      ( i, b ) -> Optional.of( node[Math.toIntExact( i )] ) ),
+                new HttpRelationship( 1, 2, 3, "LOVES", Map.of( "name", "rel1" ), false,
+                                      ( i, b ) -> Optional.of( node[Math.toIntExact( i )] ) )
+        };
 
         when( internalTransaction.getRelationshipById( anyLong() ) ).thenAnswer(
                 (Answer<Relationship>) invocation -> rel[invocation.getArgument( 0, Number.class ).intValue()] );
@@ -693,15 +691,15 @@ class ExecutionResultSerializerTest
     {
         // given
         Node[] node = {
-                node( 0, properties( property( "name", "node0" ) ) ),
-                node( 1, properties( property( "name", "node1" ) ) ),
-                node( 2, properties( property( "name", "node2" ) ) )};
+                new HttpNode( 0, emptyList(), Map.of( "name", "node0" ), false ),
+                new HttpNode( 1, emptyList(), Map.of( "name", "node1" ), false ),
+                new HttpNode( 2, emptyList(), Map.of( "name", "node2" ), false )};
         Relationship[] rel = {
-                relationship( 0, node[0], "KNOWS", node[1], property( "name", "rel0" ) ),
-                relationship( 1, node[2], "LOVES", node[1], property( "name", "rel1" ) )};
+                new HttpRelationship( 0, 0, 1, "KNOWS", Map.of( "name", "rel0" ), false, ( ignoredA, ignoredB ) -> Optional.empty() ),
+                new HttpRelationship( 1, 2, 1, "LOVES", Map.of( "name", "rel1" ), false, ( ignoredA, ignoredB ) -> Optional.empty() )};
         Path path = GraphMock.path( node[0], link( rel[0], node[1] ), link( rel[1], node[2] ) );
 
-        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
+        serializer = getSerializerWith( output, "http://base.uri/" );
 
         var resultRow = Map.of(
                 "node", node[0],
@@ -743,7 +741,7 @@ class ExecutionResultSerializerTest
     void shouldProduceResultStreamWithLegacyRestFormatAndNestedMaps() throws Exception
     {
         // given
-        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
+        serializer = getSerializerWith( output, "http://base.uri/" );
 
         // RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}
         var resultRow = Map.of(
@@ -775,7 +773,7 @@ class ExecutionResultSerializerTest
     void shouldSerializePlanWithoutChildButAllKindsOfSupportedArguments() throws Exception
     {
         // given
-        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
+        serializer = getSerializerWith( output, "http://base.uri/" );
 
         String operatorType = "Ich habe einen Plan";
 
@@ -795,7 +793,7 @@ class ExecutionResultSerializerTest
 
         writeStatementStart( serializer, Collections.singletonList( ResultDataContent.rest ) );
         writeRecord( serializer, Collections.emptyMap() );
-        writeStatementEnd( serializer, planDescription, Collections.emptyList() );
+        writeStatementEnd( serializer, planDescription, emptyList() );
         writeTransactionInfo( serializer );
 
         String resultString = output.toString( UTF_8 );
@@ -820,7 +818,7 @@ class ExecutionResultSerializerTest
     void shouldSerializePlanWithoutChildButWithIdentifiers() throws Exception
     {
         // given
-        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
+        serializer = getSerializerWith( output, "http://base.uri/" );
 
         String operatorType = "Ich habe einen Plan";
         String id1 = "id1";
@@ -833,7 +831,7 @@ class ExecutionResultSerializerTest
         // when
         writeStatementStart( serializer, Collections.singletonList( ResultDataContent.rest ) );
         writeRecord( serializer, Collections.emptyMap() );
-        writeStatementEnd( serializer, planDescription, Collections.emptyList() );
+        writeStatementEnd( serializer, planDescription, emptyList() );
         writeTransactionInfo( serializer );
 
         String resultString = output.toString( UTF_8 );
@@ -852,7 +850,7 @@ class ExecutionResultSerializerTest
     void shouldSerializePlanWithChildren() throws Exception
     {
         // given
-        serializer = getSerializerWith( transactionHandle, output, "http://base.uri/" );
+        serializer = getSerializerWith( output, "http://base.uri/" );
 
         String leftId = "leftId";
         String rightId = "rightId";
@@ -866,7 +864,7 @@ class ExecutionResultSerializerTest
         // when
         writeStatementStart( serializer, Collections.singletonList( ResultDataContent.rest ) );
         writeRecord( serializer, Collections.emptyMap() );
-        writeStatementEnd( serializer, parent, Collections.emptyList() );
+        writeStatementEnd( serializer, parent, emptyList() );
         writeTransactionInfo( serializer );
 
         // then
@@ -934,7 +932,7 @@ class ExecutionResultSerializerTest
         // when
         writeStatementStart( serializer, "column1", "column2" );
         writeRecord( serializer, row, "column1", "column2" );
-        writeStatementEnd( serializer, null, Collections.emptyList() );
+        writeStatementEnd( serializer, null, emptyList() );
         writeTransactionInfo( serializer, "commit/uri/1" );
 
         // then
@@ -978,14 +976,14 @@ class ExecutionResultSerializerTest
                         "different parts or by using OPTIONAL MATCH\"}],\"errors\":[],\"commit\":\"commit/uri/1\"}", result );
     }
 
-    private static ExecutionResultSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
+    private static ExecutionResultSerializer getSerializerWith( OutputStream output )
     {
-        return getSerializerWith( transactionHandle, output, null );
+        return getSerializerWith( output, null );
     }
 
-    private static ExecutionResultSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
+    private static ExecutionResultSerializer getSerializerWith( OutputStream output, String uri )
     {
-        return new ExecutionResultSerializer( transactionHandle, Collections.emptyMap(), uri == null ? null : URI.create( uri ), Neo4jJsonCodec.class,
+        return new ExecutionResultSerializer( Collections.emptyMap(), uri == null ? null : URI.create( uri ), Neo4jJsonCodec.class,
                                               JSON_FACTORY, output );
     }
 
@@ -1007,7 +1005,7 @@ class ExecutionResultSerializerTest
 
     private static void writeStatementEnd( ExecutionResultSerializer serializer )
     {
-        writeStatementEnd( serializer, null, Collections.emptyList() );
+        writeStatementEnd( serializer, null, emptyList() );
     }
 
     private static void writeStatementEnd( ExecutionResultSerializer serializer, ExecutionPlanDescription planDescription,
@@ -1084,4 +1082,15 @@ class ExecutionResultSerializerTest
         Map<String,?> planMap = (Map<String,?>) (resultMap.get( "plan" ));
         return (Map<String,?>) (planMap.get( "root" ));
     }
+
+    private static Path mockPathWithHttpEntities( Map<String,Object> startNodeProperties, Map<String,Object> relationshipProperties,
+                                                  Map<String,Object> endNodeProperties )
+    {
+        Node startNode = new HttpNode( 1, emptyList(), startNodeProperties, false );
+        Node endNode = new HttpNode( 2, emptyList(), endNodeProperties, false );
+        Relationship relationship =
+                new HttpRelationship( 1, 1, 2, "RELATED", relationshipProperties, false, ( ignoredA, ignoredB ) -> Optional.empty() );
+        return path( startNode, Link.link( relationship, endNode ) );
+    }
+
 }

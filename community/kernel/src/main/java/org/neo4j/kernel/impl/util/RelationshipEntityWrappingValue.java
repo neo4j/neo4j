@@ -75,6 +75,8 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
         }
         else
         {
+            boolean isDeleted = false;
+
             if ( relationship instanceof RelationshipEntity )
             {
                 RelationshipEntity proxy = (RelationshipEntity) relationship;
@@ -100,14 +102,14 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
                 }
                 // If it isn't a transient error then the relationship was deleted in the current transaction and we should write an 'empty' relationship.
                 p = VirtualValues.EMPTY_MAP;
+                isDeleted = true;
             }
 
             if ( id() < 0 )
             {
                 writer.writeVirtualRelationshipHack( relationship );
             }
-
-            writer.writeRelationship( id(), startNodeId(), endNodeId(), type(), p );
+            writer.writeRelationship( id(), startNode().id(), endNode().id(), type(), p, isDeleted );
         }
     }
 

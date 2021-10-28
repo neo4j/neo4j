@@ -29,6 +29,7 @@ import javax.ws.rs.core.UriInfo;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryPool;
+import org.neo4j.time.SystemNanoClock;
 
 @Path( LegacyTransactionService.DB_TRANSACTION_PATH )
 public class LegacyTransactionService extends AbstractCypherResource
@@ -42,9 +43,10 @@ public class LegacyTransactionService extends AbstractCypherResource
             @Context HttpTransactionManager httpTransactionManager,
             @Context UriInfo uriInfo,
             @Context MemoryPool memoryPool,
-            @Context Log log )
+            @Context Log log,
+            @Context SystemNanoClock clock )
     {
-        super( httpTransactionManager, uriInfo, memoryPool, log, databaseResolver.defaultDatabase( request.getUserPrincipal().getName() ) );
+        super( httpTransactionManager, uriInfo, memoryPool, log, databaseResolver.defaultDatabase( request.getUserPrincipal().getName() ), clock );
     }
 
     @Override

@@ -79,7 +79,7 @@ class EventSourceWriterTest
 
         RecordEvent recordEvent = new RecordEvent( Lists.newArrayList( data.keySet() ), data::get );
 
-        resultDataContentWriter.write( json, recordEvent, null );
+        resultDataContentWriter.write( json, recordEvent );
         json.flush();
         json.close();
 
