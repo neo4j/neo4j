@@ -90,6 +90,7 @@ public abstract class MuninnPageCursor extends PageCursor
     private final CursorContext cursorContext;
     private int offset;
     private int mark;
+    private boolean markOutOfBounds;
     private boolean outOfBounds;
     // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
     // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
@@ -1028,12 +1029,14 @@ public abstract class MuninnPageCursor extends PageCursor
     public void mark()
     {
         this.mark = offset;
+        this.markOutOfBounds = outOfBounds;
     }
 
     @Override
     public void setOffsetToMark()
     {
         this.offset = mark;
+        this.outOfBounds = markOutOfBounds;
     }
 
     @Override

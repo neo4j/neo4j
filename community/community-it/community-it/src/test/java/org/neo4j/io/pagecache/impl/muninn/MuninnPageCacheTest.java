@@ -1757,6 +1757,47 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
     }
 
+    @Test
+    void shouldDealWithOutOfBoundsWithRetries() throws IOException
+    {
+        try ( var pageCache = createPageCache( fs, 1024, new DefaultPageCacheTracer() ) )
+        {
+            Path file = existingFile( "a" );
+            writeInitialDataTo( file );
+            try ( PagedFile pagedFile = map( pageCache, file, 8 ) )
+            {
+                try ( PageCursor readCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+                {
+                    //Given
+                    assertThat( readCursor.next( 0 ) ).isTrue();
+                    readCursor.setOffset( -256 ); //Note negative page offset
+                    //When (common pattern for reading)
+                    boolean first = true;
+                    readCursor.mark();
+                    do
+                    {
+                        readCursor.setOffsetToMark();
+                        readCursor.getLong();
+                        if ( first )
+                        {
+                            //Pretend some concurrent write, will trigger a retry for the read cursor
+                            try ( PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+                            {
+                                writeCursor.next( 0 );
+                                writeCursor.putLong( 1 );
+                            }
+                            first = false;
+                        }
+                    }
+                    while ( readCursor.shouldRetry() );
+
+                    //Then
+                    assertThat( readCursor.checkAndClearBoundsFlag() ).isTrue();
+                }
+            }
+        }
+    }
+
     private static class FlushRendezvousTracer extends DefaultPageCacheTracer
     {
         private final CountDownLatch latch;
