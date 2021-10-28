@@ -26,10 +26,12 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementException;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -41,6 +43,7 @@ import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -91,7 +94,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     private DB getSystemDatabaseContext()
     {
         return getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID )
-                .orElseThrow( () -> new DatabaseManagementException( "Unable to retrieve the system database!" ) );
+                .orElseThrow( () -> new DatabaseShutdownException( new DatabaseManagementException( "Unable to retrieve the system database!" ) ) );
     }
 
     @Override
@@ -134,6 +137,38 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     }
 
     @Override
+    public Optional<DB> getDatabaseContext( NamedDatabaseId namedDatabaseId )
+    {
+        return Optional.ofNullable( databaseMap.get( namedDatabaseId ) );
+    }
+
+    @Override
+    public Optional<DB> getDatabaseContext( String databaseName )
+    {
+        try
+        {
+            return databaseIdRepository().getByName( databaseName ).flatMap( this::getDatabaseContext );
+        }
+        catch ( DatabaseShutdownException e )
+        {
+            return searchContext( id -> id.name().equals( databaseName ) );
+        }
+    }
+
+    @Override
+    public Optional<DB> getDatabaseContext( DatabaseId databaseId )
+    {
+        try
+        {
+            return databaseIdRepository().getById( databaseId ).flatMap( this::getDatabaseContext );
+        }
+        catch ( DatabaseShutdownException e )
+        {
+            return searchContext( id -> id.databaseId().equals( databaseId ) );
+        }
+    }
+
+    @Override
     public final SortedMap<NamedDatabaseId,DB> registeredDatabases()
     {
         return databasesSnapshot();
@@ -142,6 +177,11 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     private NavigableMap<NamedDatabaseId,DB> databasesSnapshot()
     {
         return unmodifiableNavigableMap( new TreeMap<>( databaseMap ) );
+    }
+
+    private Optional<DB> searchContext( Predicate<NamedDatabaseId> predicate )
+    {
+        return databaseMap.entrySet().stream().filter( entry -> predicate.test( entry.getKey() ) ).map( Map.Entry::getValue ).findFirst();
     }
 
     protected abstract DB createDatabaseContext( NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions ) throws Exception;

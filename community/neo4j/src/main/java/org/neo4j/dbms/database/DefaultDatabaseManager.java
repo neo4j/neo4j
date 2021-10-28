@@ -19,8 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Optional;
-
 import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -38,12 +36,6 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition )
     {
         super( globalModule, edition, true );
-    }
-
-    @Override
-    public Optional<StandaloneDatabaseContext> getDatabaseContext( NamedDatabaseId namedDatabaseId )
-    {
-        return Optional.ofNullable( databaseMap.get( namedDatabaseId ) );
     }
 
     @Override
