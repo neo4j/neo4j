@@ -256,6 +256,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows undirected relationship type scan") {
+    assume(!(isParallel && runOnlySafeScenarios))
     // given
     val nodesPerLabel = 20
     val (_, _, rs, _) = given {

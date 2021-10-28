@@ -434,6 +434,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("expand into with dense nodes without the queried REL_TYPE") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val relsToCreate = edition.getSetting(dense_node_threshold).getOrElse(dense_node_threshold.defaultValue()) + 1
 
     // given

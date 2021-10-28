@@ -470,6 +470,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("cached plan should adapt to new relationship types") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val (n1, n2) = given {
       val n1 = tx.createNode(Label.label("X"))
       val n2 = tx.createNode(Label.label("Y"))

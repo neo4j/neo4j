@@ -534,6 +534,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition
   }
 
   test("with column introduced after apply") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val (nodes, _) = given {
       circleGraph(sizeHint)
     }

@@ -120,6 +120,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
   val debugOptions: CypherDebugOptions = CypherDebugOptions.default
   val isParallel: Boolean = runtime.name.toLowerCase == "parallel"
+  val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
 
   override protected def beforeEach(): Unit = {
     DebugLog.beginTime()
