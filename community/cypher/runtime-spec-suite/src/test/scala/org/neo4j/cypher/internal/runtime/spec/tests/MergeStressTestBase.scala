@@ -87,7 +87,7 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       val unwindB = Random.nextInt(ITERATIONS)
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("idB")
-        .nonFuseable()
+        .nonFuseable() // force pipeline break so we get continuations
         .unwind(s"${(1 to unwindB).mkString("[", ",", "]")} AS idB")
         .apply()
         .|.merge(nodes = Seq(createNodeWithProperties(NODE, Seq(LABEL), s"{$PROP_KEY: $VAR_TO_FIND}")))
@@ -114,7 +114,7 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       val unwindB = Random.nextInt(ITERATIONS)
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("idB")
-        .nonFuseable()
+        .nonFuseable() // force pipeline break so we get continuations
         .unwind(s"${(1 to unwindB).mkString("[", ",", "]")} AS idB")
         .apply()
         .|.merge(nodes = Seq(createNode(NODE)),
