@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.AnyValue;
@@ -46,6 +45,9 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -81,6 +83,7 @@ public final class CursorUtils
             int prop
     ) throws EntityNotFoundException
     {
+        assert node >= NO_SUCH_NODE;
         return nodeGetProperty( read, nodeCursor, node, propertyCursor, prop, true );
     }
 
@@ -105,7 +108,13 @@ public final class CursorUtils
             boolean throwOnDeleted
     ) throws EntityNotFoundException
     {
-        if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        assert node >= NO_SUCH_NODE;
+
+        if ( node == NO_SUCH_NODE )
+        {
+            return NO_VALUE;
+        }
+        if ( prop == NO_SUCH_PROPERTY_KEY )
         {
             return NO_VALUE;
         }
@@ -159,7 +168,7 @@ public final class CursorUtils
             int prop
     ) throws EntityNotFoundException
     {
-        if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        if ( prop == NO_SUCH_PROPERTY_KEY )
         {
             return false;
         }
@@ -324,7 +333,13 @@ public final class CursorUtils
             boolean throwOnDeleted
     ) throws EntityNotFoundException
     {
-        if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        assert relationship >= NO_SUCH_RELATIONSHIP;
+
+        if ( relationship == NO_SUCH_RELATIONSHIP )
+        {
+            return NO_VALUE;
+        }
+        if ( prop == NO_SUCH_PROPERTY_KEY )
         {
             return NO_VALUE;
         }
@@ -376,7 +391,7 @@ public final class CursorUtils
             int prop
     ) throws EntityNotFoundException
     {
-        if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        if ( prop == NO_SUCH_PROPERTY_KEY )
         {
             return false;
         }
