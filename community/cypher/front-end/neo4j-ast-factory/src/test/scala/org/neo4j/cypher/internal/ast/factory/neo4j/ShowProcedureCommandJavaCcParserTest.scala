@@ -46,6 +46,10 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
       assertJavaCCAST(testName, query(ShowProceduresClause(Some(User("user")), None, hasYield = false)(pos)))
     }
 
+    test(s"SHOW $procKeyword EXECUTABLE BY CURRENT") {
+      assertJavaCCAST(testName, query(ShowProceduresClause(Some(User("CURRENT")), None, hasYield = false)(pos)))
+    }
+
     test(s"USE db SHOW $procKeyword") {
       assertJavaCCAST(testName, query(use(varFor("db")), ShowProceduresClause(None, None, hasYield = false)(pos)))
     }

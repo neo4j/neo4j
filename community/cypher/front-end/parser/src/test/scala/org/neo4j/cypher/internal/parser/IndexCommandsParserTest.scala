@@ -83,6 +83,10 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
         yields(createIndex(List(prop("n", "name")), Some("$my_index"), ast.IfExistsThrowError, NoOptions, true))
       }
 
+      test(s"CREATE INDEX ON FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("ON"), ast.IfExistsThrowError, NoOptions, true))
+      }
+
       test(s"CREATE OR REPLACE INDEX FOR $pattern ON (n.name)") {
         yields(createIndex(List(prop("n", "name")), None, ast.IfExistsReplace, NoOptions, true))
       }
@@ -906,6 +910,19 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
 
   test("CREATE LOOKUP INDEX FOR ()-[r]-() ON type(r)") {
     yields(ast.CreateLookupIndex(varFor("r"), isNodeIndex = false, function(Type.name, varFor("r")), None, ast.IfExistsThrowError, NoOptions))
+  }
+
+  test("CREATE LOOKUP INDEX FOR (x) ON EACH EACH(x)") {
+    yields(ast.CreateLookupIndex(varFor("x"), isNodeIndex = true, function("EACH", varFor("x")), None, ast.IfExistsThrowError, NoOptions))
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH EACH(x)") {
+    yields(ast.CreateLookupIndex(varFor("x"), isNodeIndex = false, function("EACH", varFor("x")), None, ast.IfExistsThrowError, NoOptions))
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)") {
+    // Thinks it is missing the function name since `EACH` is parsed as keyword
+    failsToParse
   }
 
   test("CREATE INDEX FOR n:Person ON (n.name)") {

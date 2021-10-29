@@ -3304,7 +3304,7 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
     ( <PROCEDURE> | <PROCEDURES> )
     (
         <EXECUTABLE> { currentUser = true; } ( <BY>
-        ( <CURRENT> <USER> { currentUser = true; }
+        ( LOOKAHEAD(<CURRENT> <USER>) <CURRENT> <USER> { currentUser = true; }
         | userToken=SymbolicNameString() { user = userToken.image; currentUser = false; } ) )?
     )?
     (
@@ -3349,7 +3349,7 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTyp
     ( <FUNCTION> | <FUNCTIONS> )
     (
         <EXECUTABLE> { currentUser = true; } ( <BY>
-        ( <CURRENT> <USER> { currentUser = true; }
+        ( LOOKAHEAD(<CURRENT> <USER>) <CURRENT> <USER> { currentUser = true; }
         | userToken=SymbolicNameString() { user = userToken.image; currentUser = false; } ) )?
     )?
     (
@@ -3467,7 +3467,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
         LOOKAHEAD (<ON> <LPAREN>) <ON> <LPAREN>
         | LOOKAHEAD (<FOR> <LPAREN>) <FOR> <LPAREN> { containsOn = false; }
         | LOOKAHEAD (<IF> <NOT>) <IF> <NOT> <EXISTS> { ifNotExists = true; } (<ON> | <FOR> { containsOn = false; }) <LPAREN>
-        | ( SymbolicNameString() { name = token.image; } )? ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? (<ON> | <FOR> { containsOn = false; }) <LPAREN>
+        | ( LOOKAHEAD(2) SymbolicNameString() { name = token.image; } )? ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? (<ON> | <FOR> { containsOn = false; }) <LPAREN>
     )
     (
         //(variable:LABEL)
@@ -3558,7 +3558,7 @@ SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
         )
         <ASSERT>
         (
-            errorStart=<EXISTS> { constraintType = isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS; }
+            LOOKAHEAD(<EXISTS>) errorStart=<EXISTS> { constraintType = isNode ? ConstraintType.NODE_EXISTS : ConstraintType.REL_EXISTS; }
             properties=PropertyList()
        |
             properties=PropertyList()
@@ -3617,7 +3617,7 @@ SCHEMA_COMMAND CreateIndex( Token start, boolean replace ) throws Exception:
         | <POINT> <INDEX> command=createIndex( start, replace, CreateIndexTypes.POINT )
         | <LOOKUP> <INDEX> command=createLookupIndex( start, replace )
         | <INDEX> (
-            <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
+            LOOKAHEAD(<ON> ":") <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
             | command=createIndex( start, replace, CreateIndexTypes.DEFAULT )
         )
     )
@@ -3740,7 +3740,7 @@ SCHEMA_COMMAND createLookupIndex( Token start, boolean replace ):
         //()-[r]-()
         <RPAREN> ( LeftArrow() )? ArrowLine()
         <LBRACKET> variable=Variable() <RBRACKET>
-        ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN> <ON> (<EACH>)?
+        ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN> <ON> (LOOKAHEAD(<EACH>) <EACH>)?
     )
     SymbolicNameString() { funcName = new StringPos<POS>( token.image, pos(token) ); } <LPAREN> funcParam=Variable() <RPAREN>
     ( <OPTIONS> options=MapOrParameter() )?

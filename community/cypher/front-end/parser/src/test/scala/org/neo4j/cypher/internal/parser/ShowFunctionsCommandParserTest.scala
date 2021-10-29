@@ -49,6 +49,10 @@ class ShowFunctionsCommandParserTest extends ParserAstTest[ast.Statement]
         yields(_ => query(ast.ShowFunctionsClause(functionType, Some(ast.User("user")), None, hasYield = false)(pos)))
       }
 
+      test(s"SHOW $typeString $funcKeyword EXECUTABLE BY CURRENT") {
+        yields(_ => query(ast.ShowFunctionsClause(functionType, Some(ast.User("CURRENT")), None, hasYield = false)(pos)))
+      }
+
       test(s"USE db SHOW $typeString $funcKeyword") {
         yields(_ => query(use(varFor("db")), ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(pos)))
       }

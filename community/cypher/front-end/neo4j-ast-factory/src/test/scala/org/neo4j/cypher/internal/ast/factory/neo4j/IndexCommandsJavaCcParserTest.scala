@@ -91,6 +91,10 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
         assertSameAST(testName)
       }
 
+      test(s"CREATE INDEX ON FOR $pattern ON (n2.name)") {
+        assertSameAST(testName)
+      }
+
       test(s"CREATE OR REPLACE INDEX FOR $pattern ON (n2.name)") {
         assertSameAST(testName)
       }
@@ -144,7 +148,7 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
       }
 
       test(s"CREATE INDEX $$my_index FOR $pattern ON (n2.name)") {
-        assertJavaCCExceptionStart(testName, "Invalid input '$': expected an identifier")
+        assertJavaCCExceptionStart(testName, """Invalid input '$': expected "ON" or an identifier""")
       }
 
       test(s"CREATE INDEX FOR $pattern ON n2.name") {
@@ -842,6 +846,20 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON type(r2)") {
     assertSameAST(testName)
   }
+
+  test("CREATE LOOKUP INDEX FOR (x) ON EACH EACH(x)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH EACH(x)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)") {
+    // Thinks it is missing the function name since `EACH` is parsed as keyword
+    assertSameAST(testName)
+  }
+
 
   test("CREATE INDEX FOR n1:Person ON (n2.name)") {
     assertSameAST(testName)

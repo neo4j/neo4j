@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
+import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
@@ -354,6 +356,26 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
     )
   }
 
+  test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS NODE KEY") {
+    assertJavaCCAST(testName, CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
+      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(pos))
+  }
+
+  test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS UNIQUE") {
+    assertJavaCCAST(testName, CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
+      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(pos))
+  }
+
+  test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE node.prop IS NOT NULL") {
+    assertJavaCCAST(testName, CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"),
+      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(pos))
+  }
+
+  test("CREATE CONSTRAINT FOR FOR ()-[r:R]-() REQUIRE (r.prop) IS NOT NULL") {
+    assertJavaCCAST(testName, CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"),
+      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(pos))
+  }
+
   // ASSERT EXISTS
 
   test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS (node2.prop)") {
@@ -567,6 +589,22 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS NOT NULL") {
     assertJavaCCException(testName, new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand))
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT (node.EXISTS) IS NODE KEY") {
+    assertSameAST(testName)
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT (node.EXISTS) IS UNIQUE") {
+    assertSameAST(testName)
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.EXISTS)") {
+    assertSameAST(testName)
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.EXISTS)") {
+    assertSameAST(testName)
   }
 
   test("DROP CONSTRAINT my_constraint") {
