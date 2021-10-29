@@ -23,6 +23,20 @@ import org.neo4j.values.AnyValue;
 
 public abstract class NumberValue extends ScalarValue
 {
+    static long castToLong( String name, AnyValue value, long defaultValue )
+    {
+        if ( value == null )
+        {
+            return defaultValue;
+        }
+        if ( value instanceof IntegralValue )
+        {
+            return ((IntegralValue) value).longValue();
+        }
+        throw new IllegalArgumentException(
+                name + " must be an integral value, but was a " + value.getClass().getSimpleName() );
+    }
+
     static double safeCastFloatingPoint( String name, AnyValue value, double defaultValue )
     {
         if ( value == null )

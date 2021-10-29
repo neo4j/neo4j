@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.UnsupportedTemporalUnitException;
@@ -57,6 +58,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
+import static org.neo4j.values.storable.NumberValue.castToLong;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
 import static org.neo4j.values.utils.TemporalUtil.AVG_NANOS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.AVG_SECONDS_PER_MONTH;
@@ -198,18 +200,39 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                     AnyValue microseconds,
                     AnyValue nanoseconds )
             {
-                return approximate(
-                        safeCastFloatingPoint( "years", years, 0 ) * 12 +
-                        safeCastFloatingPoint( "months", months, 0 ),
-                        safeCastFloatingPoint( "weeks", weeks, 0 ) * 7 +
-                        safeCastFloatingPoint( "days", days, 0 ),
-                        safeCastFloatingPoint( "hours", hours, 0 ) * 3600 +
-                        safeCastFloatingPoint( "minutes", minutes, 0 ) * 60 +
-                        safeCastFloatingPoint( "seconds", seconds, 0 ),
-                        safeCastFloatingPoint( "milliseconds", milliseconds, 0 ) * 1_000_000 +
-                        safeCastFloatingPoint( "microseconds", microseconds, 0 ) * 1_000 +
-                        safeCastFloatingPoint( "nanoseconds", nanoseconds, 0 )
-                );
+                var allIntegralValues = Stream.of( years, months, weeks, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds )
+                                              .allMatch( t -> t == null || t instanceof IntegralValue );
+
+                if ( allIntegralValues )
+                {
+                    return duration(
+                            castToLong( "years", years, 0L ) * 12 +
+                            castToLong( "months", months, 0L ),
+                            castToLong( "weeks", weeks, 0L ) * 7 +
+                            castToLong( "days", days, 0L ),
+                            castToLong( "hours", hours, 0L ) * 3600 +
+                            castToLong( "minutes", minutes, 0L ) * 60 +
+                            castToLong( "seconds", seconds, 0L ),
+                            castToLong( "milliseconds", milliseconds, 0L ) * 1_000_000 +
+                            castToLong( "microseconds", microseconds, 0L ) * 1_000 +
+                            castToLong( "nanoseconds", nanoseconds, 0L )
+                    );
+                }
+                else
+                {
+                    return approximate(
+                            safeCastFloatingPoint( "years", years, 0 ) * 12 +
+                            safeCastFloatingPoint( "months", months, 0 ),
+                            safeCastFloatingPoint( "weeks", weeks, 0 ) * 7 +
+                            safeCastFloatingPoint( "days", days, 0 ),
+                            safeCastFloatingPoint( "hours", hours, 0 ) * 3600 +
+                            safeCastFloatingPoint( "minutes", minutes, 0 ) * 60 +
+                            safeCastFloatingPoint( "seconds", seconds, 0 ),
+                            safeCastFloatingPoint( "milliseconds", milliseconds, 0 ) * 1_000_000 +
+                            safeCastFloatingPoint( "microseconds", microseconds, 0 ) * 1_000 +
+                            safeCastFloatingPoint( "nanoseconds", nanoseconds, 0 )
+                    );
+                }
             }
         };
     }
