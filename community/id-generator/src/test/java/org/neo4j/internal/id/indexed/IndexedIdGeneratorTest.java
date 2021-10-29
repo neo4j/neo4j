@@ -68,7 +68,7 @@ import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
@@ -619,7 +619,7 @@ class IndexedIdGeneratorTest
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(), Config.defaults(),
                         DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) );
-        assertTrue( Exceptions.contains( e, t -> t instanceof ReadOnlyDbException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
     }
@@ -637,7 +637,7 @@ class IndexedIdGeneratorTest
                 readOnly(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             var e = assertThrows( Exception.class, () -> readOnlyGenerator.start( NO_FREE_IDS, NULL ) );
-            assertThat( e ).hasCauseInstanceOf( ReadOnlyDbException.class );
+            assertThat( e ).hasCauseInstanceOf( WriteOnReadOnlyAccessDbException.class );
         }
     }
 
@@ -1199,7 +1199,7 @@ class IndexedIdGeneratorTest
         {
             readOnlyGenerator.start( NO_FREE_IDS, NULL );
             var e = assertThrows( Exception.class, operation.apply( readOnlyGenerator ) );
-            assertThat( e ).hasCauseInstanceOf( ReadOnlyDbException.class );
+            assertThat( e ).hasCauseInstanceOf( WriteOnReadOnlyAccessDbException.class );
         }
     }
 

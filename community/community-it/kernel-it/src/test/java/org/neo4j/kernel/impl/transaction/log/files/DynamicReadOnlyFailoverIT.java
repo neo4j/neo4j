@@ -132,7 +132,7 @@ class DynamicReadOnlyFailoverIT
                 transaction.commit();
             }
         } );
-        assertThat( writeException ).hasMessageContaining( "read only" );
+        assertThat( writeException ).hasMessageContaining( "read-only" );
     }
 
     @Test

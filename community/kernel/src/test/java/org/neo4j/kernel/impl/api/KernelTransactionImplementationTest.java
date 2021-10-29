@@ -55,8 +55,8 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.DatabaseIdFactory;
@@ -806,7 +806,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         // when / then
         var rte = assertThrows( RuntimeException.class, transaction::txState );
-        assertThat( rte ).hasCauseInstanceOf( ReadOnlyDbException.class );
+        assertThat( rte ).hasCauseInstanceOf( WriteOnReadOnlyAccessDbException.class );
     }
 
     @Test
