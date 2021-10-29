@@ -61,14 +61,19 @@ class AccessCapabilityFactoryTest
     {
         var accessCapability1 = CanWrite.INSTANCE;
         var accessCapability2 = ReadOnly.INSTANCE;
+        var accessCapability3 = ReadReplica.INSTANCE;
 
         var factory1 = AccessCapabilityFactory.fixed( accessCapability1 );
         var factory2 = AccessCapabilityFactory.fixed( accessCapability2 );
+        var factory3 = AccessCapabilityFactory.fixed( accessCapability3 );
 
         assertEquals( accessCapability1, factory1.newAccessCapability( readWriteChecker ) );
         assertEquals( accessCapability1, factory1.newAccessCapability( readOnlyChecker ) );
 
         assertEquals( accessCapability2, factory2.newAccessCapability( readWriteChecker ) );
         assertEquals( accessCapability2, factory2.newAccessCapability( readOnlyChecker ) );
+
+        assertEquals( accessCapability3, factory3.newAccessCapability( readWriteChecker ) );
+        assertEquals( accessCapability3, factory3.newAccessCapability( readOnlyChecker ) );
     }
 }

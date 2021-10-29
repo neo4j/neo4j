@@ -53,6 +53,7 @@ org.neo4j.kernel.api.exceptions.Status.General::TransactionMemoryLimit org.neo4j
 org.neo4j.kernel.api.exceptions.Status.General::TransactionOutOfMemoryError org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::UnknownError org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::UpgradeRequired org.neo4j.kernel.api.exceptions.Status.General public static final
+org.neo4j.kernel.api.exceptions.Status.General::WriteOnReadOnlyAccessDatabase org.neo4j.kernel.api.exceptions.Status.General public static final
 org.neo4j.kernel.api.exceptions.Status.General::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.General::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.General public static
 org.neo4j.kernel.api.exceptions.Status.General::values() org.neo4j.kernel.api.exceptions.Status.General[] public static

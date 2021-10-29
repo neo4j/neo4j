@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -47,7 +47,7 @@ class DatabaseReadOnlyCheckerTest
     void readOnlyCheckerThrowsExceptionOnCheck()
     {
         var e = assertThrows( Exception.class, () -> readOnly().check() );
-        assertThat( e ).hasRootCauseInstanceOf( ReadOnlyDbException.class );
+        assertThat( e ).hasRootCauseInstanceOf( WriteOnReadOnlyAccessDbException.class );
     }
 
     @Test

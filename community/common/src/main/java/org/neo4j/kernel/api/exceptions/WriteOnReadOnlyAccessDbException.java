@@ -17,24 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.factory;
+package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.graphdb.WriteOperationsNotAllowedException;
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.exceptions.KernelException;
 
-public class ReadOnly implements AccessCapability
+/**
+ * This exception is thrown when committing an updating transaction in a database which is configured as read-only, through configuration or ALTER DATABASE.
+ */
+public class WriteOnReadOnlyAccessDbException extends KernelException
 {
-    public static final ReadOnly INSTANCE = new ReadOnly();
-
-    private ReadOnly()
+    public WriteOnReadOnlyAccessDbException()
     {
+        super( Status.General.WriteOnReadOnlyAccessDatabase, "This Neo4j instance is read-only for all databases" );
     }
 
-    @Override
-    public void assertCanWrite()
+    public WriteOnReadOnlyAccessDbException( String databaseName )
     {
-        throw new WriteOperationsNotAllowedException(
-                "No write operations are allowed on this database. The database is in read-only mode on this Neo4j instance.",
-                Status.General.WriteOnReadOnlyAccessDatabase );
+        super( Status.General.WriteOnReadOnlyAccessDatabase, "The database " + databaseName + " is in read-only mode on this Neo4j instance" );
     }
 }

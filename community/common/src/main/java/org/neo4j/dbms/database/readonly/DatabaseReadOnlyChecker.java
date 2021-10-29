@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms.database.readonly;
 
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface DatabaseReadOnlyChecker
@@ -82,7 +82,7 @@ public interface DatabaseReadOnlyChecker
         {
             if ( isReadOnly() )
             {
-                throw new RuntimeException( new ReadOnlyDbException( namedDatabaseId.name() ) );
+                throw new RuntimeException( new WriteOnReadOnlyAccessDbException( namedDatabaseId.name() ) );
             }
         }
     }
@@ -124,7 +124,7 @@ public interface DatabaseReadOnlyChecker
         @Override
         public void check()
         {
-            throw new RuntimeException( new ReadOnlyDbException() );
+            throw new RuntimeException( new WriteOnReadOnlyAccessDbException() );
         }
     }
 }

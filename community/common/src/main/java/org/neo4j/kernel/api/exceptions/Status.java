@@ -430,6 +430,8 @@ public interface Status
         InvalidArguments( ClientError, "The request contained fields that were empty or are not allowed." ),
         ForbiddenOnReadOnlyDatabase( ClientError,
                 "This is a read only database, writing or modifying the database is not allowed." ),
+        WriteOnReadOnlyAccessDatabase( ClientError,
+                "This database is in read-only mode, writing or modifying the database is not allowed." ),
         TransactionOutOfMemoryError( ClientError,
                 "The transaction used more memory than was allowed. The maximum allowed size for a " +
                 "transaction can be configured with 'dbms.memory.transaction.max_size' in the neo4j configuration " +
