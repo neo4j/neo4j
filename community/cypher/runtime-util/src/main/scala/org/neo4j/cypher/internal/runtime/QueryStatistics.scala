@@ -21,31 +21,30 @@ package org.neo4j.cypher.internal.runtime
 
 import scala.beans.BeanProperty
 
-// Whenever you add a field here, please update the following classes:
-//
-// org.neo4j.cypher.internal.javacompact.QueryStatistics
-// org.neo4j.server.rest.repr.CypherResultRepresentation
-// org.neo4j.server.rest.CypherFunctionalTest
+// Whenever you add a field here, please also update
+// org.neo4j.graphdb.QueryStatistics
+// org.neo4j.bolt.runtime.AbstractCypherAdapterStream#queryStats (team drivers does that)
 // org.neo4j.cypher.QueryStatisticsTestSupport
-//
 
-case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
-                           @BeanProperty relationshipsCreated: Int = 0,
-                           @BeanProperty propertiesSet: Int = 0,
-                           @BeanProperty nodesDeleted: Int = 0,
-                           @BeanProperty relationshipsDeleted: Int = 0,
-                           @BeanProperty labelsAdded: Int = 0,
-                           @BeanProperty labelsRemoved: Int = 0,
-                           @BeanProperty indexesAdded: Int = 0,
-                           @BeanProperty indexesRemoved: Int = 0,
-                           uniqueConstraintsAdded: Int = 0,
-                           uniqueConstraintsRemoved: Int = 0,
-                           existenceConstraintsAdded: Int = 0,
-                           existenceConstraintsRemoved: Int = 0,
-                           nodekeyConstraintsAdded: Int = 0,
-                           nodekeyConstraintsRemoved: Int = 0,
-                           namedConstraintsRemoved: Int = 0,
-                           @BeanProperty systemUpdates: Int = 0
+case class QueryStatistics(
+                            @BeanProperty nodesCreated: Int = 0,
+                            @BeanProperty relationshipsCreated: Int = 0,
+                            @BeanProperty propertiesSet: Int = 0,
+                            @BeanProperty nodesDeleted: Int = 0,
+                            @BeanProperty relationshipsDeleted: Int = 0,
+                            @BeanProperty labelsAdded: Int = 0,
+                            @BeanProperty labelsRemoved: Int = 0,
+                            @BeanProperty indexesAdded: Int = 0,
+                            @BeanProperty indexesRemoved: Int = 0,
+                            uniqueConstraintsAdded: Int = 0,
+                            uniqueConstraintsRemoved: Int = 0,
+                            existenceConstraintsAdded: Int = 0,
+                            existenceConstraintsRemoved: Int = 0,
+                            nodekeyConstraintsAdded: Int = 0,
+                            nodekeyConstraintsRemoved: Int = 0,
+                            namedConstraintsRemoved: Int = 0,
+                            transactionsCommitted: Int = 0,
+                            @BeanProperty systemUpdates: Int = 0,
                           ) extends org.neo4j.graphdb.QueryStatistics {
 
   @BeanProperty
@@ -91,6 +90,7 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
       includeIfNonZero(builder, "Node key constraints added: ", nodekeyConstraintsAdded)
       includeIfNonZero(builder, "Node key constraints removed: ", nodekeyConstraintsRemoved)
       includeIfNonZero(builder, "Named constraints removed: ", namedConstraintsRemoved)
+      includeIfNonZero(builder, "Transactions committed: ", transactionsCommitted)
     }
     val result = builder.toString()
 
@@ -99,6 +99,29 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
 
   private def includeIfNonZero(builder: StringBuilder, message: String, count: Long) = if (count > 0) {
     builder.append(message + count.toString + "\n")
+  }
+
+  def +(other: QueryStatistics): QueryStatistics = {
+    QueryStatistics(
+      nodesCreated = this.nodesCreated + other.nodesCreated,
+      relationshipsCreated = this.relationshipsCreated + other.relationshipsCreated,
+      propertiesSet = this.propertiesSet + other.propertiesSet,
+      nodesDeleted = this.nodesDeleted + other.nodesDeleted,
+      relationshipsDeleted = this.relationshipsDeleted + other.relationshipsDeleted,
+      labelsAdded = this.labelsAdded + other.labelsAdded,
+      labelsRemoved = this.labelsRemoved + other.labelsRemoved,
+      indexesAdded = this.indexesAdded + other.indexesAdded,
+      indexesRemoved = this.indexesRemoved + other.indexesRemoved,
+      uniqueConstraintsAdded = this.uniqueConstraintsAdded + other.uniqueConstraintsAdded,
+      uniqueConstraintsRemoved = this.uniqueConstraintsRemoved + other.uniqueConstraintsRemoved,
+      existenceConstraintsAdded = this.existenceConstraintsAdded + other.existenceConstraintsAdded,
+      existenceConstraintsRemoved = this.existenceConstraintsRemoved + other.existenceConstraintsRemoved,
+      nodekeyConstraintsAdded = this.nodekeyConstraintsAdded + other.nodekeyConstraintsAdded,
+      nodekeyConstraintsRemoved = this.nodekeyConstraintsRemoved + other.nodekeyConstraintsRemoved,
+      namedConstraintsRemoved = this.namedConstraintsRemoved + other.namedConstraintsRemoved,
+      transactionsCommitted = this.transactionsCommitted + other.transactionsCommitted,
+      systemUpdates = this.systemUpdates + other.systemUpdates,
+    )
   }
 }
 
@@ -120,7 +143,7 @@ object QueryStatistics {
         indexesRemoved = statistics.getIndexesRemoved,
         uniqueConstraintsAdded = statistics.getConstraintsAdded,
         uniqueConstraintsRemoved = statistics.getConstraintsRemoved,
-        systemUpdates = statistics.getSystemUpdates
+        systemUpdates = statistics.getSystemUpdates,
       )
   }
 }

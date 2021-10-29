@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
-import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
@@ -71,7 +71,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // then
-    val exception = intercept[InvalidArgumentException] {
+    val exception = intercept[StatusWrapCypherException] {
       consume(execute(query, runtime))
     }
     exception.getMessage should include("Must be a positive integer")
@@ -89,7 +89,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // then
-    val exception = intercept[InvalidArgumentException] {
+    val exception = intercept[StatusWrapCypherException] {
       consume(execute(query, runtime))
     }
     exception.getMessage should include("Must be a positive integer")
@@ -107,7 +107,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // then
-    val exception = intercept[InvalidArgumentException] {
+    val exception = intercept[StatusWrapCypherException] {
       consume(execute(query, runtime))
     }
     exception.getMessage should include("Must be a positive integer")
@@ -410,26 +410,29 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10)
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, transactionsCommitted = 11)
   }
 
   test("statistics should report data creation from subqueries in batches") {
+    val batchSize = 3
+    val rangeSize = 10
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach(3)
+      .transactionForeach(batchSize)
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
-      .unwind("range(1, 10) AS x")
+      .unwind(s"range(1, $rangeSize) AS x")
       .argument()
       .build(readOnly = false)
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
     consume(runtimeResult)
+    val expectedTransactionCount = Math.ceil(rangeSize / batchSize.toDouble).toInt
     runtimeResult should beColumns("x")
-      .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10)
+      .withRows(singleColumn(1 to rangeSize))
+      .withStatistics(nodesCreated = rangeSize, labelsAdded = rangeSize, transactionsCommitted = expectedTransactionCount + 1)
   }
 
   test("statistics should report data creation from subqueries while profiling") {
@@ -448,7 +451,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn(Seq(1, 2)))
-      .withStatistics(nodesCreated = 2, labelsAdded = 2)
+      .withStatistics(nodesCreated = 2, labelsAdded = 2, transactionsCommitted = 2)
   }
 
   test("Should not throw exception when reading before call subquery") {

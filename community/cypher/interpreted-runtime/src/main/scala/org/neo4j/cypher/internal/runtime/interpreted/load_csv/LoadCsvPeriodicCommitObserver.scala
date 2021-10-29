@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
-import java.net.URL
-
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ResourceManagedCursorPool
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.Cursor
 
+import java.net.URL
 import scala.collection.mutable.ArrayBuffer
 
 class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVResource, queryContext: QueryContext)
@@ -78,6 +78,8 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
     trackedResources.foreach(queryContext.resources.untrace)
     // Restart TX
     queryContext.transactionalContext.commitAndRestartTx()
+    val statistics = QueryStatistics(transactionsCommitted = 1)
+    queryContext.addStatistics(statistics)
     // Set new cursors and context from the new transaction
     cursorPools.foreach(_.setCursorFactoryAndContext(queryContext.transactionalContext.cursors, queryContext.transactionalContext.cursorContext))
     // Add back

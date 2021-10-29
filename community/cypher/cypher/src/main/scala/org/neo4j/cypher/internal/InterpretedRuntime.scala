@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionMode
@@ -32,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionResultBuilderFactory
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedExecutionResultBuilderFactory
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionsCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
@@ -62,6 +65,9 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, withSlottedParameters, availableExpressionVars)
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
     val columns = query.resultColumns
+
+    val startsTransactions = doesStartTransactions(query)
+
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe,
       queryIndexRegistrator.result(),
       nExpressionSlots,
@@ -69,15 +75,22 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       columns,
       context.config.lenientCreateRelationship,
       context.config.memoryTrackingController,
-      query.hasLoadCSV)
+      query.hasLoadCSV,
+      startsTransactions)
 
     new InterpretedExecutionPlan(query.periodicCommitInfo,
       resultBuilderFactory,
       InterpretedRuntimeName,
       query.readOnly,
+      startsTransactions,
       IndexedSeq.empty,
       Set.empty)
   }
+
+  def doesStartTransactions(query: LogicalQuery): Boolean =
+    query.logicalPlan.treeExists {
+      case _: TransactionForeach | _: TransactionApply => true // CALL { ... } IN TRANSACTIONS
+    } || query.periodicCommitInfo.isDefined // USING PERIODIC COMMIT
 
   /**
    * Executable plan for a single cypher query. Warning, this class will get cached! Do not leak transaction objects
@@ -87,6 +100,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                  resultBuilderFactory: ExecutionResultBuilderFactory,
                                  override val runtimeName: RuntimeName,
                                  readOnly: Boolean,
+                                 startsTransactions: Boolean,
                                  override val metadata: Seq[Argument],
                                  warnings: Set[InternalNotification]) extends ExecutionPlan {
 
@@ -97,7 +111,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                      input: InputDataStream,
                      subscriber: QuerySubscriber): RuntimeResult = {
       val doProfile = executionMode == ProfileMode
-      val builderContext = if (!readOnly || doProfile) new UpdateCountingQueryContext(queryContext) else queryContext
+      val wrappedContext = if (!readOnly || doProfile) new UpdateCountingQueryContext(queryContext) else queryContext
+      val builderContext = if (startsTransactions) new TransactionsCountingQueryContext(wrappedContext) else wrappedContext
       val builder = resultBuilderFactory.create(builderContext)
 
       val profileInformation = new InterpretedProfileInformation

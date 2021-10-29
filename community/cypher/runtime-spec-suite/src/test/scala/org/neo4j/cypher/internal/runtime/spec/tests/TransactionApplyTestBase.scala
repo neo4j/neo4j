@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
-import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -64,7 +64,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // then
-    val exception = intercept[InvalidArgumentException] {
+    val exception = intercept[StatusWrapCypherException] {
       consume(execute(query, runtime))
     }
     exception.getMessage should include("Must be a positive integer")
@@ -103,7 +103,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10)
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
   }
 
   test("data from returning subqueries should be accessible") {
@@ -144,7 +144,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(2 to 11))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 20)
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 20, transactionsCommitted = 5)
   }
 
   def inputStreamWithSideEffectInNewTxn(inputValues: InputDataStream, sideEffect: (InternalTransaction, Long) => Unit): InputDataStream = {
@@ -289,7 +289,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10)
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 11)
   }
 
   test("statistics should report data creation from subqueries in batches") {
@@ -308,7 +308,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10)
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
   }
 
   test("statistics should report data creation from subqueries while profiling") {
@@ -327,6 +327,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(1, 2)))
-      .withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
+      .withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2, transactionsCommitted = 2)
   }
 }

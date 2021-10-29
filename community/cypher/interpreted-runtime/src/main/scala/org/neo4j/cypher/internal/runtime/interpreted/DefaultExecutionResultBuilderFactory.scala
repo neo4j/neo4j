@@ -41,7 +41,8 @@ import org.neo4j.values.virtual.MapValue
 
 abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                                                  columns: Seq[String],
-                                                 hasLoadCSV: Boolean) extends ExecutionResultBuilderFactory {
+                                                 hasLoadCSV: Boolean,
+                                                 startsTransactions: Boolean) extends ExecutionResultBuilderFactory {
 
   abstract class BaseExecutionResultBuilder() extends ExecutionResultBuilder {
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
@@ -55,7 +56,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 
     def queryContext: QueryContext
 
-    def setLoadCsvPeriodicCommitObserver(batchRowCount: Long): Unit = {
+    override def setLoadCsvPeriodicCommitObserver(batchRowCount: Long): Unit = {
       externalResource = new LoadCsvPeriodicCommitObserver(batchRowCount, externalResource, queryContext)
     }
 
@@ -66,21 +67,24 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 
     override def build(params: MapValue, queryProfile: QueryProfile, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber, doProfile: Boolean): RuntimeResult = {
       val state = createQueryState(params, prePopulateResults, input, subscriber, doProfile)
-      new PipeExecutionResult(pipe, columns.toArray, state, queryProfile, subscriber)
+      new PipeExecutionResult(pipe, columns.toArray, state, queryProfile, subscriber, startsTransactions)
     }
   }
 
 }
 
-case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
-                                                    queryIndexes: QueryIndexes,
-                                                    nExpressionSlots: Int,
-                                                    parameterMapping: ParameterMapping,
-                                                    columns: Seq[String],
-                                                    lenientCreateRelationship: Boolean,
-                                                    memoryTrackingController: MemoryTrackingController,
-                                                    hasLoadCSV: Boolean = false)
-  extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV) {
+case class InterpretedExecutionResultBuilderFactory(
+                                                     pipe: Pipe,
+                                                     queryIndexes: QueryIndexes,
+                                                     nExpressionSlots: Int,
+                                                     parameterMapping: ParameterMapping,
+                                                     columns: Seq[String],
+                                                     lenientCreateRelationship: Boolean,
+                                                     memoryTrackingController: MemoryTrackingController,
+                                                     hasLoadCSV: Boolean,
+                                                     startsTransactions: Boolean,
+                                                    )
+  extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV, startsTransactions) {
 
   override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionResultBuilder(queryContext: QueryContext)
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.CypherRowEntityTransformer
@@ -86,6 +87,9 @@ trait TransactionPipe {
       // commitTx()
       innerTxContext.close()
       innerTxContext.commitTransaction()
+
+      val executionStatistics = QueryStatistics(transactionsCommitted = 1)
+      state.query.addStatistics(executionStatistics)
 
       result
     } catch {

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
+import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext.Counter
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -39,8 +40,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
-
-import java.util.concurrent.atomic.AtomicInteger
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) with CountingQueryContext {
 
@@ -61,7 +60,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val nodekeyConstraintsRemoved = new Counter
   private val namedConstraintsRemoved = new Counter
 
-  def getStatistics: QueryStatistics = QueryStatistics(
+  def getTrackedStatistics: QueryStatistics = QueryStatistics(
     nodesCreated = nodesCreated.count,
     relationshipsCreated = relationshipsCreated.count,
     propertiesSet = propertiesSet.count,
@@ -79,8 +78,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     nodekeyConstraintsRemoved = nodekeyConstraintsRemoved.count,
     namedConstraintsRemoved = namedConstraintsRemoved.count)
 
-  override def getOptStatistics: Option[QueryStatistics] = Some(getStatistics)
-
   override def addStatistics(statistics: QueryStatistics): Unit = {
     nodesCreated.increase(statistics.nodesCreated)
     relationshipsCreated.increase(statistics.relationshipsCreated)
@@ -97,7 +94,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     propertyExistenceConstraintsRemoved.increase(statistics.existenceConstraintsRemoved)
     nodekeyConstraintsAdded.increase(statistics.nodekeyConstraintsAdded)
     nodekeyConstraintsRemoved.increase(statistics.nodekeyConstraintsRemoved)
-    super.addStatistics(statistics)
+    inner.addStatistics(statistics)
   }
 
 
@@ -249,16 +246,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   }
 
   override def contextWithNewTransaction(): UpdateCountingQueryContext = new UpdateCountingQueryContext(inner.contextWithNewTransaction())
-
-  class Counter {
-    val counter: AtomicInteger = new AtomicInteger()
-
-    def count: Int = counter.get()
-
-    def increase(amount: Int = 1): Unit = {
-      counter.addAndGet(amount)
-    }
-  }
 
   private class CountingOps[T, CURSOR](inner: Operations[T, CURSOR], deletes: Counter)
     extends DelegatingOperations[T, CURSOR](inner) {

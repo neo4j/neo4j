@@ -42,7 +42,13 @@ trait Pipe {
     decoratedState.setExecutionContextFactory(rowFactory)
     val innerResult = internalCreateResults(decoratedState)
     state.decorator.afterCreateResults(self.id, decoratedState)
-    state.decorator.decorate(self.id, decoratedState, innerResult, () => state.initialContext)
+    val decoratedResult = state.decorator.decorate(self.id, decoratedState, innerResult, () => state.initialContext)
+
+    if (isRootPipe) {
+      state.decorator.decorateRoot(this.id, decoratedState, decoratedResult)
+    } else {
+      decoratedResult
+    }
   }
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow]
@@ -54,6 +60,11 @@ trait Pipe {
   // SlotConfigurations map to get the slot configuration needed for the context creation,
   // but then we would get an extra map lookup at runtime every time we create a new context.
   var rowFactory: CypherRowFactory = CommunityCypherRowFactory()
+
+  /**
+   * True iff this pipe does not have a parent pipe but is the root of the pipe tree.
+   */
+  def isRootPipe: Boolean = false
 }
 
 case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {
@@ -70,7 +81,13 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     decoratedState.setExecutionContextFactory(rowFactory)
     val result = internalCreateResults(sourceResult, decoratedState)
     state.decorator.afterCreateResults(this.id, decoratedState)
-    state.decorator.decorate(this.id, decoratedState, result, sourceResult).closing(sourceResult)
+    val decoratedResult = state.decorator.decorate(this.id, decoratedState, result, sourceResult).closing(sourceResult)
+
+    if (isRootPipe) {
+        state.decorator.decorateRoot(this.id, decoratedState, decoratedResult)
+    } else {
+        decoratedResult
+    }
   }
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] =

@@ -17,23 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext.Counter
 
-trait TxCountsTrackingTestSupport extends CypherTestSupport {
-  self: CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport =>
+class TransactionsCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) with CountingQueryContext {
+  private val transactionsCommitted = new Counter
 
-  def prepareAndTrackTxCounts[T](f: => T): (T, TxCounts) = {
-    // prepare
-    f
-    deleteAllEntities()
+ override def getTrackedStatistics: QueryStatistics = {
+    QueryStatistics(
+      transactionsCommitted = transactionsCommitted.count,
+    )
+  }
 
-    val initialTxCounts = graph.txCounts
-    val result = f
-    val txCounts = graph.txCounts - initialTxCounts
-
-    (result, txCounts)
+  override def addStatistics(statistics: QueryStatistics): Unit = {
+    transactionsCommitted.increase(statistics.transactionsCommitted)
+    inner.addStatistics(statistics)
   }
 }

@@ -29,7 +29,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class LogicalPlansTest extends CypherFunSuite {
 
-  val pos = InputPosition(1,1,1)
+  private val pos = InputPosition(1,1,1)
 
   test("LogicalPlans.map") {
 

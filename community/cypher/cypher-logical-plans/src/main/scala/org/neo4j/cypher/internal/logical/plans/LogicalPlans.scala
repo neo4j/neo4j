@@ -46,7 +46,7 @@ object LogicalPlans {
    *   E = mapLeaf(e)
    *   C = mapTwoChildPlan(c, E, F)
    *   D = mapLeaf(d)
-   *   B = mapOneChingPlan(b, D)
+   *   B = mapOneChildPlan(b, D)
    *   A = mapTwoChildPlan(a, B, C)
    */
   def map[T](plan: LogicalPlan, mapper: Mapper[T]): T = {

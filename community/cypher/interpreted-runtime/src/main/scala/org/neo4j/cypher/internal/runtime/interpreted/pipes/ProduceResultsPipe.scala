@@ -29,6 +29,8 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 
 case class ProduceResultsPipe(source: Pipe, columns: Array[String])
                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+  override def isRootPipe: Boolean = true
+
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats

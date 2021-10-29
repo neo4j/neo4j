@@ -25,8 +25,6 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -80,14 +78,13 @@ import scala.collection.mutable
 class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSupport {
   private implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
-  val planContext: PlanContext = mock[PlanContext]
-  val semanticTable = new SemanticTable(resolvedRelTypeNames =
+  private val planContext: PlanContext = mock[PlanContext]
+  private val semanticTable = new SemanticTable(resolvedRelTypeNames =
     mutable.Map("existing1" -> RelTypeId(1),
       "existing2" -> RelTypeId(2),
       "existing3" -> RelTypeId(3)))
 
-  val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val converters = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+  private val converters = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
   private val pipeMapper =
     InterpretedPipeMapper(readOnly = true, converters, planContext, mock[QueryIndexRegistrator], new AnonymousVariableNameGenerator())(semanticTable)
 

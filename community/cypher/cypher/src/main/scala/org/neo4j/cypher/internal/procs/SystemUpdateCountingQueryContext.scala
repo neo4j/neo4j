@@ -20,16 +20,14 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
-import org.neo4j.cypher.internal.procs.SystemUpdateCountingQueryContext.Counter
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.CountingQueryContext.Counter
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
-
-import java.util.concurrent.atomic.AtomicInteger
 
 class SystemUpdateCountingQueryContext(override val inner: QueryContext, val contextVars: MapValue, val systemUpdates: Counter)
   extends DelegatingQueryContext(inner) with CountingQueryContext {
@@ -42,9 +40,7 @@ class SystemUpdateCountingQueryContext(override val inner: QueryContext, val con
     case _ => throw new IllegalStateException("System updating query context can only contain an exception translating query context")
   }
 
-  def getStatistics: QueryStatistics = QueryStatistics(systemUpdates = systemUpdates.count)
-
-  override def getOptStatistics: Option[QueryStatistics] = Some(getStatistics)
+  def getTrackedStatistics: QueryStatistics = QueryStatistics(systemUpdates = systemUpdates.count)
 
   override def addStatistics(statistics: QueryStatistics): Unit = {
     // For implementing this method, look at UpdateCountingQueryContext.addStatistics
@@ -64,15 +60,5 @@ object SystemUpdateCountingQueryContext {
   def from(ctx: QueryContext): SystemUpdateCountingQueryContext = ctx match {
     case c: SystemUpdateCountingQueryContext => c
     case c => new SystemUpdateCountingQueryContext(c, MapValue.EMPTY, new Counter())
-  }
-
-  class Counter {
-    val counter: AtomicInteger = new AtomicInteger()
-
-    def count: Int = counter.get()
-
-    def increase(amount: Int = 1): Unit = {
-      counter.addAndGet(amount)
-    }
   }
 }

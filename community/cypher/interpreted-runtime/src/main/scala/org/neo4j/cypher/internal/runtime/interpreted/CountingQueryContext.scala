@@ -19,12 +19,46 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 
+import java.util.concurrent.atomic.AtomicInteger
+
 trait CountingQueryContext {
-  this: QueryContext =>
+  this: DelegatingQueryContext =>
 
-  def getStatistics: QueryStatistics
+  /**
+   * The statistics tracked by this context. Statistics should be read through [[getStatistics]].
+   */
+  protected def getTrackedStatistics: QueryStatistics
 
+  override def getOptStatistics: Option[QueryStatistics] = Some(getStatistics)
+
+  def getStatistics: QueryStatistics = {
+    val statistics = getTrackedStatistics
+    inner match {
+      case context: CountingQueryContext => statistics + context.getStatistics
+      case _ => statistics
+    }
+  }
+}
+
+object CountingQueryContext {
+
+  class Counter {
+    val counter: AtomicInteger = new AtomicInteger()
+
+    def count: Int = counter.get()
+
+    def increase(amount: Int = 1): Unit = {
+      counter.addAndGet(amount)
+    }
+  }
+
+  object Counter {
+    def apply(initialValue: Int): Counter = {
+      val counter = new Counter
+      counter.counter.set(initialValue)
+      counter
+    }
+  }
 }

@@ -21,10 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.ResourceLinenumber
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.exceptions.LoadCsvStatusWrapCypherException
-import org.neo4j.exceptions.Neo4jException
 
 /*
 A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
@@ -46,7 +43,7 @@ trait PipeDecorator {
   def afterCreateResults(planId: Id, state: QueryState): Unit
 
   /**
-   * Return a decorated iterator.
+   * Return a decorated iterator. To be used from other pipe decorators.
    *
    * @param state the decorated query state
    * @param iter  iterator to decorate
@@ -57,6 +54,8 @@ trait PipeDecorator {
   // These two are used for linenumber only
 
   /**
+   * Called if the pipe has a source.
+   *
    * @param state the decorated query state
    * @param iter  iterator to decorate
    * @return the decorated iterator
@@ -72,7 +71,12 @@ trait PipeDecorator {
   def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] =
     decorate(planId, state, iter)
 
-  /*
+  /**
+   * Called on the root pipe. This can be useful if some decorator wants to only decorate the root pipe. It then can implement this method and ignore the others.
+   */
+  def decorateRoot(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = iter
+
+  /**
    * Returns the inner decorator of this decorator. The inner decorator is used for nested expressions
    * where the `decorate` should refer to the parent pipe instead of the calling pipe.
    */
@@ -89,79 +93,4 @@ object NullPipeDecorator extends PipeDecorator {
   override def afterCreateResults(planId: Id, state: QueryState): Unit = {}
 }
 
-class LinenumberPipeDecorator(private var inner: PipeDecorator = NullPipeDecorator) extends PipeDecorator {
 
-  def setInnerDecorator(newDecorator: PipeDecorator): Unit = inner = newDecorator
-
-  override def decorate(planId: Id, state: QueryState): QueryState = inner.decorate(planId, state)
-
-  override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = throw new UnsupportedOperationException("This method should never be called on LinenumberPipeDecorator")
-
-  override def decorate(planId: Id, queryState: QueryState, iter: ClosingIterator[CypherRow], sourceIter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
-    val previousContextSupplier = sourceIter match {
-      case p: LinenumberIterator => () => p.previousRecord
-      case _ => () => None
-    }
-    decorate(planId, queryState, iter, previousContextSupplier)
-  }
-
-  override def decorate(planId: Id, queryState: QueryState, iter: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]): ClosingIterator[CypherRow] = {
-    new LinenumberIterator(inner.decorate(planId, queryState, iter), previousContextSupplier)
-  }
-
-  override def innerDecorator(owningPipe: Id): PipeDecorator = this
-
-  class LinenumberIterator(inner: ClosingIterator[CypherRow], previousContextSupplier: () => Option[CypherRow]) extends ClosingIterator[CypherRow] {
-
-    var previousRecord: Option[CypherRow] = None
-
-    override protected[this] def closeMore(): Unit = inner.close()
-
-    def innerHasNext: Boolean = {
-      try {
-        inner.hasNext
-      } catch {
-        case e: LoadCsvStatusWrapCypherException =>
-          throw e
-        case e: Neo4jException =>
-          throw wrapException(e, previousContextSupplier())
-        case e: Throwable =>
-          throw e
-      }
-    }
-
-    def next(): CypherRow = {
-      try {
-        val record = inner.next()
-        previousRecord = Some(record)
-        record
-      } catch {
-        case e: LoadCsvStatusWrapCypherException =>
-          throw e
-        case e: Neo4jException =>
-            throw wrapException(e, previousContextSupplier())
-        case e: Throwable =>
-          throw e
-      }
-    }
-
-    private def wrapException(e: Neo4jException, maybeContext: Option[CypherRow]): Exception = maybeContext match {
-      case Some(record: CypherRow) if record.getLinenumber.nonEmpty =>
-        new LoadCsvStatusWrapCypherException(errorMessage(record), e)
-      case _ => e
-    }
-
-    private def errorMessage(record: CypherRow): String = {
-      record.getLinenumber match {
-        case Some(ResourceLinenumber(file, line, last)) =>
-          s"Failure when processing file '$file' on line $line" +
-            (if (last) " (which is the last row in the file)." else ".")
-        case _ => "" //should not get here
-      }
-    }
-  }
-
-  override def afterCreateResults(planId: Id, state: QueryState): Unit = {
-    inner.afterCreateResults(planId, state)
-  }
-}

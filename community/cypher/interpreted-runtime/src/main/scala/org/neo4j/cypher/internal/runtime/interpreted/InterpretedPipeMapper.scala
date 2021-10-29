@@ -318,7 +318,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     ((e: internal.expressions.Expression) => expressionConverters.toCommandExpression(id, e)) andThen
       (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext)))
 
-  def onLeaf(plan: LogicalPlan): Pipe = {
+  override def onLeaf(plan: LogicalPlan): Pipe = {
     val id = plan.id
     val buildExpression = getBuildExpression(id)
     plan match {
@@ -439,7 +439,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
 
 
-  def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe = {
+  override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe = {
     val id = plan.id
     val buildExpression = getBuildExpression(id)
 
@@ -907,7 +907,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     }
   }
 
-  def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
+  override def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
     val id = plan.id
     val buildExpression = getBuildExpression(id)
     plan match {

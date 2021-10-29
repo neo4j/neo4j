@@ -861,7 +861,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
     addRuntimeAttributes(addPlanningAttributes(result, plan), plan)
   }
 
-  override def onTwoChildPlan(plan: LogicalPlan, lhs: InternalPlanDescription,
+  override def onTwoChildPlan(plan: LogicalPlan,
+                              lhs: InternalPlanDescription,
                               rhs: InternalPlanDescription): InternalPlanDescription = {
     checkOnlyWhenAssertionsAreEnabled(plan.lhs.nonEmpty)
     checkOnlyWhenAssertionsAreEnabled(plan.rhs.nonEmpty)

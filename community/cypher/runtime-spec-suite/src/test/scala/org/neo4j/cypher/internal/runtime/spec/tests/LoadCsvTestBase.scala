@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.io.PrintWriter
-
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.InterpretedRuntimeName
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.SlottedRuntimeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.runtime.spec.RowCount
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 
+import java.io.PrintWriter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.immutable
@@ -56,8 +57,9 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
 
   def singleColumnCsvFile(withHeaders: Boolean = false): String = {
     val url = createCSVTempFileURL({ writer: PrintWriter =>
-      if (withHeaders)
+      if (withHeaders) {
         writer.println("a")
+      }
       testRange.foreach { i =>
         writer.println(s"${testValueOffset + i}")
       }
@@ -67,8 +69,9 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
 
   def multipleColumnCsvFile(withHeaders: Boolean = false): String = {
     val url = createCSVTempFileURL({ writer: PrintWriter =>
-      if (withHeaders)
+      if (withHeaders) {
         writer.println("a,b,c")
+      }
       testRange.foreach { i =>
         writer.println(s"${testValueOffset + i},${testValueOffset*2 + i},${testValueOffset*3 + i}")
       }
@@ -390,7 +393,12 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("n")
       .withRows(RowCount(testRange.size))
-      .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
+      .withStatistics(
+        nodesCreated = testRange.size,
+        labelsAdded = testRange.size,
+        propertiesSet = testRange.size * 3,
+        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(5)
+      )
   }
 
   test("should load csv create node with properties with periodic commit and eager aggregation") {
@@ -416,7 +424,12 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("count")
       .withSingleRow(testRange.size.toLong)
-      .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
+      .withStatistics(
+        nodesCreated = testRange.size,
+        labelsAdded = testRange.size,
+        propertiesSet = testRange.size * 3,
+        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(5)
+      )
   }
 
   Seq(1, 2, 3, 4, testRange.size/5, testRange.size).foreach { explicitBatchSize =>
@@ -466,10 +479,24 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
       consume(runtimeResult)
 
       // then
+      val expectedCommitCount = Math.ceil(testRange.size / explicitBatchSize.toDouble).toInt
       runtimeResult should beColumns("n")
         .withRows(RowCount(testRange.size))
-        .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
+        .withStatistics(
+          nodesCreated = testRange.size,
+          labelsAdded = testRange.size,
+          propertiesSet = testRange.size * 3,
+          transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(expectedCommitCount)
+        )
     }
+  }
+
+  /**
+   * We currently only support to count transactions for interpreted and slotted runtime. To account for that, this method switches accordingly.
+   */
+  def transactionsExpectedIfTransactionCountingAvailable(expectation: Int): Int = runtime.name.toUpperCase() match {
+    case InterpretedRuntimeName.name | SlottedRuntimeName.name => expectation
+    case _ => 1 // transactionsCommitted default value
   }
 }
 
@@ -533,6 +560,9 @@ trait LoadCsvWithMergeTestBase[CONTEXT <: RuntimeContext] {
     // then
     runtimeResult should beColumns("r")
       .withRows(RowCount(testRange.size))
-      .withStatistics(relationshipsCreated = testRange.size)
+      .withStatistics(
+        relationshipsCreated = testRange.size,
+        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(testRange.size / 2)
+      )
   }
 }

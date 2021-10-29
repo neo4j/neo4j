@@ -119,7 +119,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
   val debugOptions: CypherDebugOptions = CypherDebugOptions.default
-  val isParallel = runtime.name.toLowerCase == "parallel"
+  val isParallel: Boolean = runtime.name.toLowerCase == "parallel"
 
   override protected def beforeEach(): Unit = {
     DebugLog.beginTime()
@@ -325,7 +325,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   class RuntimeResultMatcher(expectedColumns: Seq[String]) extends Matcher[RecordingRuntimeResult] {
 
     private var rowsMatcher: RowsMatcher = AnyRowsMatcher
-    private var maybeStatisticts: Option[QueryStatisticsMatcher] = None
+    private var maybeStatistics: Option[QueryStatisticsMatcher] = None
     private var maybeLockedNodes: Option[LockResourceMatcher] = None
     private var maybeLockedRelationships: Option[LockResourceMatcher] = None
 
@@ -333,14 +333,26 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
     def withNoUpdates(): RuntimeResultMatcher = withStatistics()
 
-    def withStatistics(nodesCreated: Int = 0,
-                       nodesDeleted: Int = 0,
-                       relationshipsCreated: Int = 0,
-                       relationshipsDeleted: Int = 0,
-                       labelsAdded: Int = 0,
-                       labelsRemoved: Int = 0,
-                       propertiesSet: Int = 0): RuntimeResultMatcher = {
-      maybeStatisticts = Some(new QueryStatisticsMatcher(nodesCreated, nodesDeleted, relationshipsCreated, relationshipsDeleted, labelsAdded, labelsRemoved, propertiesSet))
+    def withStatistics(
+                        nodesCreated: Int = 0,
+                        nodesDeleted: Int = 0,
+                        relationshipsCreated: Int = 0,
+                        relationshipsDeleted: Int = 0,
+                        labelsAdded: Int = 0,
+                        labelsRemoved: Int = 0,
+                        propertiesSet: Int = 0,
+                        transactionsCommitted: Int = 1,
+                      ): RuntimeResultMatcher = {
+      maybeStatistics = Some(new QueryStatisticsMatcher(
+        nodesCreated,
+        nodesDeleted,
+        relationshipsCreated,
+        relationshipsDeleted,
+        labelsAdded,
+        labelsRemoved,
+        propertiesSet,
+        transactionsCommitted,
+      ))
       this
     }
 
@@ -377,7 +389,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       if (columns != expectedColumns) {
         MatchResult(matches = false, s"Expected result columns $expectedColumns, got $columns", "")
       } else {
-        maybeStatisticts
+        maybeStatistics
           .map(s => s.apply(left.runtimeResult.queryStatistics()))
           .filter(_.matches == false)
           .getOrElse {
@@ -458,15 +470,36 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
-  class QueryStatisticsMatcher(nodesCreated: Int,
-                               nodesDeleted: Int,
-                               relationshipsCreated: Int,
-                               relationshipsDeleted: Int,
-                               labelsAdded: Int,
-                               labelsRemoved: Int,
-                               propertiesSet: Int) extends Matcher[QueryStatistics] {
+  class QueryStatisticsMatcher(
+                                nodesCreated: Int,
+                                nodesDeleted: Int,
+                                relationshipsCreated: Int,
+                                relationshipsDeleted: Int,
+                                labelsAdded: Int,
+                                labelsRemoved: Int,
+                                propertiesSet: Int,
+                                transactionsCommitted: Int,
+                              ) extends Matcher[QueryStatistics] {
 
     override def apply(left: QueryStatistics): MatchResult = {
+      def transactionsCommittedDoesNotMatch: Option[MatchResult] = {
+        left match {
+          case qs: org.neo4j.cypher.internal.runtime.QueryStatistics =>
+            // FIXME: we currently do not account for the outermost transaction because that is out of cypher's control
+            if (transactionsCommitted - 1 != qs.transactionsCommitted) {
+              Some(MatchResult(matches = false, s"expected transactionsCommitted=$transactionsCommitted but was ${qs.transactionsCommitted + 1}", ""))
+            } else {
+              None
+            }
+          case _ =>
+            if (transactionsCommitted != 1) {
+              Some(MatchResult(matches = false, s"expected transactionsCommitted=$transactionsCommitted but can only match on org.neo4j.cypher.internal.runtime.QueryStatistics and was $left", ""))
+            } else {
+              None
+            }
+        }
+      }
+
       if (nodesCreated != left.getNodesCreated) {
         MatchResult(matches = false, s"expected nodesCreated=$nodesCreated but was ${left.getNodesCreated}", "")
       } else if (nodesDeleted != left.getNodesDeleted) {
@@ -481,6 +514,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
         MatchResult(matches = false, s"expected labelsRemoved=$labelsRemoved but was ${left.getLabelsRemoved}", "")
       } else if (propertiesSet != left.getPropertiesSet) {
         MatchResult(matches = false, s"expected propertiesSet=$propertiesSet but was ${left.getPropertiesSet}", "")
+      } else if (transactionsCommittedDoesNotMatch.nonEmpty)  {
+        transactionsCommittedDoesNotMatch.get
       } else {
         MatchResult(matches = true, "", "")
       }
