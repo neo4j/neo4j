@@ -26,6 +26,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.function.Function;
 
+import org.neo4j.values.virtual.ListValue;
+
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -140,6 +142,13 @@ class TextValueTest
         assertThat( value.apply( "Separating,by,comma,is,a,common,use,case" ).split( "," ) ).isEqualTo(
                 stringArray( "Separating", "by", "comma", "is", "a", "common", "use", "case" ) );
         assertThat( value.apply( "HELLO" ).split( "HELLO" ) ).isEqualTo( stringArray( "", "" ) );
+
+        // splitting on empty separator
+        ListValue helloSplitOnEmpty = value.apply( "HELLO" ).split( "" );
+        assertThat( helloSplitOnEmpty ).isEqualTo( Values.stringArray( "H", "E", "L", "L", "O" ) );
+        ArrayValue helloSplitOnEmptyStorable = helloSplitOnEmpty.toStorableArray();
+        assertThat( helloSplitOnEmptyStorable ).isInstanceOf( StringArray.class ); // is not CharArray
+        assertThat( helloSplitOnEmptyStorable.asObject() ).isEqualTo( new String[]{"H", "E", "L", "L", "O"} ); // is not char[]
     }
 
     @ParameterizedTest
