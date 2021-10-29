@@ -1185,6 +1185,30 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("idB").withRows(Seq(Array(1), Array(2), Array(3), Array(1), Array(2), Array(3))).withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
   }
+
+  test("merge on the RHS of an apply with Unwind on top of apply using created variables") {
+    //given empty database
+
+    //when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("ns")
+      .nonFuseable()
+      .unwind("[n,n,n] AS ns")
+      .apply()
+      .|.merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{id: idA}")))
+      .|.filter("n.id = idA")
+      .|.allNodeScan("n")
+      .unwind("[1,2] AS idA")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    val Seq(n1, n2) = tx.getAllNodes.asScala.toSeq
+    runtimeResult should beColumns("ns").withRows(Seq(Array(n1), Array(n1), Array(n1), Array(n2), Array(n2), Array(n2))).withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
+  }
 }
 
 // Supported by pipelined only
