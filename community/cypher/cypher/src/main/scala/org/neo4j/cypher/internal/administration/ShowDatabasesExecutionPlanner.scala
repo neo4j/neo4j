@@ -114,12 +114,18 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
            |WITH coalesce(user.homeDatabase, default.$DATABASE_NAME_PROPERTY) as homeDbName
            |
            |UNWIND $$`$accessibleDbsKey` AS props
-           |MATCH (d:$DATABASE)<-[:$TARGETS]-(:$DATABASE_NAME {$NAME_PROPERTY: props.name})
+           |CALL {
+           |    WITH props
+           |    MATCH (d:$DATABASE)<-[:$TARGETS]-(:$DATABASE_NAME {$NAME_PROPERTY: props.name}) RETURN d
+           |  UNION
+           |    WITH props
+           |    MATCH (d:$DATABASE {$NAME_PROPERTY: props.name}) RETURN d
+           |}
            |WITH d, props, homeDbName
-           |MATCH (d)<-[:$TARGETS]-(a:$DATABASE_NAME)
+           |OPTIONAL MATCH (d)<-[:$TARGETS]-(a:$DATABASE_NAME)
            |WITH d, props, homeDbName, a.name as aliasName ORDER BY aliasName
            |WITH d.name as name,
-           |collect(aliasName) as aliases,
+           |collect(aliasName) + [d.name] as aliases,
            |props.access as access,
            |props.address as address,
            |props.role as role,
@@ -127,7 +133,7 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
            |props.status as currentStatus,
            |props.error as error,
            |d.$DATABASE_DEFAULT_PROPERTY as default,
-           |coalesce( homeDbName in collect(aliasName), false) as home
+           |coalesce( homeDbName in collect(aliasName) + [d.name], false ) as home
            |$verboseColumns
            |$extraFilter
            |

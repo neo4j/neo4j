@@ -492,6 +492,7 @@ public interface Status
                 "The database is not currently available to serve your request, refer to the database logs for more " +
                 "details. Retrying your request at a later time may succeed." ),
         DatabaseNotFound( ClientError, "The request referred to a database that does not exist." ),
+        ExistingAliasFound( ClientError, "The request referred to a database with an alias." ),
         ExistingDatabaseFound( ClientError, "The request referred to a database that already exists." ),
         DatabaseLimitReached( DatabaseError, "The limit to number of databases has been reached." ),
         UnableToStartDatabase( DatabaseError, "Unable to start database." ),

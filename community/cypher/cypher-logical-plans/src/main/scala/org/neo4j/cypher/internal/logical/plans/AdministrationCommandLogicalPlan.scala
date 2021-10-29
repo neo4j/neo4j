@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
-import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Return
@@ -138,8 +137,10 @@ case class ShowPrivilegeCommands(source: Option[PrivilegePlan],
                                  returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
 case class LogSystemCommand(source: AdministrationCommandLogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class DoNothingIfNotExists(source: PrivilegePlan, label: String, labelDescription: String, name: Either[String, Parameter], operation: String, valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class DoNothingIfExists(source: PrivilegePlan, label: String, labelDescription: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DoNothingIfNotExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], operation: String, valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DoNothingIfExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DoNothingIfDatabaseNotExists(source: PrivilegePlan, name: Either[String, Parameter], operation: String, valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DoNothingIfDatabaseExists(source: PrivilegePlan, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class EnsureNodeExists(source: PrivilegePlan,
                             label: String,
                             name: Either[String, Parameter],
@@ -156,7 +157,7 @@ case class ShowDatabase(scope: DatabaseScope,
                         returns: Option[Return])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 
 case class CreateDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter], options: Options)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
-case class DropDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter], additionalAction: DropDatabaseAdditionalAction, ifExistsDoOption: Option[IfExistsDo] = None)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class DropDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter], additionalAction: DropDatabaseAdditionalAction)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class AlterDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter], access: Access)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class StartDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class StopDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))

@@ -82,6 +82,8 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseNotExists
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -224,13 +226,21 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       ShowDatabasesExecutionPlanner(resolver, defaultDatabaseResolver, normalExecutionEngine, securityAuthorizationHandler)(CommunityExtendedDatabaseInfoMapper)
       .planShowDatabases(scope, verbose, symbols, yields, returns)
 
-    case DoNothingIfNotExists(source, label, labelDescription, name, operation, valueMapper) => context =>
+    case DoNothingIfNotExists(source, label, name, operation, valueMapper) => context =>
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfNotExists(label, labelDescription, name, valueMapper, operation, sourcePlan)
+      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfNotExists(label, name, valueMapper, operation, sourcePlan)
 
-    case DoNothingIfExists(source, label, labelDescription, name, valueMapper) => context =>
+    case DoNothingIfExists(source, label, name, valueMapper) => context =>
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfExists(label, labelDescription, name, valueMapper, sourcePlan)
+      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfExists(label, name, valueMapper, sourcePlan)
+
+    case DoNothingIfDatabaseNotExists(source, name, operation, valueMapper) => context =>
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfDatabaseNotExists(name, valueMapper, operation, sourcePlan)
+
+    case DoNothingIfDatabaseExists(source, name, valueMapper) => context =>
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+      DoNothingExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planDoNothingIfDatabaseExists(name, valueMapper, sourcePlan)
 
     // Ensure that the role or user exists before being dropped
     case EnsureNodeExists(source, label, name, valueMapper, extraFilter, labelDescription, action) => context =>

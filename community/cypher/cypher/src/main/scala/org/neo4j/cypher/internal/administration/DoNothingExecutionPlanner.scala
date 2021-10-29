@@ -27,6 +27,11 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
+import org.neo4j.dbms.api.DatabaseManagementException
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY
+import org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
@@ -34,28 +39,60 @@ import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
-case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine, securityAuthorizationHandler: SecurityAuthorizationHandler) {
+case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
+                                     securityAuthorizationHandler: SecurityAuthorizationHandler) {
 
   def planDoNothingIfNotExists(label: String,
-                               labelDescription: String,
                                name: Either[String, Parameter],
                                valueMapper: String => String,
                                operation: String,
                                sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
     planDoNothing("DoNothingIfNotExists",
-      label, name, valueMapper,
+      label,
+      name,
+      valueMapper,
       QueryHandler
         .ignoreNoResult()
-        .handleError(handleErrorFn(operation, label, labelDescription, name)),
+        .handleError(handleErrorFn(operation, label, name)),
       sourcePlan
     )
 
-  def planDoNothingIfExists(label: String, labelDescription: String, name: Either[String, Parameter], valueMapper: String => String, sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
+  def planDoNothingIfExists(label: String,
+                            name: Either[String, Parameter],
+                            valueMapper: String => String,
+                            sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
     planDoNothing("DoNothingIfExists",
-      label, name, valueMapper,
+      label,
+      name,
+      valueMapper,
       QueryHandler
         .ignoreOnResult()
-        .handleError(handleErrorFn("create", label, labelDescription, name)),
+        .handleError(handleErrorFn("create", label, name)),
+      sourcePlan)
+
+  def planDoNothingIfDatabaseNotExists(name: Either[String, Parameter],
+                                       valueMapper: String => String,
+                                       operation: String,
+                                       sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
+    planDoNothingDatabase("DoNothingIfDatabaseNotExists",
+      name,
+      valueMapper,
+      QueryHandler
+        .ignoreNoResult()
+        .handleError(handleErrorFn(operation, DATABASE, name)),
+      sourcePlan
+    )
+  }
+
+  def planDoNothingIfDatabaseExists(name: Either[String, Parameter],
+                                    valueMapper: String => String,
+                                    sourcePlan: Option[ExecutionPlan]): ExecutionPlan =
+    planDoNothingDatabase("DoNothingIfDatabaseExists",
+      name,
+      valueMapper,
+      QueryHandler
+        .ignoreOnResult()
+        .handleError(handleErrorFn("create", DATABASE, name)),
       sourcePlan)
 
   private def planDoNothing(planName: String,
@@ -69,8 +106,8 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine, sec
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""
-         |MATCH (node:$label {name: $$`${nameFields.nameKey}`})
-         |RETURN node.name AS name
+         |MATCH (node:$label {$NAME_PROPERTY: $$`${nameFields.nameKey}`})
+         |RETURN node.$NAME_PROPERTY AS name
         """.stripMargin,
       VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
       queryHandler,
@@ -79,10 +116,32 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine, sec
     )
   }
 
-  private def handleErrorFn(operation: String, label: String, labelDescription: String, name: Either[String, Parameter]): (Throwable, MapValue) => Throwable = {
+  private def planDoNothingDatabase(planName: String,
+                                    name: Either[String, Parameter],
+                                    valueMapper: String => String,
+                                    queryHandler: QueryHandler,
+                                    sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
+    val nameFields = getNameFields("name", name, valueMapper = valueMapper)
+    UpdatingSystemCommandExecutionPlan(planName,
+      normalExecutionEngine,
+      securityAuthorizationHandler,
+      s"""
+         |MATCH (:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`})-[:$TARGETS]->(d:$DATABASE) RETURN d.name
+         |UNION
+         |MATCH (d:$DATABASE {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) RETURN d.name
+        """.stripMargin,
+      VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
+      queryHandler,
+      sourcePlan,
+      parameterConverter = nameFields.nameConverter
+    )
+  }
+
+  private def handleErrorFn(operation: String,
+                            labelDescription: String,
+                            name: Either[String, Parameter]): (Throwable, MapValue) => Throwable = {
     case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
       new DatabaseAdministrationOnFollowerException(s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
     case (error, p) => new IllegalStateException(s"Failed to $operation the specified ${labelDescription.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
   }
-
 }

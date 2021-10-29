@@ -63,8 +63,9 @@ public interface DatabaseManagementService
      * Drop a database by name. All data stored in the database will be deleted as well.
      * @param databaseName name of the database to drop.
      * @throws DatabaseNotFoundException if no database with the given name is found.
+     * @throws DatabaseAliasExistsException if the database exists but has an alias.
      */
-    void dropDatabase( String databaseName ) throws DatabaseNotFoundException;
+    void dropDatabase( String databaseName ) throws DatabaseNotFoundException, DatabaseAliasExistsException;
 
     /**
      * Starts a already existing database.
