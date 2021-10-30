@@ -34,7 +34,6 @@ import org.scalatest.FunSuiteLike
 class AliasAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase with FunSuiteLike with TestName with AstConstructionTestSupport {
 
   // CREATE ALIAS
-
   test("CREATE ALIAS alias FOR DATABASE target") {
     assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias"), Left("target"), IfExistsThrowError)(pos))
   }

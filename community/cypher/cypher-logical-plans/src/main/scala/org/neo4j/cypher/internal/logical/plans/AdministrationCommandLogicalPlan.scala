@@ -162,7 +162,7 @@ case class AlterDatabase(source: AdministrationCommandLogicalPlan, databaseName:
 case class StartDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class StopDatabase(source: AdministrationCommandLogicalPlan, databaseName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
-case class CreateDatabaseAlias(source: AdministrationCommandLogicalPlan, aliasName: Either[String, Parameter], targetName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
+case class CreateDatabaseAlias(source: AdministrationCommandLogicalPlan, aliasName: Either[String, Parameter], targetName: Either[String, Parameter], replace: Boolean)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class DropDatabaseAlias(source: AdministrationCommandLogicalPlan, aliasName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 case class AlterDatabaseAlias(source: AdministrationCommandLogicalPlan, aliasName: Either[String, Parameter], targetName: Either[String, Parameter])(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
