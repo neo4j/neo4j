@@ -1674,4 +1674,37 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("i", "s").withRows(inAnyOrder(expected))
   }
+
+  // fusing specific to test fallthrough with mutating operator
+  test("should do delete in same pipeline") {
+    // given
+    val size = Math.max(sizeHint, 10)
+    nodeIndex("Label", "prop")
+    val nodes = given {
+      nodePropertyGraph(size, {
+        case i: Int => Map("prop" -> i % 10)
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("m")
+      .deleteNode("n")
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:Label(prop=7)"),
+        _.nodeIndexSeek("m:Label(prop=3)"))
+      .build(readOnly = false)
+
+    // then
+    val ns = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == 7)
+    val ms = nodes.filter(_.getProperty("prop").asInstanceOf[Int] == 3)
+    val expected = for {n <-ns
+                        m <- ms} yield Array(m)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("m").withRows(expected).withStatistics(nodesDeleted = size/10)
+    tx.getAllNodes.stream().count() shouldBe size * 0.9
+  }
+
 }
