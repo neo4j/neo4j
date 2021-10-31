@@ -361,6 +361,7 @@ public class DefaultBoltConnection implements BoltConnection
     }
 
     @Override
+    @Deprecated( forRemoval = true )
     public void keepAlive()
     {
         try

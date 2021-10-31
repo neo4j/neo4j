@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.testing.Jobs;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.function.Predicates;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -76,8 +76,7 @@ public class ExecutorBoltSchedulerWithQueueTest
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltSchedulerWithQueue =
             new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, threadPoolSize, threadPoolSize, Duration.ofMinutes( 1 ),
-                                       queueSize, ForkJoinPool.commonPool(), Duration.ZERO, BoltConnectorInternalSettings.KeepAliveRequestType.OFF,
-                                       Duration.ZERO );
+                                       queueSize, ForkJoinPool.commonPool(), Duration.ZERO, BoltConnector.KeepAliveRequestType.OFF, Duration.ZERO );
 
     @BeforeEach
     void setup() throws Throwable

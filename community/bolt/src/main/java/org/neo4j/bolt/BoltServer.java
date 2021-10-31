@@ -164,12 +164,12 @@ public class BoltServer extends LifecycleAdapter
         var loopbackBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( loopbackAuthManager ), clock, transactionManager );
 
         BoltProtocolFactory externalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, externalBoltStateMachineFactory, throttleGroup,
-                                                                                     clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
+                                                                                     clock, config.get( BoltConnector.connection_keep_alive ) );
         BoltProtocolFactory internalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, internalBoltStateMachineFactory, throttleGroup,
-                                                                                     clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
+                                                                                     clock, config.get( BoltConnector.connection_keep_alive ) );
 
         BoltProtocolFactory loopbackBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, loopbackBoltStateMachineFactory, throttleGroup,
-                                                                                     clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
+                                                                                     clock, config.get( BoltConnector.connection_keep_alive ) );
 
         if ( config.get( CommonConnectorConfig.ocsp_stapling_enabled ) )
         {

@@ -231,11 +231,21 @@ org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel::OPTIONAL org.n
 org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel::REQUIRED org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel public static final
 org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel::valueOf(java.lang.String) org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel public static
 org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel::values() org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel[] public static
+org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType public static final enum extends java.lang.Enum<org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType>
+org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType::ALL org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType public static final
+org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType::OFF org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType public static final
+org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType::STREAMING org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType public static final
+org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType::valueOf(java.lang.String) org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType public static
+org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType::values() org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType[] public static
 org.neo4j.configuration.connectors.BoltConnector::BoltConnector() void public
 org.neo4j.configuration.connectors.BoltConnector::DEFAULT_PORT int public static final = 7687
 org.neo4j.configuration.connectors.BoltConnector::INTERNAL_NAME java.lang.String public static final = bolt-internal
 org.neo4j.configuration.connectors.BoltConnector::NAME java.lang.String public static final = bolt
 org.neo4j.configuration.connectors.BoltConnector::advertised_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
+org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive_probes org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive_streaming_scheduling_interval org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive_type org.neo4j.graphdb.config.Setting<org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType> public static final
 org.neo4j.configuration.connectors.BoltConnector::enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.connectors.BoltConnector::encryption_level org.neo4j.graphdb.config.Setting<org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel> public static final
 org.neo4j.configuration.connectors.BoltConnector::listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final

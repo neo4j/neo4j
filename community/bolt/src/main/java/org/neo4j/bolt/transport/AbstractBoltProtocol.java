@@ -39,7 +39,7 @@ import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.bolt.v3.runtime.bookmarking.BookmarksParserV3;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Values;
@@ -85,10 +85,10 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
         this.memoryTracker = memoryTracker;
 
         var hintBuilder = new MapValueBuilder( 1 );
-        if ( config.get( BoltConnectorInternalSettings.connection_keep_alive_type ) == BoltConnectorInternalSettings.KeepAliveRequestType.ALL )
+        if ( config.get( BoltConnector.connection_keep_alive_type ) == BoltConnector.KeepAliveRequestType.ALL )
         {
-            var keepAliveInterval = config.get( BoltConnectorInternalSettings.connection_keep_alive );
-            var keepAliveProbes = config.get( BoltConnectorInternalSettings.connection_keep_alive_probes );
+            var keepAliveInterval = config.get( BoltConnector.connection_keep_alive );
+            var keepAliveProbes = config.get( BoltConnector.connection_keep_alive_probes );
 
             hintBuilder.add( "connection.recv_timeout_seconds", Values.longValue( keepAliveInterval.toSeconds() * keepAliveProbes ) );
         }

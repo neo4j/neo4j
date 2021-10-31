@@ -110,6 +110,7 @@ public interface BoltConnection
     /**
      * Perform a keep alive check
      */
+    @Deprecated( forRemoval = true )
     void keepAlive();
 
     /**

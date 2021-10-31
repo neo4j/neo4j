@@ -33,7 +33,7 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.KeepAliveHandler;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 
@@ -51,7 +51,7 @@ class DefaultBoltConnectionFactoryTest
     {
         var schedulerProvider = mock( BoltSchedulerProvider.class );
         var config = Config.newBuilder()
-                           .set( BoltConnectorInternalSettings.connection_keep_alive_type, BoltConnectorInternalSettings.KeepAliveRequestType.ALL )
+                           .set( BoltConnector.connection_keep_alive_type, BoltConnector.KeepAliveRequestType.ALL )
                            .build();
         var logService = mock( LogService.class );
 

@@ -35,7 +35,7 @@ import org.neo4j.bolt.testing.client.SocketConnection;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -70,8 +70,8 @@ public class BoltKeepAliveSchedulingIT
     {
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, false );
-            settings.put( BoltConnectorInternalSettings.connection_keep_alive, Duration.ofMillis( 20 ) );
-            settings.put( BoltConnectorInternalSettings.connection_keep_alive_streaming_scheduling_interval, Duration.ofMillis( 10 ) );
+            settings.put( BoltConnector.connection_keep_alive, Duration.ofMillis( 20 ) );
+            settings.put( BoltConnector.connection_keep_alive_streaming_scheduling_interval, Duration.ofMillis( 10 ) );
         };
     }
 

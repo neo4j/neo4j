@@ -29,12 +29,13 @@ import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 
+import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
+import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
-import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
@@ -70,6 +71,36 @@ public final class BoltConnector implements SettingsDeclaration
                     .setDependency( default_advertised_address )
                     .build();
 
+    @DocumentedDefaultValue( "STREAMING" )
+    @Description( "The type of messages to enable keep-alive messages for (ALL, STREAMING or OFF)" )
+    public static final Setting<KeepAliveRequestType> connection_keep_alive_type =
+            newBuilder( "dbms.connector.bolt.connection_keep_alive_for_requests", ofEnum( KeepAliveRequestType.class ), KeepAliveRequestType.STREAMING )
+                    .build();
+
+    @DocumentedDefaultValue( "1m" )
+    @Description( "The maximum time to wait before sending a NOOP on connections waiting for responses from active ongoing queries." +
+                  "The minimum value is 1 millisecond." )
+    public static final Setting<Duration> connection_keep_alive =
+            newBuilder( "dbms.connector.bolt.connection_keep_alive", DURATION, ofMinutes( 1 ) )
+                    .addConstraint( min( ofMillis( 1 ) ) )
+                    .build();
+
+    @DocumentedDefaultValue( "1m" )
+    @Description( "The interval between every scheduled keep-alive check on all connections with active queries. " +
+                  "Zero duration turns off keep-alive service." )
+    public static final Setting<Duration> connection_keep_alive_streaming_scheduling_interval =
+            newBuilder( "dbms.connector.bolt.connection_keep_alive_streaming_scheduling_interval", DURATION, ofMinutes( 1 ) )
+                    .addConstraint( min( ofSeconds( 0 ) ) )
+                    .build();
+
+    @DocumentedDefaultValue( "2" )
+    @Description( "The total amount of probes to be missed before a connection is considered stale." +
+                  "The minimum for this value is 1." )
+    public static final Setting<Integer> connection_keep_alive_probes =
+            newBuilder( "dbms.connector.bolt.connection_keep_alive_probes", INT, 2 )
+                    .addConstraint( min( 1 ) )
+                    .build();
+
     @Description( "The number of threads to keep in the thread pool bound to this connector, even if they are idle." )
     public static final Setting<Integer> thread_pool_min_size = newBuilder( "dbms.connector.bolt.thread_pool_min_size", INT, 5 ).build();
 
@@ -89,5 +120,25 @@ public final class BoltConnector implements SettingsDeclaration
         REQUIRED,
         OPTIONAL,
         DISABLED
+    }
+
+    public enum KeepAliveRequestType
+    {
+
+        /**
+         * Causes keep-alive messages to be sent while the server is computing a response to a given driver command.
+         */
+        ALL,
+
+        /**
+         * Causes keep-alive messages to be sent only while streaming results.
+         */
+        @Deprecated
+        STREAMING,
+
+        /**
+         * Disables keep-alive messages entirely.
+         */
+        OFF
     }
 }

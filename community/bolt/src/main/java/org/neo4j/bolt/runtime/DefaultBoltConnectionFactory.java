@@ -32,7 +32,7 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.transport.pipeline.KeepAliveHandler;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 
@@ -92,13 +92,13 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
 
     private static KeepAliveHandler createKeepAliveHandler( Config config, BoltResponseMessageWriter messageWriter )
     {
-        var mechanism = config.get( BoltConnectorInternalSettings.connection_keep_alive_type );
-        if ( mechanism != BoltConnectorInternalSettings.KeepAliveRequestType.ALL )
+        var mechanism = config.get( BoltConnector.connection_keep_alive_type );
+        if ( mechanism != BoltConnector.KeepAliveRequestType.ALL )
         {
             return null;
         }
 
-        var interval = config.get( BoltConnectorInternalSettings.connection_keep_alive ).toMillis();
+        var interval = config.get( BoltConnector.connection_keep_alive ).toMillis();
         return new KeepAliveHandler( interval, messageWriter );
     }
 }

@@ -55,28 +55,6 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> tcp_keep_alive = newBuilder( "dbms.connector.bolt.tcp_keep_alive", BOOL, true ).build();
 
     @Internal
-    @Description( "The type of messages to enable keep-alive messages for (ALL, STREAMING or OFF)" )
-    public static final Setting<KeepAliveRequestType> connection_keep_alive_type =
-            newBuilder( "dbms.connector.bolt.connection_keep_alive_for_requests", ofEnum( KeepAliveRequestType.class ), KeepAliveRequestType.STREAMING )
-                    .build();
-
-    @Internal
-    @Description( "The maximum time to wait before sending a NOOP on connections waiting for responses from active ongoing queries." )
-    public static final Setting<Duration> connection_keep_alive =
-            newBuilder( "dbms.connector.bolt.connection_keep_alive", DURATION, ofMinutes( 1 ) ).build();
-
-    @Internal
-    @Description( "The interval between every scheduled keep-alive check on all connections with active queries. " +
-                  "Zero duration turns off keep-alive service." )
-    public static final Setting<Duration> connection_keep_alive_streaming_scheduling_interval =
-            newBuilder( "dbms.connector.bolt.connection_keep_alive_streaming_scheduling_interval", DURATION, ofMinutes( 1 ) ).build();
-
-    @Internal
-    @Description( "The total amount of probes to be missed before a connection is considered stale" )
-    public static final Setting<Integer> connection_keep_alive_probes =
-            newBuilder( "dbms.connector.bolt.connection_keep_alive_probes", INT, 2 ).build();
-
-    @Internal
     @Description( "The maximum time to wait for a user to finish authentication before closing the connection." )
     public static final Setting<Duration> unsupported_bolt_unauth_connection_timeout =
             newBuilder( "dbms.connector.bolt.unsupported_unauth_connection_timeout", DURATION, ofSeconds( 30 ) ).build();
@@ -105,23 +83,4 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration
                   "`" + "unsupported.dbms.block_start_stop_database" + "` and `" + "unsupported.dbms.upgrade_restriction_enabled" + "` settings." )
     public static final Setting<Boolean> enable_loopback_auth =
             newBuilder( "unsupported.dbms.loopback_enabled", BOOL, false ).build();
-
-    public enum KeepAliveRequestType
-    {
-
-        /**
-         * Causes keep-alive messages to be sent while the server is computing a response to a given driver command.
-         */
-        ALL,
-
-        /**
-         * Causes keep-alive messages to be sent only while streaming results.
-         */
-        STREAMING,
-
-        /**
-         * Disables keep-alive messages entirely.
-         */
-        OFF
-    }
 }

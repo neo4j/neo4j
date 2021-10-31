@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Job;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -60,14 +60,14 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
 
     private ExecutorService threadPool;
 
-    private final BoltConnectorInternalSettings.KeepAliveRequestType keepAliveRequestType;
+    private final BoltConnector.KeepAliveRequestType keepAliveRequestType;
     private final Duration keepAliveSchedulingInterval;
     private ScheduledExecutorService keepAliveService;
 
     public ExecutorBoltScheduler( String connector, ExecutorFactory executorFactory, JobScheduler scheduler,
                                   LogService logService, int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize,
                                   ExecutorService forkJoinPool, Duration shutdownWaitTime,
-                                  BoltConnectorInternalSettings.KeepAliveRequestType keepAliveRequestType, Duration keepAliveSchedulingInterval )
+                                  BoltConnector.KeepAliveRequestType keepAliveRequestType, Duration keepAliveSchedulingInterval )
     {
         this.connector = connector;
         this.executorFactory = executorFactory;
@@ -110,7 +110,7 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     @Override
     public void start()
     {
-        if ( keepAliveRequestType != BoltConnectorInternalSettings.KeepAliveRequestType.STREAMING || keepAliveSchedulingInterval.isNegative() ||
+        if ( keepAliveRequestType != BoltConnector.KeepAliveRequestType.STREAMING || keepAliveSchedulingInterval.isNegative() ||
              keepAliveSchedulingInterval.isZero() )
         {
             log.debug( "Bolt keep-alive service is disabled." );
