@@ -76,11 +76,7 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
         this.primaryLoginContext = loginContext;
 
         boltChannel.updateUser( loginContext.subject().authenticatedUser(), userAgent );
-
-        if ( this.defaultDatabase == null )
-        {
-            this.resolveDefaultDatabase();
-        }
+        this.resolveDefaultDatabase();
     }
 
     @Override
@@ -105,11 +101,7 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     {
         var defaultDatabase = defaultDatabaseResolver.defaultDatabase( this.getLoginContext().subject().executingUser() );
 
-        if ( this.impersonationLoginContext == null )
-        {
-            this.defaultDatabase = defaultDatabase;
-        }
-
+        this.defaultDatabase = defaultDatabase;
         this.boltChannel.updateDefaultDatabase( defaultDatabase );
     }
 

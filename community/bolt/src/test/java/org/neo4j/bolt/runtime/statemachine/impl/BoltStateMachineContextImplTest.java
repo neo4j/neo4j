@@ -20,35 +20,63 @@
 package org.neo4j.bolt.runtime.statemachine.impl;
 
 import io.netty.channel.Channel;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
+import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.MemoryTracker;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 
 class BoltStateMachineContextImplTest
 {
-    private static final String DB_NAME = "Molly";
+    private BoltChannel channel;
+    private BoltStateMachine machine;
+    private BoltStateMachineSPI stateMachineSPI;
+    private MutableConnectionState connectionState;
+    private DefaultDatabaseResolver databaseResolver;
+    private MemoryTracker memoryTracker;
+    private TransactionManager transactionManager;
+
+    private BoltStateMachineContextImpl context;
+
+    @BeforeEach
+    void prepareContext()
+    {
+        this.channel = spy( newTestBoltChannel( mock( Channel.class ) ) );
+        this.machine = mock( BoltStateMachine.class );
+        this.stateMachineSPI = mock( BoltStateMachineSPI.class );
+        this.connectionState = new MutableConnectionState();
+        this.databaseResolver = mock( DefaultDatabaseResolver.class );
+        this.memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
+        this.transactionManager = mock( TransactionManager.class );
+
+        this.context = new BoltStateMachineContextImpl( this.machine, this.channel, this.stateMachineSPI, this.connectionState, Clock.systemUTC(),
+                                                        this.databaseResolver, this.memoryTracker, this.transactionManager );
+    }
 
     @Test
     void shouldHandleFailure() throws BoltConnectionFatality
     {
-        BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltStateMachineContextImpl context = newContext( machine, mock( BoltStateMachineSPI.class ) );
-
         RuntimeException cause = new RuntimeException();
         context.handleFailure( cause, true );
 
@@ -58,9 +86,6 @@ class BoltStateMachineContextImplTest
     @Test
     void shouldResetMachine() throws BoltConnectionFatality
     {
-        BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltStateMachineContextImpl context = newContext( machine, mock( BoltStateMachineSPI.class ) );
-
         context.resetMachine();
 
         verify( machine ).reset();
@@ -69,10 +94,8 @@ class BoltStateMachineContextImplTest
     @Test
     void releaseShouldResetTransactionState() throws Throwable
     {
-        // Given a context that has a active tx state machine set.
-        BoltStateMachine txStateMachine = mock( BoltStateMachine.class );
-        BoltStateMachineContextImpl context = newContext( txStateMachine, mock( BoltStateMachineSPI.class ) );
-        assertNull( context.connectionState().getCurrentTransactionId() );
+        assertSame( connectionState, context.connectionState() );
+
         context.connectionState().setCurrentTransactionId( "123" );
 
         // When
@@ -82,10 +105,42 @@ class BoltStateMachineContextImplTest
         assertNull( context.connectionState().getCurrentTransactionId() );
     }
 
-    private static BoltStateMachineContextImpl newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
+    @Test
+    void impersonationShouldResolveHomeDatabase()
     {
-        BoltChannel boltChannel = newTestBoltChannel( mock( Channel.class ) );
-        return new BoltStateMachineContextImpl( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC(),
-                mock( DefaultDatabaseResolver.class ), mock( MemoryTracker.class, RETURNS_MOCKS ), mock( TransactionManager.class ) );
+        when( this.databaseResolver.defaultDatabase( "bob" ) ).thenReturn( "neo4j" );
+        when( this.databaseResolver.defaultDatabase( "grace" ) ).thenReturn( "secretdb" );
+
+        var subject = mock( AuthSubject.class );
+        when( subject.authenticatedUser() ).thenReturn( "bob" );
+        when( subject.executingUser() ).thenReturn( "bob" );
+
+        var loginContext = mock( LoginContext.class );
+        when( loginContext.subject() ).thenReturn( subject );
+
+        context.authenticatedAsUser( loginContext, "Test/0.0.0" );
+
+        verify( this.databaseResolver ).defaultDatabase( "bob" );
+        verify( this.channel ).updateDefaultDatabase( "neo4j" );
+        verify( this.channel ).updateUser( "bob", "Test/0.0.0" );
+
+        assertThat( this.context.getLoginContext() ).isSameAs( loginContext );
+        assertThat( this.context.getDefaultDatabase() ).isEqualTo( "neo4j" );
+
+        var impersonatedSubject = mock( AuthSubject.class );
+        when( impersonatedSubject.authenticatedUser() ).thenReturn( "bob" );
+        when( impersonatedSubject.executingUser() ).thenReturn( "grace" );
+
+        var impersonatedLoginContext = mock( LoginContext.class );
+        when( impersonatedLoginContext.subject() ).thenReturn( impersonatedSubject );
+
+        context.impersonateUser( impersonatedLoginContext );
+
+        verify( this.databaseResolver ).defaultDatabase( "grace" );
+        verify( this.channel ).updateDefaultDatabase( "secretdb" );
+        verifyNoMoreInteractions( this.databaseResolver );
+
+        assertThat( this.context.getLoginContext() ).isSameAs( impersonatedLoginContext );
+        assertThat( this.context.getDefaultDatabase() ).isEqualTo( "secretdb" );
     }
 }
