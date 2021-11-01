@@ -128,6 +128,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.AbstractLogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -605,7 +606,7 @@ public class Database extends LifecycleAdapter
     {
         if ( storageExists )
         {
-            checkStoreId( logFiles, pageCacheTracer );
+            checkStoreId( logFiles.getTailInformation(), pageCacheTracer );
         }
         else
         {
@@ -638,11 +639,11 @@ public class Database extends LifecycleAdapter
         throw new RuntimeException( e );
     }
 
-    private void checkStoreId( LogFiles logFiles, PageCacheTracer pageCacheTracer ) throws IOException
+    private void checkStoreId( LogTailInformation logTailInfo, PageCacheTracer pageCacheTracer ) throws IOException
     {
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( STORE_ID_VALIDATOR_TAG ) ) )
         {
-            validateStoreId( logFiles, storageEngineFactory.storeId( fs, databaseLayout, databasePageCache, cursorContext ) );
+            validateStoreId( logTailInfo, storageEngineFactory.storeId( fs, databaseLayout, databasePageCache, cursorContext ) );
         }
     }
 

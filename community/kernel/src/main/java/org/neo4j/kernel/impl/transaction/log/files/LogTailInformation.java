@@ -30,7 +30,7 @@ public class LogTailInformation
     public final long currentLogVersion;
     public final byte latestLogEntryVersion;
     private final boolean recordAfterCheckpoint;
-    public final StoreId lastStoreId;
+    private final StoreId storeId;
 
     public LogTailInformation( boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint, boolean filesNotFound, long currentLogVersion,
             byte latestLogEntryVersion )
@@ -39,7 +39,7 @@ public class LogTailInformation
     }
 
     public LogTailInformation( CheckpointInfo lastCheckPoint, boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint, boolean filesNotFound,
-            long currentLogVersion, byte latestLogEntryVersion, StoreId lastStoreId )
+            long currentLogVersion, byte latestLogEntryVersion, StoreId storeId )
     {
         this.lastCheckPoint = lastCheckPoint;
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
@@ -47,7 +47,7 @@ public class LogTailInformation
         this.currentLogVersion = currentLogVersion;
         this.latestLogEntryVersion = latestLogEntryVersion;
         this.recordAfterCheckpoint = recordAfterCheckpoint;
-        this.lastStoreId = lastStoreId;
+        this.storeId = storeId;
     }
 
     public boolean commitsAfterLastCheckpoint()
@@ -63,6 +63,11 @@ public class LogTailInformation
     public boolean isRecoveryRequired()
     {
         return recordAfterCheckpoint || logsMissing();
+    }
+
+    public StoreId getStoreId()
+    {
+        return storeId;
     }
 
     @Override

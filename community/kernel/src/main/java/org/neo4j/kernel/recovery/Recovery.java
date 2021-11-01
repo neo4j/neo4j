@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -134,6 +135,7 @@ import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP_WORK;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
+import static org.neo4j.storageengine.api.StoreId.UNKNOWN;
 import static org.neo4j.time.Clocks.systemClock;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
@@ -526,9 +528,10 @@ public final class Recovery
                 .withDependencies( dependencies )
                 .withMemoryTracker( memoryTracker )
                 .build();
+        var logTailInfo = providedLogFiles.orElse( logFiles ).getTailInformation();
 
         boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
-        validateStoreId( logFiles, storageEngine.getStoreId() );
+        validateStoreId( logTailInfo, storageEngine.getStoreId() );
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
@@ -557,7 +560,7 @@ public final class Recovery
                 new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, logPruning, checkpointAppender,
                         databaseHealth, logProvider, tracers, IOController.DISABLED, new StoreCopyCheckPointMutex(), versionContextSupplier, clock );
         recoveryLife.add( storageEngine );
-        recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logFiles, recoveryLog ) );
+        recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logTailInfo, recoveryLog ) );
         recoveryLife.add( logFiles );
         recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( transactionAppender );
@@ -584,16 +587,12 @@ public final class Recovery
         return DatabaseIdFactory.from( databaseLayout.getDatabaseName(), uuid );
     }
 
-    public static void validateStoreId( LogFiles logFiles, StoreId storeId )
+    public static void validateStoreId( LogTailInformation logTailInformation, StoreId storeId )
     {
-        StoreId txStoreId = logFiles.getTailInformation().lastStoreId;
-        if ( !StoreId.UNKNOWN.equals( txStoreId ) )
+        StoreId txStoreId = logTailInformation.getStoreId();
+        if ( !UNKNOWN.equals( txStoreId ) && !storeId.equalsIgnoringVersion( txStoreId ) )
         {
-            if ( !storeId.equalsIgnoringVersion( txStoreId ) )
-            {
-                throw new RuntimeException( "Mismatching store id. Store StoreId: " + storeId +
-                        ". Transaction log StoreId: " + txStoreId );
-            }
+            throw new RuntimeException( "Mismatching store id. Store StoreId: " + storeId + ". Transaction log StoreId: " + txStoreId );
         }
     }
 
@@ -712,16 +711,16 @@ public final class Recovery
         private final DatabaseLayout databaseLayout;
         private final Config config;
         private final FileSystemAbstraction fs;
-        private final LogFiles logFiles;
+        private final LogTailInformation logTailInformation;
         private final Log log;
 
         MissingTransactionLogsCheck( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fs,
-                                     LogFiles logFiles, Log log )
+                                     LogTailInformation logTailInformation, Log log )
         {
             this.databaseLayout = databaseLayout;
             this.config = config;
             this.fs = fs;
-            this.logFiles = logFiles;
+            this.logTailInformation = logTailInformation;
             this.log = log;
         }
 
@@ -733,7 +732,7 @@ public final class Recovery
 
         private void checkForMissingLogFiles() throws IOException
         {
-            if ( logFiles.getTailInformation().logsMissing() )
+            if ( logTailInformation.logsMissing() )
             {
                 if ( config.get( GraphDatabaseSettings.fail_on_missing_files ) )
                 {

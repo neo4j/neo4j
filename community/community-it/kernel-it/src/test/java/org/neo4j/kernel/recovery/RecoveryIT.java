@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
@@ -120,6 +121,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
@@ -1388,6 +1391,29 @@ class RecoveryIT
                                 "recovery criteria: transaction id should be < 1." );
 
         assertTrue( isRecoveryRequired( layout ) );
+    }
+
+    @Test
+    void useProvidedLogFilesLogTailInfo() throws Exception
+    {
+        GraphDatabaseAPI db = createDatabase();
+        DatabaseLayout layout = db.databaseLayout();
+        generateSomeData( db );
+        db.getDependencyResolver().resolveDependency( CheckPointerImpl.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        generateSomeData( db );
+        managementService.shutdown();
+
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+
+        assertTrue( isRecoveryRequired( layout ) );
+
+        LogFiles spiedLogFiles = Mockito.spy( buildLogFiles() );
+        performRecovery( fileSystem, pageCache, EMPTY, Config.newBuilder().build(), databaseLayout, defaultStorageEngine(), false, logProvider,
+                new Monitors(), Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.of( spiedLogFiles ),
+                RecoveryStartupChecker.EMPTY_CHECKER, INSTANCE, fakeClock, ALL.toPredicate() );
+        verify( spiedLogFiles, times( 2 ) ).getTailInformation();
+
+        assertFalse( isRecoveryRequired( layout ) );
     }
 
     private boolean idGeneratorIsDirty( Path path, IdType idType ) throws IOException
