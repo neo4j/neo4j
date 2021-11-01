@@ -24,7 +24,6 @@ import picocli.CommandLine.Option;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -38,7 +37,6 @@ import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -47,6 +45,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -113,7 +112,8 @@ public class CheckConsistencyCommand extends AbstractCommand
         if ( target.backup != null )
         {
             target.backup = target.backup.toAbsolutePath();
-            if ( !Files.isDirectory( target.backup ) )
+
+            if ( !ctx.fs().isDirectory( target.backup ) )
             {
                 throw new CommandFailedException( "Report directory path doesn't exist or not a directory: " + target.backup );
             }

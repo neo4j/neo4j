@@ -22,7 +22,6 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -222,7 +221,7 @@ public class CorruptedLogsTruncator
         try
         {
             LogFile logFile = logFiles.getLogFile();
-            if ( Files.size( logFile.getLogFileForVersion( recoveredTransactionLogVersion ) ) > recoveredTransactionOffset )
+            if ( fs.getFileSize( logFile.getLogFileForVersion( recoveredTransactionLogVersion ) ) > recoveredTransactionOffset )
             {
                 try ( PhysicalLogVersionedStoreChannel channel = logFile.openForVersion( recoveredTransactionLogVersion );
                         var scopedBuffer = new NativeScopedBuffer( safeCastLongToInt( kibiBytes( 64 ) ), memoryTracker ) )

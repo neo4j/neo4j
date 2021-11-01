@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -136,7 +134,7 @@ public class StoreUpgrader
     public void migrateIfNeeded( DatabaseLayout layout, boolean forceUpgrade ) throws IOException
     {
         // nothing to migrate
-        if ( !Files.exists( layout.databaseDirectory() ) )
+        if ( !fileSystem.fileExists( layout.databaseDirectory() ) )
         {
             return;
         }
@@ -263,16 +261,9 @@ public class StoreUpgrader
 
     private void cleanupLegacyLeftOverDirsIn( Path databaseDirectory ) throws IOException
     {
-
-        try ( DirectoryStream<Path> paths = Files.newDirectoryStream( databaseDirectory ) )
+        for ( Path path : fileSystem.listFiles( databaseDirectory, path -> MIGRATION_LEFTOVERS_PATTERN.matcher( path.getFileName().toString() ).matches() ) )
         {
-            for ( Path path : paths )
-            {
-                if ( MIGRATION_LEFTOVERS_PATTERN.matcher( path.getFileName().toString() ).matches() )
-                {
-                    deleteSilently( path );
-                }
-            }
+            deleteSilently( path );
         }
     }
 
