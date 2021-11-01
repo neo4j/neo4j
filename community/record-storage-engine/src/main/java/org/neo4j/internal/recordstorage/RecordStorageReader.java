@@ -165,9 +165,10 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType )
+    public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] changedLabels, long[] unchangedLabels,
+            int[] propertyKeyIds, boolean propertyKeyListIsComplete, EntityType entityType )
     {
-        return schemaCache.getUniquenessConstraintsRelatedTo( labels, PrimitiveLongCollections.EMPTY_LONG_ARRAY, propertyKeyIds, true, entityType );
+        return schemaCache.getUniquenessConstraintsRelatedTo( changedLabels, unchangedLabels, propertyKeyIds, propertyKeyListIsComplete, entityType );
     }
 
     @Override

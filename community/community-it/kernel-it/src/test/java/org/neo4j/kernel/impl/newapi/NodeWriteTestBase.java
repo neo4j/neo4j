@@ -29,6 +29,12 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -43,11 +49,14 @@ import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.stream;
@@ -61,6 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.test.Race.throwing;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -969,6 +979,122 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
                 assertThat( nodes.next().getId() ).isEqualTo( node );
                 assertThat( nodes.hasNext() ).isFalse();
             }
+        }
+    }
+
+    @Test
+    void nodeApplyChangesShouldEnforceUniquenessCorrectly() throws Exception
+    {
+        // Given
+        long[] nodes = new long[10];
+        Label[] labels = new Label[4];
+        String[] keys = new String[labels.length];
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            labels[i] = Label.label( "Label" + i );
+            keys[i] = "key" + i;
+        }
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            for ( int i = 0; i < nodes.length; i++ )
+            {
+                Node node = tx.createNode();
+                nodes[i] = node.getId();
+            }
+            tx.commit();
+        }
+
+        List<Label> constraintLabels = new ArrayList<>();
+        List<String[]> constraintPropertyKeys = new ArrayList<>();
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            // Create one single-key constraint
+            {
+                Label constraintLabel = random.among( labels );
+                String constraintKey = random.among( keys );
+                tx.schema().constraintFor( constraintLabel ).assertPropertyIsUnique( constraintKey ).create();
+                constraintLabels.add( constraintLabel );
+                constraintPropertyKeys.add( new String[]{constraintKey} );
+            }
+            // Create one double-key constraint
+            {
+                Label constraintLabel = random.among( labels );
+                String[] constraintKeys = random.selection( keys, 2, 2, false );
+                tx.schema().constraintFor( constraintLabel ).assertPropertyIsUnique( constraintKeys[0] ).assertPropertyIsUnique(
+                        constraintKeys[1] ).create();
+                constraintLabels.add( constraintLabel );
+                constraintPropertyKeys.add( constraintKeys );
+            }
+            tx.commit();
+        }
+        int[] labelIds = new int[labels.length];
+        int[] keyIds = new int[keys.length];
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            for ( int i = 0; i < labels.length; i++ )
+            {
+                labelIds[i] = tx.tokenWrite().labelGetOrCreateForName( labels[i].name() );
+            }
+            for ( int i = 0; i < keys.length; i++ )
+            {
+                keyIds[i] = tx.tokenWrite().propertyKeyGetOrCreateForName( keys[i] );
+            }
+        }
+
+        // Race
+        Race race = new Race().withEndCondition( () -> false );
+        race.addContestants( 1, throwing( () ->
+        {
+            try ( KernelTransaction tx = beginTransaction() )
+            {
+                long node = random.among( nodes );
+                MutableIntSet addedLabels = IntSets.mutable.of( random.selection( labelIds, 0, 2, false ) );
+                MutableIntSet removedLabels = IntSets.mutable.of( random.selection( labelIds, 0, 2, false ) );
+                removedLabels.removeAll( addedLabels );
+                MutableIntObjectMap<Value> properties = IntObjectMaps.mutable.empty();
+                for ( int key : random.selection( keyIds, 0, 2, false ) )
+                {
+                    Value value = random.nextFloat() < 0.2 ? NO_VALUE : intValue( random.nextInt( 5 ) );
+                    properties.put( key, value );
+                }
+                tx.dataWrite().nodeApplyChanges( node, addedLabels, removedLabels, properties );
+                tx.commit();
+            }
+            catch ( UniquePropertyValueValidationException e )
+            {
+                // This is OK and somewhat expected to happen for some of the operations, it's what we test here
+            }
+        } ), 100 );
+        race.goUnchecked();
+
+        // Then, check so that all data really conforms to the uniqueness constraints
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            for ( int i = 0; i < constraintLabels.size(); i++ )
+            {
+                Label label = constraintLabels.get( i );
+                String[] propertyKeys = constraintPropertyKeys.get( i );
+                Set<ValueTuple> entries = new HashSet<>();
+                try ( ResourceIterator<Node> nodesWithLabel = tx.findNodes( label ) )
+                {
+                    while ( nodesWithLabel.hasNext() )
+                    {
+                        Node node = nodesWithLabel.next();
+                        Map<String,Object> properties = node.getProperties( propertyKeys );
+                        if ( properties.size() == propertyKeys.length )
+                        {
+                            Object[] values = new Object[propertyKeys.length];
+                            for ( int v = 0; v < propertyKeys.length; v++ )
+                            {
+                                String key = propertyKeys[v];
+                                values[v] = properties.get( key );
+                            }
+                            assertThat( entries.add( ValueTuple.of( values ) ) ).isTrue();
+                        }
+                    }
+                }
+            }
+            tx.commit();
         }
     }
 
