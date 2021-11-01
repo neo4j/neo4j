@@ -618,11 +618,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                     .build();
 
     @Internal
-    @Description( "Ignore store id validation during recovery" )
-    public static final Setting<Boolean> recovery_ignore_store_id_validation =
-            newBuilder( "unsupported.dbms.recovery.ignore_store_id_validation", BOOL, false ).build();
-
-    @Internal
     @Description( "Track heap memory allocations for transactions" )
     public static final Setting<Boolean> enable_transaction_heap_allocation_tracking =
             newBuilder( "unsupported.dbms.enable_transaction_heap_allocation_tracking", BOOL, false ).build();

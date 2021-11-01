@@ -528,7 +528,7 @@ public final class Recovery
                 .build();
 
         boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
-        validateStoreId( logFiles, storageEngine.getStoreId(), config );
+        validateStoreId( logFiles, storageEngine.getStoreId() );
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
@@ -584,18 +584,15 @@ public final class Recovery
         return DatabaseIdFactory.from( databaseLayout.getDatabaseName(), uuid );
     }
 
-    public static void validateStoreId( LogFiles logFiles, StoreId storeId, Config config )
+    public static void validateStoreId( LogFiles logFiles, StoreId storeId )
     {
-        if ( !config.get( GraphDatabaseInternalSettings.recovery_ignore_store_id_validation ) )
+        StoreId txStoreId = logFiles.getTailInformation().lastStoreId;
+        if ( !StoreId.UNKNOWN.equals( txStoreId ) )
         {
-            StoreId txStoreId = logFiles.getTailInformation().lastStoreId;
-            if ( !StoreId.UNKNOWN.equals( txStoreId ) )
+            if ( !storeId.equalsIgnoringVersion( txStoreId ) )
             {
-                if ( !storeId.equalsIgnoringVersion( txStoreId ) )
-                {
-                    throw new RuntimeException( "Mismatching store id. Store StoreId: " + storeId +
-                            ". Transaction log StoreId: " + txStoreId );
-                }
+                throw new RuntimeException( "Mismatching store id. Store StoreId: " + storeId +
+                        ". Transaction log StoreId: " + txStoreId );
             }
         }
     }

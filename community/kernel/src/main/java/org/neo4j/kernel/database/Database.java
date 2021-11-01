@@ -43,10 +43,10 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
@@ -642,7 +642,7 @@ public class Database extends LifecycleAdapter
     {
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( STORE_ID_VALIDATOR_TAG ) ) )
         {
-            validateStoreId( logFiles, storageEngineFactory.storeId( fs, databaseLayout, databasePageCache, cursorContext ), databaseConfig );
+            validateStoreId( logFiles, storageEngineFactory.storeId( fs, databaseLayout, databasePageCache, cursorContext ) );
         }
     }
 
