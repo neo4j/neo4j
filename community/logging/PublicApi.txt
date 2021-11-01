@@ -33,7 +33,7 @@ org.neo4j.logging.Log::warnLogger() org.neo4j.logging.Logger public abstract
 org.neo4j.logging.LogProvider public abstract interface
 org.neo4j.logging.LogProvider::getLog(java.lang.Class<?>) org.neo4j.logging.Log public abstract
 org.neo4j.logging.LogProvider::getLog(java.lang.String) org.neo4j.logging.Log public abstract
-org.neo4j.logging.LogTimeZone public enum extends java.lang.Enum<org.neo4j.logging.LogTimeZone>
+org.neo4j.logging.LogTimeZone public sealed enum extends java.lang.Enum<org.neo4j.logging.LogTimeZone>
 org.neo4j.logging.LogTimeZone::SYSTEM org.neo4j.logging.LogTimeZone public static final
 org.neo4j.logging.LogTimeZone::UTC org.neo4j.logging.LogTimeZone public static final
 org.neo4j.logging.LogTimeZone::getZoneId() java.time.ZoneId public abstract

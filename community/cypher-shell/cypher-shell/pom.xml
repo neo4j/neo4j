@@ -234,7 +234,7 @@
                         </goals>
                         <configuration>
                             <finalName>cypher-shell-distribution-${project.version}</finalName>
-                            <minimizeJar>true</minimizeJar>
+                            <minimizeJar>false</minimizeJar>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.neo4j.shell.Main</mainClass>

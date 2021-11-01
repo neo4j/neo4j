@@ -210,16 +210,6 @@ org.neo4j.graphdb.Relationship::isType(org.neo4j.graphdb.RelationshipType) boole
 org.neo4j.graphdb.RelationshipType public abstract interface
 org.neo4j.graphdb.RelationshipType::name() java.lang.String public abstract
 org.neo4j.graphdb.RelationshipType::withName(java.lang.String) org.neo4j.graphdb.RelationshipType public static
-org.neo4j.graphdb.Resource public abstract interface implements java.lang.AutoCloseable
-org.neo4j.graphdb.Resource::EMPTY org.neo4j.graphdb.Resource public static final
-org.neo4j.graphdb.Resource::close() void public abstract
-org.neo4j.graphdb.ResourceIterable<T extends java.lang.Object> public abstract interface implements java.lang.Iterable<T>
-org.neo4j.graphdb.ResourceIterable<T>::iterator() org.neo4j.graphdb.ResourceIterator<T> public abstract
-org.neo4j.graphdb.ResourceIterable<T>::stream() java.util.stream.Stream<T> public default
-org.neo4j.graphdb.ResourceIterator<T extends java.lang.Object> public abstract interface implements java.util.Iterator<T>, org.neo4j.graphdb.Resource
-org.neo4j.graphdb.ResourceIterator<T>::<R extends java.lang.Object>map(java.util.function.Function<T,R>) org.neo4j.graphdb.ResourceIterator<R> public default
-org.neo4j.graphdb.ResourceIterator<T>::close() void public abstract
-org.neo4j.graphdb.ResourceIterator<T>::stream() java.util.stream.Stream<T> public default
 org.neo4j.graphdb.Result public abstract interface implements org.neo4j.graphdb.ResourceIterator<java.util.Map<java.lang.String,java.lang.Object>>
 org.neo4j.graphdb.Result.ResultRow public abstract static interface
 org.neo4j.graphdb.Result.ResultRow::get(java.lang.String) java.lang.Object public abstract

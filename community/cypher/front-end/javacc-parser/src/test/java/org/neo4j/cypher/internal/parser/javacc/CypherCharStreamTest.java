@@ -61,7 +61,7 @@ public class CypherCharStreamTest
         // java allows multiple u's in encoded unicode characters
         // see: The Java Language Specification
         //      James Gosling, Bill Joy, Guy Steele, Gilad Bracha
-        CypherCharStream x = new CypherCharStream( "a\uD83D\\uD83D\\uuuuD83D" );
+        CypherCharStream x = new CypherCharStream( "a" + '\uD83D' + "\\uD83D\\uuuuD83D" );
 
         assertEquals( 'a', x.readChar() );
         assertEquals( '\uD83D', x.readChar() );

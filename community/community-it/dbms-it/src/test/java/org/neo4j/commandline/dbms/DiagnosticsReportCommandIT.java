@@ -167,7 +167,7 @@ class DiagnosticsReportCommandIT
         Path[] files = FileUtils.listPaths( reports );
         assertThat( files.length ).isEqualTo( 1 );
 
-        try ( FileSystem fileSystem = FileSystems.newFileSystem( files[0], null ) )
+        try ( FileSystem fileSystem = FileSystems.newFileSystem( files[0] ) )
         {
             Path logsDir = fileSystem.getPath( "logs" );
             assertTrue( Files.exists( logsDir.resolve( "debug.log" ) ) );
