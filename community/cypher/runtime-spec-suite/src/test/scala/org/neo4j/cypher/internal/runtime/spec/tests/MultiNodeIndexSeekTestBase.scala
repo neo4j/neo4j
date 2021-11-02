@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -29,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
+import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
@@ -1705,6 +1707,34 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("m").withRows(expected).withStatistics(nodesDeleted = size/10)
     tx.getAllNodes.stream().count() shouldBe size * 0.9
+  }
+
+  test("should not create too many nodes after a multi node index seek") {
+    //NOTE: using sizeHint here can make the tx state unnecessarily big
+    val size = 100
+    nodeIndex("L", "prop")
+    val nodes = given {
+      nodePropertyGraph(size, { case i => Map("prop" -> i) }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .nonFuseable()
+      .unwind(s"range(1, 10) AS r")
+      .create(createNode("o", "A", "B", "C"))
+      .multiNodeIndexSeekOperator(
+        _.nodeIndexSeek("n:L(prop IN ???)", paramExpr = Some(listOf((0 until 10).map(i => literalInt(i)):_*))),
+        _.nodeIndexSeek("m:L(prop IN ???)", paramExpr = Some(listOf((10 until 20).map(i => literalInt(i)):_*))))
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val expected = nodes.take(10).flatMap(r => Seq.fill(10 /*m:L seek*/ * 10 /*range() r*/)(r))
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(expected))
+      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
   }
 
 }
