@@ -3090,48 +3090,6 @@
     "enterpriseOnly": true
   },
   {
-    "name": "dbms.scheduler.profile",
-    "description": "Begin profiling all threads within the given job group, for the specified duration. Note that profiling incurs overhead to a system, and will slow it down.",
-    "mode": "DBMS",
-    "worksOnSystem": true,
-    "signature": "dbms.scheduler.profile(method :: STRING?, group :: STRING?, duration :: STRING?) :: (profile :: STRING?)",
-    "argumentDescription": [
-      {
-        "name": "method",
-        "description": "method :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "group",
-        "description": "group :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "duration",
-        "description": "duration :: STRING?",
-        "type": "STRING?"
-      }
-    ],
-    "returnDescription": [
-      {
-        "name": "profile",
-        "description": "profile :: STRING?",
-        "type": "STRING?"
-      }
-    ],
-    "admin": true,
-    "rolesExecution": [
-      "admin"
-    ],
-    "rolesBoostedExecution": [
-      "admin"
-    ],
-    "option": {
-      "deprecated": false
-    },
-    "enterpriseOnly": true
-  },
-  {
     "name": "dbms.security.activateUser",
     "description": "Activate a suspended user.",
     "mode": "WRITE",

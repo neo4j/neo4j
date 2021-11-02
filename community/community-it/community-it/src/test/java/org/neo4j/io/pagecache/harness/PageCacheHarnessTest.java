@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.harness;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.nio.file.Path;
@@ -37,9 +36,7 @@ import org.neo4j.io.pagecache.randomharness.Phase;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 import org.neo4j.io.pagecache.randomharness.RecordFormat;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
-import org.neo4j.resources.Profiler;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.ProfilerExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -60,14 +57,10 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @TestDirectoryExtension
 @ResourceLock( SHARED_RESOURCE )
-@ExtendWith( ProfilerExtension.class )
 abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     @Inject
     public TestDirectory directory;
-
-    @Inject
-    private Profiler profiler;
 
     @RepeatedTest( 10 )
     void readsAndWritesMustBeMutuallyConsistent() throws Exception
@@ -103,7 +96,6 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setRecordFormat( recordFormat );
             harness.setFileSystem( fs );
             harness.setBasePath( directory.directory( "concurrentPageFaultingMustNotPutInterleavedDataIntoPages" ) );
-            harness.useProfiler( profiler );
             harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
             harness.setPreparation( ( cache, fs, filesTouched ) ->
             {

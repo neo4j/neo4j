@@ -27,8 +27,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.neo4j.resources.Profiler;
-
 class TraceableJobExecutionScheduler extends JobSchedulerExtension
 {
     @Override
@@ -166,12 +164,6 @@ class TraceableJobExecutionScheduler extends JobSchedulerExtension
         public Stream<ActiveGroup> activeGroups()
         {
             return originalScheduler.activeGroups();
-        }
-
-        @Override
-        public void profileGroup( Group group, Profiler profiler )
-        {
-            originalScheduler.profileGroup( group, profiler );
         }
 
         @Override

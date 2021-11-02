@@ -23,8 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +39,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
@@ -464,31 +461,6 @@ class CentralJobSchedulerTest
         scheduler.schedule( Group.CHECKPOINT, NOT_MONITORED, firstLatch::release );
         firstLatch.await();
         assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups().map( ag -> ag.group ).collect( toList() ) );
-    }
-
-    @Timeout( value = 20, unit = SECONDS )
-    @Test
-    void shouldProfileGroup() throws InterruptedException
-    {
-        life.start();
-        BinaryLatch checkpointLatch = new BinaryLatch();
-        scheduler.schedule( Group.CHECKPOINT, NOT_MONITORED, checkpointLatch::await );
-        Profiler profiler = Profiler.profiler();
-        scheduler.profileGroup( Group.CHECKPOINT, profiler );
-
-        String printedProfile;
-        do
-        {
-            ByteArrayOutputStream bufferOut = new ByteArrayOutputStream();
-            PrintStream out = new PrintStream( bufferOut );
-            profiler.printProfile( out, "Test Title" );
-            out.flush();
-            printedProfile = bufferOut.toString();
-        }
-        while ( !printedProfile.contains( "BinaryLatch.await" ) );
-
-        checkpointLatch.release();
-        profiler.finish();
     }
 
     @Test

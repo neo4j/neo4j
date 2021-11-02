@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.impl.scheduler.ThreadPool.ThreadPoolParameters;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.scheduler.CallableExecutorService;
@@ -218,16 +217,6 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
             }
         } );
         return groups.stream();
-    }
-
-    @Override
-    public void profileGroup( Group group, Profiler profiler )
-    {
-        if ( !pools.isStarted( group ) )
-        {
-            return; // Don't bother profiling groups that hasn't been started.
-        }
-        getThreadPool( group ).activeThreads().forEach( profiler::profile );
     }
 
     @Override

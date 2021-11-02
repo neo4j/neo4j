@@ -250,9 +250,6 @@ public interface ProcedureITBase
                                 "totalPoolMemory :: STRING?, totalPoolMemoryBytes :: STRING?)",
                         "List all memory pools, including sub pools, currently registered at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.scheduler.profile", "(method :: STRING?, group :: STRING?, duration :: STRING?) :: (profile :: STRING?)",
-                        "Begin profiling all threads within the given job group, for the specified duration. Note that profiling incurs" +
-                                " overhead to a system, and will slow it down.", stringArray( "admin" ), "DBMS" ),
                 proc( "db.createNodeKey",
                         "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, " +
                         "config = {} :: MAP?) " +

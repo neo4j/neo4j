@@ -22,39 +22,32 @@ package org.neo4j.io.pagecache.randomharness;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.resources.Profiler;
-
 class PlanRunner implements Callable<Void>
 {
     private final Plan plan;
     private final AtomicBoolean stopSignal;
-    private final Profiler profiler;
 
-    PlanRunner( Plan plan, AtomicBoolean stopSignal, Profiler profiler )
+    PlanRunner( Plan plan, AtomicBoolean stopSignal )
     {
         this.plan = plan;
         this.stopSignal = stopSignal;
-        this.profiler = profiler;
     }
 
     @Override
     public Void call() throws Exception
     {
-        try ( Profiler.ProfiledInterval profilingRun = profiler.profile() )
+        Action action = plan.next();
+        while ( action != null && !stopSignal.get() )
         {
-            Action action = plan.next();
-            while ( action != null && !stopSignal.get() )
+            try
             {
-                try
-                {
-                    action.perform();
-                }
-                catch ( Exception ignore )
-                {
-                }
-                action = plan.next();
+                action.perform();
             }
-            return null;
+            catch ( Exception ignore )
+            {
+            }
+            action = plan.next();
         }
+        return null;
     }
 }

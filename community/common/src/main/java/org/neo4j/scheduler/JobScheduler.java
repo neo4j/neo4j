@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.resources.Profiler;
 
 /**
  * To be expanded, the idea here is to have a database-global service for running jobs, handling jobs crashing and so
@@ -121,13 +120,6 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
      * @return all active groups.
      */
     Stream<ActiveGroup> activeGroups();
-
-    /**
-     * Initiate profiling of all threads within the given group, using the given profiler.
-     * @param group the group with all the threads to profile.
-     * @param profiler the profiler to use.
-     */
-    void profileGroup( Group group, Profiler profiler );
 
     /**
      *  Returns information about jobs that are registered in the scheduler (submitted but not completed yet)

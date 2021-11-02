@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.scheduler.FailedJobRun;
@@ -155,11 +154,6 @@ public class CountingJobScheduler implements JobScheduler
     public Stream<ActiveGroup> activeGroups()
     {
         return delegate.activeGroups();
-    }
-
-    @Override
-    public void profileGroup( Group group, Profiler profiler )
-    {
     }
 
     @Override

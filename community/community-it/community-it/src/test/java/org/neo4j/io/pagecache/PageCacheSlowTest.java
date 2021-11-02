@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -44,9 +43,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
-import org.neo4j.resources.Profiler;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.ProfilerExtension;
 
 import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,12 +57,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.io.pagecache.tracing.linear.LinearHistoryTracerFactory.pageCacheTracer;
 
-@ExtendWith( ProfilerExtension.class )
 public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
-    @Inject
-    Profiler profiler;
-
     private static class UpdateResult
     {
         final int threadId;
@@ -103,7 +95,6 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         @Override
         public UpdateResult call() throws Exception
         {
-            profiler.profile();
             ThreadLocalRandom rng = ThreadLocalRandom.current();
 
             while ( !shouldStop.get() )
@@ -158,8 +149,6 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             getPageCache( fs, cachePages, PageCacheTracer.NULL );
             try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize, DEFAULT_DATABASE_NAME ) )
             {
-                profiler.profile();
-
                 ensureAllPagesExists( filePages, pagedFile );
 
                 List<Future<UpdateResult>> futures = new ArrayList<>();
@@ -308,7 +297,6 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             getPageCache( fs, cachePages, PageCacheTracer.NULL );
             try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize, DEFAULT_DATABASE_NAME ) )
             {
-                profiler.profile();
 
                 ensureAllPagesExists( filePages, pagedFile );
 
@@ -399,7 +387,6 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
 
             getPageCache( fs, maxPages, PageCacheTracer.NULL );
-            profiler.profile();
 
             final PagedFile pf = pageCache.map( file, filePageSize, DEFAULT_DATABASE_NAME );
             final CountDownLatch hasLockLatch = new CountDownLatch( 1 );
@@ -410,7 +397,6 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
             executor.submit( () ->
             {
-                profiler.profile();
                 try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
                     cursor.next();
@@ -424,7 +410,6 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
             Future<Object> takeLockFuture = executor.submit( () ->
             {
-                profiler.profile();
                 try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
                     cursor.next();
@@ -436,7 +421,6 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
             Future<Object> closeFuture = executor.submit( () ->
             {
-                profiler.profile();
                 pf.close();
                 doneCloseSignal.set( true );
                 return null;
@@ -522,7 +506,6 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                   PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1, DEFAULT_DATABASE_NAME ) )
             {
                 adversary.setProbabilityFactor( 1.0 );
-                profiler.profile();
 
                 for ( int i = 0; i < 1000; i++ )
                 {
@@ -647,7 +630,6 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     {
         assumeTrue( fs instanceof EphemeralFileSystemAbstraction, "This test is file system agnostic, and too slow on a real file system" );
         configureStandardPageCache();
-        profiler.profile();
 
         Path file = file( "a" );
         int iterations = Short.MAX_VALUE * 3;
