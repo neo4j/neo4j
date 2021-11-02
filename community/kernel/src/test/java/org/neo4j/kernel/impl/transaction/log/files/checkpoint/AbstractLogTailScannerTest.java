@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,11 +29,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -40,15 +43,14 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -58,19 +60,20 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
-import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.InlinedLogTailScanner.NO_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
-abstract class AbstractLogTailScannerTest
+class DetachedLogTailScannerTest
 {
     @Inject
     protected FileSystemAbstraction fs;
@@ -79,9 +82,6 @@ abstract class AbstractLogTailScannerTest
     @Inject
     protected DatabaseLayout databaseLayout;
 
-    private final LogEntryReader reader = logEntryReader();
-
-    private final Monitors monitors = new Monitors();
     protected LogFiles logFiles;
     protected AssertableLogProvider logProvider;
     protected LogVersionRepository logVersionRepository;
@@ -104,10 +104,55 @@ abstract class AbstractLogTailScannerTest
         logFiles = createLogFiles();
     }
 
-    protected abstract LogFiles createLogFiles() throws IOException;
+    LogFiles createLogFiles() throws IOException
+    {
+        return LogFilesBuilder
+                .activeFilesBuilder( databaseLayout, fs, pageCache )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .withLogProvider( logProvider )
+                .withConfig( Config.defaults( fail_on_corrupted_log_files, false ) )
+                .build();
+    }
 
-    protected abstract void writeCheckpoint( LogEntryWriter transactionLogWriter, CheckpointFile separateCheckpointFile, LogPosition logPosition )
-            throws IOException;
+    void writeCheckpoint( LogEntryWriter transactionLogWriter, CheckpointFile separateCheckpointFile, LogPosition logPosition ) throws IOException
+    {
+        separateCheckpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "test" );
+    }
+
+    @Test
+    void includeWrongPositionInException() throws Exception
+    {
+        logFiles = LogFilesBuilder
+                .activeFilesBuilder( databaseLayout, fs, pageCache )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .withLogProvider( logProvider )
+                .withConfig( Config.defaults( fail_on_corrupted_log_files, true ) )
+                .build();
+
+        long txId = 6;
+        PositionEntry position = position();
+        setupLogFiles( 10,
+                logFile( start(), commit( txId - 1 ), position ),
+                logFile( checkPoint( position ) ),
+                logFile( start(), commit( txId ) ) );
+
+        // remove all tx log files
+        Path[] matchedFiles = logFiles.getLogFile().getMatchedFiles();
+        for ( Path matchedFile : matchedFiles )
+        {
+            fs.delete( matchedFile );
+        }
+
+        var e = assertThrows( RuntimeException.class, () -> logFiles.getTailInformation() );
+        Assertions.assertThat( e ).getRootCause().hasMessageContaining( "LogPosition{logVersion=8," ).hasMessageContaining(
+                "checkpoint does not point to a valid location in transaction logs." );
+    }
 
     @Test
     void detectMissingLogFiles()
@@ -281,23 +326,6 @@ abstract class AbstractLogTailScannerTest
 
         // then
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void bigFileLatestCheckpointFindsStartAfter( int startLogVersion, int endLogVersion ) throws IOException
-    {
-        long firstTxAfterCheckpoint = Integer.MAX_VALUE + 4L;
-
-        InlinedLogTailScanner tailScanner =
-            new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, reader, monitors );
-        LogEntryStart startEntry = new LogEntryStart( 3L, 4L, 0, new byte[]{5, 6},
-            new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
-        CheckpointInfo checkPoint = new CheckpointInfo( new LogPosition( endLogVersion, 16L ), StoreId.UNKNOWN, LogPosition.UNSPECIFIED );
-        LogTailInformation logTailInformation = tailScanner.checkpointTailInformation( endLogVersion, startEntry,
-            endLogVersion, (byte) -1, checkPoint, false, StoreId.UNKNOWN );
-
-        assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, false, logTailInformation );
     }
 
     @ParameterizedTest
@@ -643,22 +671,5 @@ abstract class AbstractLogTailScannerTest
             assertEquals( firstTxIdAfterLastCheckPoint, logTailInformation.firstTxIdAfterLastCheckPoint );
         }
         assertEquals( filesNotFound, logTailInformation.filesNotFound );
-    }
-
-    private static class FirstTxIdConfigurableTailScanner extends InlinedLogTailScanner
-    {
-        private final long txId;
-
-        FirstTxIdConfigurableTailScanner( long txId, LogFiles logFiles, LogEntryReader logEntryReader, Monitors monitors )
-        {
-            super( logFiles, logEntryReader, monitors, false, INSTANCE );
-            this.txId = txId;
-        }
-
-        @Override
-        protected ExtractedTransactionRecord extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion )
-        {
-            return new ExtractedTransactionRecord( txId );
-        }
     }
 }

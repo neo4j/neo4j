@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryInlinedCheckPoint;
 import org.neo4j.storageengine.api.StoreId;
 
 public class CheckpointInfo
@@ -29,11 +28,6 @@ public class CheckpointInfo
     private final LogPosition transactionLogPosition;
     private final LogPosition checkpointEntryPosition;
     private final StoreId storeId;
-
-    public CheckpointInfo( LogEntryInlinedCheckPoint checkpoint, StoreId storeId, LogPosition checkpointEntryPosition )
-    {
-        this( checkpoint.getLogPosition(), storeId, checkpointEntryPosition );
-    }
 
     public CheckpointInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition )
     {

@@ -24,8 +24,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -283,9 +281,8 @@ class TransactionLogsRecoveryTest
         }
     }
 
-    @ParameterizedTest( name = "{0}" )
-    @CsvSource( {"separateCheckpoints,true", "legacyCheckpoints,false"} )
-    void shouldSeeThatACleanDatabaseShouldNotRequireRecovery( String name, boolean useSeparateLogFiles ) throws Exception
+    @Test
+    void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
     {
         Path file = logFiles.getLogFile().getLogFileForVersion( logVersion );
 
@@ -302,18 +299,11 @@ class TransactionLogsRecoveryTest
 
             // check point
             consumer.accept( marker );
-            if ( useSeparateLogFiles )
-            {
-                var checkpointFile = logFiles.getCheckpointFile();
-                var checkpointAppender = checkpointFile.getCheckpointAppender();
-                checkpointAppender.checkPoint( LogCheckPointEvent.NULL, marker.newPosition(), Instant.now(), "test" );
-            }
-            else
-            {
-                writer.writeLegacyCheckPointEntry( marker.newPosition() );
-            }
+            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointAppender = checkpointFile.getCheckpointAppender();
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, marker.newPosition(), Instant.now(), "test" );
             return true;
-        }, useSeparateLogFiles ? KernelVersion.LATEST : KernelVersion.V4_0 );
+        }, KernelVersion.LATEST );
 
         LifeSupport life = new LifeSupport();
         RecoveryMonitor monitor = mock( RecoveryMonitor.class );

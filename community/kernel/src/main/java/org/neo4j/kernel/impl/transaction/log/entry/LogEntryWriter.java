@@ -28,11 +28,9 @@ import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 
@@ -108,15 +106,6 @@ public class LogEntryWriter<T extends WritableChecksumChannel>
     public void serialize( StorageCommand command ) throws IOException
     {
         serializer.visit( command );
-    }
-
-    public void writeLegacyCheckPointEntry( LogPosition logPosition ) throws IOException
-    {
-        channel.beginChecksum();
-        writeLogEntryHeader( LEGACY_CHECK_POINT, channel );
-        channel.putLong( logPosition.getLogVersion() )
-                .putLong( logPosition.getByteOffset() );
-        channel.putChecksum();
     }
 
     public T getChannel()

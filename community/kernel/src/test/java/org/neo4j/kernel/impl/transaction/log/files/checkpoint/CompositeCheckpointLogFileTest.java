@@ -34,10 +34,8 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -72,7 +70,6 @@ class CompositeCheckpointLogFileTest
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
     private CheckpointFile checkpointFile;
-    private TransactionLogWriter transactionLogWriter;
     private LogFiles logFiles;
     private final FakeKernelVersionProvider versionProvider = new FakeKernelVersionProvider();
 
@@ -83,18 +80,6 @@ class CompositeCheckpointLogFileTest
         life.add( logFiles );
         life.start();
         checkpointFile = logFiles.getCheckpointFile();
-        transactionLogWriter = logFiles.getLogFile().getTransactionLogWriter();
-    }
-
-    @Test
-    void findLogTailShouldWorkForLegacyCheckpoints() throws IOException
-    {
-        LogPosition logPosition = new LogPosition( 0, 1 );
-        writeLegacyCheckpoint( logPosition );
-        logFiles.getLogFile().forceAfterAppend( LogAppendEvent.NULL );
-
-        CheckpointInfo lastCheckPoint = checkpointFile.getTailInformation().lastCheckPoint;
-        assertThat( lastCheckPoint.getTransactionLogPosition() ).isEqualTo( logPosition );
     }
 
     @Test
@@ -107,27 +92,8 @@ class CompositeCheckpointLogFileTest
     }
 
     @Test
-    void findLogTailShouldWorkForBothLegacyAndDetachedCheckpoints() throws IOException
+    void findLatestCheckpointShouldWorkForDetachedCheckpoints() throws IOException
     {
-        LogPosition logPosition = new LogPosition( 0, 1 );
-        writeLegacyCheckpoint( logPosition );
-        logFiles.getLogFile().forceAfterAppend( LogAppendEvent.NULL );
-        LogPosition logPosition2 = new LogPosition( logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE );
-        checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition2, Instant.now(), "detached" );
-
-        // Should find the detached checkpoints first
-        CheckpointInfo lastCheckPoint = checkpointFile.getTailInformation().lastCheckPoint;
-        assertThat( lastCheckPoint.getTransactionLogPosition() ).isEqualTo( logPosition2 );
-    }
-
-    @Test
-    void findLatestCheckpointShouldWorkForBothLegacyAndDetachedCheckpoints() throws IOException
-    {
-        LogPosition logPosition = new LogPosition( 0, 1 );
-        writeLegacyCheckpoint( logPosition );
-        logFiles.getLogFile().forceAfterAppend( LogAppendEvent.NULL );
-        assertThat( checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition() ).isEqualTo( logPosition );
-
         // Should find the detached checkpoint first
         LogPosition logPosition2 = new LogPosition( logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE );
         checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition2, Instant.now(), "detached" );
@@ -135,34 +101,25 @@ class CompositeCheckpointLogFileTest
     }
 
     @Test
-    void shouldFindReachableCheckpointsForBothLegacyAndDetachedCheckpoints() throws IOException
+    void shouldFindReachableCheckpointsForDetachedCheckpoints() throws IOException
     {
         assertThat( checkpointFile.reachableCheckpoints() ).isEmpty();
         assertThat( checkpointFile.getReachableDetachedCheckpoints() ).isEmpty();
 
-        // Add legacy checkpoints
-        LogPosition logPosition = new LogPosition( 0, 1 );
-        LogPosition logPosition2 = new LogPosition( 0, 2 );
-        writeLegacyCheckpoint( logPosition );
-        writeLegacyCheckpoint( logPosition2 );
-        logFiles.getLogFile().forceAfterAppend( LogAppendEvent.NULL );
-
         // Add detached checkpoints
-        LogPosition logPosition3 = new LogPosition( 0, 3 );
-        LogPosition logPosition4 = new LogPosition( 0, 4 );
-        checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition3, Instant.now(), "detached" );
-        checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition4, Instant.now(), "detached" );
+        LogPosition logPosition = new LogPosition( 0, 3 );
+        LogPosition logPosition1 = new LogPosition( 0, 4 );
+        checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition, Instant.now(), "detached" );
+        checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition1, Instant.now(), "detached" );
 
         List<CheckpointInfo> reachableCheckpoints = checkpointFile.reachableCheckpoints();
-        assertThat( reachableCheckpoints.size() ).isEqualTo( 4 );
+        assertThat( reachableCheckpoints.size() ).isEqualTo( 2 );
         assertThat( reachableCheckpoints.get( 0 ).getTransactionLogPosition() ).isEqualTo( logPosition );
-        assertThat( reachableCheckpoints.get( 1 ).getTransactionLogPosition() ).isEqualTo( logPosition2 );
-        assertThat( reachableCheckpoints.get( 2 ).getTransactionLogPosition() ).isEqualTo( logPosition3 );
-        assertThat( reachableCheckpoints.get( 3 ).getTransactionLogPosition() ).isEqualTo( logPosition4 );
+        assertThat( reachableCheckpoints.get( 1 ).getTransactionLogPosition() ).isEqualTo( logPosition1 );
         List<CheckpointInfo> detachedCheckpoints = checkpointFile.getReachableDetachedCheckpoints();
         assertThat( detachedCheckpoints.size() ).isEqualTo( 2 );
-        assertThat( detachedCheckpoints.get( 0 ).getTransactionLogPosition() ).isEqualTo( logPosition3 );
-        assertThat( detachedCheckpoints.get( 1 ).getTransactionLogPosition() ).isEqualTo( logPosition4 );
+        assertThat( detachedCheckpoints.get( 0 ).getTransactionLogPosition() ).isEqualTo( logPosition );
+        assertThat( detachedCheckpoints.get( 1 ).getTransactionLogPosition() ).isEqualTo( logPosition1 );
     }
 
     private LogFiles buildLogFiles() throws IOException
@@ -178,17 +135,7 @@ class CompositeCheckpointLogFileTest
                 .build();
     }
 
-    /**
-     * The legacy checkpoints must be written with a version they were supported in to be able to parse them later.
-     */
-    private void writeLegacyCheckpoint( LogPosition logPosition ) throws IOException
-    {
-        versionProvider.version = KernelVersion.V4_0;
-        transactionLogWriter.legacyCheckPoint( logPosition );
-        versionProvider.version = KernelVersion.LATEST;
-    }
-
-    private class FakeKernelVersionProvider implements KernelVersionRepository
+    private static class FakeKernelVersionProvider implements KernelVersionRepository
     {
         volatile KernelVersion version = KernelVersion.LATEST;
 

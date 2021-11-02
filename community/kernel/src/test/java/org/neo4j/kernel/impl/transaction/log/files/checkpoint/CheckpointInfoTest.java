@@ -24,26 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryInlinedCheckPoint;
 import org.neo4j.storageengine.api.StoreId;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 class CheckpointInfoTest
 {
-    @Test
-    void checkpointInfoOfLegacyCheckpointEntry()
-    {
-        var logPosition = new LogPosition( 0, 1 );
-        StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
-        LogPosition position = new LogPosition( 1, 2 );
-        var checkpointInfo = new CheckpointInfo( new LogEntryInlinedCheckPoint( logPosition ), storeId, position );
-
-        assertSame( logPosition, checkpointInfo.getTransactionLogPosition() );
-        assertSame( storeId, checkpointInfo.storeId() );
-        assertSame( position, checkpointInfo.getCheckpointEntryPosition() );
-    }
-
     @Test
     void checkpointInfoOfDetachedCheckpointEntry()
     {
