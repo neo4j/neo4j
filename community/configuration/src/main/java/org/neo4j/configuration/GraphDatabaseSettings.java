@@ -46,7 +46,7 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
-import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.OFF_HEAP;
+import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.ON_HEAP;
 import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
@@ -978,7 +978,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Defines whether memory for transaction state should be allocated on- or off-heap. " +
                   "Note that for small transactions you can gain up to 25% write speed by setting it to `ON_HEAP`." )
     public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation =
-            newBuilder( "dbms.tx_state.memory_allocation", ofEnum( TransactionStateMemoryAllocation.class ), OFF_HEAP ).build();
+            newBuilder( "dbms.tx_state.memory_allocation", ofEnum( TransactionStateMemoryAllocation.class ), ON_HEAP ).build();
 
     @Description( "The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory " +
             "shared across all active transactions. Zero means 'unlimited'. Used when dbms.tx_state.memory_allocation is set to 'OFF_HEAP'." )
