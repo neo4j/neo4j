@@ -34,8 +34,6 @@ import static java.lang.String.format;
 
 public abstract class StringValue extends TextValue
 {
-    private static final Pattern SPLIT_EMPTY = Pattern.compile( "(?!^)" );
-
     abstract String value();
 
     @Override
@@ -88,10 +86,21 @@ public abstract class StringValue extends TextValue
         }
         else if ( separator.isEmpty() )
         {
-            return VirtualValues.fromArray( Values.stringArray( SPLIT_EMPTY.split( asString ) ) );
+            return splitOnEmptySeparator( asString );
         }
 
         return splitNonRegex( asString, separator );
+    }
+
+    private ListValue splitOnEmptySeparator( String asString )
+    {
+        char[] charArray = asString.toCharArray();
+        String[] strArray = new String[charArray.length];
+        for ( int i = 0; i < charArray.length; i++ )
+        {
+            strArray[i] = String.valueOf( charArray[i] );
+        }
+        return VirtualValues.fromArray( Values.stringArray( strArray ) );
     }
 
     @Override
