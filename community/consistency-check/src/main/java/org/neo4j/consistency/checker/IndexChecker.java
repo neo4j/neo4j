@@ -49,6 +49,7 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.consistency.checker.RecordLoading.lightClear;
 import static org.neo4j.consistency.checker.RecordLoading.safeGetNodeLabels;
 import static org.neo4j.consistency.checker.SchemaComplianceChecker.valuesContainTextProperty;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class IndexChecker implements Checker
 {
@@ -301,7 +302,21 @@ public class IndexChecker implements Checker
                                 }
                                 else if ( !nodeShouldBeInIndex && nodeIsInIndex )
                                 {
-                                    getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor, new Object[0] );
+                                    // Fulltext indexes created before 4.3.0-drop02 can contain empty documents (added when the schema matched but the values
+                                    // were not text). The index still works with those empty documents present, so we don't want to report them as
+                                    // inconsistencies and force rebuilds.
+                                    // This utilizes the fact that countIndexedEntities in FulltextIndexReader with non-text values will ask
+                                    // about documents that doesn't contain those property keys - a document found by that query should be an empty
+                                    // document we just want to ignore.
+                                    Value[] noValues = new Value[indexPropertyKeys.length];
+                                    Arrays.fill( noValues, NO_VALUE );
+                                    long docsWithNoneOfProperties = indexAccessors.readers().reader( descriptor )
+                                            .countIndexedEntities( entityId, cursorContext, indexPropertyKeys, noValues );
+
+                                    if ( docsWithNoneOfProperties != 1 )
+                                    {
+                                        getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor, new Object[0] );
+                                    }
                                 }
                             }
                             else
