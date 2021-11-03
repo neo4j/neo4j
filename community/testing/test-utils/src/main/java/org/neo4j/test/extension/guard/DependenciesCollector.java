@@ -37,7 +37,7 @@ import static org.objectweb.asm.Type.getType;
 
 public class DependenciesCollector extends ClassVisitor
 {
-    private static final int API_VERSION = Opcodes.ASM7;
+    private static final int API_VERSION = Opcodes.ASM9;
     private final AnnotationVisitor annotationVisitor;
     private final MethodVisitor methodVisitor;
     private final FieldVisitor fieldVisitor;
