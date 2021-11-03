@@ -178,7 +178,7 @@ abstract class BootloaderOsAbstraction
     private void printBadRuntime()
     {
         ctx.err.println( "WARNING! You are using an unsupported Java runtime." );
-        ctx.err.println( "* Please use Oracle(R) Java(TM) 11, OpenJDK(TM) 11 to run Neo4j." );
+        ctx.err.println( "* Please use Oracle(R) Java(TM) 17, OpenJDK(TM) 17 to run Neo4j." );
         ctx.err.println( "* Please see https://neo4j.com/docs/ for Neo4j installation instructions." );
     }
 
@@ -190,7 +190,7 @@ abstract class BootloaderOsAbstraction
 
     private void checkJavaVersion()
     {
-        if ( ctx.version().feature() != 11 )
+        if ( ctx.version().feature() != 17 )
         {
             //too new java
             printBadRuntime();

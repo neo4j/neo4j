@@ -271,16 +271,16 @@ function Get-JavaVersion
     if ($result.exitCode -ne 0) {
       Write-Warning "Unable to determine Java Version"
       Write-Host $result.capturedOutput
-      return @{ 'isValid' = $true; 'isJava11' = $true }
+      return @{ 'isValid' = $true; 'isJava17' = $true }
     }
 
     if ($result.capturedOutput.Count -eq 0) {
       Write-Verbose "Java did not output version information"
       Write-Warning "Unable to determine Java Version"
-      return @{ 'isValid' = $true; 'isJava11' = $true }
+      return @{ 'isValid' = $true; 'isJava17' = $true }
     }
 
-    $javaHelpText = "* Please use Oracle(R) Java(TM) 11, OpenJDK(TM) 11 to run Neo4j Server.`n" +
+    $javaHelpText = "* Please use Oracle(R) Java(TM) 17, OpenJDK(TM) 17 to run Neo4j Server.`n" +
     "* Please see https://neo4j.com/docs/ for Neo4j installation instructions."
 
     # Read the contents of the redirected output
@@ -295,18 +295,18 @@ function Get-JavaVersion
     } else {
       Write-Verbose "Could not determine the Java Version"
       Write-Warning "Unable to determine Java Version"
-      return @{ 'isValid' = $true; 'isJava11' = $true }
+      return @{ 'isValid' = $true; 'isJava17' = $true }
     }
 
     # Check for Java Version Compatibility
-    # Anything less than Java 11 will block execution
-    if (($javaVersion -lt '11') -or ($javaVersion -match '^9')) {
+    # Anything less than Java 17 will block execution
+    if (($javaVersion -lt '17') -or ($javaVersion -match '^9')) {
       Write-Warning "ERROR! Neo4j cannot be started using java version $($javaVersion)"
       Write-Warning $javaHelpText
-      return @{ 'isValid' = $false; 'isJava11' = $false }
+      return @{ 'isValid' = $false; 'isJava17' = $false }
     }
-    # Anything less then 12 is some Java 11 version
-    $isJava11 = $javaVersion -lt '12'
+    # Anything less then 18 is some Java 17 version
+    $isJava17 = $javaVersion -lt '18'
 
     # Check for Java Edition
     $regex = '(Java HotSpot\(TM\)|OpenJDK|IBM) (64-Bit Server|Server) VM'
@@ -315,7 +315,7 @@ function Get-JavaVersion
       Write-Warning $javaHelpText
     }
 
-    Write-Output @{ 'isValid' = $true; 'isJava11' = $isJava11 }
+    Write-Output @{ 'isValid' = $true; 'isJava17' = $isJava17 }
   }
 }
 
