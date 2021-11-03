@@ -98,6 +98,13 @@
       -XX:FlightRecorderOptions=stackdepth=256
       -XX:+UnlockDiagnosticVMOptions
       -XX:+DebugNonSafepoints
+      --add-opens java.base/java.lang=ALL-UNNAMED
+      --add-opens java.base/java.nio=ALL-UNNAMED
+      --add-opens java.base/java.io=ALL-UNNAMED
+      --add-opens java.base/java.util=ALL-UNNAMED
+      --add-opens java.base/java.util.concurrent=ALL-UNNAMED
+      --add-opens java.base/sun.net.www.protocol.http=ALL-UNNAMED
+      --add-opens java.base/sun.nio.ch=ALL-UNNAMED
       ${jdk.custom.options}
       ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
@@ -845,25 +852,6 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>java16AndLater</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <jdk>[16, )</jdk>
-      </activation>
-      <properties>
-        <jdk.custom.options>
-          --add-opens java.base/java.lang=ALL-UNNAMED
-          --add-opens java.base/java.nio=ALL-UNNAMED
-          --add-opens java.base/java.io=ALL-UNNAMED
-          --add-opens java.base/java.util=ALL-UNNAMED
-          --add-opens java.base/java.util.concurrent=ALL-UNNAMED
-          --add-opens java.base/sun.net.www.protocol.http=ALL-UNNAMED
-          --add-opens java.base/sun.nio.ch=ALL-UNNAMED
-        </jdk.custom.options>
-      </properties>
-    </profile>
-
     <profile>
       <id>errorprone</id>
       <activation>
