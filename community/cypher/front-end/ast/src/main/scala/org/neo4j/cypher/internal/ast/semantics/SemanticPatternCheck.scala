@@ -91,9 +91,9 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def checkRelationshipPatternPredicates(ctx: SemanticContext, pattern: RelationshipPattern): SemanticCheck =
     pattern.predicate.foldSemanticCheck { predicate =>
       when (ctx != SemanticContext.Match) {
-        error(s"WHERE clauses in relationship patterns are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension", predicate.position)
+        error(s"Relationship pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension", predicate.position)
       } chain pattern.length.foldSemanticCheck{ _ =>
-        error("WHERE clauses are not allowed in a variable-length relationship pattern", predicate.position)
+        error("Relationship pattern predicates are not allowed when a path length is specified", predicate.position)
       } ifOkChain withScopedState {
         declareVariables(ctx, pattern) chain
           Where.checkExpression(predicate)

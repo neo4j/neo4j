@@ -594,7 +594,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
-      "WHERE clauses are not allowed in a variable-length relationship pattern"
+      "Relationship pattern predicates are not allowed when a path length is specified"
     )
   }
 
@@ -618,7 +618,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
-      "WHERE clauses in relationship patterns are not allowed in CREATE, but only in MATCH clause or inside a pattern comprehension"
+      "Relationship pattern predicates are not allowed in CREATE, but only in MATCH clause or inside a pattern comprehension"
     )
   }
 
@@ -630,7 +630,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
-      "WHERE clauses in relationship patterns are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension"
+      "Relationship pattern predicates are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension"
     )
   }
 
@@ -666,7 +666,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     pipeline.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
-      "WHERE clauses in relationship patterns are not allowed in expression, but only in MATCH clause or inside a pattern comprehension"
+      "Relationship pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension"
     )
   }
 

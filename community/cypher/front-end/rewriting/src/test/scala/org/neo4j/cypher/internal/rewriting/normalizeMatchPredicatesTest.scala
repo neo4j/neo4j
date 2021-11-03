@@ -200,4 +200,10 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
       "MATCH (n)-[r WHERE r.prop > 123]->() RETURN r",
       "MATCH (n)-[r]->() WHERE r.prop > 123 RETURN r")
   }
+
+  test("move relationship pattern predicates from multiple relationships to WHERE") {
+    assertRewrite(
+      "MATCH (n)-[r WHERE r.prop > 123]->()-[s WHERE s.otherProp = \"ok\"]-() RETURN r",
+      "MATCH (n)-[r]->()-[s]-() WHERE r.prop > 123 AND s.otherProp = \"ok\" RETURN r")
+  }
 }
