@@ -84,7 +84,6 @@
       -XX:+HeapDumpOnOutOfMemoryError
       -XX:+ExitOnOutOfMemoryError
       -XX:MaxInlineLevel=15
-      -XX:-UseBiasedLocking
       -Djdk.nio.maxCachedBufferSize=262144
       -Dlog4j2.disable.jmx=true
       -Dio.netty.tryReflectionSetAccessible=true
