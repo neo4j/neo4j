@@ -398,4 +398,13 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   test("RETURN exists((n {prop: 'test'} WHERE n.otherProp = 123)-->(end WHERE end.prop = 42)) AS result") {
     assertSameAST(testName)
   }
+
+  test("MATCH (WHERE {prop: 123})") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (:Label {prop: 123} WHERE 2 > 1)") {
+    assertJavaCCExceptionStart(testName, "Invalid input 'WHERE'")
+    assertSameAST(testName)
+  }
 }

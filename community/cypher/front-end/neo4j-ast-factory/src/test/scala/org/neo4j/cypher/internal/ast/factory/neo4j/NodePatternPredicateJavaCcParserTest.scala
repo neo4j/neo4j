@@ -95,6 +95,22 @@ class NodePatternPredicateJavaCcParserTest extends CypherFunSuite with TestName 
     )
   }
 
+  test("MATCH (WHERE {prop: 123})") {
+    parseNodePatterns(testName) shouldBe Seq(
+      NodePattern(
+        Some(varFor("WHERE")),
+        Seq.empty,
+        Some(mapOf("prop" -> literal(123))),
+        None
+      )(pos)
+    )
+  }
+
+  test("MATCH (:Label {prop: 123} WHERE 2 > 1)") {
+    val e = the[Exception] thrownBy parseNodePatterns(testName)
+    e.getMessage should include("Invalid input 'WHERE'")
+  }
+
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 
   private def parseNodePatterns(query: String): Seq[NodePattern] = {
