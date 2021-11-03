@@ -26,6 +26,11 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.internal.helpers.collection.Iterables
+import org.neo4j.lock.LockType.EXCLUSIVE
+import org.neo4j.lock.LockType.SHARED
+import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
+import org.neo4j.lock.ResourceTypes.LABEL
+import org.neo4j.lock.ResourceTypes.NODE
 
 abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
@@ -393,5 +398,53 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withSingleRow(nodes.head)
       .withStatistics(propertiesSet = 2)
+  }
+
+  test("should not take exclusive lock if value not changing") {
+    // given a single node
+    given {
+      uniqueIndex("L", "prop")
+      nodePropertyGraph(1, {case _ => Map("prop" -> 1)}, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1", "p2")
+      .projection("n.prop as p1", "n.other as p2")
+      .setNodeProperties("n", ("other", "n.prop"), ("prop", "n.prop"))
+      .nodeIndexOperator("n:L(prop = 1)", unique = true)
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("p1", "p2")
+      .withSingleRow(1, 1)
+      .withStatistics(propertiesSet = 2)
+      .withLocks((EXCLUSIVE, NODE), (SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test("should take exclusive lock if value changing") {
+    // given a single node
+    given {
+      uniqueIndex("L", "prop")
+      nodePropertyGraph(1, {case _ => Map("prop" -> 1)}, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1", "p2")
+      .projection("n.prop as p1", "n.other as p2")
+      .setNodeProperties("n", ("other", "n.prop + 1"), ("prop", "n.prop + 1"))
+      .nodeIndexOperator("n:L(prop = 1)", unique = true)
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("p1", "p2")
+      .withSingleRow(2, 2)
+      .withStatistics(propertiesSet = 2)
+      .withLocks((EXCLUSIVE, NODE), (EXCLUSIVE, INDEX_ENTRY), (SHARED, INDEX_ENTRY), (SHARED, LABEL))
   }
 }
