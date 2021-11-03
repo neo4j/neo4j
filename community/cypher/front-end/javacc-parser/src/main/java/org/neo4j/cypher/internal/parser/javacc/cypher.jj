@@ -1929,10 +1929,10 @@ NODE_PATTERN NodePattern() :
 }
 {
     t=<LPAREN>
-        ( v=Variable() )?
-        ( labels=NodeLabels() )?
-        ( properties=Properties() )?
-        ( <WHERE> predicate=Expression() )?
+    (
+        v=Variable() [labels=NodeLabels()] [properties=Properties()] [<WHERE> predicate=Expression()]
+        | [labels=NodeLabels()] [properties=Properties()]
+    )
     <RPAREN>
     {
         return astFactory.nodePattern( pos( t ), v, labels, properties, predicate );
