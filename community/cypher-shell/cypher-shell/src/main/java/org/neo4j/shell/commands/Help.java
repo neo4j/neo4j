@@ -35,7 +35,7 @@ import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 public class Help implements Command
 {
     public static final String COMMAND_NAME = ":help";
-    public static String CYPHER_REFCARD_LINK = "https://neo4j.com/docs/developer-manual/current/cypher/";
+    public static final String CYPHER_REFCARD_LINK = "https://neo4j.com/docs/cypher-manual/current/";
     private final Logger logger;
     private final CommandHelper commandHelper;
 
