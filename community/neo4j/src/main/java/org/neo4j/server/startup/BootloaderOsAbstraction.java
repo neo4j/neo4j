@@ -52,6 +52,16 @@ import static org.neo4j.server.startup.ProcessManager.behaviour;
 
 abstract class BootloaderOsAbstraction
 {
+    private static final List<String> JVM_ADD_OPENS = List.of(
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "--add-opens", "java.base/java.nio=ALL-UNNAMED",
+            "--add-opens", "java.base/java.io=ALL-UNNAMED",
+            "--add-opens", "java.base/java.util=ALL-UNNAMED",
+            "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED",
+            "--add-opens", "java.base/sun.net.www.protocol.http=ALL-UNNAMED",
+            "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED"
+    );
+
     static final long UNKNOWN_PID = Long.MAX_VALUE;
 
     protected final BootloaderContext ctx;
@@ -203,6 +213,15 @@ abstract class BootloaderOsAbstraction
     }
 
     protected List<String> getJvmOpts()
+    {
+        MutableList<String> opts = Lists.mutable.empty();
+        opts.withAll( getConfiguredJvmOpts() );
+        // Always add --add-opens options because database can't start without them
+        opts.withAll( JVM_ADD_OPENS );
+        return opts;
+    }
+
+    private List<String> getConfiguredJvmOpts()
     {
         // If JAVA_OPTS is provided, it has the highest priority
         // and we just use that as it is without any modification
