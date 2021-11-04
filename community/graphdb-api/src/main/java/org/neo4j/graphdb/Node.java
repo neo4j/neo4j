@@ -58,12 +58,14 @@ import org.neo4j.annotations.api.PublicApi;
 public interface Node extends Entity
 {
     /**
-     * Deletes this node if it has no relationships attached to it. If
-     * <code>delete()</code> is invoked on a node with relationships, an
-     * unchecked exception will be raised when the transaction is committing.
-     * Invoking any methods on this node after <code>delete()</code> has
-     * returned is invalid and will lead to {@link NotFoundException} being thrown.
+     * {@inheritDoc}
+     *
+     * All attached relationships must have been deleted before deleting this node.
+     *
+     * @throws ConstraintViolationException if this node still has relationships attached
+     * @throws NotFoundException {@inheritDoc}
      */
+    @Override
     void delete();
 
     /**

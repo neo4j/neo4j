@@ -75,13 +75,6 @@ import org.neo4j.annotations.api.PublicApi;
 @PublicApi
 public interface Relationship extends Entity
 {
-    /**
-     * Deletes this relationship. Invoking any methods on this relationship
-     * after <code>delete()</code> has returned is invalid and will lead to
-     * {@link NotFoundException} being thrown.
-     */
-     void delete();
-
     // Node accessors
     /**
      * Returns the start node of this relationship. For a definition of how

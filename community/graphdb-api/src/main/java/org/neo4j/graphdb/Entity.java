@@ -184,4 +184,11 @@ public interface Entity
      * @return all properties on this property container
      */
     Map<String, Object> getAllProperties();
+
+    /**
+     * Deletes this entity.
+     *
+     * @throws NotFoundException if any methods are invoked on this entity after {@code delete()}
+     */
+    void delete();
 }

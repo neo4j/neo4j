@@ -50,6 +50,7 @@ org.neo4j.graphdb.Direction::reverse() org.neo4j.graphdb.Direction public
 org.neo4j.graphdb.Direction::valueOf(java.lang.String) org.neo4j.graphdb.Direction public static
 org.neo4j.graphdb.Direction::values() org.neo4j.graphdb.Direction[] public static
 org.neo4j.graphdb.Entity public abstract interface
+org.neo4j.graphdb.Entity::delete() void public abstract
 org.neo4j.graphdb.Entity::getAllProperties() java.util.Map<java.lang.String,java.lang.Object> public abstract
 org.neo4j.graphdb.Entity::getId() long public abstract
 org.neo4j.graphdb.Entity::getProperties(java.lang.String...) java.util.Map<java.lang.String,java.lang.Object> public abstract
@@ -197,7 +198,6 @@ org.neo4j.graphdb.QueryStatistics::getRelationshipsCreated() int public abstract
 org.neo4j.graphdb.QueryStatistics::getRelationshipsDeleted() int public abstract
 org.neo4j.graphdb.QueryStatistics::getSystemUpdates() int public abstract
 org.neo4j.graphdb.Relationship public abstract interface implements org.neo4j.graphdb.Entity
-org.neo4j.graphdb.Relationship::delete() void public abstract
 org.neo4j.graphdb.Relationship::getEndNode() org.neo4j.graphdb.Node public abstract
 org.neo4j.graphdb.Relationship::getEndNodeId() long public default
 org.neo4j.graphdb.Relationship::getNodes() org.neo4j.graphdb.Node[] public abstract
