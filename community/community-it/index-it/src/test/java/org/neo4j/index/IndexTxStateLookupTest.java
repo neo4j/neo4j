@@ -339,4 +339,54 @@ public class IndexTxStateLookupTest
             assertFalse( tx.findRelationships( type, key, this.lookup ).hasNext() );
         }
     }
+
+    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
+    @MethodSource( "argumentsProvider" )
+    void shouldRemoveDeletedNodeCreatedInSameTransactionFromIndexTxStateEvenWithMultipleProperties( Object store, Object lookup )
+    {
+        init( store, lookup );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // given
+            Label label = label( "Node" );
+            String key = "prop";
+            String key2 = "prop2";
+            Node node = tx.createNode( label );
+            node.setProperty( key, this.store );
+            node.setProperty( key2, this.store );
+            assertTrue( tx.findNodes( label, key, this.lookup ).hasNext() );
+
+            // when
+            node.delete();
+
+            // then
+            assertFalse( tx.findNodes( label, key, this.lookup ).hasNext() );
+        }
+    }
+
+    @ParameterizedTest( name = "store=<{0}> lookup=<{1}>" )
+    @MethodSource( "argumentsProvider" )
+    void shouldRemoveDeletedRelationshipCreatedInSameTransactionFromIndexTxStateEvenWithMultipleProperties( Object store, Object lookup )
+    {
+        init( store, lookup );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // given
+            RelationshipType type = RelationshipType.withName( "Rel" );
+            String key = "prop";
+            String key2 = "prop2";
+            Relationship relationship = tx.createNode().createRelationshipTo( tx.createNode(), type );
+            relationship.setProperty( key, this.store );
+            relationship.setProperty( key2, this.store );
+            assertTrue( tx.findRelationships( type, key, this.lookup ).hasNext() );
+
+            // when
+            relationship.delete();
+
+            // then
+            assertFalse( tx.findRelationships( type, key, this.lookup ).hasNext() );
+        }
+    }
 }

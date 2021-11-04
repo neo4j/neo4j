@@ -183,7 +183,8 @@ public class IndexTxStateUpdater
         {
             propertyKeyList.add( propertyCursor.propertyKey() );
         }
-        int[] propertyKeyIds = propertyKeyList.toArray();
+        // Make sure to sort the propertyKeyIds since SchemaMatcher.onMatchingSchema requires it.
+        int[] propertyKeyIds = propertyKeyList.toSortedArray();
         Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyIds, entityType );
         if ( !indexes.isEmpty() )
         {
