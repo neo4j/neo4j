@@ -239,9 +239,9 @@ case class Prettifier(
   }
 
 
-  def backtick(s: String) = expr.backtick(s)
+  def backtick(s: String): String = expr.backtick(s)
 
-  def optionsToString(options: Map[String, Expression]) =
+  def optionsToString(options: Map[String, Expression]): String =
     if (options.nonEmpty) s" OPTIONS ${options.map({ case (s, e) => s"${backtick(s)}: ${expr(e)}" }).mkString("{", ", ", "}")}" else " OPTIONS {}"
 
   def asString(command: SchemaCommand): String = {
@@ -384,8 +384,8 @@ case class Prettifier(
     def showClausesAsString(yieldOrWhere: YieldOrWhere): (String, String) = {
       val ind: IndentingQueryPrettifier = base.indented()
       yieldOrWhere match {
-        case Some(Left((y,r))) => ("\n" + ind.asString(y), r.map(ind.asString).map("\n" + _).getOrElse(""))
-        case Some(Right(w)) => ("\n" + ind.asString(w), "")
+        case Some(Left((y,r))) => (NL + ind.asString(y), r.map(ind.asString).map(NL + _).getOrElse(""))
+        case Some(Right(w)) => (NL + ind.asString(w), "")
         case None => ("", "")
       }
     }
