@@ -22,7 +22,6 @@ package org.neo4j.storageengine.api;
 import java.util.Arrays;
 
 import org.neo4j.token.api.TokenConstants;
-import org.neo4j.util.Preconditions;
 
 import static org.neo4j.token.api.TokenConstants.ANY_PROPERTY_KEY;
 
@@ -77,6 +76,17 @@ public abstract class PropertySelection
     }
 
     /**
+     * Creates a {@link PropertySelection} with its single criterion based on the given {@code key}.
+     *
+     * @param key a single key that should be selected.
+     * @return a {@link PropertySelection} instance with the given {@code key} as its criterion.
+     */
+    public static PropertySelection selection( int key )
+    {
+        return SingleKey.singleKey( false, key );
+    }
+
+    /**
      * Creates a {@link PropertySelection} with its criteria based on the given {@code keys}.
      *
      * @param keys one or more keys that should be part of the created selection.
@@ -105,12 +115,36 @@ public abstract class PropertySelection
         {
             return keysOnly ? ALL_PROPERTY_KEYS : ALL_PROPERTIES;
         }
-        Preconditions.checkState( keys.length > 0, "Can't make a property selection of zero keys" );
-        return keys.length == 1 ? new SingleKey( keysOnly, keys[0] ) : new MultipleKeys( keysOnly, keys );
+        if ( keys.length == 0 )
+        {
+            throw new IllegalArgumentException( "Can't make a property selection of zero keys" );
+        }
+        return keys.length == 1 ? SingleKey.singleKey( keysOnly, keys[0] ) : new MultipleKeys( keysOnly, keys );
     }
 
     private static class SingleKey extends PropertySelection
     {
+        private static final int LOW_ID_THRESHOLD = 128;
+        private static final PropertySelection[] SINGLE_LOW_ID_SELECTIONS = new PropertySelection[LOW_ID_THRESHOLD];
+        private static final PropertySelection[] SINGLE_LOW_ID_KEY_SELECTIONS = new PropertySelection[LOW_ID_THRESHOLD];
+        static
+        {
+            for ( int key = 0; key < SINGLE_LOW_ID_SELECTIONS.length; key++ )
+            {
+                SINGLE_LOW_ID_SELECTIONS[key] = new PropertySelection.SingleKey( false, key );
+                SINGLE_LOW_ID_KEY_SELECTIONS[key] = new PropertySelection.SingleKey( true, key );
+            }
+        }
+
+        private static PropertySelection singleKey( boolean keysOnly, int key )
+        {
+            if ( key < LOW_ID_THRESHOLD && key >= 0 )
+            {
+                return keysOnly ? SINGLE_LOW_ID_KEY_SELECTIONS[key] : SINGLE_LOW_ID_SELECTIONS[key];
+            }
+            return new SingleKey( keysOnly, key );
+        }
+
         private final int key;
 
         private SingleKey( boolean keysOnly, int key )
