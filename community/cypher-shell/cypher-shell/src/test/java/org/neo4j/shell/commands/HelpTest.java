@@ -78,7 +78,7 @@ class HelpTest
         verify( logger ).printOut( "\nFor help on a specific command type:" );
         verify( logger ).printOut( "    :help@|BOLD  command|@\n" );
         verify( logger ).printOut( "\nFor help on cypher please visit:" );
-        verify( logger ).printOut( "    " + Help.CYPHER_REFCARD_LINK + "\n" );
+        verify( logger ).printOut( "    " + Help.CYPHER_MANUAL_LINK + "\n" );
     }
 
     @Test
