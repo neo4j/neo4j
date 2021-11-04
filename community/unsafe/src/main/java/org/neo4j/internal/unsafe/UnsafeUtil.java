@@ -27,7 +27,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -38,9 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Long.compareUnsigned;
@@ -85,8 +82,6 @@ public final class UnsafeUtil
     private static final VarHandle DIRECT_BYTE_BUFFER_ADDRESS;
     private static final VarHandle DIRECT_BYTE_BUFFER_ATTACHMENT;
     private static final MethodHandle DIRECT_BYTE_BUFFER_CONSTRUCTOR;
-    private static final MethodHandle DEFINE_HIDDEN_CLASS;
-    private static final ClassFactory CLASS_FACTORY;
 
     private static final int pageSize;
 
@@ -147,42 +142,7 @@ public final class UnsafeUtil
         DIRECT_BYTE_BUFFER_CONSTRUCTOR = dbbCtor;
         pageSize = ps;
 
-        MethodHandle defineHiddenClass;
-        ClassFactory factoryMethod;
-        try
-        {
-            MethodType unsafeMethodType = MethodType.methodType( Class.class, Class.class, byte[].class, Object[].class );
-            MethodHandle unsafeDefineMethod = MethodHandles.lookup()
-                            .findVirtual( Unsafe.class, "defineAnonymousClass", unsafeMethodType )
-                            .bindTo( unsafe );
-            defineHiddenClass = MethodHandles.insertArguments( unsafeDefineMethod, 2, (Object) null );
-            factoryMethod = UnsafeUtil::defineClassUnsafe;
-        }
-        catch ( Throwable e )
-        {
-            // JAVA 17 does not have unsafe method anymore https://bugs.openjdk.java.net/browse/JDK-8243287
-            try
-            {
-                Class optionClazz = Class.forName( "java.lang.invoke.MethodHandles$Lookup$ClassOption" );
-                Object defaultOptions = Array.newInstance( optionClazz, 1 );
-                Array.set( defaultOptions, 0, Enum.valueOf( optionClazz, "NESTMATE" ) );
-                Class<?> optionsArrayClazz = defaultOptions.getClass();
-
-                MethodType lookupMethodType = MethodType.methodType( MethodHandles.Lookup.class, byte[].class, boolean.class, optionsArrayClazz );
-                MethodHandle defineOriginal = MethodHandles.lookup().findVirtual( MethodHandles.Lookup.class, "defineHiddenClass", lookupMethodType );
-
-                defineHiddenClass = MethodHandles.insertArguments( defineOriginal, 2, true, defaultOptions );
-                factoryMethod = UnsafeUtil::defineClassLookup;
-            }
-            catch ( Throwable e2 )
-            {
-                throw new LinkageError( "Unable to find any implementations to define class", Exceptions.chain( e2, e ) );
-            }
-        }
-        DEFINE_HIDDEN_CLASS = defineHiddenClass;
-        CLASS_FACTORY = factoryMethod;
-
-            // See java.nio.Bits.unaligned() and its uses.
+        // See java.nio.Bits.unaligned() and its uses.
         String alignmentProperty = System.getProperty( allowUnalignedMemoryAccessProperty );
         if ( alignmentProperty != null &&
              (alignmentProperty.equalsIgnoreCase( "true" )
@@ -485,10 +445,9 @@ public final class UnsafeUtil
         long nsize = floorIsNearest ? fsize : csize;
         long noffset = floorIsNearest ? foffset : coffset;
         List<FreeTrace> recentFrees = Arrays.stream( freeTraces )
-                                            .filter( Objects::nonNull )
-                                            .filter( trace -> trace.contains( pointer ) )
-                                            .sorted()
-                                            .collect( Collectors.toList() );
+                .filter( Objects::nonNull )
+                .filter( trace -> trace.contains( pointer ) )
+                .sorted().toList();
         AssertionError error = new AssertionError( format(
                 "Bad access to address 0x%x with size %s, nearest valid allocation is " +
                 "0x%x (%s bytes, off by %s bytes). " +
@@ -808,43 +767,6 @@ public final class UnsafeUtil
         UnsafeUtil.putByte( p + 5, (byte) (value >> 40) );
         UnsafeUtil.putByte( p + 6, (byte) (value >> 48) );
         UnsafeUtil.putByte( p + 7, (byte) (value >> 56) );
-    }
-
-    /**
-     * Define a class but do not make it known to the class loader or system dictionary.
-     * @param byteBuffer the code to load
-     * @return the defined class
-     */
-    public static Class<?> defineAnonymousClass( Class<?> host, ByteBuffer byteBuffer ) throws Throwable
-    {
-        byte[] bytes;
-        if ( byteBuffer.hasArray() )
-        {
-            bytes = byteBuffer.array();
-        }
-        else
-        {
-            //buffer not backed by an array, copy data into an array
-            bytes = new byte[byteBuffer.remaining()];
-            byteBuffer.get( bytes );
-        }
-        return CLASS_FACTORY.defineClass( host, bytes );
-    }
-
-    private static Class<?> defineClassUnsafe( Class<?> host, byte[] bytes ) throws Throwable
-    {
-        return (Class<?>) DEFINE_HIDDEN_CLASS.invokeExact( host, bytes );
-    }
-
-    private static Class<?> defineClassLookup( Class<?> host, byte[] bytes ) throws Throwable
-    {
-        return ((MethodHandles.Lookup) DEFINE_HIDDEN_CLASS.invokeExact( MethodHandles.privateLookupIn( host, MethodHandles.lookup() ), bytes )).lookupClass();
-    }
-
-    @FunctionalInterface
-    private interface ClassFactory
-    {
-        Class<?> defineClass( Class<?> host, byte[] bytes ) throws Throwable;
     }
 
     private static final class Allocation

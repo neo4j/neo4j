@@ -19,10 +19,14 @@
  */
 package org.neo4j.codegen;
 
+import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.internal.unsafe.UnsafeUtil;
+import static java.lang.invoke.MethodHandles.Lookup.ClassOption.NESTMATE;
+import static java.lang.invoke.MethodHandles.lookup;
+import static java.lang.invoke.MethodHandles.privateLookupIn;
 
 /**
  * ClassLoader which loads new classes that have been compiled in-process.
@@ -30,6 +34,19 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
 class CodeLoader extends ClassLoader
 {
     private final Map<String/*class name*/,ByteCodes> stagedClasses = new HashMap<>();
+    private static final MethodHandles.Lookup LOOKUP;
+
+    static
+    {
+        try
+        {
+            LOOKUP = privateLookupIn( CodeLoader.class, lookup() );
+        }
+        catch ( IllegalAccessException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
+    }
 
     CodeLoader( ClassLoader parent )
     {
@@ -67,13 +84,30 @@ class CodeLoader extends ClassLoader
         return defineClass( name, clazz.bytes(), null );
     }
 
-    protected synchronized Class<?> defineAnonymousClass( String name ) throws Throwable
+    protected synchronized Class<?> defineHiddenClass( String name ) throws Throwable
     {
         ByteCodes clazz = stagedClasses.remove( name );
         if ( clazz == null )
         {
             throw new ClassNotFoundException( name );
         }
-        return UnsafeUtil.defineAnonymousClass( CodeLoader.class, clazz.bytes() );
+        return LOOKUP.defineHiddenClass( classBytes( clazz ), true, NESTMATE ).lookupClass();
+    }
+
+    private static byte[] classBytes( ByteCodes clazz )
+    {
+        ByteBuffer byteBuffer = clazz.bytes();
+        byte[] bytes;
+        if ( byteBuffer.hasArray() )
+        {
+            bytes = byteBuffer.array();
+        }
+        else
+        {
+            //buffer not backed by an array, copy data into an array
+            bytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get( bytes );
+        }
+        return bytes;
     }
 }

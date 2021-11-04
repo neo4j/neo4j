@@ -156,7 +156,7 @@ public abstract class CodeGenerator
         compileAndStageForLoading( generation );
         try
         {
-            return loader.defineAnonymousClass( name );
+            return loader.defineHiddenClass( name );
         }
         catch ( Throwable e )
         {
