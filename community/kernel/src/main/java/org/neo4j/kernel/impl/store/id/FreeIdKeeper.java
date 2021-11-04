@@ -84,7 +84,7 @@ public class FreeIdKeeper implements Closeable
      * @param aggressiveMode whether to reuse freed IDs during this lifecycle.
      * @throws IOException if an I/O error occurs.
      */
-    FreeIdKeeper( StoreChannel channel, int batchSize, boolean aggressiveMode ) throws IOException
+    public FreeIdKeeper( StoreChannel channel, int batchSize, boolean aggressiveMode ) throws IOException
     {
         this.channel = channel;
         this.batchSize = batchSize;

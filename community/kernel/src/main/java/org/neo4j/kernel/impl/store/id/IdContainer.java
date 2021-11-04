@@ -43,7 +43,7 @@ public class IdContainer
     public static final long NO_RESULT = -1;
 
     // header format: sticky(byte), nextFreeId(long)
-    static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
+    public static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
 
     // if sticky the id generator wasn't closed properly so it has to be
     // rebuilt (go through the node, relationship, property, rel type etc files)
