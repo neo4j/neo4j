@@ -415,17 +415,16 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             @Override
             protected DateTimeValue selectDateTime( AnyValue datetime )
             {
-                if ( datetime instanceof DateTimeValue )
+                if ( datetime instanceof DateTimeValue value )
                 {
-                    DateTimeValue value = (DateTimeValue) datetime;
                     ZoneId zone = optionalTimezone();
                     return zone == null ? value : new DateTimeValue(
                             ZonedDateTime.of( value.temporal().toLocalDateTime(), zone ) );
                 }
-                if ( datetime instanceof LocalDateTimeValue )
+                if ( datetime instanceof LocalDateTimeValue value )
                 {
                     return new DateTimeValue( ZonedDateTime.of(
-                            ((LocalDateTimeValue) datetime).temporal(), timezone() ) );
+                            value.temporal(), timezone() ) );
                 }
                 throw new UnsupportedTemporalUnitException( "Cannot select datetime from: " + datetime );
             }
@@ -485,9 +484,9 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     public boolean equals( Value other )
     {
-        if ( other instanceof DateTimeValue )
+        if ( other instanceof DateTimeValue dateTimeValue )
         {
-            ZonedDateTime that = ((DateTimeValue) other).value;
+            ZonedDateTime that = dateTimeValue.value;
             boolean res = value.toLocalDateTime().equals( that.toLocalDateTime() );
             if ( res )
             {
@@ -639,18 +638,16 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             zone = parseZoneName( zoneName );
             if ( offset != null )
             {
-                ZoneOffset expected;
                 try
                 {
-                    expected = zone.getRules().getOffset( local );
+                    if ( !zone.getRules().isValidOffset( local, offset ) )
+                    {
+                        throw new InvalidArgumentException( "Timezone and offset do not match: " + matcher.group() );
+                    }
                 }
                 catch ( ZoneRulesException e )
                 {
                     throw new TemporalParseException( e.getMessage(), e );
-                }
-                if ( !expected.equals( offset ) )
-                {
-                    throw new InvalidArgumentException( "Timezone and offset do not match: " + matcher.group() );
                 }
             }
         }
@@ -662,7 +659,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         {
             zone = defaultZone.get();
         }
-        return new DateTimeValue( ZonedDateTime.of( local, zone ) );
+        return new DateTimeValue( ZonedDateTime.ofLocal( local, zone, offset ) );
     }
 
     static ZoneId parseZoneName( String zoneName )
