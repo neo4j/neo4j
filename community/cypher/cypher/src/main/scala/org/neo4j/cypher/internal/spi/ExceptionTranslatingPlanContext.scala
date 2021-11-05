@@ -84,8 +84,8 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
     translateException(tokenNameLookup, inner.functionSignature(name))
 
-  override def btreeIndexExistsForLabel(labelId: Int): Boolean =
-    translateException(tokenNameLookup, inner.btreeIndexExistsForLabel(labelId))
+  override def indexExistsForLabel(labelId: Int): Boolean =
+    translateException(tokenNameLookup, inner.indexExistsForLabel(labelId))
 
   override def canLookupNodesByLabel: Boolean =
     translateException(tokenNameLookup, inner.canLookupNodesByLabel)

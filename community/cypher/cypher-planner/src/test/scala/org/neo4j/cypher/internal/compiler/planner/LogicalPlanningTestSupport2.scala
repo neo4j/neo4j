@@ -297,10 +297,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.procedureSignatures.find(_.name == name).get
       }
 
-      override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
+      override def indexExistsForLabel(labelId: Int): Boolean = {
         val labelName = config.labelsById(labelId)
         config.indexes.keys.exists {
-          case IndexDef(IndexDefinition.EntityType.Node(`labelName`), _, IndexType.Btree) => true
+          case IndexDef(IndexDefinition.EntityType.Node(`labelName`), _, _) => true
           case _ => false
         }
       }

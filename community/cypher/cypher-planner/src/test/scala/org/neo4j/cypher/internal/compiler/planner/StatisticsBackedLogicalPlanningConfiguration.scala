@@ -592,10 +592,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         procedures.find(_.name == name).getOrElse(fail(s"No procedure signature for $name"))
       }
 
-      override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
-        btreeIndexesGetForLabel(labelId).nonEmpty
-      }
-
       override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
         btreeIndexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
       }

@@ -117,7 +117,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   extends TransactionBoundReadTokenContext(tc) with PlanContext with IndexDescriptorCompatibility {
 
   override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    indexesGetForLabel(labelId, schema.IndexType.BTREE)
+    indexesGetForLabel(labelId, Some(schema.IndexType.BTREE))
   }
 
   override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
@@ -125,16 +125,21 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    indexesGetForLabel(labelId, schema.IndexType.TEXT)
+    indexesGetForLabel(labelId, Some(schema.IndexType.TEXT))
   }
 
   override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
     indexesGetForRelType(relTypeId, schema.IndexType.TEXT)
   }
 
-  private def indexesGetForLabel(labelId: Int, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
+  private def indexesGetForLabel(labelId: Int, indexType: Option[schema.IndexType]): Iterator[IndexDescriptor] = {
+    val selector: schema.IndexDescriptor => Boolean = indexType match {
+      case Some(it) => _.getIndexType == it
+      case None     => _ => true
+    }
+
     tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala
-      .filter(_.getIndexType == indexType)
+      .filter(selector)
       .flatMap(getOnlineIndex)
   }
 
@@ -146,8 +151,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = tc.schemaRead.indexesGetAllNonLocking.asScala.flatMap(getOnlineIndex)
 
-  override def btreeIndexExistsForLabel(labelId: Int): Boolean = {
-    btreeIndexesGetForLabel(labelId).nonEmpty
+  override def indexExistsForLabel(labelId: Int): Boolean = {
+    indexesGetForLabel(labelId, None).nonEmpty
   }
 
   override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
