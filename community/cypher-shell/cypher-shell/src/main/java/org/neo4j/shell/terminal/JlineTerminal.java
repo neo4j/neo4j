@@ -95,6 +95,8 @@ public class JlineTerminal implements CypherShellTerminal
         if ( !file.equals( jLineReader.getVariable( LineReader.HISTORY_FILE ) ) )
         {
             jLineReader.setVariable( LineReader.HISTORY_FILE, file );
+            //the load here makes sure that history will work right from the start
+            loadHistory();
             Runtime.getRuntime().addShutdownHook( new Thread( this::flushHistory ) );
         }
     }
@@ -117,19 +119,24 @@ public class JlineTerminal implements CypherShellTerminal
         }
     }
 
+    private void loadHistory()
+    {
+        try
+        {
+            jLineReader.getHistory().load();
+        }
+        catch ( IOException e )
+        {
+            logger.printError( "Failed to load history: " + e.getMessage() );
+        }
+    }
+
     private class JlineHistorian implements Historian
     {
         @Override
         public List<String> getHistory()
         {
-            try
-            {
-                jLineReader.getHistory().load();
-            }
-            catch ( IOException e )
-            {
-                logger.printError( "Failed to load history: " + e.getMessage() );
-            }
+            loadHistory();
             return stream( jLineReader.getHistory().spliterator(), false ).map( History.Entry::line ).collect( toList() );
         }
 
