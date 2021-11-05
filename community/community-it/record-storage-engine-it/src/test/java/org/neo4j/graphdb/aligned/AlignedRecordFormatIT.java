@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -40,8 +41,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
-import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V4_1;
-import static org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_1.NAME;
 
 @DbmsExtension( configurationCallback = "configure" )
 public class AlignedRecordFormatIT
@@ -55,13 +54,13 @@ public class AlignedRecordFormatIT
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
-        builder.setConfig( GraphDatabaseSettings.record_format, NAME );
+        builder.setConfig( GraphDatabaseSettings.record_format, PageAligned.LATEST_NAME );
     }
 
     @Test
     void databaseCanBeStartedWithAlignedFormat()
     {
-        assertEquals( ALIGNED_V4_1.versionString(), versionLongToString( storeIdProvider.getStoreId().getStoreVersion() ) );
+        assertEquals( PageAligned.LATEST_RECORD_FORMATS.storeVersion(), versionLongToString( storeIdProvider.getStoreId().getStoreVersion() ) );
     }
 
     @Test
