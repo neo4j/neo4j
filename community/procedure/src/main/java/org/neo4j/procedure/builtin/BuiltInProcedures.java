@@ -24,7 +24,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +53,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -67,7 +65,6 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.storageengine.api.StoreIdProvider;
-import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
@@ -205,40 +202,6 @@ public class BuiltInProcedures
 
     @Deprecated( since = "4.2.0", forRemoval = true )
     @SystemProcedure
-    @Description( "Detailed description of specific index." )
-    @Procedure( name = "db.indexDetails", mode = READ, deprecatedBy = "SHOW INDEXES YIELD * command" )
-    public Stream<IndexDetailResult> indexDetails( @Name( "indexName" ) String indexName ) throws ProcedureException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
-            return Stream.empty();
-        }
-
-        TokenRead tokenRead = kernelTransaction.tokenRead();
-        IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
-
-        SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-        List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
-        IndexDescriptor index = null;
-        for ( IndexDescriptor candidate : indexes )
-        {
-            if ( candidate.getName().equals( indexName ) )
-            {
-                index = candidate;
-                break;
-            }
-        }
-        if ( index == null )
-        {
-            throw new ProcedureException( Status.Schema.IndexNotFound, "Could not find index with name \"" + indexName + "\"" );
-        }
-
-        final IndexDetailResult indexDetailResult = asIndexDetails( tokenRead, schemaRead, index );
-        return Stream.of( indexDetailResult );
-    }
-
-    @Deprecated( since = "4.2.0", forRemoval = true )
-    @SystemProcedure
     @Description( "List all statements for creating and dropping existing indexes and constraints. " +
             "Note that only index types introduced before Neo4j 4.3 are included." )
     @Procedure( name = "db.schemaStatements", mode = READ, deprecatedBy = "SHOW INDEXES YIELD * command and SHOW CONSTRAINTS YIELD * command" )
@@ -270,24 +233,6 @@ public class BuiltInProcedures
         return new IndexResult( id, name, status.state, status.populationProgress, uniqueness, type, entityType, labelsOrTypes, properties, provider );
     }
 
-    private static IndexDetailResult asIndexDetails( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
-    {
-        long id = index.getId();
-        String name = index.getName();
-        IndexStatus status = getIndexStatus( schemaRead, index );
-        String uniqueness = IndexUniqueness.getUniquenessOf( index );
-        String type = index.getIndexType().name();
-        String entityType = index.schema().entityType().name();
-        SchemaDescriptor schema = index.schema();
-        List<String> labelsOrTypes = Arrays.asList( tokenLookup.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
-        List<String> properties = propertyNames( tokenLookup, index );
-        String provider = index.getIndexProvider().name();
-        Map<String,Object> indexConfig = asObjectMap( index.getIndexConfig().asMap() );
-
-        return new IndexDetailResult( id, name, status.state, status.populationProgress, uniqueness, type, entityType, labelsOrTypes, properties, provider,
-                indexConfig, status.failureMessage );
-    }
-
     private static IndexStatus getIndexStatus( SchemaReadCore schemaRead, IndexDescriptor index )
     {
         IndexStatus status = new IndexStatus();
@@ -306,16 +251,6 @@ public class BuiltInProcedures
             status.failureMessage = "Index not found. It might have been concurrently dropped.";
         }
         return status;
-    }
-
-    private static Map<String,Object> asObjectMap( Map<String,Value> valueConfig )
-    {
-        Map<String,Object> objectConfig = new HashMap<>();
-        for ( Map.Entry<String,Value> entry : valueConfig.entrySet() )
-        {
-            objectConfig.put( entry.getKey(), entry.getValue().asObject() );
-        }
-        return objectConfig;
     }
 
     private static class IndexStatus
@@ -619,61 +554,6 @@ public class BuiltInProcedures
             this.labelsOrTypes = labelsOrTypes;
             this.properties = properties;
             this.provider = provider;
-        }
-    }
-
-    public static class IndexDetailResult
-    {
-        // Copy if IndexResult
-        public final long id;                    //1
-        public final String name;                //"myIndex"
-        public final String state;               //"ONLINE", "FAILED", "POPULATING"
-        public final double populationPercent;    // 0.0, 100.0, 75.1
-        public final String uniqueness;          //"UNIQUE", "NONUNIQUE"
-        public final String type;                //"FULLTEXT", "BTREE"
-        public final String entityType;          //"NODE", "RELATIONSHIP"
-        public final List<String> labelsOrTypes; //["Label1", "Label2"], ["RelType1", "RelType2"]
-        public final List<String> properties;    //["propKey", "propKey2"]
-        public final String provider;            //"native-btree-1.0", "lucene+native-3.0"
-        // Additional for IndexDetailResult
-        public final Map<String,Object> indexConfig;// - map
-        public final String failureMessage;
-        // Maybe additional things to add
-//        public final String useLucene;           //  - "True", "False"
-//        public final String indexSize; // Index size on disk
-
-        private IndexDetailResult( long id, String name, String state, double populationPercent, String uniqueness, String type, String entityType,
-                List<String> labelsOrTypes, List<String> properties, String provider, Map<String,Object> indexConfig, String failureMessage )
-        {
-            this.id = id;
-            this.name = name;
-            this.state = state;
-            this.populationPercent = populationPercent;
-            this.uniqueness = uniqueness;
-            this.type = type;
-            this.entityType = entityType;
-            this.labelsOrTypes = labelsOrTypes;
-            this.properties = properties;
-            this.provider = provider;
-            this.indexConfig = indexConfig;
-            this.failureMessage = failureMessage;
-        }
-
-        private IndexDetailResult( IndexResult indexResult, Map<String,Object> indexConfig, String failureMessage )
-        {
-            this(
-                    indexResult.id,
-                    indexResult.name,
-                    indexResult.state,
-                    indexResult.populationPercent,
-                    indexResult.uniqueness,
-                    indexResult.type,
-                    indexResult.entityType,
-                    indexResult.labelsOrTypes,
-                    indexResult.properties,
-                    indexResult.provider,
-                    indexConfig,
-                    failureMessage );
         }
     }
 

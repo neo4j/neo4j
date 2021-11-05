@@ -19,42 +19,32 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.Map;
 
-import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.cypher.internal.javacompat.ResultRowImpl;
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.VirtualValues;
+import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION;
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
 
 class DbIndexesFailureMessageIT extends KernelIntegrationTest
 {
@@ -72,66 +62,56 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
 
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         LabelSchemaDescriptor schema = forLabel( failedLabel, propertyKeyId1 );
-        IndexDescriptor index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "fail foo index" ) );
+        String indexName = "fail foo index";
+        IndexDescriptor index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( indexName ) );
+        long indexId = index.getId();
+        String indexProvider = index.getIndexProvider().name();
+        Map<String,Value> indexConfig = index.getIndexConfig().asMap();
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertThrows( IllegalStateException.class, () -> tx.schema().awaitIndexesOnline( 2, MINUTES ) );
+            assertThatThrownBy( () -> tx.schema().awaitIndexesOnline( 2, MINUTES ) )
+                    .isInstanceOf( IllegalStateException.class );
         }
 
         // When
-        RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexDetails" ) ).id(),
-                        new TextValue[]{stringValue( index.getName() )},
-                        ProcedureCallContext.EMPTY );
-        assertTrue( stream.hasNext() );
-        AnyValue[] result = stream.next();
-        assertFalse( stream.hasNext() );
-        commit(); // Commit procedure transaction
+        try ( Transaction tx = db.beginTx() )
+        {
+            Result results = tx.execute( "SHOW INDEX YIELD * WHERE name = '" + index.getName() + "'" );
+            assertThat( results ).hasNext();
+            Result.ResultRow result = new ResultRowImpl( results.next() );
+            assertThat( results ).isExhausted();
 
-        // Then
-        assertEquals( longValue( index.getId() ), result[0] );
-        assertEquals( stringValue( "fail foo index" ), result[1] );
-        assertEquals( stringValue( "FAILED" ), result[2] );
-        assertEquals( doubleValue( 0.0 ), result[3] );
-        assertEquals( stringValue( "NONUNIQUE" ), result[4] );
-        assertEquals( stringValue( "BTREE" ), result[5] );
-        assertEquals( stringValue( "NODE" ), result[6] );
-        assertEquals( VirtualValues.list( stringValue( labelName ) ), result[7] );
-        assertEquals( VirtualValues.list( stringValue( propertyKey ) ), result[8] );
-        assertEquals( stringValue( FailingGenericNativeIndexProviderFactory.DESCRIPTOR.name() ), result[9] );
-        assertMapsEqual( index.getIndexConfig().asMap(), (MapValue)result[10] );
-        assertThat( ((TextValue) result[11]).stringValue() ).contains( "java.lang.RuntimeException: Fail on update during population" );
-        assertEquals( 12, result.length );
+            assertThat( result.getNumber( "id" ) ).as( "id" ).isEqualTo( indexId );
+            assertThat( result.getString( "name" ) ).as( "name" ).isEqualTo( indexName );
+            assertThat( result.getString( "state" ) ).as( "state" ).isEqualTo( "FAILED" );
+            assertThat( result.getNumber( "populationPercent" ) ).as( "populationPercent" ).isEqualTo( 0.0 );
+            assertThat( result.getString( "uniqueness" ) ).as( "uniqueness" ).isEqualTo( "NONUNIQUE" );
+            assertThat( result.getString( "type" ) ).as( "type" ).isEqualTo( "BTREE" );
+            assertThat( result.getString( "entityType" ) ).as( "entityType" ).isEqualTo( "NODE" );
+            assertThat( result.get( "labelsOrTypes" ) ).asList().as( "labelsOrTypes" ).containsExactly( labelName );
+            assertThat( result.get( "properties" ) ).asList().as( "properties" ).containsExactly( propertyKey );
+            assertThat( result.getString( "indexProvider" ) ).as( "indexProvider" ).isEqualTo( indexProvider );
+            assertThat( result.get( "options" ) ).extracting( "indexConfig", InstanceOfAssertFactories.map( String.class, Object.class ) )
+                                                 .extractingFromEntries( entry -> Map.entry( entry.getKey(), Values.of( entry.getValue() ) ) )
+                                                 .as( "indexConfig" ).containsExactlyInAnyOrderElementsOf( indexConfig.entrySet() );
+            assertThat( result.getString( "failureMessage" ) ).as( "failureMessage" )
+                                                              .startsWith( "java.lang.RuntimeException: Fail on update during population" );
+            assertThat( result.getString( "createStatement" ) ).as( "createStatement" )
+                                                               .contains( "CREATE BTREE INDEX", indexName, "FOR", labelName, "ON", propertyKey,
+                                                                          "OPTIONS", "indexConfig", "indexProvider", indexProvider );
+        }
     }
 
     @Test
     void indexDetailsWithNonExistingIndex()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> {
-            procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexDetails" ) ).id(),
-                    new TextValue[]{stringValue( "MyIndex" )},
-                    ProcedureCallContext.EMPTY );
-        } );
-        assertEquals( exception.getMessage(), "Could not find index with name \"MyIndex\"" );
-    }
-
-    private static void assertMapsEqual( Map<String,Value> expected, MapValue actual )
-    {
-        assertEquals( expected.size(), actual.size() );
-        expected.forEach( ( k, v ) ->
+        try ( Transaction tx = db.beginTx() )
         {
-            final AnyValue value = actual.get( k );
-            assertNotNull( value );
-            assertEquals( v, value );
-        } );
-        actual.foreach( ( k, v ) ->
-        {
-            final Value value = expected.get( k );
-            assertNotNull( value );
-            assertEquals( v, value );
-        } );
+            Result results = tx.execute( "SHOW INDEX YIELD * WHERE name = 'MyIndex'" );
+            assertThat( results ).isExhausted();
+        }
     }
 
     @Override

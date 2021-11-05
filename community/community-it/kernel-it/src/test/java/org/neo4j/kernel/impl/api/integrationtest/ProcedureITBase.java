@@ -53,11 +53,6 @@ public interface ProcedureITBase
                         "() :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, " +
                                 "entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?)",
                         "List all indexes in the database.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
-                proc( "db.indexDetails",
-                        "(indexName :: STRING?) :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, " +
-                                "type :: STRING?, entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: " +
-                                "STRING?, indexConfig :: MAP?, failureMessage :: STRING?)", "Detailed description of specific index.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.schemaStatements",
                         "() :: (name :: STRING?, type :: STRING?, createStatement :: STRING?, dropStatement :: STRING?)",
                         "List all statements for creating and dropping existing indexes and constraints. " +

@@ -46,7 +46,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.Read;
@@ -243,33 +242,6 @@ class BuiltInProceduresTest
                 singletonList( "name" ),
                 "no-index-provider-1.0" )
         );
-    }
-
-    @Test
-    void indexDetailsShouldGiveDetailedIndexInfo() throws Throwable
-    {
-        // Given
-        givenIndex( "User", "name" );
-
-        // When/Then
-        final Map<String,Object> configMap = MapUtil.genericMap( new HashMap<>(), "config1", "value1", "config2", 2, "config3", true );
-        assertThat( call( "db.indexDetails", "index_" + 1000 ) ).contains( record(
-                1000L, "index_1000", "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE", singletonList( "User" ), singletonList( "name" ),
-                EMPTY.getProviderDescriptor().name(), configMap, "" ) );
-    }
-
-    @Test
-    void indexDetailsShouldGiveMessageForConcurrentlyDeletedIndexes() throws Throwable
-    {
-        // Given
-        givenIndex( "User", "name" );
-        when( schemaReadCore.indexGetState( any( IndexDescriptor.class ) ) ).thenThrow( new IndexNotFoundKernelException( "Not found." ) );
-
-        // When/Then
-        final Map<String,Object> configMap = MapUtil.genericMap( new HashMap<>(), "config1", "value1", "config2", 2, "config3", true );
-        assertThat( call( "db.indexDetails", "index_" + 1000 ) ).contains( record(
-                1000L, "index_1000", "NOT FOUND", 0D, "NONUNIQUE", "BTREE", "NODE", singletonList( "User" ), singletonList( "name" ),
-                EMPTY.getProviderDescriptor().name(), configMap, "Index not found. It might have been concurrently dropped." ) );
     }
 
     @Test
