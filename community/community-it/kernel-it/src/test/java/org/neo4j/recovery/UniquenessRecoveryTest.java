@@ -60,6 +60,7 @@ import static java.lang.Boolean.getBoolean;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.proc.ProcessUtil.getModuleOptions;
 
 @TestDirectoryExtension
 @ResourceLock( Resources.SYSTEM_OUT )
@@ -120,11 +121,13 @@ public class UniquenessRecoveryTest
         // given
         Path path = dir.absolutePath();
         System.out.println( "in path: " + path );
-        ProcessBuilder prototype = new ProcessBuilder( "java", "-ea", "-Xmx1G",
-                "-Dforce_create_constraint=" + config.force_create_constraint,
+        ArrayList<String> args = new ArrayList<>();
+        args.addAll( List.of( "java", "-ea", "-Xmx1G" ) );
+        args.addAll( getModuleOptions() );
+        args.addAll( List.of( "-Dforce_create_constraint=" + config.force_create_constraint,
                 "-D" + param( "use_cypher" ) + "=" + USE_CYPHER,
-                "-cp", System.getProperty( "java.class.path" ),
-                getClass().getName(), path.toAbsolutePath().toString() );
+                "-cp", System.getProperty( "java.class.path" ), getClass().getName(), path.toAbsolutePath().toString() ) );
+        ProcessBuilder prototype = new ProcessBuilder( args );
         prototype.environment().put( "JAVA_HOME", System.getProperty( "java.home" ) );
 
         // when
