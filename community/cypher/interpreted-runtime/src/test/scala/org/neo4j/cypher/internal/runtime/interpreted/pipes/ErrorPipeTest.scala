@@ -26,7 +26,7 @@ class ErrorPipeTest extends CypherFunSuite {
 
   test("should throw an exception when used") {
     val exception = new RuntimeException("Boom!")
-    val pipe = ErrorPipe(mock[Pipe], exception)()
+    val pipe = ErrorPipe(new DummyPipe(Iterator.empty), exception)()
 
     val thrown = the [RuntimeException] thrownBy pipe.createResults(QueryStateHelper.empty)
 
