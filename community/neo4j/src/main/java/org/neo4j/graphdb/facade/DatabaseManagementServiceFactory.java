@@ -73,6 +73,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.procedure.StatusDetailsAccessor;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
@@ -81,6 +82,7 @@ import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.procedure.impl.ProcedureLoginContextTransformer;
 import org.neo4j.procedure.impl.ProcedureTransactionProvider;
 import org.neo4j.procedure.impl.TerminationGuardProvider;
+import org.neo4j.procedure.impl.TransactionStatusDetailsProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.DisabledNeoWebServer;
 import org.neo4j.values.ValueMapper;
@@ -316,19 +318,19 @@ public class DatabaseManagementServiceFactory
             globalProcedures.registerComponent( KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false );
             globalProcedures.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
             globalProcedures.registerComponent( SystemGraphComponents.class, ctx -> globalModule.getSystemGraphComponents(), false );
-            globalProcedures.registerComponent( ValueMapper.class, Context::valueMapper, true );
+            globalProcedures.registerComponent( DataCollector.class, ctx -> ctx.dependencyResolver().resolveDependency( DataCollector.class ), false );
 
             // Register injected public API components
             globalProcedures.registerComponent( Log.class, ctx -> proceduresLog, true );
             globalProcedures.registerComponent( Transaction.class, new ProcedureTransactionProvider(), true );
             globalProcedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
+            globalProcedures.registerComponent( StatusDetailsAccessor.class, new TransactionStatusDetailsProvider(), true );
             globalProcedures.registerComponent( SecurityContext.class, Context::securityContext, true );
             globalProcedures.registerComponent( ProcedureCallContext.class, Context::procedureCallContext, true );
             globalProcedures.registerComponent( FulltextAdapter.class, ctx -> ctx.dependencyResolver().resolveDependency( FulltextAdapter.class ), true );
             globalProcedures.registerComponent( GraphDatabaseService.class,
                     ctx -> new GraphDatabaseFacade( (GraphDatabaseFacade) ctx.graphDatabaseAPI(), new ProcedureLoginContextTransformer( ctx ) ), true );
-
-            globalProcedures.registerComponent( DataCollector.class, ctx -> ctx.dependencyResolver().resolveDependency( DataCollector.class ), false );
+            globalProcedures.registerComponent( ValueMapper.class, Context::valueMapper, true );
 
             // Edition procedures
             try
