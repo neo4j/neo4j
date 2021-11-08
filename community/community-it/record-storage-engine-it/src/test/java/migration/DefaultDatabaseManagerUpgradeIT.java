@@ -110,7 +110,7 @@ class DefaultDatabaseManagerUpgradeIT
 
         // Then
         assertTrue( db.isAvailable( 100 ), "Expected database to be available after upgrade" );
-        RecordFormats expectedFormat = RecordFormatSelector.findLatestFormatInFamily( StandardV3_4.RECORD_FORMATS ).orElseThrow();
+        RecordFormats expectedFormat = RecordFormatSelector.findLatestSupportedFormatInFamily( StandardV3_4.RECORD_FORMATS ).orElseThrow();
         assertTrue( MigrationTestUtils.checkNeoStoreHasFormatVersion( check, expectedFormat ), "Expected store version to be default." );
     }
 

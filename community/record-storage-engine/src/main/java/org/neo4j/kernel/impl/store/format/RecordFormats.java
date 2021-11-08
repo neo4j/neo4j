@@ -138,4 +138,9 @@ public interface RecordFormats
     {
         return new RecordFormats[0];
     }
+
+    default boolean formatUnderDevelopment()
+    {
+        return false;
+    }
 }

@@ -790,4 +790,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "Enables sketching of next transaction log file in the background during reverse recovery." )
     public static final Setting<Boolean> pre_sketch_transaction_logs = newBuilder( "unsupported.dbms.tx_log.presketch", BOOL, false ).build();
+
+    @Internal
+    @Description( "Enables using record format versions that are still under development, which will trigger migration to them on start up. " +
+                  "This setting is only useful for tests of the incomplete record format versions during their development." )
+    public static final Setting<Boolean> include_versions_under_development =
+            newBuilder( "unsupported.dbms.include_dev_record_format_versions", BOOL, false ).build();
 }

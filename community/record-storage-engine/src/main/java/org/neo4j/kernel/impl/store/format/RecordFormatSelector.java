@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -39,11 +40,13 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_1;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
+import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV5_0;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.service.Services;
 
@@ -71,8 +74,10 @@ public class RecordFormatSelector
             StandardV3_4.RECORD_FORMATS,
             StandardV4_0.RECORD_FORMATS,
             StandardV4_3.RECORD_FORMATS,
+            StandardV5_0.RECORD_FORMATS,
             PageAlignedV4_1.RECORD_FORMATS,
-            PageAlignedV4_3.RECORD_FORMATS
+            PageAlignedV4_3.RECORD_FORMATS,
+            PageAlignedV5_0.RECORD_FORMATS
     );
 
     private RecordFormatSelector()
@@ -87,6 +92,15 @@ public class RecordFormatSelector
      */
     public static RecordFormats defaultFormat()
     {
+        return DEFAULT_FORMAT;
+    }
+
+    private static RecordFormats defaultFormat( boolean includeDevFormats )
+    {
+        if ( includeDevFormats )
+        {
+            return PageAlignedV5_0.RECORD_FORMATS;
+        }
         return DEFAULT_FORMAT;
     }
 
@@ -126,9 +140,9 @@ public class RecordFormatSelector
         if ( StringUtils.isEmpty( recordFormat ) )
         {
             info( logProvider, "Record format not configured, selected default: " + defaultFormat() );
-            return defaultFormat();
+            return defaultFormat( config.get( GraphDatabaseInternalSettings.include_versions_under_development ) );
         }
-        RecordFormats format = selectSpecificFormat( recordFormat );
+        RecordFormats format = selectSpecificFormat( recordFormat, config.get( GraphDatabaseInternalSettings.include_versions_under_development ) );
         info( logProvider, "Selected record format based on config: " + format );
         return format;
     }
@@ -223,7 +237,7 @@ public class RecordFormatSelector
             return configuredFormat;
         }
 
-        return DEFAULT_FORMAT;
+        return defaultFormat( config.get( GraphDatabaseInternalSettings.include_versions_under_development ) );
     }
 
     private static RecordFormats getConfiguredRecordFormat( Config config, DatabaseLayout databaseLayout )
@@ -233,7 +247,15 @@ public class RecordFormatSelector
             // TODO: System database does not support multiple formats, remove this when it does!
             return null;
         }
-        return loadRecordFormat( configuredRecordFormat( config ) );
+
+        boolean includeDevFormats = config.get( GraphDatabaseInternalSettings.include_versions_under_development );
+        RecordFormats formats = loadRecordFormat( configuredRecordFormat( config ), includeDevFormats );
+        if ( includeDevFormats && formats != null )
+        {
+            Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily( formats, true );
+            formats = newestFormatInFamily.orElse( formats );
+        }
+        return formats;
     }
 
     private static boolean formatSameFamilyAndGeneration( RecordFormats left, RecordFormats right )
@@ -281,10 +303,12 @@ public class RecordFormatSelector
             if ( result == null )
             {
                 // format was not explicitly configured and store does not exist, select default format
-                info( logProvider, format( "Selected format '%s' for the new store %s", DEFAULT_FORMAT, databaseLayout.databaseDirectory() ) );
-                return DEFAULT_FORMAT;
+                RecordFormats formats = defaultFormat( config.get( GraphDatabaseInternalSettings.include_versions_under_development ) );
+                info( logProvider, format( "Selected format '%s' for the new store %s", formats, databaseLayout.databaseDirectory() ) );
+                return formats;
             }
-            Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily( result );
+            Optional<RecordFormats> newestFormatInFamily =
+                    findLatestFormatInFamily( result, config.get( GraphDatabaseInternalSettings.include_versions_under_development ) );
             RecordFormats newestFormat = newestFormatInFamily.orElse( result );
             info( logProvider, format( "Selected format '%s' for existing store %s with format '%s'",
                     newestFormat, databaseLayout.databaseDirectory(), result ) );
@@ -292,10 +316,15 @@ public class RecordFormatSelector
         }
     }
 
-    public static Optional<RecordFormats> findLatestFormatInFamily( RecordFormats result )
+    public static Optional<RecordFormats> findLatestSupportedFormatInFamily( RecordFormats result )
+    {
+        return findLatestFormatInFamily( result, false );
+    }
+
+    private static Optional<RecordFormats> findLatestFormatInFamily( RecordFormats result, boolean includeDevFormats )
     {
         return Iterables.stream( allFormats() )
-                .filter( format -> format.getFormatFamily() == result.getFormatFamily() )
+                .filter( format -> format.getFormatFamily() == result.getFormatFamily() && ( includeDevFormats || !format.formatUnderDevelopment() ) )
                 .max( comparingInt( RecordFormats::generation ) );
     }
 
@@ -305,10 +334,10 @@ public class RecordFormatSelector
      * @param format to find successor to.
      * @return the format with the lowest generation > format.generation, or None if no such format is known.
      */
-    public static Optional<RecordFormats> findSuccessor( final RecordFormats format )
+    public static Optional<RecordFormats> findSupportedSuccessor( final RecordFormats format )
     {
         return StreamSupport.stream( RecordFormatSelector.allFormats().spliterator(), false )
-                .filter( candidate -> candidate.getFormatFamily() == format.getFormatFamily() )
+                .filter( candidate -> candidate.getFormatFamily() == format.getFormatFamily() && !candidate.formatUnderDevelopment() )
                 .filter( candidate -> candidate.generation() > format.generation() )
                 .reduce( ( a, b ) -> a.generation() < b.generation() ? a : b );
     }
@@ -316,6 +345,7 @@ public class RecordFormatSelector
     /**
      * Gets all {@link RecordFormats} that the selector is aware of.
      * @return An iterable over all known record formats.
+     * NOTE this includes formats that are under development.
      */
     public static Iterable<RecordFormats> allFormats()
     {
@@ -324,17 +354,22 @@ public class RecordFormatSelector
         return concat( KNOWN_FORMATS, loadableFormats );
     }
 
-    private static RecordFormats selectSpecificFormat( String recordFormat )
+    private static RecordFormats selectSpecificFormat( String recordFormat, boolean includeDevFormats )
     {
-        RecordFormats formats = loadRecordFormat( recordFormat );
+        RecordFormats formats = loadRecordFormat( recordFormat, includeDevFormats );
         if ( formats == null )
         {
             throw new IllegalArgumentException( "No record format found with the name '" + recordFormat + "'." );
         }
+        if ( includeDevFormats )
+        {
+            Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily( formats, true );
+            formats = newestFormatInFamily.orElse( formats );
+        }
         return formats;
     }
 
-    private static RecordFormats loadRecordFormat( String recordFormat )
+    private static RecordFormats loadRecordFormat( String recordFormat, boolean includeDevFormats )
     {
         if ( StringUtils.isEmpty( recordFormat ) )
         {
@@ -346,13 +381,17 @@ public class RecordFormatSelector
         }
         for ( RecordFormats knownFormat : KNOWN_FORMATS )
         {
-            if ( recordFormat.equals( knownFormat.name() ) )
+            if ( includeDevFormats || !knownFormat.formatUnderDevelopment() )
             {
-                return knownFormat;
+                if ( recordFormat.equals( knownFormat.name() ) )
+                {
+                    return knownFormat;
+                }
             }
         }
         return Services.load( RecordFormats.Factory.class, recordFormat )
                 .map( RecordFormats.Factory::newInstance )
+                .filter( recordFormats -> includeDevFormats || !recordFormats.formatUnderDevelopment() )
                 .orElse( null );
     }
 

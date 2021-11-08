@@ -122,7 +122,7 @@ public class StoreUpgraderInterruptionTestIT
         legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
         pageCache = pageCacheExtension.getPageCache( fs );
         baselineFormat = RecordFormatSelector.selectForVersion( version );
-        successorFormat = RecordFormatSelector.findLatestFormatInFamily( baselineFormat ).orElse( baselineFormat );
+        successorFormat = RecordFormatSelector.findLatestSupportedFormatInFamily( baselineFormat ).orElse( baselineFormat );
     }
 
     @AfterEach

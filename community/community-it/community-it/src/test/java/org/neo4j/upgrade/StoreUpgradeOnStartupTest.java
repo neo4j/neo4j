@@ -89,7 +89,7 @@ public class StoreUpgradeOnStartupTest
         Path prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         RecordFormats baselineFormat = RecordFormatSelector.selectForVersion( version );
-        successorFormat = RecordFormatSelector.findLatestFormatInFamily( baselineFormat ).orElse( baselineFormat );
+        successorFormat = RecordFormatSelector.findLatestSupportedFormatInFamily( baselineFormat ).orElse( baselineFormat );
     }
 
     @ParameterizedTest
