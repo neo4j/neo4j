@@ -293,31 +293,50 @@ case class Match(
   }
 
   private def checkHints: SemanticCheck = {
+    def getMissingEntityKindError(variable: String,
+                                  labelOrRelTypeName: String,
+                                  index: Boolean): String = {
+      val preface = s"Cannot use ${if (index) "index" else "label/relationship type scan"} hint in this context."
+      getLabelAndRelTypePredicates(variable) match {
+        case LabelAndRelTypeNames(Seq(), Seq()) =>
+          s"""|$preface
+              | Must use label/relationship type '$labelOrRelTypeName' on node/relationship '$variable'
+              | that this hint is referring to. But no label/relationship type was found.
+              | Note that the label/relationship type${if (index) " and property comparison"} must be specified on a non-optional node/relationship.""".stripLinesAndMargins
+        case LabelAndRelTypeNames(labels: Seq[String], Seq()) =>
+          s"""|$preface
+              | Must use label '$labelOrRelTypeName' on node '$variable'
+              | that this hint is referring to. But only the labels ${labels.mkString("'", ",", "'")} were found for node '$variable'.
+              | Note that the label${if (index) " and property comparison"} must be specified on a non-optional node.""".stripLinesAndMargins
+        case LabelAndRelTypeNames(Seq(), relTypes: Seq[String]) =>
+          s"""|$preface
+              | Must use relationship type '$labelOrRelTypeName' on relationship '$variable'
+              | that this hint is referring to. But only the relationship types ${relTypes.mkString("'", ",", "'")} were found for relationship '$variable'.
+              | Note that the relationship type${if (index) " and property comparison"} must be specified on a non-optional relationship.""".stripLinesAndMargins
+        case _ =>
+          throw new IllegalStateException(s"Both labels and relationship types specified for variable '$variable'")
+      }
+    }
+
     val error: Option[SemanticCheck] = hints.collectFirst {
       case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(labelOrRelTypeName), _, _, _)
         if !containsLabelOrRelTypePredicate(variable, labelOrRelTypeName) =>
-        SemanticError(
-          s"""|Cannot use index hint in this context.
-              | Must use label/relationship type '$labelOrRelTypeName' on node/relationship '$variable'
-              | that this hint is referring to.
-              | Did you choose the wrong variable or the wrong label/relationship type?""".stripLinesAndMargins, hint.position)
+        SemanticError(getMissingEntityKindError(variable, labelOrRelTypeName, index = true), hint.position)
       case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(_), properties, _, _)
         if !containsPropertyPredicates(variable, properties) =>
         SemanticError(
           """|Cannot use index hint in this context.
-             | Index hints are only supported for the following predicates in WHERE
-             | (either directly or as part of a top-level AND or OR):
+             | Must use the property that the hint is referring to in a supported predicate in WHERE
+             | (either directly or as part of a top-level AND or OR).
+             | Supported predicates are:
              | equality comparison, inequality (range) comparison, STARTS WITH,
              | IN condition or checking property existence.
              | The comparison cannot be performed between two property values.
              | Note that the label/relationship type and property comparison must be specified on a
              | non-optional node/relationship.""".stripLinesAndMargins, hint.position)
-      case hint@UsingScanHint(Variable(variable), LabelOrRelTypeName(labelName))
-        if !containsLabelOrRelTypePredicate(variable, labelName) =>
-        SemanticError(
-          """|Cannot use label/relationship type scan hint in this context.
-             | Label/relationship type scan hints require using a simple label/relationship type test in WHERE (either directly or as part of a
-             | top-level AND or OR). Note that the label/relationship type must be specified on a non-optional node/relationship.""".stripLinesAndMargins, hint.position)
+      case hint@UsingScanHint(Variable(variable), LabelOrRelTypeName(labelOrRelTypeName))
+        if !containsLabelOrRelTypePredicate(variable, labelOrRelTypeName) =>
+        SemanticError(getMissingEntityKindError(variable, labelOrRelTypeName, index = false), hint.position)
       case hint@UsingJoinHint(_)
         if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
@@ -392,7 +411,14 @@ case class Match(
     }
   }
 
-  private[ast] def containsLabelOrRelTypePredicate(variable: String, labelOrRelType: String): Boolean = {
+  private[ast] def containsLabelOrRelTypePredicate(variable: String, labelOrRelType: String): Boolean =
+    getLabelAndRelTypePredicates(variable).contains(labelOrRelType)
+
+  private case class LabelAndRelTypeNames(labels: Seq[String], relTypes: Seq[String]) {
+    def contains(name: String): Boolean = labels.contains(name) || relTypes.contains(name)
+  }
+
+  private def getLabelAndRelTypePredicates(variable: String) : LabelAndRelTypeNames = {
     val inlinedLabels = pattern.fold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), nodeLabels, _, _) if variable == id =>
         list => list ++ nodeLabels.map(_.name)
@@ -407,7 +433,7 @@ case class Match(
           case (ls, rs) => SkipChildren((ls ++ predicateLabels.map(_.name), rs))
         }
         case HasLabelsOrTypes(Variable(id), predicateLabelsOrRelTypes) if id == variable => {
-          case (ls, rs) => SkipChildren((ls ++ predicateLabelsOrRelTypes.map(_.name), rs  ++ predicateLabelsOrRelTypes.map(_.name)))
+          case (ls, rs) => SkipChildren((ls ++ predicateLabelsOrRelTypes.map(_.name), rs ++ predicateLabelsOrRelTypes.map(_.name)))
         }
         case HasTypes(Variable(id), predicateRelTypes) if id == variable => {
           case (ls, rs) => SkipChildren((ls, rs ++ predicateRelTypes.map(_.name)))
@@ -421,7 +447,7 @@ case class Match(
     }
     val allLabels = inlinedLabels ++ predicateLabels
     val allRelTypes = inlinedRelTypes ++ predicateRelTypes
-    allLabels.contains(labelOrRelType) || allRelTypes.contains(labelOrRelType)
+    LabelAndRelTypeNames(allLabels, allRelTypes)
   }
 
   def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.findAllByClass[LogicalVariable].toSet

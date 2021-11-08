@@ -181,7 +181,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     graph.createUniqueConstraint("Person", "id")
     expectError(
       "MATCH (n:Person) USING INDEX n:Person(id) WHERE n.name = 'Andres' RETURN n",
-      "Cannot use index hint in this context. Index hints are only supported for the following predicates in WHERE (either directly or as part of a top-level AND or OR): equality comparison, inequality (range) comparison, STARTS WITH, IN condition or checking property existence. The comparison cannot be performed between two property values. Note that the label/relationship type and property comparison must be specified on a non-optional node/relationship. (line 1, column 18 (offset: 17))"
+      "Cannot use index hint in this context. Must use the property that the hint is referring to in a supported predicate in WHERE (either directly or as part of a top-level AND or OR). Supported predicates are: equality comparison, inequality (range) comparison, STARTS WITH, IN condition or checking property existence. The comparison cannot be performed between two property values. Note that the label/relationship type and property comparison must be specified on a non-optional node/relationship. (line 1, column 18 (offset: 17))"
     )
   }
 
@@ -239,18 +239,18 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
       "                             ^")
   }
 
-  private def expectError(query: String, expectedError: String) {
+  private def expectError(query: String, expectedError: String): Unit = {
     val error = intercept[Neo4jException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
   }
 
-  private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int) {
+  private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int): Unit = {
     val error = intercept[SyntaxException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
     assertThat(error.getOffset, equalTo(Optional.of(expectedOffset.asInstanceOf[java.lang.Integer])))
   }
 
-  private def testSyntaxErrorWithCaret(expectedError: String, query: String, expectedCaret: String) {
+  private def testSyntaxErrorWithCaret(expectedError: String, query: String, expectedCaret: String): Unit = {
     val error = intercept[SyntaxException](executeQuery(query))
     val expected = String.format("\"%s\"\n %s", query, expectedCaret)
     val got = error.getMessage.linesIterator
@@ -258,7 +258,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     got.mkString("\n") should equal(expected)
   }
 
-  private def executeQuery(query: String) {
+  private def executeQuery(query: String): Unit = {
     execute(query.fixNewLines).toList
   }
 }
