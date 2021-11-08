@@ -27,10 +27,8 @@ import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
 import picocli.CommandLine;
 import picocli.CommandLine.ExitCode;
@@ -210,7 +208,6 @@ class Neo4jCommandTest
         }
 
         @Test
-        @DisabledForJreRange( min = JRE.JAVA_17 )
         void shouldNotValidateSettingsNotUsedByBootloaderOnStopAndStatus()
         {
             assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
@@ -223,7 +220,6 @@ class Neo4jCommandTest
         }
 
         @Test
-        @DisabledForJreRange( min = JRE.JAVA_17 )
         void shouldValidateSettingsUsedByBootloaderOnStopAndStatus()
         {
             assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );

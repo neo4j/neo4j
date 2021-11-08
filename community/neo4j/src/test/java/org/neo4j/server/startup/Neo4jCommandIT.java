@@ -21,10 +21,7 @@ package org.neo4j.server.startup;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.parallel.Isolated;
 
@@ -67,15 +64,6 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
         addConf( HttpConnector.listen_address, "localhost:0" );
         addConf( HttpsConnector.enabled, "false" );
         addConf( BoltConnector.enabled, "false" );
-    }
-
-    @DisabledOnOs( OS.WINDOWS )
-    @EnabledOnJre( JRE.JAVA_11 )
-    @Test
-    void shouldBeAbleToStartAndStopRealServerOnNonWindows()
-    {
-        shouldBeAbleToStartAndStopRealServer();
-        assertThat( err.toString() ).isEmpty();
     }
 
     @EnabledOnOs( OS.WINDOWS )

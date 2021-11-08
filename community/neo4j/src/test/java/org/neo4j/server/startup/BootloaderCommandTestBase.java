@@ -23,8 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
@@ -79,7 +77,6 @@ import static org.neo4j.test.proc.ProcessUtil.start;
 
 @TestDirectoryExtension
 @ExtendWith( BootloaderCommandTestBase.FailureOutputProvider.class )
-@DisabledForJreRange( min = JRE.JAVA_17 )
 abstract class BootloaderCommandTestBase
 {
     @Inject
