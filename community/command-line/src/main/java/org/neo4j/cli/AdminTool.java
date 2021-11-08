@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
-import org.neo4j.internal.unsafe.IllegalAccessLoggerSuppressor;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.service.Services;
 import org.neo4j.util.VisibleForTesting;
@@ -72,7 +71,6 @@ public final class AdminTool
 
     public static void main( String[] args )
     {
-        IllegalAccessLoggerSuppressor.suppress();
         final var homeDir = getDirOrExit( "NEO4J_HOME" );
         final var confDir = getDirOrExit( "NEO4J_CONF" );
         final var ctx = new ExecutionContext( homeDir, confDir );
