@@ -78,7 +78,8 @@ public abstract class BaseRecordFormats implements RecordFormats
         }
 
         RecordFormats other = (RecordFormats) obj;
-        return  node().equals( other.node() ) &&
+        return  generation == other.generation() &&
+                node().equals( other.node() ) &&
                 relationship().equals( other.relationship() ) &&
                 relationshipGroup().equals( other.relationshipGroup() ) &&
                 property().equals( other.property() ) &&
