@@ -385,7 +385,7 @@ object CardinalityCostModel {
    * Given an incoming WorkReduction, calculate how this reduction applies to the LHS and RHS of the plan.
    *
    */
-  private[logical] def  effectiveCardinalities(plan: LogicalPlan, workReduction: WorkReduction, batchSize: SelectedBatchSize, cardinalities: Cardinalities): EffectiveCardinalities = {
+  private[logical] def effectiveCardinalities(plan: LogicalPlan, workReduction: WorkReduction, batchSize: SelectedBatchSize, cardinalities: Cardinalities): EffectiveCardinalities = {
     val (lhsWorkReduction, rhsWorkReduction) = childrenWorkReduction(plan, workReduction, batchSize, cardinalities)
 
     // Make sure argument leaf plans under semiApply etc. get bounded to the same cardinality as the lhs
