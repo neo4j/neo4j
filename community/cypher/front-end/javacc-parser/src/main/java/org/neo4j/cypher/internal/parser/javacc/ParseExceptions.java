@@ -44,7 +44,6 @@ public class ParseExceptions extends RuntimeException
     {
         long identifiers = expectedTokens.getOrDefault( CypherConstants.IDENTIFIER, 0L);
         long plusCount = expectedTokens.getOrDefault( CypherConstants.PLUS, 0L);
-        long parameters = expectedTokens.getOrDefault( CypherConstants.PARAMETER, 0L );
         long expressions = Math.min( identifiers, plusCount );
         if ( identifiers > 0 )
         {
@@ -54,17 +53,13 @@ public class ParseExceptions extends RuntimeException
         {
             filterTokenSet( expectedTokens, ExpressionTokens.getExpressionTokens(), expressions );
         }
-        if ( parameters > 0 )
-        {
-            filterTokenSet( expectedTokens, Set.of( CypherConstants.PARAMETER, CypherConstants.DOLLAR ), parameters );
-        }
         List<String> expectedMessage = expectedTokens.keySet().stream()
-                                                     .map( token -> tokenImage[token] )
+                                                     .map( token ->
+                                                           {
+                                                               String image = tokenImage[token];
+                                                               return image.equals( "\"$\"" ) ? "a parameter" : image;
+                                                           } )
                                                      .collect( Collectors.toList() );
-        if ( parameters > 0 )
-        {
-            expectedMessage.add( "a parameter" );
-        }
         if ( identifiers - expressions > 0 )
         {
             expectedMessage.add( "an identifier" );
