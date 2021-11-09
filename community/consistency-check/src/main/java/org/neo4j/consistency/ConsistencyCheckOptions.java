@@ -49,21 +49,6 @@ public class ConsistencyCheckOptions
             description = "Perform structure checks on indexes." )
     private boolean checkIndexStructure = true;
 
-    @Option( names = "--check-label-scan-store", arity = "1", paramLabel = "<true/false>",
-            description = "Perform consistency checks on the label scan store. This option is deprecated and its value will be ignored. " +
-                          "Checking of label scan store/lookup index on labels is controlled by --check-graph." )
-    private boolean checkLabelScanStore = true;
-
-    @Option( names = "--check-relationship-type-scan-store", arity = "1", paramLabel = "<true/false>",
-            description = "Perform consistency checks on the relationship type scan store. This option is deprecated and its value will be ignored. " +
-                          "Checking of relationship type scan store/lookup index on relationship types is controlled by --check-graph." )
-    private boolean checkRelationshipTypeScanStore;
-
-    @Option( names = "--check-property-owners", arity = "1", paramLabel = "<true/false>",
-            description = "Perform additional consistency checks on property ownership. This check is @|bold,red very|@ expensive in time and memory. " +
-                          "This option is deprecated and its value will be ignored." )
-    private boolean checkPropertyOwners;
-
     public Path getReportDir()
     {
         return reportDir;
@@ -82,22 +67,5 @@ public class ConsistencyCheckOptions
     public boolean isCheckIndexStructure()
     {
         return checkIndexStructure;
-    }
-
-    public static void warnOnUsageOfDeprecatedOptions( CommandSpec spec, ExecutionContext ctx )
-    {
-        CommandLine.ParseResult parseResult = spec.commandLine().getParseResult();
-        PrintStream out = ctx.out();
-        checkUsageOfDeprecatedOption( parseResult, out, "--check-label-scan-store" );
-        checkUsageOfDeprecatedOption( parseResult, out, "--check-relationship-type-scan-store" );
-        checkUsageOfDeprecatedOption( parseResult, out, "--check-property-owners" );
-    }
-
-    private static void checkUsageOfDeprecatedOption( CommandLine.ParseResult parseResult, PrintStream out, String deprecatedOption )
-    {
-        if ( parseResult.hasMatchedOption( deprecatedOption ) )
-        {
-            out.println( "Warning: Option '" + deprecatedOption + "' has been deprecated and its value will be ignored." );
-        }
     }
 }

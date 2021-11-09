@@ -107,8 +107,6 @@ public class CheckConsistencyCommand extends AbstractCommand
     @Override
     public void execute()
     {
-        options.warnOnUsageOfDeprecatedOptions( spec, ctx );
-
         if ( target.backup != null )
         {
             target.backup = target.backup.toAbsolutePath();
