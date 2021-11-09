@@ -259,6 +259,7 @@ class Neo4jCommandTest
             }
             assertThat( execute( "start", "--expand-commands" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "--expand-commands" );
+            assertThat( execute( "stop", "--expand-commands" ) ).isEqualTo( EXIT_CODE_OK );
         }
 
         @Test
