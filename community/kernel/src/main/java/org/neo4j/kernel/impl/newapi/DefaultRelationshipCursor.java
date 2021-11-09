@@ -31,7 +31,7 @@ import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationshipCursor,CURSOR> extends TraceableCursor<CURSOR>
+abstract class DefaultRelationshipCursor<SELF extends DefaultRelationshipCursor> extends TraceableCursor<SELF>
         implements RelationshipDataAccessor
 {
     protected boolean hasChanges;
@@ -39,7 +39,7 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
     AccessMode accessMode;
     Read read;
 
-    final STORECURSOR storeCursor;
+    final StorageRelationshipCursor storeCursor;
     RelationshipVisitor<RuntimeException> relationshipTxStateDataVisitor = new TxStateDataVisitor();
     // The visitor above will update the fields below
     long currentAddedInTx = NO_ID;
@@ -47,7 +47,7 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
     long txStateSourceNodeReference;
     long txStateTargetNodeReference;
 
-    DefaultRelationshipCursor( STORECURSOR storeCursor, CursorPool<CURSOR> pool )
+    DefaultRelationshipCursor( StorageRelationshipCursor storeCursor, CursorPool<SELF> pool )
     {
         super( pool );
         this.storeCursor = storeCursor;

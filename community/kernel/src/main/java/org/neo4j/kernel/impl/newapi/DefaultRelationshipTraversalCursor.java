@@ -33,9 +33,10 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<StorageRelationshipTraversalCursor,DefaultRelationshipTraversalCursor>
+class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<DefaultRelationshipTraversalCursor>
         implements RelationshipTraversalCursor
 {
+    private final StorageRelationshipTraversalCursor storeCursor;
     private final DefaultNodeCursor nodeCursor;
     private LongIterator addedRelationships;
     private long originNodeReference;
@@ -47,6 +48,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             DefaultNodeCursor nodeCursor )
     {
         super( storeCursor, pool );
+        this.storeCursor = storeCursor;
         this.nodeCursor = nodeCursor;
     }
 

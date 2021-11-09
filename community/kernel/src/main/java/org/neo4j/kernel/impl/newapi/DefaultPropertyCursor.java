@@ -126,7 +126,7 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
         initializeRelationshipTransactionState( relationshipReference, read );
     }
 
-    void initRelationship( DefaultRelationshipCursor<?,?> relationshipCursor, PropertySelection selection, Read read, AssertOpen assertOpen )
+    void initRelationship( DefaultRelationshipCursor relationshipCursor, PropertySelection selection, Read read, AssertOpen assertOpen )
     {
         entityReference = relationshipCursor.relationshipReference();
         assert entityReference != NO_ID;

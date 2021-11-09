@@ -30,11 +30,11 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRelationshipScanCursor,DefaultRelationshipScanCursor>
-        implements RelationshipScanCursor
+class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements RelationshipScanCursor
 {
     private long single;
     private LongIterator addedRelationships;
+    private final StorageRelationshipScanCursor storeCursor;
     private final DefaultNodeCursor securityNodeCursor;
 
     DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool,
@@ -42,6 +42,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
                                    DefaultNodeCursor securityNodeCursor )
     {
         super( storeCursor, pool );
+        this.storeCursor = storeCursor;
         this.securityNodeCursor = securityNodeCursor;
     }
 
