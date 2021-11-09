@@ -134,7 +134,6 @@ import org.neo4j.cypher.internal.logical.plans.Anti
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
@@ -628,10 +627,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("Argument") {
-    assertGood(attach(Argument(Set.empty), 95.0),
+    assertGood(attach(org.neo4j.cypher.internal.logical.plans.Argument(Set.empty), 95.0),
       planDescription(id, "EmptyRow", NoChildren, Seq.empty, Set.empty))
 
-    assertGood(attach(Argument(Set("a", "b")), 95.0),
+    assertGood(attach(org.neo4j.cypher.internal.logical.plans.Argument(Set("a", "b")), 95.0),
       planDescription(id, "Argument", NoChildren, Seq(details("a, b")), Set("a", "b")))
   }
 
