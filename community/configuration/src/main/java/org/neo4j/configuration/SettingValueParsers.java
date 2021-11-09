@@ -825,7 +825,10 @@ public final class SettingValueParsers
         @Override
         public String getDescription()
         {
-            return "A valid database name. " + DatabaseNameValidator.DESCRIPTION;
+            return "A valid database name containing only alphabetic characters, numbers, dots and dashes " +
+                   "with a length between " + DatabaseNameValidator.MINIMUM_DATABASE_NAME_LENGTH + " and " +
+                   DatabaseNameValidator.MAXIMUM_DATABASE_NAME_LENGTH + " characters, " +
+                   "starting with an alphabetic character but not with the name 'system'";
         }
 
         @Override
