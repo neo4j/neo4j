@@ -212,6 +212,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                   " for every physical core in the system. If set to -1, no workers will be started and the parallel runtime cannot be used." )
     public static final Setting<Integer> cypher_worker_count = newBuilder( "unsupported.cypher.number_of_workers", INT, 0 ).build();
 
+    @Internal
+    @Description( "Feature flag to force produce result to always be in a separate pipeline" )
+    public static final Setting<Boolean> produce_result_in_separate_pipeline =
+            newBuilder( "unsupported.cypher.produce_result_in_pipeline", BOOL, false ).build();
+
     public enum CypherOperatorEngine
     {
         DEFAULT, COMPILED, INTERPRETED

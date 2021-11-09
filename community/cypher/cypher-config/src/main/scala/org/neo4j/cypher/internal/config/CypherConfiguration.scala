@@ -86,6 +86,7 @@ class CypherConfiguration private (val config: Config) {
   val disallowSplittingTop: Boolean = config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
   val enableExtraSemanticFeatures: Set[String] = config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
   val planningTextIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_text_indexes_enabled)
+  val produceResultInSeparatePipeline: Boolean = config.get(GraphDatabaseInternalSettings.produce_result_in_separate_pipeline)
 
   //dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
