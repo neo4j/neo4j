@@ -68,12 +68,12 @@ class Neo4jCommand extends BootloaderCommand
     }
 
     @CommandLine.Command( name = "stop", description = "Stop the server daemon." )
-    private static class Stop extends BaseCommand
+    private static class Stop extends BootCommand
     {
         @Override
         public Integer call()
         {
-            return getBootloader( false ).stop();
+            return getBootloader( startOptions.expandCommands ).stop();
         }
     }
 
@@ -88,12 +88,12 @@ class Neo4jCommand extends BootloaderCommand
     }
 
     @CommandLine.Command( name = "status", description = "Get the status of the server." )
-    private static class Status extends BaseCommand
+    private static class Status extends BootCommand
     {
         @Override
         public Integer call()
         {
-            return getBootloader( false ).status();
+            return getBootloader( startOptions.expandCommands ).status();
         }
     }
 

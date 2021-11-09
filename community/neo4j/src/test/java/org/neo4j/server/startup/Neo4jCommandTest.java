@@ -206,6 +206,7 @@ class Neo4jCommandTest
             }
             assertThat( execute( List.of( "start", "--expand-commands" ), Map.of() ) ).isEqualTo( 0 );
             assertThat( out.toString() ).contains( "--expand-commands" );
+            assertThat( execute( List.of( "stop", "--expand-commands" ), Map.of() ) ).isEqualTo( 0 );
         }
 
         @Test
