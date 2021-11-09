@@ -41,13 +41,13 @@ import org.neo4j.configuration.helpers.DatabaseNameValidator;
 import org.neo4j.configuration.helpers.DurationRange;
 import org.neo4j.configuration.helpers.GlobbingPattern;
 import org.neo4j.configuration.helpers.GraphNameValidator;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.configuration.helpers.NormalizedGraphName;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.string.SecureString;
 import org.neo4j.values.storable.DateTimeValue;
 
@@ -827,7 +827,10 @@ public final class SettingValueParsers
         @Override
         public String getDescription()
         {
-            return "A valid database name. " + DatabaseNameValidator.DESCRIPTION;
+            return "A valid database name (aliases are not supported) containing only alphabetic characters, numbers, dots and dashes " +
+                   "with a length between " + DatabaseNameValidator.MINIMUM_DATABASE_NAME_LENGTH + " and " +
+                   DatabaseNameValidator.MAXIMUM_DATABASE_NAME_LENGTH + " characters, " +
+                   "starting with an alphabetic character but not with the name 'system'";
         }
 
         @Override
