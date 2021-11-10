@@ -27,15 +27,12 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
 import org.neo4j.exceptions.KernelException;
@@ -53,14 +50,11 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.count;
 import static org.neo4j.kernel.impl.newapi.TestUtils.createContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
 import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
-import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
-import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
