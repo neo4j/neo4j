@@ -375,10 +375,10 @@ object ClauseConverters {
 
   private def createNodeCommand(pattern: NodePattern): CreateNodeCommand =  pattern match {
     case NodePattern(Some(variable), labels, props, None) => CreateNodeCommand(CreateNode(variable.name, labels, props), variable)
+    case _ => throw new InternalException("All nodes must be named at this instance")
   }
 
   private def allCreatePatterns(element: PatternElement): (Vector[CreateNodeCommand], Vector[CreateRelCommand]) = element match {
-    case NodePattern(None, _, _, _) => throw new InternalException("All nodes must be named at this instance")
     //CREATE ()
     case np:NodePattern => (Vector(createNodeCommand(np)), Vector.empty)
 
