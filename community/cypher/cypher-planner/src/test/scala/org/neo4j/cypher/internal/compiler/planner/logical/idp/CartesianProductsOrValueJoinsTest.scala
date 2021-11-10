@@ -69,13 +69,13 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     plan
   }
 
-  private def nodeIndexScan(n: String, label: String, cardinality: Double, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): LogicalPlan = {
+  private def nodeIndexScan(n: String, label: String, cardinality: Double, planningAttributes: PlanningAttributes): LogicalPlan = {
     val plan = NodeIndexScan(n, LabelToken(label, LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)), Set.empty, IndexOrderAscending, IndexType.BTREE)
     setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, cardinality, planningAttributes)
     plan
   }
 
-  private def nodeByLabelScan(n: String, label: String, cardinality: Double, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): LogicalPlan = {
+  private def nodeByLabelScan(n: String, label: String, cardinality: Double, planningAttributes: PlanningAttributes): LogicalPlan = {
     val plan = NodeByLabelScan(n, LabelName(label)(pos), Set.empty, IndexOrderNone)
     setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, cardinality, planningAttributes)
     plan

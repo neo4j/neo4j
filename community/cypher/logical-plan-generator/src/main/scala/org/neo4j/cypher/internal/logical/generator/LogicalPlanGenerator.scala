@@ -591,7 +591,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   private def expressionList(state: State,
                              availableSymbols: Seq[String],
                              expressionGen: SemanticAwareAstGenerator => Gen[Expression],
-                             minSize: Int = 0): Gen[WithState[Seq[Expression]]] =
+                             minSize: Int): Gen[WithState[Seq[Expression]]] =
     Gen.sized(s => Gen.choose(minSize, s max minSize)).flatMap { n =>
       (0 until n).foldLeft(Gen.const(WithState(Seq.empty[Expression], state))) { (prevGen, _) =>
         for {

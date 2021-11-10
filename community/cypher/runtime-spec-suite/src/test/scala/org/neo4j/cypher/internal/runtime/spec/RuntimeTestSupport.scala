@@ -270,7 +270,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                          resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                                          subscriber: QuerySubscriber,
                                          parameters: Map[String, Any],
-                                         profile: Boolean = false): RESULT = {
+                                         profile: Boolean): RESULT = {
     val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
     val txContext = contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
     val queryContext = newQueryContext(txContext, logicalQuery.readOnly)

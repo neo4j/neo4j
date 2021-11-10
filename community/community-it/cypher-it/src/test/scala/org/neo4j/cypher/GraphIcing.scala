@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
@@ -44,6 +43,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
 
+import scala.annotation.nowarn
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
@@ -242,7 +242,7 @@ trait GraphIcing {
       createIndex(maybeName, s"()-[e:$relType]-()", properties, indexType, () => getRelIndex(relType, properties, indexType), options)
     }
 
-    private def createIndex(maybeName: Option[String], pattern: String, properties: Seq[String], indexType: IndexType, getIndex: () => IndexDefinition, options: Map[String, String] = Map.empty): IndexDefinition = {
+    private def createIndex(maybeName: Option[String], pattern: String, properties: Seq[String], indexType: IndexType, getIndex: () => IndexDefinition, options: Map[String, String]): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
       withTx( tx => {
         tx.execute(s"CREATE $indexType INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})${optionsString(options)}")
