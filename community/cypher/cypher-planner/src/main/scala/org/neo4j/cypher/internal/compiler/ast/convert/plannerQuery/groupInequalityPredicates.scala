@@ -59,7 +59,7 @@ object groupInequalityPredicates extends (Seq[Predicate] => Seq[Predicate]) {
     }
 
     // collect together all inequalities over some property lookup
-    val rewrittenPropertyInequalities = predicatesGroupedByProperty.map {
+    val rewrittenPropertyInequalities = predicatesGroupedByProperty.collect {
       case (prop@Property(variable: Variable, _), groupInequalities) =>
         val dependencies = groupInequalities.flatMap(_.dependencies).toSet
         val inequalityExpressions = groupInequalities.collect {
