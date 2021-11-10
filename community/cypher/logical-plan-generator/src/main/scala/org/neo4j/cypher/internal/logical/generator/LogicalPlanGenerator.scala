@@ -184,7 +184,7 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
  * A generator of random logical plans, with the ambition to generate only valid plans.
  * @param labelsWithIds The labels that exist in a graph that the plans can be executed against.
  * @param relTypesWithIds The relationship types that exist in a graph that the plans can be executed against.
- * @param stats Statistics of a graphs that plans are executed against.
+ * @param planContext Mostly used to obtain statistics of a graphs that plans are executed against.
  * @param costLimit Maximum allowed cost of a generated plan.
  */
 class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
@@ -608,7 +608,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     rhsState <- Gen.delay(copyStateWithoutVariableInfo(state))
     WithState(newPlan, newState) <- innerLogicalPlan(rhsState)
       .suchThat {
-        case WithState(source, _) => (source.availableSymbols == plan.availableSymbols)
+        case WithState(source, _) => source.availableSymbols == plan.availableSymbols
       }
   } yield {
     WithState(newPlan, state.addParameters(newState.parameters))

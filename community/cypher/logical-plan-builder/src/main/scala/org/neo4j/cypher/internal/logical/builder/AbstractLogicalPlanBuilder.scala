@@ -252,17 +252,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   protected case class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder{
     private val id = idGen.id()
     _idOfLastPlan = id
-    val planConstructor: Unit => LogicalPlan = _ => planToIdConstructor(SameId(id))
+    def planConstructor(): LogicalPlan = planToIdConstructor(SameId(id))
   }
   protected case class UnaryOperator(planToIdConstructor: LogicalPlan => IdGen => LogicalPlan) extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
-    val planConstructor: LogicalPlan => LogicalPlan = planToIdConstructor(_)(SameId(id))
+    def planConstructor: LogicalPlan => LogicalPlan = planToIdConstructor(_)(SameId(id))
   }
   protected case class BinaryOperator(planToIdConstructor: (LogicalPlan, LogicalPlan) => IdGen => LogicalPlan) extends OperatorBuilder {
     private val id = idGen.id()
     _idOfLastPlan = id
-    val planConstructor: (LogicalPlan, LogicalPlan) => LogicalPlan = planToIdConstructor(_, _)(SameId(id))
+    def planConstructor: (LogicalPlan, LogicalPlan) => LogicalPlan = planToIdConstructor(_, _)(SameId(id))
   }
 
   protected class Tree(operator: OperatorBuilder) {

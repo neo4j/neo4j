@@ -65,6 +65,8 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.graphdb.schema.IndexType
 
+import scala.annotation.nowarn
+
 /**
  * This planner takes on queries that requires no planning such as schema commands
  */
@@ -95,7 +97,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
                          name: Option[String],
                          ifExistsDo: IfExistsDo,
                          options: Options): Option[LogicalPlan] = {
-      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.BTREE, name, ifExistsDo)
+      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.BTREE, name, ifExistsDo): @nowarn // we accept to use BTREE for now
       Some(plans.CreateBtreeIndex(source, entityName, propKeys, name, options))
     }
 
