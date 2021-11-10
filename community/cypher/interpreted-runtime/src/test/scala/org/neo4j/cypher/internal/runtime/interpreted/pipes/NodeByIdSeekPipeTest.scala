@@ -20,11 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
-import org.neo4j.cypher.internal.runtime.NodeReadOperations
-import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal

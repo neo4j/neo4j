@@ -27,7 +27,6 @@ import org.neo4j.values.storable.ValueCategory
 import org.neo4j.values.storable.ValueGroup
 import org.neo4j.values.storable.ValueType
 import org.scalatest.Outcome
-import org.scalatest.TestSuite
 import org.scalatest.TestSuiteMixin
 
 import java.lang.System.lineSeparator

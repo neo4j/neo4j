@@ -51,8 +51,6 @@ import org.neo4j.values.storable.Values.stringArray
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualRelationshipValue

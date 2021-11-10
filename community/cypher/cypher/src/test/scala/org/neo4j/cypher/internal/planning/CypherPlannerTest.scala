@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverCo
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.JoinDisconnectedQueryGraphComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.Monitors

@@ -71,7 +71,6 @@ import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.api.procedure.GlobalProcedures
-import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber

@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScop
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.impl.query.FunctionInformation
-import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 

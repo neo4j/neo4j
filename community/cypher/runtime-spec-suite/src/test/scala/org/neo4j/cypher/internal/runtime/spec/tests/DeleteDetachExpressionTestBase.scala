@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.kernel.impl.util.ValueUtils
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter

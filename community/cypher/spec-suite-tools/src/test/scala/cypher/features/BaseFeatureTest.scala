@@ -19,13 +19,12 @@
  */
 package cypher.features
 
-import java.net.URI
-import java.net.URL
-
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.opencypher.tools.tck.api.CypherTCK
 import org.opencypher.tools.tck.api.Scenario
+
+import java.net.URI
 
 @Execution(ExecutionMode.CONCURRENT)
 abstract class BaseFeatureTest {

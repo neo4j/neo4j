@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
-import org.neo4j.dbms.api.DatabaseManagementException
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY

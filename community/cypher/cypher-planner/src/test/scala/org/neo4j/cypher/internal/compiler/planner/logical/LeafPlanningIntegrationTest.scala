@@ -93,7 +93,6 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
-import org.neo4j.exceptions.HintException
 import org.neo4j.exceptions.IndexHintException
 import org.neo4j.graphdb.schema.IndexType
 
