@@ -875,7 +875,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
                                                   potentialUsernameAndQuery: List[(String, String)]) = {
     resultMap("transactionId").asInstanceOf[String] should startWith(transactionId) // not stable on system database, differs among things between running the test on its own and the whole class
     resultMap("currentQueryId").asInstanceOf[String] should startWith("query-") // not stable, differs among things between running the test on its own and the whole class
-    potentialUsernameAndQuery should contain(resultMap("username"), resultMap("currentQuery")) // Expected the actual result to be part of the given list
+    potentialUsernameAndQuery should contain(resultMap("username") -> resultMap("currentQuery")) // Expected the actual result to be part of the given list
 
     // Default values:
     resultMap("database") should be(DEFAULT_DATABASE_NAME)

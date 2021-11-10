@@ -97,7 +97,7 @@ case object expandShowWhere extends Rewriter with Step with PreparatoryRewriting
       } else returnClause
     )
 
-    Some(Left(newYield, newReturn))
+    Some(Left(newYield -> newReturn))
   }
 
   override def getRewriter(cypherExceptionFactory: CypherExceptionFactory,

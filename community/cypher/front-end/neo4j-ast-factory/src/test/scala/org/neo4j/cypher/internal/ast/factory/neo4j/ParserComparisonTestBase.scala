@@ -182,7 +182,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
                _: SetExactPropertiesFromMapItem => acc => TraverseChildren(acc)
           case returnItems: ReturnItems if returnItems.items.isEmpty => acc => SkipChildren(acc)
           case _: Variable if containsReadAdministratorCommand => acc => TraverseChildren(acc)
-          case astNode: ASTNode => acc => TraverseChildren(acc :+ (astNode, astNode.position))
+          case astNode: ASTNode => acc => TraverseChildren(acc :+ (astNode -> astNode.position))
           case _ => acc => TraverseChildren(acc)
         }
       }

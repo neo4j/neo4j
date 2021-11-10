@@ -48,7 +48,7 @@ class PathValueBuilderTest extends CypherFunSuite {
   private val rel4 = VirtualValues.relationship(4)
   private val state = mockState
 
-  private val graph = Map(rel1 -> (A, B), rel2 -> (B, C), rel3 -> (C, D), rel4 -> (D, E))
+  private val graph = Map(rel1 -> (A -> B), rel2 -> (B -> C), rel3 -> (C -> D), rel4 -> (D -> E))
 
   test("p = (a)") {
     val builder = new PathValueBuilder(state)

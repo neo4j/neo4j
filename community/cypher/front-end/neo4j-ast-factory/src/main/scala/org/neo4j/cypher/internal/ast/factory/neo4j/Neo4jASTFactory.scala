@@ -1705,7 +1705,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                            returnWithoutGraph: Return,
                            where: Where): Option[Either[(Yield, Option[Return]), Where]] = {
     if (yieldExpr != null) {
-      Some(Left(yieldExpr, Option(returnWithoutGraph)))
+      Some(Left(yieldExpr -> Option(returnWithoutGraph)))
     } else if (where != null) {
       Some(Right(where))
     } else {

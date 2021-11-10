@@ -123,8 +123,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("SHOW CURRENT USER YIELD * WHERE suspended = false RETURN roles") {
     val suspendedVar = varFor("suspended")
-    yields(ast.ShowCurrentUser(Some(Left(yieldClause(returnAllItems, where = Some(where(equals(suspendedVar, falseLiteral)))),
-      Some(returnClause(returnItems(variableReturnItem("roles"))))))))
+    val yield_ =  yieldClause(returnAllItems, where = Some(where(equals(suspendedVar, falseLiteral))))
+    val return_ = returnClause(returnItems(variableReturnItem("roles")))
+    val yieldOrWhere = Some(Left(yield_ -> Some(return_)))
+    yields(ast.ShowCurrentUser(yieldOrWhere))
   }
 
   //  Creating user

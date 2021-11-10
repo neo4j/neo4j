@@ -188,7 +188,7 @@ object PlannerQueryBuilder {
     qg.selections.predicates.foldLeft(Map.empty[String, (Predicate, Seq[RelTypeName])]) {
       // WHERE r:REL
       case (acc, pred@Predicate(_, HasTypes(Variable(name), relTypes))) =>
-        acc + (name -> (pred, relTypes))
+        acc + (name -> (pred -> relTypes))
 
       // WHERE r:REL OR r:OTHER_REL
       case (acc, pred@Predicate(_, Ors(HasTypes(Variable(name), headRelTypes) +: exprs))) =>
@@ -199,7 +199,7 @@ object PlannerQueryBuilder {
         // all predicates must refer to the same variable to be equivalent to [r:A|B|C]
         if (tailRelTypesOnTheSameVariable.length == exprs.length) {
           val oredRelTypes = (headRelTypes +: tailRelTypesOnTheSameVariable).flatten
-          acc + (name -> (pred, oredRelTypes))
+          acc + (name -> (pred -> oredRelTypes))
         } else {
           acc
         }
