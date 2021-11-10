@@ -94,7 +94,7 @@ public final class SuppressOutput
                     replace( original ).flush();
                     if ( failure )
                     {
-                        original.write( buffer.toByteArray() );
+                        buffer.writeTo( original );
                     }
                 }
             };

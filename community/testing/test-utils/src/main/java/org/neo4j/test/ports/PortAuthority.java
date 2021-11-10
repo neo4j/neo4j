@@ -77,6 +77,6 @@ public class PortAuthority
             new Exception().printStackTrace( printWriter );
         }
 
-        return new String( outputStream.toByteArray() );
+        return outputStream.toString();
     }
 }

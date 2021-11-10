@@ -158,7 +158,7 @@ public class AnsiLogger implements Logger
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             PrintStream ps = new PrintStream( baos );
             e.printStackTrace( ps );
-            msg.append( new String( baos.toByteArray(), StandardCharsets.UTF_8 ) );
+            msg.append( baos.toString( StandardCharsets.UTF_8 ) );
         }
         else
         {
