@@ -33,8 +33,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 class DeprecationBoltAcceptanceTest extends DeprecationAcceptanceTestBase {
   val boltConfig: Map[Setting[_], Object] =
-    Map(BoltConnector.enabled -> true, BoltConnector.listen_address -> new SocketAddress("localhost", 0))
-      .asInstanceOf[Map[Setting[_], Object]]
+    Map(BoltConnector.enabled -> java.lang.Boolean.TRUE, BoltConnector.listen_address -> new SocketAddress("localhost", 0))
 
   private val config = Config.newBuilder().set(boltConfig.asJava).build()
   private val managementService: DatabaseManagementService = new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()

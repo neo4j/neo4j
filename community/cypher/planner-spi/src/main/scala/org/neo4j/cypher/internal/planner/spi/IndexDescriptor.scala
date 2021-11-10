@@ -126,7 +126,7 @@ case class IndexDescriptor(indexType: IndexType,
   }
 
   override def hashCode(): Int = {
-    val state = Seq(indexType, entityType, properties, behaviours, isUnique)
+    val state: Seq[Any] = Seq(indexType, entityType, properties, behaviours, isUnique)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
