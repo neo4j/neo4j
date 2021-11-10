@@ -1143,4 +1143,34 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       }
     }
   }
+
+  test("index hint with node pattern predicate") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1)
+      .build()
+
+    val queries = Seq(
+      """MATCH (a:A)
+        |USING INDEX a:A(prop)
+        |WHERE a.prop > 10
+        |RETURN a, a.prop
+        |""".stripMargin,
+      """MATCH (a:A WHERE a.prop > 10)
+        |USING INDEX a:A(prop)
+        |RETURN a, a.prop
+        |""".stripMargin,
+    )
+
+    for (query <- queries) withClue(query) {
+      val plan = cfg.plan(query)
+      plan shouldEqual cfg.planBuilder()
+        .produceResults("a", "`a.prop`")
+        .projection("a.prop AS `a.prop`")
+        .nodeIndexOperator("a:A(prop > 10)")
+        .build()
+    }
+  }
 }

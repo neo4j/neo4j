@@ -357,60 +357,66 @@ case class Match(
   }
 
   private[ast] def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
-    val propertiesInPredicates: Seq[String] = (where match {
-      case Some(w) => w.treeFold(Seq.empty[String]) {
-        case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
-          acc => SkipChildren(acc :+ name)
-        case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
-          acc => SkipChildren(acc :+ name)
-        case In(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => SkipChildren(acc :+ name)
-        case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
-          acc => SkipChildren(acc :+ name)
-        case StartsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => SkipChildren(acc :+ name)
-        case EndsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => SkipChildren(acc :+ name)
-        case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => SkipChildren(acc :+ name)
-        case FunctionInvocation(Namespace(List("point")), FunctionName("withinBBox"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _, _)) if id == variable =>
-          acc => SkipChildren(acc :+ name)
-        case expr: InequalityExpression =>
-          acc =>
-            val newAcc: Seq[String] = Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
-              expr match {
-                case Property(Variable(id), PropertyKeyName(name)) if id == variable =>
-                  acc :+ name
-                case FunctionInvocation(Namespace(List(point)), FunctionName("distance"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _)) if id == variable && point.equalsIgnoreCase("point") =>
-                  acc :+ name
-                case _ =>
-                  acc
-              }
-            }
-            SkipChildren(newAcc)
-        case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
-          acc => TraverseChildren(acc)
-        case _ =>
-          acc => SkipChildren(acc)
+    val propertiesInPredicates: Seq[String] = where.map(w => collectPropertiesInPredicates(variable, w.expression)).getOrElse(Seq.empty[String]) ++
+      pattern.treeFold(Seq.empty[String]) {
+        case NodePattern(Some(Variable(id)), _, properties, predicate) if variable == id =>
+          acc => SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(collectPropertiesInPredicates(variable, _)).getOrElse(Seq.empty[String]))
+        case RelationshipPattern(Some(Variable(id)), _, _, properties, predicate, _) if variable == id =>
+          acc => SkipChildren(acc ++ collectPropertiesInPropertyMap(properties))
       }
-      case None => Seq.empty
-    }) ++ pattern.treeFold(Seq.empty[String]) {
-      case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop)), _) if variable == id =>
-        acc => SkipChildren(acc ++ prop.map(_._1.name))
-      case RelationshipPattern(Some(Variable(id)), _, _, Some(MapExpression(prop)), _, _) if variable == id =>
-        acc => SkipChildren(acc ++ prop.map(_._1.name))
-    }
 
     propertiesInHint.forall(p => propertiesInPredicates.contains(p.name))
   }
 
-  /*
+  private def collectPropertiesInPropertyMap(properties: Option[Expression]): Seq[String] =
+    properties match {
+      case Some(MapExpression(prop)) => prop.map(_._1.name)
+      case _ => Seq.empty[String]
+    }
+
+  private def collectPropertiesInPredicates(variable: String, whereExpression: Expression): Seq[String] = whereExpression.treeFold(Seq.empty[String]) {
+      case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
+        acc => SkipChildren(acc :+ name)
+      case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
+        acc => SkipChildren(acc :+ name)
+      case In(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+        acc => SkipChildren(acc :+ name)
+      case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
+        acc => SkipChildren(acc :+ name)
+      case StartsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+        acc => SkipChildren(acc :+ name)
+      case EndsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+        acc => SkipChildren(acc :+ name)
+      case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+        acc => SkipChildren(acc :+ name)
+      case FunctionInvocation(Namespace(List("point")), FunctionName("withinBBox"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _, _)) if id == variable =>
+        acc => SkipChildren(acc :+ name)
+      case expr: InequalityExpression =>
+        acc =>
+          val newAcc: Seq[String] = Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
+            expr match {
+              case Property(Variable(id), PropertyKeyName(name)) if id == variable =>
+                acc :+ name
+              case FunctionInvocation(Namespace(List(point)), FunctionName("distance"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _)) if id == variable && point.equalsIgnoreCase("point") =>
+                acc :+ name
+              case _ =>
+                acc
+            }
+          }
+          SkipChildren(newAcc)
+      case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
+        acc => TraverseChildren(acc)
+      case _ =>
+        acc => SkipChildren(acc)
+    }
+
+  /**
    * Checks validity of the other side, X, of expressions such as
-   *  USING INDEX ON n:Label(prop) WHERE n.prop = X (or X = n.prop)
+   * `USING INDEX ON n:Label(prop) WHERE n.prop = X (or X = n.prop)`
    *
    * Returns true if X is a valid expression in this context, otherwise false.
    */
-  private def applicable(other: Expression) = {
+  private def applicable(other: Expression): Boolean = {
     other match {
       case f: FunctionInvocation => f.function != functions.Id
       case _ => true
