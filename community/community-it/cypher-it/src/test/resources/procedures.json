@@ -1182,48 +1182,6 @@
     "enterpriseOnly": false
   },
   {
-    "name": "db.schemaStatements",
-    "description": "List all statements for creating and dropping existing indexes and constraints. Note that only index types introduced before Neo4j 4.3 are included.",
-    "mode": "READ",
-    "worksOnSystem": true,
-    "signature": "db.schemaStatements() :: (name :: STRING?, type :: STRING?, createStatement :: STRING?, dropStatement :: STRING?)",
-    "argumentDescription": [],
-    "returnDescription": [
-      {
-        "name": "name",
-        "description": "name :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "type",
-        "description": "type :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "createStatement",
-        "description": "createStatement :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "dropStatement",
-        "description": "dropStatement :: STRING?",
-        "type": "STRING?"
-      }
-    ],
-    "admin": false,
-    "rolesExecution": [
-      "PUBLIC",
-      "admin"
-    ],
-    "rolesBoostedExecution": [
-      "admin"
-    ],
-    "option": {
-      "deprecated": true
-    },
-    "enterpriseOnly": false
-  },
-  {
     "name": "db.stats.clear",
     "description": "Clear collected data of a given data section. Valid sections are 'QUERIES'",
     "mode": "READ",

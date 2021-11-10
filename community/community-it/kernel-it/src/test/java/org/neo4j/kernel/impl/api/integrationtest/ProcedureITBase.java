@@ -53,11 +53,6 @@ public interface ProcedureITBase
                         "() :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, " +
                                 "entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?)",
                         "List all indexes in the database.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
-                proc( "db.schemaStatements",
-                        "() :: (name :: STRING?, type :: STRING?, createStatement :: STRING?, dropStatement :: STRING?)",
-                        "List all statements for creating and dropping existing indexes and constraints. " +
-                                "Note that only index types introduced before Neo4j 4.3 are included.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.awaitIndex", "(indexName :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for an index to come online (for example: CALL db.awaitIndex(\"MyIndex\", 300)).",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),

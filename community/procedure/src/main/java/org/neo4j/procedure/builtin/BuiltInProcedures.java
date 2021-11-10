@@ -200,23 +200,6 @@ public class BuiltInProcedures
         return result.stream();
     }
 
-    @Deprecated( since = "4.2.0", forRemoval = true )
-    @SystemProcedure
-    @Description( "List all statements for creating and dropping existing indexes and constraints. " +
-            "Note that only index types introduced before Neo4j 4.3 are included." )
-    @Procedure( name = "db.schemaStatements", mode = READ, deprecatedBy = "SHOW INDEXES YIELD * command and SHOW CONSTRAINTS YIELD * command" )
-    public Stream<SchemaStatementResult> schemaStatements() throws ProcedureException
-    {
-        if ( callContext.isSystemDatabase() )
-        {
-            return Stream.empty();
-        }
-
-        SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-        final TokenRead tokenRead = kernelTransaction.tokenRead();
-        return SchemaStatementProcedure.createSchemaStatementResults( schemaRead, tokenRead ).stream();
-    }
-
     private static IndexResult asIndexResult( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
     {
         SchemaDescriptor schema = index.schema();
