@@ -144,11 +144,6 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.kohlschutter.junixsocket</groupId>
-            <artifactId>junixsocket-core</artifactId>
-            <scope>test</scope>
-        </dependency>
 
         <!-- This dependency is needed for Netty to be able to generate
     self signed certificate on a JDK without sun.security.* package -->

@@ -19,26 +19,59 @@
  */
 package org.neo4j.bolt.testing.client;
 
-import org.newsclub.net.unix.AFUNIXSocket;
-
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
-public class UnixDomainSocketConnection extends SocketConnection
+import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.io.memory.ByteBuffers;
+
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
+public class UnixDomainSocketConnection implements TransportConnection
 {
 
-    public UnixDomainSocketConnection() throws IOException
+    private SocketChannel socketChannel;
+
+    @Override
+    public TransportConnection connect( HostnamePort address ) throws Exception
     {
-        super( AFUNIXSocket.newInstance() );
+        throw new UnsupportedOperationException( "UnixDomainSocketConnection can't connect to " + address );
     }
 
     @Override
     public TransportConnection connect( SocketAddress address ) throws Exception
     {
-        socket.connect( address );
-
-        in = socket.getInputStream();
-        out = socket.getOutputStream();
+        socketChannel = SocketChannel.open( address );
         return this;
+    }
+
+    @Override
+    public TransportConnection send( byte[] rawBytes ) throws IOException
+    {
+        socketChannel.write( ByteBuffer.wrap( rawBytes ) );
+        return this;
+    }
+
+    @Override
+    public byte[] recv( int length ) throws IOException
+    {
+        ByteBuffer byteBuffer = ByteBuffers.allocate( length, INSTANCE );
+        while ( byteBuffer.hasRemaining() )
+        {
+            socketChannel.read( byteBuffer );
+        }
+        byteBuffer.flip();
+        return byteBuffer.array();
+    }
+
+    @Override
+    public void disconnect() throws IOException
+    {
+        if ( socketChannel != null )
+        {
+            socketChannel.close();
+        }
     }
 }

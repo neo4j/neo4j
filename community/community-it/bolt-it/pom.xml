@@ -108,9 +108,5 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.kohlschutter.junixsocket</groupId>
-            <artifactId>junixsocket-core</artifactId>
-        </dependency>
     </dependencies>
 </project>
