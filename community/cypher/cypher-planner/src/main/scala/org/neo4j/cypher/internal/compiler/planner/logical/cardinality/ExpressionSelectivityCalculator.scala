@@ -77,8 +77,6 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 
-import scala.language.postfixOps
-
 case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner, planningTextIndexesEnabled: Boolean) {
 
   private val indexTypesPriorityForSubstringSargable: Seq[IndexType] = Seq(
@@ -121,7 +119,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, Some(substring))
 
     // WHERE x.prop CONTAINS expression
-    case Contains(Property(Variable(name), propertyKey), expr) =>
+    case Contains(Property(Variable(name), propertyKey), _) =>
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, None)
 
     // WHERE x.prop ENDS WITH 'substring'
@@ -129,7 +127,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, Some(substring))
 
     // WHERE x.prop ENDS WITH expression
-    case EndsWith(Property(Variable(name), propertyKey), expr) =>
+    case EndsWith(Property(Variable(name), propertyKey), _) =>
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, None)
 
     // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index

@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
-import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
 
@@ -39,7 +38,6 @@ case class AssumeIndependenceQueryGraphCardinalityModel(planContext: PlanContext
                                                         selectivityCalculator: SelectivityCalculator,
                                                         combiner: SelectivityCombiner) extends QueryGraphCardinalityModel {
 
-  private implicit val numericCardinality: NumericCardinality.type = NumericCardinality
   private implicit val numericMultiplier: NumericMultiplier.type = NumericMultiplier
 
   private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(planContext.statistics, combiner)
