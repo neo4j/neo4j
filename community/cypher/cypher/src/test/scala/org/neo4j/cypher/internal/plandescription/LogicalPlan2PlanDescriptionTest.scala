@@ -125,6 +125,7 @@ import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
@@ -627,10 +628,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("Argument") {
-    assertGood(attach(org.neo4j.cypher.internal.logical.plans.Argument(Set.empty), 95.0),
+    assertGood(attach(plans.Argument(Set.empty), 95.0),
       planDescription(id, "EmptyRow", NoChildren, Seq.empty, Set.empty))
 
-    assertGood(attach(org.neo4j.cypher.internal.logical.plans.Argument(Set("a", "b")), 95.0),
+    assertGood(attach(plans.Argument(Set("a", "b")), 95.0),
       planDescription(id, "Argument", NoChildren, Seq(details("a, b")), Set("a", "b")))
   }
 
