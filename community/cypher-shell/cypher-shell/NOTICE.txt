@@ -43,6 +43,7 @@ BSD - Scala License
   Scala Library
 
 BSD License
+  JLine JANSI Terminal
   JLine Reader
   JLine Terminal
 

@@ -33,13 +33,14 @@ import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
-import static org.fusesource.jansi.internal.CLibrary.STDIN_FILENO;
-import static org.fusesource.jansi.internal.CLibrary.STDOUT_FILENO;
 import static org.fusesource.jansi.internal.CLibrary.isatty;
 import static org.neo4j.shell.system.Utils.isWindows;
 
 public interface ShellRunner
 {
+    int STDIN_FILENO = 0;
+    int STDOUT_FILENO = 1;
+
     /**
      * @param cliArgs
      * @return true if an interactive shellrunner should be used, false otherwise
