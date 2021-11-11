@@ -39,13 +39,17 @@ object QgWithLeafInfo {
   sealed trait Identifier {
     def name: String
 
+    def isStable: Boolean
     def isIdStable: Boolean
   }
 
   case class StableIdentifier(override val name: String,
-                              override val isIdStable: Boolean) extends Identifier
+                              override val isIdStable: Boolean) extends Identifier {
+    override def isStable: Boolean = true
+  }
 
   case class UnstableIdentifier(override val name: String) extends Identifier {
+    override def isStable: Boolean = false
     override def isIdStable: Boolean = false
   }
 

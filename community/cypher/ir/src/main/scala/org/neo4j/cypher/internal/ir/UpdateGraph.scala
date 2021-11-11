@@ -230,7 +230,9 @@ trait UpdateGraph {
 
       noLabelOrPropOverlap || //MATCH () CREATE/MERGE (...)?
           (labelsOnCurrentNode intersect labelsToCreate).nonEmpty || //MATCH (:A) CREATE (:A)?
-          propertiesOnCurrentNode.exists(propertiesToCreate.overlaps) || //MATCH ({prop:42}) CREATE ({prop:...})
+          (!currentNode.isStable &&
+            labelsOnCurrentNode.isEmpty &&
+            propertiesOnCurrentNode.exists(propertiesToCreate.overlaps)) || //MATCH ({prop:42}) CREATE ({prop:...})
           //MATCH (n:A), (m:B) REMOVE n:B
           //MATCH (n:A), (m:A) REMOVE m:A
           (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
