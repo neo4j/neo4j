@@ -20,7 +20,6 @@
 package org.neo4j.harness.internal;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
@@ -52,16 +51,6 @@ public class InProcessNeo4j implements Neo4j
     private final Config config;
     private final Closeable additionalClosable;
     private ConnectorPortRegister connectorPortRegister;
-
-    /**
-     * @deprecated Use {@link #InProcessNeo4j(Path, Path, Path, DatabaseManagementService, Config, Closeable)}.
-     */
-    @Deprecated( forRemoval = true )
-    public InProcessNeo4j( File serverFolder, File userLogFile, File internalLogFile, DatabaseManagementService managementService, Config config,
-            Closeable additionalClosable )
-    {
-        this( serverFolder.toPath(), userLogFile.toPath(), internalLogFile.toPath(), managementService, config, additionalClosable );
-    }
 
     public InProcessNeo4j( Path serverFolder, Path userLogFile, Path internalLogFile, DatabaseManagementService managementService, Config config,
             Closeable additionalClosable )

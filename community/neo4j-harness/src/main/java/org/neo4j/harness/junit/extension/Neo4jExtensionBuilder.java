@@ -19,7 +19,6 @@
  */
 package org.neo4j.harness.junit.extension;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.function.Function;
 
@@ -49,19 +48,6 @@ public class Neo4jExtensionBuilder
     protected Neo4jExtensionBuilder( Neo4jBuilder builder )
     {
         this.builder = builder;
-    }
-
-    /**
-     * Configure the Neo4j to use provided directory
-     *
-     * @param workingDirectory new working directory
-     * @return this configurator instance
-     * @deprecated Use {@link #withFolder(Path)}.
-     */
-    @Deprecated( forRemoval = true )
-    public Neo4jExtensionBuilder withFolder( File workingDirectory )
-    {
-        return withFolder( workingDirectory.toPath() );
     }
 
     /**
@@ -146,19 +132,6 @@ public class Neo4jExtensionBuilder
      * (for example, myFixture.cyp), or a directory containing such files with the suffix ".cyp".
      * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
      * @return this configurator instance
-     * @deprecated Use {@link #withFixture(Path)}.
-     */
-    @Deprecated( forRemoval = true )
-    public Neo4jExtensionBuilder withFixture( File cypherFileOrDirectory )
-    {
-        return withFixture( cypherFileOrDirectory.toPath() );
-    }
-
-    /**
-     * Data fixtures to inject upon server build. This can be either a file with a plain-text cypher query
-     * (for example, myFixture.cyp), or a directory containing such files with the suffix ".cyp".
-     * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
-     * @return this configurator instance
      */
     public Neo4jExtensionBuilder withFixture( Path cypherFileOrDirectory )
     {
@@ -186,19 +159,6 @@ public class Neo4jExtensionBuilder
     public Neo4jExtensionBuilder withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
     {
         builder = builder.withFixture( fixtureFunction );
-        return this;
-    }
-
-    /**
-     * Pre-populate the server with databases copied from the specified source directory.
-     * The source directory needs to have sub-folders `databases/neo4j` in which the source store files are located.
-     * @param sourceDirectory the directory to copy from
-     * @return this configurator instance
-     */
-    @Deprecated( forRemoval = true )
-    public Neo4jExtensionBuilder copyFrom( File sourceDirectory )
-    {
-        builder = builder.copyFrom( sourceDirectory.toPath() );
         return this;
     }
 

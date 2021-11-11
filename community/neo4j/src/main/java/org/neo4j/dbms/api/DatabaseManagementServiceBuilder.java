@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.api;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,15 +76,6 @@ public class DatabaseManagementServiceBuilder
     public DatabaseManagementServiceBuilder( Path homeDirectory )
     {
         this( homeDirectory, extension -> true );
-    }
-
-    /**
-     * @deprecated Use {@link #DatabaseManagementServiceBuilder(Path)}.
-     */
-    @Deprecated( forRemoval = true )
-    public DatabaseManagementServiceBuilder( File homeDirectory )
-    {
-        this( homeDirectory.toPath() );
     }
 
     public DatabaseManagementService build()
@@ -189,15 +179,6 @@ public class DatabaseManagementServiceBuilder
     {
         config.setRaw( raw );
         return this;
-    }
-
-    /**
-     * @deprecated Use {@link #loadPropertiesFromFile(Path)} instead;
-     */
-    @Deprecated( forRemoval = true )
-    public DatabaseManagementServiceBuilder loadPropertiesFromFile( String fileName )
-    {
-        return loadPropertiesFromFile( Path.of( fileName ) );
     }
 
     public DatabaseManagementServiceBuilder loadPropertiesFromFile( Path path )

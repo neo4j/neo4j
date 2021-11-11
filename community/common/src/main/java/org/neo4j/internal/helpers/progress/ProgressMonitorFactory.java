@@ -43,30 +43,13 @@ public abstract class ProgressMonitorFactory
 
     public static ProgressMonitorFactory textual( final OutputStream out )
     {
-        return textual( new OutputStreamWriter( out, StandardCharsets.UTF_8 ), false );
-    }
-
-    @Deprecated
-    public static ProgressMonitorFactory textualWithDeltaTimes( final OutputStream out )
-    {
-        return textual( new OutputStreamWriter( out, StandardCharsets.UTF_8 ), true );
-    }
-
-    @Deprecated
-    public static ProgressMonitorFactory textualWithDeltaTimes( final Writer out )
-    {
-        return textual( out, true );
+        return textual( new OutputStreamWriter( out, StandardCharsets.UTF_8 ), false, Indicator.Textual.DEFAULT_DOTS_PER_LINE,
+                Indicator.Textual.DEFAULT_NUM_LINES );
     }
 
     public static ProgressMonitorFactory textual( final Writer out )
     {
-        return textual( out, false );
-    }
-
-    @Deprecated
-    private static ProgressMonitorFactory textual( final Writer out, boolean deltaTimes )
-    {
-        return textual( out, deltaTimes, Indicator.Textual.DEFAULT_DOTS_PER_LINE, Indicator.Textual.DEFAULT_NUM_LINES );
+        return textual( out, false, Indicator.Textual.DEFAULT_DOTS_PER_LINE, Indicator.Textual.DEFAULT_NUM_LINES );
     }
 
     public static ProgressMonitorFactory textual( final OutputStream out, boolean deltaTimes, int dotsPerLine, int numLines )

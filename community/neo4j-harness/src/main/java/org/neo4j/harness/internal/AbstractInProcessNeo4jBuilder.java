@@ -21,7 +21,6 @@ package org.neo4j.harness.internal;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -87,26 +86,12 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         withWorkingDir( dataDir );
     }
 
-    @SuppressWarnings( "removal" )
-    @Override
-    public Neo4jBuilder withWorkingDir( File workingDirectory )
-    {
-        return withWorkingDir( workingDirectory.toPath() );
-    }
-
     @Override
     public Neo4jBuilder withWorkingDir( Path workingDirectory )
     {
         Path dataDir = workingDirectory.resolve( randomFolderName() ).toAbsolutePath();
         setWorkingDirectory( dataDir );
         return this;
-    }
-
-    @SuppressWarnings( "removal" )
-    @Override
-    public Neo4jBuilder copyFrom( File originalStoreDir )
-    {
-        return copyFrom( originalStoreDir.toPath() );
     }
 
     @Override
@@ -212,13 +197,6 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     {
         this.disabledServer = true;
         return this;
-    }
-
-    @SuppressWarnings( "removal" )
-    @Override
-    public Neo4jBuilder withFixture( File cypherFileOrDirectory )
-    {
-        return withFixture( cypherFileOrDirectory.toPath() );
     }
 
     @Override
