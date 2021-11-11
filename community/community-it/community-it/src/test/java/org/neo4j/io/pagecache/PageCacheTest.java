@@ -39,6 +39,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -74,6 +75,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.util.concurrent.BinaryLatch;
+import org.neo4j.util.concurrent.Futures;
 
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
@@ -435,19 +437,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         Path b = existingFile( "b" );
         Path c = existingFile( "c" );
 
-        BinaryLatch limiterStartLatch = new BinaryLatch();
+        CountDownLatch closeFilesLatch = new CountDownLatch( 3 );
         BinaryLatch limiterBlockLatch = new BinaryLatch();
-        var ioController = new EmptyIOController()
-        {
-            @Override
-            public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent )
-            {
-                limiterStartLatch.release();
-                limiterBlockLatch.await();
-                super.maybeLimitIO( recentlyCompletedIOs, flushable, flushEvent );
-            }
-        };
-        Future<?> flusher;
+        var ioController = new LatchedIOController( closeFilesLatch, limiterBlockLatch );
+        List<Future<?>> flushers = new ArrayList<>();
 
         try ( PagedFile pfA = pageCache.map( a, filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController );
                 PagedFile pfB = pageCache.map( b, filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(),  ioController );
@@ -466,20 +459,29 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 assertTrue( cursor.next() );
             }
-            flusher = executor.submit( () ->
+
+            flushers.add( executor.submit( () ->
             {
                 pfA.flushAndForce();
+                return null;
+            } ) );
+            flushers.add( executor.submit( () ->
+            {
                 pfB.flushAndForce();
+                return null;
+            } ) );
+            flushers.add( executor.submit( () ->
+            {
                 pfC.flushAndForce();
                 return null;
-            } );
+            } ) );
 
-            limiterStartLatch.await(); // Flusher is now stuck inside flushAndForce.
+            closeFilesLatch.await(); // Flusher is now stuck inside flushAndForce.
         } // We should be able to unmap all the files.
         // And then when the flusher resumes again, it should not throw any exceptions from the asynchronously
         // closed files.
         limiterBlockLatch.release();
-        flusher.get(); // This must not throw.
+        Futures.getAll( flushers ); // This must not throw.
     }
 
     @Test
@@ -6405,6 +6407,26 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
             callbackCounter.getAndIncrement();
+        }
+    }
+
+    private static class LatchedIOController extends EmptyIOController
+    {
+        private final CountDownLatch closeLatch;
+        private final BinaryLatch limiterBlockLatch;
+
+        LatchedIOController( CountDownLatch closeLatch, BinaryLatch limiterBlockLatch )
+        {
+            this.closeLatch = closeLatch;
+            this.limiterBlockLatch = limiterBlockLatch;
+        }
+
+        @Override
+        public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent )
+        {
+            closeLatch.countDown();
+            limiterBlockLatch.await();
+            super.maybeLimitIO( recentlyCompletedIOs, flushable, flushEvent );
         }
     }
 }
