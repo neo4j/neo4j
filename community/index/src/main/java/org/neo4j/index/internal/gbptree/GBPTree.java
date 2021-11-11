@@ -31,14 +31,15 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.Exceptions;
@@ -1131,11 +1132,15 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         while ( numberOfSubtrees < desiredNumberOfPartitions );
 
         // From the set of splitter keys, create partitions
-        KeyPartitioning<KEY> partitioning = new KeyPartitioning<>( layout );
-        return partitioning.partition( splitterKeysInRange, fromInclusive, toExclusive, desiredNumberOfPartitions ).stream()
-                           .map( partition -> (Seeker.WithContext<KEY,VALUE>) context ->
-                                   seekerFactory.seek( partition.getLeft(), partition.getRight(), context ) )
-                           .collect( Collectors.toUnmodifiableList() );
+        List<KEY> edges = new KeyPartitioning<>( layout ).partition( splitterKeysInRange, fromInclusive, toExclusive, desiredNumberOfPartitions );
+        List<Seeker.WithContext<KEY,VALUE>> partitions = new ArrayList<>();
+        for ( int i = 0; i < edges.size() - 1; i++ )
+        {
+            int from = i;
+            int to = i + 1;
+            partitions.add( context -> seekerFactory.seek( edges.get( from ), edges.get( to ), context ) );
+        }
+        return partitions;
     }
 
     /**

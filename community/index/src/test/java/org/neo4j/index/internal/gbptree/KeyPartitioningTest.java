@@ -19,16 +19,18 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static java.lang.Math.abs;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,33 +51,31 @@ class KeyPartitioningTest
         // given
         Layout<PartitionKey,?> layout = layout();
         int numberOfKeys = random.nextInt( 50, 200 );
-        List<PartitionKey> allKeys = keys( numberOfKeys );
+        SortedSet<PartitionKey> allKeys = keys( numberOfKeys );
         KeyPartitioning<PartitionKey> partitioning = new KeyPartitioning<>( layout );
 
         // when
         int from = random.nextInt( numberOfKeys - 1 );
         int to = random.nextInt( from, numberOfKeys );
         int numberOfPartitions = from == to ? 1 : random.nextInt( 1, to - from );
-        List<Pair<PartitionKey,PartitionKey>> partitions =
-                partitioning.partition( allKeys, new PartitionKey( from ), new PartitionKey( to ), numberOfPartitions );
+
+        List<PartitionKey> partitionEdges = partitioning.partition( allKeys, new PartitionKey( from ), new PartitionKey( to ), numberOfPartitions );
 
         // then verify that the partitions have no seams in between them, that they cover the whole requested range and are fairly evenly distributed
-        assertEquals( numberOfPartitions, partitions.size() );
-        assertEquals( from, partitions.get( 0 ).getLeft().value );
-        assertEquals( to, partitions.get( partitions.size() - 1 ).getRight().value );
-        int diff = diff( partitions.get( 0 ) );
-        for ( int i = 1; i < partitions.size(); i++ )
+        assertEquals( numberOfPartitions, partitionEdges.size() - 1 );
+        assertEquals( from, partitionEdges.get( 0 ).value );
+        assertEquals( to, partitionEdges.get( partitionEdges.size() - 1 ).value );
+        int diff = diff( partitionEdges, 0 );
+        for ( int i = 1; i < partitionEdges.size() - 2; i++ )
         {
-            Pair<PartitionKey,PartitionKey> prev = partitions.get( i - 1 );
-            Pair<PartitionKey,PartitionKey> current = partitions.get( i );
-            assertEquals( prev.getRight().value, current.getLeft().value );
-            assertTrue( abs( diff - diff( current ) ) <= 1 );
+            assertTrue( abs( diff - diff( partitionEdges, i ) ) <= 1 );
         }
     }
 
-    private static int diff( Pair<PartitionKey,PartitionKey> partition )
+    private static int diff( List<PartitionKey> partitionEdges, int partition )
     {
-        return partition.getRight().value - partition.getLeft().value;
+        assertTrue( partition < partitionEdges.size() - 2 );
+        return partitionEdges.get( partition ).value - partitionEdges.get( partition + 1 ).value;
     }
 
     private static Layout<PartitionKey,?> layout()
@@ -92,14 +92,11 @@ class KeyPartitioningTest
         return layout;
     }
 
-    private static List<PartitionKey> keys( int count )
+    private static SortedSet<PartitionKey> keys( int count )
     {
-        List<PartitionKey> keys = new ArrayList<>();
-        for ( int i = 0; i < count; i++ )
-        {
-            keys.add( new PartitionKey( i ) );
-        }
-        return keys;
+        return IntStream.range( 0, count )
+                        .mapToObj( PartitionKey::new )
+                        .collect( Collectors.toCollection( () -> new TreeSet<>( layout() ) ) );
     }
 
     private static class PartitionKey
