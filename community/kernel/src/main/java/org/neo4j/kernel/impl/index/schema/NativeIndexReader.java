@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Iterator;
-import java.util.Optional;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -211,8 +211,8 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
     {
         private final PropertyIndexQuery[] query;
         private final boolean filter;
-        private final Iterator<Seeker.WithContext<KEY,NullValue>> partitions;
-        private final int numberOfPartitions;
+        private final List<KEY> partitionEdges;
+        private final AtomicInteger nextFrom = new AtomicInteger();
 
         NativePartitionedValueSeek( int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query ) throws IOException
         {
@@ -226,38 +226,34 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
 
             filter = initializeRangeForQuery( fromInclusive, toExclusive, this.query );
 
-            final var partitions = tree.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, queryContext.cursorContext() );
-            this.numberOfPartitions = partitions.size();
-            this.partitions = partitions.iterator();
+            partitionEdges = tree.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, queryContext.cursorContext() );
         }
 
         @Override
         public int getNumberOfPartitions()
         {
-            return numberOfPartitions;
+            return partitionEdges.size() - 1;
         }
 
         @Override
         public IndexProgressor reservePartition( IndexProgressor.EntityValueClient client, CursorContext cursorContext )
         {
-            final var partition = getNextPotentialPartition();
-            if ( partition.isEmpty() )
+            final var from = nextFrom.getAndIncrement();
+            final var to = from + 1;
+            if ( to >= partitionEdges.size() )
             {
                 return IndexProgressor.EMPTY;
             }
             try
             {
-                return getIndexProgressor( partition.get().with( cursorContext ), client, filter, query );
+                final var fromInclusive = partitionEdges.get( from );
+                final var toExclusive = partitionEdges.get( to );
+                return getIndexProgressor( tree.seek( fromInclusive, toExclusive, cursorContext ), client, filter, query );
             }
             catch ( IOException e )
             {
                 throw new UncheckedIOException( e );
             }
-        }
-
-        private synchronized Optional<Seeker.WithContext<KEY,NullValue>> getNextPotentialPartition()
-        {
-            return partitions.hasNext() ? Optional.of( partitions.next() ) : Optional.empty();
         }
     }
 }

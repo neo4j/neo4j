@@ -50,11 +50,11 @@ import java.util.stream.LongStream;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Math.max;
@@ -681,10 +681,11 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             KEY to = key( end() );
             if ( partitionedSeek )
             {
-                Collection<Seeker<KEY,VALUE>> partitions = new ArrayList<>();
-                for ( Seeker.WithContext<KEY,VALUE> seeker : tree.partitionedSeek( from, to, 10, NULL ) )
+                List<KEY> partitionEdges = tree.partitionedSeek( from, to, 10, NULL );
+                List<Seeker<KEY,VALUE>> partitions = new ArrayList<>( partitionEdges.size() - 1 );
+                for ( int i = 0; i < partitionEdges.size() - 1; i++ )
                 {
-                    partitions.add( seeker.with( NULL ) );
+                    partitions.add( tree.seek( partitionEdges.get( i ), partitionEdges.get( i + 1 ), NULL ) );
                 }
                 return new PartitionBridgingSeeker<>( partitions );
             }

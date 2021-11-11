@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Iterator;
-import java.util.Optional;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -197,8 +197,8 @@ public class DefaultTokenIndexReader implements TokenIndexReader
     private class NativePartitionedTokenScan implements PartitionedTokenScan
     {
         private final EntityRange range = EntityRange.FULL;
-        private final Iterator<Seeker.WithContext<TokenScanKey,TokenScanValue>> partitions;
-        private final int numberOfPartitions;
+        private final List<TokenScanKey> partitionEdges;
+        private final AtomicInteger nextFrom = new AtomicInteger();
 
         NativePartitionedTokenScan( int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query ) throws IOException
         {
@@ -206,38 +206,34 @@ public class DefaultTokenIndexReader implements TokenIndexReader
             int tokenId = query.tokenId();
             final var fromInclusive = new TokenScanKey( tokenId, rangeOf( range.fromInclusive ) );
             final var toExclusive = new TokenScanKey( tokenId, rangeOf( range.toExclusive ) );
-            final var partitions = index.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, cursorContext );
-            this.numberOfPartitions = partitions.size();
-            this.partitions = partitions.iterator();
+            partitionEdges = index.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, cursorContext );
         }
 
         @Override
         public int getNumberOfPartitions()
         {
-            return numberOfPartitions;
+            return partitionEdges.size() - 1;
         }
 
         @Override
         public IndexProgressor reservePartition( IndexProgressor.EntityTokenClient client, CursorContext cursorContext )
         {
-            final var partition = getNextPotentialPartition();
-            if ( partition.isEmpty() )
+            final var from = nextFrom.getAndIncrement();
+            final var to = from + 1;
+            if ( to >= partitionEdges.size() )
             {
                 return IndexProgressor.EMPTY;
             }
             try
             {
-                return new TokenScanValueIndexProgressor( partition.get().with( cursorContext ), client, IndexOrder.NONE, range );
+                final var fromInclusive = partitionEdges.get( from );
+                final var toExclusive = partitionEdges.get( to );
+                return new TokenScanValueIndexProgressor( index.seek( fromInclusive, toExclusive, cursorContext ), client, IndexOrder.NONE, range );
             }
             catch ( IOException e )
             {
                 throw new UncheckedIOException( e );
             }
-        }
-
-        private synchronized Optional<Seeker.WithContext<TokenScanKey,TokenScanValue>> getNextPotentialPartition()
-        {
-            return partitions.hasNext() ? Optional.of( partitions.next() ) : Optional.empty();
         }
     }
 }

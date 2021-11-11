@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -155,11 +156,11 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
         highest.initValuesAsHighest();
         try
         {
-            Collection<Seeker.WithContext<KEY,NullValue>> seekersWithContext = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
+            List<KEY> partitionEdges = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
             Collection<IndexEntriesReader> readers = new ArrayList<>();
-            for ( Seeker.WithContext<KEY,NullValue> seekerWithContext : seekersWithContext )
+            for ( int i = 0; i < partitionEdges.size() - 1; i++ )
             {
-                Seeker<KEY,NullValue> seeker = seekerWithContext.with( cursorContext );
+                Seeker<KEY,NullValue> seeker = tree.seek( partitionEdges.get( i ), partitionEdges.get( i + 1 ), cursorContext );
                 readers.add( new IndexEntriesReader()
                 {
                     @Override
