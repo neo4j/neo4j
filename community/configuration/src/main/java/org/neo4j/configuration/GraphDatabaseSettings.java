@@ -135,12 +135,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.directories.dumps.root", PATH, Path.of( DEFAULT_DUMPS_DIR_NAME ) )
                     .setDependency( data_directory ).immutable().build();
 
-    @Description( "Only allow read operations from this Neo4j instance. " +
-            "This mode still requires write access to the directory for lock purposes. " +
-            "Replaced by: dbms.databases.default_to_read_only, dbms.databases.read_only, dbms.databases.writable." )
-    @Deprecated( since = "4.3.0", forRemoval = true )
-    public static final Setting<Boolean> read_only = newBuilder( "dbms.read_only", BOOL, false ).build();
-
     @Description( "Whether or not any database on this instance are read_only by default. If false, individual databases may be marked as read_only using " +
                   "dbms.database.read_only. If true, individual databases may be marked as writable using dbms.databases.writable." )
     public static final Setting<Boolean> read_only_database_default = newBuilder( "dbms.databases.default_to_read_only", BOOL, false )
@@ -419,17 +413,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "an explicit timezone will use this configured default timezone." )
     public static final Setting<ZoneId> db_temporal_timezone = newBuilder( "db.temporal.timezone", TIMEZONE, ZoneOffset.UTC ).build();
 
-    @Deprecated( since = "4.2.0", forRemoval = true )
-    @Description( "Minimum time interval after last rotation of the user log (_neo4j.log_) before it " +
-            "may be rotated again. Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored." )
-    public static final Setting<Duration> store_user_log_rotation_delay =
-            newBuilder( "dbms.logs.user.rotation.delay", DURATION, ofSeconds( 300 ) ).build();
-
-    @Deprecated( since = "4.2.0", forRemoval = true )
-    @Description( "Minimum time interval after last rotation of the debug log before it may be rotated again." )
-    public static final Setting<Duration> store_internal_log_rotation_delay =
-            newBuilder( "dbms.logs.debug.rotation.delay", DURATION, ofSeconds( 300 ) ).build();
-
     @Description( "Maximum number of history files for the user log (_neo4j.log_). " +
                   "Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored." )
     public static final Setting<Integer> store_user_log_max_archives =
@@ -518,12 +501,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "triggered" )
     public static final Setting<Integer> index_sampling_update_percentage =
             newBuilder( "dbms.index_sampling.update_percentage", INT, 5 ).addConstraint( min( 0 ) ).build();
-
-    // Lucene settings
-    @Deprecated( since = "4.0.0", forRemoval = true )
-    @Description( "The maximum number of open Lucene index searchers." )
-    public static final Setting<Integer> lucene_searcher_cache_size =
-            newBuilder( "dbms.index_searcher_cache_size", INT, Integer.MAX_VALUE ).addConstraint( min( 1 ) ).build();
 
     // Lucene schema indexes
     @Deprecated( since = "4.4.0", forRemoval = true )
@@ -643,10 +620,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "The size of the page cache will also not be larger than 70x the max heap size (due to some overhead of the page cache in the heap." )
     public static final Setting<Long> pagecache_memory = newBuilder( "dbms.memory.pagecache.size", BYTES, null ).build();
 
-    @Description( "This setting is not used anymore." )
-    @Deprecated
-    public static final Setting<String> pagecache_swapper = newBuilder( "dbms.memory.pagecache.swapper", STRING, null ).build();
-
     @Description( "The maximum number of worker threads to use for pre-fetching data when doing sequential scans. " +
             "Set to '0' to disable pre-fetching for scans." )
     public static final Setting<Integer> pagecache_scan_prefetch = newBuilder( "dbms.memory.pagecache.scan.prefetchers", INT, 4 )
@@ -684,13 +657,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "Enabling this disables warmup by profile " )
     public static final Setting<Boolean> pagecache_warmup_prefetch =
             newBuilder( "dbms.memory.pagecache.warmup.preload", BOOL, false ).build();
-
-    @Deprecated( since = "4.2.0", forRemoval = true )
-    @Description( "Page cache warmup prefetch file whitelist regex. " +
-            "By default matches all files.\n" +
-            "Deprecated, use 'dbms.memory.pagecache.warmup.preload.allowlist'." )
-    public static final Setting<String> pagecache_warmup_prefetch_whitelist =
-            newBuilder( "dbms.memory.pagecache.warmup.preload.whitelist", STRING, ".*" ).build();
 
     @Description( "Page cache warmup prefetch file allowlist regex. " +
             "By default matches all files." )
@@ -878,14 +844,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "wildcard '*'. Note that this enables these procedures to bypass security. Use with caution." )
     public static final Setting<List<String>> procedure_unrestricted =
             newBuilder( "dbms.security.procedures.unrestricted", listOf( STRING ), emptyList() ) .build();
-
-    @Deprecated( since = "4.2.0", forRemoval = true )
-    @Description( "A list of procedures (comma separated) that are to be loaded. " +
-            "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
-            "If this setting is left empty no procedures will be loaded. " +
-            "Deprecated, use dbms.security.procedures.allowlist" )
-    public static final Setting<List<String>> procedure_whitelist =
-            newBuilder( "dbms.security.procedures.whitelist", listOf( STRING ), List.of("*") ).build();
 
     @Description( "A list of procedures (comma separated) that are to be loaded. " +
             "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +

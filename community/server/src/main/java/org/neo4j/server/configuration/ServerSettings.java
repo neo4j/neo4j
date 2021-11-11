@@ -153,12 +153,6 @@ public class ServerSettings implements SettingsDeclaration
             "Value is expected to contain directives like 'max-age', 'includeSubDomains' and 'preload'." )
     public static final Setting<String> http_strict_transport_security = newBuilder( "dbms.security.http_strict_transport_security", STRING, null ).build();
 
-    @Deprecated( since = "4.2.0", forRemoval = true )
-    @Description( "Defines a whitelist of http paths where Neo4j authentication is not required. " +
-                  "Deprecated, use dbms.security.http_auth_allowlist" )
-    public static final Setting<List<String>> http_auth_whitelist =
-            newBuilder( "dbms.security.http_auth_whitelist", listOf( STRING ), List.of( "/", "/browser.*" ) ).build();
-
     @Description( "Defines an allowlist of http paths where Neo4j authentication is not required." )
     public static final Setting<List<String>> http_auth_allowlist =
             newBuilder( "dbms.security.http_auth_allowlist", listOf( STRING ), List.of( "/", "/browser.*" ) ).build();
