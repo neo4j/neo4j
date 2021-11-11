@@ -43,12 +43,6 @@ public class StandardBranchCollisionDetector implements BranchCollisionDetector
     private final Set<Path> returnedPaths = new HashSet<>();
     private Predicate<Path> pathPredicate = Predicates.alwaysTrue();
 
-    @Deprecated
-    public StandardBranchCollisionDetector( Evaluator evaluator )
-    {
-        this.evaluator = evaluator;
-    }
-
     public StandardBranchCollisionDetector( Evaluator evaluator, Predicate<Path> pathPredicate )
     {
         this.evaluator = evaluator;
