@@ -21,7 +21,6 @@ package org.neo4j.configuration;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.function.Consumer;
 
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
@@ -165,15 +164,6 @@ public class BufferingLog extends AbstractLog
         synchronized ( buffer )
         {
             buffer.add( other -> other.error( format, arguments ) );
-        }
-    }
-
-    @Override
-    public void bulk( Consumer<Log> consumer )
-    {
-        synchronized ( buffer )
-        {
-            consumer.accept( this );
         }
     }
 

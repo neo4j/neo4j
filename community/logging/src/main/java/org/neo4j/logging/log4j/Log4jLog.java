@@ -19,8 +19,6 @@
  */
 package org.neo4j.logging.log4j;
 
-import java.util.function.Consumer;
-
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 
@@ -170,11 +168,5 @@ public class Log4jLog extends AbstractLog
     public void error( String format, Object... arguments )
     {
         logger.printf( org.apache.logging.log4j.Level.ERROR, format, arguments );
-    }
-
-    @Override
-    public void bulk( Consumer<Log> consumer )
-    {
-        consumer.accept(this);
     }
 }

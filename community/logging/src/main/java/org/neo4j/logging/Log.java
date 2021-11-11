@@ -19,8 +19,6 @@
  */
 package org.neo4j.logging;
 
-import java.util.function.Consumer;
-
 import org.neo4j.annotations.api.PublicApi;
 
 /**
@@ -33,13 +31,6 @@ public interface Log
      * @return true if the current log level enables debug logging
      */
     boolean isDebugEnabled();
-
-    /**
-     * @return a {@link Logger} instance for writing debug messages
-     * @deprecated Use {@link #debug(String)} directly.
-     */
-    @Deprecated( forRemoval = true, since = "4.2" )
-    Logger debugLogger();
 
     /**
      * @param message The message to be written
@@ -59,13 +50,6 @@ public interface Log
     void debug( String format, Object... arguments );
 
     /**
-     * @return a {@link Logger} instance for writing info messages
-     * @deprecated Use {@link #info(String)}} directly.
-     */
-    @Deprecated( forRemoval = true, since = "4.2" )
-    Logger infoLogger();
-
-    /**
      * @param message The message to be written
      */
     void info( String message );
@@ -81,13 +65,6 @@ public interface Log
      * @param arguments Arguments to substitute into the message according to the format
      */
     void info( String format, Object... arguments );
-
-    /**
-     * @return a {@link Logger} instance for writing warn messages
-     * @deprecated Use {@link #warn(String)} directly.
-     */
-    @Deprecated( forRemoval = true, since = "4.2" )
-    Logger warnLogger();
 
     /**
      * @param message The message to be written
@@ -107,13 +84,6 @@ public interface Log
     void warn( String format, Object... arguments );
 
     /**
-     * @return a {@link Logger} instance for writing error messages
-     * @deprecated Use {@link #error(String)} directly.
-     */
-    @Deprecated( forRemoval = true, since = "4.2" )
-    Logger errorLogger();
-
-    /**
      * @param message The message to be written
      */
     void error( String message );
@@ -129,13 +99,4 @@ public interface Log
      * @param arguments Arguments to substitute into the message according to the {@code format}
      */
     void error( String format, Object... arguments );
-
-    /**
-     * Used to temporarily log several messages in bulk. The implementation may choose to
-     * disable flushing, and may also block other operations until the bulk update is completed.
-     *
-     * @param consumer A consumer for the bulk {@link Log}
-     */
-    @Deprecated( forRemoval = true, since = "4.2" )
-    void bulk( Consumer<Log> consumer );
 }

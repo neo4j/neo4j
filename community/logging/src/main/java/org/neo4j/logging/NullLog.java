@@ -19,8 +19,6 @@
  */
 package org.neo4j.logging;
 
-import java.util.function.Consumer;
-
 /**
  * A {@link Log} implementation that discards all messages
  */
@@ -104,11 +102,5 @@ public final class NullLog extends AbstractLog
     @Override
     public void error( String format, Object... arguments )
     {
-    }
-
-    @Override
-    public void bulk( Consumer<Log> consumer )
-    {
-        consumer.accept( this );
     }
 }

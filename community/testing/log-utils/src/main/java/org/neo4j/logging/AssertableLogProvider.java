@@ -25,7 +25,6 @@ import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.logging.log4j.Neo4jLogMessage;
@@ -306,12 +305,6 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         public void error( Neo4jLogMessage message, Throwable throwable )
         {
             logCalls.add( new LogCall( context, Level.ERROR, message.getFormattedMessage(), null, throwable ) );
-        }
-
-        @Override
-        public void bulk( Consumer<Log> consumer )
-        {
-            consumer.accept( this );
         }
     }
 

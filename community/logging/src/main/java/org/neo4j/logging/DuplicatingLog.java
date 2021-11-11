@@ -19,8 +19,6 @@
  */
 package org.neo4j.logging;
 
-import java.util.function.Consumer;
-
 /**
  * A {@link Log} implementation that duplicates all messages to other Log instances
  */
@@ -123,11 +121,5 @@ public class DuplicatingLog extends AbstractLog
     {
         log1.error( format, arguments );
         log2.error( format, arguments );
-    }
-
-    @Override
-    public void bulk( Consumer<Log> consumer )
-    {
-        consumer.accept( this );
     }
 }

@@ -19,11 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.logging.Logger;
-
-/**
- * Mainly exists as a class for a {@link Logger} to reference for convenient detection of these message in the log.
- */
 interface InconsistentDataDeletion
 {
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.logging.internal;
 
-import java.util.function.Consumer;
-
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 
@@ -115,13 +113,6 @@ public class PrefixedLog extends AbstractLog
     public void error( String format, Object... arguments )
     {
         delegate.error( withPrefix( format ), arguments );
-    }
-
-    @Override
-    @Deprecated
-    public void bulk( Consumer<Log> consumer )
-    {
-        delegate.bulk( log -> consumer.accept( this ) );
     }
 
     private String withPrefix( String message )
