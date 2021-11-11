@@ -308,6 +308,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
                     pushScope( "." + element.getSimpleName() );
                     processType( (TypeElement) element );
                     break;
+                case RECORD_COMPONENT:
                 case ENUM_CONSTANT:
                 case FIELD:
                     pushScope( "#" + element );
@@ -319,7 +320,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
                     processMethod( (ExecutableElement) element );
                     break;
                 default:
-                    throw new AssertionError( "???: " + kind );
+                    error( "Unhandled ElementKind: " + kind );
                 }
                 popScope();
             }
@@ -402,6 +403,9 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
             break;
         case ANNOTATION_TYPE:
             sb.append( " annotation" );
+            break ;
+        case RECORD:
+            sb.append( " record" );
             break;
         default:
             error( "Unhandled ElementKind: " + kind );
