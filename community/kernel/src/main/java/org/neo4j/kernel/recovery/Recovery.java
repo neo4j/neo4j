@@ -40,7 +40,6 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.IndexMonitor;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
@@ -123,7 +122,6 @@ import org.neo4j.token.TokenHolders;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
@@ -227,7 +225,7 @@ public final class Recovery
         private Optional<LogFiles> providedLogFiles = Optional.empty();
         private RecoveryStartupChecker startupChecker = EMPTY_CHECKER;
         private Clock clock = systemClock();
-        private IOController ioController;
+        private final IOController ioController;
         private RecoveryPredicate recoveryPredicate = RecoveryPredicate.ALL;
 
         /**
@@ -251,6 +249,7 @@ public final class Recovery
             this.config = config;
             this.memoryTracker = memoryTracker;
             this.tracers = tracers;
+            this.ioController = ioController;
         }
 
         /**

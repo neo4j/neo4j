@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.recovery.Recovery;
@@ -68,7 +69,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade
     public void performRecovery( DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor ) throws IOException
     {
         monitor.recoveryStarted();
-        Recovery.performRecovery( Recovery.context( fs, pageCache, tracers, config, databaseLayout, memoryTracker )
+        Recovery.performRecovery( Recovery.context( fs, pageCache, tracers, config, databaseLayout, memoryTracker, IOController.DISABLED )
                                           .log( logProvider )
                                           .recoveryPredicate( recoveryCriteria.toPredicate() ) );
         monitor.recoveryCompleted();

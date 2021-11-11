@@ -187,6 +187,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
+import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
 
 public class Database extends LifecycleAdapter
@@ -426,7 +427,7 @@ public class Database extends LifecycleAdapter
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             validateStoreAndTxLogs( logFiles, pageCacheTracer, storageExists );
 
-            Recovery.performRecovery( Recovery.context( fs, databasePageCache, tracers, databaseConfig, databaseLayout, otherDatabaseMemoryTracker, ioController )
+            Recovery.performRecovery( context( fs, databasePageCache, tracers, databaseConfig, databaseLayout, otherDatabaseMemoryTracker, ioController )
                             .storageEngineFactory( storageEngineFactory )
                             .log( internalLogProvider )
                             .recoveryPredicate( RecoveryPredicate.ALL )
@@ -1052,6 +1053,11 @@ public class Database extends LifecycleAdapter
     public StorageEngineFactory getStorageEngineFactory()
     {
         return storageEngineFactory;
+    }
+
+    public IOController getIoController()
+    {
+        return ioController;
     }
 
     private void prepareStop( Predicate<PagedFile> deleteFilePredicate )

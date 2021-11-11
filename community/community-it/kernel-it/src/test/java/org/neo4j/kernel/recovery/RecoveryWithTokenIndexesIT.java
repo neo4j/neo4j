@@ -45,6 +45,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -312,7 +313,7 @@ class RecoveryWithTokenIndexesIT
     private void recoverDatabase( DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache ) throws Exception
     {
         assertTrue( Recovery.isRecoveryRequired( fs, layout, config, INSTANCE ) );
-        performRecovery( Recovery.context( fs, cache, DatabaseTracers.EMPTY, config, layout, INSTANCE ) );
+        performRecovery( Recovery.context( fs, cache, DatabaseTracers.EMPTY, config, layout, INSTANCE, IOController.DISABLED ) );
         assertFalse( Recovery.isRecoveryRequired( fs, layout, config, INSTANCE ) );
     }
 
