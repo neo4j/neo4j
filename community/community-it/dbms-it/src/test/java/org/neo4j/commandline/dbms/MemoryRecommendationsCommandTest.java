@@ -69,6 +69,7 @@ import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
+import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.OFF_HEAP;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -180,9 +181,22 @@ class MemoryRecommendationsCommandTest
     }
 
     @Test
-    void recommendTxStatMemory()
+    void doNotRecommendTxStateMemoryByDefault()
     {
         final Config config = Config.defaults();
+        assertEquals( mebiBytes( 0 ), recommendTxStateMemory( config, mebiBytes( 100 ) ) );
+        assertEquals( mebiBytes( 0 ), recommendTxStateMemory( config, mebiBytes( 512 ) ) );
+        assertEquals( mebiBytes( 0 ), recommendTxStateMemory( config, mebiBytes( 768 ) ) );
+        assertEquals( mebiBytes( 0 ), recommendTxStateMemory( config, gibiBytes( 1 ) ) );
+        assertEquals( gibiBytes( 0 ), recommendTxStateMemory( config, gibiBytes( 16 ) ) );
+        assertEquals( gibiBytes( 0 ), recommendTxStateMemory( config, gibiBytes( 32 ) ) );
+        assertEquals( gibiBytes( 0 ), recommendTxStateMemory( config, gibiBytes( 128 ) ) );
+    }
+
+    @Test
+    void recommendOffHeapTxStateMemory()
+    {
+        final Config config = Config.defaults( tx_state_memory_allocation, OFF_HEAP );
         assertEquals( mebiBytes( 128 ), recommendTxStateMemory( config, mebiBytes( 100 ) ) );
         assertEquals( mebiBytes( 128 ), recommendTxStateMemory( config, mebiBytes( 512 ) ) );
         assertEquals( mebiBytes( 192 ), recommendTxStateMemory( config, mebiBytes( 768 ) ) );
@@ -210,55 +224,57 @@ class MemoryRecommendationsCommandTest
     @Test
     void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
     {
-        PrintStream output = mock( PrintStream.class );
         Path homeDir = testDirectory.homePath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         Files.createDirectories( configDir );
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
 
+        var outputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream( outputStream );
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
-                new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
+                new ExecutionContext( homeDir, configDir, printStream, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
 
         CommandLine.populateCommand( command, "--memory=8g" );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), gibiBytes( 2 ) ) );
-        String offHeap = bytesToString( gibiBytes( 2 ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), 0 ) );
 
         command.execute();
 
-        verify( output ).println( initial_heap_size.name() + "=" + heap );
-        verify( output ).println( max_heap_size.name() + "=" + heap );
-        verify( output ).println( pagecache_memory.name() + "=" + pagecache );
-        verify( output ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
-        verify( output ).println( additional_jvm.name() + "=" + "-XX:+ExitOnOutOfMemoryError" );
+        var commandResult = outputStream.toString();
+        assertThat( commandResult ).contains( initial_heap_size.name() + "=" + heap )
+                                   .contains( max_heap_size.name() + "=" + heap )
+                                   .contains( pagecache_memory.name() + "=" + pagecache )
+                                   .contains( additional_jvm.name() + "=" + "-XX:+ExitOnOutOfMemoryError" )
+                                   .doesNotContain( tx_state_max_off_heap_memory.name() );
     }
 
     @Test
     void canPrintRecommendationsAsDockerEnvVariables() throws Exception
     {
-        PrintStream output = mock( PrintStream.class );
         Path homeDir = testDirectory.homePath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         Files.createDirectories( configDir );
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
 
+        var outputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream( outputStream );
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
-                new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
+                new ExecutionContext( homeDir, configDir, printStream, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
 
         CommandLine.populateCommand( command, "--memory=8g", "--docker" );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), gibiBytes( 2 ) ) );
-        String offHeap = bytesToString( gibiBytes( 2 ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), 0 ) );
 
         command.execute();
 
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_initial__size='" + heap + "'" );
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_heap_max__size='" + heap + "'" );
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_pagecache_size='" + pagecache + "'" );
-        verify( output ).println( "EXPORT NEO4J_dbms_memory_off__heap_max__size='" + offHeap + "'" );
-        verify( output ).println( "EXPORT NEO4J_dbms_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'" );
+        var commandResult = outputStream.toString();
+        assertThat( commandResult ).contains( "EXPORT NEO4J_dbms_memory_heap_initial__size='" + heap + "'" )
+                                   .contains( "EXPORT NEO4J_dbms_memory_heap_max__size='" + heap + "'" )
+                                   .contains( "EXPORT NEO4J_dbms_memory_pagecache_size='" + pagecache + "'" )
+                                   .contains( "EXPORT NEO4J_dbms_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'" )
+                                   .doesNotContain( "EXPORT NEO4J_dbms_memory_off__heap_max__size='" );
     }
 
     @Test
@@ -317,20 +333,23 @@ class MemoryRecommendationsCommandTest
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         Files.createFile( configFile );
         createDatabaseWithNativeIndexes( homeDir, DEFAULT_DATABASE_NAME );
-        PrintStream output = mock( PrintStream.class );
+
+        var outputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream( outputStream );
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
-                new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
+                new ExecutionContext( homeDir, configDir, printStream, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), gibiBytes( 2 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ), 0 ) );
 
         // when
         CommandLine.populateCommand( command, "--memory=8g" );
         command.execute();
 
         // then
-        verify( output ).println( contains( initial_heap_size.name() + "=" + heap ) );
-        verify( output ).println( contains( max_heap_size.name() + "=" + heap ) );
-        verify( output ).println( contains( pagecache_memory.name() + "=" + pagecache ) );
+        var commandResult = outputStream.toString();
+        assertThat( commandResult ).contains( initial_heap_size.name() + "=" + heap )
+                                   .contains( max_heap_size.name() + "=" + heap )
+                                   .contains( pagecache_memory.name() + "=" + pagecache );
 
         DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
         DatabaseLayout systemLayout = neo4jLayout.databaseLayout( SYSTEM_DATABASE_NAME );
@@ -339,8 +358,8 @@ class MemoryRecommendationsCommandTest
         long expectedPageCacheSize = expectedSizes[0] + systemSizes[0];
         long expectedLuceneSize = expectedSizes[1] + systemSizes[1];
 
-        verify( output ).println( contains( "Total size of lucene indexes in all databases: " + bytesToString( expectedLuceneSize ) ) );
-        verify( output ).println( contains( "Total size of data and native indexes in all databases: " + bytesToString( expectedPageCacheSize ) ) );
+        assertThat( commandResult ).contains( "Total size of lucene indexes in all databases: " + bytesToString( expectedLuceneSize ) )
+                                   .contains( "Total size of data and native indexes in all databases: " + bytesToString( expectedPageCacheSize ) );
     }
 
     @Test
