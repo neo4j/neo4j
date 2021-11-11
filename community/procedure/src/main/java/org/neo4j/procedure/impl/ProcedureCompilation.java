@@ -618,7 +618,16 @@ public final class ProcedureCompilation
                 for ( int i = 0; i < fields.size(); i++ )
                 {
                     Field f = fields.get( i );
-                    mapped[i] = toAnyValue( get( method.load( "casted" ), field( f ) ), f.getType(), get( method.self(), context ) );
+                    if ( outputType.isRecord() )
+                    {
+                        // Records must be accessed through the public method with the same name as the field
+                        mapped[i] = toAnyValue( invoke( method.load( "casted" ), methodReference( outputType, f.getType(), f.getName() ) ), f.getType(),
+                                get( method.self(), context ) );
+                    }
+                    else
+                    {
+                        mapped[i] = toAnyValue( get( method.load( "casted" ), field( f ) ), f.getType(), get( method.self(), context ) );
+                    }
                 }
                 method.returns( Expression.newInitializedArray( typeReference( AnyValue.class ), mapped ) );
             }

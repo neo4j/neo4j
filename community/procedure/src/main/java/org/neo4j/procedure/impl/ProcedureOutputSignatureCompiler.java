@@ -108,7 +108,7 @@ class ProcedureOutputSignatureCompiler
         for ( int i = 0; i < fields.size(); i++ )
         {
             Field field = fields.get( i );
-            if ( !isPublic( field.getModifiers() ) )
+            if ( !userClass.isRecord() && !isPublic( field.getModifiers() ) )
             {
                 throw new ProcedureException( Status.Procedure.TypeError,
                         "Field `%s` in record `%s` cannot be accessed. Please ensure the field is marked as `public`.", field.getName(),

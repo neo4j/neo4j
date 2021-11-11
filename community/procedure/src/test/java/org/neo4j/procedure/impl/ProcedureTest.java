@@ -402,22 +402,16 @@ public class ProcedureTest
         return buildContext( dependencyResolver, valueMapper ).context();
     }
 
-    public static class MyOutputRecord
+    public record MyOutputRecord( String name )
     {
-        public String name;
-
-        public MyOutputRecord( String name )
-        {
-            this.name = name;
-        }
     }
 
-    public static class SomeOtherOutputRecord
+    public static class SomeOtherOutputPOJO
     {
         public String name;
         public long bananas;
 
-        public SomeOtherOutputRecord( String name, long bananas )
+        public SomeOtherOutputPOJO( String name, long bananas )
         {
             this.name = name;
             this.bananas = bananas;
@@ -484,11 +478,11 @@ public class ProcedureTest
         }
 
         @Procedure
-        public Stream<SomeOtherOutputRecord> listBananaOwningPeople()
+        public Stream<SomeOtherOutputPOJO> listBananaOwningPeople()
         {
             return Stream.of(
-                    new SomeOtherOutputRecord( "Jake", 18 ),
-                    new SomeOtherOutputRecord( "Pontus", 2 ) );
+                    new SomeOtherOutputPOJO( "Jake", 18 ),
+                    new SomeOtherOutputPOJO( "Pontus", 2 ) );
         }
     }
 
@@ -631,19 +625,8 @@ public class ProcedureTest
         }
     }
 
-    public static class InternalTypeRecord
+    public record InternalTypeRecord( LongValue longValue, TextValue textValue, BooleanValue booleanValue )
     {
-        public final LongValue longValue;
-        public final TextValue textValue;
-        public final BooleanValue booleanValue;
-
-        public InternalTypeRecord( LongValue longValue, TextValue textValue,
-                BooleanValue booleanValue )
-        {
-            this.longValue = longValue;
-            this.textValue = textValue;
-            this.booleanValue = booleanValue;
-        }
     }
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
