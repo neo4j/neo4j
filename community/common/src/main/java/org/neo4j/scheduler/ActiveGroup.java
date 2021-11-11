@@ -19,14 +19,6 @@
  */
 package org.neo4j.scheduler;
 
-public class ActiveGroup
+public record ActiveGroup( Group group, int threads )
 {
-    public final Group group;
-    public final int threads;
-
-    public ActiveGroup( Group group, int threads )
-    {
-        this.group = group;
-        this.threads = threads;
-    }
 }

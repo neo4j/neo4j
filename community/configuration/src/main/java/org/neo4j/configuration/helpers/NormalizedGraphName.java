@@ -19,52 +19,16 @@
  */
 package org.neo4j.configuration.helpers;
 
-import java.util.Objects;
-
 import org.neo4j.annotations.api.PublicApi;
 
 import static java.util.Objects.requireNonNull;
 
 @PublicApi
-public class NormalizedGraphName
+public record NormalizedGraphName( String name )
 {
-    private final String name;
-
     public NormalizedGraphName( String name )
     {
         requireNonNull( name, "Graph name should be not null." );
         this.name = name.toLowerCase();
-    }
-
-    public String name()
-    {
-        return name;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        NormalizedGraphName that = (NormalizedGraphName) o;
-        return Objects.equals( name, that.name );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( name );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "NormalizedGraphName{ name='" + name + "'}";
     }
 }

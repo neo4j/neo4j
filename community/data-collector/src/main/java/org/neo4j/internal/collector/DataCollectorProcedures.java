@@ -128,7 +128,7 @@ public class DataCollectorProcedures
         }
 
         CollectorStateMachine.Status status = dataCollector.getQueryCollector().status();
-        return Stream.of( new StatusResult( Sections.QUERIES, status.message, Collections.emptyMap() ) );
+        return Stream.of( new StatusResult( Sections.QUERIES, status.message(), Collections.emptyMap() ) );
     }
 
     @Admin
@@ -144,7 +144,7 @@ public class DataCollectorProcedures
         }
 
         CollectorStateMachine.Result result = collectorStateMachine( section ).collect( config );
-        return Stream.of( new ActionResult( section, result.success, result.message ) );
+        return Stream.of( new ActionResult( section, result.success(), result.message() ) );
     }
 
     @Admin
@@ -159,7 +159,7 @@ public class DataCollectorProcedures
         }
 
         CollectorStateMachine.Result result = collectorStateMachine( section ).stop( Long.MAX_VALUE );
-        return Stream.of( new ActionResult( section, result.success, result.message ) );
+        return Stream.of( new ActionResult( section, result.success(), result.message() ) );
     }
 
     @Admin
@@ -174,7 +174,7 @@ public class DataCollectorProcedures
         }
 
         CollectorStateMachine.Result result = collectorStateMachine( section ).clear();
-        return Stream.of( new ActionResult( section, result.success, result.message ) );
+        return Stream.of( new ActionResult( section, result.success(), result.message() ) );
     }
 
     private QueryCollector collectorStateMachine( String section ) throws InvalidArgumentsException

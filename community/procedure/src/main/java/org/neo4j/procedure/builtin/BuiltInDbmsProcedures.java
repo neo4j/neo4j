@@ -39,7 +39,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -50,6 +49,7 @@ import org.neo4j.fabric.transaction.FabricTransaction;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
@@ -820,18 +820,8 @@ public class BuiltInDbmsProcedures
         return config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
     }
 
-    public static class SystemInfo
+    public record SystemInfo( String id, String name, String creationDate )
     {
-        public final String id;
-        public final String name;
-        public final String creationDate;
-
-        public SystemInfo( String id, String name, String creationDate )
-        {
-            this.id = id;
-            this.name = name;
-            this.creationDate = creationDate;
-        }
     }
 
     public static class FunctionResult

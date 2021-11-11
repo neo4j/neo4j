@@ -193,16 +193,8 @@ class ByteCodeVerifier implements ByteCodeChecker, CodeGeneratorOption
         return exception;
     }
 
-    private static class Failure
+    private record Failure( Throwable cause, String message )
     {
-        final Throwable cause;
-        final String message;
-
-        Failure( Throwable cause, String message )
-        {
-            this.cause = cause;
-            this.message = message;
-        }
     }
 
     private static String detailedMessage(

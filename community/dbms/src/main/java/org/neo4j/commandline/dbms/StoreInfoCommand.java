@@ -202,37 +202,25 @@ public class StoreInfoCommand extends AbstractCommand
         }
     }
 
-    private static class StoreInfo
+    private record StoreInfo(
+            String databaseName,
+            String storeFormat,
+            String storeFormatIntroduced,
+            String storeFormatSuperseded,
+            long lastCommittedTransaction,
+            boolean recoveryRequired,
+            boolean inUse
+    )
     {
-        private final String databaseName;
-        private final String storeFormat;
-        private final String storeFormatIntroduced;
-        private final String storeFormatSuperseded;
-        private final long lastCommittedTransaction;
-        private final boolean recoveryRequired;
-        private final boolean inUse;
-
         static StoreInfo inUseResult( String databaseName )
         {
-            return new StoreInfo( databaseName, true, null, null, null, -1, true );
+            return new StoreInfo( databaseName, null, null, null, -1, true, true );
         }
 
         static StoreInfo notInUseResult( String databaseName, String storeFormat, String storeFormatIntroduced, String storeFormatSuperseded,
                 long lastCommittedTransaction, boolean recoveryRequired )
         {
-            return new StoreInfo( databaseName, false, storeFormat, storeFormatIntroduced, storeFormatSuperseded, lastCommittedTransaction, recoveryRequired );
-        }
-
-        private StoreInfo( String databaseName, boolean inUse, String storeFormat, String storeFormatIntroduced, String storeFormatSuperseded,
-                long lastCommittedTransaction, boolean recoveryRequired )
-        {
-            this.databaseName = databaseName;
-            this.storeFormat = storeFormat;
-            this.storeFormatIntroduced = storeFormatIntroduced;
-            this.storeFormatSuperseded = storeFormatSuperseded;
-            this.lastCommittedTransaction = lastCommittedTransaction;
-            this.recoveryRequired = recoveryRequired;
-            this.inUse = inUse;
+            return new StoreInfo( databaseName, storeFormat, storeFormatIntroduced, storeFormatSuperseded, lastCommittedTransaction, recoveryRequired, false );
         }
 
         List<StoreInfoField> printFields()

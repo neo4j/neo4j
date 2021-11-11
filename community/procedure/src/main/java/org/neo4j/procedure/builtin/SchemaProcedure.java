@@ -167,16 +167,8 @@ public class SchemaProcedure
     {
     }
 
-    public static class GraphResult
+    public record GraphResult( List<Node> nodes, List<Relationship> relationships )
     {
-        public final List<Node> nodes;
-        public final List<Relationship> relationships;
-
-        public GraphResult( List<Node> nodes, List<Relationship> relationships )
-        {
-            this.nodes = nodes;
-            this.relationships = relationships;
-        }
     }
 
     private static VirtualNodeHack getOrCreateLabel( String label, Map<String,Object> properties,

@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.id;
 
-import java.util.Objects;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.util.Preconditions;
 
@@ -128,53 +126,8 @@ public interface IdSlotDistribution
         return IDS_PER_ENTRY;
     }
 
-    class Slot
+    record Slot( int capacity, int slotSize )
     {
-        private final int capacity;
-        private final int slotSize;
-
-        public Slot( int capacity, int slotSize )
-        {
-            this.capacity = capacity;
-            this.slotSize = slotSize;
-        }
-
-        public int capacity()
-        {
-            return capacity;
-        }
-
-        public int slotSize()
-        {
-            return slotSize;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-            Slot slot = (Slot) o;
-            return capacity == slot.capacity && slotSize == slot.slotSize;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( capacity, slotSize );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Slot{" + "capacity=" + capacity + ", slotSize=" + slotSize + '}';
-        }
     }
 
     abstract class BaseIdSlotDistribution implements IdSlotDistribution

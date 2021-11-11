@@ -122,6 +122,6 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
      */
     private boolean isInRange( long entityId )
     {
-        return entityId >= range.fromInclusive && entityId < range.toExclusive;
+        return entityId >= range.fromInclusive() && entityId < range.toExclusive();
     }
 }

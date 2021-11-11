@@ -19,24 +19,6 @@
  */
 package org.neo4j.server.bind;
 
-class SingletonBinding
+record SingletonBinding( Object component, Class<?> type )
 {
-    private final Object component;
-    private final Class<?> type;
-
-    SingletonBinding( Object component, Class<?> type )
-    {
-        this.component = component;
-        this.type = type;
-    }
-
-    Object component()
-    {
-        return component;
-    }
-
-    Class<?> type()
-    {
-        return type;
-    }
 }

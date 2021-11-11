@@ -184,12 +184,12 @@ public class StoreUpgrader
     {
         String configuredVersion = storeVersionCheck.configuredVersion();
         StoreVersionCheck.Result versionResult = storeVersionCheck.checkUpgrade( configuredVersion, cursorContext );
-        if ( versionResult.outcome == StoreVersionCheck.Outcome.missingStoreFile )
+        if ( versionResult.outcome() == StoreVersionCheck.Outcome.missingStoreFile )
         {
             // New store so will be of the current version
             return true;
         }
-        return versionResult.outcome.isSuccessful() && versionResult.actualVersion.equals( configuredVersion );
+        return versionResult.outcome().isSuccessful() && versionResult.actualVersion().equals( configuredVersion );
     }
 
     private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, Path migrationStateFile, CursorContext cursorContext )
@@ -230,22 +230,22 @@ public class StoreUpgrader
 
     private String getVersionFromResult( StoreVersionCheck.Result result )
     {
-        switch ( result.outcome )
+        switch ( result.outcome() )
         {
         case ok:
-            return result.actualVersion;
+            return result.actualVersion();
         case missingStoreFile:
-            throw new StoreUpgrader.UpgradeMissingStoreFilesException( result.storeFilename );
+            throw new StoreUpgrader.UpgradeMissingStoreFilesException( result.storeFilename() );
         case storeVersionNotFound:
-            throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( result.storeFilename );
+            throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( result.storeFilename() );
         case attemptedStoreDowngrade:
             throw new StoreUpgrader.AttemptedDowngradeException();
         case unexpectedStoreVersion:
-            throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException( result.actualVersion, configuredFormat );
+            throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException( result.actualVersion(), configuredFormat );
         case unexpectedUpgradingVersion:
             throw new StoreUpgrader.UnexpectedUpgradingStoreFormatException();
         default:
-            throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
+            throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome().name() );
         }
     }
 

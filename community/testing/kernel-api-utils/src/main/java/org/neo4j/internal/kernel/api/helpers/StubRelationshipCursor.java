@@ -83,13 +83,13 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     @Override
     public long relationshipReference()
     {
-        return store.get( chainId ).get( offset ).id;
+        return store.get( chainId ).get( offset ).id();
     }
 
     @Override
     public int type()
     {
-        return store.get( chainId ).get( offset ).type;
+        return store.get( chainId ).get( offset ).type();
     }
 
     @Override
@@ -113,13 +113,13 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     @Override
     public long sourceNodeReference()
     {
-        return store.get( chainId ).get( offset ).source;
+        return store.get( chainId ).get( offset ).source();
     }
 
     @Override
     public long targetNodeReference()
     {
-        return store.get( chainId ).get( offset ).target;
+        return store.get( chainId ).get( offset ).target();
     }
 
     @Override
@@ -139,7 +139,7 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     {
         TestRelationshipChain chain = store.get( chainId );
         TestRelationshipChain.Data relationship = chain.get( offset );
-        return relationship.source == chain.originNodeId() ? relationship.target : relationship.source;
+        return relationship.source() == chain.originNodeId() ? relationship.target() : relationship.source();
     }
 
     @Override
@@ -160,7 +160,7 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
                 return false;
             }
             TestRelationshipChain.Data data = chain.get( offset );
-            if ( selection.test( data.type, data.relationshipDirection( nodeReference ) ) &&
+            if ( selection.test( data.type(), data.relationshipDirection( nodeReference ) ) &&
                     (neighbourNodeReference == NO_ID || neighbourNodeReference == otherNodeReference()) )
             {
                 return true;

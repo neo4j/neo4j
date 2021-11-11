@@ -450,16 +450,8 @@ public abstract class StandardExpander implements PathExpander
     public static final StandardExpander EMPTY =
             new RegularExpander( Collections.emptyMap() );
 
-    private static class DirectionAndTypes
+    private record DirectionAndTypes( Direction direction, RelationshipType[] types )
     {
-        final Direction direction;
-        final RelationshipType[] types;
-
-        DirectionAndTypes( Direction direction, RelationshipType[] types )
-        {
-            this.direction = direction;
-            this.types = types;
-        }
     }
 
     static class RegularExpander extends StandardExpander

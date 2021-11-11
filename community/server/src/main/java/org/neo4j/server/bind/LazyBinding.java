@@ -21,24 +21,6 @@ package org.neo4j.server.bind;
 
 import java.util.function.Supplier;
 
-class LazyBinding
+record LazyBinding( Supplier<?> supplier, Class<?> type )
 {
-    private final Supplier<?> supplier;
-    private final Class<?> type;
-
-    LazyBinding( Supplier<?> supplier, Class<?> type )
-    {
-        this.supplier = supplier;
-        this.type = type;
-    }
-
-    Supplier<?> supplier()
-    {
-        return supplier;
-    }
-
-    Class<?> type()
-    {
-        return type;
-    }
 }

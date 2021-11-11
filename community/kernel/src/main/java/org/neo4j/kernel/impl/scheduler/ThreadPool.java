@@ -45,7 +45,6 @@ import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.FeatureToggles;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
@@ -241,21 +240,7 @@ final class ThreadPool
         failedJobRunsStore.add( failedJobRun );
     }
 
-    private static class RegisteredJob
+    private record RegisteredJob( long jobId, Future<?> future, JobMonitoringParams monitoredJobParams, Instant submitted, AtomicBoolean running )
     {
-        private final long jobId;
-        private final Future<?> future;
-        private final JobMonitoringParams monitoredJobParams;
-        private final Instant submitted;
-        private final AtomicBoolean running;
-
-        RegisteredJob( long jobId, Future<?> future, JobMonitoringParams monitoredJobParams, Instant submitted, AtomicBoolean running )
-        {
-            this.jobId = jobId;
-            this.future = requireNonNull( future );
-            this.monitoredJobParams = requireNonNull( monitoredJobParams );
-            this.submitted = requireNonNull( submitted );
-            this.running = requireNonNull( running );
-        }
     }
 }

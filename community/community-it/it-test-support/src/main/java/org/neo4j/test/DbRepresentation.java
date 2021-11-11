@@ -433,15 +433,8 @@ public class DbRepresentation
         void add( String report );
     }
 
-    private static class CollectionDiffReport implements DiffReport
+    private record CollectionDiffReport( Collection<String> collection ) implements DiffReport
     {
-        private final Collection<String> collection;
-
-        CollectionDiffReport( Collection<String> collection )
-        {
-            this.collection = collection;
-        }
-
         @Override
         public void add( String report )
         {

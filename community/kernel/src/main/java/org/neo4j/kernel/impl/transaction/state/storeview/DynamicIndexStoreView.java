@@ -155,15 +155,7 @@ public class DynamicIndexStoreView implements IndexStoreView
         return Optional.empty();
     }
 
-    private static class TokenIndexData
+    private record TokenIndexData( TokenIndexReader reader, IndexDescriptor descriptor )
     {
-        private final TokenIndexReader reader;
-        private final IndexDescriptor descriptor;
-
-        private TokenIndexData( TokenIndexReader reader, IndexDescriptor descriptor )
-        {
-            this.reader = reader;
-            this.descriptor = descriptor;
-        }
     }
 }

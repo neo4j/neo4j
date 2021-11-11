@@ -496,22 +496,8 @@ class GBPTreeConsistencyChecker<KEY>
             }
         }
 
-        private static class KeyInWrongNode<KEY>
+        private record KeyInWrongNode<KEY>( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
         {
-            final long pageId;
-            final KeyRange<KEY> range;
-            final KEY key;
-            final int pos;
-            final int keyCount;
-
-            private KeyInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
-            {
-                this.pageId = pageId;
-                this.range = range;
-                this.key = key;
-                this.pos = pos;
-                this.keyCount = keyCount;
-            }
         }
     }
 

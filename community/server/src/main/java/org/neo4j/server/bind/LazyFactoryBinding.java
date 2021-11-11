@@ -21,24 +21,6 @@ package org.neo4j.server.bind;
 
 import java.util.function.Supplier;
 
-class LazyFactoryBinding<T>
+record LazyFactoryBinding<T>( Class<? extends Supplier<T>> supplierType, Class<T> type )
 {
-    private final Class<? extends Supplier<T>> supplierType;
-    private final Class<T> type;
-
-    LazyFactoryBinding( Class<? extends Supplier<T>> supplierType, Class<T> type )
-    {
-        this.supplierType = supplierType;
-        this.type = type;
-    }
-
-    Class<? extends Supplier<T>> supplierType()
-    {
-        return supplierType;
-    }
-
-    Class<T> type()
-    {
-        return type;
-    }
 }

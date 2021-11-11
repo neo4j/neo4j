@@ -36,13 +36,13 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.internal.locker.FileLockException;
 
 import static java.util.Objects.requireNonNull;
@@ -110,9 +110,9 @@ public class LoadCommand extends AbstractCommand
         try
         {
             Loader.DumpMetaData metaData = loader.getMetaData( getArchiveInputStreamSupplier() );
-            ctx.out().println( "Format: " + metaData.format );
-            ctx.out().println( "Files: " + metaData.fileCount );
-            ctx.out().println( "Bytes: " + metaData.byteCount );
+            ctx.out().println( "Format: " + metaData.format() );
+            ctx.out().println( "Files: " + metaData.fileCount() );
+            ctx.out().println( "Bytes: " + metaData.byteCount() );
         }
         catch ( IOException e )
         {

@@ -257,17 +257,7 @@ public class Loader
         }
     }
 
-    public static class DumpMetaData
+    public record DumpMetaData( String format, String fileCount, String byteCount )
     {
-        public final String format;
-        public final String fileCount;
-        public final String byteCount;
-
-        public DumpMetaData( String format, String fileCount, String byteCount )
-        {
-            this.format = format;
-            this.fileCount = fileCount;
-            this.byteCount = byteCount;
-        }
     }
 }

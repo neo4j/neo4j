@@ -195,27 +195,9 @@ public class RelationshipGroupGetter
         return anyDeleted;
     }
 
-    public static class RelationshipGroupPosition
+    public record RelationshipGroupPosition( RecordProxy<RelationshipGroupRecord, Integer> closestPrevious,
+            RecordProxy<RelationshipGroupRecord, Integer> group )
     {
-        private final RecordProxy<RelationshipGroupRecord, Integer> closestPrevious;
-        private final RecordProxy<RelationshipGroupRecord, Integer> group;
-
-        public RelationshipGroupPosition( RecordProxy<RelationshipGroupRecord, Integer> closestPrevious,
-                RecordProxy<RelationshipGroupRecord, Integer> group )
-        {
-            this.closestPrevious = closestPrevious;
-            this.group = group;
-        }
-
-        public RecordProxy<RelationshipGroupRecord, Integer> group()
-        {
-            return group;
-        }
-
-        public RecordProxy<RelationshipGroupRecord, Integer> closestPrevious()
-        {
-            return closestPrevious;
-        }
     }
 
     interface GroupLookup

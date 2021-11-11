@@ -38,10 +38,10 @@ import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 
 import static java.lang.String.format;
@@ -361,7 +361,7 @@ public class PushToCloudCommand extends AbstractCommand
         {
             throw new CommandFailedException( "Unable to check size of database dump.", e );
         }
-        return Long.parseLong( metaData.byteCount );
+        return Long.parseLong( metaData.byteCount() );
     }
 
     private Config getConfig( Path configFile )

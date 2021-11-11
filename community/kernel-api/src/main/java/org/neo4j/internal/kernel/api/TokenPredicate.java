@@ -23,7 +23,7 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.values.storable.ValueCategory;
 
-public record TokenPredicate(int tokenId) implements IndexQuery
+public record TokenPredicate( int tokenId ) implements IndexQuery
 {
     @Override
     public int queriedId()

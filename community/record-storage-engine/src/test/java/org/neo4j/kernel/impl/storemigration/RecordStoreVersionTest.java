@@ -89,7 +89,7 @@ class RecordStoreVersionTest
 
         boolean storeFilesUpgradable( RecordStoreVersionCheck check )
         {
-            return check.checkUpgrade( check.configuredVersion(), NULL ).outcome.isSuccessful();
+            return check.checkUpgrade( check.configuredVersion(), NULL ).outcome().isSuccessful();
         }
 
         @Test
@@ -165,8 +165,8 @@ class RecordStoreVersionTest
 
         // when
         StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion(), NULL );
-        assertFalse( result.outcome.isSuccessful() );
-        assertSame( StoreVersionCheck.Outcome.unexpectedStoreVersion, result.outcome );
+        assertFalse( result.outcome().isSuccessful() );
+        assertSame( StoreVersionCheck.Outcome.unexpectedStoreVersion, result.outcome() );
     }
 
     private RecordStoreVersionCheck getVersionCheck()

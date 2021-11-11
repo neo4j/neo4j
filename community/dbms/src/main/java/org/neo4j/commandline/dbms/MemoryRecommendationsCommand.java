@@ -416,43 +416,12 @@ public class MemoryRecommendationsCommand extends AbstractCommand
         ctx.out().println( text );
     }
 
-    private static final class Bracket
+    private record Bracket( double totalMemory, double osMemory, double heapMemory )
     {
-        private final double totalMemory;
-        private final double osMemory;
-        private final double heapMemory;
-
-        private Bracket( double totalMemory, double osMemory, double heapMemory )
-        {
-            this.totalMemory = totalMemory;
-            this.osMemory = osMemory;
-            this.heapMemory = heapMemory;
-        }
-
-        double osMemory()
-        {
-            return osMemory;
-        }
-
-        double heapMemory()
-        {
-            return heapMemory;
-        }
     }
 
-    private static final class Brackets
+    private record Brackets( double totalMemoryGB, Bracket lower, Bracket upper )
     {
-        private final double totalMemoryGB;
-        private final Bracket lower;
-        private final Bracket upper;
-
-        private Brackets( double totalMemoryGB, Bracket lower, Bracket upper )
-        {
-            this.totalMemoryGB = totalMemoryGB;
-            this.lower = lower;
-            this.upper = upper;
-        }
-
         private double differenceFactor()
         {
             if ( lower == upper )

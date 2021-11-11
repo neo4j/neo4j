@@ -62,8 +62,8 @@ public class TransactionLogChannelAllocator
     public PhysicalLogVersionedStoreChannel createLogChannel( long version, LongSupplier lastCommittedTransactionId ) throws IOException
     {
         AllocatedFile allocatedFile = allocateFile( version );
-        var storeChannel = allocatedFile.getStoreChannel();
-        var logFile = allocatedFile.getPath();
+        var storeChannel = allocatedFile.storeChannel();
+        var logFile = allocatedFile.path();
         try ( var scopedBuffer = new HeapScopedBuffer( CURRENT_FORMAT_LOG_HEADER_SIZE, logFilesContext.getMemoryTracker() ) )
         {
             var buffer = scopedBuffer.getBuffer();
@@ -160,26 +160,8 @@ public class TransactionLogChannelAllocator
         return new AllocatedFile( file, storeChannel );
     }
 
-    private static class AllocatedFile
+    private record AllocatedFile( Path path, StoreChannel storeChannel )
     {
-        private final Path path;
-        private final StoreChannel storeChannel;
-
-        AllocatedFile( Path path, StoreChannel storeChannel )
-        {
-            this.path = path;
-            this.storeChannel = storeChannel;
-        }
-
-        public Path getPath()
-        {
-            return path;
-        }
-
-        public StoreChannel getStoreChannel()
-        {
-            return storeChannel;
-        }
     }
 
 }

@@ -377,18 +377,8 @@ public class SslPolicyLoader
         return trustStore;
     }
 
-    private static final class KeyAndChain
+    private record KeyAndChain( PrivateKey privateKey, X509Certificate[] keyCertChain, KeyStore trustStore )
     {
-        final PrivateKey privateKey;
-        final X509Certificate[] keyCertChain;
-        final KeyStore trustStore;
-
-        private KeyAndChain( PrivateKey privateKey, X509Certificate[] keyCertChain, KeyStore trustStore )
-        {
-            this.privateKey = privateKey;
-            this.keyCertChain = keyCertChain;
-            this.trustStore = trustStore;
-        }
     }
 
     private DirectoryStream.Filter<Path> certificateFilenameFilter()

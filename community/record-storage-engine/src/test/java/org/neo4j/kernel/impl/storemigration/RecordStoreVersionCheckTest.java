@@ -75,9 +75,9 @@ class RecordStoreVersionCheckTest
         StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "version", NULL );
 
         // then
-        assertFalse( result.outcome.isSuccessful() );
-        assertEquals( Outcome.missingStoreFile, result.outcome );
-        assertNull( result.actualVersion );
+        assertFalse( result.outcome().isSuccessful() );
+        assertEquals( Outcome.missingStoreFile, result.outcome() );
+        assertNull( result.actualVersion() );
     }
 
     @Test
@@ -93,7 +93,7 @@ class RecordStoreVersionCheckTest
 
         StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( storeVersion, cursorContext );
 
-        assertTrue( result.outcome.isSuccessful() );
+        assertTrue( result.outcome().isSuccessful() );
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isOne();
         assertThat( cursorTracer.unpins() ).isOne();
@@ -146,9 +146,9 @@ class RecordStoreVersionCheckTest
         StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "version", NULL );
 
         // then
-        assertFalse( result.outcome.isSuccessful() );
-        assertEquals( Outcome.storeVersionNotFound, result.outcome );
-        assertNull( result.actualVersion );
+        assertFalse( result.outcome().isSuccessful() );
+        assertEquals( Outcome.storeVersionNotFound, result.outcome() );
+        assertNull( result.actualVersion() );
     }
 
     @Test
@@ -164,9 +164,9 @@ class RecordStoreVersionCheckTest
         StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "V2", NULL );
 
         // then
-        assertFalse( result.outcome.isSuccessful() );
-        assertEquals( Outcome.unexpectedStoreVersion, result.outcome );
-        assertEquals( "V1", result.actualVersion );
+        assertFalse( result.outcome().isSuccessful() );
+        assertEquals( Outcome.unexpectedStoreVersion, result.outcome() );
+        assertEquals( "V1", result.actualVersion() );
     }
 
     @Test
@@ -183,9 +183,9 @@ class RecordStoreVersionCheckTest
         StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( storeVersion, NULL );
 
         // then
-        assertTrue( result.outcome.isSuccessful() );
-        assertEquals( Outcome.ok, result.outcome );
-        assertEquals( storeVersion, result.actualVersion );
+        assertTrue( result.outcome().isSuccessful() );
+        assertEquals( Outcome.ok, result.outcome() );
+        assertEquals( storeVersion, result.actualVersion() );
     }
 
     private Path emptyFile( FileSystemAbstraction fs ) throws IOException

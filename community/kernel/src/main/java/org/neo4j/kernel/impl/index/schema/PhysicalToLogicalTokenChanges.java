@@ -96,41 +96,8 @@ class PhysicalToLogicalTokenChanges
         }
     }
 
-    static class LogicalTokenUpdates implements Comparable<LogicalTokenUpdates>
+    record LogicalTokenUpdates( long txId, long entityId, long[] removals, long[] additions ) implements Comparable<LogicalTokenUpdates>
     {
-        private final long txId;
-        private final long entityId;
-        private final long[] removals;
-        private final long[] additions;
-
-        LogicalTokenUpdates( long txId, long entityId, long[] removals, long[] additions )
-        {
-            this.txId = txId;
-            this.entityId = entityId;
-            this.removals = removals;
-            this.additions = additions;
-        }
-
-        long txId()
-        {
-            return txId;
-        }
-
-        long entityId()
-        {
-            return entityId;
-        }
-
-        long[] removals()
-        {
-            return removals;
-        }
-
-        long[] additions()
-        {
-            return additions;
-        }
-
         @Override
         public int compareTo( LogicalTokenUpdates o )
         {

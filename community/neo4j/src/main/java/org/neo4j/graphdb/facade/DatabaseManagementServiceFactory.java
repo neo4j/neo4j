@@ -20,6 +20,8 @@
 package org.neo4j.graphdb.facade;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -368,13 +370,11 @@ public class DatabaseManagementServiceFactory
     {
         try
         {
-            Class<BuiltInDbmsProcedures.SystemInfo> systemInfoClass = BuiltInDbmsProcedures.SystemInfo.class;
-            Field[] fields = systemInfoClass.getFields();
-            for ( BuiltInDbmsProcedures.SystemInfo info : BuiltInDbmsProcedures.dbmsInfo( system ).collect( Collectors.toList() ) )
+            for ( BuiltInDbmsProcedures.SystemInfo info : BuiltInDbmsProcedures.dbmsInfo( system ).toList() )
             {
-                for ( Field field : fields )
+                for ( RecordComponent recordComponent : BuiltInDbmsProcedures.SystemInfo.class.getRecordComponents() )
                 {
-                    log.info( field.getName() + ": " + field.get( info ) );
+                    log.info( recordComponent.getName() + ": " + recordComponent.getAccessor().invoke( info ) );
                 }
             }
         }

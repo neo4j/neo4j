@@ -46,14 +46,8 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
     private final Map<Direction, Side> sides = new EnumMap<>( Direction.class );
     private final BidirectionalUniquenessFilter uniqueness;
 
-    private static class Side
+    private record Side( MonoDirectionalTraversalDescription description )
     {
-        private final MonoDirectionalTraversalDescription description;
-
-        Side( MonoDirectionalTraversalDescription description )
-        {
-            this.description = description;
-        }
     }
 
     BidirectionalTraverserIterator( MonoDirectionalTraversalDescription start,

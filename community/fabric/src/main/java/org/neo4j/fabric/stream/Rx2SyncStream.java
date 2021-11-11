@@ -135,15 +135,7 @@ public class Rx2SyncStream
         }
     }
 
-    private static class RecordOrError
+    private record RecordOrError( Record record, Throwable error )
     {
-        private final Record record;
-        private final Throwable error;
-
-        RecordOrError( Record record, Throwable error )
-        {
-            this.record = record;
-            this.error = error;
-        }
     }
 }

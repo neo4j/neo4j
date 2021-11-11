@@ -60,24 +60,8 @@ public interface StoreVersionCheck
      */
     Result checkUpgrade( String desiredVersion, CursorContext cursorContext );
 
-    class Result
+    record Result( Outcome outcome, String actualVersion, String storeFilename )
     {
-        public final Outcome outcome;
-        public final String actualVersion;
-        public final String storeFilename;
-
-        public Result( Outcome outcome, String actualVersion, String storeFilename )
-        {
-            this.outcome = outcome;
-            this.actualVersion = actualVersion;
-            this.storeFilename = storeFilename;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Result{" + "outcome=" + outcome + ", actualVersion='" + actualVersion + '\'' + ", storeFilename='" + storeFilename + '\'' + '}';
-        }
     }
 
     enum Outcome

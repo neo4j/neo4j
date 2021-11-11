@@ -33,26 +33,12 @@ abstract class CollectorStateMachine<DATA>
         IDLE, COLLECTING
     }
 
-    static final class Status
+    record Status( String message )
     {
-        final String message;
-
-        Status( String message )
-        {
-            this.message = message;
-        }
     }
 
-    static final class Result
+    record Result( boolean success, String message )
     {
-        final boolean success;
-        final String message;
-
-        Result( boolean success, String message )
-        {
-            this.success = success;
-            this.message = message;
-        }
     }
 
     static Result success( String message )

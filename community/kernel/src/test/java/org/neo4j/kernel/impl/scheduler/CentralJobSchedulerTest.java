@@ -455,12 +455,12 @@ class CentralJobSchedulerTest
     void shouldListActiveGroups()
     {
         life.start();
-        assertEquals( List.of(), scheduler.activeGroups().map( ag -> ag.group ).collect( toList() ) );
+        assertEquals( List.of(), scheduler.activeGroups().map( ag -> ag.group() ).collect( toList() ) );
 
         BinaryLatch firstLatch = new BinaryLatch();
         scheduler.schedule( Group.CHECKPOINT, NOT_MONITORED, firstLatch::release );
         firstLatch.await();
-        assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups().map( ag -> ag.group ).collect( toList() ) );
+        assertEquals( List.of( Group.CHECKPOINT ), scheduler.activeGroups().map( ag -> ag.group() ).collect( toList() ) );
     }
 
     @Test

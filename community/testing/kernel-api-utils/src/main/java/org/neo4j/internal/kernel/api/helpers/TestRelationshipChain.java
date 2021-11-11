@@ -80,21 +80,8 @@ public class TestRelationshipChain
         return new TestRelationshipChain( originNodeId, data.subList( 1, data.size() ) );
     }
 
-    static class Data
+    record Data( long id, long source, long target, int type )
     {
-        final long id;
-        final long source;
-        final long target;
-        final int type;
-
-        Data( long id, long source, long target, int type )
-        {
-            this.id = id;
-            this.source = source;
-            this.target = target;
-            this.type = type;
-        }
-
         RelationshipDirection relationshipDirection( long nodeReference )
         {
             if ( source == target )

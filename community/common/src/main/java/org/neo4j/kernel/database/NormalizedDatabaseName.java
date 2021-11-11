@@ -19,49 +19,13 @@
  */
 package org.neo4j.kernel.database;
 
-import java.util.Objects;
-
 import static java.util.Objects.requireNonNull;
 
-public class NormalizedDatabaseName
+public record NormalizedDatabaseName( String name )
 {
-    private final String name;
-
     public NormalizedDatabaseName( String name )
     {
         requireNonNull( name, "Database name should be not null." );
         this.name = name.toLowerCase();
-    }
-
-    public String name()
-    {
-        return name;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        NormalizedDatabaseName that = (NormalizedDatabaseName) o;
-        return Objects.equals( name, that.name );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( name );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "NormalizedDatabaseName{ name='" + name + "'}";
     }
 }

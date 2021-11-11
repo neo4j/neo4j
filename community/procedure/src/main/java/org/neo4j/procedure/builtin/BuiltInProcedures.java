@@ -441,18 +441,8 @@ public class BuiltInProcedures
         }
     }
 
-    public static class DatabaseInfo
+    public record DatabaseInfo( String id, String name, String creationDate )
     {
-        public final String id;
-        public final String name;
-        public final String creationDate;
-
-        public DatabaseInfo( String id, String name, String creationDate )
-        {
-            this.id = id;
-            this.name = name;
-            this.creationDate = creationDate;
-        }
     }
 
     public static class RelationshipTypeResult
@@ -465,14 +455,8 @@ public class BuiltInProcedures
         }
     }
 
-    public static class BooleanResult
+    public record BooleanResult( Boolean success )
     {
-        public BooleanResult( Boolean success )
-        {
-            this.success = success;
-        }
-
-        public final Boolean success;
     }
 
     public static class IndexResult
@@ -534,48 +518,20 @@ public class BuiltInProcedures
         }
     }
 
-    public static class NodeResult
+    public record NodeResult( Node node )
     {
-        public NodeResult( Node node )
-        {
-            this.node = node;
-        }
-
-        public final Node node;
     }
 
-    public static class WeightedNodeResult
+    public record WeightedNodeResult( Node node, double weight )
     {
-        public final Node node;
-        public final double weight;
-
-        public WeightedNodeResult( Node node, double weight )
-        {
-            this.node = node;
-            this.weight = weight;
-        }
     }
 
-    public static class WeightedRelationshipResult
+    public record WeightedRelationshipResult( Relationship relationship, double weight )
     {
-        public final Relationship relationship;
-        public final double weight;
-
-        public WeightedRelationshipResult( Relationship relationship, double weight )
-        {
-            this.relationship = relationship;
-            this.weight = weight;
-        }
     }
 
-    public static class RelationshipResult
+    public record RelationshipResult( Relationship relationship )
     {
-        public RelationshipResult( Relationship relationship )
-        {
-            this.relationship = relationship;
-        }
-
-        public final Relationship relationship;
     }
 
     private enum IndexUniqueness

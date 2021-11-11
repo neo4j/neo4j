@@ -157,16 +157,8 @@ public class VmPauseMonitor
         return new GcStats( time, count );
     }
 
-    private static class GcStats
+    private record GcStats( long time, long count )
     {
-        private final long time;
-        private final long count;
-
-        private GcStats( long time, long count )
-        {
-            this.time = time;
-            this.count = count;
-        }
     }
 
     public interface Monitor

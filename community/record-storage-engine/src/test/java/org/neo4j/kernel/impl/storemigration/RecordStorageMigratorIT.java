@@ -566,8 +566,8 @@ class RecordStorageMigratorIT
     private static String getVersionToMigrateFrom( RecordStoreVersionCheck check )
     {
         StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion(), NULL );
-        assertTrue( result.outcome.isSuccessful() );
-        return result.actualVersion;
+        assertTrue( result.outcome().isSuccessful() );
+        return result.actualVersion();
     }
 
     private static String getVersionToMigrateTo( RecordStoreVersionCheck check )

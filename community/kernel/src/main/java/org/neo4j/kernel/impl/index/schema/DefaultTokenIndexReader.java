@@ -114,8 +114,8 @@ public class DefaultTokenIndexReader implements TokenIndexReader
     private Seeker<TokenScanKey,TokenScanValue> seekerForToken(
             EntityRange range, int tokenId, IndexOrder indexOrder, CursorContext cursorContext ) throws IOException
     {
-        long rangeFrom = range.fromInclusive;
-        long rangeTo = range.toExclusive;
+        long rangeFrom = range.fromInclusive();
+        long rangeTo = range.toExclusive();
 
         if ( indexOrder == IndexOrder.DESCENDING )
         {
@@ -204,8 +204,8 @@ public class DefaultTokenIndexReader implements TokenIndexReader
         {
             Preconditions.requirePositive( desiredNumberOfPartitions );
             int tokenId = query.tokenId();
-            final var fromInclusive = new TokenScanKey( tokenId, rangeOf( range.fromInclusive ) );
-            final var toExclusive = new TokenScanKey( tokenId, rangeOf( range.toExclusive ) );
+            final var fromInclusive = new TokenScanKey( tokenId, rangeOf( range.fromInclusive() ) );
+            final var toExclusive = new TokenScanKey( tokenId, rangeOf( range.toExclusive() ) );
             partitionEdges = index.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, cursorContext );
         }
 

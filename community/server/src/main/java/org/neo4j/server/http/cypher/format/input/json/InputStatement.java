@@ -30,38 +30,6 @@ import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
  * <p>
  * It has some extra format-specific information over {@link Statement}.
  */
-public class InputStatement
+public record InputStatement( String statement, Map<String,Object> parameters, boolean includeStats, List<ResultDataContent> resultDataContents )
 {
-    private final String statement;
-    private final Map<String,Object> parameters;
-    private final boolean includeStats;
-    private final List<ResultDataContent> resultDataContents;
-
-    public InputStatement( String statement, Map<String,Object> parameters, boolean includeStats, List<ResultDataContent> resultDataContents )
-    {
-        this.statement = statement;
-        this.parameters = parameters;
-        this.includeStats = includeStats;
-        this.resultDataContents = resultDataContents;
-    }
-
-    public String statement()
-    {
-        return statement;
-    }
-
-    public Map<String,Object> parameters()
-    {
-        return parameters;
-    }
-
-    public List<ResultDataContent> resultDataContents()
-    {
-        return resultDataContents;
-    }
-
-    public boolean includeStats()
-    {
-        return includeStats;
-    }
 }

@@ -552,16 +552,8 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         return id;
     }
 
-    private static class ReadingTransaction
+    private record ReadingTransaction( SingleDbTransaction singleDbTransaction, boolean readingOnly )
     {
-        private final SingleDbTransaction singleDbTransaction;
-        private final boolean readingOnly;
-
-        ReadingTransaction( SingleDbTransaction singleDbTransaction, boolean readingOnly )
-        {
-            this.singleDbTransaction = singleDbTransaction;
-            this.readingOnly = readingOnly;
-        }
     }
 
     public Set<InternalTransaction> getInternalTransactions()
@@ -576,15 +568,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         TERMINATED
     }
 
-    private static class ErrorRecord
+    private record ErrorRecord( String message, Throwable error )
     {
-        private final String message;
-        private final Throwable error;
-
-        ErrorRecord( String message, Throwable error )
-        {
-            this.message = message;
-            this.error = error;
-        }
     }
 }

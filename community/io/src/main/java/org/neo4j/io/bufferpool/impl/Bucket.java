@@ -147,15 +147,7 @@ class Bucket
         private final Deque<IdleBuffer> stack = new ConcurrentLinkedDeque<>();
     }
 
-    private static class IdleBuffer
+    private record IdleBuffer( ByteBuffer byteBuffer, long lastUsedTick )
     {
-        private final ByteBuffer byteBuffer;
-        private final long lastUsedTick;
-
-        IdleBuffer( ByteBuffer byteBuffer, long lastUsedTick )
-        {
-            this.byteBuffer = byteBuffer;
-            this.lastUsedTick = lastUsedTick;
-        }
     }
 }
