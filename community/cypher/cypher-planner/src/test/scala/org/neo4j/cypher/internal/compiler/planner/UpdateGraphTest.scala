@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
@@ -42,11 +43,9 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class UpdateGraphTest extends CypherFunSuite {
-  private val pos = DummyPosition(0)
+class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   private implicit val semanticTable: SemanticTable = SemanticTable()
 
   test("should not be empty after adding label to set") {
@@ -195,6 +194,53 @@ class UpdateGraphTest extends CypherFunSuite {
     ))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.DeleteOverlap(Seq("col")))
+  }
+
+  test("overlap when reading and merging on the same label and property") {
+    // MATCH (a:Label {prop: 42}) MERGE (b:Label {prop: 123})
+    val selections = Selections.from(Seq(
+      hasLabels("a", "Label"),
+      in(prop("a", "prop"), listOfInt(42))
+    ))
+    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
+      MergeNodePattern(
+        CreateNode("b", Seq(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+        QueryGraph.empty, Seq.empty, Seq.empty)
+    ))
+
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
+  }
+
+  test("overlap when reading and merging on the same property, no label on MATCH") {
+    // MATCH (a {prop: 42}) MERGE (b:Label {prop: 123})
+    val selections = Selections.from(Seq(
+      in(prop("a", "prop"), listOfInt(42))
+    ))
+    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
+      MergeNodePattern(
+        CreateNode("b", Seq(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+        QueryGraph.empty, Seq.empty, Seq.empty)
+    ))
+
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
+  }
+
+  test("no overlap when reading and merging on the same property but different labels") {
+    // MATCH (a:Label {prop: 42}) MERGE (b:OtherLabel {prop: 123})
+    val selections = Selections.from(Seq(
+      hasLabels("a", "Label"),
+      in(prop("a", "prop"), listOfInt(42))
+    ))
+    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(
+      MergeNodePattern(
+        CreateNode("b", Seq(labelName("OtherLabel")), Some(mapOfInt("prop" -> 123))),
+        QueryGraph.empty, Seq.empty, Seq.empty)
+    ))
+
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
   }
 
   private def createNode(name: String, labels: String*) =
