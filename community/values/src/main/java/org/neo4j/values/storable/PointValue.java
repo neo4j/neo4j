@@ -74,6 +74,12 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
                 throw new InvalidArgumentException( "Cannot create a point with non-finite coordinate values: " + Arrays.toString( coordinate) );
             }
         }
+        if ( coordinate.length != crs.getDimension() )
+        {
+            throw new IllegalArgumentException(
+                    format( "Cannot create point, CRS %s expects %d dimensions, but got coordinates %s",
+                            crs, crs.getDimension(), Arrays.toString( coordinate ) ) );
+        }
         if ( crs.isGeographic() && (coordinate.length == 2 || coordinate.length == 3) )
         {
             // anything with less or more coordinates gets a pass as it is and needs to be stopped from other places like bolt does

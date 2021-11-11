@@ -330,25 +330,10 @@ public final class Values
     }
 
     /**
-     * Unlike pointValue(), this method does not enforce consistency between the CRS and coordinate dimensions.
-     * This can be useful for testing.
-     */
-    public static PointValue unsafePointValue( CoordinateReferenceSystem crs, double... coordinate )
-    {
-        return new PointValue( crs, coordinate );
-    }
-
-    /**
      * Creates a PointValue, and enforces consistency between the CRS and coordinate dimensions.
      */
     public static PointValue pointValue( CoordinateReferenceSystem crs, double... coordinate )
     {
-        if ( crs.getDimension() != coordinate.length )
-        {
-            throw new IllegalArgumentException(
-                    format( "Cannot create point, CRS %s expects %d dimensions, but got coordinates %s",
-                            crs, crs.getDimension(), Arrays.toString( coordinate ) ) );
-        }
         return new PointValue( crs, coordinate );
     }
 

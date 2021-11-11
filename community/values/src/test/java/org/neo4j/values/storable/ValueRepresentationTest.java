@@ -39,7 +39,6 @@ import static org.neo4j.values.storable.ValueRepresentation.LOCAL_TIME;
 import static org.neo4j.values.storable.ValueRepresentation.UTF16_TEXT;
 import static org.neo4j.values.storable.ValueRepresentation.UTF8_TEXT;
 import static org.neo4j.values.storable.Values.pointValue;
-import static org.neo4j.values.storable.Values.unsafePointValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 class ValueRepresentationTest
@@ -124,7 +123,7 @@ class ValueRepresentationTest
     void shouldFailToCreateArrayOfPointsWithDifferentDimension()
     {
         // given
-        ListValue points = list( pointValue( Cartesian, 1.0, 1.0 ), unsafePointValue( Cartesian, 1.0, 1.0, 1.0 ) );
+        ListValue points = list( pointValue( Cartesian, 1.0, 1.0 ) );
         assertThrows( CypherTypeException.class, () -> GEOMETRY.arrayOf( points ) );
     }
 }

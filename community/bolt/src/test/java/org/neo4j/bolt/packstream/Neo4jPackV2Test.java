@@ -33,9 +33,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -61,7 +61,7 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intValue;
-import static org.neo4j.values.storable.Values.unsafePointValue;
+import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 @ExtendWith( RandomExtension.class )
@@ -367,13 +367,13 @@ public class Neo4jPackV2Test
             {
                 crs = WGS84;
                 coordinates = new double[]{x, y};
-                return unsafePointValue( crs, coordinates );
+                return pointValue( crs, coordinates );
             }
             if ( dimension == 3 )
             {
                 double z = random.doubles( 1, Double.MIN_VALUE, Double.MAX_VALUE ).sum();
                 coordinates = new double[]{x, y, z};
-                return unsafePointValue( crs, coordinates );
+                return pointValue( crs, coordinates );
             }
         }
         else
@@ -381,7 +381,7 @@ public class Neo4jPackV2Test
             crs = dimension == 2 ? Cartesian : Cartesian_3D;
         }
 
-        return unsafePointValue( crs, random.doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
+        return pointValue( crs, random.doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
     }
 
     private DurationValue randomDuration()
