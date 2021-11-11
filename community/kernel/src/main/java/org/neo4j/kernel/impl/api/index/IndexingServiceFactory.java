@@ -44,20 +44,19 @@ public final class IndexingServiceFactory
     }
 
     public static IndexingService createIndexingService( Config config,
-                                          JobScheduler scheduler,
-                                          IndexProviderMap providerMap,
-                                          IndexStoreViewFactory indexStoreViewFactory,
-                                          TokenNameLookup tokenNameLookup,
-                                          Iterable<IndexDescriptor> indexRules,
-                                          LogProvider internalLogProvider,
-                                          LogProvider userLogProvider,
-                                          IndexMonitor monitor,
-                                          SchemaState schemaState,
-                                          IndexStatisticsStore indexStatisticsStore,
-                                          PageCacheTracer pageCacheTracer,
-                                          MemoryTracker memoryTracker,
-                                          String databaseName,
-                                          DatabaseReadOnlyChecker readOnlyChecker )
+            JobScheduler scheduler,
+            IndexProviderMap providerMap,
+            IndexStoreViewFactory indexStoreViewFactory,
+            TokenNameLookup tokenNameLookup,
+            Iterable<IndexDescriptor> indexRules,
+            LogProvider internalLogProvider,
+            IndexMonitor monitor,
+            SchemaState schemaState,
+            IndexStatisticsStore indexStatisticsStore,
+            PageCacheTracer pageCacheTracer,
+            MemoryTracker memoryTracker,
+            String databaseName,
+            DatabaseReadOnlyChecker readOnlyChecker )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         IndexMapReference indexMapRef = new IndexMapReference();
@@ -69,6 +68,6 @@ public final class IndexingServiceFactory
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, indexStoreViewFactory, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnlyChecker, config );
+                internalLogProvider, monitor, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnlyChecker, config );
     }
 }

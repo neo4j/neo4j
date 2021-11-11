@@ -115,7 +115,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexMapReference indexMapRef;
     private final Iterable<IndexDescriptor> indexDescriptors;
     private final Log internalLog;
-    private final Log userLog;
     private final IndexStatisticsStore indexStatisticsStore;
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
@@ -151,7 +150,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             JobScheduler scheduler,
             SchemaState schemaState,
             LogProvider internalLogProvider,
-            LogProvider userLogProvider,
             IndexMonitor monitor,
             IndexStatisticsStore indexStatisticsStore,
             PageCacheTracer pageCacheTracer,
@@ -172,7 +170,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.monitor = monitor;
         this.populationJobController = new IndexPopulationJobController( scheduler );
         this.internalLog = internalLogProvider.getLog( getClass() );
-        this.userLog = userLogProvider.getLog( getClass() );
         this.indexStatisticsStore = indexStatisticsStore;
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;

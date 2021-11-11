@@ -343,7 +343,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
             indexService = IndexingServiceFactory.createIndexingService( config, scheduler,
                     providerMap, indexStoreViewFactory, ktx.tokenRead(), initialSchemaRulesLoader( storageEngine ),
-                    nullLogProvider, nullLogProvider, IndexMonitor.NO_MONITOR, getSchemaState(),
+                    nullLogProvider, IndexMonitor.NO_MONITOR, getSchemaState(),
                     mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, "", writable() );
             indexService.start();
 

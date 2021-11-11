@@ -707,7 +707,7 @@ public class Database extends LifecycleAdapter
             MemoryTracker memoryTracker )
     {
         return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore, databaseConfig, scheduler,
-                indexProviderMap, tokenHolders, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexMonitor.class ),
+                indexProviderMap, tokenHolders, internalLogProvider, databaseMonitors.newMonitor( IndexMonitor.class ),
                 pageCacheTracer, memoryTracker, namedDatabaseId.name(), readOnlyDatabaseChecker ) );
     }
 
@@ -724,7 +724,6 @@ public class Database extends LifecycleAdapter
             IndexProviderMap indexProviderMap,
             TokenNameLookup tokenNameLookup,
             LogProvider internalLogProvider,
-            LogProvider userLogProvider,
             IndexMonitor indexMonitor,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
@@ -732,7 +731,7 @@ public class Database extends LifecycleAdapter
             DatabaseReadOnlyChecker readOnlyChecker )
     {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory,
-                tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, userLogProvider, indexMonitor,
+                tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, indexMonitor,
                 databaseSchemaState, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnlyChecker );
         storageEngine.addIndexUpdateListener( indexingService );
         return indexingService;

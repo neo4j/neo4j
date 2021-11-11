@@ -449,7 +449,6 @@ public class BatchInserterImpl implements BatchInserter
     private void repopulateAllIndexes() throws IOException
     {
         LogProvider logProvider = logService.getInternalLogProvider();
-        LogProvider userLogProvider = logService.getUserLogProvider();
         var cacheTracer = PageCacheTracer.NULL;
 
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory( config, context -> new CachedStoreCursors( neoStores, context ),
@@ -458,7 +457,7 @@ public class BatchInserterImpl implements BatchInserter
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
                 immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
-                .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory, tokenHolders, emptyList(), logProvider, userLogProvider,
+                .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory, tokenHolders, emptyList(), logProvider,
                         IndexMonitor.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker,
                         databaseLayout.getDatabaseName(), readOnlyChecker );
         life.add( indexingService );

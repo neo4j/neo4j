@@ -442,7 +442,7 @@ public final class Recovery
         IndexStatisticsStore indexStatisticsStore =
                 new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, readOnlyChecker, tracers.getPageCacheTracer() );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreViewFactory, indexStatisticsStore,
-                config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexMonitor.class ),
+                config, scheduler, indexProviderMap, tokenHolders, logProvider, monitors.newMonitor( IndexMonitor.class ),
                 tracers.getPageCacheTracer(), memoryTracker, databaseLayout.getDatabaseName(), readOnlyChecker );
 
         MetadataProvider metadataProvider = storageEngine.metadataProvider();
