@@ -64,12 +64,12 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnIndexSeek;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnLabelScan;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnNode;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnProperty;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationship;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationshipTypeScan;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.indexSeekEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.labelScanEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.nodeEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.propertyEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.relationshipEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.relationshipTypeScanEvent;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
@@ -163,7 +163,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             read.allNodesScan( nodes );
             while ( nodes.next() )
             {
-                expectedEvents.add( OnNode( nodes.nodeReference() ) );
+                expectedEvents.add( nodeEvent( nodes.nodeReference() ) );
             }
         }
 
@@ -183,15 +183,15 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             cursor.setTracer( tracer );
             read.singleNode( foo, cursor );
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnNode( foo ) );
+            tracer.assertEvents( nodeEvent( foo ) );
 
             read.singleNode( bar, cursor );
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnNode( bar ) );
+            tracer.assertEvents( nodeEvent( bar ) );
 
             read.singleNode( bare, cursor );
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnNode( bare ) );
+            tracer.assertEvents( nodeEvent( bare ) );
         }
     }
 
@@ -207,7 +207,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             cursor.setTracer( tracer );
             read.singleNode( foo, cursor );
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnNode( foo ) );
+            tracer.assertEvents( nodeEvent( foo ) );
 
             cursor.removeTracer( );
             read.singleNode( bar, cursor );
@@ -217,7 +217,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             cursor.setTracer( tracer );
             read.singleNode( bare, cursor );
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnNode( bare ) );
+            tracer.assertEvents( nodeEvent( bare ) );
         }
     }
 
@@ -229,7 +229,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         int barId = token.labelGetOrCreateForName( "Bar" );
 
         List<TraceEvent> expectedEvents = new ArrayList<>();
-        expectedEvents.add( OnLabelScan( barId ) );
+        expectedEvents.add( labelScanEvent( barId ) );
 
         try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor( NULL ) )
         {
@@ -239,7 +239,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
                                 IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ), NULL );
             while ( cursor.next() )
             {
-                expectedEvents.add( OnNode( cursor.nodeReference() ) );
+                expectedEvents.add( nodeEvent( cursor.nodeReference() ) );
             }
         }
 
@@ -273,10 +273,10 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         cursor.setTracer( tracer );
         read.nodeIndexSeek( tx.queryContext(), session, cursor, constrained( order, false ), PropertyIndexQuery.range( prop, 0, false, 10, false ) );
 
-        tracer.assertEvents( OnIndexSeek() );
+        tracer.assertEvents( indexSeekEvent() );
 
         assertTrue( cursor.next() );
-        tracer.assertEvents( OnNode( cursor.nodeReference() ) );
+        tracer.assertEvents( nodeEvent( cursor.nodeReference() ) );
 
         assertFalse( cursor.next() );
         tracer.assertEvents();
@@ -294,7 +294,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             cursor.setTracer( tracer );
             read.singleRelationship( has, cursor );
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( has ) );
+            tracer.assertEvents( relationshipEvent( has ) );
 
             cursor.removeTracer();
             read.singleRelationship( is, cursor );
@@ -304,7 +304,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             cursor.setTracer( tracer );
             read.singleRelationship( is, cursor );
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( is ) );
+            tracer.assertEvents( relationshipEvent( is ) );
 
             assertFalse( cursor.next() );
             tracer.assertEvents();
@@ -328,7 +328,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             nodeCursor.relationships( cursor, ALL_RELATIONSHIPS );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+            tracer.assertEvents( relationshipEvent( cursor.relationshipReference() ) );
 
             cursor.removeTracer();
             assertTrue( cursor.next() );
@@ -336,7 +336,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
 
             cursor.setTracer( tracer );
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+            tracer.assertEvents( relationshipEvent( cursor.relationshipReference() ) );
 
             assertTrue( cursor.next() ); // skip last two
             assertTrue( cursor.next() );
@@ -366,16 +366,15 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             nodeCursor.relationships( cursor, selection( type, Direction.OUTGOING ) );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+            tracer.assertEvents( relationshipEvent( cursor.relationshipReference() ) );
 
             cursor.removeTracer();
-            assertTrue( cursor.next() );
-            tracer.assertEvents();
 
             cursor.setTracer( tracer );
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+            tracer.assertEvents( relationshipEvent( cursor.relationshipReference() ) );
 
+            assertTrue( cursor.next() );
             assertTrue( cursor.next() ); // skip last one
             tracer.clear();
 
@@ -401,10 +400,10 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             nodeCursor.properties( propertyCursor );
 
             assertTrue( propertyCursor.next() );
-            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
+            tracer.assertEvents( propertyEvent( propertyCursor.propertyKey() ) );
 
             assertTrue( propertyCursor.next() );
-            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
+            tracer.assertEvents( propertyEvent( propertyCursor.propertyKey() ) );
 
             propertyCursor.removeTracer();
             assertTrue( propertyCursor.next() );
@@ -412,7 +411,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
 
             propertyCursor.setTracer( tracer );
             assertTrue( propertyCursor.next() );
-            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
+            tracer.assertEvents( propertyEvent( propertyCursor.propertyKey() ) );
 
             assertFalse( propertyCursor.next() );
             tracer.assertEvents();
@@ -427,7 +426,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         int hasId = token.relationshipTypeGetOrCreateForName( "HAS" );
 
         List<TraceEvent> expectedEvents = new ArrayList<>();
-        expectedEvents.add( OnRelationshipTypeScan( hasId ) );
+        expectedEvents.add( relationshipTypeScanEvent( hasId ) );
 
         try ( RelationshipTypeIndexCursor cursor = cursors.allocateRelationshipTypeIndexCursor( NULL ) )
         {
@@ -437,7 +436,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
                                        IndexQueryConstraints.unconstrained(), new TokenPredicate( hasId ), NULL );
             while ( cursor.next() )
             {
-                expectedEvents.add( OnRelationship( cursor.relationshipReference() ) );
+                expectedEvents.add( relationshipEvent( cursor.relationshipReference() ) );
             }
         }
 
@@ -481,10 +480,10 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         read.relationshipIndexSeek( queryContext, session, cursor, constrained( order, false ),
                 PropertyIndexQuery.range( prop, 0, false, 10, false ) );
 
-        tracer.assertEvents( OnIndexSeek() );
+        tracer.assertEvents( indexSeekEvent() );
 
         assertTrue( cursor.next() );
-        tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+        tracer.assertEvents( relationshipEvent( cursor.relationshipReference() ) );
 
         assertFalse( cursor.next() );
         tracer.assertEvents();

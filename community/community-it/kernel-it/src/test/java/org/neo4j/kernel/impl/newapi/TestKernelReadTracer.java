@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestKernelReadTracer implements KernelReadTracer
 {
+    static final TraceEvent ON_ALL_NODES_SCAN = new TraceEvent( TraceEventKind.AllNodesScan );
+
     private final List<TraceEvent> traceEvents;
 
     TestKernelReadTracer()
@@ -40,7 +42,7 @@ public class TestKernelReadTracer implements KernelReadTracer
     @Override
     public void onNode( long nodeReference )
     {
-        traceEvents.add( OnNode( nodeReference ) );
+        traceEvents.add( nodeEvent( nodeReference ) );
     }
 
     @Override
@@ -52,31 +54,31 @@ public class TestKernelReadTracer implements KernelReadTracer
     @Override
     public void onLabelScan( int label )
     {
-        traceEvents.add( OnLabelScan( label ) );
+        traceEvents.add( labelScanEvent( label ) );
     }
 
     @Override
     public void onRelationshipTypeScan( int type )
     {
-        traceEvents.add( OnRelationshipTypeScan( type ) );
+        traceEvents.add( relationshipTypeScanEvent( type ) );
     }
 
     @Override
     public void onIndexSeek()
     {
-        traceEvents.add( OnIndexSeek() );
+        traceEvents.add( indexSeekEvent() );
     }
 
     @Override
     public void onRelationship( long relationshipReference )
     {
-        traceEvents.add( OnRelationship( relationshipReference ) );
+        traceEvents.add( relationshipEvent( relationshipReference ) );
     }
 
     @Override
     public void onProperty( int propertyKey )
     {
-        traceEvents.add( OnProperty( propertyKey ) );
+        traceEvents.add( propertyEvent( propertyKey ) );
     }
 
     @Override
@@ -157,34 +159,32 @@ public class TestKernelReadTracer implements KernelReadTracer
         }
     }
 
-    static final TraceEvent ON_ALL_NODES_SCAN = new TraceEvent( TraceEventKind.AllNodesScan );
-
-    static TraceEvent OnNode( long nodeReference )
+    static TraceEvent nodeEvent( long nodeReference )
     {
         return new TraceEvent( TraceEventKind.Node, nodeReference );
     }
 
-    static TraceEvent OnLabelScan( int label )
+    static TraceEvent labelScanEvent( int label )
     {
         return new TraceEvent( TraceEventKind.LabelScan, label );
     }
 
-    static TraceEvent OnRelationshipTypeScan( int type )
+    static TraceEvent relationshipTypeScanEvent( int type )
     {
         return new TraceEvent( TraceEventKind.RelationshipTypeScan, type );
     }
 
-    static TraceEvent OnIndexSeek()
+    static TraceEvent indexSeekEvent()
     {
         return new TraceEvent( TraceEventKind.IndexSeek, 1 );
     }
 
-    static TraceEvent OnRelationship( long relationshipReference )
+    static TraceEvent relationshipEvent( long relationshipReference )
     {
         return new TraceEvent( TraceEventKind.Relationship, relationshipReference );
     }
 
-    static TraceEvent OnProperty( int propertyKey )
+    static TraceEvent propertyEvent( int propertyKey )
     {
         return new TraceEvent( TraceEventKind.Property, propertyKey );
     }

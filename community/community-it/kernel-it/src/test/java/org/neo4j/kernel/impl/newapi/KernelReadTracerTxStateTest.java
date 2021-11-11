@@ -60,12 +60,12 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnIndexSeek;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnLabelScan;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnNode;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnProperty;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationship;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationshipTypeScan;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.indexSeekEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.labelScanEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.nodeEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.propertyEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.relationshipEvent;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.relationshipTypeScanEvent;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSupport>
@@ -88,10 +88,10 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
             tracer.assertEvents( ON_ALL_NODES_SCAN );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnNode( cursor.nodeReference() ) );
+            tracer.assertEvents( nodeEvent( cursor.nodeReference() ) );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnNode( cursor.nodeReference() ) );
+            tracer.assertEvents( nodeEvent( cursor.nodeReference() ) );
 
             assertFalse( cursor.next() );
             tracer.assertEvents();
@@ -115,10 +115,10 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
             cursor.setTracer( tracer );
             tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
                                          IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ), tx.cursorContext() );
-            tracer.assertEvents( OnLabelScan( barId ) );
+            tracer.assertEvents( labelScanEvent( barId ) );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnNode( cursor.nodeReference() ) );
+            tracer.assertEvents( nodeEvent( cursor.nodeReference() ) );
 
             assertFalse( cursor.next() );
             tracer.assertEvents();
@@ -164,10 +164,10 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
 
         tx.dataRead().nodeIndexSeek( tx.queryContext(), session, cursor, constrained( order, needsValues ),
                 PropertyIndexQuery.stringPrefix( user, Values.stringValue( "B" ) ) );
-        tracer.assertEvents( OnIndexSeek() );
+        tracer.assertEvents( indexSeekEvent() );
 
         assertTrue( cursor.next() );
-        tracer.assertEvents( OnNode( cursor.nodeReference() ) );
+        tracer.assertEvents( nodeEvent( cursor.nodeReference() ) );
 
         assertFalse( cursor.next() );
         tracer.assertEvents();
@@ -191,7 +191,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
             tx.dataRead().singleRelationship( r, cursor );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( r ) );
+            tracer.assertEvents( relationshipEvent( r ) );
 
             long deleted = tx.dataWrite().relationshipCreate( n1, tx.token().relationshipTypeGetOrCreateForName( "R" ), n2 );
             tx.dataWrite().relationshipDelete( deleted );
@@ -223,7 +223,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
             nodeCursor.relationships( cursor, ALL_RELATIONSHIPS );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( r ) );
+            tracer.assertEvents( relationshipEvent( r ) );
 
             assertFalse( cursor.next() );
             tracer.assertEvents();
@@ -252,7 +252,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
             nodeCursor.properties( propertyCursor );
 
             assertTrue( propertyCursor.next() );
-            tracer.assertEvents( OnProperty( name ) );
+            tracer.assertEvents( propertyEvent( name ) );
 
             assertFalse( propertyCursor.next() );
             tracer.assertEvents();
@@ -305,7 +305,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
                     PropertyIndexQuery.fulltextSearch( "transformational" ) );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnIndexSeek(), OnRelationship( cursor.relationshipReference() ) );
+            tracer.assertEvents( indexSeekEvent(), relationshipEvent( cursor.relationshipReference() ) );
 
             assertFalse( cursor.next() );
             tracer.assertEvents();
@@ -331,10 +331,10 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
             cursor.setTracer( tracer );
             tx.dataRead().relationshipTypeScan( getTokenReadSession( tx, EntityType.RELATIONSHIP ), cursor,
                                                 IndexQueryConstraints.unconstrained(), new TokenPredicate( rType ), tx.cursorContext() );
-            tracer.assertEvents( OnRelationshipTypeScan( rType ) );
+            tracer.assertEvents( relationshipTypeScanEvent( rType ) );
 
             assertTrue( cursor.next() );
-            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+            tracer.assertEvents( relationshipEvent( cursor.relationshipReference() ) );
 
             assertFalse( cursor.next() );
             tracer.assertEvents();
