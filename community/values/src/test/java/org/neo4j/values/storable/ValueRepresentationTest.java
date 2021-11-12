@@ -27,6 +27,7 @@ import org.neo4j.values.virtual.ListValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT32;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT64;
@@ -123,7 +124,7 @@ class ValueRepresentationTest
     void shouldFailToCreateArrayOfPointsWithDifferentDimension()
     {
         // given
-        ListValue points = list( pointValue( Cartesian, 1.0, 1.0 ) );
+        ListValue points = list( pointValue( Cartesian, 1.0, 1.0 ), pointValue( Cartesian_3D, 1.0, 1.0, 1.0 ) );
         assertThrows( CypherTypeException.class, () -> GEOMETRY.arrayOf( points ) );
     }
 }

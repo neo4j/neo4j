@@ -119,8 +119,6 @@ class RelationshipChainCheckerTest extends CheckerTestBase
         }, report ->
         {
             report.sourceNextDoesNotReferenceBack( any() );
-            report.sourceNextReferencesOtherNodes( any() );
-            report.sourcePrevReferencesOtherNodes( any() );
             report.targetPrevReferencesOtherNodes( any() );
         } );
     }
@@ -137,8 +135,6 @@ class RelationshipChainCheckerTest extends CheckerTestBase
         }, report ->
         {
             report.targetNextDoesNotReferenceBack( any() );
-            report.targetNextReferencesOtherNodes( any() );
-            report.targetPrevReferencesOtherNodes( any() );
             report.sourcePrevReferencesOtherNodes( any() );
         } );
     }

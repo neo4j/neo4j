@@ -288,8 +288,7 @@ public class Neo4jPackV2Test
 
     private void testPackingPointsWithWrongDimensions( int dimensions )
     {
-        PointValue point = randomPoint( 0, dimensions );
-        assertThrows(IllegalArgumentException.class, () -> pack( point ) );
+        assertThrows(IllegalArgumentException.class, () -> randomPoint( 0, dimensions ) );
     }
 
     private static <T extends AnyValue> T packAndUnpack( T value )
