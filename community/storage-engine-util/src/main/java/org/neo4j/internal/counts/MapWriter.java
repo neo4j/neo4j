@@ -48,9 +48,9 @@ public class MapWriter implements CountUpdater.CountWriter
     }
 
     @Override
-    public void write( CountsKey key, long delta )
+    public boolean write( CountsKey key, long delta )
     {
-        changes.add( key, delta, defaultToStoredCount );
+        return changes.add( key, delta, defaultToStoredCount );
     }
 
     @Override

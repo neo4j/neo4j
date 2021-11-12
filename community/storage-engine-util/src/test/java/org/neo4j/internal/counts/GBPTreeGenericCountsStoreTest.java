@@ -245,6 +245,23 @@ class GBPTreeGenericCountsStoreTest
     }
 
     @Test
+    void shouldReturnTrueWhenGoingToAndFromZero()
+    {
+        long txId = BASE_TX_ID;
+        CountsKey key = nodeKey( LABEL_ID_1 );
+        try ( CountUpdater updater = countsStore.updater( ++txId, NULL_CONTEXT ) )
+        {
+            assertThat( updater.increment( key, 1 ) ).isTrue();   // 0->1 true
+            assertThat( updater.increment( key, 1 ) ).isFalse();  // 1->2 false
+        }
+        try ( CountUpdater updater = countsStore.updater( ++txId, NULL_CONTEXT ) )
+        {
+            assertThat( updater.increment( key, -1 ) ).isFalse(); // 2->1 false
+            assertThat( updater.increment( key, -1 ) ).isTrue();  // 1->0 true
+        }
+    }
+
+    @Test
     void shouldCheckpointAndRecoverConsistentlyUnderStressfulLoad() throws Throwable
     {
         // given

@@ -307,6 +307,17 @@ class CountsChangesTest
         }
     }
 
+    @Test
+    void shouldReturnTrueWhenGoingToAndFromZero()
+    {
+        CountsChanges changes = new MapCountsChanges();
+        CountsKey key = nodeKey( 99 );
+        assertThat( changes.add( key, 1, NOT_STORED ) ).isTrue();   // 0->1 true
+        assertThat( changes.add( key, 1, NOT_STORED ) ).isFalse();  // 1->2 false
+        assertThat( changes.add( key, -1, NOT_STORED ) ).isFalse(); // 2->1 false
+        assertThat( changes.add( key, -1, NOT_STORED ) ).isTrue();  // 1->0 true
+    }
+
     private static CountsKey randomKey( Random random )
     {
         return random.nextBoolean() ? nodeKey( randomToken( random ) ) : relationshipKey( randomToken( random ), randomToken( random ), randomToken( random ) );

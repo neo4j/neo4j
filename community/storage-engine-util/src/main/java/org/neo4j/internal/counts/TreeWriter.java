@@ -31,12 +31,10 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
  */
 class TreeWriter implements CountUpdater.CountWriter
 {
-    private static final ValueMerger<CountsKey,CountsValue> REPLACING_MERGER =
-            ( existingKey, newKey, existingValue, newValue ) -> REPLACED;
-
     private final Writer<CountsKey,CountsValue> treeWriter;
     private final CountsValue value = new CountsValue();
     private final LogProvider userLogProvider;
+    private final RememberingReplacingMerger merger = new RememberingReplacingMerger();
 
     TreeWriter( Writer<CountsKey,CountsValue> treeWriter, LogProvider userLogProvider )
     {
@@ -45,9 +43,9 @@ class TreeWriter implements CountUpdater.CountWriter
     }
 
     @Override
-    public void write( CountsKey key, long delta )
+    public boolean write( CountsKey key, long delta )
     {
-        merge( treeWriter, key, value.initialize( delta ) );
+        return merge( treeWriter, key, value.initialize( delta ) );
     }
 
     @Override
@@ -56,15 +54,17 @@ class TreeWriter implements CountUpdater.CountWriter
         closeAllUnchecked( treeWriter );
     }
 
-    private void merge( Writer<CountsKey,CountsValue> writer, CountsKey key, CountsValue value )
+    private boolean merge( Writer<CountsKey,CountsValue> writer, CountsKey key, CountsValue value )
     {
         if ( value.count > 0 )
         {
-            writer.merge( key, value, REPLACING_MERGER );
+            writer.merge( key, value, merger );
+            return merger.oldMergeValue.count == 0;
         }
         else if ( value.count == 0 )
         {
             writer.remove( key );
+            return true;
         }
         else
         {
@@ -73,7 +73,20 @@ class TreeWriter implements CountUpdater.CountWriter
                     "Even thought the database will continue operating, it will do so with reduced functionality\n" +
                     "The best cause of action is running the consistency checker, fixing the corruption and rebuilding the count store\n" +
                     "Counts for the problematic key will not be available until the count store is rebuilt.\n" );
-            writer.merge( key, new CountsValue().initialize( GBPTreeGenericCountsStore.INVALID_COUNT ), REPLACING_MERGER );
+            writer.merge( key, new CountsValue().initialize( GBPTreeGenericCountsStore.INVALID_COUNT ), merger );
+        }
+        return false;
+    }
+
+    private static class RememberingReplacingMerger implements ValueMerger<CountsKey,CountsValue>
+    {
+        private final CountsValue oldMergeValue = new CountsValue(); //Note: this value is only valid directly after the previous merge
+
+        @Override
+        public MergeResult merge( CountsKey existingKey, CountsKey newKey, CountsValue existingValue, CountsValue newValue )
+        {
+            oldMergeValue.initialize( existingValue.count );
+            return REPLACED;
         }
     }
 }

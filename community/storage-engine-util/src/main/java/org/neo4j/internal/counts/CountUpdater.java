@@ -37,11 +37,17 @@ class CountUpdater implements AutoCloseable
         this.lock = lock;
     }
 
-    void increment( CountsKey key, long delta )
+    /**
+     * Make a relative counts change to the given key.
+     * @param key {@link CountsKey} the key to make the update for.
+     * @param delta the delta for the count, can be positive or negative.
+     * @return {@code true} if the absolute value either was 0 before this change, or became zero after the change. Otherwise {@code false}.
+     */
+    boolean increment( CountsKey key, long delta )
     {
         try
         {
-            writer.write( key, delta );
+            return writer.write( key, delta );
         }
         catch ( InvalidCountException e )
         {
@@ -50,6 +56,7 @@ class CountUpdater implements AutoCloseable
             // There is nothing better we can do here than just ignore updates to this key.
             // Throwing an exception here would mean panicking the database which is what this
             // entire invalid-value exercise tries to prevent
+            return false;
         }
     }
 
@@ -68,7 +75,7 @@ class CountUpdater implements AutoCloseable
 
     interface CountWriter extends AutoCloseable
     {
-        void write( CountsKey key, long delta );
+        boolean write( CountsKey key, long delta );
 
         @Override
         void close();

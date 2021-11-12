@@ -71,11 +71,13 @@ abstract class CountsChanges
      * @param key {@link CountsKey} the key to make the update for.
      * @param delta the delta for the count, can be positive or negative.
      * @param defaultToStoredCount where to read the absolute count if it isn't already loaded into this instance (or the "old" instance).
+     * @return {@code true} if the absolute value either was 0 before this change, or became zero after the change. Otherwise {@code false}.
      */
-    void add( CountsKey key, long delta, Function<CountsKey,AtomicLong> defaultToStoredCount )
+    boolean add( CountsKey key, long delta, Function<CountsKey,AtomicLong> defaultToStoredCount )
     {
         Preconditions.checkState( !frozen, "Can't make changes in a frozen state" );
-        getCounter( key, defaultToStoredCount ).addAndGet( delta );
+        long absoluteValueAfterChange = getCounter( key, defaultToStoredCount ).addAndGet( delta );
+        return delta > 0 ? absoluteValueAfterChange - delta == 0 : absoluteValueAfterChange == 0;
     }
 
     private AtomicLong getCounter( CountsKey key, Function<CountsKey,AtomicLong> defaultToStoredCount )

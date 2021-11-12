@@ -56,9 +56,9 @@ class DeltaTreeWriter implements CountUpdater.CountWriter
     }
 
     @Override
-    public void write( CountsKey key, long delta )
+    public boolean write( CountsKey key, long delta )
     {
-        changes.add( key, delta, defaultToStoredCount );
+        boolean result = changes.add( key, delta, defaultToStoredCount );
         if ( ++changeCounter == 100 )
         {
             // Don't check size every time, it's unnecessarily expensive
@@ -68,6 +68,7 @@ class DeltaTreeWriter implements CountUpdater.CountWriter
                 writeChanges();
             }
         }
+        return result;
     }
 
     private void writeChanges()
