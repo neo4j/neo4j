@@ -216,6 +216,7 @@ public class Operations implements Write, SchemaWrite
         ktx.assertOpen();
         TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
+        storageLocks.acquireExclusiveNodeLock( ktx.lockTracer(), nodeId );
         txState.nodeDoCreate( nodeId );
         return nodeId;
     }
@@ -246,6 +247,7 @@ public class Operations implements Write, SchemaWrite
 
         TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
+        storageLocks.acquireExclusiveNodeLock( ktx.lockTracer(), nodeId );
         txState.nodeDoCreate( nodeId );
         nodeCursor.single( nodeId, allStoreHolder );
         nodeCursor.next();

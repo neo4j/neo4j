@@ -357,13 +357,13 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       this
     }
 
-    def withLockedNodes(nodeIds: Set[Long]): RuntimeResultMatcher = {
-      maybeLockedNodes = Some(new LockResourceMatcher(nodeIds, ResourceTypes.NODE))
+    def withLockedNodes(nodeIds: Set[Long], onlyCheckContains: Boolean = false): RuntimeResultMatcher = {
+      maybeLockedNodes = Some(new LockResourceMatcher(nodeIds, ResourceTypes.NODE, onlyCheckContains))
       this
     }
 
-    def withLockedRelationships(relationshipId: Set[Long]): RuntimeResultMatcher = {
-      maybeLockedRelationships = Some(new LockResourceMatcher(relationshipId, ResourceTypes.RELATIONSHIP))
+    def withLockedRelationships(relationshipId: Set[Long], onlyCheckContains: Boolean = false): RuntimeResultMatcher = {
+      maybeLockedRelationships = Some(new LockResourceMatcher(relationshipId, ResourceTypes.RELATIONSHIP, onlyCheckContains))
       this
     }
 
@@ -422,7 +422,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   /*
    * locks.accept() does not keep the order of when the locks was taken, therefore we don't assert on the order of the locks.
    */
-  class LockResourceMatcher(expectedLocked: Set[Long], expectedResourceType: ResourceType) extends Matcher[Unit] {
+  class LockResourceMatcher(expectedLocked: Set[Long], expectedResourceType: ResourceType, onlyCheckContains: Boolean) extends Matcher[Unit] {
      override def apply(left: Unit): MatchResult = {
       val locksList = new util.ArrayList[Long]
       runtimeTestSupport.locks.accept(
@@ -432,8 +432,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       )
 
       val actualLocked = locksList.asScala.toSet
+      val setsMatches = if ( onlyCheckContains ) expectedLocked.subsetOf(actualLocked) else actualLocked == expectedLocked
       MatchResult(
-        matches = actualLocked == expectedLocked,
+        matches = setsMatches,
         rawFailureMessage = s"expected ${expectedResourceType.name} locked=$expectedLocked but was $actualLocked",
         rawNegatedFailureMessage = ""
       )

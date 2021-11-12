@@ -942,6 +942,7 @@ public class PlainOperationsTest extends OperationsTest
         InOrder inOrder = inOrder( ktx, commandCreationContext );
         inOrder.verify( ktx ).txState();
         inOrder.verify( commandCreationContext ).reserveNode();
+        inOrder.verify( ktx ).lockTracer();
         inOrder.verifyNoMoreInteractions();
     }
 

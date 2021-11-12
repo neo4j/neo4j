@@ -365,7 +365,9 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should not kill hash join query with large RHS") {
     // given
-    val nodes = given { nodeGraph(10000) }
+    val nodesBatch1 = given { nodeGraph(5000) }
+    val nodesBatch2 = given { nodeGraph(5000) }
+    val nodes = nodesBatch1 ++ nodesBatch2
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x")
