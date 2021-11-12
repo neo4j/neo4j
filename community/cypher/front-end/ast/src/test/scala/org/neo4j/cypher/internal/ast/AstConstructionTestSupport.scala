@@ -117,34 +117,35 @@ import scala.language.implicitConversions
 
 trait AstConstructionTestSupport extends CypherTestSupport {
   protected val pos: InputPosition = DummyPosition(0)
+  protected val defaultPos: InputPosition = InputPosition(0, 1, 1)
 
   //noinspection LanguageFeature
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
-  def varFor(name: String): Variable = Variable(name)(pos)
+  def varFor(name: String, position: InputPosition = pos): Variable = Variable(name)(position)
 
-  def labelName(s: String): LabelName = LabelName(s)(pos)
+  def labelName(s: String, position:InputPosition = pos): LabelName = LabelName(s)(position)
 
-  def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
+  def relTypeName(s: String, position:InputPosition = pos): RelTypeName = RelTypeName(s)(position)
 
-  def labelOrRelTypeName(s: String): LabelOrRelTypeName = LabelOrRelTypeName(s)(pos)
+  def labelOrRelTypeName(s: String, position:InputPosition = pos): LabelOrRelTypeName = LabelOrRelTypeName(s)(position)
 
-  def propName(s: String): PropertyKeyName = PropertyKeyName(s)(pos)
+  def propName(s: String, position:InputPosition = pos): PropertyKeyName = PropertyKeyName(s)(position)
 
   def hasLabels(v: String, label: String): HasLabels =
     hasLabels(varFor(v), label)
 
   def hasTypes(v: String, types: String*): HasTypes =
-    HasTypes(varFor(v), types.map(relTypeName))(pos)
+    HasTypes(varFor(v), types.map(relTypeName(_)))(pos)
 
   def hasLabels(v: LogicalVariable, labels: String*): HasLabels =
-    HasLabels(v, labels.map(labelName))(pos)
+    HasLabels(v, labels.map(labelName(_)))(pos)
 
   def hasAnyLabel(v: LogicalVariable, labels: String*): HasAnyLabel =
-    HasAnyLabel(v, labels.map(labelName))(pos)
+    HasAnyLabel(v, labels.map(labelName(_)))(pos)
 
   def hasAnyLabel(v: String, labels: String*): HasAnyLabel =
-    HasAnyLabel(varFor(v), labels.map(labelName))(pos)
+    HasAnyLabel(varFor(v), labels.map(labelName(_)))(pos)
 
   def hasLabelsOrTypes(v: String, labelsOrTypes: String*): HasLabelsOrTypes =
     HasLabelsOrTypes(varFor(v), labelsOrTypes.map(n => LabelOrRelTypeName(n)(pos)))(pos)
@@ -152,8 +153,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def exists(e: Expression): FunctionInvocation =
     FunctionInvocation(FunctionName(Exists.name)(e.position), e)(e.position)
 
-  def prop(variable: String, propKey: String): Property =
-    Property(varFor(variable), propName(propKey))(pos)
+  def prop(variable: String, propKey: String, position: InputPosition = pos): Property =
+    Property(varFor(variable, position), propName(propKey, increasePos(position, variable.length + 1)))(position)
 
   def cachedNodeProp(variable: String, propKey: String): CachedProperty =
     cachedNodeProp(variable, propKey, variable)
@@ -188,8 +189,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def literalString(stringValue: String): StringLiteral =
     StringLiteral(stringValue)(pos)
 
-  def literalInt(value: Long): SignedDecimalIntegerLiteral =
-    SignedDecimalIntegerLiteral(value.toString)(pos)
+  def literalInt(value: Long, position: InputPosition = pos): SignedDecimalIntegerLiteral =
+    SignedDecimalIntegerLiteral(value.toString)(position)
 
   def literalUnsignedInt(intValue: Int): UnsignedDecimalIntegerLiteral =
     UnsignedDecimalIntegerLiteral(intValue.toString)(pos)
@@ -201,7 +202,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     ListLiteral(expressions)(pos)
 
   def listOfInt(values: Long*): ListLiteral =
-    ListLiteral(values.toSeq.map(literalInt))(pos)
+    ListLiteral(values.toSeq.map(literalInt(_)))(pos)
 
   def listOfString(stringValues: String*): ListLiteral =
     ListLiteral(stringValues.toSeq.map(literalString))(pos)
@@ -386,8 +387,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def nodePat(): NodePattern =
     NodePattern(None, Seq(), None, None)(pos)
 
-  def nodePat(name: String): NodePattern =
-    NodePattern(Some(Variable(name)(pos)), Seq(), None, None)(pos)
+  def nodePat(name: String, position: InputPosition = pos): NodePattern =
+    NodePattern(Some(Variable(name)(increasePos(position, 1))), Seq(), None, None)(position)
 
   def nodePat(name: String, labels: String*): NodePattern =
     NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None, None)(pos)
@@ -403,7 +404,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     Query(None, part)(pos)
 
   def query(cs: Clause*): Query =
-    Query(None, SingleQuery(cs)(pos))(pos)
+    Query(None, SingleQuery(cs)(defaultPos))(defaultPos)
+
+  def query(cs: Clause, position: InputPosition ): Query =
+    Query(None, SingleQuery(List(cs))(position))(position)
 
   def singleQuery(cs: Clause*): SingleQuery =
     SingleQuery(cs)(pos)
@@ -430,8 +434,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def inTransactionsParameters(batchSize: Option[Expression]): SubqueryCall.InTransactionsParameters =
     SubqueryCall.InTransactionsParameters(batchSize)(pos)
 
-  def create(pattern: PatternElement): Create =
-    Create(Pattern(Seq(EveryPath(pattern)))(pos))(pos)
+  def create(pattern: PatternElement, position: InputPosition = pos): Create =
+    Create(Pattern(Seq(EveryPath(pattern)))(pattern.position))(position)
 
   def merge(pattern: PatternElement): Merge =
     Merge(Pattern(Seq(EveryPath(pattern)))(pos), Seq.empty)(pos)
@@ -452,22 +456,26 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def returnAllItems: ReturnItems = ReturnItems(includeExisting = true, Seq.empty)(pos)
 
+  def returnAllItems(position: InputPosition): ReturnItems = ReturnItems(includeExisting = true, Seq.empty)(position)
+
   def returnItems(items: ReturnItem*): ReturnItems = ReturnItems(includeExisting = false, items)(pos)
 
-  def returnItem(expr: Expression, text: String): UnaliasedReturnItem = UnaliasedReturnItem(expr, text)(pos)
+  def returnItem(expr: Expression, text: String, position: InputPosition = pos): UnaliasedReturnItem = UnaliasedReturnItem(expr, text)(position)
 
-  def variableReturnItem(text: String): UnaliasedReturnItem = returnItem(varFor(text), text)
+  def variableReturnItem(text: String, position: InputPosition = pos): UnaliasedReturnItem = returnItem(varFor(text, position), text, position)
 
   def aliasedReturnItem(variable: Variable): AliasedReturnItem = AliasedReturnItem(variable)
 
-  def aliasedReturnItem(originalName: String, newName: String): AliasedReturnItem = AliasedReturnItem(varFor(originalName), varFor(newName))(pos, isAutoAliased = false)
+  def aliasedReturnItem(originalName: String, newName: String, position: InputPosition = pos): AliasedReturnItem = AliasedReturnItem(
+    varFor(originalName, position),
+    varFor(newName, increasePos(position, originalName.length + 4)))(pos, isAutoAliased = false)
 
   def orderBy(items: SortItem*): OrderBy =
     OrderBy(items)(pos)
 
-  def skip(value: Long): Skip = Skip(literalInt(value))(pos)
+  def skip(value: Long, position: InputPosition = pos): Skip = Skip(literalInt(value, increasePos(position, 5)))(position)
 
-  def limit(value: Long): Limit = Limit(literalInt(value))(pos)
+  def limit(value: Long, position: InputPosition = pos): Limit = Limit(literalInt(value, increasePos(position, 6)))(position)
 
   def sortItem(e: Expression): AscSortItem =
     AscSortItem(e)(pos)
@@ -492,7 +500,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     )(pos)
 
   def use(e: Expression): UseGraph =
-    UseGraph(e)(pos)
+    UseGraph(e)(defaultPos)
 
   def union(part: QueryPart, query: SingleQuery): UnionDistinct = UnionDistinct(part, query)(pos)
 
@@ -528,4 +536,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     def all: UnionAll = UnionAll(u.part, u.query)(pos)
   }
 
+  def increasePos(position: InputPosition, inc:Int):InputPosition = {
+    InputPosition(position.offset + inc, position.line, position.column + inc)
+  }
 }

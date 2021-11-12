@@ -46,9 +46,9 @@ import org.scalatest.FunSuiteLike
 
 import scala.util.Try
 
-class JavaccParserPositionTest extends ParserComparisonTestBase with FunSuiteLike with TestName {
+class JavaCcParserPositionTest extends ParserComparisonTestBase with FunSuiteLike with TestName {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
-  private val javaccAST = (query: String) => Try(JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator()))
+  private val javaCcAST = (query: String) => Try(JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator()))
 
   test("MATCH (n) RETURN n.prop") {
     assertSameAST(testName)
@@ -140,8 +140,8 @@ class JavaccParserPositionTest extends ParserComparisonTestBase with FunSuiteLik
     validatePosition(testName, _.isInstanceOf[PropertyKeyName], InputPosition(22, 1, 23))
   }
 
-  private def validatePosition(query: String, astToVerify: (ASTNode) => Boolean, pos: InputPosition): Unit = {
-    val propAst = javaccAST(query).treeFind[ASTNode] {
+  private def validatePosition(query: String, astToVerify: ASTNode => Boolean, pos: InputPosition): Unit = {
+    val propAst = javaCcAST(query).treeFind[ASTNode] {
       case ast if astToVerify(ast) => true
     }
 

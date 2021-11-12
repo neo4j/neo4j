@@ -350,12 +350,12 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
   private def pattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
     QueryGraph(
       patternNodes = Set(name, from, to),
-      patternRelationships = Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName), SimplePatternLength)))
+      patternRelationships = Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), SimplePatternLength)))
 
   private def varPattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =
     QueryGraph(
       patternNodes = Set(name, from, to),
-      patternRelationships = Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName), VarPatternLength(1, None))))
+      patternRelationships = Set(PatternRelationship(name, (from, to), direction, types.map(relTypeName(_)), VarPatternLength(1, None))))
 
   def planningContext(typeScanEnabled: Boolean = true): LogicalPlanningContext = {
     val planContext = newMockedPlanContext()

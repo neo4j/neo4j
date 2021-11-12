@@ -99,7 +99,7 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
 
     val labels = new mutable.HashMap[String, LabelId]()
     for (i <- 1 to 100) labels.put(i.toString, LabelId(i))
-    val labelInfo = Map("a" -> labels.keys.map(labelName).toSet)
+    val labelInfo = Map("a" -> labels.keys.map(labelName(_)).toSet)
 
     implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = labels)
     val result = calculator.relationshipMultiplier(relationship, labelInfo)

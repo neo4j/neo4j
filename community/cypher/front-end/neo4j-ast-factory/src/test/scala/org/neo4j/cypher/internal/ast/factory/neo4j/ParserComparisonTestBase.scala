@@ -102,9 +102,23 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   /**
    * Tests that the JavaCC parser produce correct AST.
    */
-  protected def assertJavaCCAST(query: String, expected: Statement): Unit = {
+  protected def assertJavaCCAST(query: String, expected: Statement, comparePosition: Boolean = true ) : Unit = {
     val ast = JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator())
     ast shouldBe expected
+    if (comparePosition) {
+      //change flag to true to get basic print methods for position of words
+      printQueryPositions(query, printFlag = false)
+      verifyPositions(ast, expected)
+    }
+  }
+
+  private def printQueryPositions(query: String, printFlag: Boolean): Unit = {
+    if (printFlag) {
+      println(query)
+      query.split("[ ,:.()\\[\\]]+").foreach(split =>
+        println(s"$split: ${query.indexOf(split)+1}, ${query.indexOf(split)}"))
+      println("---")
+    }
   }
 
   /**
@@ -181,4 +195,6 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
         case _ => // Do nothing
       }
   }
+
+  implicit protected def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)
 }

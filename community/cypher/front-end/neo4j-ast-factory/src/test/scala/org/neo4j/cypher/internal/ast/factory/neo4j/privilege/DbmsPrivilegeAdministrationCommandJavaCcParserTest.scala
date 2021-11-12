@@ -107,11 +107,11 @@ class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserCompariso
     }
 
     test(s"$command ALTER DATABASE ON DBMS $preposition role") {
-      assertJavaCCAST(testName, privilegeFunc(AlterDatabaseAction, Seq(Left("role"))))
+      assertJavaCCAST(testName, privilegeFunc(AlterDatabaseAction, Seq(Left("role"))), comparePosition = false)
     }
 
     test(s"$command SET DATABASE ACCESS ON DBMS $preposition role") {
-      assertJavaCCAST(testName, privilegeFunc(SetDatabaseAccessAction, Seq(Left("role"))))
+      assertJavaCCAST(testName, privilegeFunc(SetDatabaseAccessAction, Seq(Left("role"))), comparePosition = false)
     }
 
     (privilegesSupportedInParboiled ++ privilegesOnlySupportedInJavaCc).foreach {

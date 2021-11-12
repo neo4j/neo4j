@@ -98,7 +98,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
         relName,
         (startNodeName, endNodeName),
         semanticDirection,
-        types.map(super[AstConstructionTestSupport].relTypeName),
+        types.map(super[AstConstructionTestSupport].relTypeName(_)),
         SimplePatternLength))
     )
 

@@ -1194,14 +1194,14 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
                                 name: Option[String],
                                 ifExistsDo: ast.IfExistsDo,
                                 options: Options): InputPosition => ast.CreateIndex =
-    ast.CreateFulltextNodeIndex(varFor("n"), labels.map(labelName), props, name, ifExistsDo, options)
+    ast.CreateFulltextNodeIndex(varFor("n"), labels.map(labelName(_)), props, name, ifExistsDo, options)
 
   private def fulltextRelIndex(props: List[expressions.Property],
                                types: List[String],
                                name: Option[String],
                                ifExistsDo: ast.IfExistsDo,
                                options: Options): InputPosition => ast.CreateIndex =
-    ast.CreateFulltextRelationshipIndex(varFor("n"), types.map(relTypeName), props, name, ifExistsDo, options)
+    ast.CreateFulltextRelationshipIndex(varFor("n"), types.map(relTypeName(_)), props, name, ifExistsDo, options)
 
   private def textNodeIndex(props: List[expressions.Property],
                             name: Option[String],

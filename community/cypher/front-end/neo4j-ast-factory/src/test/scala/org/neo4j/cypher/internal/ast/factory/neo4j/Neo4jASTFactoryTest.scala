@@ -35,7 +35,7 @@ class Neo4jASTFactoryTest extends CypherFunSuite {
     ASTExceptionFactory.invalidCatalogStatement shouldBe "CATALOG is not allowed for this statement"
   }
 
-  test("relationShipPattternNotAllowed") {
+  test("relationShipPatternNotAllowed") {
     ASTExceptionFactory.relationshipPattternNotAllowed(ConstraintType.UNIQUE) shouldBe "'IS UNIQUE' does not allow relationship patterns"
   }
 

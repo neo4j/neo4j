@@ -624,7 +624,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     val resolvedLabelTypes = mutable.HashMap(labelsWithIds.mapValues(LabelId).toSeq: _*)
     val resolvedRelTypes = mutable.HashMap(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
     val arguments = state.arguments
-    val variables: Set[Expression] = arguments.map(varFor)
+    val variables: Set[Expression] = arguments.map(varFor(_))
     val semanticTable = new SemanticTable(
       resolvedLabelNames = resolvedLabelTypes,
       resolvedRelTypeNames = resolvedRelTypes,

@@ -31,39 +31,40 @@ class TerminateTransactionsCommandJavaCCParserTest extends ParserComparisonTestB
   Seq("TRANSACTION", "TRANSACTIONS").foreach { transactionKeyword =>
 
     test(s"TERMINATE $transactionKeyword") {
-      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List.empty))(pos)))
+      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List.empty))(defaultPos)))
     }
 
     test(s"TERMINATE $transactionKeyword 'db1-transaction-123'") {
-      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(pos)))
+      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(defaultPos)))
     }
 
     test(s"""TERMINATE $transactionKeyword "db1-transaction-123"""") {
-      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(pos)))
+      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(defaultPos)))
     }
 
     test(s"TERMINATE $transactionKeyword 'my.db-transaction-123'") {
-      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("my.db-transaction-123")))(pos)))
+      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("my.db-transaction-123")))(pos)), comparePosition = false)
     }
 
     test(s"TERMINATE $transactionKeyword $$param") {
-      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Right(parameter("param", CTAny)))(pos)))
+      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Right(parameter("param", CTAny)))(pos)), comparePosition = false)
     }
 
     test(s"""TERMINATE $transactionKeyword "db1 - transaction - 123", 'db2-transaction-45a6'""") {
-      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("db1 - transaction - 123", "db2-transaction-45a6")))(pos)))
+      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("db1 - transaction - 123", "db2-transaction-45a6")))(defaultPos)))
     }
 
     test(s"TERMINATE $transactionKeyword 'yield-transaction-123'") {
-      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("yield-transaction-123")))(pos)))
+      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("yield-transaction-123")))(defaultPos)))
     }
 
     test(s"TERMINATE $transactionKeyword 'where-transaction-123'") {
-      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("where-transaction-123")))(pos)))
+      assertJavaCCAST(testName, query(ast.TerminateTransactionsClause(Left(List("where-transaction-123")))(pos)), comparePosition = false)
     }
 
     test(s"USE db TERMINATE $transactionKeyword 'db1-transaction-123'") {
-      assertJavaCCAST(testName, query(use(varFor("db")), ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(pos)))
+      assertJavaCCAST(testName, query(use(varFor("db")), ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(pos)),
+        comparePosition = false)
     }
 
   }

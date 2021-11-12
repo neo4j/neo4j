@@ -1075,7 +1075,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
         .nodeIndexOperator("x:Honey(prop)",
-          customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 2L, -2L, 3L, 4L, 5L).map(literalInt):_*))),
+          customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 2L, -2L, 3L, 4L, 5L).map(literalInt(_)):_*))),
           unique = true
         )
         .build()
@@ -1481,7 +1481,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeIndexOperator("x:Honey(prop)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 0L, 1L, 10L, 20L).map(literalInt):_*))),
+        customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 0L, 1L, 10L, 20L).map(literalInt(_)):_*))),
         unique = true
       )
       .build(readOnly = false)

@@ -19,10 +19,19 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.CurrentUser
+import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.User
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
 
@@ -31,27 +40,28 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
   Seq("PROCEDURE", "PROCEDURES").foreach { procKeyword =>
 
     test(s"SHOW $procKeyword") {
-      assertJavaCCAST(testName, query(ShowProceduresClause(None, None, hasYield = false)(pos)))
+      assertJavaCCAST(testName, query(ShowProceduresClause(None, None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE") {
-      assertJavaCCAST(testName, query(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(pos)))
+      assertJavaCCAST(testName, query(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT USER") {
-      assertJavaCCAST(testName, query(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(pos)))
+      assertJavaCCAST(testName, query(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY user") {
-      assertJavaCCAST(testName, query(ShowProceduresClause(Some(User("user")), None, hasYield = false)(pos)))
+      assertJavaCCAST(testName, query(ShowProceduresClause(Some(User("user")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT") {
-      assertJavaCCAST(testName, query(ShowProceduresClause(Some(User("CURRENT")), None, hasYield = false)(pos)))
+      assertJavaCCAST(testName, query(ShowProceduresClause(Some(User("CURRENT")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"USE db SHOW $procKeyword") {
-      assertJavaCCAST(testName, query(use(varFor("db")), ShowProceduresClause(None, None, hasYield = false)(pos)))
+      assertJavaCCAST(testName, Query(None, SingleQuery(
+        List(use(Variable("db")(1, 5, 4)), ShowProceduresClause(None, None, hasYield = false)(1, 8, 7)))(1, 8, 7))(1, 8, 7))
     }
 
   }
@@ -59,20 +69,34 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
   // Filtering tests
 
   test("SHOW PROCEDURE WHERE name = 'my.proc'") {
-    assertJavaCCAST(testName, query(ShowProceduresClause(None, Some(where(equals(varFor("name"), literalString("my.proc")))), hasYield = false)(pos)))
+    assertJavaCCAST(testName, query(ShowProceduresClause(None,
+      Some(Where(
+        Equals(
+          Variable("name")(1, 22, 21),
+          StringLiteral("my.proc")(1, 29, 28)
+        )(1, 27, 26))
+        (1, 16, 15)
+      ), hasYield = false)(defaultPos)))
   }
 
   test("SHOW PROCEDURES YIELD description") {
-    assertJavaCCAST(testName, query(ShowProceduresClause(None, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("description")))))
+    assertJavaCCAST(testName, query(ShowProceduresClause(None, None, hasYield = true)(defaultPos),
+      yieldClause(
+        ReturnItems(includeExisting = false, Seq(variableReturnItem("description", (1, 23, 22))))(1, 23, 22)
+      )))
   }
 
   test("SHOW PROCEDURES EXECUTABLE BY user YIELD *") {
-    assertJavaCCAST(testName, query(ShowProceduresClause(Some(User("user")), None, hasYield = true)(pos), yieldClause(returnAllItems)))
+    assertJavaCCAST(testName, query(ShowProceduresClause(Some(User("user")), None, hasYield = true)(defaultPos), yieldClause(returnAllItems)))
   }
 
   test("SHOW PROCEDURES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    assertJavaCCAST(testName, query(ShowProceduresClause(None, None, hasYield = true)(pos),
-      yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+    assertJavaCCAST(testName, query(ShowProceduresClause(None, None, hasYield = true)(defaultPos),
+      yieldClause(returnAllItems((1, 25, 24)),
+        Some(OrderBy(Seq(
+            AscSortItem(Variable("name")(1, 34, 33))((1, 34, 33)))
+        )(1, 25, 24)),
+        Some(skip(2, (1, 39, 38))), Some(limit(5, (1, 46, 45))))
     ))
   }
 
@@ -83,7 +107,7 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
       yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("description", "pp")),
         where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
       return_(variableReturnItem("name"))
-    ))
+    ), comparePosition = false)
   }
 
   test("USE db SHOW PROCEDURES EXECUTABLE YIELD name, description AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name") {
@@ -96,12 +120,13 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
         Some(limit(5)),
         Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
       return_(variableReturnItem("name"))
-    ))
+    ), comparePosition = false)
   }
 
   test("SHOW PROCEDURES YIELD name AS PROCEDURE, mode AS OUTPUT") {
     assertJavaCCAST(testName, query(ShowProceduresClause(None, None, hasYield = true)(pos),
-      yieldClause(returnItems(aliasedReturnItem("name", "PROCEDURE"), aliasedReturnItem("mode", "OUTPUT")))))
+      yieldClause(returnItems(aliasedReturnItem("name", "PROCEDURE"), aliasedReturnItem("mode", "OUTPUT"))))
+    , comparePosition = false)
   }
 
   // Negative tests

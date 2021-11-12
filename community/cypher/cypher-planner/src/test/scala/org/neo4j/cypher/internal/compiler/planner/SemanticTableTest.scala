@@ -36,8 +36,6 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
   private val position123 = InputPosition(1, 2, 3)
   private val position000 = InputPosition(0, 0, 0)
 
-  private def varFor(name: String, position: InputPosition) = Variable(name)(position)
-
   test("can add nodes to a SemanticTable") {
     val table = SemanticTable().addNode(varFor("x"))
 

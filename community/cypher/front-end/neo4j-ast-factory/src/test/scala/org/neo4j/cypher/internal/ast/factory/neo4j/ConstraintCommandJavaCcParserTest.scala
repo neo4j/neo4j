@@ -343,37 +343,49 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
   test("CREATE CONSTRAINT ON (node1:Label) ASSERT node2.prop IS NODE KEY") {
     assertJavaCCAST(testName,
-      CreateNodeKeyConstraint(Variable("node1")(pos),
-        LabelName("Label")(pos),
-        Seq(Property(Variable("node2")(pos), PropertyKeyName("prop")(pos))(pos)),
+      CreateNodeKeyConstraint(Variable("node1")(1, 23, 22),
+        LabelName("Label")(1, 29, 28),
+        Seq(Property(Variable("node2")(1, 43, 42), PropertyKeyName("prop")(1, 49, 48))(1, 43, 42)),
         None,
         IfExistsThrowError,
         NoOptions,
         containsOn = true,
         ConstraintVersion0,
         None
-      )(pos)
+      )(defaultPos)
     )
   }
 
   test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS NODE KEY") {
-    assertJavaCCAST(testName, CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
-      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(pos))
+    assertJavaCCAST(testName, CreateNodeKeyConstraint(
+      varFor("node", (1, 28, 27)),
+      LabelName("Label")(1, 33, 32),
+      Seq(prop("node", "prop", (1, 49, 48))),
+      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(defaultPos))
   }
 
   test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS UNIQUE") {
-    assertJavaCCAST(testName, CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")),
-      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(pos))
+    assertJavaCCAST(testName, CreateUniquePropertyConstraint(
+      varFor("node", (1, 28, 27)),
+      LabelName("Label")(1, 33, 32),
+      Seq(prop("node", "prop", (1, 49, 48))),
+      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(defaultPos))
   }
 
   test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE node.prop IS NOT NULL") {
-    assertJavaCCAST(testName, CreateNodePropertyExistenceConstraint(varFor("node"), labelName("Label"), prop("node", "prop"),
-      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(pos))
+    assertJavaCCAST(testName, CreateNodePropertyExistenceConstraint(
+      varFor("node", (1, 28, 27)),
+      labelName("Label",(1, 33, 32)),
+      prop("node", "prop", (1, 48, 47)),
+      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(defaultPos))
   }
 
   test("CREATE CONSTRAINT FOR FOR ()-[r:R]-() REQUIRE (r.prop) IS NOT NULL") {
-    assertJavaCCAST(testName, CreateRelationshipPropertyExistenceConstraint(varFor("r"), relTypeName("R"), prop("r", "prop"),
-      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(pos))
+    assertJavaCCAST(testName, CreateRelationshipPropertyExistenceConstraint(
+      varFor("r", (1, 31, 30)),
+      relTypeName("R", (1, 33, 32)),
+      prop("r", "prop", (1, 48, 47)),
+      Some("FOR"), IfExistsThrowError, NoOptions, containsOn = false, ConstraintVersion2)(defaultPos))
   }
 
   // ASSERT EXISTS
@@ -424,7 +436,11 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
   test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS node2.prop") {
     assertJavaCCAST(testName,
-      CreateNodePropertyExistenceConstraint(Variable("node1")(pos), LabelName("Label")(pos), Property(Variable("node2")(pos), PropertyKeyName("prop")(pos))(pos), None, IfExistsThrowError, NoOptions, containsOn = true, ConstraintVersion0, None)(pos))
+      CreateNodePropertyExistenceConstraint(
+        Variable("node1")(1, 23, 22),
+        LabelName("Label")(1, 29, 28),
+        Property(Variable("node2")(1, 50, 49), PropertyKeyName("prop")(1, 56, 55))(1, 50, 49),
+        None, IfExistsThrowError, NoOptions, containsOn = true, ConstraintVersion0, None)(defaultPos))
   }
 
   test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS (node2.prop1, node3.prop2)") {
@@ -441,7 +457,11 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
   test("CREATE CONSTRAINT ON ()-[r1:R]-() ASSERT EXISTS r2.prop") {
     assertJavaCCAST(testName,
-      CreateRelationshipPropertyExistenceConstraint(Variable("r1")(pos), RelTypeName("R")(pos), Property(Variable("r2")(pos), PropertyKeyName("prop")(pos))(pos), None, IfExistsThrowError, NoOptions, containsOn = true, ConstraintVersion0, None)(pos)
+      CreateRelationshipPropertyExistenceConstraint(
+        Variable("r1")(1, 26, 25),
+        RelTypeName("R")(1, 29, 28),
+        Property(Variable("r2")(1, 49, 48), PropertyKeyName("prop")(1, 52, 51))(1, 49, 48),
+        None, IfExistsThrowError, NoOptions, containsOn = true, ConstraintVersion0, None)(defaultPos)
     )
   }
 
@@ -545,19 +565,19 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
   test("DROP CONSTRAINT ON (node1:Label) ASSERT node2.prop IS NODE KEY") {
     assertJavaCCAST(testName,
-      DropNodeKeyConstraint(Variable("node1")(pos),
-        LabelName("Label")(pos),
-        Seq(Property(Variable("node2")(pos), PropertyKeyName("prop")(pos))(pos)),
-        None)(pos)
+      DropNodeKeyConstraint(Variable("node1")(1, 21, 20),
+        LabelName("Label")(1, 27, 26),
+        Seq(Property(Variable("node2")(1, 41, 40), PropertyKeyName("prop")(1, 47, 46))(1, 42, 40)),
+        None)(defaultPos)
     )
   }
 
   test("DROP CONSTRAINT ON (node1:Label) ASSERT EXISTS node2.prop") {
     assertJavaCCAST(testName,
-      DropNodePropertyExistenceConstraint(Variable("node1")(pos),
-        LabelName("Label")(pos),
-        Property(Variable("node2")(pos), PropertyKeyName("prop")(pos))(pos),
-        None)(pos)
+      DropNodePropertyExistenceConstraint(Variable("node1")(1, 21, 20),
+        LabelName("Label")(1, 27, 26),
+        Property(Variable("node2")(1, 48, 47), PropertyKeyName("prop")(1, 54, 53))(1, 48, 47),
+        None)(defaultPos)
     )
   }
 
@@ -576,10 +596,10 @@ class ConstraintCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT EXISTS r2.prop") {
     assertJavaCCAST(testName,
       DropRelationshipPropertyExistenceConstraint(
-        Variable("r1")(pos),
-        RelTypeName("R")(pos),
-        Property(Variable("r2")(pos), PropertyKeyName("prop")(pos))(pos),
-        None)(pos)
+        Variable("r1")(1, 24, 23),
+        RelTypeName("R")(1, 27, 26),
+        Property(Variable("r2")(1, 47, 46), PropertyKeyName("prop")(1, 50, 49))(1, 47, 46),
+        None)(defaultPos)
     )
   }
 

@@ -430,16 +430,16 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   private def relPattern(from: Option[String] = None, rel: Option[String] = None, to: Option[String] = None, relationships: Seq[String] = Seq.empty) = {
-    RelationshipsPattern(RelationshipChain(NodePattern(Some(from.map(varFor).getOrElse(varFor("DEFAULT"))), Seq.empty, None, None)(pos),
+    RelationshipsPattern(RelationshipChain(NodePattern(Some(from.map(varFor(_)).getOrElse(varFor("DEFAULT"))), Seq.empty, None, None)(pos),
       RelationshipPattern(Some(varFor("r")), relationships.map(r => RelTypeName(r)(pos)), None, None, None, SemanticDirection.OUTGOING)(pos),
-      NodePattern(Some(to.map(varFor).getOrElse(varFor("DEFAULT"))), Seq.empty, None, None)(pos))(pos))(pos)
+      NodePattern(Some(to.map(varFor(_)).getOrElse(varFor("DEFAULT"))), Seq.empty, None, None)(pos))(pos))(pos)
   }
 
   private def patternExpression(from: Option[String] = None, rel: Option[String] = None, to: Option[String] = None, relationships: Seq[String] = Seq.empty) = {
     PatternExpression(
       pattern = relPattern(from, rel, to, relationships)
     )(
-      outerScope = (from.toSet ++ to.toSet).map(varFor),
+      outerScope = (from.toSet ++ to.toSet).map(varFor(_)),
       variableToCollectName = "",
       collectionName = "",
     )
@@ -457,7 +457,7 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
       projection = literalInt(1)
     )(
       position = pos,
-      outerScope = (from.toSet ++ to.toSet).map(varFor),
+      outerScope = (from.toSet ++ to.toSet).map(varFor(_)),
       variableToCollectName = "",
       collectionName = "",
     )

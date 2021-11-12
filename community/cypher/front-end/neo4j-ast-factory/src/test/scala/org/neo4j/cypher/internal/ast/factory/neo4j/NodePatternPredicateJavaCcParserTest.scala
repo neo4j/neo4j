@@ -43,7 +43,7 @@ class NodePatternPredicateJavaCcParserTest extends CypherFunSuite with TestName 
     parseNodePatterns(testName) shouldBe Seq(
       NodePattern(
         Some(varFor("n")),
-        Seq("A", "B", "C").map(labelName),
+        Seq("A", "B", "C").map(labelName(_)),
         Some(mapOf("prop" -> literalInt(42))),
         Some(lessThan(prop("n", "otherProp"), literalInt(123)))
       )(pos)

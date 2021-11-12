@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
@@ -35,35 +36,35 @@ class AliasAdministrationCommandJavaCcParserTest extends ParserComparisonTestBas
 
   // CREATE ALIAS
   test("CREATE ALIAS alias FOR DATABASE target") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias"), Left("target"), IfExistsThrowError)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias"), Left("target"), IfExistsThrowError)(defaultPos))
   }
 
   test("CREATE ALIAS alias IF NOT EXISTS FOR DATABASE target") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias"), Left("target"), IfExistsDoNothing)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias"), Left("target"), IfExistsDoNothing)(defaultPos))
   }
 
   test("CREATE OR REPLACE ALIAS alias FOR DATABASE target") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias"), Left("target"), IfExistsReplace)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias"), Left("target"), IfExistsReplace)(defaultPos))
   }
 
   test("CREATE OR REPLACE ALIAS alias IF NOT EXISTS FOR DATABASE target") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias"), Left("target"), IfExistsInvalidSyntax)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias"), Left("target"), IfExistsInvalidSyntax)(defaultPos))
   }
 
   test("CREATE ALIAS alias.name FOR DATABASE db.name") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias.name"), Left("db.name"), IfExistsThrowError)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias.name"), Left("db.name"), IfExistsThrowError)(defaultPos))
   }
 
   test("CREATE ALIAS alias . name FOR DATABASE db.name") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias.name"), Left("db.name"), IfExistsThrowError)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Left("alias.name"), Left("db.name"), IfExistsThrowError)(defaultPos))
   }
 
   test("CREATE ALIAS IF FOR DATABASE db.name") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Left("IF"), Left("db.name"), IfExistsThrowError)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Left("IF"), Left("db.name"), IfExistsThrowError)(defaultPos))
   }
 
   test("CREATE ALIAS $alias FOR DATABASE $target") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Right(parameter("alias", CTString)), Right(parameter("target", CTString)), IfExistsThrowError)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Right(Parameter("alias", CTString)(1, 14, 13)), Right(Parameter("target", CTString)(1, 34, 33)), IfExistsThrowError)(defaultPos))
   }
 
   test("CREATE ALIAS IF") {
@@ -84,11 +85,11 @@ class AliasAdministrationCommandJavaCcParserTest extends ParserComparisonTestBas
   }
 
   test("CREATE ALIAS `Mal#mö` FOR DATABASE db1") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Left("Mal#mö"), Left("db1"), IfExistsThrowError)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Left("Mal#mö"), Left("db1"), IfExistsThrowError)(defaultPos))
   }
 
   test("CREATE ALIAS `#Malmö` FOR DATABASE db1") {
-    assertJavaCCAST(testName, CreateDatabaseAlias(Left("#Malmö"), Left("db1"), IfExistsThrowError)(pos))
+    assertJavaCCAST(testName, CreateDatabaseAlias(Left("#Malmö"), Left("db1"), IfExistsThrowError)(defaultPos))
   }
 
   test("CREATE ALIAS name FOR DATABASE") {
@@ -98,40 +99,40 @@ class AliasAdministrationCommandJavaCcParserTest extends ParserComparisonTestBas
 
   // DROP ALIAS
   test("DROP ALIAS name FOR DATABASE") {
-    assertJavaCCAST(testName, DropDatabaseAlias(Left("name"), false)(pos))
+    assertJavaCCAST(testName, DropDatabaseAlias(Left("name"), ifExists = false)(defaultPos))
   }
 
   test("DROP ALIAS $name FOR DATABASE") {
-    assertJavaCCAST(testName, DropDatabaseAlias(Right(parameter("name", CTString)), false)(pos))
+    assertJavaCCAST(testName, DropDatabaseAlias(Right(Parameter("name", CTString)(1, 12, 11)), ifExists = false)(defaultPos))
   }
 
   test("DROP ALIAS name IF EXISTS FOR DATABASE") {
-    assertJavaCCAST(testName, DropDatabaseAlias(Left("name"), true)(pos))
+    assertJavaCCAST(testName, DropDatabaseAlias(Left("name"), ifExists = true)(defaultPos))
   }
 
   test("DROP ALIAS wait FOR DATABASE") {
-    assertJavaCCAST(testName, DropDatabaseAlias(Left("wait"), false)(pos))
+    assertJavaCCAST(testName, DropDatabaseAlias(Left("wait"), ifExists = false)(defaultPos))
   }
 
   test("DROP ALIAS nowait FOR DATABASE") {
-    assertJavaCCAST(testName, DropDatabaseAlias(Left("nowait"), false)(pos))
+    assertJavaCCAST(testName, DropDatabaseAlias(Left("nowait"), ifExists = false)(defaultPos))
   }
 
   // ALTER ALIAS
   test("ALTER ALIAS name SET DATABASE TARGET db") {
-    assertJavaCCAST(testName, AlterDatabaseAlias(Left("name"), Left("db"), false)(pos))
+    assertJavaCCAST(testName, AlterDatabaseAlias(Left("name"), Left("db"), ifExists = false)(defaultPos))
   }
 
   test("ALTER ALIAS name IF EXISTS SET DATABASE TARGET db") {
-    assertJavaCCAST(testName, AlterDatabaseAlias(Left("name"), Left("db"), true)(pos))
+    assertJavaCCAST(testName, AlterDatabaseAlias(Left("name"), Left("db"), ifExists = true)(defaultPos))
   }
 
   test("ALTER ALIAS $name SET DATABASE TARGET $db") {
-    assertJavaCCAST(testName, AlterDatabaseAlias(Right(parameter("name", CTString)), Right(parameter("db", CTString)), false)(pos))
+    assertJavaCCAST(testName, AlterDatabaseAlias(Right(Parameter("name", CTString)(1, 13, 12)), Right(Parameter("db", CTString)(1, 39, 38)), ifExists = false)(defaultPos))
   }
 
   test("ALTER ALIAS $name if exists SET DATABASE TARGET $db") {
-    assertJavaCCAST(testName, AlterDatabaseAlias(Right(parameter("name", CTString)), Right(parameter("db", CTString)), true)(pos))
+    assertJavaCCAST(testName, AlterDatabaseAlias(Right(Parameter("name", CTString)(1, 13, 12)), Right(Parameter("db", CTString)(1, 49, 48)), ifExists = true)(defaultPos))
   }
 
   test("ALTER ALIAS name if exists SET db TARGET") {

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -40,7 +41,7 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
 
   val literalFoo: Either[String, Parameter] = Left("foo")
   val literalFooBar: Either[String, Parameter] = Left("foo.bar")
-  val paramFoo: Either[String, Parameter] = Right(expressions.Parameter("foo", CTString)(_))
+  val paramFoo: Either[String, Parameter] = Right(expressions.Parameter("foo", CTString)(1, 16, 15))
 
   // SHOW DATABASE
 
@@ -299,19 +300,19 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
 
   test("CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'}") {
     assertJavaCCAST(testName,
-      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsMap(Map("existingData" -> literalString("use"),
-        "existingDataSeedInstance" -> literalString("84c3ee6f-260e-47db-a4b6-589c807f2c2e"))), NoWait)(pos))
+      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsMap(Map("existingData" -> StringLiteral("use")(1, 44, 43),
+        "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76))), NoWait)(defaultPos))
   }
 
   test("CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} WAIT") {
     assertJavaCCAST(testName,
-      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsMap(Map("existingData" -> literalString("use"),
-        "existingDataSeedInstance" -> literalString("84c3ee6f-260e-47db-a4b6-589c807f2c2e"))), IndefiniteWait)(pos))
+      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsMap(Map("existingData" -> StringLiteral("use")(1, 44, 43),
+        "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76))), IndefiniteWait)(defaultPos))
   }
 
   test("CREATE DATABASE foo OPTIONS $param") {
     assertJavaCCAST(testName,
-      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsParam(parameter("param", CTMap)), NoWait)(pos))
+      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsParam(Parameter("param", CTMap)(1, 29, 28)), NoWait)(defaultPos))
   }
 
   test("CREATE DATABASE alias") {
@@ -443,28 +444,28 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
 
       test(s"ALTER DATABASE foo SET ACCESS $accessKeyword") {
         assertJavaCCAST(testName,
-          AlterDatabase(literalFoo, ifExists = false, accessType)(pos))
+          AlterDatabase(literalFoo, ifExists = false, accessType)(defaultPos))
       }
 
       test(s"ALTER DATABASE $$foo SET ACCESS $accessKeyword") {
         assertJavaCCAST(testName,
-          AlterDatabase(paramFoo, ifExists = false, accessType)(pos))
+          AlterDatabase(paramFoo, ifExists = false, accessType)(defaultPos))
       }
 
       test(s"ALTER DATABASE `foo.bar` SET ACCESS $accessKeyword") {
         assertJavaCCAST(testName,
-          AlterDatabase(literalFooBar, ifExists = false, accessType)(pos))
+          AlterDatabase(literalFooBar, ifExists = false, accessType)(defaultPos))
       }
 
       test(s"USE system ALTER DATABASE foo SET ACCESS $accessKeyword") {
         // can parse USE clause, but is not included in AST
         assertJavaCCAST(testName,
-          AlterDatabase(literalFoo, ifExists = false, accessType)(pos))
+          AlterDatabase(literalFoo, ifExists = false, accessType)(1, 12, 11))
       }
 
       test(s"ALTER DATABASE foo IF EXISTS SET ACCESS $accessKeyword") {
         assertJavaCCAST(testName,
-          AlterDatabase(literalFoo, ifExists = true, accessType)(pos))
+          AlterDatabase(literalFoo, ifExists = true, accessType)(defaultPos))
       }
   }
 
