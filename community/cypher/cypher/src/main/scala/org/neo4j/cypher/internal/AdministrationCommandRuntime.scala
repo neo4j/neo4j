@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
@@ -212,7 +213,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     val uuidKey = internalKey("uuid")
     val homeDatabaseFields = defaultDatabase.map {
       case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
-      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name)
+      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name, s => new NormalizedDatabaseName(s).name())
     }
     val userNameFields = getNameFields("username", userName)
     val credentials = getPasswordExpression(userName.toOption, password, isEncryptedPassword)
@@ -268,7 +269,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     val userNameFields = getNameFields("username", userName)
     val homeDatabaseFields = defaultDatabase.map {
       case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
-      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name)
+      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name, s => new NormalizedDatabaseName(s).name())
     }
     val maybePw = password.map(p => getPasswordExpression(userName.toOption, p, isEncryptedPassword.getOrElse(false)))
     val params = Seq(
