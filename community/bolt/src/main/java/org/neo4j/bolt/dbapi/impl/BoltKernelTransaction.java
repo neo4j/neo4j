@@ -52,13 +52,16 @@ public class BoltKernelTransaction extends BoltQueryExecutorImpl implements Bolt
     @Override
     public void commit() throws TransactionFailureException
     {
-        kernelTransaction.commit();
+        if ( this.topLevelInternalTransaction.isOpen() )
+        {
+            kernelTransaction.commit();
+        }
     }
 
     @Override
     public void rollback() throws TransactionFailureException
     {
-        if ( kernelTransaction.isOpen() )
+        if ( this.topLevelInternalTransaction.isOpen() )
         {
             kernelTransaction.rollback();
         }
@@ -67,19 +70,28 @@ public class BoltKernelTransaction extends BoltQueryExecutorImpl implements Bolt
     @Override
     public void close() throws TransactionFailureException
     {
-        kernelTransaction.close();
+        if ( this.topLevelInternalTransaction.isOpen() )
+        {
+            kernelTransaction.close();
+        }
     }
 
     @Override
     public void markForTermination( Status reason )
     {
-        kernelTransaction.markForTermination( reason );
+        if ( this.topLevelInternalTransaction.isOpen() )
+        {
+            kernelTransaction.markForTermination( reason );
+        }
     }
 
     @Override
     public void markForTermination()
     {
-        kernelTransaction.markForTermination( Status.Transaction.Terminated );
+        if ( this.topLevelInternalTransaction.isOpen() )
+        {
+            kernelTransaction.markForTermination( Status.Transaction.Terminated );
+        }
     }
 
     @Override
