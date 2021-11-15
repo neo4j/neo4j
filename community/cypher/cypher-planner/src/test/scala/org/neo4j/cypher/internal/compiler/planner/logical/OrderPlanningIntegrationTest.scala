@@ -731,4 +731,28 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val (_, plan, _, _) = new given().getLogicalPlanFor(query)
     plan shouldBe a[Sort]
   }
+
+  test("should propagate interesting order also through 2 horizons and with aggregation") {
+    val query =
+      """MATCH (a)
+        |WITH a.name AS name1,
+        |   count(a) AS count1
+        |WITH name1 AS name2,
+        |    count1 AS count2
+        |RETURN name2, count2
+        |  ORDER BY name2, count2""".stripMargin
+
+    val (_, plan, _, _) = new given().getLogicalPlanFor(query, stripProduceResults = false)
+
+    val expectedPlan =
+      new LogicalPlanBuilder()
+        .produceResults("name2", "count2")
+        .sort(Seq(Ascending("name2"), Ascending("count2")))
+        .projection("name1 AS name2", "count1 AS count2")
+        .aggregation(Seq("a.name AS name1"), Seq("count(a) AS count1"))
+        .allNodeScan("a")
+        .build()
+
+    plan shouldEqual expectedPlan
+  }
 }
