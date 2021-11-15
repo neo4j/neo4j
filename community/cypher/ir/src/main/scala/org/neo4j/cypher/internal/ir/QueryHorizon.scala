@@ -181,7 +181,7 @@ final case class AggregatingQueryProjection(groupingExpressions: Map[String, Exp
     "Everything can't be empty"
   )
 
-  override def projections: Map[String, Expression] = groupingExpressions
+  override def projections: Map[String, Expression] = groupingExpressions ++ aggregationExpressions
 
   override def keySet: Set[String] = groupingExpressions.keySet ++ aggregationExpressions.keySet
 

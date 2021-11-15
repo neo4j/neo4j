@@ -577,6 +577,21 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     )
   }
 
+  test("should propagate required order beyond aggregating horizon") {
+    val q = buildSinglePlannerQuery(
+      """MATCH (a)
+        |WITH a.name as name,
+        |   count(a) AS count
+        |RETURN name, count
+        |  ORDER BY name, count""".stripMargin)
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(RequiredOrderCandidate
+        .asc(varFor("name"), Map("name" -> prop(varFor("a"), "name")))
+        .asc(varFor("count"), Map("count" -> function("count", varFor("a"))))
+      )
+    )
+  }
+
   private def interestingOrders(plannerQuery: SinglePlannerQuery): List[InterestingOrder] =
     plannerQuery.tail match {
       case None => List(plannerQuery.interestingOrder)
