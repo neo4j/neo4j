@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.planner.spi.SkipAndLimit
 import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundReadTokenContext
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
-import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.LabelSchemaDescriptor
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
+import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException
 import org.neo4j.kernel.api.exceptions.RelationshipTypeNotFoundException
 
 import scala.util.control.Exception.catching
@@ -68,7 +68,7 @@ trait IndexDescriptorCompatibility {
   def toLabelSchemaDescriptor(tc: TransactionBoundReadTokenContext,
                               labelName: String,
                               propertyKeys: Seq[String]): Option[LabelSchemaDescriptor] = {
-    catching(classOf[LabelNotFoundKernelException], classOf[PropertyKeyIdNotFoundKernelException]) opt {
+    catching(classOf[LabelNotFoundKernelException], classOf[PropertyKeyNotFoundException]) opt {
       val labelId: Int = tc.getLabelId(labelName)
       val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
       SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*)
@@ -78,7 +78,7 @@ trait IndexDescriptorCompatibility {
   def toRelTypeSchemaDescriptor(tc: TransactionBoundReadTokenContext,
                                 relTypeName: String,
                                 propertyKeys: Seq[String]): Option[RelationTypeSchemaDescriptor] = {
-    catching(classOf[RelationshipTypeNotFoundException], classOf[PropertyKeyIdNotFoundKernelException]) opt {
+    catching(classOf[RelationshipTypeNotFoundException], classOf[PropertyKeyNotFoundException]) opt {
       val relTypeId: Int = tc.getRelTypeId(relTypeName)
       val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
       SchemaDescriptors.forRelType(relTypeId, propertyKeyIds: _*)
