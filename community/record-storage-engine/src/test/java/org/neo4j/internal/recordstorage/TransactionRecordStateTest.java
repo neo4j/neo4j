@@ -249,17 +249,12 @@ class TransactionRecordStateTest
 
     private static boolean hasExternalDegrees( RelationshipGroupRecord group, RelationshipDirection direction )
     {
-        switch ( direction )
-        {
-        case OUTGOING:
-            return group.hasExternalDegreesOut();
-        case INCOMING:
-            return group.hasExternalDegreesIn();
-        case LOOP:
-            return group.hasExternalDegreesLoop();
-        default:
-            throw new UnsupportedOperationException( direction.name() );
-        }
+        return switch ( direction )
+                {
+                    case OUTGOING -> group.hasExternalDegreesOut();
+                    case INCOMING -> group.hasExternalDegreesIn();
+                    case LOOP -> group.hasExternalDegreesLoop();
+                };
     }
 
     private static RecordProxy<RelationshipGroupRecord,Integer> getRelationshipGroup( RecordChangeSet recordChangeSet, NodeRecord node, int type )
@@ -1659,7 +1654,7 @@ class TransactionRecordStateTest
     @SuppressWarnings( "InfiniteLoopStatement" )
     private static CommandsToApply readFromChannel( StoreCursors storeCursors, ReadableLogChannel channel ) throws IOException
     {
-        CommandReader reader = LogCommandSerializationV4_0.INSTANCE;
+        CommandReader reader = LogCommandSerializationV4_2.INSTANCE;
         List<StorageCommand> commands = new ArrayList<>();
         try
         {

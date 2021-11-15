@@ -30,20 +30,11 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
     @Override
     public LogCommandSerialization get( KernelVersion version )
     {
-        switch ( version )
-        {
-        case V2_3:
-            return LogCommandSerializationV3_0_10.INSTANCE;
-        case V4_0:
-            return LogCommandSerializationV4_0.INSTANCE;
-        case V4_2:
-            return LogCommandSerializationV4_2.INSTANCE;
-        case V4_3_D4:
-            return LogCommandSerializationV4_3_D3.INSTANCE;
-        case V4_4:
-            return LogCommandSerializationV4_4.INSTANCE;
-        default:
-            throw new IllegalArgumentException( "Unsupported kernel version " + version );
-        }
+        return switch ( version )
+                {
+                    case V4_2 -> LogCommandSerializationV4_2.INSTANCE;
+                    case V4_3_D4 -> LogCommandSerializationV4_3_D3.INSTANCE;
+                    case V4_4 -> LogCommandSerializationV4_4.INSTANCE;
+                };
     }
 }

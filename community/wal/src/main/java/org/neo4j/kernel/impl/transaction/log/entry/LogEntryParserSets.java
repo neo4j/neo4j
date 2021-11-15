@@ -29,8 +29,6 @@ public class LogEntryParserSets
     private static final EnumMap<KernelVersion,LogEntryParserSet> PARSER_SETS = new EnumMap<>( KernelVersion.class );
     static
     {
-        PARSER_SETS.put( KernelVersion.V2_3, new LogEntryParserSetV2_3() );
-        PARSER_SETS.put( KernelVersion.V4_0, new LogEntryParserSetV4_0() );
         PARSER_SETS.put( KernelVersion.V4_2, new LogEntryParserSetV4_2() );
         PARSER_SETS.put( KernelVersion.V4_3_D4, new LogEntryParserSetV4_3() );
         PARSER_SETS.put( KernelVersion.V4_4, new LogEntryParserSetV4_4() );

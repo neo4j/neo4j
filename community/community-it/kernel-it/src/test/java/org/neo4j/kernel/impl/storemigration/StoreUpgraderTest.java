@@ -472,10 +472,10 @@ public class StoreUpgraderTest
                          .collect( Collectors.toSet() );
     }
 
-    protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
+    protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout,
             Path databaseDirectory ) throws IOException
     {
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, databaseLayout.databaseDirectory(), databaseDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, databaseLayout, databaseDirectory );
     }
 
     private StoreVersionCheck getVersionCheck( PageCache pageCache )
@@ -605,8 +605,8 @@ public class StoreUpgraderTest
         // let's assume there is at least a checkpoint
         assertNotNull( logTailInformation.lastCheckPoint );
 
-        LogPosition logPosition = logTailInformation.lastCheckPoint.getTransactionLogPosition();
-        Path logFile = logFiles.getLogFile().getLogFileForVersion( logPosition.getLogVersion() );
+        LogPosition logPosition = logTailInformation.lastCheckPoint.getCheckpointEntryPosition();
+        Path logFile = logFiles.getCheckpointFile().getDetachedCheckpointFileForVersion( logPosition.getLogVersion() );
         long byteOffset = logPosition.getByteOffset();
         fileSystem.truncate( logFile, byteOffset );
     }

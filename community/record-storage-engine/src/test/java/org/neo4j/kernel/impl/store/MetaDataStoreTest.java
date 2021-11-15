@@ -964,13 +964,13 @@ class MetaDataStoreTest
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
             assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.LATEST ); //new store should have latest
-            assertThat( metaDataStore.kernelVersion() ).isNotEqualTo( KernelVersion.V4_0 ); //that is not 4.0
-            metaDataStore.setKernelVersion( KernelVersion.V4_0, NULL ); //so we set it
+            assertThat( metaDataStore.kernelVersion() ).isNotEqualTo( KernelVersion.V4_2 ); //that is not 4.0
+            metaDataStore.setKernelVersion( KernelVersion.V4_2, NULL ); //so we set it
         }
 
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
-            assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.V4_0 ); //and can read it after a restart
+            assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.V4_2 ); //and can read it after a restart
 
         }
     }

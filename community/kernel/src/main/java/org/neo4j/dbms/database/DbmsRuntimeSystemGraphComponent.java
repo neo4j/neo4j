@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.util.Preconditions;
 
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 
@@ -42,7 +41,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
     @Override
     DbmsRuntimeVersion getFallbackVersion()
     {
-        return DbmsRuntimeVersion.V4_1;
+        return DbmsRuntimeVersion.V4_2;
     }
 
     @Override

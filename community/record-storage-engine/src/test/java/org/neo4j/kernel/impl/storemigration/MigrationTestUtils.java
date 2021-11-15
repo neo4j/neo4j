@@ -26,11 +26,12 @@ import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
-import org.neo4j.kernel.impl.storemigration.legacystore.v34.Legacy34Store;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
+import org.neo4j.kernel.impl.storemigration.legacystore.v43.Legacy43Store;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.Unzip;
@@ -38,6 +39,7 @@ import org.neo4j.test.Unzip;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.fs.IoPrimitiveUtils.readAndFlip;
+import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public final class MigrationTestUtils
@@ -56,22 +58,36 @@ public final class MigrationTestUtils
         }
     }
 
-    public static void prepareSampleLegacyDatabase( String version, FileSystemAbstraction workingFs,
-            Path workingDirectory, Path prepareDirectory ) throws IOException
+    public static void prepareSampleLegacyDatabase( String version, FileSystemAbstraction fs,
+            RecordDatabaseLayout databaseLayout, Path prepareDirectory ) throws IOException
     {
         if ( Files.notExists( prepareDirectory ) )
         {
             throw new IllegalArgumentException( "bad prepare directory" );
         }
-        Path resourceDirectory = findFormatStoreDirectoryForVersion( version, prepareDirectory );
-        workingFs.deleteRecursively( workingDirectory );
-        workingFs.mkdirs( workingDirectory );
-        workingFs.copyRecursively( resourceDirectory, workingDirectory );
+        Path source = findFormatStoreDirectoryForVersion( version, prepareDirectory );
+        Path dbDirectory = databaseLayout.databaseDirectory();
+        Path txDirectory = databaseLayout.getTransactionLogsDirectory();
+        prepareDirectory( fs, dbDirectory );
+        prepareDirectory( fs, txDirectory );
+
+        fs.copyRecursively( source, dbDirectory );
+        Path[] logFiles = fs.listFiles( dbDirectory, DEFAULT_FILENAME_FILTER );
+        for ( Path logFile : logFiles )
+        {
+            fs.moveToDirectory( logFile, txDirectory );
+        }
+    }
+
+    private static void prepareDirectory( FileSystemAbstraction fs, Path destination ) throws IOException
+    {
+        fs.deleteRecursively( destination );
+        fs.mkdirs( destination );
     }
 
     static Path findFormatStoreDirectoryForVersion( String version, Path targetDir ) throws IOException
     {
-        if ( StandardV3_4.STORE_VERSION.equals( version ) )
+        if ( StandardV4_3.STORE_VERSION.equals( version ) )
         {
             return find34FormatStoreDirectory( targetDir );
         }
@@ -83,7 +99,7 @@ public final class MigrationTestUtils
 
     private static Path find34FormatStoreDirectory( Path targetDir ) throws IOException
     {
-        return Unzip.unzip( Legacy34Store.class, "upgradeTest34Db.zip", targetDir );
+        return Unzip.unzip( Legacy43Store.class, "upgradeTest43Db.zip", targetDir );
     }
 
     public static boolean checkNeoStoreHasFormatVersion( StoreVersionCheck check, RecordFormats expectedFormat )

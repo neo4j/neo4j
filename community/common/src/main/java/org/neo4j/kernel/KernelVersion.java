@@ -35,8 +35,6 @@ import java.util.List;
  */
 public enum KernelVersion
 {
-    V2_3( (byte) -10 ), // 2.3 to 3.5.
-    V4_0( (byte) 1 ), // 4.0 to 4.1. Added checksums to the log files.
     V4_2( (byte) 2 ), // 4.2+. Removed checkpoint entries.
     // 4.3(some drop)+. Not a change to log entry format, but record storage engine log format change. Since record storage commands
     // has no command version of their own it relies on a bump of the parser set version to distinguish between versions unfortunately.
@@ -44,6 +42,7 @@ public enum KernelVersion
     V4_3_D4( (byte) 3 ),
     V4_4( (byte) 4 ); // 4.4. Introduces RANGE, POINT and TEXT index types.
 
+    public static final KernelVersion EARLIEST = V4_2;
     public static final KernelVersion LATEST = V4_4;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED = V4_4;

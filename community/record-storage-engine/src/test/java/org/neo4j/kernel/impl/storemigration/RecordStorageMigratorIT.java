@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.eclipse.collections.api.iterator.MutableLongIterator;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -37,15 +35,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.SplittableRandom;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
@@ -55,43 +50,33 @@ import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
-import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RandomSchema;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
-import org.neo4j.internal.recordstorage.SchemaStorage;
-import org.neo4j.internal.recordstorage.StoreTokens;
-import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleSerialization35;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
@@ -109,10 +94,8 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.token.TokenHolders;
 
 import static java.util.Collections.singleton;
-import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
@@ -132,7 +115,6 @@ import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 @PageCacheExtension
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
-@Disabled
 class RecordStorageMigratorIT
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";
@@ -161,7 +143,7 @@ class RecordStorageMigratorIT
     {
         return Stream.of(
             Arguments.of(
-                StandardV3_4.STORE_VERSION,
+                StandardV4_3.STORE_VERSION,
                 new LogPosition( 3, 385 ),
                 txInfoAcceptanceOnIdAndTimestamp( TX_ID, 1548441268467L ) ) );
     }
@@ -188,7 +170,7 @@ class RecordStorageMigratorIT
         // GIVEN a legacy database
         Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -220,7 +202,7 @@ class RecordStorageMigratorIT
 
         Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
 
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         LogService logService = new SimpleLogService( logProvider, logProvider );
@@ -290,7 +272,7 @@ class RecordStorageMigratorIT
 
         Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -322,7 +304,7 @@ class RecordStorageMigratorIT
 
         Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -350,7 +332,7 @@ class RecordStorageMigratorIT
 
         Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
@@ -371,128 +353,13 @@ class RecordStorageMigratorIT
 
     @ParameterizedTest
     @MethodSource( "versions" )
-    void mustMigrateSchemaStoreToNewFormat( String version, LogPosition expectedLogPosition, Function<TransactionId, Boolean> txIdComparator ) throws Exception
-    {
-        // Given we have an old store full of random schema rules.
-
-        Path prepare = testDirectory.directory( "prepare" );
-        var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
-        // and a state of the migration saying that it has done the actual migration
-        LogService logService = NullLogService.getInstance();
-
-        // Uses this special scan-on-open IGF because when the new IndexedIdGenerator was introduced this test would break
-        // when trying to open an older store, before doing migration.
-        IdGeneratorFactory igf = new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() );
-        LogProvider logProvider = logService.getInternalLogProvider();
-
-        // Prepare all the tokens we'll need.
-        StoreFactory legacyStoreFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, StandardV3_4.RECORD_FORMATS, logProvider,
-                PageCacheTracer.NULL, writable(),
-                immutable.empty() );
-        NeoStores stores = legacyStoreFactory.openNeoStores( false,
-                StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
-                StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME );
-        createTokens( stores.getLabelTokenStore(), MAX_LABEL_ID );
-        createTokens( stores.getRelationshipTypeTokenStore(), MAX_RELATIONSHIP_TYPE_ID );
-        createTokens( stores.getPropertyKeyTokenStore(), MAX_PROPERTY_KEY_ID );
-        stores.close();
-
-        // Prepare the legacy schema store we'll migrate.
-        Path storeFile = databaseLayout.schemaStore();
-        Path idFile = databaseLayout.idSchemaStore();
-        SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, SchemaIdType.SCHEMA, igf, pageCache, logProvider,
-                StandardV3_4.RECORD_FORMATS, writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
-        schemaStore35.initialise( false, NULL );
-        SplittableRandom rng = new SplittableRandom( randomRule.seed() );
-        LongHashSet indexes = new LongHashSet();
-        LongHashSet constraints = new LongHashSet();
-        for ( int i = 0; i < 10; i++ )
-        {
-            long id = schemaStore35.nextId( NULL );
-            MutableLongSet target = rng.nextInt( 3 ) < 2 ? indexes : constraints;
-            target.add( id );
-        }
-
-        List<SchemaRule> generatedRules = new ArrayList<>();
-        RealIdsRandomSchema randomSchema = new RealIdsRandomSchema( rng, indexes, constraints );
-        while ( randomSchema.hasMoreIds() )
-        {
-            try
-            {
-                SchemaRule schemaRule = randomSchema.nextSchemaRule();
-                if ( schemaRule instanceof ConstraintDescriptor )
-                {
-                    ConstraintDescriptor constraint = (ConstraintDescriptor) schemaRule;
-                    if ( constraint.isIndexBackedConstraint() && !constraint.asIndexBackedConstraint().hasOwnedIndexId() )
-                    {
-                        // Filter out constraints that are supposed to own indexes, but don't, because those are illegal to persist.
-                        randomSchema.rollback();
-                        continue;
-                    }
-                }
-                randomSchema.commit();
-                generatedRules.add( schemaRule );
-                List<DynamicRecord> dynamicRecords = allocateFrom( schemaStore35, schemaRule, NULL );
-                try ( PageCursor pageCursor = schemaStore35.openPageCursorForWriting( 0, NULL ) )
-                {
-                    for ( DynamicRecord dynamicRecord : dynamicRecords )
-                    {
-                        schemaStore35.updateRecord( dynamicRecord, pageCursor, NULL, StoreCursors.NULL );
-                    }
-                }
-            }
-            catch ( NoSuchElementException ignore )
-            {
-                // We're starting to run low on ids, but just ignore this and loop as along as there are still some left.
-            }
-        }
-        schemaStore35.flush( NULL );
-        schemaStore35.close();
-
-        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
-        String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        MigrationProgressMonitor progressMonitor = SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
-                batchImporterFactory, INSTANCE );
-
-        // When we migrate it to the new store format.
-        String versionToMigrateTo = getVersionToMigrateTo( check );
-        ProgressReporter reporter = progressMonitor.startSection( "section" );
-        migrator.migrate( databaseLayout, migrationLayout, reporter, versionToMigrateFrom, versionToMigrateTo, EMPTY );
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
-
-        generatedRules.sort( Comparator.comparingLong( SchemaRule::getId ) );
-
-        // Then the new store should retain an exact representation of the old-format schema rules.
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, logProvider, PageCacheTracer.NULL, writable() );
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores();
-              var storeCursors = new CachedStoreCursors( neoStores, NULL ) )
-        {
-            SchemaStore schemaStore = neoStores.getSchemaStore();
-            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, storeCursors );
-            SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
-            List<SchemaRule> migratedRules = new ArrayList<>();
-            storage.getAll( storeCursors ).iterator().forEachRemaining( migratedRules::add );
-
-            // Nerf the rule names, since migration may change those around.
-            migratedRules = migratedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );
-            generatedRules = generatedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );
-
-            assertThat( migratedRules ).isEqualTo( generatedRules );
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource( "versions" )
     void shouldStartCheckpointLogVersionFromZeroIfMissingBeforeMigration( String version, LogPosition expectedLogPosition,
             Function<TransactionId,Boolean> txIdComparator ) throws Exception
     {
         // given
         Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         String versionToMigrateTo = getVersionToMigrateTo( check );
@@ -525,7 +392,7 @@ class RecordStorageMigratorIT
         // given
         Path prepare = testDirectory.directory( "prepare" );
         var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         String versionToMigrateTo = getVersionToMigrateTo( check );
@@ -554,7 +421,7 @@ class RecordStorageMigratorIT
         }
     }
 
-    private static <T extends TokenRecord> void createTokens( TokenStore<T> tokenStore, int tokenCount )
+    private static <T extends TokenRecord> void createTokens( TokenStore<T> tokenStore, int tokenCount, StoreCursors storeCursors )
     {
         T record = tokenStore.newRecord();
         DynamicStringStore nameStore = tokenStore.getNameStore();
@@ -574,14 +441,14 @@ class RecordStorageMigratorIT
             {
                 for ( DynamicRecord nameRecord : nameRecords )
                 {
-                    nameStore.updateRecord( nameRecord, nameCursor, NULL, StoreCursors.NULL );
+                    nameStore.updateRecord( nameRecord, nameCursor, NULL, storeCursors );
                     maxId = Math.max( nameRecord.getId(), maxId );
                 }
             }
             nameStore.setHighestPossibleIdInUse( Math.max( maxId, nameStore.getHighestPossibleIdInUse( NULL ) ) );
             try ( var tokenCursor = tokenStore.openPageCursorForWriting( 0, NULL ) )
             {
-                tokenStore.updateRecord( record, tokenCursor, NULL, StoreCursors.NULL );
+                tokenStore.updateRecord( record, tokenCursor, NULL, storeCursors );
             }
             tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse( NULL ) ) );
         }

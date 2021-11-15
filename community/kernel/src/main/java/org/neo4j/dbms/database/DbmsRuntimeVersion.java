@@ -23,8 +23,6 @@ import org.neo4j.kernel.KernelVersion;
 
 public enum DbmsRuntimeVersion implements ComponentVersion
 {
-    V4_1( 1, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_41, KernelVersion.V4_0 ),
-
     /**
      * Introduced new transaction log version
      */

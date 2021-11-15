@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,10 +33,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -49,8 +51,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
-import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -84,7 +85,7 @@ class LogVersionUpgradeCheckerIT
     @Test
     void startFromOlderTransactionLogsIfAllowed() throws Exception
     {
-        createStoreWithLogEntryVersion( KernelVersion.V2_3.version(), true );
+        createStoreWithLogEntryVersion( KernelVersion.EARLIEST.version(), true );
 
         // Try to start with upgrading enabled
         DatabaseManagementService managementService = startDatabaseService( true );
@@ -121,27 +122,16 @@ class LogVersionUpgradeCheckerIT
 
         if ( removeCheckpointFile )
         {
-            for ( Path file : fileSystem.listFiles( logFiles.logFilesDirectory(), path -> path.getFileName().toString().startsWith( CHECKPOINT_FILE_PREFIX ) ) )
+            for ( Path checkpointFile : logFiles.getCheckpointFile().getDetachedCheckpointFiles() )
             {
-                fileSystem.deleteFile( file );
+                fileSystem.deleteFile( checkpointFile );
             }
         }
 
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            LogFile logFile = logFiles.getLogFile();
-            TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
-            var channel = transactionLogWriter.getChannel();
-
-            LogPosition logPosition = transactionLogWriter.getCurrentPosition();
-
-            // Fake record
-            channel.put( logEntryVersion )
-                    .put( LEGACY_CHECK_POINT )
-                    .putLong( logPosition.getLogVersion() )
-                    .putLong( logPosition.getByteOffset() );
-
-            logFile.flush();
+            CheckpointAppender appender = logFiles.getCheckpointFile().getCheckpointAppender();
+            appender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), Instant.now(), "test" );
         }
     }
 

@@ -94,7 +94,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                                 "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This " +
                                         "indicates that the log files originates from an older version of neo4j, which we don't support " +
                                         "migrations from.",
-                                versionCode, KernelVersion.V2_3 ) );
+                                versionCode, KernelVersion.EARLIEST ) );
                     }
                     // Since checksum is calculated over the whole entry we need to rewind and begin
                     // a new checksum segment if we change version parser.

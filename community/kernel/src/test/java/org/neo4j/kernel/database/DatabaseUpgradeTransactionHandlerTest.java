@@ -109,13 +109,13 @@ class DatabaseUpgradeTransactionHandlerTest
     void shouldNotUpgradePastRuntimeVersionAndKeepListener()
     {
         //Given
-        init( KernelVersion.V4_0, DbmsRuntimeVersion.V4_2 );
+        init( KernelVersion.V4_2, DbmsRuntimeVersion.V4_3_D4 );
 
         //When
         doATransaction();
 
         //Then
-        assertThat( currentKernelVersion ).isEqualTo( KernelVersion.V4_2 );
+        assertThat( currentKernelVersion ).isEqualTo( KernelVersion.V4_3_D4 );
         assertThat( listenerUnregistered ).isFalse();
     }
 
@@ -159,7 +159,7 @@ class DatabaseUpgradeTransactionHandlerTest
     void shouldUpgradeOnceEvenWithManyConcurrentTransactions()
     {
         //Given a dbms running with 4.3 "jars" and a db that has just now been upgraded to run on these jars too
-        init( KernelVersion.V4_0, DbmsRuntimeVersion.V4_2 );
+        init( KernelVersion.V4_2, DbmsRuntimeVersion.V4_4 );
         AtomicBoolean stop = new AtomicBoolean();
         Race race = new Race().withEndCondition( stop::get );
 
@@ -169,7 +169,7 @@ class DatabaseUpgradeTransactionHandlerTest
         {
             //Wait for the first upgrade transaction
             //which really is the db setting its kernel version to that of the current dbms runtime version, which is 4.2
-            assertEventually( this::getKernelVersion, equalityCondition( KernelVersion.V4_2 ), 1, MINUTES );
+            assertEventually( this::getKernelVersion, equalityCondition( KernelVersion.V4_4 ), 1, MINUTES );
             //Then upgrade the dbms runtime version
             setDbmsRuntime( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION );
             //And wait for the db to make the upgrade to this version too

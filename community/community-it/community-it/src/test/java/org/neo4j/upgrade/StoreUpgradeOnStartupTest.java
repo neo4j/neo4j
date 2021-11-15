@@ -87,7 +87,7 @@ public class StoreUpgradeOnStartupTest
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
         Path prepareDirectory = testDir.directory( "prepare_" + version );
-        prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
+        prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout, prepareDirectory );
         RecordFormats baselineFormat = RecordFormatSelector.selectForVersion( version );
         successorFormat = RecordFormatSelector.findLatestSupportedFormatInFamily( baselineFormat ).orElse( baselineFormat );
     }

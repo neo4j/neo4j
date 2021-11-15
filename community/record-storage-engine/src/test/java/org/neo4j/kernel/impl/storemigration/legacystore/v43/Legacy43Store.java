@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore.v34;
+package org.neo4j.kernel.impl.storemigration.legacystore.v43;
 
 import org.neo4j.test.Unzip;
 
 /**
  * Here as a place holder for using {@link Unzip} to find old db tarballs.
  */
-public interface Legacy34Store
+public interface Legacy43Store
 {
 }

@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_1;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -50,6 +51,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -88,7 +90,7 @@ class RecordStoreVersionTest
         @BeforeEach
         void setup() throws IOException
         {
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV4_3.STORE_VERSION, databaseLayout.databaseDirectory() );
         }
 
         boolean storeFilesUpgradable( RecordStoreVersionCheck check )
@@ -117,15 +119,12 @@ class RecordStoreVersionTest
             // when
             Optional<String> version = check.storeVersion( NULL );
             assertTrue( version.isPresent() );
-            boolean currentVersion = version.get().equalsIgnoreCase( check.configuredVersion() );
-
-            // then
-            assertFalse( currentVersion );
+            assertNotEquals( version.get(), check.configuredVersion() );
         }
 
         private RecordStoreVersionCheck getVersionCheck()
         {
-            return new RecordStoreVersionCheck( pageCache, databaseLayout, Standard.LATEST_RECORD_FORMATS, Config.defaults() );
+            return new RecordStoreVersionCheck( pageCache, databaseLayout, PageAligned.LATEST_RECORD_FORMATS, Config.defaults() );
         }
     }
 
@@ -137,7 +136,7 @@ class RecordStoreVersionTest
     private void setupUnsupported( String version ) throws IOException
     {
         // doesn't matter which version we pick we are changing it to the wrong one...
-        MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
+        MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV4_3.STORE_VERSION, databaseLayout.databaseDirectory() );
         changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore(), version );
         Path metadataStore = databaseLayout.metadataStore();
         MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, org.neo4j.storageengine.api.StoreVersion.versionStringToLong( version ),

@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
 public class SketchingTransactionCursor implements TransactionCursor
@@ -87,7 +86,7 @@ public class SketchingTransactionCursor implements TransactionCursor
 
     private boolean isCheckPoint( LogEntry entry )
     {
-        return entry.getType() == DETACHED_CHECK_POINT || entry.getType() == LEGACY_CHECK_POINT;
+        return entry.getType() == DETACHED_CHECK_POINT;
     }
 
     private boolean isCommit( LogEntry entry )

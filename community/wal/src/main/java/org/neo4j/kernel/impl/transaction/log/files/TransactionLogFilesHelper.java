@@ -36,7 +36,8 @@ public class TransactionLogFilesHelper
 {
     public static final String DEFAULT_NAME = "neostore.transaction.db";
     public static final String CHECKPOINT_FILE_PREFIX = "checkpoint";
-    static final DirectoryStream.Filter<Path> DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( quote( DEFAULT_NAME ), quote( CHECKPOINT_FILE_PREFIX ) );
+    public static final DirectoryStream.Filter<Path> DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( quote( DEFAULT_NAME ),
+            quote( CHECKPOINT_FILE_PREFIX ) );
     public static final Predicate<String> DEFAULT_FILENAME_PREDICATE = file -> file.startsWith( DEFAULT_NAME ) || file.startsWith( CHECKPOINT_FILE_PREFIX );
 
     private static final String VERSION_SUFFIX = ".";

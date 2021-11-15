@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSets.parserSet;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
 
 class LogEntryParserDispatcherV6Test
 {
@@ -105,41 +104,6 @@ class LogEntryParserDispatcherV6Test
 
         // then
         assertEquals( command, logEntry );
-    }
-
-    @Test
-    void parseLegacyCheckPointEntry() throws IOException
-    {
-        // given
-        final LogEntryInlinedCheckPoint checkPoint = new LogEntryInlinedCheckPoint( KernelVersion.V4_0, new LogPosition( 43, 44 ) );
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
-
-        channel.putLong( checkPoint.getLogPosition().getLogVersion() );
-        channel.putLong( checkPoint.getLogPosition().getByteOffset() );
-        channel.putChecksum();
-
-        channel.getCurrentPosition( marker );
-
-        // when
-        final LogEntryParser parser = new LogEntryParserSetV4_0().select( LEGACY_CHECK_POINT );
-        final LogEntry logEntry = parser.parse( KernelVersion.V4_0, channel, marker, commandReader );
-
-        // then
-        assertEquals( checkPoint, logEntry );
-    }
-
-    @Test
-    void failToParseCheckpointWithLatestFormat()
-    {
-        var checkPoint = new LogEntryInlinedCheckPoint( version, new LogPosition( 43, 44 ) );
-        var channel = new InMemoryClosableChannel();
-
-        channel.putLong( checkPoint.getLogPosition().getLogVersion() );
-        channel.putLong( checkPoint.getLogPosition().getByteOffset() );
-        channel.putChecksum();
-
-        channel.getCurrentPosition( marker );
-        assertThrows( Exception.class, () -> parserSet( LATEST ).select( LEGACY_CHECK_POINT ) );
     }
 
     @Test

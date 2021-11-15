@@ -56,8 +56,8 @@ class DbmsRuntimeVersionTest
         assertSame( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion() );
 
         // BTW this should never be manipulated directly outside tests
-        setRuntimeVersion( DbmsRuntimeVersion.V4_1 );
-        assertSame( DbmsRuntimeVersion.V4_1, dbmsRuntimeRepository.getVersion() );
+        setRuntimeVersion( DbmsRuntimeVersion.V4_2 );
+        assertSame( DbmsRuntimeVersion.V4_2, dbmsRuntimeRepository.getVersion() );
 
         systemDb.executeTransactionally( "CALL dbms.upgrade()" );
 

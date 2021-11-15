@@ -78,7 +78,7 @@ class DbmsRuntimeSystemGraphComponentTest
 
         systemGraphComponents.initializeSystemGraph( fakeSystemDb );
 
-        assertVersion( DbmsRuntimeVersion.V4_1, fakeSystemDb );
+        assertVersion( DbmsRuntimeVersion.V4_2, fakeSystemDb );
 
         assertStatus( SystemGraphComponent.Status.UNINITIALIZED );
     }
@@ -111,10 +111,10 @@ class DbmsRuntimeSystemGraphComponentTest
     @Test
     void testOldVersionPresent()
     {
-        createVersionNode( userDatabase, DbmsRuntimeVersion.V4_1 );
+        createVersionNode( userDatabase, DbmsRuntimeVersion.V4_2 );
 
         systemGraphComponents.initializeSystemGraph( fakeSystemDb );
-        assertVersion( DbmsRuntimeVersion.V4_1, fakeSystemDb );
+        assertVersion( DbmsRuntimeVersion.V4_2, fakeSystemDb );
 
         assertStatus( SystemGraphComponent.Status.REQUIRES_UPGRADE );
     }
@@ -122,7 +122,7 @@ class DbmsRuntimeSystemGraphComponentTest
     @Test
     void testUpgrade() throws Exception
     {
-        createVersionNode( userDatabase, DbmsRuntimeVersion.V4_1 );
+        createVersionNode( userDatabase, DbmsRuntimeVersion.V4_2 );
 
         assertStatus( SystemGraphComponent.Status.REQUIRES_UPGRADE );
 

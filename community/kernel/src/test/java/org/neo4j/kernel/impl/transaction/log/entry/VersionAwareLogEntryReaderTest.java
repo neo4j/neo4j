@@ -95,26 +95,6 @@ class VersionAwareLogEntryReaderTest
     }
 
     @Test
-    void shouldReadACheckPointLogEntry() throws IOException
-    {
-        // given
-        final LogEntryInlinedCheckPoint checkPoint = new LogEntryInlinedCheckPoint( new LogPosition( 42, 43 ) );
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel( true );
-
-        channel.put( checkPoint.getVersion().version() );
-        channel.put( LogEntryTypeCodes.LEGACY_CHECK_POINT );
-        channel.putLong( checkPoint.getLogPosition().getLogVersion() );
-        channel.putLong( checkPoint.getLogPosition().getByteOffset() );
-        channel.putChecksum();
-
-        // when
-        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
-
-        // then
-        assertEquals( checkPoint, logEntry );
-    }
-
-    @Test
     void shouldReturnNullWhenThereIsNoCommand() throws IOException
     {
         // given

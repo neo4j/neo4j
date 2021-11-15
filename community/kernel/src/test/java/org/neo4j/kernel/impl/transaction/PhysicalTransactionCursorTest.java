@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryInlinedCheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
@@ -52,7 +51,6 @@ class PhysicalTransactionCursorTest
     private final LogEntryReader entryReader = mock( LogEntryReader.class );
 
     private static final LogEntry NULL_ENTRY = null;
-    private static final LogEntryInlinedCheckPoint A_CHECK_POINT_ENTRY = new LogEntryInlinedCheckPoint( LogPosition.UNSPECIFIED );
     private static final LogEntryStart A_START_ENTRY = new LogEntryStart( 0L, 0L, 0, null, LogPosition.UNSPECIFIED );
     private static final LogEntryCommit A_COMMIT_ENTRY = new LogEntryCommit( 42, 0, BASE_TX_CHECKSUM );
     private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand( new TestCommand() );
@@ -107,27 +105,6 @@ class PhysicalTransactionCursorTest
     {
         // given
         when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, A_COMMAND_ENTRY, A_COMMIT_ENTRY );
-
-        // when
-        cursor.next();
-
-        // then
-        PhysicalTransactionRepresentation txRepresentation =
-                new PhysicalTransactionRepresentation( singletonList( A_COMMAND_ENTRY.getCommand() ) );
-        assertEquals(
-                new CommittedTransactionRepresentation( A_START_ENTRY, txRepresentation, A_COMMIT_ENTRY ),
-                cursor.get()
-        );
-    }
-
-    @Test
-    void shouldSkipCheckPoints() throws IOException
-    {
-        // given
-        when( entryReader.readLogEntry( channel ) ).thenReturn(
-                A_CHECK_POINT_ENTRY,
-                A_START_ENTRY, A_COMMAND_ENTRY, A_COMMIT_ENTRY,
-                A_CHECK_POINT_ENTRY );
 
         // when
         cursor.next();
