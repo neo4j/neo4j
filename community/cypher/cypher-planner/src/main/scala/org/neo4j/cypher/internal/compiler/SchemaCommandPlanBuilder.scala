@@ -97,7 +97,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
                          name: Option[String],
                          ifExistsDo: IfExistsDo,
                          options: Options): Option[LogicalPlan] = {
-      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.BTREE, name, ifExistsDo): @nowarn // we accept to use BTREE for now
+      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.BTREE, name, ifExistsDo): @nowarn("msg=Java enum BTREE in Java enum IndexType is deprecated") // we accept to use BTREE for now
       Some(plans.CreateBtreeIndex(source, entityName, propKeys, name, options))
     }
 
