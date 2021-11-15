@@ -300,18 +300,18 @@ case class Match(
       getLabelAndRelTypePredicates(variable) match {
         case LabelAndRelTypeNames(Seq(), Seq()) =>
           s"""|$preface
-              | Must use label/relationship type '$labelOrRelTypeName' on node/relationship '$variable'
-              | that this hint is referring to. But no label/relationship type was found.
+              | Must use label/relationship type '$labelOrRelTypeName' on the node/relationship
+              | that this hint is referring to, but no label/relationship type was found for node/relationship '$variable'.
               | Note that the label/relationship type${if (index) " and property comparison"} must be specified on a non-optional node/relationship.""".stripLinesAndMargins
         case LabelAndRelTypeNames(labels: Seq[String], Seq()) =>
           s"""|$preface
-              | Must use label '$labelOrRelTypeName' on node '$variable'
-              | that this hint is referring to. But only the labels ${labels.mkString("'", ",", "'")} were found for node '$variable'.
+              | Must use label '$labelOrRelTypeName' on the node
+              | that this hint is referring to, but only the labels ${labels.mkString("'", ",", "'")} were found for node '$variable'.
               | Note that the label${if (index) " and property comparison"} must be specified on a non-optional node.""".stripLinesAndMargins
         case LabelAndRelTypeNames(Seq(), relTypes: Seq[String]) =>
           s"""|$preface
-              | Must use relationship type '$labelOrRelTypeName' on relationship '$variable'
-              | that this hint is referring to. But only the relationship types ${relTypes.mkString("'", ",", "'")} were found for relationship '$variable'.
+              | Must use relationship type '$labelOrRelTypeName' on the relationship
+              | that this hint is referring to, but only the relationship types ${relTypes.mkString("'", ",", "'")} were found for relationship '$variable'.
               | Note that the relationship type${if (index) " and property comparison"} must be specified on a non-optional relationship.""".stripLinesAndMargins
         case _ =>
           throw new IllegalStateException(s"Both labels and relationship types specified for variable '$variable'")
