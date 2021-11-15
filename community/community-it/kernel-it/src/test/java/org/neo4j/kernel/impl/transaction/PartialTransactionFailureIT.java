@@ -39,6 +39,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.recordstorage.Command;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -83,7 +84,7 @@ class PartialTransactionFailureIT
         adversary.disable();
 
         Path storeDir = testDirectory.homePath();
-        final Map<Setting<?>,Object> params = Map.of( GraphDatabaseSettings.pagecache_memory, "8m" );
+        final Map<Setting<?>,Object> params = Map.of( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setFileSystem( new AdversarialFileSystemAbstraction( adversary ) )
                 .setConfig( params )

@@ -47,6 +47,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -159,10 +160,9 @@ public class ConsistencyCheckServiceIntegrationTest
         var pageCacheTracer = new DefaultPageCacheTracer();
         fixture.close();
         JobScheduler jobScheduler = JobSchedulerFactory.createScheduler();
-        ConfiguringPageCacheFactory pageCacheFactory =
-                new ConfiguringPageCacheFactory( testDirectory.getFileSystem(), Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
-                        pageCacheTracer, NullLog.getInstance(), jobScheduler, Clocks.nanoClock(),
-                        new MemoryPools( false ) );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( testDirectory.getFileSystem(),
+                Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) ), pageCacheTracer, NullLog.getInstance(), jobScheduler,
+                Clocks.nanoClock(), new MemoryPools( false ) );
         try ( Lifespan life = new Lifespan( jobScheduler );
               PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
         {
@@ -393,7 +393,7 @@ public class ConsistencyCheckServiceIntegrationTest
     protected Map<Setting<?>,Object> settings()
     {
         Map<Setting<?>, Object> defaults = new HashMap<>();
-        defaults.put( GraphDatabaseSettings.pagecache_memory, "8m" );
+        defaults.put( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
         defaults.put( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() );
         defaults.put( record_format, getRecordFormatName() );
         return defaults;

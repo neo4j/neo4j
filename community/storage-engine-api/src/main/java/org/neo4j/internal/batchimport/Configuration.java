@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport;
 import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
 
@@ -237,12 +236,12 @@ public interface Configuration
         @Override
         public long pageCacheMemory()
         {
-            String pageCacheMemory = config.get( pagecache_memory );
+            Long pageCacheMemory = config.get( pagecache_memory );
             if ( pageCacheMemory == null )
             {
                 return defaults.pageCacheMemory();
             }
-            return min( MAX_PAGE_CACHE_MEMORY, ByteUnit.parse( pageCacheMemory ) );
+            return min( MAX_PAGE_CACHE_MEMORY, pageCacheMemory );
         }
 
         @Override

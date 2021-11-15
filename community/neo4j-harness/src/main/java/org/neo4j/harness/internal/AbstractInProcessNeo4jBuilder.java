@@ -43,6 +43,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.harness.Neo4jBuilder;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -272,7 +273,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     {
         setDirectory( workingDir );
         withConfig( auth_enabled, false );
-        withConfig( pagecache_memory, "8m" );
+        withConfig( pagecache_memory, ByteUnit.mebiBytes( 8 ) );
 
         withConfig( HttpConnector.enabled, true );
         withConfig( HttpConnector.listen_address, new SocketAddress( "localhost", 0 ) );

@@ -44,6 +44,7 @@ import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -163,7 +164,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private Config getTuningConfiguration()
     {
         return Config.newBuilder()
-                .set( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .set( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) )
                 .set( getConfig() )
                 .build();
     }

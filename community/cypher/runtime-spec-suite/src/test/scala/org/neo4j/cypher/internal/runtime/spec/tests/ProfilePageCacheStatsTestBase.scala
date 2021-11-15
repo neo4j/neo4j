@@ -37,7 +37,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
                                                                         edition: Edition[CONTEXT],
                                                                         runtime: CypherRuntime[CONTEXT]
                                                                        ) extends RuntimeTestSuite[CONTEXT](
-  edition.copyWith(GraphDatabaseSettings.pagecache_memory -> "164480"), // 20 pages
+  edition.copyWith(GraphDatabaseSettings.pagecache_memory -> Long.box(164480)), // 20 pages
   runtime) {
 
   // This needs to be big enough to trigger some page cache hits & misses

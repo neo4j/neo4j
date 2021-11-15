@@ -54,6 +54,7 @@ import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RandomSchema;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -118,7 +119,7 @@ import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 class RecordStorageMigratorIT
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";
-    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
+    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
     private static final int MAX_PROPERTY_KEY_ID = 500;
     private static final int MAX_RELATIONSHIP_TYPE_ID = 100;
     private static final int MAX_LABEL_ID = 100;

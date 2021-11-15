@@ -68,6 +68,7 @@ import org.neo4j.internal.batchimport.staging.ProcessorAssignmentStrategies;
 import org.neo4j.internal.batchimport.staging.StageExecution;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -250,7 +251,7 @@ public class ParallelBatchImporterTest
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( databaseLayout,
-            Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
+            Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) ),
             ProgressMonitorFactory.NONE,
             NullLogProvider.getInstance(), false );
         assertTrue(

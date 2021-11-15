@@ -61,6 +61,7 @@ import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.helpers.TimeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -185,7 +186,7 @@ class MultipleIndexPopulationStressIT
         ConsistencyCheckService cc = new ConsistencyCheckService();
         Config config = Config.newBuilder()
                               .set( neo4j_home, directory.homePath() )
-                              .set( GraphDatabaseSettings.pagecache_memory, "8m" )
+                              .set( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) )
                               .set( index_population_queue_threshold, concurrentUpdatesQueueFlushThreshold )
                               .build();
         Result result = cc.runFullConsistencyCheck( RecordDatabaseLayout.of( config ),
@@ -246,7 +247,7 @@ class MultipleIndexPopulationStressIT
     {
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( directory.homePath() )
-                        .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
+                        .setConfig( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) )
                         .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )

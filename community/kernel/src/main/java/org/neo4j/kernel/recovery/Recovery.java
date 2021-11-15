@@ -40,6 +40,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
@@ -181,7 +182,7 @@ public final class Recovery
         requireNonNull( databaseLayout );
         requireNonNull( config );
         requireNonNull( fs );
-        config = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.pagecache_memory, "8m" ).build(); //We dont need that much memory
+        config = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) ).build();
         try ( JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
                 PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
         {

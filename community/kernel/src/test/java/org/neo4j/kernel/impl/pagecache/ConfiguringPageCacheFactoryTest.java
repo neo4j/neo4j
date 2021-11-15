@@ -77,8 +77,7 @@ class ConfiguringPageCacheFactoryTest
         // Given
         long pageCount = 60;
         long memory = MuninnPageCache.memoryRequiredForPages( pageCount );
-        Config config = Config.defaults(
-                pagecache_memory, Long.toString( memory ) );
+        Config config = Config.defaults( pagecache_memory, memory );
 
         // When
         ConfiguringPageCacheFactory factory =

@@ -634,13 +634,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "database, but the integrity of the database might be compromised." )
     public static final Setting<Boolean> fail_on_missing_files = newBuilder( "dbms.recovery.fail_on_missing_files", BOOL, true ).build();
 
-    @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
-            "suffix, megabytes with 'm' and gigabytes with 'g'). If Neo4j is running on a dedicated server, " +
+    @Description( "The amount of memory to use for mapping the store files. If Neo4j is running on a dedicated server, " +
             "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the " +
             "JVM enough heap to hold all your transaction state and query context, and then leave the rest for " +
             "the page cache. If no page cache memory is configured, then a heuristic setting is computed based " +
             "on available system resources." )
-    public static final Setting<String> pagecache_memory = newBuilder( "dbms.memory.pagecache.size", STRING, null ).build();
+    @DocumentedDefaultValue( "By default the size of page cache will be 50% och available RAM minus the max heap size." +
+            "The size of the page cache will also not be larger than 70x the max heap size (due to some overhead of the page cache in the heap." )
+    public static final Setting<Long> pagecache_memory = newBuilder( "dbms.memory.pagecache.size", BYTES, null ).build();
 
     @Description( "This setting is not used anymore." )
     @Deprecated

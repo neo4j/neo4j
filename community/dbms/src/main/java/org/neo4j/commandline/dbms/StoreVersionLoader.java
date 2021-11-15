@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -49,7 +50,7 @@ public class StoreVersionLoader implements AutoCloseable
     public StoreVersionLoader( FileSystemAbstraction fs, Config config )
     {
         this.fs = fs;
-        this.config = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.pagecache_memory, "8m"  ).build();
+        this.config = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) ).build();
         this.jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         this.pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(), jobScheduler, Clocks.nanoClock(),
                 new MemoryPools() ).getOrCreatePageCache();

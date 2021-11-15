@@ -23,7 +23,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +39,11 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -53,22 +61,34 @@ import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
+@TestDirectoryExtension
 class GraphDatabaseSettingsTest
 {
+    @Inject
+    private TestDirectory directory;
+
     @Test
     void mustHaveNullDefaultPageCacheMemorySizeInBytes()
     {
-        String bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
+        Long bytes = Config.defaults().get( GraphDatabaseSettings.pagecache_memory );
         assertThat( bytes ).isNull();
     }
 
     @Test
-    void pageCacheSettingMustAcceptArbitraryUserSpecifiedValue()
+    void pageCacheSettingMustAcceptArbitraryUserSpecifiedValue() throws IOException
     {
-        Setting<String> setting = GraphDatabaseSettings.pagecache_memory;
-        assertThat( Config.defaults( setting, "245760" ).get( setting ) ).isEqualTo( "245760" );
-        assertThat( Config.defaults( setting, "2244g" ).get( setting ) ).isEqualTo( "2244g" );
-        assertThat( Config.defaults( setting, "string" ).get( setting ) ).isEqualTo( "string" );
+        assertPageCacheMemorySettingIsParsedAsBytes( "245760" );
+        assertPageCacheMemorySettingIsParsedAsBytes( "2244g" );
+        assertPageCacheMemorySettingIsParsedAsBytes( "8m" );
+    }
+
+    private void assertPageCacheMemorySettingIsParsedAsBytes( String value ) throws IOException
+    {
+        Path cfg = directory.file( "cfg" );
+        Files.writeString( cfg, GraphDatabaseSettings.pagecache_memory.name() + "=" + value, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING );
+        Config config = Config.newBuilder().fromFile( cfg ).build();
+        assertThat( config.get( GraphDatabaseSettings.pagecache_memory ) ).isEqualTo( ByteUnit.parse( value ) );
     }
 
     @Test

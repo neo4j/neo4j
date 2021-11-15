@@ -40,6 +40,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -91,7 +92,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 @Disabled
 public class StoreUpgraderInterruptionTestIT
 {
-    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
+    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
     private final BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
 
     @RegisterExtension

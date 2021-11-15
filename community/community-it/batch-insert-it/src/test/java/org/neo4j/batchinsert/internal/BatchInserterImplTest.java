@@ -69,7 +69,7 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 class BatchInserterImplTest
 {
     private final Config config = defaults( Map.of(
-            pagecache_memory, "280K",
+            pagecache_memory, ByteUnit.kibiBytes( 280 ),
             logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) ) );
 
     @Inject

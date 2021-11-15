@@ -44,7 +44,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.counts.DegreesRebuildFromStore;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
@@ -73,6 +72,7 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -157,6 +157,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_ro
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
@@ -231,7 +232,7 @@ public class BatchInserterImpl implements BatchInserter
         rejectAutoUpgrade( fromConfig );
         Neo4jLayout layout = databaseLayout.getNeo4jLayout();
         this.config = Config.newBuilder()
-                .setDefaults( getDefaultParams() )
+                .setDefault( pagecache_memory, ByteUnit.mebiBytes( 32 ) )
                 .set( neo4j_home, layout.homeDirectory() )
                 .set( databases_root_path, layout.databasesDirectory() )
                 .set( transaction_logs_root_path, layout.transactionLogsRootDirectory() )
@@ -379,13 +380,6 @@ public class BatchInserterImpl implements BatchInserter
             throw e;
         }
         return locker;
-    }
-
-    private static Map<Setting<?>, Object> getDefaultParams()
-    {
-        Map<Setting<?>, Object> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.pagecache_memory, "32m" );
-        return params;
     }
 
     @Override

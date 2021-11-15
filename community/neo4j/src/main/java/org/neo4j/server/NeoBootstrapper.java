@@ -39,7 +39,6 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.os.OsBeanUtil;
@@ -193,9 +192,8 @@ public abstract class NeoBootstrapper implements Bootstrapper
 
     private boolean requestedMemoryExceedsAvailable( Config config )
     {
-        String pageCacheMemory = config.get( GraphDatabaseSettings.pagecache_memory );
-        long pageCacheSize =
-                pageCacheMemory == null ? ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory( machineMemory ) : ByteUnit.parse( pageCacheMemory );
+        Long pageCacheMemory = config.get( GraphDatabaseSettings.pagecache_memory );
+        long pageCacheSize = pageCacheMemory == null ? ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory( machineMemory ) : pageCacheMemory;
         MemoryUsage heapMemoryUsage = machineMemory.getHeapMemoryUsage();
         long totalPhysicalMemory = machineMemory.getTotalPhysicalMemory();
 

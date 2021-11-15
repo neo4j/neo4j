@@ -22,15 +22,14 @@ package org.neo4j.internal.batchimport;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.os.OsBeanUtil;
 
 import static java.lang.Math.abs;
-import static java.lang.String.valueOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
 class ConfigurationTest
@@ -39,7 +38,7 @@ class ConfigurationTest
     void shouldOverrideBigPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
-        Config dbConfig = Config.defaults( pagecache_memory, "2g" );
+        Config dbConfig = Config.defaults( pagecache_memory, ByteUnit.gibiBytes( 2 ) );
         Configuration config = new Configuration.Overridden( dbConfig );
 
         // WHEN
@@ -53,8 +52,8 @@ class ConfigurationTest
     void shouldOverrideSmallPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
-        long overridden = parseLongWithUnit( "10m" );
-        Config dbConfig = Config.defaults( pagecache_memory, valueOf( overridden ) );
+        long overridden = ByteUnit.mebiBytes( 10 );
+        Config dbConfig = Config.defaults( pagecache_memory, overridden );
         Configuration config = new Configuration.Overridden( dbConfig );
 
         // WHEN

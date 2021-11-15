@@ -43,7 +43,6 @@ import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -77,7 +76,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 
-import static java.lang.String.valueOf;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
@@ -313,7 +311,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private static Config getNeo4jConfig( Configuration config, Config dbConfig )
     {
-        dbConfig.set( pagecache_memory, valueOf( config.pageCacheMemory() ) );
+        dbConfig.set( pagecache_memory, config.pageCacheMemory() );
         dbConfig.set( check_point_iops_limit, -1 );
         return dbConfig;
     }
@@ -322,7 +320,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             MemoryTracker memoryTracker )
     {
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem, tracer );
-        MemoryAllocator memoryAllocator = createAllocator( ByteUnit.parse( config.get( pagecache_memory ) ), memoryTracker );
+        MemoryAllocator memoryAllocator = createAllocator( config.get( pagecache_memory ), memoryTracker );
         MuninnPageCache.Configuration configuration = MuninnPageCache.config( memoryAllocator )
                 .pageCacheTracer( tracer )
                 .memoryTracker( memoryTracker )

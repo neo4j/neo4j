@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.pagecache;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -69,7 +70,7 @@ public final class ConfigurableStandalonePageCacheFactory
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer, Config config,
             JobScheduler jobScheduler, MemoryPools memoryPools )
     {
-        config.setIfNotSet( GraphDatabaseSettings.pagecache_memory, "8M" );
+        config.setIfNotSet( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
         Neo4jLoggerContext loggerContext =
                 LogConfig.createBuilder( System.err, Level.INFO )
                         .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) )

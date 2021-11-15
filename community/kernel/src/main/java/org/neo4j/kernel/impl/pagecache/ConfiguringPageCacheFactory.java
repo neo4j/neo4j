@@ -124,7 +124,7 @@ public class ConfiguringPageCacheFactory
 
     private long getPageCacheMaxMemory( Config config )
     {
-        String pageCacheMemorySetting = config.get( pagecache_memory );
+        Long pageCacheMemorySetting = config.get( pagecache_memory );
         if ( pageCacheMemorySetting == null )
         {
             long heuristic = defaultHeuristicPageCacheMemory( MachineMemory.DEFAULT );
@@ -132,9 +132,9 @@ public class ConfiguringPageCacheFactory
                       "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
                       "Until then, a computed heuristic value of " + heuristic + " bytes will be used instead. " +
                       "Run `neo4j-admin memrec` for memory configuration suggestions." );
-            pageCacheMemorySetting = "" + heuristic;
+            pageCacheMemorySetting = heuristic;
         }
-        return ByteUnit.parse( pageCacheMemorySetting );
+        return pageCacheMemorySetting;
     }
 
     public static long defaultHeuristicPageCacheMemory( MachineMemory machineMemory )
@@ -185,7 +185,7 @@ public class ConfiguringPageCacheFactory
 
     public void dumpConfiguration()
     {
-        String pageCacheMemory = config.get( pagecache_memory );
+        Long pageCacheMemory = config.get( pagecache_memory );
         long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
         String totalPhysicalMemMb = (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE)
                                     ? "?" : "" + ByteUnit.Byte.toMebiBytes( totalPhysicalMemory );
