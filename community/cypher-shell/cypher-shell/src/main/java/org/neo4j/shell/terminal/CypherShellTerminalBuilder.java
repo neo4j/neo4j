@@ -115,7 +115,7 @@ public class CypherShellTerminalBuilder
         {
             var attributes = new Attributes();
             attributes.setLocalFlag( Attributes.LocalFlag.ECHO, false );
-            jLineTerminal.dumb( true ).type( Terminal.TYPE_DUMB ).attributes( attributes );
+            jLineTerminal.jansi( false ).jna( false ).dumb( true ).type( Terminal.TYPE_DUMB ).attributes( attributes );
         }
 
         var reader = LineReaderBuilder.builder()
