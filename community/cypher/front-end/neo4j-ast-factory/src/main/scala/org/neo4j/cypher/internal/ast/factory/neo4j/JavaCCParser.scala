@@ -30,9 +30,7 @@ case object JavaCCParser {
 
   // Triggers to fallback to parboiled parser
   // The various SHOW PRIVILEGE commands and the EXECUTE privileges are still left to be ported.
-  // The START keyword is only available in parboiled to get better error message for a removed feature,
-  // and can be dropped entirely in 5.0 or when parboiled is removed.
-  private val FALLBACK_TRIGGERS = Seq("PRIVILEGE", "EXECUTE", "START")
+  private val FALLBACK_TRIGGERS = Seq("PRIVILEGE", "EXECUTE")
 
   def shouldFallback(errorMsg: String): Boolean = {
     val upper = errorMsg.toUpperCase()

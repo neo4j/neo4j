@@ -51,15 +51,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("badStart") {
-    //temporary fallback to parboiled parser since error message includes java cc Parsing.FALLBACK_TRIGGERS removed
-    expectSyntaxError(
-      "starta = node(0) return a",
-      "Invalid input 'a'",
-      5
-    )
-  }
-
   test("should consider extra offset in syntax error messages when there are pre-parsing options") {
     expectSyntaxError("PROFILE XX", "", 8)
   }

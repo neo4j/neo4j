@@ -26,7 +26,6 @@ import org.parboiled.scala.Rule5
 import org.parboiled.scala.group
 
 trait Clauses extends Parser
-  with StartPoints
   with Patterns
   with Expressions
   with Base
@@ -43,12 +42,6 @@ trait Clauses extends Parser
       keyword("AS") ~~ Variable ~~
       optional(keyword("FIELDTERMINATOR") ~~ StringLiteral) ~~>>
       (ast.LoadCSV(_, _, _, _))
-  }
-
-  def Start: Rule1[ast.Start] = rule("START") {
-    group(
-      keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)
-    ) ~~>> (ast.Start(_, _))
   }
 
   def Match: Rule1[ast.Match] = rule("MATCH") {

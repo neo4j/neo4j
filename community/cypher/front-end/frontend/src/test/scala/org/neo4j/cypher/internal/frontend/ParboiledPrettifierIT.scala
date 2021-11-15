@@ -2437,34 +2437,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     }
   }
 
-  def startTests(entityType: String): Seq[(String, String)] = {
-    // Not valid in JavaCC parser
-    val ENTITYTYPE = entityType.toUpperCase
-    Seq(
-      s"START x=$entityType(*) RETURN x" ->
-        s"""START x = $ENTITYTYPE( * )
-           |RETURN x""".stripMargin,
-
-      s"START x=$entityType(42) RETURN x" ->
-        s"""START x = $ENTITYTYPE( 42 )
-           |RETURN x""".stripMargin,
-
-      s"START x=$entityType(42,101) RETURN x" ->
-        s"""START x = $ENTITYTYPE( 42, 101 )
-           |RETURN x""".stripMargin,
-
-      s"START x=$entityType($$param) RETURN x" ->
-        s"""START x = $ENTITYTYPE( $$param )
-           |RETURN x""".stripMargin,
-
-      s"START x=$entityType($$param), y=$entityType(42,101) RETURN x, y" ->
-        s"""START x = $ENTITYTYPE( $$param ),
-           |      y = $ENTITYTYPE( 42, 101 )
-           |RETURN x, y""".stripMargin
-    )
-  }
-
-  (tests ++ startTests("node") ++ startTests("relationship")) foreach {
+  tests foreach {
     case (inputString, expected) =>
       test(inputString) {
         val parsingResults: Statement = parser.parse(inputString, OpenCypherExceptionFactory(None))

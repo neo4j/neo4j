@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.ast.Start
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
@@ -82,7 +81,6 @@ object StatementConverters {
     classOf[And],
     classOf[Or],
     classOf[UnaliasedReturnItem],
-    classOf[Start],
     classOf[UnionAll],
     classOf[UnionDistinct]
   )

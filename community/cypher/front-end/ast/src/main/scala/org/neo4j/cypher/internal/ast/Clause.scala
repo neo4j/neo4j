@@ -252,37 +252,6 @@ trait SingleRelTypeCheck {
   }
 }
 
-case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
-  override def name = "START"
-
-  override def semanticCheck: SemanticCheck = (state: SemanticState) => {
-
-    val query = rewrittenQuery
-    val newState = state.addNotification(DeprecatedStartNotification(position, query))
-    SemanticCheckResult(newState, Seq(SemanticError(
-      s"""START is deprecated, use: `$query` instead.
-       """.stripMargin, position)))
-  }
-
-  private def rewrittenQuery: String = {
-    val rewritten = items.map {
-      case AllNodes(variable) => s"MATCH (${variable.asCanonicalStringVal})"
-      case AllRelationships(variable) => s"MATCH ()-[${variable.asCanonicalStringVal}]->()"
-      case NodeByIds(variable, ids) =>
-        if (ids.size == 1) s"MATCH (${variable.asCanonicalStringVal}) WHERE id(${variable.asCanonicalStringVal}) = ${ids.head.asCanonicalStringVal}"
-        else s"MATCH (${variable.asCanonicalStringVal}) WHERE id(${variable.asCanonicalStringVal}) IN ${ids.map(_.asCanonicalStringVal).mkString("[", ", ", "]")}"
-      case RelationshipByIds(variable, ids) =>
-        if (ids.size == 1) s"MATCH ()-[${variable.asCanonicalStringVal}]->() WHERE id(${variable.asCanonicalStringVal}) = ${ids.head.asCanonicalStringVal}"
-        else s"MATCH ()-[${variable.asCanonicalStringVal}]->() WHERE id(${variable.asCanonicalStringVal}) IN ${ids.map(_.asCanonicalStringVal).mkString("[", ", ", "]")}"
-      case NodeByParameter(variable, parameter) => s"MATCH (${variable.asCanonicalStringVal}) WHERE id(${variable.asCanonicalStringVal}) IN ${parameter.asCanonicalStringVal}"
-      case RelationshipByParameter(variable, parameter) => s"MATCH ()-[${variable.asCanonicalStringVal}]->() WHERE id(${variable.asCanonicalStringVal}) IN ${parameter.asCanonicalStringVal}"
-    }
-
-    rewritten.mkString(" ")
-  }
-
-}
-
 case class Match(
                   optional: Boolean,
                   pattern: Pattern,
