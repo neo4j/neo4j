@@ -41,8 +41,10 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.internal.helpers.Exceptions.stringify;
+import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
 import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.proc.ProcessUtil.getModuleOptions;
 
 @Isolated
 public class Neo4jCommandIT extends Neo4jCommandTestBase
@@ -67,6 +69,11 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
         addConf( HttpConnector.listen_address, "localhost:0" );
         addConf( HttpsConnector.enabled, "false" );
         addConf( BoltConnector.enabled, "false" );
+
+        for ( String moduleOption : getModuleOptions() )
+        {
+            addConf( additional_jvm, moduleOption );
+        }
     }
 
     @DisabledOnOs( OS.WINDOWS )
