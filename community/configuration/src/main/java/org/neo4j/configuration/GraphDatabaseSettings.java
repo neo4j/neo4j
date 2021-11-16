@@ -201,7 +201,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                                                                                   RoutingMode.CLIENT ).build();
 
     @Description( "Always use client side routing (regardless of the default router) for neo4j:// protocol connections to these domains. " +
-                  "A comma seperated list of domains. Wildcards (*) are supported." )
+                  "A comma separated list of domains. Wildcards (*) are supported." )
     public static final Setting<Set<String>> client_side_router_enforce_for_domains = newBuilder( "dbms.routing.client_side.enforce_for_domains",
                                                                                                   setOf( STRING ), Set.of() ).dynamic().build();
 
