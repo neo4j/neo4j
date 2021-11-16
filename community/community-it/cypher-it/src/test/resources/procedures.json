@@ -1417,54 +1417,6 @@
     "enterpriseOnly": false
   },
   {
-    "name": "dbms.database.state",
-    "description": "The actual status of the database with the provided name on this neo4j instance.",
-    "mode": "DBMS",
-    "worksOnSystem": true,
-    "signature": "dbms.database.state(databaseName :: STRING?) :: (role :: STRING?, address :: STRING?, status :: STRING?, error :: STRING?)",
-    "argumentDescription": [
-      {
-        "name": "databaseName",
-        "description": "databaseName :: STRING?",
-        "type": "STRING?"
-      }
-    ],
-    "returnDescription": [
-      {
-        "name": "role",
-        "description": "role :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "address",
-        "description": "address :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "status",
-        "description": "status :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "error",
-        "description": "error :: STRING?",
-        "type": "STRING?"
-      }
-    ],
-    "admin": false,
-    "rolesExecution": [
-      "PUBLIC",
-      "admin"
-    ],
-    "rolesBoostedExecution": [
-      "admin"
-    ],
-    "option": {
-      "deprecated": false
-    },
-    "enterpriseOnly": false
-  },
-  {
     "name": "dbms.functions",
     "description": "List all functions in the DBMS.",
     "mode": "DBMS",
