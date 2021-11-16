@@ -215,7 +215,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "Feature flag to force produce result to always be in a separate pipeline" )
     public static final Setting<Boolean> produce_result_in_separate_pipeline =
-            newBuilder( "unsupported.cypher.produce_result_in_pipeline", BOOL, false ).build();
+            newBuilder( "unsupported.cypher.produce_result_in_separate_pipeline", BOOL, false ).build();
 
     public enum CypherOperatorEngine
     {
