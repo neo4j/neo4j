@@ -72,7 +72,6 @@
       --add-opens java.base/java.io=ALL-UNNAMED
       --add-opens java.base/java.util=ALL-UNNAMED
       --add-opens java.base/java.util.concurrent=ALL-UNNAMED
-      --add-opens java.base/sun.net.www.protocol.http=ALL-UNNAMED
       --add-opens java.base/sun.nio.ch=ALL-UNNAMED
     </jdk.custom.options>
     <test.runner.jvm/>
