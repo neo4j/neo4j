@@ -46,7 +46,6 @@ import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
-import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -152,7 +151,7 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     if (url.getProtocol.startsWith("http"))
       TheCookieManager.ensureEnabled()
     val con = url.openConnection()
-    con.setRequestProperty("User-Agent", s"${CSVResources.NEO_USER_AGENT_PREFIX}${HttpURLConnection.userAgent}")
+    con.setRequestProperty("User-Agent", s"${CSVResources.NEO_USER_AGENT_PREFIX}${userAgent}")
     con.setConnectTimeout(connectionTimeout)
     con.setReadTimeout(readTimeout)
     val stream = con.getInputStream
@@ -161,6 +160,13 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
       case "deflate" => new InflaterInputStream(stream)
       case _ => stream
     }
+  }
+
+  private def userAgent: String = {
+    val version = Runtime.version()
+    val agent = System.getProperty("http.agent")
+    if (agent == null) "Java/" + version
+    else agent + " Java/" + version
   }
 }
 
