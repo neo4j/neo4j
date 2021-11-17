@@ -31,7 +31,6 @@ import org.neo4j.util.concurrent.AsyncEvent;
 import org.neo4j.util.concurrent.AsyncEvents;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.helpers.Exceptions.withMessage;
 
 public final class BadCollector implements Collector
 {
@@ -168,8 +167,8 @@ public final class BadCollector implements Collector
         }
 
         InputException exception = report.exception();
-        throw collect ? withMessage( exception, format( "Too many bad entries %d, where last one was: %s",
-                badEntries.longValue(), exception.getMessage() ) ) : exception;
+        throw collect ? new InputException( format( "Too many bad entries %d, where last one was: %s",
+                badEntries.longValue(), exception.getMessage() ), exception ) : exception;
     }
 
     @Override

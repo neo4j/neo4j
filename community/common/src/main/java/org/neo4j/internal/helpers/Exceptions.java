@@ -23,7 +23,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.Thread.State;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -224,33 +223,6 @@ public final class Exceptions
             cause = cause.getCause();
         }
         return false;
-    }
-
-    private static final Field THROWABLE_MESSAGE_FIELD;
-    static
-    {
-        try
-        {
-            THROWABLE_MESSAGE_FIELD = Throwable.class.getDeclaredField( "detailMessage" );
-            THROWABLE_MESSAGE_FIELD.setAccessible( true );
-        }
-        catch ( Exception e )
-        {
-            throw new LinkageError( "Could not get Throwable message field", e );
-        }
-    }
-
-    public static <T extends Throwable> T withMessage( T cause, String message )
-    {
-        try
-        {
-            THROWABLE_MESSAGE_FIELD.set( cause, message );
-        }
-        catch ( IllegalArgumentException | IllegalAccessException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return cause;
     }
 
     public static <T extends Throwable> T chain( T initial, T current )

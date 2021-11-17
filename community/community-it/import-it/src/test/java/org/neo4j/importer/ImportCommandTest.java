@@ -79,13 +79,13 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.String.format;
@@ -115,8 +115,8 @@ import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
+import static org.neo4j.internal.helpers.Exceptions.chain;
 import static org.neo4j.internal.helpers.Exceptions.contains;
-import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -2443,8 +2443,7 @@ class ImportCommandTest
     {
         if ( !contains( e, message, type ) )
         {   // Rethrow the exception since we'd like to see what it was instead
-            throw withMessage( e,
-                    format( "Expected exception to contain cause '%s', %s. but was %s", message, type, e ) );
+            throw chain( e, new Exception( format( "Expected exception to contain cause '%s', %s. but was %s", message, type, e ) ) );
         }
     }
 

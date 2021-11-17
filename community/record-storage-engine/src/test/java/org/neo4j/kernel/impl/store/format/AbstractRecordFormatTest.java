@@ -46,7 +46,6 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 import static java.lang.System.currentTimeMillis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @SuppressWarnings( "AbstractClassWithoutAbstractMethods" )
@@ -176,8 +175,7 @@ public abstract class AbstractRecordFormatTest
             sb.append( "Wrote and read back again: " ).append( read2 ).append( System.lineSeparator() );
             sb.append( "Seed:                      " ).append( random.seed() ).append( System.lineSeparator() );
             sb.append( "Iteration:                 " ).append( i ).append( System.lineSeparator() );
-            withMessage( t, sb.toString() );
-            throw t;
+            throw new IOException( sb.toString(), t );
         }
     }
 

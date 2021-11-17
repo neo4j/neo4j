@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.KernelVersion;
@@ -30,8 +31,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecks
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.util.FeatureToggles;
 
-import static org.neo4j.internal.helpers.Exceptions.throwIfInstanceOf;
-import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 /**
@@ -123,9 +122,12 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                 catch ( Exception e )
                 {   // Tag all other exceptions with log position and other useful information
                     LogPosition position = positionMarker.newPosition();
-                    withMessage( e, e.getMessage() + ". At position " + position + " and entry version " + versionCode );
-                    throwIfInstanceOf( e, UnsupportedLogVersionException.class );
-                    throw new IOException( e );
+                    var message = e.getMessage() + ". At position " + position + " and entry version " + versionCode;
+                    if ( e instanceof UnsupportedLogVersionException )
+                    {
+                        throw new UnsupportedLogVersionException( message, e );
+                    }
+                    throw new IOException( message, e );
                 }
 
                 verifyChecksumChain( entry );

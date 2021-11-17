@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.Exceptions;
 
 import static java.lang.String.format;
 
@@ -127,7 +126,7 @@ public final class SettingImpl<T> implements Setting<T>
             }
             catch ( IllegalArgumentException e )
             {
-                throw Exceptions.withMessage( e, format( "Failed to validate '%s' for '%s': %s", value, name(), e.getMessage() ) );
+                throw new IllegalArgumentException( format( "Failed to validate '%s' for '%s': %s", value, name(), e.getMessage() ), e );
             }
 
         }

@@ -28,4 +28,9 @@ public class UnsupportedLogVersionException extends RuntimeException
     {
         super( message );
     }
+
+    UnsupportedLogVersionException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
 }

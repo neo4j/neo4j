@@ -33,7 +33,6 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.UnexpectedEndOfInputException;
-import org.neo4j.internal.helpers.Exceptions;
 
 import static java.lang.String.format;
 
@@ -227,10 +226,6 @@ public class CsvInputParser implements Closeable
                     stringValue != null ? stringValue : "??",
                     e.getMessage() );
 
-            if ( e instanceof InputException )
-            {
-                throw Exceptions.withMessage( e, message );
-            }
             throw new InputException( message, e );
         }
     }

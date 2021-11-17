@@ -64,7 +64,6 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
-import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
 /**
@@ -798,7 +797,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             // Decorate outgoing exceptions with basic tree information. This is similar to how the constructor
             // appends its information, but the constructor has read more information at that point so this one
             // is a bit more sparse on information.
-            withMessage( t, t.getMessage() + " | " + format( "GBPTree[file:%s]", indexFile ) );
+            t.addSuppressed( new Exception( format( "GBPTree[file:%s]", indexFile ) ) );
             throw t;
         }
     }
@@ -1580,7 +1579,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     private <E extends Throwable> void appendTreeInformation( E e )
     {
-        Exceptions.withMessage( e, e.getMessage() + " | " + toString() );
+        e.addSuppressed( new Exception( e.getMessage() + " | " + this ) );
     }
 
     private static class SeekDepthMonitor extends SeekCursor.MonitorAdaptor

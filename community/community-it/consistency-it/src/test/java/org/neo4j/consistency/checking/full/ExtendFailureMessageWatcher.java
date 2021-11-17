@@ -24,8 +24,6 @@ import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.util.function.Supplier;
 
-import org.neo4j.internal.helpers.Exceptions;
-
 public class ExtendFailureMessageWatcher implements TestWatcher
 {
     private final Supplier<String> getter;
@@ -38,6 +36,6 @@ public class ExtendFailureMessageWatcher implements TestWatcher
     @Override
     public void testFailed( ExtensionContext context, Throwable cause )
     {
-        Exceptions.withMessage( cause, getter.get() + cause.getMessage() );
+        cause.addSuppressed( new Exception( getter.get() + cause.getMessage() ) );
     }
 }

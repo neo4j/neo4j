@@ -26,7 +26,6 @@ import org.neo4j.internal.batchimport.cache.NodeType;
 import org.neo4j.internal.batchimport.staging.ForkedProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
@@ -89,8 +88,7 @@ public abstract class RelationshipLinkStep extends ForkedProcessorStep<Relations
                 }
                 catch ( Exception e )
                 {
-                    Exceptions.withMessage( e, e.getMessage() + " - ERROR when processing " + item );
-                    throw e;
+                    throw new RuntimeException( "ERROR when processing " + item, e );
                 }
                 if ( changeCount == -1 )
                 {

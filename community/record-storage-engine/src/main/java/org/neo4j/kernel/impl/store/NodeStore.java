@@ -27,7 +27,6 @@ import java.util.Arrays;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.pagecache.PageCache;
@@ -111,7 +110,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         }
         catch ( InvalidRecordException e )
         {
-            throw Exceptions.withMessage( e, format( "Error loading dynamic label records for %s | %s", node, e.getMessage() ) );
+            throw new InvalidRecordException( format( "Error loading dynamic label records for %s | %s", node, e.getMessage() ), e );
         }
     }
 

@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -38,6 +37,7 @@ import org.neo4j.memory.MemoryTracker;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.neo4j.internal.helpers.Exceptions.chain;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
 public class NumberArrayFactories
@@ -213,25 +213,13 @@ public class NumberArrayFactories
                 }
                 catch ( OutOfMemoryError | NativeMemoryAllocationRefusedError e )
                 {   // Alright let's try the next one
-                    if ( error == null )
-                    {
-                        error = e;
-                    }
-                    else
-                    {
-                        e.addSuppressed( error );
-                        error = e;
-                    }
+
+                    error = chain( e, error );
                     failures.add( new AllocationFailure( e, candidate ) );
                 }
             }
-            throw error( length, itemSize, error );
-        }
-
-        private Error error( long length, int itemSize, Error error )
-        {
-            return Exceptions.withMessage( error, format( "%s: Not enough memory available for allocating %s, tried %s",
-                                                          error.getMessage(), bytesToString( length * itemSize ), Arrays.toString( candidates ) ) );
+            throw chain( new OutOfMemoryError( format( "Not enough memory available for allocating %s, tried %s",
+                                                       bytesToString( length * itemSize ), Arrays.toString( candidates ) ) ), error );
         }
     }
 }

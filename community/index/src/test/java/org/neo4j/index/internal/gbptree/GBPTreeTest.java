@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.tuple.Pair;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,13 +85,13 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.PageCacheConfig;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Long.min;
@@ -1813,6 +1814,7 @@ class GBPTreeTest
             assertThatThrownBy( () -> index( pageCache ).with( readOnly() ).build() )
                     .isInstanceOf( TreeFileNotFoundException.class )
                     .hasMessageContaining( "Can not create new tree file in read only mode" )
+                    .extracting( throwable -> throwable.getSuppressed()[0], InstanceOfAssertFactories.THROWABLE )
                     .hasMessageContaining( indexFile.toAbsolutePath().toString() );
         }
     }

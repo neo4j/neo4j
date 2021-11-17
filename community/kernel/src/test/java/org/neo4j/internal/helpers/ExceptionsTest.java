@@ -22,7 +22,6 @@ package org.neo4j.internal.helpers;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,21 +37,6 @@ class ExceptionsTest
         // THEN
         assertTrue( Exceptions.contains( cause, "words", NullPointerException.class ) );
         assertFalse( Exceptions.contains( cause, "not", NullPointerException.class ) );
-    }
-
-    @Test
-    void shouldSetMessage()
-    {
-        // GIVEN
-        var initialMessage = "Initial message";
-        var exception = new LevelOneException( initialMessage );
-
-        // WHEN
-        var prependedMessage = "Prepend this: " + exception.getMessage();
-        Exceptions.withMessage( exception, prependedMessage );
-
-        // THEN
-        assertEquals( prependedMessage, exception.getMessage() );
     }
 
     @Test
