@@ -450,11 +450,11 @@ class ConnectionTrackingIT
         var uri = neo4j.httpURI().resolve( "db/system/tx/commit" ).toString();
 
         Response response1 = withBasicAuth( "neo4j", NEO4J_USER_PWD )
-                .POST( uri, query( "CALL dbms.security.createUser(\\\"" + username + "\\\", \\\"" + password + "\\\", false)" ) );
+                .POST( uri, query( "CREATE USER " + username + " SET PASSWORD '" + password + "' CHANGE NOT REQUIRED" ) );
         assertEquals( 200, response1.status() );
 
         Response response2 = withBasicAuth( "neo4j", NEO4J_USER_PWD )
-                .POST( uri, query( "CALL dbms.security.addRoleToUser(\\\"admin\\\", \\\"" + username + "\\\")" ) );
+                .POST( uri, query( "GRANT ROLE admin TO " + username ) );
         assertEquals( 200, response2.status() );
     }
 

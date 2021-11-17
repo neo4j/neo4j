@@ -21,13 +21,9 @@ package org.neo4j.fabric;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.List;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -69,22 +65,11 @@ class SecurityProcedureQueryTypeTest
         databaseManagementService.shutdown();
     }
 
-    @ParameterizedTest( name = "statement {0} should have queryType {1}" )
-    @MethodSource( "procedures" )
-    void securityProcedure( String statement, QueryType queryType )
+    @Test
+    void showCurrentUserShouldBeReadQueryType()
     {
-        var instance = planner.instance( statement, MapValue.EMPTY, "system" );
-        assertThat( instance.plan().queryType() ).isEqualTo( queryType );
-    }
-
-    static List<Arguments> procedures()
-    {
-        return List.of(
-                Arguments.of( "CALL dbms.security.listUsers()", QueryType.READ() ),
-                Arguments.of( "CALL dbms.security.createUser('Tobias', 'secret')", QueryType.WRITE() ),
-                Arguments.of( "CALL dbms.security.changePassword('newSecret')", QueryType.WRITE() ),
-                Arguments.of( "CALL dbms.security.deleteUser('Tobias')", QueryType.WRITE() ),
-                Arguments.of( "CALL dbms.showCurrentUser()", QueryType.READ() ) // DBMS mode gives READ
-        );
+        var instance = planner.instance( "CALL dbms.showCurrentUser()", MapValue.EMPTY, "system" );
+        // DBMS mode gives READ
+        assertThat( instance.plan().queryType() ).isEqualTo( QueryType.READ() );
     }
 }

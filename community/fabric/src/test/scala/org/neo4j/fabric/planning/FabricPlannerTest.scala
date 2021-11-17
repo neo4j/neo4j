@@ -188,19 +188,6 @@ class FabricPlannerTest
         .shouldEqual(UTF8.encode("secret"))
     }
 
-    "single security procedure with password with USE" in {
-      val remote = asRemote(
-        """USE system
-          |CALL dbms.security.createUser('myProcedureUser', 'secret')
-          |""".stripMargin)
-
-      remote.query
-        .should(not(include("*")))
-
-      parse(remote.query).as[Query].part.as[SingleQuery].clauses
-        .should(matchPattern { case Seq(_:UnresolvedCall) => })
-    }
-
     "inner query with imports and USE" in {
       val remote = asRemote(
         """WITH 1 AS a

@@ -63,13 +63,6 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
 
       s"ALTER CURRENT USER SET PASSWORD FROM '$password' TO '$password'" ->
         "ALTER CURRENT USER SET PASSWORD FROM ****** TO ******",
-
-      s"CALL dbms.security.createUser('user', '$password')" ->
-        s"CALL dbms.security.createUser('user', ******)",
-      s"CALL dbms.security.createUser('user', '$password', true)" ->
-        s"CALL dbms.security.createUser('user', ******, true)",
-      s"CALL dbms.security.changePassword('$password')" ->
-        s"CALL dbms.security.changePassword(******)",
     )
 
     for ((rawText, obfuscatedText) <- literalTests) {
@@ -112,19 +105,7 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
       "ALTER CURRENT USER SET PASSWORD FROM $old TO ******",
       Map("old" -> "a", "new" -> "b"),
       Map("old" -> "******", "new" -> "b"),
-    ),
-    ParameterTest(
-      "CALL dbms.security.createUser($user, 'password')",
-      "CALL dbms.security.createUser($user, ******)",
-      Map("user" -> "a", "unused" -> "test"),
-      Map("user" -> "a", "unused" -> "test"),
-    ),
-    ParameterTest(
-      "CALL dbms.security.createUser($user, $password)",
-      "CALL dbms.security.createUser($user, $password)",
-      Map("user" -> "a", "password" -> "b"),
-      Map("user" -> "a", "password" -> "******"),
-    ),
+    )
   )
 
   for (ParameterTest(rawText, obfuscatedText, rawParameters, obfuscatedParameters) <- parameterTests) {
