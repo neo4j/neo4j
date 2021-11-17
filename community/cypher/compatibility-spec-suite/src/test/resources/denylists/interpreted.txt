@@ -1,7 +1,3 @@
-// TCK needs to be updated, expects wrong error type or message
-Feature "List1 - Dynamic Element Access": Scenario "Fail at runtime when trying to index into a list with a list"
-Feature "List1 - Dynamic Element Access": Scenario "Fail at compile time when attempting to index with a non-integer into a list"
-
 //Semantics change not yet visible on 4.3 branch
 Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "8"
 Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "9"
@@ -25,18 +21,55 @@ Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a 
 Feature "List11 - Create a list from a range": Scenario "Create an empty list if range direction and step direction are inconsistent"
 Feature "List11 - Create a list from a range": Scenario "Create list from `range()` with explicitly given step": Example "10"
 
-//Semantics change not yet visible on 4.3 branch
-Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "2"
-Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "3"
-Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "4"
-Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "5"
-Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "6"
-
-//TCK needs to be updated, toInteger is valid for Boolean
-Feature "TypeConversion2 - To Integer": Scenario "`toInteger()` failing on invalid arguments": Example "0"
-//TCK needs to be updated, toBoolean is valid for Integer
-Feature "TypeConversion1 - To Boolean": Scenario "`toBoolean()` on invalid types": Example "2"
-
 // Failing with M16 TCK - require investigation
 // TODO: the below case does currently fallback to the parboiled parser, needs to be re-added/fixed when we remove the fallback for START
 // Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"
+
+// Failing with M17 TCK - Not yet implemented
+Feature "Call5 - Results projection": Scenario "Fail on in-query call to procedure with YIELD *"
+
+// Failing with M17 TCK - Not yet implemented
+Feature "Boolean1 - And logical operations": Scenario "Fail on conjunction of at least one non-booleans": Example "4"
+Feature "Boolean1 - And logical operations": Scenario "Fail on conjunction of at least one non-booleans": Example "5"
+Feature "Boolean1 - And logical operations": Scenario "Fail on conjunction of at least one non-booleans": Example "6"
+Feature "Boolean1 - And logical operations": Scenario "Fail on conjunction of at least one non-booleans": Example "13"
+Feature "Boolean1 - And logical operations": Scenario "Fail on conjunction of at least one non-booleans": Example "14"
+Feature "Boolean1 - And logical operations": Scenario "Fail on conjunction of at least one non-booleans": Example "15"
+Feature "Boolean1 - And logical operations": Scenario "Fail on conjunction of at least one non-booleans": Example "21"
+Feature "Boolean2 - OR logical operations": Scenario "Fail on disjunction of at least one non-booleans": Example "4"
+Feature "Boolean2 - OR logical operations": Scenario "Fail on disjunction of at least one non-booleans": Example "5"
+Feature "Boolean2 - OR logical operations": Scenario "Fail on disjunction of at least one non-booleans": Example "6"
+Feature "Boolean2 - OR logical operations": Scenario "Fail on disjunction of at least one non-booleans": Example "13"
+Feature "Boolean2 - OR logical operations": Scenario "Fail on disjunction of at least one non-booleans": Example "14"
+Feature "Boolean2 - OR logical operations": Scenario "Fail on disjunction of at least one non-booleans": Example "15"
+Feature "Boolean2 - OR logical operations": Scenario "Fail on disjunction of at least one non-booleans": Example "21"
+Feature "Boolean3 - XOR logical operations": Scenario "Fail on exclusive disjunction of at least one non-booleans": Example "4"
+Feature "Boolean3 - XOR logical operations": Scenario "Fail on exclusive disjunction of at least one non-booleans": Example "5"
+Feature "Boolean3 - XOR logical operations": Scenario "Fail on exclusive disjunction of at least one non-booleans": Example "6"
+Feature "Boolean3 - XOR logical operations": Scenario "Fail on exclusive disjunction of at least one non-booleans": Example "13"
+Feature "Boolean3 - XOR logical operations": Scenario "Fail on exclusive disjunction of at least one non-booleans": Example "14"
+Feature "Boolean3 - XOR logical operations": Scenario "Fail on exclusive disjunction of at least one non-booleans": Example "15"
+Feature "Boolean3 - XOR logical operations": Scenario "Fail on exclusive disjunction of at least one non-booleans": Example "21"
+
+// Failing with M17 TCK - Not yet implemented
+Feature "Pattern1 - Pattern predicate": Scenario "Fail on using pattern in right-hand side of SET"
+Feature "Pattern1 - Pattern predicate": Scenario "Fail on using pattern in RETURN projection"
+Feature "Pattern1 - Pattern predicate": Scenario "Fail on using pattern in WITH projection"
+
+// Failing with M17 TCK - Not yet implemented
+Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with update clause should fail"
+Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested simple existential subquery"
+Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery"
+Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery with pattern predicate"
+Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery"
+Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation"
+
+// Failing with M17 TCK - Not yet implemented
+Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "0"
+Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "1"
+Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "2"
+Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "3"
+Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "4"
+Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "5"
+Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "6"
+Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "7"

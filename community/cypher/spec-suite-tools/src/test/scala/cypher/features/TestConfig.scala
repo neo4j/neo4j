@@ -29,7 +29,7 @@ case object DefaultTestConfig extends TestConfig(Some("default.txt"),"")
 
 case object SlottedTestConfig extends TestConfig(Some("slotted.txt"),"CYPHER planner=cost runtime=slotted")
 
-case object SlottedWithCompiledExpressionsTestConfig extends TestConfig(Some("slotted.txt"),"CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
+case object SlottedWithCompiledExpressionsTestConfig extends TestConfig(Some("slotted-with-compiled-expressions.txt"),"CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
 
 case object PipelinedTestConfig extends TestConfig(Some("pipelined-single-threaded.txt"), "CYPHER planner=cost runtime=pipelined")
 

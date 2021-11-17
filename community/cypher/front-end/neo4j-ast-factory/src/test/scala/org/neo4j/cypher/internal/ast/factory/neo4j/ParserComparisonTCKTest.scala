@@ -52,20 +52,49 @@ class ParserComparisonTCKTest extends ParserComparisonTestBase with FunSpecLike 
     """Feature "Literals8 - Maps": Scenario "Fail on a map containing a map without key"""",
     """Feature "Literals8 - Maps": Scenario "Fail on a nested map with non-matching braces"""",
     """Feature "Literals8 - Maps": Scenario "Fail on a map containing key with symbol"""",
+
+    // TCK M17, fails in parboiled parser
+    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation"""",
+
+    // TCK M17, new syntax not implemented in parboiled
+    """Feature "Call5 - Results projection": Scenario "Allow standalone call to procedure with YIELD *"""",
+    """Feature "Call5 - Results projection": Scenario "Fail on in-query call to procedure with YIELD *"""",
   )
 
   val positionAcceptanceList = Seq(
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 1\"",
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 4\"",
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling numerical ranges 1\"",
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling numerical ranges 3\"",
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 3\"",
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 3\"",
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling string ranges 2\"",
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling numerical ranges 4\"",
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling empty range\"",
-    "Feature \"Comparison3 - Full-Bound Range\": Scenario \"Handling numerical ranges 2\"",
-    "Feature \"Comparison4 - Combination of Comparisons\": Scenario \"Handling long chains of operators\""
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling string ranges 1"""",
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling string ranges 4"""",
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling numerical ranges 1"""",
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling numerical ranges 3"""",
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling string ranges 3"""",
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling string ranges 3"""",
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling string ranges 2"""",
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling numerical ranges 4"""",
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling empty range"""",
+    """Feature "Comparison3 - Full-Bound Range": Scenario "Handling numerical ranges 2"""",
+    """Feature "Comparison4 - Combination of Comparisons": Scenario "Handling long chains of operators"""",
+
+    // TCK M17, seems like below parses with wrong position in parboiled
+    """Feature "Call5 - Results projection": Scenario "Fail on renaming all outputs to the same variable name"""",
+    """Feature "Call5 - Results projection": Scenario "Fail on renaming to an already bound variable name"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "0"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "1"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "2"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "3"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "4"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "5"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "6"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "7"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "8"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "9"""",
+    """Feature "Call5 - Results projection": Scenario "Rename outputs to unbound variable names": Example "10"""",
+
+    // TCK M17, seems like below parses with wrong position in JavaCC
+    // TODO: remove below once this card has been played: https://trello.com/c/JhZlBMQa/3821-existential-subqueries-parsed-with-wrong-position-in-javacc-parser
+    """Feature "ExistentialSubquery1 - Simple existential subquery": Scenario "Simple subquery without WHERE clause"""",
+    """Feature "ExistentialSubquery1 - Simple existential subquery": Scenario "Simple subquery with WHERE clause"""",
+    """Feature "ExistentialSubquery1 - Simple existential subquery": Scenario "Simple subquery without WHERE clause, not existing pattern"""",
+    """Feature "ExistentialSubquery1 - Simple existential subquery": Scenario "Simple subquery with WHERE clause, not existing pattern"""",
   )
 
   scenariosPerFeature foreach {
@@ -73,8 +102,7 @@ class ParserComparisonTCKTest extends ParserComparisonTestBase with FunSpecLike 
       describe(featureName) {
         scenarios
           .filterNot(scenarioObj => DENYLIST(denyListEntry(scenarioObj)))
-          .foreach {
-            scenarioObj =>
+          .foreach { scenarioObj =>
               val testName = denyListEntry(scenarioObj)
               describe(testName) {
                 scenarioObj.steps foreach {
