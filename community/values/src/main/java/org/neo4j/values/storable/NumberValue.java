@@ -23,13 +23,13 @@ import org.neo4j.values.AnyValue;
 
 public abstract class NumberValue extends ScalarValue
 {
-    static long castToLong( String name, AnyValue value, long defaultValue )
+    static long castToLong( String name, AnyValue value )
     {
         if ( value == null )
         {
-            return defaultValue;
+            return 0L;
         }
-        if ( value instanceof IntegralValue )
+        else if ( value instanceof IntegralValue )
         {
             return ((IntegralValue) value).longValue();
         }

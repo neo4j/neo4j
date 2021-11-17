@@ -206,16 +206,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 if ( allIntegralValues )
                 {
                     return duration(
-                            castToLong( "years", years, 0L ) * 12 +
-                            castToLong( "months", months, 0L ),
-                            castToLong( "weeks", weeks, 0L ) * 7 +
-                            castToLong( "days", days, 0L ),
-                            castToLong( "hours", hours, 0L ) * 3600 +
-                            castToLong( "minutes", minutes, 0L ) * 60 +
-                            castToLong( "seconds", seconds, 0L ),
-                            castToLong( "milliseconds", milliseconds, 0L ) * 1_000_000 +
-                            castToLong( "microseconds", microseconds, 0L ) * 1_000 +
-                            castToLong( "nanoseconds", nanoseconds, 0L )
+                            castToLong( "years", years ) * 12 +
+                            castToLong( "months", months ),
+                            castToLong( "weeks", weeks ) * 7 +
+                            castToLong( "days", days ),
+                            castToLong( "hours", hours ) * 3600 +
+                            castToLong( "minutes", minutes ) * 60 +
+                            castToLong( "seconds", seconds ),
+                            castToLong( "milliseconds", milliseconds ) * 1_000_000 +
+                            castToLong( "microseconds", microseconds ) * 1_000 +
+                            castToLong( "nanoseconds", nanoseconds )
                     );
                 }
                 else
