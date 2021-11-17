@@ -126,7 +126,7 @@ public abstract class FabricServicesBootstrap
         var localExecutor = register( new FabricLocalExecutor( fabricConfig, fabricDatabaseManager, databaseAccess ), FabricLocalExecutor.class );
 
         var systemNanoClock = resolve( SystemNanoClock.class );
-        var transactionMonitor = new FabricTransactionMonitor( systemNanoClock, logService, fabricConfig );
+        var transactionMonitor = register( new FabricTransactionMonitor( systemNanoClock, logService, fabricConfig ), FabricTransactionMonitor.class );
 
         var transactionCheckInterval = config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis();
         register( new TransactionMonitorScheduler( transactionMonitor, jobScheduler, transactionCheckInterval, null ), TransactionMonitorScheduler.class );
