@@ -49,10 +49,6 @@ public interface ProcedureITBase
                 proc( "db.constraints", "() :: (name :: STRING?, description :: STRING?, details :: STRING?)",
                         "List all constraints in the database.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
-                proc( "db.indexes",
-                        "() :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, " +
-                                "entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?)",
-                        "List all indexes in the database.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.awaitIndex", "(indexName :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for an index to come online (for example: CALL db.awaitIndex(\"MyIndex\", 300)).",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),

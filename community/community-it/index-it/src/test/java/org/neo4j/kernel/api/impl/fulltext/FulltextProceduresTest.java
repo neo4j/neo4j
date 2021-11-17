@@ -1630,7 +1630,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         String schemaIndexName;
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Result result = tx.execute( "call db.indexes()" ) )
+            try ( Result result = tx.execute( "SHOW INDEXES" ) )
             {
                 assertTrue( result.hasNext() );
                 schemaIndexName = result.next().get( "name" ).toString();

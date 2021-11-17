@@ -22,7 +22,6 @@ package org.neo4j.procedure.builtin;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
@@ -39,19 +37,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -170,70 +163,6 @@ public class BuiltInProcedures
                     .collect( Collectors.toList() );
         }
         return relTypesInUse.stream();
-    }
-
-    @Deprecated( since = "4.2.0", forRemoval = true )
-    @SystemProcedure
-    @Description( "List all indexes in the database." )
-    @Procedure( name = "db.indexes", mode = READ, deprecatedBy = "SHOW INDEXES command" )
-    public Stream<IndexResult> listIndexes()
-    {
-        if ( callContext.isSystemDatabase() )
-        {
-            return Stream.empty();
-        }
-
-        TokenRead tokenRead = kernelTransaction.tokenRead();
-        IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
-
-        SchemaReadCore schemaRead = kernelTransaction.schemaRead().snapshot();
-        List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
-
-        List<IndexResult> result = new ArrayList<>();
-        for ( IndexDescriptor index : indexes )
-        {
-            IndexResult indexResult;
-            indexResult = asIndexResult( tokenRead, schemaRead, index );
-            result.add( indexResult );
-        }
-        result.sort( Comparator.comparing( r -> r.name ) );
-        return result.stream();
-    }
-
-    private static IndexResult asIndexResult( TokenNameLookup tokenLookup, SchemaReadCore schemaRead, IndexDescriptor index )
-    {
-        SchemaDescriptor schema = index.schema();
-        long id = index.getId();
-        String name = index.getName();
-        IndexStatus status = getIndexStatus( schemaRead, index );
-        String uniqueness = IndexUniqueness.getUniquenessOf( index );
-        String type = index.getIndexType().name();
-        String entityType = index.schema().entityType().name();
-        List<String> labelsOrTypes = Arrays.asList( tokenLookup.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
-        List<String> properties = propertyNames( tokenLookup, index );
-        String provider = index.getIndexProvider().name();
-
-        return new IndexResult( id, name, status.state, status.populationProgress, uniqueness, type, entityType, labelsOrTypes, properties, provider );
-    }
-
-    private static IndexStatus getIndexStatus( SchemaReadCore schemaRead, IndexDescriptor index )
-    {
-        IndexStatus status = new IndexStatus();
-        try
-        {
-            InternalIndexState internalIndexState = schemaRead.indexGetState( index );
-            status.state = internalIndexState.toString();
-            PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
-            status.populationProgress = progress.toIndexPopulationProgress().getCompletedPercentage();
-            status.failureMessage = internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure( index ) : "";
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            status.state = "NOT FOUND";
-            status.populationProgress = 0D;
-            status.failureMessage = "Index not found. It might have been concurrently dropped.";
-        }
-        return status;
     }
 
     private static class IndexStatus
@@ -430,17 +359,6 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
-    private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
-    {
-        int[] propertyIds = index.schema().getPropertyIds();
-        List<String> propertyNames = new ArrayList<>( propertyIds.length );
-        for ( int propertyId : propertyIds )
-        {
-            propertyNames.add( tokens.propertyKeyGetName( propertyId ) );
-        }
-        return propertyNames;
-    }
-
     private ZoneId getConfiguredTimeZone()
     {
         Config config = resolver.resolveDependency( Config.class );
@@ -509,35 +427,6 @@ public class BuiltInProcedures
         }
 
         public final Boolean success;
-    }
-
-    public static class IndexResult
-    {
-        public final long id;                    //1
-        public final String name;                //"myIndex"
-        public final String state;               //"ONLINE", "FAILED", "POPULATING"
-        public final double populationPercent;    // 0.0, 100.0, 75.1
-        public final String uniqueness;          //"UNIQUE", "NONUNIQUE"
-        public final String type;                //"FULLTEXT", "BTREE"
-        public final String entityType;          //"NODE", "RELATIONSHIP"
-        public final List<String> labelsOrTypes; //["Label1", "Label2"], ["RelType1", "RelType2"]
-        public final List<String> properties;    //["propKey", "propKey2"]
-        public final String provider;            //"native-btree-1.0", "lucene+native-3.0"
-
-        private IndexResult( long id, String name, String state, double populationPercent, String uniqueness, String type, String entityType,
-                List<String> labelsOrTypes, List<String> properties, String provider )
-        {
-            this.id = id;
-            this.name = name;
-            this.state = state;
-            this.populationPercent = populationPercent;
-            this.uniqueness = uniqueness;
-            this.type = type;
-            this.entityType = entityType;
-            this.labelsOrTypes = labelsOrTypes;
-            this.properties = properties;
-            this.provider = provider;
-        }
     }
 
     public static class SchemaStatementResult
@@ -630,17 +519,5 @@ public class BuiltInProcedures
         }
 
         public final Relationship relationship;
-    }
-
-    private enum IndexUniqueness
-    {
-        UNIQUE,
-        NONUNIQUE;
-
-        private static String getUniquenessOf( IndexDescriptor index )
-        {
-            return index.isUnique() ? UNIQUE.name() : NONUNIQUE.name();
-
-        }
     }
 }

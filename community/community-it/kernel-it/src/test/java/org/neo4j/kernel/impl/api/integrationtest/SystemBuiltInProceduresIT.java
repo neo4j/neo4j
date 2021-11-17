@@ -36,7 +36,6 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -151,37 +150,6 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
                 new AnyValue[]{stringValue( "Neo4j Kernel" ), VirtualValues.list( stringValue( Version.getNeo4jVersion() ) ), stringValue( "community" )} );
 
         commit();
-    }
-
-    @Test
-    void listAllIndexes() throws Throwable
-    {
-        // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
-        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
-        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
-        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
-        LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
-        LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooDescriptor ).withName( "person foo index" ) );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( ageFooDescriptor ).withName( "constraint name" ) );
-        transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( personFooBarDescriptor ).withName( "person foo bar index" ) );
-        commit();
-
-        //let indexes come online
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, MINUTES );
-            tx.commit();
-        }
-
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
-            // When & Then
-            assertFalse( tx.execute( "CALL db.indexes" ).hasNext());
-        }
     }
 
     @Test
