@@ -107,7 +107,7 @@ object SizeEstimation {
           //multi byte instructions
           case i: InvokeSideEffect => if (isInterface(i.method.owner.modifiers())) INVOKE_INTERFACE else INVOKE
           case i: Invoke => if (isInterface(i.method.owner.modifiers())) INVOKE_INTERFACE else INVOKE
-          case _: InvokeStatic | _: InvokeStaticSideEffect => INVOKE
+          case _: InvokeStatic | _: InvokeStaticSideEffect  | _: InvokeLocal | _: InvokeLocalSideEffect => INVOKE
           case Load(name, _) => localVarInstruction(name)
           case _: LoadField => 1 + FIELD_INSTRUCTION // load this + 3 bytes for the field
           case _: SetField => 1 + FIELD_INSTRUCTION // load this + 3 bytes for setting the field

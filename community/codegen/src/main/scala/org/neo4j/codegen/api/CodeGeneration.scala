@@ -205,10 +205,27 @@ object CodeGeneration {
     //target.method(p1,p2,...)
     case Invoke(target, method, params) =>
       invoke(compileExpression(target, block), method.asReference, params.map(p => compileExpression(p, block)): _*)
+
+    //target.method(p1,p2,...)
+    case InvokeLocal(method, params) =>
+      invoke(block.self(), codegen.MethodReference.methodReference(block.owner(), method.returnType, method.name, method.params: _*),
+        params.map(p => compileExpression(p, block)): _*)
+
     //target.method(p1,p2,...)
     case InvokeSideEffect(target, method, params) =>
       val invocation = invoke(compileExpression(target, block), method.asReference,
                               params.map(p => compileExpression(p, block)): _*)
+      if (method.returnType.isVoid) {
+        block.expression(invocation)
+      } else {
+        block.expression(codegen.Expression.pop(invocation))
+      }
+      codegen.Expression.EMPTY
+
+    //this.method(p1,p2,...)
+    case InvokeLocalSideEffect(method, params) =>
+      val invocation = invoke(block.self(), codegen.MethodReference.methodReference(block.owner(), method.returnType, method.name, method.params: _*),
+        params.map(p => compileExpression(p, block)): _*)
       if (method.returnType.isVoid) {
         block.expression(invocation)
       } else {
@@ -447,7 +464,7 @@ object CodeGeneration {
     }
 
     val method = codegen.MethodDeclaration.method(m.returnType, m.methodName,
-                                     m.parameters.map(_.asCodeGen): _*)
+                                     m.parameters.map(_.asCodeGen): _*).modifiers(m.modifiers)
     m.parameterizedWith.foreach {
       case (name, bound) => method.parameterizedWith(name, bound)
     }

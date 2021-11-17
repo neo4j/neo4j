@@ -27,6 +27,7 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
 import java.io.PrintStream
+import java.lang.reflect.Modifier
 import scala.annotation.tailrec
 
 /**
@@ -71,13 +72,35 @@ case class Invoke(target: IntermediateRepresentation, method: Method, params: Se
 }
 
 /**
- * Invoke a void method
+ * Invoke a local instance method
+ *
+ * @param method the method to invoke
+ * @param params the parameter to the method
+ */
+case class InvokeLocal(method: LocalMethod, params: Seq[IntermediateRepresentation])
+  extends IntermediateRepresentation {
+  override def typeReference: TypeReference = method.returnType
+}
+
+/**
+ * Invoke a void method or a non-void method but ignoring the output
  *
  * @param target the target to call the method on
  * @param method the method to invoke
  * @param params the parameter to the method
  */
 case class InvokeSideEffect(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation])
+  extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
+
+/**
+ * Invoke a local instance void method or a local non-void instance method but ignoring the output
+ *
+ * @param method the method to invoke
+ * @param params the parameter to the method
+ */
+case class InvokeLocalSideEffect(method: LocalMethod, params: Seq[IntermediateRepresentation])
   extends IntermediateRepresentation {
   override def typeReference: TypeReference = TypeReference.VOID
 }
@@ -570,6 +593,14 @@ case class Method(owner: codegen.TypeReference, returnType: codegen.TypeReferenc
   def asReference: codegen.MethodReference = codegen.MethodReference.methodReference(owner, returnType, name, params: _*)
 }
 
+/**
+ * Defines a method that is local to the current class
+ * @param returnType output type to the method
+ * @param name   the name of the method
+ * @param params the parameter types of the method
+ */
+case class LocalMethod(returnType: codegen.TypeReference, name: String, params: Seq[codegen.TypeReference])
+
 case class Parameter(typ: codegen.TypeReference, name: String) {
   def asCodeGen: codegen.Parameter = codegen.Parameter.param(typ, name)
 }
@@ -592,7 +623,8 @@ case class MethodDeclaration(methodName: String,
                              body: IntermediateRepresentation,
                              genLocalVariables: () => Seq[LocalVariable] = () => Seq.empty,
                              parameterizedWith: Option[(String, codegen.TypeReference.Bound)] = None,
-                             throws: Option[TypeReference] = None) {
+                             throws: Option[TypeReference] = None,
+                             modifiers: Int = Modifier.PUBLIC) {
   def localVariables: Seq[LocalVariable] = genLocalVariables()
 }
 
@@ -710,6 +742,22 @@ object IntermediateRepresentation {
                              parameters: Parameter*)(implicit out: Manifest[OUT]): MethodDeclaration =
     MethodDeclaration(name, typeRef(out), parameters, body, locals)
 
+  def localMethod[OUT](name: String)(implicit out: Manifest[OUT]): LocalMethod =
+    LocalMethod(typeRef(out), name, Seq.empty)
+
+  def localMethod[OUT, IN](name: String)(implicit out: Manifest[OUT], in: Manifest[IN]): LocalMethod =
+    LocalMethod(typeRef(out), name, Seq(typeRef(in)))
+
+  def localMethod[OUT, IN1, IN2](name: String)
+                                  (implicit out: Manifest[OUT], in1: Manifest[IN1],
+                                   in2: Manifest[IN2]): LocalMethod =
+    LocalMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2)))
+
+  def localMethod[OUT, IN1, IN2, IN3](name: String)
+                                       (implicit out: Manifest[OUT], in1: Manifest[IN1],
+                                        in2: Manifest[IN2], in3: Manifest[IN3]): LocalMethod =
+    LocalMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3)))
+
   def param[TYPE](name: String)(implicit typ: Manifest[TYPE]): Parameter = Parameter(typeRef(typ), name)
 
   def param(name: String, typeReference: TypeReference): Parameter = Parameter(typeReference, name)
@@ -779,9 +827,18 @@ object IntermediateRepresentation {
              params: IntermediateRepresentation*): IntermediateRepresentation =
     invoke(Load(ownerVar, method.owner), method, params:_*)
 
+  def invokeLocal(method: LocalMethod, params: IntermediateRepresentation*): IntermediateRepresentation =
+    if (method.returnType == org.neo4j.codegen.TypeReference.VOID)
+      InvokeLocalSideEffect(method, params)
+    else
+      InvokeLocal(method, params)
+
   def invokeSideEffect(owner: IntermediateRepresentation, method: Method,
                        params: IntermediateRepresentation*): IntermediateRepresentation =
     InvokeSideEffect(owner, method, params)
+
+  def invokeLocalSideEffect(method: LocalMethod, params: IntermediateRepresentation*): IntermediateRepresentation =
+    InvokeLocalSideEffect(method, params)
 
   def invokeSideEffect(ownerVar: String, method: Method,
                        params: IntermediateRepresentation*): IntermediateRepresentation =
