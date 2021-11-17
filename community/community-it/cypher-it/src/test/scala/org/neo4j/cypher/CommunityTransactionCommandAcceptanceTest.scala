@@ -37,6 +37,7 @@ import org.neo4j.test.DoubleLatch
 import org.neo4j.test.NamedFunction
 import org.neo4j.test.extension.Threading
 import org.neo4j.values.storable.DurationValue
+import org.scalatest.concurrent.Eventually.eventually
 
 import java.util
 
@@ -59,20 +60,24 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
 
-  // SHOW TRANSACTIONS
+  // SHOW TRANSACTIONS (don't test exact id as it might change)
 
   test("Should show current transaction") {
+    // GIVEN
+    waitForNoTransactions()
+
     // WHEN
     val result = execute("SHOW TRANSACTIONS").toList
 
     // THEN
     result should have size 1
-    assertCorrectDefaultMap(result.head, "neo4j-transaction-3", "", "SHOW TRANSACTIONS")
+    assertCorrectDefaultMap(result.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS")
   }
 
   test("Should show all transactions") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
@@ -86,13 +91,14 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // THEN
     result should have size 2
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-3", username, unwindQuery)
-    assertCorrectDefaultMap(sortedRes(1), "neo4j-transaction-4", "", "SHOW TRANSACTIONS")
+    assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-", username, unwindQuery)
+    assertCorrectDefaultMap(sortedRes(1), "neo4j-transaction-", "", "SHOW TRANSACTIONS")
   }
 
   test("Should show system transactions") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
     tx.execute(username, password, threading, "SHOW DATABASES")
@@ -106,8 +112,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // THEN
     result should have size 2
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-3", "", "SHOW TRANSACTIONS")
-    assertCorrectDefaultMap(sortedRes(1), "system-transaction-", username, "SHOW DATABASES", database = SYSTEM_DATABASE_NAME) // the id number will change each time someone updates system database set-up
+    assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS")
+    assertCorrectDefaultMap(sortedRes(1), "system-transaction-", username, "SHOW DATABASES", database = SYSTEM_DATABASE_NAME)
   }
 
   test("Should only show given transactions") {
@@ -135,14 +141,16 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS 'neo4j-transaction-4', 'neo4j-transaction-3', 'neo4j-transaction-4'").toList
+    val user1Id = getTransactionIdExecutingQuery(user1Query)
+    val user2Id = getTransactionIdExecutingQuery(user2Query)
+    val result = execute(s"SHOW TRANSACTIONS '$user2Id', '$user1Id', '$user2Id'").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectDefaultMapUnknownOrder(sortedRes.head, "neo4j-transaction-3", List((username, user1Query), (username2, user2Query)))
-    assertCorrectDefaultMapUnknownOrder(sortedRes(1), "neo4j-transaction-4", List((username2, user2Query), (username, user1Query)))
+    val sortedRes = result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
+    assertCorrectDefaultMap(sortedRes.head, user2Id, username2, user2Query)
+    assertCorrectDefaultMap(sortedRes(1), user1Id, username, user1Query)
   }
 
   test("Should return nothing when showing non-existing transaction") {
@@ -155,6 +163,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show current transaction on system database") {
     // GIVEN
+    waitForNoTransactions()
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // WHEN
@@ -162,12 +171,13 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should have size 1
-    assertCorrectDefaultMap(result.head, "system-transaction-", "", "SHOW TRANSACTIONS", database = SYSTEM_DATABASE_NAME) // the id number will change each time someone updates system database set-up
+    assertCorrectDefaultMap(result.head, "system-transaction-", "", "SHOW TRANSACTIONS", database = SYSTEM_DATABASE_NAME)
   }
 
   test("Should show all transactions on system database") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
@@ -182,8 +192,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // THEN
     result should have size 2
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-3", username, unwindQuery)
-    assertCorrectDefaultMap(sortedRes(1), "system-transaction-", "", "SHOW TRANSACTIONS", database = SYSTEM_DATABASE_NAME) // the id number will change each time someone updates system database set-up
+    assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-", username, unwindQuery)
+    assertCorrectDefaultMap(sortedRes(1), "system-transaction-", "", "SHOW TRANSACTIONS", database = SYSTEM_DATABASE_NAME)
   }
 
   test("Should only show given transactions on system database") {
@@ -193,15 +203,17 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
+    val user1Id = getTransactionIdExecutingQuery(user1Query)
+    val user2Id = getTransactionIdExecutingQuery(user2Query)
     selectDatabase(SYSTEM_DATABASE_NAME)
-    val result = execute("SHOW TRANSACTIONS 'neo4j-transaction-4', 'neo4j-transaction-3'").toList
+    val result = execute(s"SHOW TRANSACTIONS '$user2Id', '$user1Id'").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectDefaultMapUnknownOrder(sortedRes.head, "neo4j-transaction-3", List((username, user1Query), (username2, user2Query)))
-    assertCorrectDefaultMapUnknownOrder(sortedRes(1), "neo4j-transaction-4", List((username2, user2Query), (username, user1Query)))
+    val sortedRes = result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
+    assertCorrectDefaultMap(sortedRes.head, user2Id, username2, user2Query)
+    assertCorrectDefaultMap(sortedRes(1), user1Id, username, user1Query)
   }
 
   test("Should show given transactions with string parameter") {
@@ -258,11 +270,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should have size 4
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectDefaultMapUnknownOrder(sortedRes.head, "neo4j-transaction-3", List((username, user1Query), (username2, user2Query1)))
-    assertCorrectDefaultMapUnknownOrder(sortedRes(1), "neo4j-transaction-4", List((username2, user2Query1), (username, user1Query)))
-    assertCorrectDefaultMap(sortedRes(2), "neo4j-transaction-5", showUser, "SHOW TRANSACTIONS")
-    assertCorrectDefaultMap(sortedRes(3), "system-transaction-", username2, user2Query2, database = SYSTEM_DATABASE_NAME) // the id number will change each time someone updates system database set-up
+    val sortedRes = result.sortBy(m => m("currentQuery").asInstanceOf[String]) // To get stable order to assert correct result
+    assertCorrectDefaultMap(sortedRes.head, "neo4j-transaction-", username2, user2Query1)
+    assertCorrectDefaultMap(sortedRes(1), "system-transaction-", username2, user2Query2, database = SYSTEM_DATABASE_NAME)
+    assertCorrectDefaultMap(sortedRes(2), "neo4j-transaction-", showUser, "SHOW TRANSACTIONS")
+    assertCorrectDefaultMap(sortedRes(3), "neo4j-transaction-", username, user1Query)
   }
 
   // yield/where/return tests
@@ -279,22 +291,24 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should have size 1
-    assertCorrectDefaultMap(result.head, "neo4j-transaction-", username2, user2Query) // should be transaction 3 or 4, but that seems flaky so lets not assert on it
+    assertCorrectDefaultMap(result.head, "neo4j-transaction-", username2, user2Query)
   }
 
   test("Should show given transactions with WHERE") {
     // GIVEN
     val latch = new DoubleLatch(3)
-    val (_, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
+    val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
     latch.startAndWaitForAllToStart()
 
     // WHEN
-    val result = execute(s"SHOW TRANSACTIONS 'neo4j-transaction-4', 'neo4j-transaction-3' WHERE username = '$username2'").toList
+    val user1Id = getTransactionIdExecutingQuery(user1Query)
+    val user2Id = getTransactionIdExecutingQuery(user2Query)
+    val result = execute(s"SHOW TRANSACTIONS '$user2Id', '$user1Id' WHERE username = '$username2'").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 1
-    assertCorrectDefaultMap(result.head, "neo4j-transaction-", username2, user2Query) // should be transaction 3 or 4, but that seems flaky so lets not assert on it
+    assertCorrectDefaultMap(result.head, "neo4j-transaction-", username2, user2Query)
   }
 
   test("Should show given transactions filtered with WHERE on transactionId") {
@@ -307,12 +321,14 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
-    val result = execute(s"SHOW TRANSACTIONS 'neo4j-transaction-3', 'neo4j-transaction-4' WHERE transactionId = 'neo4j-transaction-4' OR transactionId STARTS WITH 'system-transaction-'").toList
+    val user1Id = getTransactionIdExecutingQuery(user1Query)
+    val user2Id = getTransactionIdExecutingQuery(user2Query1)
+    val result = execute(s"SHOW TRANSACTIONS '$user1Id', '$user2Id' WHERE transactionId = '$user2Id' OR transactionId STARTS WITH 'system-transaction-'").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 1
-    assertCorrectDefaultMapUnknownOrder(result.head, "neo4j-transaction-4", List((username2, user2Query1), (username, user1Query))) // can't guarantee that 4 is actually query2 could be query1
+    assertCorrectDefaultMap(result.head, user2Id, username2, user2Query1)
   }
 
   test("should fail to show transactions with WHERE on verbose column") {
@@ -326,17 +342,21 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   }
 
   test("Should show current transaction with YIELD *") {
+    // GIVEN
+    waitForNoTransactions()
+
     // WHEN
     val result = execute("SHOW TRANSACTIONS YIELD *").toList
 
     // THEN
     result should have size 1
-    assertCorrectFullMap(result.head, "neo4j-transaction-3", "", "SHOW TRANSACTIONS YIELD *")
+    assertCorrectFullMap(result.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *")
   }
 
   test("Should show all transactions with YIELD *") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val userQuery = "SHOW DATABASES"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
@@ -351,8 +371,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // THEN
     result should have size 2
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectFullMap(sortedRes.head, "neo4j-transaction-3", "", "SHOW TRANSACTIONS YIELD *")
-    assertCorrectFullMap(sortedRes(1), "system-transaction-", username, userQuery, database = SYSTEM_DATABASE_NAME, planner = "administration", runtime = "system") // the id number will change each time someone updates system database set-up
+    assertCorrectFullMap(sortedRes.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *")
+    assertCorrectFullMap(sortedRes(1), "system-transaction-", username, userQuery, database = SYSTEM_DATABASE_NAME, planner = "administration", runtime = "system")
   }
 
   test("Should show given transactions with YIELD *") {
@@ -362,24 +382,30 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS 'neo4j-transaction-4', 'neo4j-transaction-3', 'neo4j-transaction-3' YIELD *").toList
+    val user1Id = getTransactionIdExecutingQuery(user1Query)
+    val user2Id = getTransactionIdExecutingQuery(user2Query)
+    val result = execute(s"SHOW TRANSACTIONS '$user2Id', '$user1Id', '$user1Id' YIELD *").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectFullMapUnknownOrder(sortedRes.head, "neo4j-transaction-3", List((username, user1Query), (username2, user2Query)))
-    assertCorrectFullMapUnknownOrder(sortedRes(1), "neo4j-transaction-4", List((username2, user2Query), (username, user1Query)))
+    val sortedRes = result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
+    assertCorrectFullMap(sortedRes.head, user2Id, username2, user2Query)
+    assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query)
   }
 
   test("Should show all transactions with specific YIELD") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
     tx.execute(username, password, threading, unwindQuery)
     latch.startAndWaitForAllToStart()
+    val unwindId = getTransactionIdExecutingQuery(unwindQuery)
+    val showIdNumber = unwindId.split("-")(2).toInt + 2
+    val showId = s"neo4j-transaction-$showIdNumber"
 
     // WHEN
     val showQuery = "SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime"
@@ -389,8 +415,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // THEN
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     sortedRes should be(List(
-      Map("transactionId" -> "neo4j-transaction-3", "currentQuery" -> unwindQuery, "runtime" -> "interpreted"),
-      Map("transactionId" -> "neo4j-transaction-4", "currentQuery" -> showQuery, "runtime" -> "interpreted")
+      Map("transactionId" -> unwindId, "currentQuery" -> unwindQuery, "runtime" -> "interpreted"),
+      Map("transactionId" -> showId, "currentQuery" -> showQuery, "runtime" -> "interpreted")
     ))
   }
 
@@ -401,28 +427,31 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS 'neo4j-transaction-4', 'neo4j-transaction-3', 'neo4j-transaction-3' YIELD transactionId, currentQuery, runtime").toList
+    val user1Id = getTransactionIdExecutingQuery(user1Query)
+    val user2Id = getTransactionIdExecutingQuery(user2Query)
+    val result = execute(s"SHOW TRANSACTIONS '$user2Id', '$user1Id', '$user1Id' YIELD transactionId, currentQuery, runtime").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    sortedRes should (be(List(
-      Map("transactionId" -> "neo4j-transaction-3", "currentQuery" -> user1Query, "runtime" -> "interpreted"),
-      Map("transactionId" -> "neo4j-transaction-4", "currentQuery" -> user2Query, "runtime" -> "interpreted")
-    )) or be(List(
-      Map("transactionId" -> "neo4j-transaction-3", "currentQuery" -> user2Query, "runtime" -> "interpreted"),
-      Map("transactionId" -> "neo4j-transaction-4", "currentQuery" -> user1Query, "runtime" -> "interpreted")
-    ))) // transaction id not fully stable, txId3 is either query1 or query2 the other will be txId4
+    sortedRes should be(List(
+      Map("transactionId" -> user1Id, "currentQuery" -> user1Query, "runtime" -> "interpreted"),
+      Map("transactionId" -> user2Id, "currentQuery" -> user2Query, "runtime" -> "interpreted")
+    ).sortBy(m => m("transactionId")))
   }
 
   test("Should show transactions with YIELD and ORDER BY ASC") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
     tx.execute(username, password, threading, unwindQuery)
     latch.startAndWaitForAllToStart()
+    val unwindId = getTransactionIdExecutingQuery(unwindQuery)
+    val showIdNumber = unwindId.split("-")(2).toInt + 2
+    val showId = s"neo4j-transaction-$showIdNumber"
 
     // WHEN
     val result = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId ASC").toList
@@ -430,19 +459,23 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should be(List(
-      Map("transactionId" -> "neo4j-transaction-3", "runtime" -> "interpreted"),
-      Map("transactionId" -> "neo4j-transaction-4", "runtime" -> "interpreted")
+      Map("transactionId" -> unwindId, "runtime" -> "interpreted"),
+      Map("transactionId" -> showId, "runtime" -> "interpreted")
     ))
   }
 
   test("Should show transactions with YIELD and ORDER BY DESC") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
     tx.execute(username, password, threading, unwindQuery)
     latch.startAndWaitForAllToStart()
+    val unwindId = getTransactionIdExecutingQuery(unwindQuery)
+    val showIdNumber = unwindId.split("-")(2).toInt + 2
+    val showId = s"neo4j-transaction-$showIdNumber"
 
     // WHEN
     val result = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId DESC").toList
@@ -450,8 +483,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     result should be(List(
-      Map("transactionId" -> "neo4j-transaction-4", "runtime" -> "interpreted"),
-      Map("transactionId" -> "neo4j-transaction-3", "runtime" -> "interpreted")
+      Map("transactionId" -> showId, "runtime" -> "interpreted"),
+      Map("transactionId" -> unwindId, "runtime" -> "interpreted")
     ))
   }
 
@@ -462,14 +495,16 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
+    val user1Id = getTransactionIdExecutingQuery(user1Query)
+    val user2Id = getTransactionIdExecutingQuery(user2Query)
     val result = execute("SHOW TRANSACTIONS YIELD * WHERE username <> ''").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 2
-    val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    assertCorrectFullMapUnknownOrder(sortedRes.head, "neo4j-transaction-3", List((username, user1Query), (username2, user2Query)))
-    assertCorrectFullMapUnknownOrder(sortedRes(1), "neo4j-transaction-4", List((username2, user2Query), (username, user1Query)))
+    val sortedRes = result.sortBy(m => m("username").asInstanceOf[String]) // To get stable order to assert correct result
+    assertCorrectFullMap(sortedRes.head, user2Id, username2, user2Query)
+    assertCorrectFullMap(sortedRes(1), user1Id, username, user1Query)
   }
 
   test("Should show transactions with specific YIELD and WHERE") {
@@ -477,6 +512,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
     latch.startAndWaitForAllToStart()
+    val user1Id = getTransactionIdExecutingQuery(user1Query)
+    val user2Id = getTransactionIdExecutingQuery(user2Query)
 
     // WHEN
     val result = execute("SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime, username WHERE runtime = 'interpreted' AND username <> ''").toList
@@ -484,13 +521,10 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    sortedRes should (be(List(
-      Map("transactionId" -> "neo4j-transaction-3", "currentQuery" -> user1Query, "username" -> username, "runtime" -> "interpreted"),
-      Map("transactionId" -> "neo4j-transaction-4", "currentQuery" -> user2Query, "username" -> username2, "runtime" -> "interpreted")
-    )) or be(List(
-      Map("transactionId" -> "neo4j-transaction-3", "currentQuery" -> user2Query, "username" -> username2, "runtime" -> "interpreted"),
-      Map("transactionId" -> "neo4j-transaction-4", "currentQuery" -> user1Query, "username" -> username, "runtime" -> "interpreted")
-    ))) // transaction id not fully stable, txId3 is either query1 or query2 the other will be txId4
+    sortedRes should be(List(
+      Map("transactionId" -> user1Id, "currentQuery" -> user1Query, "username" -> username, "runtime" -> "interpreted"),
+      Map("transactionId" -> user2Id, "currentQuery" -> user2Query, "username" -> username2, "runtime" -> "interpreted")
+    ).sortBy(m => m("transactionId")))
   }
 
   test("Should show transactions with YIELD, WHERE and RETURN") {
@@ -498,6 +532,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
     latch.startAndWaitForAllToStart()
+    val user1Id = getTransactionIdExecutingQuery(user1Query)
+    val user2Id = getTransactionIdExecutingQuery(user2Query)
 
     // WHEN
     val result = execute("SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime, username WHERE runtime = 'interpreted' AND username <> '' RETURN transactionId, currentQuery").toList
@@ -505,13 +541,10 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // THEN
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
-    sortedRes should (be(List(
-      Map("transactionId" -> "neo4j-transaction-3", "currentQuery" -> user1Query),
-      Map("transactionId" -> "neo4j-transaction-4", "currentQuery" -> user2Query)
-    )) or be(List(
-      Map("transactionId" -> "neo4j-transaction-3", "currentQuery" -> user2Query),
-      Map("transactionId" -> "neo4j-transaction-4", "currentQuery" -> user1Query)
-    ))) // transaction id not fully stable, txId3 is either query1 or query2 the other will be txId4
+    sortedRes should be(List(
+      Map("transactionId" -> user1Id, "currentQuery" -> user1Query),
+      Map("transactionId" -> user2Id, "currentQuery" -> user2Query)
+    ).sortBy(m => m("transactionId")))
   }
 
   test("Should show transactions with full yield") {
@@ -543,13 +576,18 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // GIVEN
     createUser()
     createUser(username2)
+    waitForNoTransactions()
 
     val latch = new DoubleLatch(3)
     val tx1 = ThreadedTransaction(latch)
-    tx1.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
+    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
+    tx1.execute(username, password, threading, unwindQuery)
     val tx2 = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
     tx2.execute(username2, password, threading, "SHOW DATABASES")
     latch.startAndWaitForAllToStart()
+    val unwindId = getTransactionIdExecutingQuery(unwindQuery)
+    val showIdNumber = unwindId.split("-")(2).toInt + 2
+    val showId = s"neo4j-transaction-$showIdNumber"
 
     // WHEN
     selectDatabase(DEFAULT_DATABASE_NAME)
@@ -562,30 +600,36 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     result should have size 3
     planDescr should includeSomewhere.aPlan("Sort").containingArgument("transactionId DESC")
     planDescr should includeSomewhere.aPlan("Sort").containingArgument("database ASC")
-    assertCorrectMap(resultList.head, "neo4j-transaction-4", DEFAULT_DATABASE_NAME)
-    assertCorrectMap(resultList(1), "neo4j-transaction-3", DEFAULT_DATABASE_NAME)
-    assertCorrectMap(resultList(2), "system-transaction-", SYSTEM_DATABASE_NAME) // the id number will change each time someone updates system database set-up
+    assertCorrectMap(resultList.head, showId, DEFAULT_DATABASE_NAME)
+    assertCorrectMap(resultList(1), unwindId, DEFAULT_DATABASE_NAME)
+    assertCorrectMap(resultList(2), "system-transaction-", SYSTEM_DATABASE_NAME)
   }
 
   test("Should show transactions with aggregation") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
-    tx.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
+    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
+    tx.execute(username, password, threading, unwindQuery)
     latch.startAndWaitForAllToStart()
+    val unwindId = getTransactionIdExecutingQuery(unwindQuery)
+    val showIdNumber = unwindId.split("-")(2).toInt + 2
+    val showId = s"neo4j-transaction-$showIdNumber"
 
     // WHEN
     val result = execute("SHOW TRANSACTIONS YIELD * ORDER BY transactionId RETURN collect(transactionId) AS txIds")
     latch.finishAndWaitForAllToFinish()
 
     // THEN
-    result.toList should be(List(Map("txIds" -> List("neo4j-transaction-3", "neo4j-transaction-4"))))
+    result.toList should be(List(Map("txIds" -> List(unwindId, showId))))
   }
 
   test("Should show transactions with double aggregation") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
     tx.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
@@ -602,6 +646,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show transactions with double aggregation on system database") {
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
     tx.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
@@ -655,6 +700,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // GIVEN
     createUser()
+    waitForNoTransactions()
     val latch = new DoubleLatch(2, true)
     val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
     tx.execute(username, password, threading, s"CREATE USER $username2 SET PASSWORD '$password'")
@@ -864,30 +910,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     resultMap("elapsedTime").isInstanceOf[DurationValue] should be(true)
   }
 
-  /* The transaction id on background transactions sometimes switches order so txId1 is sometimes for query1 and sometimes for query2.
-   * This method checks that it is one of the given username and query combinations to avoid flaky tests.
-   *
-   * Not needed when the transactions are on different databases since they won't get mixed up when asserting the result,
-   * nor for the `SHOW TRANSACTION` transaction as that one is started after the latch and therefore be guaranteed to have the last txId.
-   */
-  private def assertCorrectDefaultMapUnknownOrder(resultMap: Map[String, AnyRef],
-                                                  transactionId: String,
-                                                  potentialUsernameAndQuery: List[(String, String)]) = {
-    resultMap("transactionId").asInstanceOf[String] should startWith(transactionId) // not stable on system database, differs among things between running the test on its own and the whole class
-    resultMap("currentQueryId").asInstanceOf[String] should startWith("query-") // not stable, differs among things between running the test on its own and the whole class
-    potentialUsernameAndQuery should contain(resultMap("username") -> resultMap("currentQuery")) // Expected the actual result to be part of the given list
-
-    // Default values:
-    resultMap("database") should be(DEFAULT_DATABASE_NAME)
-    resultMap("status") should be("Running")
-    resultMap("allocatedBytes") should be(0L)
-    resultMap("connectionId") should be("")
-    resultMap("clientAddress") should be("")
-    // Don't check exact values:
-    resultMap("startTime").isInstanceOf[String] should be(true) // This is a timestamp
-    resultMap("elapsedTime").isInstanceOf[DurationValue] should be(true)
-  }
-
   private def assertCorrectFullMap(resultMap: Map[String, AnyRef],
                                    transactionId: String,
                                    username: String,
@@ -919,39 +941,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     resultMap("idleTime").isInstanceOf[DurationValue] should be(true)
   }
 
-  /* The transaction id on background transactions sometimes switches order so txId1 is sometimes for query1 and sometimes for query2.
-   * This method checks that it is one of the given username and query combinations to avoid flaky tests.
-   *
-   * Not needed when the transactions are on different databases since they won't get mixed up when asserting the result,
-   * nor for the `SHOW TRANSACTION` transaction as that one is started after the latch and therefore be guaranteed to have the last txId.
-   */
-  private def assertCorrectFullMapUnknownOrder(resultMap: Map[String, AnyRef],
-                                               transactionId: String,
-                                               potentialUsernameAndQuery: List[(String, String)]) = {
-    assertCorrectDefaultMapUnknownOrder(resultMap, transactionId, potentialUsernameAndQuery)
-    // Default values:
-    resultMap("planner") should be("idp")
-    resultMap("runtime") should be("interpreted")
-    resultMap("outerTransactionId") should be("")
-    resultMap("parameters") should be(Map())
-    resultMap("indexes") should be(List())
-    resultMap("protocol") should be("embedded")
-    resultMap("metaData") should be(Map())
-    resultMap("requestUri") should be("")
-    resultMap("statusDetails") should be("")
-    resultMap("resourceInformation") should be(Map())
-    resultMap("allocatedDirectBytes") should be(0L)
-    resultMap("initializationStackTrace") should be("")
-    // Don't check exact values:
-    resultMap("estimatedUsedHeapMemory").isInstanceOf[Long] should be(true)
-    resultMap("activeLockCount").isInstanceOf[Long] should be(true)
-    resultMap("pageHits").isInstanceOf[Long] should be(true)
-    resultMap("pageFaults").isInstanceOf[Long] should be(true)
-    resultMap("cpuTime").isInstanceOf[DurationValue] should be(true)
-    resultMap("waitTime").isInstanceOf[DurationValue] should be(true)
-    resultMap("idleTime").isInstanceOf[DurationValue] should be(true)
-  }
-
   /* Sets up one query for _username_ on neo4j.
    * Sets up one query for _username2_ on neo4j.
    *
@@ -960,6 +949,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   private def setupTwoUsersAndOneTransactionEach(latch: DoubleLatch) = {
     createUser()
     createUser(username2)
+    waitForNoTransactions()
 
     val user1Query = "UNWIND [1,2,3] AS x RETURN x"
     val tx1 = ThreadedTransaction(latch)
@@ -1003,6 +993,12 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     } finally {
       tx.close()
     }
+  }
+
+  private def waitForNoTransactions(): Unit = eventually {
+    val res = execute("SHOW TRANSACTIONS")
+    res should have size 1
+    res.columnAs[String]("currentQuery").next should be("SHOW TRANSACTIONS")
   }
 
   case class ThreadedTransaction(latch: DoubleLatch, database: String = DEFAULT_DATABASE_NAME) {
