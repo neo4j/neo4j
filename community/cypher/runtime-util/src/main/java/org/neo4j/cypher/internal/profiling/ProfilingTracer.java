@@ -103,11 +103,11 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
         if ( trackTime )
         {
-            return new TrackingExecutionEvent( clock, statisticProvider, operatorData );
+            return new TrackingExecutionEvent( clock, statisticProvider, operatorData, operatorId.x() );
         }
         else
         {
-            return new ExecutionEvent( statisticProvider, operatorData );
+            return new ExecutionEvent( statisticProvider, operatorData, operatorId.x() );
         }
     }
 
@@ -123,11 +123,13 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         final KernelStatisticProvider statisticProvider;
         long hitCount;
         long rowCount;
+        int planId;
 
-        ExecutionEvent( KernelStatisticProvider statisticProvider, ProfilingTracerData data )
+        ExecutionEvent( KernelStatisticProvider statisticProvider, ProfilingTracerData data, int planId )
         {
             this.statisticProvider = statisticProvider;
             this.data = data;
+            this.planId = planId;
         }
 
         @Override
@@ -177,9 +179,9 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         private long pageCountHitsStart;
         private long pageCountMissesStart;
 
-        TrackingExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, ProfilingTracerData data )
+        TrackingExecutionEvent( Clock clock, KernelStatisticProvider statisticProvider, ProfilingTracerData data, int planId )
         {
-            super( statisticProvider, data );
+            super( statisticProvider, data, planId );
             this.clock = clock;
             this.start = clock.nanoTime();
             this.pageCountHitsStart = statisticProvider.getPageCacheHits();
