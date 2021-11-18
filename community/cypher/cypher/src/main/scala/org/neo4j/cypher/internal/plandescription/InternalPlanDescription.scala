@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.plandescription
 import java.util
 
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
@@ -227,7 +228,12 @@ final case class PlanDescriptionImpl(id: Id,
     val runtimeVersion = arguments.collectFirst {
       case RuntimeVersion(n) => s"Runtime version ${n.toUpperCase}$NL"
     }
-    val prefix = version ++ planner ++ runtime ++ runtimeVersion
+
+    val batchSize = arguments.collectFirst {
+      case BatchSize(n) => s"Batch size $n$NL"
+    }
+
+    val prefix = version ++ planner ++ runtime ++ runtimeVersion ++ batchSize
     s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this, withRawCardinalities)}$NL${renderSummary(this)}$renderSources"
   }
 

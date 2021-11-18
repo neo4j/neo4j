@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
@@ -44,22 +45,24 @@ object PlanDescriptionBuilder {
             providedOrders: ProvidedOrders,
             executionPlan: ExecutionPlan): PlanDescriptionBuilder = {
     // NOTE: We should not keep a reference to the ExecutionPlan in the PlanDescriptionBuilder since it can end up in long-lived caches, e.g. RecentQueryBuffer
+    val batchSize = executionPlan.batchSize
     val runtimeName = executionPlan.runtimeName
     val runtimeMetadata = executionPlan.metadata
     val runtimeOperatorMetadata = executionPlan.operatorMetadata
     val internalPlanDescriptionRewriter = executionPlan.internalPlanDescriptionRewriter
 
     new PlanDescriptionBuilder(logicalPlan: LogicalPlan,
-                               plannerName: PlannerName,
-                               cypherVersion: CypherVersion,
-                               readOnly: Boolean,
-                               effectiveCardinalities: EffectiveCardinalities,
-                               withRawCardinalities: Boolean,
-                               providedOrders: ProvidedOrders,
-                               runtimeName,
-                               runtimeMetadata,
-                               runtimeOperatorMetadata,
-                               internalPlanDescriptionRewriter)
+      plannerName: PlannerName,
+      cypherVersion: CypherVersion,
+      readOnly: Boolean,
+      effectiveCardinalities: EffectiveCardinalities,
+      withRawCardinalities: Boolean,
+      providedOrders: ProvidedOrders,
+      runtimeName,
+      runtimeMetadata,
+      runtimeOperatorMetadata,
+      internalPlanDescriptionRewriter,
+      batchSize)
   }
 }
 
@@ -73,7 +76,8 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              runtimeName: RuntimeName,
                              runtimeMetadata: Seq[Argument],
                              runtimeOperatorMetadata: Id => Seq[Argument],
-                             internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter]) {
+                             internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter],
+                             batchSize: Option[Int]) {
 
   def explain(): InternalPlanDescription = {
     val description =
@@ -82,7 +86,7 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
         .addArgument(Runtime(runtimeName.toTextOutput))
         .addArgument(RuntimeImpl(runtimeName.name))
 
-    runtimeMetadata.foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
+    (runtimeMetadata ++ batchSize.map(BatchSize)).foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
   }
 
   def profile(queryProfile: QueryProfile): InternalPlanDescription = {

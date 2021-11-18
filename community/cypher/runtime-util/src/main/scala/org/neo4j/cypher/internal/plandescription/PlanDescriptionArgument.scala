@@ -111,4 +111,9 @@ object Arguments {
 
     override def name: String = "bytecode:" + className
   }
+
+  case class BatchSize(size: Int) extends Argument {
+
+    override def name: String = "batch-size"
+  }
 }

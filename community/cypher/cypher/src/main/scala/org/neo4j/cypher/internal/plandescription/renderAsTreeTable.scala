@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
@@ -321,6 +322,7 @@ object renderAsTreeTable {
         !x.isInstanceOf[Time] &&
         !x.isInstanceOf[RuntimeImpl] &&
         !x.isInstanceOf[Version] &&
+        !x.isInstanceOf[BatchSize] &&
         !x.isInstanceOf[Details] => PlanDescriptionArgumentSerializer.serialize(x)
     }
   }

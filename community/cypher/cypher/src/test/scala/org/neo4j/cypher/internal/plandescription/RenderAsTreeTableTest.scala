@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
 import org.neo4j.cypher.internal.options.CypherVersion
+import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
@@ -39,6 +40,8 @@ import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.PipelineInfo
 import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
+import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
+import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.details
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.planDescription
@@ -377,12 +380,15 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         |""".stripMargin)
   }
 
-  test("don't render planner in Other") {
+  test("don't render planner/runtime configs in Other") {
 
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      Planner("COST"),
+      Planner("COST"), //should not be rendered
+      RuntimeVersion("5.0"), //should not be rendered
+      BatchSize(123), //should not be rendered
+      Runtime("PIPELINED"), //should not be rendered
       details("`id`"),
       EstimatedRows(1))
 

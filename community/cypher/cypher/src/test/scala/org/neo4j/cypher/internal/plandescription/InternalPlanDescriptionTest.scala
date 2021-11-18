@@ -19,11 +19,16 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
+import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.Rows
+import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
+import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
+import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -86,5 +91,36 @@ class InternalPlanDescriptionTest extends CypherFunSuite {
     val A  = PlanDescriptionImpl(ID, "A" , TwoChildren(B1, B2), Seq.empty, Set())
 
     A.flatten should equal(Seq(A, B1, C1, C2, B2, C3, C4))
+  }
+
+  test("toString should render nicely") {
+    val version = "5.0"
+    val planDescription = PlanDescriptionImpl(ID, "Leaf", NoChildren, Seq.empty, Set())
+      .addArgument(Version(version))
+      .addArgument(Planner("COST"))
+      .addArgument(RuntimeVersion(version))
+      .addArgument(Runtime("PIPELINED"))
+      .addArgument(BatchSize(128))
+
+
+    planDescription.toString should equal(
+      normalizeNewLines(s"""Compiler $version
+       |
+       |Planner COST
+       |
+       |Runtime PIPELINED
+       |
+       |Runtime version $version
+       |
+       |Batch size 128
+       |
+       |+----------+
+       || Operator |
+       |+----------+
+       || +Leaf    |
+       |+----------+
+       |
+       |Total database accesses: ?
+       |""".stripMargin))
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
@@ -64,6 +65,7 @@ object PlanDescriptionArgumentSerializer {
       case SourceCode(_, sourceCode) => sourceCode
       case ByteCode(_, byteCode) => byteCode
       case RuntimeImpl(runtimeName) => runtimeName
+      case BatchSize(size) => Int.box(size)
       case PipelineInfo(pipelineId, fused) =>
         val fusion = if (fused) "Fused in" else "In"
         s"$fusion Pipeline $pipelineId"

@@ -59,6 +59,8 @@ abstract class ExecutionPlan {
 
   def rewrittenPlan: Option[LogicalPlan] = None
 
+  def batchSize: Option[Int] = None
+
   def internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter] = None
 }
 
