@@ -22,6 +22,7 @@ package org.neo4j.internal.collector
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
+import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.helpers.Neo4jJavaCCParserWithFallback
@@ -42,8 +43,8 @@ object DataCollectorMatchers {
 
   private val preParser = new PreParser(
     CypherConfiguration.fromConfig(Config.defaults()),
-    0,
-    TestExecutorCaffeineCacheFactory)
+    new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 0),
+  )
 
   /**
    * Matches a ZonedDateTime if it occurs between (inclusive) to given points in time.

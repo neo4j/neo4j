@@ -25,7 +25,10 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
+import org.neo4j.cypher.internal.LastCommittedTxIdProvider;
+import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory$;
+import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -37,6 +40,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.time.Clocks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -70,7 +74,7 @@ class SnapshotExecutionEngineTest
         versionContext = mock( VersionContext.class );
         statistics = mock( QueryStatistics.class );
 
-        executionEngine = new SnapshotExecutionEngine( new GraphDatabaseCypherService( db ), config, TestExecutorCaffeineCacheFactory$.MODULE$,
+        executionEngine = new SnapshotExecutionEngine( new GraphDatabaseCypherService( db ), config, mock( CypherQueryCaches.class ),
                 NullLogProvider.getInstance(), mock( CompilerFactory.class ) );
         when( transactionalContext.kernelTransaction().cursorContext() ).thenReturn( new CursorContext( NULL, versionContext ) );
         when( transactionalContext.statement() ).thenReturn( kernelStatement );

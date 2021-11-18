@@ -31,7 +31,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.QueryCache.CacheKey;
-import org.neo4j.cypher.internal.planning.CypherCacheHitMonitor;
+import org.neo4j.cypher.internal.QueryCacheTracer;
+import org.neo4j.cypher.internal.cache.CypherQueryCaches;
+import org.neo4j.cypher.internal.cache.CypherQueryCaches$;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -68,12 +70,17 @@ public class QueryInvalidationIT
                .setConfig( cypher_min_replan_interval, Duration.ofSeconds( 1 ) );
     }
 
+    void addMonitorListener( TestMonitor monitor )
+    {
+        monitors.addMonitorListener( monitor, CypherQueryCaches.ExecutableQueryCache$.MODULE$.monitorTag() );
+    }
+
     @Test
     void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception
     {
         // GIVEN
         TestMonitor monitor = new TestMonitor();
-        monitors.addMonitorListener( monitor );
+        addMonitorListener( monitor );
         // - setup schema -
         createIndex();
         // - execute the query without the existence data -
@@ -105,7 +112,7 @@ public class QueryInvalidationIT
     {
         // GIVEN
         TestMonitor monitor = new TestMonitor();
-        monitors.addMonitorListener( monitor );
+        addMonitorListener( monitor );
         // - setup schema -
         createIndex();
         // - execute the query without the existence data -
@@ -158,7 +165,7 @@ public class QueryInvalidationIT
         long replanInterval = config.get( cypher_min_replan_interval ).toMillis();
 
         TestMonitor monitor = new TestMonitor();
-        monitors.addMonitorListener( monitor );
+        addMonitorListener( monitor );
         // - setup schema -
         createIndex();
         //create some data
@@ -258,7 +265,7 @@ public class QueryInvalidationIT
         return ThreadLocalRandom.current().nextInt( max );
     }
 
-    private static class TestMonitor implements CypherCacheHitMonitor<CacheKey<String>>
+    private static class TestMonitor implements QueryCacheTracer<String>
     {
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
@@ -267,35 +274,34 @@ public class QueryInvalidationIT
         private final AtomicLong waitTime = new AtomicLong();
 
         @Override
-        public void cacheHit( CacheKey<String> key )
+        public void queryCacheHit( CacheKey<String> key, String metaData )
         {
             hits.incrementAndGet();
         }
 
         @Override
-        public void cacheMiss( CacheKey<String> key )
+        public void queryCacheMiss( CacheKey<String> key, String metaData )
         {
             misses.incrementAndGet();
         }
 
         @Override
-        public void cacheDiscard( CacheKey<String> key, String ignored, int secondsSinceReplan,
-                                  Option<String> maybeReason )
+        public void queryCompile( CacheKey<String> stringCacheKey, String metaData )
+        {
+            compilations.incrementAndGet();
+        }
+
+        @Override
+        public void queryCompileWithExpressionCodeGen( CacheKey<String> stringCacheKey, String metaData )
+        {
+            compilations.incrementAndGet();
+        }
+
+        @Override
+        public void queryCacheStale( CacheKey<String> stringCacheKey, int secondsSincePlan, String metaData, Option<String> maybeReason )
         {
             discards.incrementAndGet();
-            waitTime.addAndGet( secondsSinceReplan );
-        }
-
-        @Override
-        public void cacheCompile( CacheKey<String> key )
-        {
-            compilations.incrementAndGet();
-        }
-
-        @Override
-        public void cacheCompileWithExpressionCodeGen( CacheKey<String> key )
-        {
-            compilations.incrementAndGet();
+            waitTime.addAndGet( secondsSincePlan );
         }
 
         @Override

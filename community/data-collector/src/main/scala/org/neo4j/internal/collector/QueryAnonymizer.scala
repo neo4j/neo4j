@@ -20,11 +20,13 @@
 package org.neo4j.internal.collector
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
+import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.helpers.Neo4jJavaCCParserWithFallback
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -50,8 +52,10 @@ case class PlainText(valueMapper: ValueMapper.JavaMapper) extends QueryAnonymize
 object IdAnonymizer {
   private val preParser = new PreParser(
     CypherConfiguration.fromConfig(Config.defaults()),
-    0,
-    new ExecutorBasedCaffeineCacheFactory((_:Runnable).run()))
+    new LFUCache[String, PreParsedQuery](
+      cacheFactory = new ExecutorBasedCaffeineCacheFactory((_: Runnable).run()),
+      size = 0),
+    )
 }
 
 case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {

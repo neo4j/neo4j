@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
@@ -35,8 +36,7 @@ class InputQueryTest extends CypherFunSuite {
   private val preParser =
     new PreParser(
       CypherConfiguration.fromConfig(Config.defaults()),
-      0,
-      TestExecutorCaffeineCacheFactory)
+      new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 0))
 
   private def parser =
     CompilationPhases.parsing(ParsingConfig())

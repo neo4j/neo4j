@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import com.github.benmanes.caffeine.cache.Cache
+import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.NOT_PRESENT
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
@@ -35,40 +36,46 @@ import org.neo4j.values.virtual.MapValue
 
 /**
  * Tracer for cache activity.
+ * Default implementations do nothing.
  */
 trait CacheTracer[QUERY_KEY] {
   /**
    * The item was found in the cache and was not stale.
    */
-  def queryCacheHit(queryKey: QUERY_KEY, metaData: String): Unit
+  def queryCacheHit(queryKey: QUERY_KEY, metaData: String): Unit = ()
 
   /**
    * The item was not found in the cache or was stale, or a miss was forced by replan=force.
    */
-  def queryCacheMiss(queryKey: QUERY_KEY, metaData: String): Unit
+  def queryCacheMiss(queryKey: QUERY_KEY, metaData: String): Unit = ()
 
   /**
    * The compiler was invoked to compile a key to a query, avoiding expression code generation.
    */
-  def queryCompile(queryKey: QUERY_KEY, metaData: String): Unit
+  def queryCompile(queryKey: QUERY_KEY, metaData: String): Unit = ()
 
   /**
    * The compiler was invoked to compile a key to a query, requesting expression code generation.
    */
-  def queryCompileWithExpressionCodeGen(queryKey: QUERY_KEY, metaData: String): Unit
+  def queryCompileWithExpressionCodeGen(queryKey: QUERY_KEY, metaData: String): Unit = ()
 
   /**
    * The item was found in the cache but has become stale.
    * @param secondsSincePlan how long the last replan was ago
    * @param maybeReason maybe a reason clarifying why the item was stale.
    */
-  def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit
+  def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit = ()
 
   /**
    * The query cache was flushed.
    */
-  def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit
+  def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = ()
 }
+
+/**
+ * For tracing when the key is CacheKey[T]
+ */
+trait QueryCacheTracer[InnerKey] extends CacheTracer[CacheKey[InnerKey]]
 
 /**
  * A compiler with expression code generation capabilities.
@@ -123,14 +130,12 @@ trait PlanStalenessCaller[EXECUTABLE_QUERY] {
  * @param stalenessCaller Decided whether CachedExecutionPlans are stale
  * @param tracer Traces cache activity
  */
-
 class QueryCache[QUERY_KEY <: AnyRef,
                  EXECUTABLE_QUERY <: CacheabilityInfo](
                                                        val cacheFactory: CaffeineCacheFactory,
                                                        val maximumSize: Int,
                                                        val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY],
                                                        val tracer: CacheTracer[QUERY_KEY]) {
-
 
   private val inner: Cache[QUERY_KEY, CachedValue] = cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize)
 

@@ -26,9 +26,8 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
-import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor;
 import org.neo4j.cypher.internal.FullyParsedQuery;
-import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
+import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
@@ -62,11 +61,11 @@ public class ExecutionEngine implements QueryExecutionEngine
     /**
      * Creates an execution engine around the given graph database
      */
-    public ExecutionEngine( GraphDatabaseQueryService queryService, CaffeineCacheFactory cacheFactory, LogProvider logProvider,
+    public ExecutionEngine( GraphDatabaseQueryService queryService, CypherQueryCaches queryCaches, LogProvider logProvider,
                             CompilerFactory compilerFactory )
     {
         cypherExecutionEngine =
-                makeExecutionEngine( queryService, cacheFactory, logProvider, new CompilerLibrary( compilerFactory, this::getCypherExecutionEngine ) );
+                makeExecutionEngine( queryService, queryCaches, logProvider, new CompilerLibrary( compilerFactory, this::getCypherExecutionEngine ) );
     }
 
     /**
@@ -86,12 +85,11 @@ public class ExecutionEngine implements QueryExecutionEngine
         return cypherExecutionEngine;
     }
 
-    protected static org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine( GraphDatabaseQueryService queryService, CaffeineCacheFactory cacheFactory,
+    protected static org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine( GraphDatabaseQueryService queryService, CypherQueryCaches queryCaches,
             LogProvider logProvider, CompilerLibrary compilerLibrary )
     {
         DependencyResolver resolver = queryService.getDependencyResolver();
         Monitors monitors = resolver.resolveDependency( Monitors.class );
-        MonitoringCacheTracer cacheTracer = new MonitoringCacheTracer( monitors.newMonitor( ExecutionEngineQueryCacheMonitor.class ) );
         Config config = resolver.resolveDependency( Config.class );
         CypherConfiguration cypherConfiguration = CypherConfiguration.fromConfig( config );
         CompilationTracer tracer =
@@ -99,10 +97,9 @@ public class ExecutionEngine implements QueryExecutionEngine
         return new org.neo4j.cypher.internal.ExecutionEngine( queryService,
                 monitors,
                 tracer,
-                cacheTracer,
                 cypherConfiguration,
                 compilerLibrary,
-                cacheFactory,
+                queryCaches,
                 logProvider,
                 Clock.systemUTC() );
     }

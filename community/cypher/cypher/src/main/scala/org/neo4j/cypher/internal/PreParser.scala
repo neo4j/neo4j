@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTExceptionFactory
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -45,23 +46,18 @@ import scala.util.matching.Regex
  * into
  *
  * PreParsedQuery(
- * statement: 'MATCH (n) RETURN n'
- * options: QueryOptions(
- * planner: 'cost'
- * runtime: 'slotted'
- * version: '3.5'
- * )
+ *   statement: 'MATCH (n) RETURN n'
+ *   options: QueryOptions(
+ *     planner: 'cost'
+ *     runtime: 'slotted'
+ *     version: '3.5'
+ *   )
  * )
  */
 class PreParser(
   configuration: CypherConfiguration,
-  planCacheSize: Int,
-  cacheFactory: CaffeineCacheFactory) {
-
-  def this(configuration: CypherConfiguration, cacheFactory: CaffeineCacheFactory) =
-    this(configuration, configuration.queryCacheSize, cacheFactory)
-
-  private val preParsedQueries = new LFUCache[String, PreParsedQuery](cacheFactory, planCacheSize)
+  preParserCache: LFUCache[String, PreParsedQuery],
+) {
 
   /**
    * Clear the pre-parser query cache.
@@ -69,7 +65,7 @@ class PreParser(
    * @return the number of entries cleared
    */
   def clearCache(): Long = {
-    preParsedQueries.clear()
+    preParserCache.clear()
   }
 
   /**
@@ -86,7 +82,7 @@ class PreParser(
     val preParsedQuery = if (couldContainSensitiveFields) { // This is potentially any outer query running on the system database
       actuallyPreParse(queryText)
     } else {
-      preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
+      preParserCache.computeIfAbsent(queryText, actuallyPreParse(queryText))
     }
     if (profile) {
       preParsedQuery.copy(options = preParsedQuery.options.withExecutionMode(CypherExecutionMode.profile))

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
@@ -41,8 +42,7 @@ class PreParserTest extends CypherFunSuite {
 
   private def preParserWith(settings: (Setting[_], AnyRef)*) = new PreParser(
     CypherConfiguration.fromConfig(Config.defaults(settings.toMap.asJava)),
-    0,
-    TestExecutorCaffeineCacheFactory)
+    new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 0))
 
   private val preParser = preParserWith()
 

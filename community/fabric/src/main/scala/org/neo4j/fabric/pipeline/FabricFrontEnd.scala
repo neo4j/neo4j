@@ -69,9 +69,10 @@ case class FabricFrontEnd(
 
   object preParsing {
 
+    // TODO: use CypherQueryCaches
     private val preParser = new PreParser(
       cypherConfig,
-      cacheFactory
+      ???
     )
 
     def executionType(options: QueryOptions, inFabricContext: Boolean): FabricPlan.ExecutionType = options.queryOptions.executionMode match {

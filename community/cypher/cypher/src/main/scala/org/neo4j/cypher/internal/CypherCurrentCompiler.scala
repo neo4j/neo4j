@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.ExecutionPlanCacheTracer.NO_TRACING
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
-import org.neo4j.cypher.internal.cache.LFUCache
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCache.ExecutionPlanCacheKey
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributesCacheKey
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.planning.LogicalPlanResult
@@ -86,20 +85,6 @@ import org.neo4j.values.virtual.MapValue
 import java.util.function.Supplier
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
-case class ExecutionPlanCacheKey(runtimeKey: String, logicalPlan: LogicalPlan, planningAttributesCacheKey: PlanningAttributesCacheKey)
-
-trait ExecutionPlanCacheTracer {
-  def cacheHit(key: ExecutionPlanCacheKey): Unit
-  def cacheMiss(key: ExecutionPlanCacheKey): Unit
-}
-
-object ExecutionPlanCacheTracer {
-  val NO_TRACING: ExecutionPlanCacheTracer = new ExecutionPlanCacheTracer {
-    override def cacheHit(key: ExecutionPlanCacheKey): Unit = {}
-    override def cacheMiss(key: ExecutionPlanCacheKey): Unit = {}
-  }
-}
-
 /**
  * Composite [[Compiler]], which uses a [[CypherPlanner]] and [[CypherRuntime]] to compile
  * a query into a [[ExecutableQuery]].
@@ -113,21 +98,9 @@ object ExecutionPlanCacheTracer {
 case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlanner,
                                                             runtime: CypherRuntime[CONTEXT],
                                                             contextManager: RuntimeContextManager[CONTEXT],
-                                                            kernelMonitors: Monitors
+                                                            kernelMonitors: Monitors,
+                                                            queryCaches: CypherQueryCaches,
                                                            ) extends org.neo4j.cypher.internal.Compiler {
-
-  private val cacheTracer =
-    if (contextManager.config.enableMonitors) {
-      kernelMonitors.newMonitor(classOf[ExecutionPlanCacheTracer], "cypher")
-    } else {
-      NO_TRACING
-    }
-
-  private val executionPlanCache = contextManager.config.executionPlanCacheSize match {
-    case 0 => None
-    case -1 => Some(new LFUCache[ExecutionPlanCacheKey, (ExecutionPlan, PlanningAttributes)](planner.cacheFactory, planner.config.queryCacheSize))
-    case executionPlanCacheSize => Some(new LFUCache[ExecutionPlanCacheKey, (ExecutionPlan, PlanningAttributes)](planner.cacheFactory, executionPlanCacheSize))
-  }
 
   /**
    * Compile [[InputQuery]] into [[ExecutableQuery]].
@@ -158,18 +131,12 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan = planState.logicalPlan
     val queryType = getQueryType(planState)
-    val (executionPlan, attributes) = executionPlanCache match {
-      case Some(ePlanCache) if logicalPlanResult.shouldBeCached =>
-        val cacheKey = ExecutionPlanCacheKey(query.options.runtimeCacheKey, logicalPlan, planState.planningAttributes.cacheKey)
-        var hit = true
-        val result = ePlanCache.computeIfAbsent(cacheKey, {
-          hit = false
-          computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
-        })
-        if (hit) cacheTracer.cacheHit(cacheKey) else cacheTracer.cacheMiss(cacheKey)
-        result
-      case _ => computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
-    }
+    val (executionPlan, attributes) =
+      queryCaches.executionPlanCache.computeIfAbsent(
+        cacheWhen = logicalPlanResult.shouldBeCached,
+        key = ExecutionPlanCacheKey(query.options.runtimeCacheKey, logicalPlan, planState.planningAttributes.cacheKey),
+        compute = computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType),
+      )
 
     new CypherExecutableQuery(
       logicalPlan,
@@ -457,8 +424,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
    * @return the number of entries that were cleared in any cache
    */
   def clearCaches(): Long = {
-    Math.max(planner.clearCaches(), executionPlanCache.map(_.clear()).getOrElse(0L))
+    // TODO: global clear on queryCaches?
+    Math.max(planner.clearCaches(), queryCaches.executionPlanCache.clear())
   }
 
-  def clearExecutionPlanCache(): Unit = executionPlanCache.foreach(_.clear())
+  def clearExecutionPlanCache(): Unit = queryCaches.executionPlanCache.clear()
 }

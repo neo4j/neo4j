@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
@@ -40,10 +41,10 @@ import org.neo4j.monitoring
  */
 class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
                                kernelMonitors: monitoring.Monitors,
-                               cacheFactory: CaffeineCacheFactory,
                                logProvider: LogProvider,
                                plannerConfig: CypherPlannerConfiguration,
-                               runtimeConfig: CypherRuntimeConfiguration
+                               runtimeConfig: CypherRuntimeConfiguration,
+                               queryCaches: CypherQueryCaches,
                               ) extends CompilerFactory {
 
   private val log: Log = logProvider.getLog(getClass)
@@ -68,10 +69,9 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
         MasterCompiler.CLOCK,
         kernelMonitors,
         log,
-        cacheFactory,
+        queryCaches,
         cypherPlanner,
         cypherUpdateStrategy,
-        LastCommittedTxIdProvider(graph),
         compatibilityMode)
 
     val runtime = if (plannerConfig.planSystemCommands)
@@ -86,6 +86,8 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
       planner,
       runtime,
       CommunityRuntimeContextManager(log, runtimeConfig),
-      kernelMonitors)
+      kernelMonitors,
+      queryCaches,
+    )
   }
 }

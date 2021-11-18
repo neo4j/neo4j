@@ -20,13 +20,11 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.QueryCache.CacheKey
-import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
-import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherReplanOption
-import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.tracing.CompilationTracer
@@ -49,21 +47,15 @@ import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
 /**
- * See comment in MonitoringCacheTracer for justification of the existence of this type.
- */
-trait ExecutionEngineQueryCacheMonitor extends CypherCacheMonitor[CacheKey[String]]
-
-/**
  * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
  * operation. Please make sure this will be constructed only once and properly reused.
  */
 class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val kernelMonitors: Monitors,
                       val tracer: CompilationTracer,
-                      val cacheTracer: CacheTracer[CacheKey[String]],
                       val config: CypherConfiguration,
                       val compilerLibrary: CompilerLibrary,
-                      val cacheFactory: CaffeineCacheFactory,
+                      val queryCaches: CypherQueryCaches,
                       val logProvider: LogProvider,
                       val clock: Clock = Clock.systemUTC() ) {
 
@@ -72,29 +64,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // HELPER OBJECTS
   private val defaultQueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  private val preParser = new PreParser(config, cacheFactory)
-  private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
-  private def planReusabilitiy(executableQuery: ExecutableQuery,
-                               transactionalContext: TransactionalContext): ReusabilityState =
-    executableQuery.reusabilityState(lastCommittedTxIdProvider, transactionalContext)
+  private val preParser = new PreParser(config, queryCaches.preParserCache)
 
-  // Log on stale query discard from query cache
-  private val log = logProvider.getLog( getClass )
-  kernelMonitors.addMonitorListener( new ExecutionEngineQueryCacheMonitor {
-    override def cacheDiscard(ignored: CacheKey[String], queryId: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
-      log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds${maybeReason.fold("")(r => s". Reason: $r")}. Query id: $queryId")
-    }
-  })
-
-  private val planStalenessCaller =
-    new DefaultPlanStalenessCaller[ExecutableQuery](clock,
-      StatsDivergenceCalculator.divergenceCalculatorFor(config.statsDivergenceCalculator),
-      lastCommittedTxIdProvider,
-      planReusabilitiy,
-      log)
-
-  private val queryCache: QueryCache[CacheKey[String], ExecutableQuery] =
-    new QueryCache[CacheKey[String], ExecutableQuery](cacheFactory, config.queryCacheSize, planStalenessCaller, cacheTracer)
+  private val queryCache: QueryCache[CacheKey[String], ExecutableQuery] = queryCaches.executableQueryCache
 
   private val masterCompiler: MasterCompiler = new MasterCompiler(compilerLibrary)
 

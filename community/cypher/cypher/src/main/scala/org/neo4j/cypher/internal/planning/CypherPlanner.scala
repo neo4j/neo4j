@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.planning
 
 import org.neo4j.cypher.internal.AdministrationCommandRuntime
-import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.CompilerWithExpressionCodeGenOption
 import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.CypherRuntime
@@ -32,13 +31,12 @@ import org.neo4j.cypher.internal.PlanFingerprintReference
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.CacheKey
-import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.SchemaCommandRuntime
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
-import org.neo4j.cypher.internal.cache.LFUCache
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache.CacheableLogicalPlan
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.CypherPlannerFactory
@@ -153,45 +151,22 @@ object CypherPlanner {
 
 }
 
-case class ParsedQueriesCacheKey(key: String, parameterTypes: ParameterTypeMap)
-
-object ParsedQueriesCacheKey {
-  def key(preParsedQuery: PreParsedQuery, params: MapValue): ParsedQueriesCacheKey =
-    ParsedQueriesCacheKey(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
-}
-
 /**
  * Cypher planner, which either parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]] or just plans [[FullyParsedQuery]].
- *
- * @param lastCommittedTxIdProvider Last committed transaction id provider used to compute logical plan staleness
  */
 case class CypherPlanner(config: CypherPlannerConfiguration,
                          clock: Clock,
                          kernelMonitors: monitoring.Monitors,
                          log: Log,
-                         cacheFactory: CaffeineCacheFactory,
+                         queryCaches: CypherQueryCaches,
                          plannerOption: CypherPlannerOption,
                          updateStrategy: CypherUpdateStrategy,
-                         lastCommittedTxIdProvider: () => Long,
                          compatibilityMode: CypherCompatibilityVersion
     ) {
 
-  private val parsedQueries = new LFUCache[ParsedQueriesCacheKey, BaseState](cacheFactory, config.queryCacheSize)
+  private val caches = new queryCaches.CypherPlannerCaches()
 
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
-
-  private val cacheTracer: CacheTracer[CacheKey[Statement]] = monitors.newMonitor[CacheTracer[CacheKey[Statement]]]("cypher")
-
-  private val planCache: AstLogicalPlanCache[Statement] =
-    new AstLogicalPlanCache(cacheFactory,
-      config.queryCacheSize,
-      cacheTracer,
-      clock,
-      config.statsDivergenceCalculator,
-      lastCommittedTxIdProvider,
-      log)
-
-  monitors.addMonitorListener(planCache.logStalePlanRemovalMonitor(log), "cypher")
 
   private val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
     case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
@@ -209,7 +184,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
    * @return the number of entries that were cleared
    */
   def clearCaches(): Long = {
-    Math.max(parsedQueries.clear(), planCache.clear())
+    Math.max(caches.astCache.clear(), caches.logicalPlanCache.clear())
   }
 
   /**
@@ -223,8 +198,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                          tracer: CompilationPhaseTracer,
                         ): BaseState = {
 
-    val key = ParsedQueriesCacheKey.key(preParsedQuery, params)
-    parsedQueries.get(key).getOrElse {
+    val key = caches.astCache.key(preParsedQuery, params)
+    caches.astCache.get(key).getOrElse {
       val parsedQuery = planner.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,
@@ -233,7 +208,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         tracer,
         params,
         compatibilityMode)
-      if (!config.planSystemCommands) parsedQueries.put(key, parsedQuery)
+      if (!config.planSystemCommands) caches.astCache.put(key, parsedQuery)
       parsedQuery
     }
   }
@@ -367,7 +342,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
           transactionalContext.kernelTransaction().dataRead().transactionStateHasChanges()
         )
 
-        planCache.computeIfAbsentOrStale(cacheKey,
+        caches.logicalPlanCache.computeIfAbsentOrStale(cacheKey,
           transactionalContext,
           compilerWithExpressionCodeGenOption,
           options.queryOptions.replan,
@@ -434,7 +409,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
   }
 
   private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
-    tcw.getOrCreateFromSchemaState(schemaStateKey, planCache.clear())
+    tcw.getOrCreateFromSchemaState(schemaStateKey, caches.logicalPlanCache.clear())
 
   private def parameterNamesAndValues(statement: Statement): (ArrayBuffer[String], MapValue) = {
     val names = mutable.ArrayBuffer.empty[String]
@@ -485,8 +460,3 @@ trait CypherCacheHitMonitor[T] {
 
   def cacheCompileWithExpressionCodeGen(key: T): Unit = {}
 }
-
-/**
- * See comment in MonitoringCacheTracer for justification of the existence of this type.
- */
-trait CypherCacheMonitor[T] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor

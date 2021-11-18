@@ -31,7 +31,8 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor;
+import org.neo4j.cypher.internal.QueryCache;
+import org.neo4j.cypher.internal.QueryCacheTracer;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -438,15 +439,15 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         return monitorListener;
     }
 
-    private static class ReplanMonitor extends IndexMonitor.MonitorAdapter implements ExecutionEngineQueryCacheMonitor
+    private static class ReplanMonitor extends IndexMonitor.MonitorAdapter implements QueryCacheTracer<String>
     {
         private long numberOfFlushedItems = -1L;
         private IndexSamplingMode samplingMode;
 
         @Override
-        public void cacheFlushDetected( long sizeBeforeFlush )
+        public void queryCacheFlush( long sizeOfCacheBeforeFlush )
         {
-            numberOfFlushedItems = sizeBeforeFlush;
+            numberOfFlushedItems = sizeOfCacheBeforeFlush;
         }
 
         @Override

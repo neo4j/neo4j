@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.planning
 
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
@@ -33,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.JoinDisconnectedQueryGraphComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
@@ -53,6 +56,7 @@ import org.neo4j.cypher.internal.util.helpers.NameDeduplicator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.NullLog
+import org.neo4j.logging.NullLogProvider
 import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 import org.scalatest.Assertion
@@ -139,14 +143,24 @@ class CypherPlannerTest extends CypherFunSuite {
 
     CypherPlanner.customPlanContextCreator = Some((_, _, _) => planContext)
 
+    val monitors = new monitoring.Monitors()
+
+    val caches = new CypherQueryCaches(
+      CypherQueryCaches.Config.fromCypherConfiguration(CypherConfiguration.fromConfig(Config.defaults())),
+      getTx,
+      TestExecutorCaffeineCacheFactory,
+      Clock.systemUTC(),
+      monitors,
+      NullLogProvider.getInstance(),
+    )
+
     val planner = CypherPlanner(CypherPlannerConfiguration.defaults(),
       Clock.systemUTC(),
-      new monitoring.Monitors(),
+      monitors,
       NullLog.getInstance(),
-      TestExecutorCaffeineCacheFactory,
+      caches,
       CypherPlannerOption.default,
       CypherUpdateStrategy.default,
-      getTx,
       compatibilityMode = Compatibility4_3)
 
     val query =

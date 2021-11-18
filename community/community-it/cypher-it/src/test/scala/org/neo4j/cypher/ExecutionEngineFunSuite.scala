@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
-import org.neo4j.cypher.internal.QueryCache.CacheKey
+import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
@@ -117,13 +115,18 @@ case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted
   override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, compilations = $compilations, compilationsWithExpressionCodeGen = $compilationsWithExpressionCodeGen"
 }
 
-class ExecutionEngineCacheCounter() extends ExecutionEngineQueryCacheMonitor with CypherCacheMonitor[CacheKey[String]] {
+class CountingCacheTracer[Key] extends CacheTracer[Key] {
   var counts: CacheCounts = CacheCounts()
-  override def cacheMiss(key: CacheKey[String]): Unit = counts = counts.copy(misses = counts.misses + 1)
-  override def cacheHit(key: CacheKey[String]): Unit = counts = counts.copy(hits = counts.hits + 1)
-  override def cacheFlushDetected(sizeBeforeFlush: Long): Unit = counts = counts.copy(flushes = counts.flushes + 1)
-  override def cacheDiscard(key: CacheKey[String], key2: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit =
+  override def queryCacheHit(queryKey: Key, metaData: String): Unit =
+    counts = counts.copy(hits = counts.hits + 1)
+  override def queryCacheMiss(queryKey: Key, metaData: String): Unit =
+    counts = counts.copy(misses = counts.misses + 1)
+  override def queryCompile(queryKey: Key, metaData: String): Unit =
+    counts = counts.copy(compilations = counts.compilations + 1)
+  override def queryCompileWithExpressionCodeGen(queryKey: Key, metaData: String): Unit =
+    counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
+  override def queryCacheStale(queryKey: Key, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
     counts = counts.copy(evicted = counts.evicted + 1)
-  override def cacheCompile(key: CacheKey[String]): Unit = counts = counts.copy(compilations = counts.compilations + 1)
-  override def cacheCompileWithExpressionCodeGen(key: CacheKey[String]): Unit = counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
+  override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit =
+    counts = counts.copy(flushes = counts.flushes + 1)
 }

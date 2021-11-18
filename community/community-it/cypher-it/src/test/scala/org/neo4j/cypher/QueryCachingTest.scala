@@ -22,11 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CacheTracer
-import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
-import org.neo4j.cypher.internal.ExecutionPlanCacheKey
-import org.neo4j.cypher.internal.ExecutionPlanCacheTracer
-import org.neo4j.cypher.internal.QueryCache.CacheKey
-import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.QueryExecutionException
@@ -883,9 +879,39 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
   def executionPlanCacheKeyHit: String
   def executionPlanCacheKeyMiss: String
 
-  private class LoggingTracer(traceAstLogicalPlanCache: Boolean = true, traceExecutionEngineQueryCache: Boolean = true, traceExecutionPlanCache: Boolean = true)
-    extends CacheTracer[CacheKey[Statement]] with ExecutionEngineQueryCacheMonitor with ExecutionPlanCacheTracer {
-    kernelMonitors.addMonitorListener(this)
+  private class LoggingTracer(traceAstLogicalPlanCache: Boolean = true, traceExecutionEngineQueryCache: Boolean = true, traceExecutionPlanCache: Boolean = true) {
+
+    private class LoggingCacheTracer[Key](name: String, logKey: Boolean) extends CacheTracer[Key] {
+      override def queryCacheHit(key: Key, metaData: String): Unit = log += s"$name: cacheHit" + keySuffix(key)
+      override def queryCacheMiss(key: Key, metaData: String): Unit = log += s"$name: cacheMiss" + keySuffix(key)
+      override def queryCompile(key: Key, metaData: String): Unit = log += s"$name: cacheCompile" + keySuffix(key)
+      override def queryCompileWithExpressionCodeGen(key: Key, metaData: String): Unit = log += s"$name: cacheCompileWithExpressionCodeGen" + keySuffix(key)
+      override def queryCacheStale(key: Key, secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit = log += s"$name: cacheStale" + keySuffix(key)
+      override def queryCacheFlush(sizeBeforeFlush: Long): Unit = log += s"$name: cacheFlushDetected"
+
+      private def keySuffix(key: Key): String = if (logKey) s": $key" else ""
+    }
+
+    if (traceAstLogicalPlanCache) {
+      CypherQueryCaches.LogicalPlanCache.addMonitorListener(
+        kernelMonitors,
+        new LoggingCacheTracer[CypherQueryCaches.LogicalPlanCache.Key]("AST", logKey = false)
+      )
+    }
+
+    if (traceExecutionEngineQueryCache) {
+      CypherQueryCaches.ExecutableQueryCache.addMonitorListener(
+        kernelMonitors,
+        new LoggingCacheTracer[CypherQueryCaches.ExecutableQueryCache.Key]("String", logKey = true)
+      )
+    }
+
+    if (traceExecutionPlanCache) {
+      CypherQueryCaches.ExecutionPlanCache.addMonitorListener(
+        kernelMonitors,
+        new LoggingCacheTracer[CypherQueryCaches.ExecutionPlanCache.Key]("ExecutionPlanCacheKey", logKey = false)
+      )
+    }
 
     private val log: mutable.Builder[String, List[String]] = List.newBuilder
 
@@ -899,65 +925,6 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       val actual = trace.map(str => str.replaceAll("\\s+", " "))
       val expectedFormatted = expected.filterNot(_.isEmpty).map(str => str.replaceAll("\\s+", " "))
       actual should equal(expectedFormatted)
-    }
-
-    override def queryCacheHit(queryKey: CacheKey[Statement], metaData: String): Unit = {
-      if (traceAstLogicalPlanCache) log += "AST: cacheHit"
-    }
-
-    override def queryCacheMiss(queryKey: CacheKey[Statement], metaData: String): Unit = {
-      if (traceAstLogicalPlanCache) log += "AST: cacheMiss"
-    }
-
-    override def queryCompile(queryKey: CacheKey[Statement], metaData: String): Unit = {
-      if (traceAstLogicalPlanCache) log += "AST: cacheCompile"
-    }
-
-    override def queryCompileWithExpressionCodeGen(queryKey: CacheKey[Statement], metaData: String): Unit = {
-      if (traceAstLogicalPlanCache) log += "AST: cacheCompileWithExpressionCodeGen"
-    }
-
-    override def queryCacheStale(queryKey: CacheKey[Statement],
-                                 secondsSincePlan: Int,
-                                 metaData: String,
-                                 maybeReason: Option[String]): Unit = {
-      if (traceAstLogicalPlanCache) log += "AST: cacheStale"
-    }
-
-    override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {
-      if (traceAstLogicalPlanCache) log += "AST: cacheFlushDetected"
-    }
-
-    override def cacheFlushDetected(sizeBeforeFlush: Long): Unit = {
-      if (traceExecutionEngineQueryCache) log += "String: cacheFlushDetected"
-    }
-
-    override def cacheHit(key: CacheKey[String]): Unit = {
-      if (traceExecutionEngineQueryCache) log += s"String: cacheHit: $key"
-    }
-
-    override def cacheMiss(key: CacheKey[String]): Unit = {
-      if (traceExecutionEngineQueryCache) log += s"String: cacheMiss: $key"
-    }
-
-    override def cacheDiscard(key: CacheKey[String], ignored: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit = {
-      if (traceExecutionEngineQueryCache) log += s"String: cacheDiscard: $key"
-    }
-
-    override def cacheCompile(key: CacheKey[String]): Unit = {
-      if (traceExecutionEngineQueryCache) log += s"String: cacheCompile: $key"
-    }
-
-    override def cacheCompileWithExpressionCodeGen(key: CacheKey[String]): Unit = {
-      if (traceExecutionEngineQueryCache) log += s"String: cacheCompileWithExpressionCodeGen: $key"
-    }
-
-    override def cacheHit(key: ExecutionPlanCacheKey): Unit = {
-      if (traceExecutionPlanCache) log += "ExecutionPlanCacheKey: cacheHit"
-    }
-
-    override def cacheMiss(key: ExecutionPlanCacheKey): Unit = {
-      if (traceExecutionPlanCache) log += "ExecutionPlanCacheKey: cacheMiss"
     }
   }
 }

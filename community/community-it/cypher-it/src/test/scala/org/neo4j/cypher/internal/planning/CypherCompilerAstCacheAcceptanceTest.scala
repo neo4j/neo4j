@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.planning
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.CacheCounts
+import org.neo4j.cypher.CountingCacheTracer
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.CommunityCompilerFactory
 import org.neo4j.cypher.internal.CommunityRuntimeContextManager
 import org.neo4j.cypher.internal.CommunityRuntimeFactory
@@ -32,9 +32,14 @@ import org.neo4j.cypher.internal.Compiler
 import org.neo4j.cypher.internal.CompilerLibrary
 import org.neo4j.cypher.internal.CypherCurrentCompiler
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration
+import org.neo4j.cypher.internal.LastCommittedTxIdProvider
+import org.neo4j.cypher.internal.MasterCompiler
+import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
+import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_4
@@ -51,9 +56,8 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.AssertableLogProvider.Level
-import org.neo4j.logging.Log
 import org.neo4j.logging.LogAssertions.assertThat
-import org.neo4j.logging.NullLog
+import org.neo4j.logging.LogProvider
 import org.neo4j.logging.NullLogProvider
 
 import java.time.Clock
@@ -65,65 +69,58 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   private val cacheFactory = TestExecutorCaffeineCacheFactory
 
-  private def plannerConfig(queryCacheSize: Int = 128,
+  private def cypherConfig(queryCacheSize: Int = 128,
                             statsDivergenceThreshold: Double = 0.5,
-                            queryPlanTTL: Long = 1000): CypherPlannerConfiguration = {
+                            queryPlanTTL: Long = 1000): CypherConfiguration = {
     val builder = Config.newBuilder()
     builder.set(GraphDatabaseSettings.query_cache_size, Int.box(queryCacheSize))
     builder.set(GraphDatabaseSettings.query_statistics_divergence_threshold, Double.box(statsDivergenceThreshold))
     builder.set(GraphDatabaseSettings.cypher_min_replan_interval, Duration.ofMillis(queryPlanTTL))
     val config = builder.build()
-    CypherPlannerConfiguration.fromCypherConfiguration(CypherConfiguration.fromConfig(config), config, planSystemCommands = false)
-
+    CypherConfiguration.fromConfig(config)
   }
 
-  private def createCompiler(config: CypherPlannerConfiguration,
+  private def createCompiler(config: CypherConfiguration,
                              clock: Clock = Clock.systemUTC(),
-                             log: Log = NullLog.getInstance): CypherCurrentCompiler[RuntimeContext] = {
-    val planner = CypherPlanner(config,
+                             logProvider: LogProvider = NullLogProvider.getInstance): CypherCurrentCompiler[RuntimeContext] = {
+    val caches = new CypherQueryCaches(
+      CypherQueryCaches.Config.fromCypherConfiguration(config),
+      () => 1,
+      cacheFactory,
+      clock,
+      kernelMonitors,
+      logProvider,
+    )
+
+    val log = logProvider.getLog(getClass)
+
+    val planner = CypherPlanner(
+      CypherPlannerConfiguration.fromCypherConfiguration(config, Config.defaults(), planSystemCommands = false),
       clock,
       kernelMonitors,
       log,
-      cacheFactory,
+      caches,
       CypherPlannerOption.default,
       CypherUpdateStrategy.default,
-      () => 1,
       compatibilityMode = Compatibility4_4)
-    createCompiler(planner, log)
-  }
 
-  private def createCompiler(planner: CypherPlanner, log: Log):
-  CypherCurrentCompiler[RuntimeContext] = {
     CypherCurrentCompiler(
       planner,
       CommunityRuntimeFactory.getRuntime(CypherRuntimeOption.default, disallowFallback = true),
       CommunityRuntimeContextManager(log, CypherRuntimeConfiguration.fromCypherConfiguration(CypherConfiguration.fromConfig(Config.defaults()))),
-      kernelMonitors)
-
-  }
-
-  private class ASTCacheCounter() extends CacheTracer[CacheKey[AnyRef]] {
-    var counts: CacheCounts = CacheCounts()
-    override def queryCacheHit(key: CacheKey[AnyRef], metaData: String): Unit = counts = counts.copy(hits = counts.hits + 1)
-    override def queryCacheMiss(key: CacheKey[AnyRef], metaData: String): Unit = counts = counts.copy(misses = counts.misses + 1)
-    override def queryCacheFlush(sizeBeforeFlush: Long): Unit = counts = counts.copy(flushes = counts.flushes + 1)
-    override def queryCacheStale(key: CacheKey[AnyRef], secondsSincePlan: Int, metaData: String, maybeReason: Option[String]): Unit =
-      counts = counts.copy(evicted = counts.evicted + 1)
-    override def queryCompile(queryKey: CacheKey[AnyRef], metaData: String): Unit = counts = counts.copy(compilations = counts.compilations + 1)
-    override def queryCompileWithExpressionCodeGen(queryKey: CacheKey[AnyRef],
-                                                   metaData: String): Unit = {counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
-    }
+      kernelMonitors,
+      caches)
   }
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
 
-  private var counter: ASTCacheCounter = _
+  private var counter: CountingCacheTracer[CacheKey[AnyRef]] = _
   private var compiler: CypherCurrentCompiler[RuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    counter = new ASTCacheCounter()
-    compiler = createCompiler(plannerConfig())
+    counter = new CountingCacheTracer[CacheKey[AnyRef]]()
+    compiler = createCompiler(cypherConfig())
     kernelMonitors.addMonitorListener(counter)
   }
 
@@ -133,8 +130,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     val preParser = new PreParser(
       CypherConfiguration.fromConfig(Config.defaults()),
-      1,
-      cacheFactory)
+      new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 1))
 
     val preParsedQuery = preParser.preParseQuery(query)
 
@@ -303,8 +299,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should monitor cache remove") {
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    counter = new ASTCacheCounter()
-    compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
+    counter = new CountingCacheTracer[CacheKey[AnyRef]]()
+    compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
 
@@ -327,8 +323,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("it's ok to evict query because of total nodes change") {
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    counter = new ASTCacheCounter()
-    compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
+    counter = new CountingCacheTracer[CacheKey[AnyRef]]()
+    compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "MATCH (n:Person) RETURN n"
     (0 until MIN_NODES_ALL).foreach { _ => createNode() }
@@ -352,8 +348,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should not evict query because of unrelated statistics change") {
     // given
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
-    counter = new ASTCacheCounter()
-    compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock)
+    counter = new CountingCacheTracer[CacheKey[AnyRef]]()
+    compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
     compiler.kernelMonitors.addMonitorListener(counter)
     val query: String = "MATCH (n:Person) RETURN n"
     (0 until MIN_NODES_WITH_LABEL * 3).foreach { _ => createLabeledNode("Person") }
@@ -378,7 +374,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // given
     val logProvider = new AssertableLogProvider()
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(10000L), ZoneOffset.UTC)
-    compiler = createCompiler(plannerConfig(queryPlanTTL = 0), clock = clock, log = logProvider.getLog(getClass))
+    compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock, logProvider = logProvider)
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
@@ -392,10 +388,10 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // then
     val dogId = graph.withTx(tx => tokenReader(tx, _.nodeLabel("Dog")))
 
-    assertThat(logProvider).forClass(getClass).forLevel(Level.DEBUG)
+    assertThat(logProvider).forClass(classOf[CypherQueryCaches]).forLevel(Level.DEBUG)
       .containsMessages(s"Discarded stale plan from the plan cache after 0 seconds. " +
                              s"Reason: NodesWithLabelCardinality(Some(LabelId($dogId))) changed from 10.0 to 1001.0, " +
-                             s"which is a divergence of 0.99000999000999 which is greater than threshold 0.5. Metadata: $queryId")
+                             s"which is a divergence of 0.99000999000999 which is greater than threshold 0.5. Query id: $queryId.")
       .doesNotContainMessage(query)
   }
 
@@ -459,10 +455,19 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val nullLogProvider = NullLogProvider.getInstance
     val config = resolver.resolveDependency(classOf[Config])
     val cypherConfig = CypherConfiguration.fromConfig(config)
+    val queryCaches = new CypherQueryCaches(
+      CypherQueryCaches.Config.fromCypherConfiguration(cypherConfig),
+      LastCommittedTxIdProvider(graph),
+      cacheFactory,
+      MasterCompiler.CLOCK,
+      monitors,
+      logProvider
+    )
     val compilerFactory =
-      new CommunityCompilerFactory(graph, monitors, cacheFactory, nullLogProvider,
+      new CommunityCompilerFactory(graph, monitors, nullLogProvider,
         CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, config, planSystemCommands = false),
         CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig),
+        queryCaches,
       )
     new CompilerLibrary(compilerFactory, () => null)
   }
