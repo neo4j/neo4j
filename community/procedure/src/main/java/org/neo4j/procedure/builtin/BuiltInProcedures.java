@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -72,7 +71,6 @@ import static org.neo4j.kernel.impl.api.TokenAccess.LABELS;
 import static org.neo4j.kernel.impl.api.TokenAccess.PROPERTY_KEYS;
 import static org.neo4j.kernel.impl.api.TokenAccess.RELATIONSHIP_TYPES;
 import static org.neo4j.procedure.Mode.READ;
-import static org.neo4j.procedure.Mode.SCHEMA;
 import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
 import static org.neo4j.storageengine.util.StoreIdDecodeUtils.decodeId;
 
@@ -384,23 +382,6 @@ public class BuiltInProcedures
         }
         result.sort( Comparator.comparing( r -> r.name ) );
         return result.stream();
-    }
-
-    @Deprecated( since = "4.2.0", forRemoval = true )
-    @Description( "Create a named unique property constraint. Backing index will use specified index provider and configuration (optional). " +
-            "Yield: name, labels, properties, providerName, status" )
-    @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA, deprecatedBy = "CREATE CONSTRAINT ... IS UNIQUE command" )
-    public Stream<SchemaIndexInfo> createUniquePropertyConstraint(
-            @Name( "constraintName" ) String constraintName,
-            @Name( "labels" ) List<String> labels,
-            @Name( "properties" ) List<String> properties,
-            @Name( "providerName" ) String providerName,
-            @Name( value = "config", defaultValue = "{}" ) Map<String,Object> config )
-            throws ProcedureException
-    {
-        IndexProcedures indexProcedures = indexProcedures();
-        final IndexProviderDescriptor indexProviderDescriptor = getIndexProviderDescriptor( providerName );
-        return indexProcedures.createUniquePropertyConstraint( constraintName, labels, properties, indexProviderDescriptor, config );
     }
 
     @SystemProcedure( allowExpiredCredentials = true )

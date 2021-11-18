@@ -87,19 +87,6 @@ public class IndexProcedures
         indexingService.triggerIndexSampling( mode );
     }
 
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String constraintName, List<String> labels, List<String> properties,
-            IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap ) throws ProcedureException
-    {
-        return createIndex( constraintName, labels, properties, indexProviderDescriptor, configMap,
-                "uniqueness constraint online",
-                ( schemaWrite, name, schema, provider, indexConfig ) -> {
-                    final IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema, provider )
-                            .withName( name )
-                            .withIndexConfig( indexConfig );
-                    schemaWrite.uniquePropertyConstraintCreate( prototype );
-                } );
-    }
-
     public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String constraintName, List<String> labels, List<String> properties,
             IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap ) throws ProcedureException
     {

@@ -430,7 +430,6 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
                 "CALL db.createLabel('Foo')",
                 "CALL db.createProperty('bar')",
                 "CALL db.createRelationshipType('BAZ')",
-                "CALL db.createUniquePropertyConstraint('MyConstraint', ['Person'], ['age'], 'lucene+native-3.0')",
                 "CALL db.index.fulltext.createNodeIndex('businessNameIndex', ['Business'],['name'])",
                 "CALL db.index.fulltext.createRelationshipIndex('owner of index', ['IS_OWNER_OF'],['name'])",
                 "CALL tx.setMetaData( { User: 'Sascha' } )",
