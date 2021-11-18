@@ -309,13 +309,13 @@ public class Operations implements Write, SchemaWrite
 
         sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
         sharedTokenSchemaLock( ResourceTypes.RELATIONSHIP_TYPE );
-        storageLocks.acquireRelationshipCreationLock( ktx.txState(), ktx.lockTracer(), sourceNode, targetNode );
+        TransactionState txState = ktx.txState();
+        long id = commandCreationContext.reserveRelationship( sourceNode );
+        storageLocks.acquireRelationshipCreationLock( ktx.txState(), ktx.lockTracer(), sourceNode, targetNode, id );
 
         assertNodeExists( sourceNode );
         assertNodeExists( targetNode );
 
-        TransactionState txState = ktx.txState();
-        long id = commandCreationContext.reserveRelationship( sourceNode );
         txState.relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
         return id;
     }

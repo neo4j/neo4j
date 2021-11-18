@@ -135,9 +135,10 @@ class RecordStorageLocks implements StorageLocks
     }
 
     @Override
-    public void acquireRelationshipCreationLock( ReadableTransactionState txState, LockTracer lockTracer, long sourceNode, long targetNode )
+    public void acquireRelationshipCreationLock( ReadableTransactionState txState, LockTracer lockTracer, long sourceNode, long targetNode, long relationship )
     {
         lockGroupAndDegrees( txState, locker, lockTracer, sourceNode, targetNode );
+        locker.acquireExclusive( lockTracer, ResourceTypes.RELATIONSHIP, relationship );
     }
 
     @Override

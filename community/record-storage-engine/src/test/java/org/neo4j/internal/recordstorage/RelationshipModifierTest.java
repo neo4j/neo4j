@@ -440,10 +440,12 @@ class RelationshipModifierTest
     {
         // Acquire the "external" locks that the RelationshipModifier rely on when making decisions internally
         StorageLocks context = new RecordStorageLocks( locks );
+        this.locks.preModify( true );
         modifications.creations().forEach(
-                ( id, type, start, end, addedProperties ) -> context.acquireRelationshipCreationLock( txState, NONE, start, end ) );
+                ( id, type, start, end, addedProperties ) -> context.acquireRelationshipCreationLock( txState, NONE, start, end, id ) );
         modifications.deletions().forEach(
                 ( id, type, start, end, noProperties ) -> context.acquireRelationshipDeletionLock( txState, NONE, start, end, id ) );
+        this.locks.preModify( false );
 
         RecordAccessSet changes = store.newRecordChanges( loadMonitor, readMonitor );
         modifier.modifyRelationships( modifications, changes, groupUpdater, locks, NONE );

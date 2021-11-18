@@ -42,6 +42,7 @@ import org.neo4j.test.RandomSupport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 
 /**
  * {@link ResourceLocker} that keeps track of acquired locks so that they can be verified later after test.
@@ -56,6 +57,7 @@ class TrackingResourceLocker implements ResourceLocker
     private final RandomSupport random;
     private final LockAcquisitionMonitor lockAcquisitionMonitor;
     private final int changeOfGettingTryLock;
+    private boolean isPreModify;
 
     TrackingResourceLocker( RandomSupport random, LockAcquisitionMonitor lockAcquisitionMonitor )
     {
@@ -74,6 +76,11 @@ class TrackingResourceLocker implements ResourceLocker
     {
         strictAssertions.add( resourceType );
         return this;
+    }
+
+    void preModify( boolean isPreModify )
+    {
+        this.isPreModify = isPreModify;
     }
 
     @Override
@@ -98,6 +105,11 @@ class TrackingResourceLocker implements ResourceLocker
 
     private void acquireLock( ResourceType resourceType, long[] resourceIds, LockType lockType )
     {
+        if ( isPreModify && resourceType == RELATIONSHIP )
+        {
+            return;
+        }
+
         MutableSortedBag<Long> locks = locks( resourceType, locksMap( lockType ) );
         boolean doStrictAssertions = strictAssertions.contains( resourceType );
         for ( long id : resourceIds )

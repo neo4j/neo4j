@@ -125,7 +125,7 @@ public class PlainOperationsTest extends OperationsTest
         long rId = operations.relationshipCreate( sourceNode, relationshipType, targetNode );
 
         // then
-        order.verify( storageLocks ).acquireRelationshipCreationLock( txState, LockTracer.NONE, sourceNode, targetNode );
+        order.verify( storageLocks ).acquireRelationshipCreationLock( txState, LockTracer.NONE, sourceNode, targetNode, rId );
         order.verify( txState ).relationshipDoCreate( rId, relationshipType, sourceNode, targetNode );
     }
 
@@ -142,8 +142,8 @@ public class PlainOperationsTest extends OperationsTest
 
         // THEN
         InOrder lockingOrder = inOrder( creationContext, storageLocks );
-        lockingOrder.verify( storageLocks ).acquireRelationshipCreationLock( txState, LockTracer.NONE, lowId, highId );
         lockingOrder.verify( creationContext ).reserveRelationship( lowId );
+        lockingOrder.verify( storageLocks ).acquireRelationshipCreationLock( eq( txState ), eq( LockTracer.NONE ), eq( lowId ), eq( highId ), anyLong() );
         lockingOrder.verifyNoMoreInteractions();
         reset( creationContext );
 
@@ -152,8 +152,8 @@ public class PlainOperationsTest extends OperationsTest
 
         // THEN
         InOrder lowLockingOrder = inOrder( creationContext, storageLocks );
-        lowLockingOrder.verify( storageLocks ).acquireRelationshipCreationLock( txState, LockTracer.NONE, highId, lowId );
         lowLockingOrder.verify( creationContext ).reserveRelationship( highId );
+        lowLockingOrder.verify( storageLocks ).acquireRelationshipCreationLock( eq( txState ), eq( LockTracer.NONE ), eq( highId ), eq( lowId ), anyLong() );
         lowLockingOrder.verifyNoMoreInteractions();
     }
 
@@ -1004,6 +1004,8 @@ public class PlainOperationsTest extends OperationsTest
         InOrder inOrder = inOrder( ktx, commandCreationContext );
         inOrder.verify( ktx ).txState();
         inOrder.verify( commandCreationContext ).reserveRelationship( anyLong() );
+        inOrder.verify( ktx ).txState();
+        inOrder.verify( ktx ).lockTracer();
         inOrder.verifyNoMoreInteractions();
     }
 
