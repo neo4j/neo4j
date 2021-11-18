@@ -82,6 +82,12 @@ public class TestKernelReadTracer implements KernelReadTracer
     }
 
     @Override
+    public void onHasLabel( int label )
+    {
+        traceEvents.add( OnHasLabel( label ) );
+    }
+
+    @Override
     public void dbHit()
     {
         throw new UnsupportedOperationException();
@@ -111,7 +117,8 @@ public class TestKernelReadTracer implements KernelReadTracer
         RelationshipTypeScan,
         IndexSeek,
         Relationship,
-        Property
+        Property,
+        HasLabel
     }
 
     static class TraceEvent
@@ -187,5 +194,10 @@ public class TestKernelReadTracer implements KernelReadTracer
     static TraceEvent propertyEvent( int propertyKey )
     {
         return new TraceEvent( TraceEventKind.Property, propertyKey );
+    }
+
+    static TraceEvent OnHasLabel( int label )
+    {
+        return new TraceEvent( TraceEventKind.HasLabel, label );
     }
 }

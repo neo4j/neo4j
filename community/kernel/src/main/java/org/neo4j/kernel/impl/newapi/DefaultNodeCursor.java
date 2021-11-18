@@ -198,6 +198,10 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
             }
         }
 
+        if ( tracer != null )
+        {
+            tracer.onHasLabel( label );
+        }
         //Get labels from store and put in intSet, unfortunately we get longs back
         return storeCursor.hasLabel( label );
     }

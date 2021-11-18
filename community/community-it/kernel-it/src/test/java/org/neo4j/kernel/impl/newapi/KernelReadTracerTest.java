@@ -64,6 +64,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnHasLabel;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.indexSeekEvent;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.labelScanEvent;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.nodeEvent;
@@ -415,6 +416,35 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
 
             assertFalse( propertyCursor.next() );
             tracer.assertEvents();
+        }
+    }
+
+    @Test
+    void shouldTraceLabelCheck()
+    {
+        // given
+        int label = 42;
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL ) )
+        {
+            // when
+            nodeCursor.setTracer( tracer );
+
+            read.singleNode( foo, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.hasLabel( label );
+
+            tracer.assertEvents( OnNode( foo ), OnHasLabel( 42 ) );
+
+            nodeCursor.removeTracer();
+
+            nodeCursor.hasLabel( label );
+            tracer.assertEvents();
+
+            nodeCursor.setTracer( tracer );
+            nodeCursor.hasLabel( label );
+            tracer.assertEvents( OnHasLabel( 42 ) );
         }
     }
 

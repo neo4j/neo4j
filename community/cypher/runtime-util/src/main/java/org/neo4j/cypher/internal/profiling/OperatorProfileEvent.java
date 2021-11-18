@@ -81,4 +81,10 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
     {
         dbHit();
     }
+
+    @Override
+    public void onHasLabel( int label )
+    {
+        dbHit();
+    }
 }

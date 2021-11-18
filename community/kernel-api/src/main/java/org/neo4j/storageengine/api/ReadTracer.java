@@ -47,5 +47,10 @@ public interface ReadTracer
      */
     void onProperty( int propertyKey );
 
+    /**
+     * Called when checking for existence of a label.
+     */
+    void onHasLabel( int label );
+
     void dbHit();
 }
