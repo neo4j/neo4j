@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
@@ -111,7 +110,6 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL_DESCRIPTION
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY
@@ -454,16 +452,16 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@CreateDatabaseAlias(aliasName, targetName, ifExistsDo) =>
         val assertNotBlocked = Some(plans.AssertNotBlocked(CreateDatabaseAction))
         val (source, replace) = ifExistsDo match {
-          case IfExistsReplace => (plans.DropDatabaseAlias(plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(AllDatabaseManagementActions, DropDatabaseAction)), aliasName), true)
-          case IfExistsDoNothing => (plans.DoNothingIfDatabaseExists(plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(AllDatabaseManagementActions, CreateDatabaseAction)),
+          case IfExistsReplace => (plans.DropDatabaseAlias(plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(CreateDatabaseAction, DropDatabaseAction)), aliasName), true)
+          case IfExistsDoNothing => (plans.DoNothingIfDatabaseExists(plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(CreateDatabaseAction)),
             aliasName), false)
-          case _ => (plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(AllDatabaseManagementActions, CreateDatabaseAction)), false)
+          case _ => (plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(CreateDatabaseAction)), false)
         }
         Some(plans.LogSystemCommand(plans.CreateDatabaseAlias(plans.EnsureValidNonSystemDatabase(source, targetName, "create", Some(aliasName)), aliasName, targetName, replace), prettifier.asString(c)))
 
       // DROP DATABASE ALIAS foo [IF EXISTS]
       case c@DropDatabaseAlias(aliasName, ifExists) =>
-        val assertAllowed = plans.AssertAllowedDbmsActions(None, Seq(AllDatabaseManagementActions, DropDatabaseAction))
+        val assertAllowed = plans.AssertAllowedDbmsActions(None, Seq(DropDatabaseAction))
         val source =
           if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowed, aliasName, "delete")
           else plans.EnsureNodeExists(assertAllowed, DATABASE_NAME, aliasName,
@@ -473,7 +471,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // ALTER DATABASE ALIAS foo
       case c@AlterDatabaseAlias(aliasName, targetName, ifExists) =>
-        val assertAllowed = plans.AssertAllowedDbmsActions(None, Seq(AllDatabaseManagementActions, AlterDatabaseAction))
+        val assertAllowed = plans.AssertAllowedDbmsActions(None, Seq(AlterDatabaseAction))
         val source = if (ifExists) plans.DoNothingIfDatabaseNotExists(assertAllowed, aliasName, "alter")
         else plans.EnsureNodeExists(assertAllowed, DATABASE_NAME, aliasName, new NormalizedDatabaseName(_).name(),
           node => s"WHERE $node.$PRIMARY_PROPERTY = false", DATABASE_NAME_LABEL_DESCRIPTION, "alter")
