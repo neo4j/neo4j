@@ -20,6 +20,7 @@
 package org.neo4j.upgrade;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -87,6 +88,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoSt
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
+@Disabled
 public class StoreUpgraderInterruptionTestIT
 {
     private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );

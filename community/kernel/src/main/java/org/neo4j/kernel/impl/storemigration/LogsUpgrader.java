@@ -89,10 +89,7 @@ public class LogsUpgrader
         LogTailInformation tail = null;
         try
         {
-            // we should not use provided database layout here since transaction log location is different compare to previous versions
-            // and that's why we need to use custom transaction logs locator and database layout
-            DatabaseLayout oldDatabaseLayout = buildLegacyLogsLayout( layout );
-            LogFiles logFiles = buildLogFiles( oldDatabaseLayout );
+            LogFiles logFiles = buildLogFiles( layout );
 
             tail = logFiles.getTailInformation();
             if ( !tail.isRecoveryRequired() )
@@ -130,11 +127,6 @@ public class LogsUpgrader
             exception.addSuppressed( suppressibleException );
         }
         throw exception;
-    }
-
-    private DatabaseLayout buildLegacyLogsLayout( DatabaseLayout databaseLayout )
-    {
-        return new LegacyDatabaseLayout( databaseLayout.getNeo4jLayout(), databaseLayout.getDatabaseName(), legacyLogsLocator );
     }
 
     private LogFiles buildLogFiles( DatabaseLayout layout )

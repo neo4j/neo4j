@@ -19,6 +19,7 @@
  */
 package org.neo4j.upgrade;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -38,7 +39,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -60,6 +61,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSam
 import static org.neo4j.kernel.impl.storemigration.StoreUpgraderTest.removeCheckPointFromTxLog;
 
 @PageCacheExtension
+@Disabled
 public class StoreUpgradeOnStartupTest
 {
     @Inject
@@ -77,7 +79,7 @@ public class StoreUpgradeOnStartupTest
 
     private static Stream<Arguments> versions()
     {
-        return Stream.of( Arguments.of( StandardV3_4.STORE_VERSION ) );
+        return Stream.of( Arguments.of( StandardV4_3.STORE_VERSION ) );
     }
 
     private void init( String version ) throws IOException
@@ -114,7 +116,7 @@ public class StoreUpgradeOnStartupTest
         init( version );
 
         // given
-        removeCheckPointFromTxLog( fileSystem, workingDatabaseLayout.databaseDirectory() );
+        removeCheckPointFromTxLog( fileSystem, workingDatabaseLayout );
         GraphDatabaseAPI database = createGraphDatabaseService();
         try
         {

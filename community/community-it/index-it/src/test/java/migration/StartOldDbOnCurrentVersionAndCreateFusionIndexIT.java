@@ -82,6 +82,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.test.Unzip.unzip;
 
 @Neo4jLayoutExtension
+@Disabled
 class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 {
     private static final String ZIP_FILE_3_5 = "3_5-db.zip";

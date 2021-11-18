@@ -37,9 +37,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
@@ -54,6 +54,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -102,15 +103,14 @@ class DefaultDatabaseManagerUpgradeIT
         DefaultDatabaseManager databaseManager = getDatabaseManager( db );
         RecordStoreVersionCheck check =
                 new RecordStoreVersionCheck( fs, getPageCache( db ), databaseLayout, NullLogProvider.getInstance(), Config.defaults(), NULL );
-        assertFalse( db.isAvailable( 100 ), "Expected database to have failed during startup because we don't allow upgrade." );
+        assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL ).orElseThrow() );
 
         // When
         databaseManager.upgradeDatabase( db.databaseId() );
 
         // Then
         assertTrue( db.isAvailable( 100 ), "Expected database to be available after upgrade" );
-        RecordFormats expectedFormat = RecordFormatSelector.findLatestSupportedFormatInFamily( StandardV4_3.RECORD_FORMATS ).orElseThrow();
-        assertTrue( MigrationTestUtils.checkNeoStoreHasFormatVersion( check, expectedFormat ), "Expected store version to be default." );
+        assertTrue( MigrationTestUtils.checkNeoStoreHasFormatVersion( check, PageAligned.LATEST_RECORD_FORMATS ), "Expected store version to be default." );
     }
 
     @Test
@@ -124,7 +124,7 @@ class DefaultDatabaseManagerUpgradeIT
         DefaultDatabaseManager databaseManager = getDatabaseManager( db );
         RecordStoreVersionCheck check =
                 new RecordStoreVersionCheck( fs, getPageCache( db ), databaseLayout, NullLogProvider.getInstance(), Config.defaults(), NULL );
-        assertFalse( db.isAvailable( 100 ), "Expected database to have failed during startup because we don't allow upgrade." );
+        assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL ).orElseThrow() );
 
         // When
         NamedDatabaseId namedDatabaseId = db.databaseId();
@@ -142,6 +142,7 @@ class DefaultDatabaseManagerUpgradeIT
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jLayout );
         dbms = builder
                 .setConfig( GraphDatabaseSettings.allow_upgrade, false )
+                .setConfig( GraphDatabaseSettings.record_format, PageAligned.LATEST_NAME )
                 .setUserLogProvider( userLogProvider )
                 .build();
     }

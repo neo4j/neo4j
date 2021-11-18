@@ -96,6 +96,7 @@ import static org.neo4j.values.storable.Values.COMPARATOR;
  * This test should verify that index configurations from a 3.5 store stay intact when opened again, with migration if needed.
  */
 @Neo4jLayoutExtension
+@Disabled
 class IndexConfigMigrationIT
 {
     private static final int EXPECTED_NUMBER_OF_INDEXES = 8;

@@ -28,6 +28,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 
 public final class StoreAssertions
 {
@@ -39,8 +40,8 @@ public final class StoreAssertions
     {
         Config configuration = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
         AssertableLogProvider logger = new AssertableLogProvider();
-        ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                databaseLayout, configuration, ProgressMonitorFactory.NONE, logger, false );
+        ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, configuration,
+                ProgressMonitorFactory.NONE, logger, false, DEFAULT );
 
         assertTrue( result.isSuccessful(), "Consistency check for " + databaseLayout + " found inconsistencies:\n\n" + logger.serialize() );
     }

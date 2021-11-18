@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,8 +57,9 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -105,6 +107,7 @@ import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PA
 
 @PageCacheExtension
 @Neo4jLayoutExtension
+@Disabled
 public class StoreUpgraderTest
 {
     private static final String INTERNAL_LOG_FILE = "debug.log";
@@ -121,12 +124,13 @@ public class StoreUpgraderTest
     private RecordDatabaseLayout databaseLayout;
     private JobScheduler jobScheduler;
 
-    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, true );
+    private final Config allowMigrateConfig = Config.newBuilder().set( GraphDatabaseSettings.allow_upgrade, true )
+                                                                 .set( GraphDatabaseSettings.record_format, PageAligned.LATEST_NAME ).build();
     private Path prepareDatabaseDirectory;
 
     private static Collection<Arguments> versions()
     {
-        return Collections.singletonList( arguments( StandardV3_4.RECORD_FORMATS ) );
+        return Collections.singletonList( arguments( StandardV4_3.RECORD_FORMATS ) );
     }
 
     @BeforeEach
@@ -181,7 +185,7 @@ public class StoreUpgraderTest
         init( formats );
         Path comparisonDirectory = testDirectory.directory(
             "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
-        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
+        removeCheckPointFromTxLog( fileSystem, databaseLayout );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
@@ -197,7 +201,7 @@ public class StoreUpgraderTest
         init( formats );
         Path comparisonDirectory = testDirectory.directory(
             "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
-        removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
+        removeCheckPointFromTxLog( fileSystem, databaseLayout );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
@@ -589,9 +593,9 @@ public class StoreUpgraderTest
         return Standard.LATEST_NAME;
     }
 
-    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, Path databaseDirectory ) throws IOException
+    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout ) throws IOException
     {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fileSystem )
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
                 .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() )
                 .build();
         LogTailInformation logTailInformation = logFiles.getTailInformation();
