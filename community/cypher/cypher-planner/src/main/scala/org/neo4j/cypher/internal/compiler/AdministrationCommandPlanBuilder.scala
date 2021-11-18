@@ -450,12 +450,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // CREATE DATABASE ALIAS
       case c@CreateDatabaseAlias(aliasName, targetName, ifExistsDo) =>
-        val assertNotBlocked = Some(plans.AssertNotBlocked(CreateDatabaseAction))
         val (source, replace) = ifExistsDo match {
-          case IfExistsReplace => (plans.DropDatabaseAlias(plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(CreateDatabaseAction, DropDatabaseAction)), aliasName), true)
-          case IfExistsDoNothing => (plans.DoNothingIfDatabaseExists(plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(CreateDatabaseAction)),
+          case IfExistsReplace => (plans.DropDatabaseAlias(plans.AssertAllowedDbmsActions(None, Seq(CreateDatabaseAction, DropDatabaseAction)), aliasName), true)
+          case IfExistsDoNothing => (plans.DoNothingIfDatabaseExists(plans.AssertAllowedDbmsActions(None, Seq(CreateDatabaseAction)),
             aliasName), false)
-          case _ => (plans.AssertAllowedDbmsActions(assertNotBlocked, Seq(CreateDatabaseAction)), false)
+          case _ => (plans.AssertAllowedDbmsActions(None, Seq(CreateDatabaseAction)), false)
         }
         Some(plans.LogSystemCommand(plans.CreateDatabaseAlias(plans.EnsureValidNonSystemDatabase(source, targetName, "create", Some(aliasName)), aliasName, targetName, replace), prettifier.asString(c)))
 
