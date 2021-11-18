@@ -190,6 +190,27 @@ class BuiltInProceduresTest
     }
 
     @Test
+    void shouldListAllIndexes() throws Throwable
+    {
+        // Given
+        givenIndex( "User", "name" );
+
+        // When/Then
+        assertThat( call( "db.indexes" ) ).contains( record(
+                1000L,
+                "index_1000",
+                "ONLINE",
+                100D,
+                "NONUNIQUE",
+                "BTREE",
+                "NODE",
+                singletonList( "User" ),
+                singletonList( "name" ),
+                "no-index-provider-1.0" )
+        );
+    }
+
+    @Test
     void lookupComponentProviders()
     {
         assertNotNull( procs.lookupComponentProvider( Transaction.class, true ) );
@@ -200,6 +221,27 @@ class BuiltInProceduresTest
 
         assertNull( procs.lookupComponentProvider( DependencyResolver.class, true ) );
         assertNotNull( procs.lookupComponentProvider( DependencyResolver.class, false ) );
+    }
+
+    @Test
+    void shouldListAllUniqueIndexes() throws Throwable
+    {
+        // Given
+        givenUniqueConstraint( "User", "name" );
+
+        // When/Then
+        assertThat( call( "db.indexes" ) ).contains( record(
+                1000L,
+                "constraint_1000",
+                "ONLINE",
+                100D,
+                "UNIQUE",
+                "BTREE",
+                "NODE",
+                singletonList( "User" ),
+                singletonList( "name" ),
+                "no-index-provider-1.0" )
+        );
     }
 
     @Test

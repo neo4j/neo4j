@@ -192,7 +192,7 @@ class CommunityEditionEndToEndTest
     {
         execute( database, session -> session.run( "USE " + DEFAULT_DATABASE_NAME + " CREATE INDEX myIndex FOR (n:Person) ON (n.name)" ).consume() );
 
-        List<String> result = execute( database, session -> session.run( "USE " + DEFAULT_DATABASE_NAME + " SHOW INDEXES YIELD name RETURN name" ).list() )
+        List<String> result = execute( database, session -> session.run( "USE " + DEFAULT_DATABASE_NAME + " CALL db.indexes() YIELD name RETURN name" ).list() )
                 .stream()
                 .map( r -> r.get( "name" ).asString() ).collect( Collectors.toList() );
         assertThat( result ).contains( "myIndex" );

@@ -728,6 +728,78 @@
     "enterpriseOnly": false
   },
   {
+    "name": "db.indexes",
+    "description": "List all indexes in the database.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.indexes() :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "id",
+        "description": "id :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "state",
+        "description": "state :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "populationPercent",
+        "description": "populationPercent :: FLOAT?",
+        "type": "FLOAT?"
+      },
+      {
+        "name": "uniqueness",
+        "description": "uniqueness :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "type",
+        "description": "type :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "entityType",
+        "description": "entityType :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labelsOrTypes",
+        "description": "labelsOrTypes :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "provider",
+        "description": "provider :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
     "name": "db.info",
     "description": "Provides information regarding the database.",
     "mode": "READ",
