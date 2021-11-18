@@ -55,16 +55,90 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  val costOfPropertyToken: Long, // the reported dbHits for looking up a property token
                                                                  val costOfSetProperty: Long, // the reported dbHits for setting a property token
                                                                  costOfPropertyJumpedOverInChain: Long, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
+                                                                 val costOfPropertyExists: Long, // the reported dbHits for a single checking if a property exists on a node
                                                                  val costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
+                                                                 val costOfLabelCheck: Long, // the reported dbHits for getting label of a node
                                                                  val costOfLabelLookup: Long, // the reported dbHits for finding the id of a label
                                                                  costOfExpandGetRelCursor: Long, // the reported dbHits for obtaining a relationship cursor for expanding
                                                                  costOfExpandOneRel: Long, // the reported dbHits for expanding one relationship
                                                                  val costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
                                                                  val costOfCompositeUniqueIndexCursorRow: Long, // the reported dbHits for finding one row from a composite unique index
                                                                  cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
+                                                                 val canReuseAllNodesScanLookup: Boolean, // operator following AllNodesScan does not need to lookup node again
                                                                  val canFuseOverPipelines: Boolean,
                                                                  val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  test("HasLabel on top of AllNodesScan") {
+    val cost = if (canReuseAllNodesScanLookup) costOfLabelCheck - 1 else costOfLabelCheck
+    hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "n:Label", Math.min(cost,1))
+  }
+
+  test("HasLabel on top of LabelScan") {
+    hasLabelOnTopOfLeaf(_.nodeByLabelScan("n", "Label"), expression = "n:Label", costOfLabelCheck)
+  }
+
+  test("PropertyExists on top of AllNodesScan") {
+    val cost = if (canReuseAllNodesScanLookup) 1 else costOfPropertyExists
+    hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "exists(n.prop)", Math.min(cost,1))
+  }
+
+  test("PropertyExists on top of LabelScan") {
+    hasLabelOnTopOfLeaf(_.nodeByLabelScan("n", "Label"), expression = "exists(n.prop)", costOfPropertyExists)
+  }
+
+  private def hasLabelOnTopOfLeaf(leaf: LogicalQueryBuilder => LogicalQueryBuilder, expression: String, expressionPerRowCost: Long): Unit = {
+    val nodes = given {
+      nodeIndex("Label", "prop")
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "Label")
+    }
+
+    // when
+    val builder = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .filter(expression)
+    val logicalQuery = leaf(builder).build()
+
+    // only used when Input is leaf
+    val input = inputValues(nodes.map(n => Array[Any](n)):_*)
+
+    val runtimeResult = profile(logicalQuery, runtime, input)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should be(sizeHint * expressionPerRowCost) // Filter
+  }
+
+  test("HasType on top of Input") {
+    hasTypeOnTopOfLeaf(_.input(relationships = Seq("r")), hasTypePerRowCost = 1)
+  }
+
+  test("HasType on top of RelationshipTypeScan") {
+    hasTypeOnTopOfLeaf(_.relationshipTypeScan("()-[r:R]->()"), hasTypePerRowCost = 1)
+  }
+
+  private def hasTypeOnTopOfLeaf(leaf: LogicalQueryBuilder => LogicalQueryBuilder, hasTypePerRowCost: Int): Unit = {
+    val (_, rels) = given {
+      circleGraph(sizeHint, "R", 1)
+    }
+
+    // when
+    val builder = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("r:R")
+    val logicalQuery = leaf(builder).build()
+
+    // only used when Input is leaf
+    val input = inputValues(rels.map(r => Array[Any](r)):_*)
+
+    val runtimeResult = profile(logicalQuery, runtime, input)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should be(sizeHint * hasTypePerRowCost) // Filter(HasType)
+  }
 
   test("should profile dbHits of all nodes scan") {
     given { nodeGraph(sizeHint) }
