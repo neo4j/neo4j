@@ -387,23 +387,6 @@ public class BuiltInProcedures
     }
 
     @Deprecated( since = "4.2.0", forRemoval = true )
-    @Description( "Create a named schema index with specified index provider and configuration (optional). " +
-            "Yield: name, labels, properties, providerName, status" )
-    @Procedure( name = "db.createIndex", mode = SCHEMA, deprecatedBy = "CREATE INDEX command" )
-    public Stream<SchemaIndexInfo> createIndex(
-            @Name( "indexName" ) String indexName,
-            @Name( "labels" ) List<String> labels,
-            @Name( "properties" ) List<String> properties,
-            @Name( "providerName" ) String providerName,
-            @Name( value = "config", defaultValue = "{}" ) Map<String,Object> config )
-            throws ProcedureException
-    {
-        IndexProcedures indexProcedures = indexProcedures();
-        final IndexProviderDescriptor indexProviderDescriptor = getIndexProviderDescriptor( providerName );
-        return indexProcedures.createIndex( indexName, labels, properties, indexProviderDescriptor, config );
-    }
-
-    @Deprecated( since = "4.2.0", forRemoval = true )
     @Description( "Create a named unique property constraint. Backing index will use specified index provider and configuration (optional). " +
             "Yield: name, labels, properties, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA, deprecatedBy = "CREATE CONSTRAINT ... IS UNIQUE command" )

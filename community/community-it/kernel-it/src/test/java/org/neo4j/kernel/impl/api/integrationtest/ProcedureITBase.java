@@ -97,12 +97,6 @@ public interface ProcedureITBase
                         "WRITE", false ), proc( "db.createRelationshipType", "(newRelationshipType :: STRING?) :: VOID", "Create a RelationshipType",
                         stringArray( "publisher", "architect", "admin" ), "WRITE", false ),
                 proc( "db.clearQueryCaches", "() :: (value :: STRING?)", "Clears all query caches.", stringArray( "admin" ), "DBMS" ),
-                proc( "db.createIndex",
-                        "(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, config = {} :: MAP?) :: " +
-                                "(name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a named schema index with specified index provider and configuration (optional). " +
-                                "Yield: name, labels, properties, providerName, status",
-                        stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "db.createUniquePropertyConstraint",
                         "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, " +
                                 "config = {} :: MAP?) :: " +

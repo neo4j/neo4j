@@ -364,6 +364,7 @@ class IndexConfigMigrationIT
         {
             String indexPattern = format( "\":%s(%s)\"", label.name(), propKey );
             String indexProvider = "\"" + providerName + "\"";
+            // Note that db.createIndex(...) has since been removed but still exists in Neo4j 3.5 where this store was created
             tx.execute( format( "CALL db.createIndex( %s, %s )", indexPattern, indexProvider ) ).close();
             tx.commit();
         }

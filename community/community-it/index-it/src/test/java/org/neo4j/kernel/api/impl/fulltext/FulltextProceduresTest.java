@@ -1801,24 +1801,6 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
     }
 
-    @Test
-    void creatingNormalIndexWithFulltextProviderMustThrow()
-    {
-        String providerName = FulltextIndexProviderFactory.DESCRIPTOR.name();
-        assertThat( providerName ).isEqualTo( "fulltext-1.0" ); // Sanity check that this test is up to date.
-
-        Exception e = assertThrows( QueryExecutionException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( "call db.createIndex( \"MyIndex\", ['User'], ['searchableString'], \"" + providerName + "\" );" ).close();
-                tx.commit();
-            }
-        } );
-        assertThat( e.getMessage() ).contains(
-                "Could not create index with specified index provider 'fulltext-1.0'. To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'." );
-    }
-
     @MethodSource( "entityTypeProvider" )
     @ParameterizedTest
     void mustSupportWildcardEndsLikeStartsWith( EntityUtil entityUtil )

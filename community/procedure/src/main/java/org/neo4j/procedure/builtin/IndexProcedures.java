@@ -87,19 +87,6 @@ public class IndexProcedures
         indexingService.triggerIndexSampling( mode );
     }
 
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexName, List<String> labels, List<String> properties,
-            IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap ) throws ProcedureException
-    {
-        return createIndex( indexName, labels, properties, indexProviderDescriptor, configMap,
-                "index created", ( schemaWrite, name, descriptor, provider, indexConfig ) ->
-                {
-                    IndexPrototype prototype = IndexPrototype.forSchema( descriptor, provider )
-                            .withName( name )
-                            .withIndexConfig( indexConfig );
-                    schemaWrite.indexCreate( prototype );
-                } );
-    }
-
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String constraintName, List<String> labels, List<String> properties,
             IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap ) throws ProcedureException
     {

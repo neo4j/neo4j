@@ -427,7 +427,6 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     void checkCommunityProceduresThatAreNotAllowedOnSystem()
     {
         List<String> queries = List.of(
-                "CALL db.createIndex('MyIndex', ['Person'], ['name'], 'lucene+native-3.0')",
                 "CALL db.createLabel('Foo')",
                 "CALL db.createProperty('bar')",
                 "CALL db.createRelationshipType('BAZ')",
