@@ -96,6 +96,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("non-empty lhs, non-empty rhs should produce lists preserving nulls") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val size = Math.sqrt(sizeHint).toInt
     val (aNodes, bNodes) =
       given {
@@ -121,6 +122,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should RollUpApply under apply") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val size = Math.sqrt(sizeHint).toInt
     val (aNodes, bNodes) =
       given {
@@ -150,6 +152,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should RollUpApply under limit") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val size = Math.sqrt(sizeHint).toInt
     val limit = size / 2
     val (aNodes, bNodes) =
@@ -180,6 +183,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should RollUpApply under join") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val size = Math.sqrt(sizeHint).toInt
     val (aNodes, bNodes) =
       given {
