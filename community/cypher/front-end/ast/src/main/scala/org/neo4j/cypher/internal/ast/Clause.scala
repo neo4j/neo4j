@@ -73,7 +73,6 @@ import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CartesianProductNotification
-import org.neo4j.cypher.internal.util.DeprecatedStartNotification
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -318,22 +317,38 @@ case class Match(
       }
     }
 
+    def getMissingPropertyError(variable: String, propertiesInHint: Seq[PropertyKeyName]): String = {
+      val plural = propertiesInHint.size > 1
+      val isNodeHint = getLabelAndRelTypePredicates(variable) match {
+        case LabelAndRelTypeNames(labels: Seq[String], Seq()) => true
+        case LabelAndRelTypeNames(Seq(), relTypes: Seq[String]) => false
+        case _ => throw new IllegalStateException(s"Indetermined entity kind for '$variable'")
+      }
+      val propertiesInPredicates: Seq[String] = getPropertyPredicates(variable)
+      val foundPropertiesDescription = propertiesInPredicates match {
+        case Seq() => "none was"
+        case Seq(property) => s"only '$property' was"
+        case properties => s"only '${properties.mkString("', '")}' were"
+      }
+      s"""|Cannot use index hint in this context.
+          | Must use the ${if (plural) "properties" else "property"} ${propertiesInHint.map(prop => s"'${prop.name}'").mkString(", ")} that the hint is referring to in
+          | ${if (plural) "supported predicates" else "a supported predicate"} in WHERE
+          | (either directly or as part of a top-level AND or OR), but $foundPropertiesDescription found.
+          | Supported predicates are:
+          | equality comparison, inequality (range) comparison, STARTS WITH,
+          | IN condition or checking property existence.
+          | The comparison cannot be performed between two property values.
+          | Note that the ${if (isNodeHint) "label" else "relationship type"} and property comparison must be specified on a
+          | non-optional ${if (isNodeHint) "node" else "relationship"}.""".stripLinesAndMargins
+    }
+
     val error: Option[SemanticCheck] = hints.collectFirst {
       case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(labelOrRelTypeName), _, _, _)
         if !containsLabelOrRelTypePredicate(variable, labelOrRelTypeName) =>
         SemanticError(getMissingEntityKindError(variable, labelOrRelTypeName, index = true), hint.position)
       case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(_), properties, _, _)
         if !containsPropertyPredicates(variable, properties) =>
-        SemanticError(
-          """|Cannot use index hint in this context.
-             | Must use the property that the hint is referring to in a supported predicate in WHERE
-             | (either directly or as part of a top-level AND or OR).
-             | Supported predicates are:
-             | equality comparison, inequality (range) comparison, STARTS WITH,
-             | IN condition or checking property existence.
-             | The comparison cannot be performed between two property values.
-             | Note that the label/relationship type and property comparison must be specified on a
-             | non-optional node/relationship.""".stripLinesAndMargins, hint.position)
+        SemanticError(getMissingPropertyError(variable, properties), hint.position)
       case hint@UsingScanHint(Variable(variable), LabelOrRelTypeName(labelOrRelTypeName))
         if !containsLabelOrRelTypePredicate(variable, labelOrRelTypeName) =>
         SemanticError(getMissingEntityKindError(variable, labelOrRelTypeName, index = false), hint.position)
@@ -345,15 +360,19 @@ case class Match(
   }
 
   private[ast] def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
-    val propertiesInPredicates: Seq[String] = where.map(w => collectPropertiesInPredicates(variable, w.expression)).getOrElse(Seq.empty[String]) ++
+    val propertiesInPredicates: Seq[String] = getPropertyPredicates(variable)
+
+    propertiesInHint.forall(p => propertiesInPredicates.contains(p.name))
+  }
+
+  private def getPropertyPredicates(variable: String): Seq[String] = {
+    where.map(w => collectPropertiesInPredicates(variable, w.expression)).getOrElse(Seq.empty[String]) ++
       pattern.treeFold(Seq.empty[String]) {
         case NodePattern(Some(Variable(id)), _, properties, predicate) if variable == id =>
           acc => SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(collectPropertiesInPredicates(variable, _)).getOrElse(Seq.empty[String]))
         case RelationshipPattern(Some(Variable(id)), _, _, properties, predicate, _, _) if variable == id =>
           acc => SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(collectPropertiesInPredicates(variable, _)).getOrElse(Seq.empty[String]))
       }
-
-    propertiesInHint.forall(p => propertiesInPredicates.contains(p.name))
   }
 
   private def collectPropertiesInPropertyMap(properties: Option[Expression]): Seq[String] =
