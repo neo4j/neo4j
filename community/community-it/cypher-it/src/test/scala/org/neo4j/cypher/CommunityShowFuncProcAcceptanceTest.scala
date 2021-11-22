@@ -208,20 +208,6 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
   private val allProceduresVerbose: List[Map[String, Any]] = readAll(procResourceUrl)
     .filterNot(m => m("enterpriseOnly").asInstanceOf[Boolean])
     .map(m => m.filterKeys(k => !k.equals("enterpriseOnly")))
-    .map(m => m("name").asInstanceOf[String] match {
-      // This (deprecated) procedure have different signature in enterprise and community
-      case "dbms.security.changePassword" => m.map {
-        case ("signature", _) => ("signature", "dbms.security.changePassword(password :: STRING?) :: VOID")
-        case ("argumentDescription", _) => ("argumentDescription", List(Map("name" -> "password", "description" -> "password :: STRING?", "type" -> "STRING?")))
-        case other => other
-      }
-      // These (deprecated) procedures are admin in enterprise but not in community
-      case "dbms.security.createUser" | "dbms.security.deleteUser" | "dbms.security.listUsers" => m.map {
-        case ("admin", _) => ("admin", false)
-        case other => other
-      }
-      case _ => m
-    })
     .map(m => m.map {
     case ("rolesExecution", _) => ("rolesExecution", null)
     case ("rolesBoostedExecution", _) => ("rolesBoostedExecution", null)
