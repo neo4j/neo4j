@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.assertj.core.api.SoftAssertions;
+import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
+import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -33,62 +36,75 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 import static java.lang.Math.abs;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith( RandomExtension.class )
+@ExtendWith( {RandomExtension.class, SoftAssertionsExtension.class} )
 class KeyPartitioningTest
 {
     @Inject
     private RandomSupport random;
 
+    @InjectSoftAssertions
+    private SoftAssertions softly;
+
     @Test
     void shouldPartitionEvenly()
     {
         // given
-        Layout<PartitionKey,?> layout = layout();
-        int numberOfKeys = random.nextInt( 50, 200 );
-        SortedSet<PartitionKey> allKeys = keys( numberOfKeys );
-        KeyPartitioning<PartitionKey> partitioning = new KeyPartitioning<>( layout );
+        final var layout = layout();
+        final var numberOfKeys = random.nextInt( 50, 200 );
+        final var allKeys = keys( numberOfKeys );
+        final var partitioning = new KeyPartitioning<>( layout );
 
         // when
-        int from = random.nextInt( numberOfKeys - 1 );
-        int to = random.nextInt( from, numberOfKeys );
-        int numberOfPartitions = from == to ? 1 : random.nextInt( 1, to - from );
+        final var from = random.nextInt( numberOfKeys - 1 );
+        final var to = random.nextInt( from, numberOfKeys );
+        final var desiredNumberOfPartitions = from == to ? 1 : random.nextInt( 1, to - from );
 
-        List<PartitionKey> partitionEdges = partitioning.partition( allKeys, new PartitionKey( from ), new PartitionKey( to ), numberOfPartitions );
+        final var partitionEdges = partitioning.partition( allKeys, new PartitionKey( from ), new PartitionKey( to ), desiredNumberOfPartitions );
 
         // then verify that the partitions have no seams in between them, that they cover the whole requested range and are fairly evenly distributed
-        assertEquals( numberOfPartitions, partitionEdges.size() - 1 );
-        assertEquals( from, partitionEdges.get( 0 ).value );
-        assertEquals( to, partitionEdges.get( partitionEdges.size() - 1 ).value );
-        int diff = diff( partitionEdges, 0 );
+        softly.assertThat( partitionEdges.size() - 1 )
+              .as( "at least one partition" ).isGreaterThanOrEqualTo( 1 )
+              .as( "no larger than desired" ).isLessThanOrEqualTo( desiredNumberOfPartitions );
+        softly.assertThat( partitionEdges.get( 0 ).value ).as( "initial edge" ).isEqualTo( from );
+        softly.assertThat( partitionEdges.get( partitionEdges.size() - 1 ).value ).as( "final edge" ).isEqualTo( to );
+        final var diff = diff( partitionEdges, 0 );
         for ( int i = 1; i < partitionEdges.size() - 2; i++ )
         {
-            assertTrue( abs( diff - diff( partitionEdges, i ) ) <= 1 );
+            softly.assertThat( abs( diff - diff( partitionEdges, i ) ) )
+                  .as( "no seams in between partitions %d and %d", i, i + 1 )
+                  .isLessThanOrEqualTo( 1 );
         }
     }
 
-    private static int diff( List<PartitionKey> partitionEdges, int partition )
+    private int diff( List<PartitionKey> partitionEdges, int partition )
     {
-        assertTrue( partition < partitionEdges.size() - 2 );
+        softly.assertThat( partition )
+              .as( "valid partition index" )
+              .isGreaterThanOrEqualTo( 0 )
+              .isLessThanOrEqualTo( partitionEdges.size() - 2 );
+
         return partitionEdges.get( partition ).value - partitionEdges.get( partition + 1 ).value;
     }
 
     private static Layout<PartitionKey,?> layout()
     {
-        Layout<PartitionKey,?> layout = mock( Layout.class );
+        @SuppressWarnings( "unchecked" )
+        final var layout = (Layout<PartitionKey,?>) mock( Layout.class );
+
         when( layout.newKey() ).thenAnswer( invocationOnMock -> new PartitionKey() );
         when( layout.copyKey( any(), any() ) ).thenAnswer( invocationOnMock ->
         {
             invocationOnMock.getArgument( 1, PartitionKey.class ).value = invocationOnMock.getArgument( 0, PartitionKey.class ).value;
             return null;
         } );
-        when( layout.compare( any(), any() ) ).thenAnswer( invocationOnMock -> Integer.compare( invocationOnMock.getArgument( 0, PartitionKey.class ).value,
-                invocationOnMock.getArgument( 1, PartitionKey.class ).value ) );
+        when( layout.compare( any(), any() ) ).thenAnswer( invocationOnMock ->
+            Integer.compare( invocationOnMock.getArgument( 0, PartitionKey.class ).value,
+                             invocationOnMock.getArgument( 1, PartitionKey.class ).value ) );
+
         return layout;
     }
 
