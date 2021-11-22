@@ -208,14 +208,11 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
                 return false;
             }
 
-            switch ( queryType )
+            return switch ( queryType )
             {
-            case EXACT:
-            case RANGE:
-                return true;
-            default:
-                return false;
-            }
+                case EXACT, RANGE -> true;
+                default -> false;
+            };
         }
 
         @Override

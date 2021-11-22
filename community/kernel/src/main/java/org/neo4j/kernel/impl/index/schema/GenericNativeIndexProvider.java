@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Map;
 
 import org.neo4j.common.TokenNameLookup;
@@ -54,7 +52,6 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
-import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration;
@@ -230,19 +227,21 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
         {
             var seenUnknown = false;
-            for ( ValueCategory valueCategory : valueCategories )
+            for ( final var valueCategory : valueCategories )
             {
-                if ( valueCategory == ValueCategory.GEOMETRY ||
-                     valueCategory == ValueCategory.GEOMETRY_ARRAY )
+                switch ( valueCategory )
                 {
-                    return IndexOrderCapability.NONE;
-                }
-                else if ( valueCategory == ValueCategory.UNKNOWN )
-                {
-                    seenUnknown = true;
+                    case GEOMETRY, GEOMETRY_ARRAY:
+                        return IndexOrderCapability.NONE;
+                    case UNKNOWN:
+                        seenUnknown = true;
+                    default:
+                        break;
                 }
             }
-            return seenUnknown ? IndexOrderCapability.BOTH_PARTIALLY_SORTED : IndexOrderCapability.BOTH_FULLY_SORTED;
+            return seenUnknown
+                   ? IndexOrderCapability.BOTH_PARTIALLY_SORTED
+                   : IndexOrderCapability.BOTH_FULLY_SORTED;
         }
 
         @Override
@@ -270,9 +269,11 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         @Override
         public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
         {
-            return queryType != IndexQueryType.FULLTEXT_SEARCH
-                   && queryType != IndexQueryType.TOKEN_LOOKUP
-                   && areValueCategoriesAccepted( valueCategory );
+            return areValueCategoriesAccepted( valueCategory ) && switch ( queryType )
+            {
+                case TOKEN_LOOKUP, FULLTEXT_SEARCH -> false;
+                default -> true;
+            };
         }
 
         @Override
@@ -281,11 +282,17 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
             // for now, just make the operations which are more efficiently supported by
             // lucene-based indexes slightly more expensive so the planner would choose a
             // lucene-based index instead of btree-based index if there is a choice
-            if ( Arrays.stream( queryTypes ).anyMatch( EnumSet.of( IndexQueryType.STRING_SUFFIX, IndexQueryType.STRING_CONTAINS )::contains ) )
+
+            var preferLuceneBasedIndex = false;
+            for ( int i = 0; i < queryTypes.length && !preferLuceneBasedIndex; i++ )
             {
-                return 1.1;
+                preferLuceneBasedIndex = switch ( queryTypes[i] )
+                {
+                    case STRING_CONTAINS, STRING_SUFFIX -> true;
+                    default -> false;
+                };
             }
-            return 1.0;
+            return preferLuceneBasedIndex ? 1.1 : 1.0;
         }
 
         @Override
@@ -293,31 +300,52 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         {
             Preconditions.requireNonEmpty( queries );
             Preconditions.requireNoNullElements( queries );
-            if ( Arrays.stream( queries ).anyMatch( query ->
-                    (query.type() == IndexQueryType.TOKEN_LOOKUP)
-                    || (query.type() == IndexQueryType.RANGE
-                        && EnumSet.of( ValueGroup.GEOMETRY, ValueGroup.GEOMETRY_ARRAY ).contains( ((PropertyIndexQuery) query).valueGroup() )) )
-                 || (queries.length > 1
-                     && Arrays.stream( queries )
-                              .map( IndexQuery::type )
-                              .anyMatch( EnumSet.of( IndexQueryType.ALL_ENTRIES, IndexQueryType.STRING_SUFFIX, IndexQueryType.STRING_CONTAINS )::contains )) )
-            {
-                return false;
-            }
 
-            for ( int i = 1; i < queries.length; i++ )
+            for ( int i = 0; i < queries.length; i++ )
             {
-                final var prev = queries[i - 1].type();
-                final var curr = queries[i].type();
+                final var query = queries[i];
+                final var type = query.type();
 
-                if ( prev == IndexQueryType.EXACT )
+                switch ( type )
                 {
-                    continue;
-                }
-                if ( (EnumSet.of( IndexQueryType.EXISTS, IndexQueryType.RANGE, IndexQueryType.STRING_PREFIX ).contains( prev ))
-                     && !(curr == IndexQueryType.EXISTS) )
-                {
+                case ALL_ENTRIES, EXISTS, EXACT, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX:
+                    break;
+                case RANGE:
+                    switch ( ((PropertyIndexQuery) query).valueGroup() )
+                    {
+                    case GEOMETRY, GEOMETRY_ARRAY:
+                        return false;
+                    default:
+                        break;
+                    }
+                    break;
+                default:
                     return false;
+                }
+
+                if ( i > 0 )
+                {
+                    final var prevType = queries[i - 1].type();
+                    switch ( type )
+                    {
+                    case EXISTS:
+                        switch ( prevType )
+                        {
+                        case EXISTS, EXACT, RANGE, STRING_PREFIX:
+                            break;
+                        default:
+                            return false;
+                        }
+                        break;
+                    case EXACT, RANGE, STRING_PREFIX:
+                        if ( prevType != IndexQueryType.EXACT )
+                        {
+                            return false;
+                        }
+                        break;
+                    default:
+                        return false;
+                    }
                 }
             }
             return true;

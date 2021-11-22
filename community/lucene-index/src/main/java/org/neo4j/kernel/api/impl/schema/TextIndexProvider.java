@@ -105,17 +105,11 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
                 return false;
             }
 
-            switch ( queryType )
+            return switch ( queryType )
             {
-            case EXACT:
-            case STRING_PREFIX:
-            case STRING_SUFFIX:
-            case STRING_CONTAINS:
-            case RANGE:
-                return true;
-            default:
-                return false;
-            }
+                case EXACT, RANGE, STRING_PREFIX, STRING_CONTAINS, STRING_SUFFIX -> true;
+                default -> false;
+            };
         }
 
         @Override
@@ -124,11 +118,17 @@ public class TextIndexProvider extends AbstractLuceneIndexProvider
             // for now, just make the operations which are more efficiently supported by
             // btree-based indexes slightly more expensive so the planner would choose a
             // btree-based index instead of lucene-based index if there is a choice
-            if ( Arrays.stream( queryTypes ).anyMatch( EnumSet.of( IndexQueryType.EXACT, IndexQueryType.RANGE, IndexQueryType.STRING_PREFIX )::contains ) )
+
+            var preferBTreeBasedIndex = false;
+            for ( int i = 0; i < queryTypes.length && !preferBTreeBasedIndex; i++ )
             {
-                return 1.1;
+                preferBTreeBasedIndex = switch ( queryTypes[i] )
+                {
+                    case EXACT, RANGE, STRING_PREFIX -> true;
+                    default -> false;
+                };
             }
-            return 1.0;
+            return preferBTreeBasedIndex ? 1.1 : 1.0;
         }
 
         @Override

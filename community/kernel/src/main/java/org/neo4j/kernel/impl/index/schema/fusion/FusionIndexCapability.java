@@ -95,7 +95,11 @@ public class FusionIndexCapability implements IndexCapability
     @Override
     public boolean isQuerySupported( IndexQueryType queryType, ValueCategory valueCategory )
     {
-        return queryType != IndexQueryType.FULLTEXT_SEARCH && queryType != IndexQueryType.TOKEN_LOOKUP;
+        return switch ( queryType )
+        {
+            case TOKEN_LOOKUP, FULLTEXT_SEARCH -> false;
+            default -> true;
+        };
     }
 
     @Override
@@ -109,11 +113,19 @@ public class FusionIndexCapability implements IndexCapability
     {
         Preconditions.requireNonEmpty( queries );
         Preconditions.requireNoNullElements( queries );
-        if ( Arrays.stream( queries )
-                   .map( IndexQuery::type )
-                   .anyMatch( EnumSet.of( IndexQueryType.TOKEN_LOOKUP, IndexQueryType.ALL_ENTRIES, IndexQueryType.EXISTS )::contains ) )
+
+        for ( final var query : queries )
         {
-            return false;
+            final var potentiallySupported = switch ( query.type() )
+            {
+                case TOKEN_LOOKUP, ALL_ENTRIES, EXISTS -> false;
+                default -> true;
+            };
+
+            if ( !potentiallySupported )
+            {
+                return false;
+            }
         }
 
         final var propertyIndexQueries = Arrays.stream( queries ).map( PropertyIndexQuery.class::cast ).toArray( PropertyIndexQuery[]::new );

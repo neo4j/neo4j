@@ -214,18 +214,16 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
                 return false;
             }
 
-            switch ( queryType )
+            return switch ( queryType )
             {
-            case ALL_ENTRIES:
-            case EXISTS:
-            case EXACT:
-            case STRING_PREFIX:
-                return true;
-            case RANGE:
-                return valueCategory != ValueCategory.UNKNOWN && valueCategory != ValueCategory.GEOMETRY;
-            default:
-                return false;
-            }
+                case ALL_ENTRIES, EXISTS, EXACT, STRING_PREFIX -> true;
+                case RANGE -> switch ( valueCategory )
+                {
+                    case UNKNOWN, GEOMETRY -> false;
+                    default -> true;
+                };
+                default -> false;
+            };
         }
 
         @Override
@@ -239,28 +237,52 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
         {
             Preconditions.requireNonEmpty( queries );
             Preconditions.requireNoNullElements( queries );
-            if ( Arrays.stream( queries ).anyMatch( query ->
-                    EnumSet.of( IndexQueryType.TOKEN_LOOKUP, IndexQueryType.STRING_SUFFIX, IndexQueryType.STRING_CONTAINS ).contains( query.type() )
-                    || (query.type() == IndexQueryType.RANGE
-                        && EnumSet.of( ValueGroup.GEOMETRY, ValueGroup.GEOMETRY_ARRAY ).contains( ((PropertyIndexQuery) query).valueGroup() )) )
-                 || (queries.length > 1 && Arrays.stream( queries ).map( IndexQuery::type ).anyMatch( IndexQueryType.ALL_ENTRIES::equals )) )
-            {
-                return false;
-            }
 
-            for ( int i = 1; i < queries.length; i++ )
+            for ( int i = 0; i < queries.length; i++ )
             {
-                final var prev = queries[i - 1].type();
-                final var curr = queries[i].type();
+                final var query = queries[i];
+                final var type = query.type();
 
-                if ( prev == IndexQueryType.EXACT )
+                switch ( type )
                 {
-                    continue;
-                }
-                if ( (EnumSet.of( IndexQueryType.EXISTS, IndexQueryType.RANGE, IndexQueryType.STRING_PREFIX ).contains( prev ))
-                     && !(curr == IndexQueryType.EXISTS) )
-                {
+                case ALL_ENTRIES, EXISTS, EXACT, STRING_PREFIX:
+                    break;
+                case RANGE:
+                    switch ( ((PropertyIndexQuery) query).valueGroup() )
+                    {
+                    case GEOMETRY, GEOMETRY_ARRAY:
+                        return false;
+                    default:
+                        break;
+                    }
+                    break;
+                default:
                     return false;
+                }
+
+                if ( i > 0 )
+                {
+                    final var prevType = queries[i - 1].type();
+                    switch ( type )
+                    {
+                    case EXISTS:
+                        switch ( prevType )
+                        {
+                        case EXISTS, EXACT, RANGE, STRING_PREFIX:
+                            break;
+                        default:
+                            return false;
+                        }
+                        break;
+                    case EXACT, RANGE, STRING_PREFIX:
+                        if ( prevType != IndexQueryType.EXACT )
+                        {
+                            return false;
+                        }
+                        break;
+                    default:
+                        return false;
+                    }
                 }
             }
             return true;
