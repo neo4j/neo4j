@@ -573,25 +573,25 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, CARTESIAN ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.boundingBox( prop, CARTESIAN ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 5, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, CARTESIAN_3D ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.boundingBox( prop, CARTESIAN_3D ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, WGS_84 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.boundingBox( prop, WGS_84 ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, WGS_84_3D ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.boundingBox( prop, WGS_84_3D ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
@@ -781,7 +781,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ),
-                                              PropertyIndexQuery.range( prop, CoordinateReferenceSystem.CARTESIAN ) );
+                                              PropertyIndexQuery.boundingBox( prop, CARTESIAN ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.ASCENDING );
@@ -790,7 +790,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
-                                              PropertyIndexQuery.range( prop, CoordinateReferenceSystem.CARTESIAN ) );
+                                              PropertyIndexQuery.boundingBox( prop, CARTESIAN ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );

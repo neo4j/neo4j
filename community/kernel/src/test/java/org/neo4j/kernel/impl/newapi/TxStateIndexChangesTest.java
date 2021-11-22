@@ -47,7 +47,10 @@ import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -56,21 +59,30 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForBoundingBoxSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForScan;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSuffixOrContains;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForBoundingBoxSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
 import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D;
+import static org.neo4j.values.storable.PointValue.maxPointValueOf;
+import static org.neo4j.values.storable.PointValue.minPointValueOf;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class TxStateIndexChangesTest
@@ -105,8 +117,8 @@ class TxStateIndexChangesTest
         AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index, IndexOrder.NONE );
 
         // THEN
-        assertContains( changes.getAdded(), 42L, 43L );
-        assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 42L, "foo" ), entityWithPropertyValues( 43L, "bar" ) );
+        assertContains( changes.added(), 42L, 43L );
+        assertContains( changesWithValues.added(), entityWithPropertyValues( 42L, "foo" ), entityWithPropertyValues( 43L, "bar" ) );
     }
 
     @Test
@@ -166,13 +178,13 @@ class TxStateIndexChangesTest
         AddedAndRemoved changes = indexUpdatesForSeek( state, index, ValueTuple.of( "bar" ) );
 
         // THEN
-        assertContains( changes.getAdded(), 43L );
+        assertContains( changes.added(), 43L );
     }
 
     @TestFactory
     Collection<DynamicTest> rangeTests()
     {
-        final ReadableTransactionState state = new TxStateBuilder()
+        final var state = new TxStateBuilder()
                 .withAdded( 42L, 510 )
                 .withAdded( 43L, 520 )
                 .withAdded( 44L, 550 )
@@ -182,8 +194,17 @@ class TxStateIndexChangesTest
                 .withAdded( 48L, 540 )
                 .build();
 
-        final Collection<DynamicTest> tests = new ArrayList<>();
+        final var tests = new ArrayList<DynamicTest>();
 
+        tests.addAll( rangeTest( state, ValueGroup.NUMBER,
+                entityWithPropertyValues( 45L, 500 ),
+                entityWithPropertyValues( 42L, 510 ),
+                entityWithPropertyValues( 43L, 520 ),
+                entityWithPropertyValues( 46L, 530 ),
+                entityWithPropertyValues( 48L, 540 ),
+                entityWithPropertyValues( 44L, 550 ),
+                entityWithPropertyValues( 47L, 560 )
+        ) );
         tests.addAll( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), true,
                 entityWithPropertyValues( 42L, 510 ),
                 entityWithPropertyValues( 43L, 520 ),
@@ -271,23 +292,271 @@ class TxStateIndexChangesTest
 
     private DynamicTest rangeTest( ReadableTransactionState state,
                                    IndexOrder indexOrder,
-                                   Value lo,
-                                   boolean includeLo,
-                                   Value hi,
-                                   boolean includeHi,
+                                   Value lo, boolean includeLo,
+                                   Value hi, boolean includeHi,
                                    EntityWithPropertyValues... expected )
     {
-        return DynamicTest.dynamicTest( String.format( "range seek: lo=%s (incl: %s), hi=%s (incl: %s)", lo, includeLo, hi, includeHi ), () ->
+        return DynamicTest.dynamicTest( String.format( "range seek: lo=%s (incl: %s), hi=%s (incl: %s), order=%s", lo, includeLo, hi, includeHi, indexOrder ),
+                                        () ->
         {
-            // Internal production code relies on null for unbounded, and cannot cope with NO_VALUE in this case
             assert lo != NO_VALUE;
             assert hi != NO_VALUE;
-            final AddedAndRemoved changes =
-                    indexUpdatesForRangeSeek( state, index, new Value[0], PropertyIndexQuery.range( -1, lo, includeLo, hi, includeHi ), indexOrder );
-            final AddedWithValuesAndRemoved changesWithValues =
-                    indexUpdatesWithValuesForRangeSeek( state, index, new Value[0], PropertyIndexQuery.range( -1, lo, includeLo, hi, includeHi ), indexOrder );
+            final var query = PropertyIndexQuery.range( -1, lo, includeLo, hi, includeHi );
+            final var changes = indexUpdatesForRangeSeek( state, index, new Value[0], query, indexOrder );
+            final var changesWithValues = indexUpdatesWithValuesForRangeSeek( state, index, new Value[0], query, indexOrder );
 
             assertContains( indexOrder, changes, changesWithValues, expected );
+        } );
+    }
+
+    private Collection<DynamicTest> rangeTest( ReadableTransactionState state, ValueGroup valueGroup,
+                                               EntityWithPropertyValues... expected )
+    {
+        return Arrays.asList( rangeTest( state, IndexOrder.NONE, valueGroup, expected ),
+                              rangeTest( state, IndexOrder.ASCENDING, valueGroup, expected ),
+                              rangeTest( state, IndexOrder.DESCENDING, valueGroup, expected ) );
+    }
+
+    private DynamicTest rangeTest( ReadableTransactionState state,
+                                   IndexOrder indexOrder,
+                                   ValueGroup valueGroup,
+                                   EntityWithPropertyValues... expected )
+    {
+        return DynamicTest.dynamicTest( String.format( "range seek: all valueGroup=%s, order=%s", valueGroup, indexOrder ), () ->
+        {
+            final var query = PropertyIndexQuery.range( -1, valueGroup );
+            final var changes = indexUpdatesForRangeSeek( state, index, new Value[0], query, indexOrder );
+            final var changesWithValues = indexUpdatesWithValuesForRangeSeek( state, index, new Value[0], query, indexOrder );
+
+            assertContains( indexOrder, changes, changesWithValues, expected );
+        } );
+    }
+
+    @TestFactory
+    Collection<DynamicTest> boundingBoxTests()
+    {
+        final var state = new TxStateBuilder()
+
+                .withAdded( 42L, minPointValueOf( CARTESIAN ) )
+                .withAdded( 43L, maxPointValueOf( CARTESIAN ) )
+                .withAdded( 44L, pointValue( CARTESIAN, -500, -500 ) )
+                .withAdded( 45L, pointValue( CARTESIAN, -250, 0 ) )
+                .withAdded( 46L, pointValue( CARTESIAN, -250, 500 ) )
+                .withAdded( 47L, pointValue( CARTESIAN, 0, -500 ) )
+                .withAdded( 48L, pointValue( CARTESIAN, 0, 0 ) )
+                .withAdded( 49L, pointValue( CARTESIAN, 250, 500 ) )
+                .withAdded( 50L, pointValue( CARTESIAN, 250, 0 ) )
+                .withAdded( 51L, pointValue( CARTESIAN, 500, -500 ) )
+                .withAdded( 52L, pointValue( CARTESIAN, 500, 500 ) )
+
+                .withAdded( 53L, minPointValueOf( CARTESIAN_3D ) )
+                .withAdded( 54L, maxPointValueOf( CARTESIAN_3D ) )
+                .withAdded( 55L, pointValue( CARTESIAN_3D, -500, -500, -500 ) )
+                .withAdded( 56L, pointValue( CARTESIAN_3D, -500, 0, 250 ) )
+                .withAdded( 57L, pointValue( CARTESIAN_3D, 0, -250, -250 ) )
+                .withAdded( 58L, pointValue( CARTESIAN_3D, 0, 0, 0 ) )
+                .withAdded( 59L, pointValue( CARTESIAN_3D, 0, 250, -500 ) )
+                .withAdded( 60L, pointValue( CARTESIAN_3D, 250, -250, 500 ) )
+                .withAdded( 61L, pointValue( CARTESIAN_3D, 500, 500, 500 ) )
+
+                .withAdded( 62L, minPointValueOf( WGS_84 ) )
+                .withAdded( 63L, maxPointValueOf( WGS_84 ) )
+                .withAdded( 64L, pointValue( WGS_84, -122.322312, 37.563437 ) )
+                .withAdded( 65L, pointValue( WGS_84, 12.994807, 55.612088 ) )
+                .withAdded( 66L, pointValue( WGS_84, -0.101008, 51.503773 ) )
+                .withAdded( 67L, pointValue( WGS_84, 11.572188, 48.135813 ) )
+
+                .withAdded( 68L, minPointValueOf( WGS_84_3D ) )
+                .withAdded( 69L, maxPointValueOf( WGS_84_3D ) )
+                .withAdded( 70L, pointValue( WGS_84_3D, -122.322312, 37.563437, 10 ) )
+                .withAdded( 71L, pointValue( WGS_84_3D, 12.994807, 55.612088, 0 ) )
+                .withAdded( 72L, pointValue( WGS_84_3D, -0.101008, 51.503773, 10 ) )
+                .withAdded( 73L, pointValue( WGS_84_3D, 11.572188, 48.135813, 528 ) )
+
+                .build();
+
+        final var tests = new ArrayList<DynamicTest>();
+
+        tests.add( boundingBoxTest( state, CARTESIAN,
+                                    entityWithPropertyValues( 42L, minPointValueOf( CARTESIAN ) ),
+                                    entityWithPropertyValues( 43L, maxPointValueOf( CARTESIAN ) ),
+                                    entityWithPropertyValues( 44L, pointValue( CARTESIAN, -500, -500 ) ),
+                                    entityWithPropertyValues( 45L, pointValue( CARTESIAN, -250, 0 ) ),
+                                    entityWithPropertyValues( 46L, pointValue( CARTESIAN, -250, 500 ) ),
+                                    entityWithPropertyValues( 47L, pointValue( CARTESIAN, 0, -500 ) ),
+                                    entityWithPropertyValues( 48L, pointValue( CARTESIAN, 0, 0 ) ),
+                                    entityWithPropertyValues( 49L, pointValue( CARTESIAN, 250, 500 ) ),
+                                    entityWithPropertyValues( 50L, pointValue( CARTESIAN, 250, 0 ) ),
+                                    entityWithPropertyValues( 51L, pointValue( CARTESIAN, 500, -500 ) ),
+                                    entityWithPropertyValues( 52L, pointValue( CARTESIAN, 500, 500 ) ) ) );
+
+        tests.add( boundingBoxTest( state, minPointValueOf( CARTESIAN ), maxPointValueOf( CARTESIAN ),
+                                    entityWithPropertyValues( 42L, minPointValueOf( CARTESIAN ) ),
+                                    entityWithPropertyValues( 43L, maxPointValueOf( CARTESIAN ) ),
+                                    entityWithPropertyValues( 44L, pointValue( CARTESIAN, -500, -500 ) ),
+                                    entityWithPropertyValues( 45L, pointValue( CARTESIAN, -250, 0 ) ),
+                                    entityWithPropertyValues( 46L, pointValue( CARTESIAN, -250, 500 ) ),
+                                    entityWithPropertyValues( 47L, pointValue( CARTESIAN, 0, -500 ) ),
+                                    entityWithPropertyValues( 48L, pointValue( CARTESIAN, 0, 0 ) ),
+                                    entityWithPropertyValues( 49L, pointValue( CARTESIAN, 250, 500 ) ),
+                                    entityWithPropertyValues( 50L, pointValue( CARTESIAN, 250, 0 ) ),
+                                    entityWithPropertyValues( 51L, pointValue( CARTESIAN, 500, -500 ) ),
+                                    entityWithPropertyValues( 52L, pointValue( CARTESIAN, 500, 500 ) ) ) );
+
+        tests.add( boundingBoxTest( state, pointValue( CARTESIAN, -250, -250 ), pointValue( CARTESIAN, 250, 750 ),
+                                    entityWithPropertyValues( 45L, pointValue( CARTESIAN, -250, 0 ) ),
+                                    entityWithPropertyValues( 46L, pointValue( CARTESIAN, -250, 500 ) ),
+                                    entityWithPropertyValues( 48L, pointValue( CARTESIAN, 0, 0 ) ),
+                                    entityWithPropertyValues( 49L, pointValue( CARTESIAN, 250, 500 ) ),
+                                    entityWithPropertyValues( 50L, pointValue( CARTESIAN, 250, 0 ) ) ) );
+
+        tests.add( boundingBoxTest( state, pointValue( CARTESIAN, -500, -500 ), pointValue( CARTESIAN, 500, 500 ),
+                                    entityWithPropertyValues( 44L, pointValue( CARTESIAN, -500, -500 ) ),
+                                    entityWithPropertyValues( 45L, pointValue( CARTESIAN, -250, 0 ) ),
+                                    entityWithPropertyValues( 46L, pointValue( CARTESIAN, -250, 500 ) ),
+                                    entityWithPropertyValues( 47L, pointValue( CARTESIAN, 0, -500 ) ),
+                                    entityWithPropertyValues( 48L, pointValue( CARTESIAN, 0, 0 ) ),
+                                    entityWithPropertyValues( 49L, pointValue( CARTESIAN, 250, 500 ) ),
+                                    entityWithPropertyValues( 50L, pointValue( CARTESIAN, 250, 0 ) ),
+                                    entityWithPropertyValues( 51L, pointValue( CARTESIAN, 500, -500 ) ),
+                                    entityWithPropertyValues( 52L, pointValue( CARTESIAN, 500, 500 ) ) ) );
+
+        tests.add( boundingBoxTest( state, CARTESIAN_3D,
+                                    entityWithPropertyValues( 53L, minPointValueOf( CARTESIAN_3D ) ),
+                                    entityWithPropertyValues( 54L, maxPointValueOf( CARTESIAN_3D ) ),
+                                    entityWithPropertyValues( 55L, pointValue( CARTESIAN_3D, -500, -500, -500 ) ),
+                                    entityWithPropertyValues( 56L, pointValue( CARTESIAN_3D, -500, 0, 250 ) ),
+                                    entityWithPropertyValues( 57L, pointValue( CARTESIAN_3D, 0, -250, -250 ) ),
+                                    entityWithPropertyValues( 58L, pointValue( CARTESIAN_3D, 0, 0, 0 ) ),
+                                    entityWithPropertyValues( 59L, pointValue( CARTESIAN_3D, 0, 250, -500 ) ),
+                                    entityWithPropertyValues( 60L, pointValue( CARTESIAN_3D, 250, -250, 500 ) ),
+                                    entityWithPropertyValues( 61L, pointValue( CARTESIAN_3D, 500, 500, 500 ) ) ) );
+
+        tests.add( boundingBoxTest( state, minPointValueOf( CARTESIAN_3D ), maxPointValueOf( CARTESIAN_3D ),
+                                    entityWithPropertyValues( 53L, minPointValueOf( CARTESIAN_3D ) ),
+                                    entityWithPropertyValues( 54L, maxPointValueOf( CARTESIAN_3D ) ),
+                                    entityWithPropertyValues( 55L, pointValue( CARTESIAN_3D, -500, -500, -500 ) ),
+                                    entityWithPropertyValues( 56L, pointValue( CARTESIAN_3D, -500, 0, 250 ) ),
+                                    entityWithPropertyValues( 57L, pointValue( CARTESIAN_3D, 0, -250, -250 ) ),
+                                    entityWithPropertyValues( 58L, pointValue( CARTESIAN_3D, 0, 0, 0 ) ),
+                                    entityWithPropertyValues( 59L, pointValue( CARTESIAN_3D, 0, 250, -500 ) ),
+                                    entityWithPropertyValues( 60L, pointValue( CARTESIAN_3D, 250, -250, 500 ) ),
+                                    entityWithPropertyValues( 61L, pointValue( CARTESIAN_3D, 500, 500, 500 ) ) ) );
+
+        tests.add( boundingBoxTest( state, pointValue( CARTESIAN_3D, -500, -500, -500 ), pointValue( CARTESIAN_3D, 500, 500, 500 ),
+                                    entityWithPropertyValues( 55L, pointValue( CARTESIAN_3D, -500, -500, -500 ) ),
+                                    entityWithPropertyValues( 56L, pointValue( CARTESIAN_3D, -500, 0, 250 ) ),
+                                    entityWithPropertyValues( 57L, pointValue( CARTESIAN_3D, 0, -250, -250 ) ),
+                                    entityWithPropertyValues( 58L, pointValue( CARTESIAN_3D, 0, 0, 0 ) ),
+                                    entityWithPropertyValues( 59L, pointValue( CARTESIAN_3D, 0, 250, -500 ) ),
+                                    entityWithPropertyValues( 60L, pointValue( CARTESIAN_3D, 250, -250, 500 ) ),
+                                    entityWithPropertyValues( 61L, pointValue( CARTESIAN_3D, 500, 500, 500 ) ) ) );
+
+        tests.add( boundingBoxTest( state, pointValue( CARTESIAN_3D, 0, -250, -500 ), pointValue( CARTESIAN_3D, 250, 250, 500 ),
+                                    entityWithPropertyValues( 57L, pointValue( CARTESIAN_3D, 0, -250, -250 ) ),
+                                    entityWithPropertyValues( 58L, pointValue( CARTESIAN_3D, 0, 0, 0 ) ),
+                                    entityWithPropertyValues( 59L, pointValue( CARTESIAN_3D, 0, 250, -500 ) ),
+                                    entityWithPropertyValues( 60L, pointValue( CARTESIAN_3D, 250, -250, 500 ) ) ) );
+
+        tests.add( boundingBoxTest( state, WGS_84,
+                                    entityWithPropertyValues( 62L, minPointValueOf( WGS_84 ) ),
+                                    entityWithPropertyValues( 63L, maxPointValueOf( WGS_84 ) ),
+                                    entityWithPropertyValues( 64L, pointValue( WGS_84, -122.322312, 37.563437 ) ),
+                                    entityWithPropertyValues( 65L, pointValue( WGS_84, 12.994807, 55.612088 ) ),
+                                    entityWithPropertyValues( 66L, pointValue( WGS_84, -0.101008, 51.503773 ) ),
+                                    entityWithPropertyValues( 67L, pointValue( WGS_84, 11.572188, 48.135813 ) ) ) );
+
+        tests.add( boundingBoxTest( state, minPointValueOf( WGS_84 ), maxPointValueOf( WGS_84 ),
+                                    entityWithPropertyValues( 62L, minPointValueOf( WGS_84 ) ),
+                                    entityWithPropertyValues( 63L, maxPointValueOf( WGS_84 ) ),
+                                    entityWithPropertyValues( 64L, pointValue( WGS_84, -122.322312, 37.563437 ) ),
+                                    entityWithPropertyValues( 65L, pointValue( WGS_84, 12.994807, 55.612088 ) ),
+                                    entityWithPropertyValues( 66L, pointValue( WGS_84, -0.101008, 51.503773 ) ),
+                                    entityWithPropertyValues( 67L, pointValue( WGS_84, 11.572188, 48.135813 ) ) ) );
+
+        tests.add( boundingBoxTest( state, pointValue( WGS_84, -171.791110603, 18.91619 ), pointValue( WGS_84, -66.96466, 71.3577635769 ),
+                                    entityWithPropertyValues( 64L, pointValue( WGS_84, -122.322312, 37.563437 ) ) ) );
+
+        tests.add( boundingBoxTest( state, pointValue( WGS_84, 11.0273686052, 55.3617373725 ), pointValue( WGS_84, 23.9033785336, 69.1062472602 ),
+                                    entityWithPropertyValues( 65L, pointValue( WGS_84, 12.994807, 55.612088 ) ) ) );
+
+        tests.add( boundingBoxTest( state, pointValue( WGS_84, -7.57216793459, 49.959999905 ), pointValue( WGS_84, 1.68153079591, 58.6350001085 ),
+                                    entityWithPropertyValues( 66L, pointValue( WGS_84, -0.101008, 51.503773 ) ) ) );
+
+        tests.add( boundingBoxTest( state, pointValue( WGS_84, 5.98865807458, 47.3024876979 ), pointValue( WGS_84, 15.0169958839, 54.983104153 ),
+                                    entityWithPropertyValues( 67L, pointValue( WGS_84, 11.572188, 48.135813 ) ) ) );
+
+        tests.add( boundingBoxTest( state, pointValue( WGS_84, -0.6, 51.23 ), pointValue( WGS_84, 13.1, 55.65 ),
+                                    entityWithPropertyValues( 65L, pointValue( WGS_84, 12.994807, 55.612088 ) ),
+                                    entityWithPropertyValues( 66L, pointValue( WGS_84, -0.101008, 51.503773 ) ) ) );
+
+        tests.add( boundingBoxTest( state, WGS_84_3D,
+                                    entityWithPropertyValues( 68L, minPointValueOf( WGS_84_3D ) ),
+                                    entityWithPropertyValues( 69L, maxPointValueOf( WGS_84_3D ) ),
+                                    entityWithPropertyValues( 70L, pointValue( WGS_84_3D, -122.322312, 37.563437, 10 ) ),
+                                    entityWithPropertyValues( 71L, pointValue( WGS_84_3D, 12.994807, 55.612088, 0 ) ),
+                                    entityWithPropertyValues( 72L, pointValue( WGS_84_3D, -0.101008, 51.503773, 10 ) ),
+                                    entityWithPropertyValues( 73L, pointValue( WGS_84_3D, 11.572188, 48.135813, 528 ) ) ) );
+
+        tests.add( boundingBoxTest( state, minPointValueOf( WGS_84_3D ), maxPointValueOf( WGS_84_3D ),
+                                    entityWithPropertyValues( 68L, minPointValueOf( WGS_84_3D ) ),
+                                    entityWithPropertyValues( 69L, maxPointValueOf( WGS_84_3D ) ),
+                                    entityWithPropertyValues( 70L, pointValue( WGS_84_3D, -122.322312, 37.563437, 10 ) ),
+                                    entityWithPropertyValues( 71L, pointValue( WGS_84_3D, 12.994807, 55.612088, 0 ) ),
+                                    entityWithPropertyValues( 72L, pointValue( WGS_84_3D, -0.101008, 51.503773, 10 ) ),
+                                    entityWithPropertyValues( 73L, pointValue( WGS_84_3D, 11.572188, 48.135813, 528 ) ) ) );
+
+        tests.add( boundingBoxTest( state,
+                                    pointValue( WGS_84_3D, -171.791110603, 18.91619, -86 ),
+                                    pointValue( WGS_84_3D, -66.96466, 71.3577635769, 6_190.5 ),
+                                    entityWithPropertyValues( 70L, pointValue( WGS_84_3D, -122.322312, 37.563437, 10 ) ) ) );
+
+        tests.add( boundingBoxTest( state,
+                                    pointValue( WGS_84_3D, 11.0273686052, 55.3617373725, -2.41 ),
+                                    pointValue( WGS_84_3D, 23.9033785336, 69.1062472602, 2_097 ),
+                                    entityWithPropertyValues( 71L, pointValue( WGS_84_3D, 12.994807, 55.612088, 0 ) ) ) );
+
+        tests.add( boundingBoxTest( state,
+                                    pointValue( WGS_84_3D, -7.57216793459, 49.959999905, -2.75 ),
+                                    pointValue( WGS_84_3D, 1.68153079591, 58.6350001085, 1_343 ),
+                                    entityWithPropertyValues( 72L, pointValue( WGS_84_3D, -0.101008, 51.503773, 10 ) ) ) );
+
+        tests.add( boundingBoxTest( state,
+                                    pointValue( WGS_84_3D, -0.6, 51.23, 0 ),
+                                    pointValue( WGS_84_3D, 13.1, 55.65, 10 ),
+                                    entityWithPropertyValues( 71L, pointValue( WGS_84_3D, 12.994807, 55.612088, 0 ) ),
+                                    entityWithPropertyValues( 72L, pointValue( WGS_84_3D, -0.101008, 51.503773, 10 ) ) ) );
+
+        return tests;
+    }
+
+    private DynamicTest boundingBoxTest( ReadableTransactionState state,
+                                         CoordinateReferenceSystem crs,
+                                         EntityWithPropertyValues... expected )
+    {
+        return DynamicTest.dynamicTest( String.format( "bounding box seek: all crs=%s", crs.getName() ), () ->
+        {
+            final var query = PropertyIndexQuery.boundingBox( -1, crs );
+            final var changes = indexUpdatesForBoundingBoxSeek( state, index, new Value[0], query );
+            final var changesWithValues = indexUpdatesWithValuesForBoundingBoxSeek( state, index, new Value[0], query );
+
+            assertContains( IndexOrder.NONE, changes, changesWithValues, expected );
+        } );
+    }
+
+    private DynamicTest boundingBoxTest( ReadableTransactionState state,
+                                         PointValue lowerBound, PointValue upperBound,
+                                         EntityWithPropertyValues... expected )
+    {
+        return DynamicTest.dynamicTest( String.format( "bounding box seek: lowerBound=%s, upperBound=%s", lowerBound, upperBound ), () ->
+        {
+            assert lowerBound != NO_VALUE;
+            assert upperBound != NO_VALUE;
+            final var query = PropertyIndexQuery.boundingBox( -1, lowerBound, upperBound );
+            final var changes = indexUpdatesForBoundingBoxSeek( state, index, new Value[0], query );
+            final var changesWithValues = indexUpdatesWithValuesForBoundingBoxSeek( state, index, new Value[0], query );
+
+            assertContains( IndexOrder.NONE, changes, changesWithValues, expected );
         } );
     }
 
@@ -310,8 +579,8 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
 
             // THEN
-            assertTrue( changes.getAdded().isEmpty() );
-            assertFalse( changesWithValues.getAdded().iterator().hasNext() );
+            assertTrue( changes.added().isEmpty() );
+            assertFalse( changesWithValues.added().iterator().hasNext() );
         }
 
         @Test
@@ -335,8 +604,8 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes.getAdded(), 46L, 47L );
-            assertContains( changesWithValues.getAdded(),
+            assertContains( changes.added(), 46L, 47L );
+            assertContains( changesWithValues.added(),
                             entityWithPropertyValues( 46L, "Barbarella" ),
                             entityWithPropertyValues( 47L, "Cinderella" ) );
         }
@@ -405,8 +674,8 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes.getAdded(), 45L, 46L );
-            assertContains( changesWithValues.getAdded(),
+            assertContains( changes.added(), 45L, 46L );
+            assertContains( changesWithValues.added(),
                             entityWithPropertyValues( 45L, "Barbara" ),
                             entityWithPropertyValues( 46L, "Barbarella" ) );
         }
@@ -474,8 +743,8 @@ class TxStateIndexChangesTest
                     indexUpdatesWithValuesForRangeSeekByPrefix( state, index, new Value[0], stringValue( "eulav" ), IndexOrder.NONE );
 
             // THEN
-            assertTrue( changes.getAdded().isEmpty() );
-            assertFalse( changesWithValues.getAdded().iterator().hasNext() );
+            assertTrue( changes.added().isEmpty() );
+            assertFalse( changesWithValues.added().iterator().hasNext() );
         }
 
         @Test
@@ -535,7 +804,7 @@ class TxStateIndexChangesTest
             AddedAndRemoved changes = TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix( state, index, new Value[0], stringValue( "bar" ), IndexOrder.NONE );
 
             // THEN
-            assertContainsInOrder( changes.getAdded(),   43L, 42L );
+            assertContainsInOrder( changes.added(), 43L, 42L );
         }
     }
 
@@ -572,8 +841,8 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes.getAdded(), 42L, 43L );
-            assertContains( changesWithValues.getAdded(),
+            assertContains( changes.added(), 42L, 43L );
+            assertContains( changesWithValues.added(),
                             entityWithPropertyValues( 42L, "42value1", "42value2" ),
                             entityWithPropertyValues( 43L, "43value1", "43value2" ) );
         }
@@ -595,8 +864,8 @@ class TxStateIndexChangesTest
                     indexUpdatesWithValuesForRangeSeek( state, compositeIndex, new Value[]{stringValue( "43value1" )}, predicate, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes.getAdded(), 43L );
-            assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 43L, "43value1", "43value2" ) );
+            assertContains( changes.added(), 43L );
+            assertContains( changesWithValues.added(), entityWithPropertyValues( 43L, "43value1", "43value2" ) );
         }
 
         @Test
@@ -616,8 +885,8 @@ class TxStateIndexChangesTest
                     indexUpdatesWithValuesForRangeSeek( state, compositeIndex, new Value[]{doubleValue( 43001.0 )}, predicate, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes.getAdded(), 43L );
-            assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 43L, 43001.0, 43002.0 ) );
+            assertContains( changes.added(), 43L );
+            assertContains( changesWithValues.added(), entityWithPropertyValues( 43L, 43001.0, 43002.0 ) );
         }
 
         @Test
@@ -636,10 +905,10 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, compositeIndex, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes.getAdded(), 42L );
-            assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 42L, "42value1", "42value2" ) );
-            assertContains( changes.getRemoved(), 44L );
-            assertContains( changesWithValues.getRemoved(), 44L );
+            assertContains( changes.added(), 42L );
+            assertContains( changesWithValues.added(), entityWithPropertyValues( 42L, "42value1", "42value2" ) );
+            assertContains( changes.removed(), 44L );
+            assertContains( changesWithValues.removed(), 44L );
         }
 
         @Test
@@ -666,17 +935,17 @@ class TxStateIndexChangesTest
                     indexUpdatesWithValuesForRangeSeek( state, compositeIndex, new Value[]{stringValue( "44value1" )}, null, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes42.getAdded(), 42L );
-            assertTrue( changes42.getRemoved().isEmpty() );
+            assertContains( changes42.added(), 42L );
+            assertTrue( changes42.removed().isEmpty() );
             assertTrue( changes43.isEmpty() );
-            assertTrue( changes44.getAdded().isEmpty() );
-            assertContains( changes44.getRemoved(), 44L );
+            assertTrue( changes44.added().isEmpty() );
+            assertContains( changes44.removed(), 44L );
 
-            assertContains( changesWithValues42.getAdded(), entityWithPropertyValues( 42L, "42value1", "42value2" ) );
-            assertTrue( changesWithValues42.getRemoved().isEmpty() );
+            assertContains( changesWithValues42.added(), entityWithPropertyValues( 42L, "42value1", "42value2" ) );
+            assertTrue( changesWithValues42.removed().isEmpty() );
             assertTrue( changesWithValues43.isEmpty() );
-            assertFalse( changesWithValues44.getAdded().iterator().hasNext() );
-            assertContains( changesWithValues44.getRemoved(), 44L );
+            assertFalse( changesWithValues44.added().iterator().hasNext() );
+            assertContains( changesWithValues44.removed(), 44L );
         }
 
         @Test
@@ -696,9 +965,9 @@ class TxStateIndexChangesTest
                     new Value[]{stringValue( "43value1" ), stringValue( "43value2" )}, null, IndexOrder.NONE );
 
             // THEN
-            assertContains( changes.getAdded(), 43L, 44L );
-            assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 43L, "43value1", "43value2", "43value3" ),
-                    entityWithPropertyValues( 44L, "43value1", "43value2", "43value3" ) );
+            assertContains( changes.added(), 43L, 44L );
+            assertContains( changesWithValues.added(), entityWithPropertyValues( 43L, "43value1", "43value2", "43value3" ),
+                            entityWithPropertyValues( 44L, "43value1", "43value2", "43value3" ) );
         }
 
         @Test
@@ -714,26 +983,26 @@ class TxStateIndexChangesTest
                     .build();
 
             // THEN
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "hi", 3 ) ).getAdded(), 10L );
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 9L, 33L ) ).getAdded(), 11L );
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "sneaker", false ) ).getAdded(), 12L );
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( new int[]{10, 100}, "array-buddy" ) ).getAdded(), 13L );
-            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 40.1, 40.2 ) ).getAdded(), 14L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "hi", 3 ) ).added(), 10L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 9L, 33L ) ).added(), 11L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "sneaker", false ) ).added(), 12L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( new int[]{10, 100}, "array-buddy" ) ).added(), 13L );
+            assertContains( indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 40.1, 40.2 ) ).added(), 14L );
 
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
-                    new Value[]{stringValue( "hi" )}, null, IndexOrder.NONE ).getAdded(),
+                    new Value[]{stringValue( "hi" )}, null, IndexOrder.NONE ).added(),
                     entityWithPropertyValues( 10L, "hi", 3 ) );
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
-                    new Value[]{longValue( 9L )}, null, IndexOrder.NONE ).getAdded(),
+                    new Value[]{longValue( 9L )}, null, IndexOrder.NONE ).added(),
                     entityWithPropertyValues( 11L, 9L, 33L ) );
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
-                    new Value[]{stringValue( "sneaker" )}, null, IndexOrder.NONE ).getAdded(),
+                    new Value[]{stringValue( "sneaker" )}, null, IndexOrder.NONE ).added(),
                     entityWithPropertyValues( 12L, "sneaker", false ) );
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
-                    new Value[]{intArray( new int[]{10, 100} )}, null, IndexOrder.NONE ).getAdded(),
+                    new Value[]{intArray( new int[]{10, 100} )}, null, IndexOrder.NONE ).added(),
                     entityWithPropertyValues( 13L, new int[]{10, 100}, "array-buddy" ) );
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
-                    new Value[]{doubleValue( 40.1 )}, null, IndexOrder.NONE ).getAdded(),
+                    new Value[]{doubleValue( 40.1 )}, null, IndexOrder.NONE ).added(),
                     entityWithPropertyValues( 14L, 40.1, 40.2 ) );
         }
 
@@ -838,13 +1107,13 @@ class TxStateIndexChangesTest
 
         if ( indexOrder == IndexOrder.NONE )
         {
-            assertContains( changes.getAdded(), expectedEntityIds );
-            assertContains( changesWithValues.getAdded(), expected );
+            assertContains( changes.added(), expectedEntityIds );
+            assertContains( changesWithValues.added(), expected );
         }
         else
         {
-            assertContainsInOrder( changes.getAdded(), expectedEntityIds );
-            assertContainsInOrder( changesWithValues.getAdded(), expected );
+            assertContainsInOrder( changes.added(), expectedEntityIds );
+            assertContainsInOrder( changesWithValues.added(), expected );
         }
     }
 

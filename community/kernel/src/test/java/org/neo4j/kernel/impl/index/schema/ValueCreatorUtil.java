@@ -28,8 +28,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
@@ -42,7 +40,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
-class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>>
+record ValueCreatorUtil<KEY extends NativeIndexKey<KEY>>(IndexDescriptor indexDescriptor, ValueType[] supportedTypes, double fractionDuplicates)
 {
     static final double FRACTION_DUPLICATE_UNIQUE = 0;
     static final double FRACTION_DUPLICATE_NON_UNIQUE = 0.1;
@@ -51,30 +49,9 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>>
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
     private static final int N_VALUES = 10;
 
-    final IndexDescriptor indexDescriptor;
-    private final ValueType[] supportedTypes;
-    private final double fractionDuplicates;
-
-    ValueCreatorUtil( IndexDescriptor indexDescriptor, ValueType[] supportedTypes, double fractionDuplicates )
-    {
-        this.indexDescriptor = indexDescriptor;
-        this.supportedTypes = supportedTypes;
-        this.fractionDuplicates = fractionDuplicates;
-    }
-
     int compareIndexedPropertyValue( KEY key1, KEY key2 )
     {
         return Values.COMPARATOR.compare( key1.asValues()[0], key2.asValues()[0] );
-    }
-
-    ValueType[] supportedTypes()
-    {
-        return supportedTypes;
-    }
-
-    private double fractionDuplicates()
-    {
-        return fractionDuplicates;
     }
 
     static PropertyIndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
@@ -153,21 +130,19 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>>
         return values;
     }
 
-    protected ValueIndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
+    ValueIndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
     {
         return ValueIndexEntryUpdate.add( nodeId, indexDescriptor, value );
     }
 
-    static int countUniqueValues( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
+    static long countUniqueValues( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
     {
-        return Stream.of( updates ).map( update -> update.values()[0] ).collect( Collectors.toSet() ).size();
+        return Stream.of( updates ).map( update -> update.values()[0] ).distinct().count();
     }
 
-    static int countUniqueValues( Value[] updates )
+    static long countUniqueValues( Value[] updates )
     {
-        Set<Value> set = new TreeSet<>( Values.COMPARATOR );
-        set.addAll( Arrays.asList( updates ) );
-        return set.size();
+        return Arrays.stream( updates ).distinct().count();
     }
 
     static void sort( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
@@ -197,7 +172,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>>
         {
             Value value;
             if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
-                    randomValues.nextFloat() < fractionDuplicates )
+                 randomValues.nextFloat() < fractionDuplicates )
             {
                 value = randomValues.among( uniqueValues );
             }

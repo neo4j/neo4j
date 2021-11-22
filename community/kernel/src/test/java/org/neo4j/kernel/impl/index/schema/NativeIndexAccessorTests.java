@@ -23,6 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,7 +38,9 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -51,6 +54,7 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
@@ -62,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.function.Predicates.in;
 import static org.neo4j.internal.helpers.collection.Iterables.asUniqueSet;
@@ -93,7 +96,12 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
 
     abstract ValueCreatorUtil<KEY> createValueCreatorUtil();
 
-    abstract boolean supportsGeometryRangeQueries();
+    abstract IndexCapability indexCapability();
+
+    boolean supportedBoundingBoxQueries()
+    {
+        return indexCapability().isQuerySupported( IndexQueryType.BOUNDING_BOX, ValueCategory.GEOMETRY );
+    }
 
     // UPDATER
 
@@ -227,7 +235,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         {
             // when
             ValueIndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.randomUpdateGenerator( random ).next();
-            long count = reader.countIndexedEntities( 123, NULL, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), update.values()[0] );
+            long count = reader.countIndexedEntities( 123, NULL, valueCreatorUtil.indexDescriptor().schema().getPropertyIds(), update.values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -247,7 +255,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
             for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
             {
                 long count = reader.countIndexedEntities( update.getEntityId(), NULL,
-                        valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), update.values() );
+                        valueCreatorUtil.indexDescriptor().schema().getPropertyIds(), update.values() );
 
                 // then
                 assertEquals( 1, count );
@@ -255,7 +263,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
 
             // and when
             Iterator<ValueIndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) );
-            long count = reader.countIndexedEntities( 123, NULL, valueCreatorUtil.indexDescriptor.schema().getPropertyIds(), generator.next().values()[0] );
+            long count = reader.countIndexedEntities( 123, NULL, valueCreatorUtil.indexDescriptor().schema().getPropertyIds(), generator.next().values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -274,7 +282,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
 
         for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            int[] propKeys = valueCreatorUtil.indexDescriptor.schema().getPropertyIds();
+            int[] propKeys = valueCreatorUtil.indexDescriptor().schema().getPropertyIds();
             long countWithMismatchingData = reader.countIndexedEntities( update.getEntityId() + 1, NULL, propKeys, update.values() );
             long countWithNonExistentEntityId = reader.countIndexedEntities( NON_EXISTENT_ENTITY_ID, NULL, propKeys, update.values() );
             long countWithNonExistentValue = reader.countIndexedEntities( update.getEntityId(), NULL, propKeys, generateUniqueValue( updates ) );
@@ -458,42 +466,43 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         {
             value = random.among( allValues );
         }
-        while ( Values.isGeometryValue( value ) && !supportsGeometryRangeQueries() );
-        ValueGroup valueGroup = value.valueGroup();
+        while ( Values.isGeometryValue( value ) && !supportedBoundingBoxQueries() );
 
-        PropertyIndexQuery.RangePredicate<?> supportedQuery;
+        PropertyIndexQuery supportedQuery;
         List<Value> expectedValues;
         if ( Values.isGeometryValue( value ) )
         {
             // Unless it's a point value in which case we query for the specific coordinate reference system instead
             CoordinateReferenceSystem crs = ((PointValue) value).getCoordinateReferenceSystem();
-            supportedQuery = PropertyIndexQuery.range( 0, crs );
+            supportedQuery = PropertyIndexQuery.boundingBox( 0, crs );
             expectedValues = Arrays.stream( allValues )
-                    .filter( v -> v.valueGroup() == ValueGroup.GEOMETRY )
-                    .filter( v -> ((PointValue) v).getCoordinateReferenceSystem() == crs )
-                    .collect( Collectors.toList() );
+                                   .filter( v -> v.valueGroup() == ValueGroup.GEOMETRY )
+                                   .filter( v -> ((PointValue) v).getCoordinateReferenceSystem() == crs )
+                                   .toList();
         }
         else
         {
+            ValueGroup valueGroup = value.valueGroup();
             supportedQuery = PropertyIndexQuery.range( 0, valueGroup );
             expectedValues = Arrays.stream( allValues )
-                    .filter( v -> v.valueGroup() == valueGroup )
-                    .collect( Collectors.toList() );
+                                   .filter( v -> v.valueGroup() == valueGroup )
+                                   .toList();
         }
 
         // when
         try ( var reader = accessor.newValueReader() )
         {
-                SimpleEntityValueClient client = new SimpleEntityValueClient();
-                reader.query( client, NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), supportedQuery );
+            SimpleEntityValueClient client = new SimpleEntityValueClient();
+            reader.query( client, NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), supportedQuery );
 
-                // then
-                while ( client.next() )
-                {
-                    Value foundValue = client.values[0];
-                    assertTrue( expectedValues.remove( foundValue ), "found value that was not expected " + foundValue );
-                }
-            assertThat( expectedValues.size() ).as( "did not find all expected values" ).isEqualTo( 0 );
+            // then
+            List<Value> foundValues = new ArrayList<>( expectedValues.size() );
+            while ( client.next() )
+            {
+                Value foundValue = client.values[0];
+                foundValues.add( foundValue );
+            }
+            assertThat( foundValues ).as( "values found by query" ).containsExactlyInAnyOrderElementsOf( expectedValues );
         }
     }
 

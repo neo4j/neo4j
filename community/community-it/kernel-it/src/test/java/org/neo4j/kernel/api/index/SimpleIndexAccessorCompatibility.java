@@ -71,6 +71,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.boundingBox;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
@@ -159,10 +160,10 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
     }
 
     @Test
-    void testIndexRangeSeekWithSpatial() throws Exception
+    void testIndexBoundingBoxSeek() throws Exception
     {
         assumeTrue( testSuite.supportsSpatial() );
-        assumeTrue( testSuite.supportsSpatialRangeQueries() );
+        assumeTrue( testSuite.supportsBoundingBoxQueries() );
 
         PointValue p1 = Values.pointValue( CoordinateReferenceSystem.WGS_84, -180, -1 );
         PointValue p2 = Values.pointValue( CoordinateReferenceSystem.WGS_84, -180, 1 );
@@ -174,7 +175,7 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
                 add( 3L, descriptor, p3 )
             ) );
 
-        assertThat( query( range( 1, p1, true, p2, true ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( boundingBox( 1, p1, true, p2, true ) ) ).containsExactly( 1L, 2L );
     }
 
     @Test
@@ -906,21 +907,12 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
 
     private void shouldRangeSeekInOrderWithExpectedSize( IndexOrder order, RangeSeekMode rangeSeekMode, int expectedSize, Object... objects ) throws Exception
     {
-        PropertyIndexQuery range;
-        switch ( rangeSeekMode )
+        PropertyIndexQuery range = switch ( rangeSeekMode )
         {
-        case CLOSED:
-            range = range( 100, Values.of( objects[0] ), true, Values.of( objects[objects.length - 1] ), true );
-            break;
-        case OPEN_END:
-            range = range( 100, Values.of( objects[0] ), true, null, false );
-            break;
-        case OPEN_START:
-            range = range( 100, null, false, Values.of( objects[objects.length - 1] ), true );
-            break;
-        default:
-            throw new IllegalStateException();
-        }
+            case CLOSED -> range( 100, Values.of( objects[0] ), true, Values.of( objects[objects.length - 1] ), true );
+            case OPEN_END -> range( 100, Values.of( objects[0] ), true, null, false );
+            case OPEN_START -> range( 100, null, false, Values.of( objects[objects.length - 1] ), true );
+        };
 
         IndexOrderCapability indexOrders = orderCapability( range );
         if ( order == IndexOrder.ASCENDING )

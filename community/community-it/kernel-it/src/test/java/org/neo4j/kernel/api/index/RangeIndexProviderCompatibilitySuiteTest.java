@@ -93,7 +93,7 @@ class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderComp
     }
 
     @Override
-    boolean supportsSpatialRangeQueries()
+    boolean supportsBoundingBoxQueries()
     {
         return false;
     }

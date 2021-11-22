@@ -144,12 +144,12 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
         treeKeyTo.initialize( Long.MAX_VALUE );
     }
 
-    abstract void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery[] predicates );
+    abstract void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery... predicates );
 
     /**
      * @return true if query results from seek will need to be filtered through the predicates, else false
      */
-    abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, PropertyIndexQuery[] predicates );
+    abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, PropertyIndexQuery... predicates );
 
     void startSeekForInitializedRange( IndexProgressor.EntityValueClient client, KEY treeKeyFrom, KEY treeKeyTo, CursorContext cursorContext,
                                        AccessMode accessMode, boolean needFilter, IndexQueryConstraints constraints, PropertyIndexQuery... query )
@@ -183,7 +183,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
     }
 
     private IndexProgressor getIndexProgressor( Seeker<KEY,NullValue> seeker, IndexProgressor.EntityValueClient client, boolean needFilter,
-                                                PropertyIndexQuery[] query )
+                                                PropertyIndexQuery... query )
     {
         return needFilter ? new FilteringNativeHitIndexProgressor<>( seeker, client, query )
                           : new NativeHitIndexProgressor<>( seeker, client );

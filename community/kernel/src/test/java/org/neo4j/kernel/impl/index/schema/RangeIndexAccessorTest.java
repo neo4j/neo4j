@@ -42,9 +42,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
@@ -79,12 +78,6 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
     }
 
     @Override
-    boolean supportsGeometryRangeQueries()
-    {
-        return false;
-    }
-
-    @Override
     ValueCreatorUtil<RangeKey> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( INDEX_DESCRIPTOR, SUPPORTED_TYPES, FRACTION_DUPLICATE_NON_UNIQUE );
@@ -103,18 +96,16 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
     }
 
     @Test
-    void readerShouldThrowOnGeometryRangeQueries()
+    void readerShouldThrowOnBoundingBoxQueries()
     {
-        PropertyIndexQuery.RangePredicate<?> geometryRangePredicate = PropertyIndexQuery.range( 0, CoordinateReferenceSystem.CARTESIAN );
+        PropertyIndexQuery.BoundingBoxPredicate boundingBoxPredicate = PropertyIndexQuery.boundingBox( 0, CoordinateReferenceSystem.CARTESIAN );
 
         try ( var reader = accessor.newValueReader() )
         {
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( new SimpleEntityValueClient(),
-                                                                                                           NULL_CONTEXT,
-                                                                                                           AccessMode.Static.ACCESS,
-                                                                                                           unorderedValues(),
-                                                                                                           geometryRangePredicate ) );
-            assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. Geometry range predicate is not allowed" );
+            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
+                                                    unorderedValues(), boundingBoxPredicate ) )
+                    .isInstanceOf( IllegalArgumentException.class )
+                    .hasMessageContaining( "Tried to query index with illegal query. A %s predicate is not allowed", boundingBoxPredicate.type() );
         }
     }
 
@@ -125,12 +116,10 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
 
         try ( var reader = accessor.newValueReader() )
         {
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( new SimpleEntityValueClient(),
-                                                                                                           NULL_CONTEXT,
-                                                                                                           AccessMode.Static.ACCESS,
-                                                                                                           unorderedValues(),
-                                                                                                           suffixPredicate ) );
-            assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. STRING_SUFFIX predicate is not allowed" );
+            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
+                                                    unorderedValues(), suffixPredicate ) )
+                    .isInstanceOf( IllegalArgumentException.class )
+                    .hasMessageContaining( "Tried to query index with illegal query. A %s predicate is not allowed", suffixPredicate.type() );
         }
     }
 
@@ -141,12 +130,10 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
 
         try ( var reader = accessor.newValueReader() )
         {
-            IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> reader.query( new SimpleEntityValueClient(),
-                                                                                                           NULL_CONTEXT,
-                                                                                                           AccessMode.Static.ACCESS,
-                                                                                                           unorderedValues(),
-                                                                                                           containsPredicate ) );
-            assertThat( e ).hasMessageContaining( "Tried to query index with illegal query. STRING_CONTAINS predicate is not allowed" );
+            assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
+                                                    unorderedValues(), containsPredicate ) )
+                    .isInstanceOf( IllegalArgumentException.class )
+                    .hasMessageContaining( "Tried to query index with illegal query. A %s predicate is not allowed", containsPredicate.type() );
         }
     }
 
@@ -201,7 +188,10 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
     private ValueType[] supportedTypesForGeometry()
     {
         return RandomValues.excluding( valueCreatorUtil.supportedTypes(),
-                t -> t.valueGroup != ValueGroup.GEOMETRY &&
-                     t.valueGroup != ValueGroup.GEOMETRY_ARRAY );
+                                       type -> switch ( type.valueGroup.category() )
+        {
+            case GEOMETRY, GEOMETRY_ARRAY -> false;
+            default -> true;
+        });
     }
 }

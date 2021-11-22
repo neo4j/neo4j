@@ -79,12 +79,6 @@ class NativeIndexAccessorTest extends GenericNativeIndexAccessorTests<BtreeKey>
     }
 
     @Override
-    boolean supportsGeometryRangeQueries()
-    {
-        return true;
-    }
-
-    @Override
     ValueCreatorUtil<BtreeKey> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( INDEX_DESCRIPTOR, SUPPORTED_TYPES, FRACTION_DUPLICATE_NON_UNIQUE );

@@ -32,6 +32,7 @@ import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -69,6 +70,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
                                                                                             .withIndexProvider( PointIndexProvider.DESCRIPTOR )
                                                                                             .withName( "index" )
                                                                                             .materialise( 0 );
+    private static final IndexCapability INDEX_CAPABILITY = PointIndexProvider.CAPABILITY;
 
     private static final PointLayout LAYOUT = new PointLayout( SPACE_FILLING_CURVE_SETTINGS );
 
@@ -87,9 +89,9 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
     }
 
     @Override
-    boolean supportsGeometryRangeQueries()
+    IndexCapability indexCapability()
     {
-        return true;
+        return INDEX_CAPABILITY;
     }
 
     @Override
@@ -122,8 +124,8 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
                                                     unorderedValues(), predicate ),
                                 "%s is an unsupported query", predicate )
                     .isInstanceOf( IllegalArgumentException.class )
-                    .hasMessageContaining( "Tried to query index with illegal query. Only %s, %s, and %s %s queries are supported by a point index",
-                                           IndexQueryType.ALL_ENTRIES, IndexQueryType.EXACT, ValueGroup.GEOMETRY, IndexQueryType.RANGE );
+                    .hasMessageContaining( "Tried to query index with illegal query. Only %s, %s, and %s queries are supported by a point index",
+                                           IndexQueryType.ALL_ENTRIES, IndexQueryType.EXACT, IndexQueryType.BOUNDING_BOX );
         }
     }
 

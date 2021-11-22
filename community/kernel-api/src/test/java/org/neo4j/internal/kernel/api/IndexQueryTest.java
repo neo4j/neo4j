@@ -26,6 +26,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.BoundingBoxPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
@@ -283,169 +284,6 @@ class IndexQueryTest
         assertFalse( test( p, "bee" ) );
     }
 
-    // GEOMETRY RANGE
-
-    private final PointValue gps1 = pointValue( CoordinateReferenceSystem.WGS_84, -12.6, -56.7 );
-    private final PointValue gps2 = pointValue( CoordinateReferenceSystem.WGS_84, -12.6, -55.7 );
-    private final PointValue gps3 = pointValue( CoordinateReferenceSystem.WGS_84, -11.0, -55 );
-    private final PointValue gps4 = pointValue( CoordinateReferenceSystem.WGS_84, 0, 0 );
-    private final PointValue gps5 = pointValue( CoordinateReferenceSystem.WGS_84, 14.6, 56.7 );
-    private final PointValue gps6 = pointValue( CoordinateReferenceSystem.WGS_84, 14.6, 58.7 );
-    private final PointValue gps7 = pointValue( CoordinateReferenceSystem.WGS_84, 15.6, 59.7 );
-    private final PointValue car1 = pointValue( CoordinateReferenceSystem.CARTESIAN, 0, 0 );
-    private final PointValue car2 = pointValue( CoordinateReferenceSystem.CARTESIAN, 2, 2 );
-    private final PointValue car3 = pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 1, 2, 3 );
-    private final PointValue car4 = pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 2, 3, 4 );
-    private final PointValue gps1_3d = pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.6, 56.8, 100.0 );
-    private final PointValue gps2_3d = pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.8, 56.9, 200.0 );
-
-    //TODO: Also insert points which can't be compared e.g. Cartesian and (-100, 100)
-
-    @Test
-    void testGeometryRange_FalseForIrrelevant()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, gps2, true, gps5, true );
-
-        assertFalseForOtherThings( p );
-    }
-
-    @Test
-    void testGeometryRange_InclusiveLowerInclusiveUpper()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, gps2, true, gps5, true );
-
-        assertFalse( test( p, gps1 ) );
-        assertTrue( test( p, gps2 ) );
-        assertTrue( test( p, gps5 ) );
-        assertFalse( test( p, gps6 ) );
-        assertFalse( test( p, gps7 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testGeometryRange_ExclusiveLowerInclusiveUpper()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, gps2, false, gps5, true );
-
-        assertFalse( test( p, gps2 ) );
-        assertTrue( test( p, gps3 ) );
-        assertTrue( test( p, gps5 ) );
-        assertFalse( test( p, gps6 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testGeometryRange_InclusiveLowerExclusiveUpper()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, gps2, true, gps5, false );
-
-        assertFalse( test( p, gps1 ) );
-        assertTrue( test( p, gps2 ) );
-        assertTrue( test( p, gps3 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testGeometryRange_ExclusiveLowerExclusiveUpper()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, gps2, false, gps5, false );
-
-        assertFalse( test( p, gps2 ) );
-        assertTrue( test( p, gps3 ) );
-        assertTrue( test( p, gps4 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testGeometryRange_UpperUnbounded()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, gps2, false, null, false );
-
-        assertFalse( test( p, gps2 ) );
-        assertTrue( test( p, gps3 ) );
-        assertTrue( test( p, gps7 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testGeometryRange_LowerUnbounded()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, null, false, gps5, false );
-
-        assertTrue( test( p, gps1 ) );
-        assertTrue( test( p, gps3 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testGeometryRange_Cartesian()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, car1, false, car2, true );
-
-        assertFalse( test( p, gps1 ) );
-        assertFalse( test( p, gps3 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertTrue( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, car4 ) );
-        assertFalse( test( p, gps1_3d ) );
-        assertFalse( test( p, gps2_3d ) );
-    }
-
-    @Test
-    void testGeometryRange_Cartesian3D()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, car3, true, car4, true );
-
-        assertFalse( test( p, gps1 ) );
-        assertFalse( test( p, gps3 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertTrue( test( p, car3 ) );
-        assertTrue( test( p, car4 ) );
-        assertFalse( test( p, gps1_3d ) );
-        assertFalse( test( p, gps2_3d ) );
-    }
-
-    @Test
-    void testGeometryRange_WGS84_3D()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, gps1_3d, true, gps2_3d, true );
-
-        assertFalse( test( p, gps1 ) );
-        assertFalse( test( p, gps3 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, car4 ) );
-        assertTrue( test( p, gps1_3d ) );
-        assertTrue( test( p, gps2_3d ) );
-    }
-
     @Test
     void testDateRange()
     {
@@ -472,10 +310,173 @@ class IndexQueryTest
         assertFalse( test( p, gps2_3d ) );
     }
 
+    // BOUNDING BOX
+
+    private final PointValue gps1 = pointValue( CoordinateReferenceSystem.WGS_84, -12.6, -56.7 );
+    private final PointValue gps2 = pointValue( CoordinateReferenceSystem.WGS_84, -12.6, -55.7 );
+    private final PointValue gps3 = pointValue( CoordinateReferenceSystem.WGS_84, -11.0, -55 );
+    private final PointValue gps4 = pointValue( CoordinateReferenceSystem.WGS_84, 0, 0 );
+    private final PointValue gps5 = pointValue( CoordinateReferenceSystem.WGS_84, 14.6, 56.7 );
+    private final PointValue gps6 = pointValue( CoordinateReferenceSystem.WGS_84, 14.6, 58.7 );
+    private final PointValue gps7 = pointValue( CoordinateReferenceSystem.WGS_84, 15.6, 59.7 );
+    private final PointValue car1 = pointValue( CoordinateReferenceSystem.CARTESIAN, 0, 0 );
+    private final PointValue car2 = pointValue( CoordinateReferenceSystem.CARTESIAN, 2, 2 );
+    private final PointValue car3 = pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 1, 2, 3 );
+    private final PointValue car4 = pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 2, 3, 4 );
+    private final PointValue gps1_3d = pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.6, 56.8, 100.0 );
+    private final PointValue gps2_3d = pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.8, 56.9, 200.0 );
+
+    // TODO: Also insert points which can't be compared e.g. Cartesian and (-100, 100)
+
     @Test
-    void testCRSRange()
+    void testBoundingBox_FalseForIrrelevant()
     {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, CoordinateReferenceSystem.WGS_84 );
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, true, gps5, true );
+
+        assertFalseForOtherThings( p );
+    }
+
+    @Test
+    void testBoundingBox_InclusiveLowerInclusiveUpper()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, true, gps5, true );
+
+        assertFalse( test( p, gps1 ) );
+        assertTrue( test( p, gps2 ) );
+        assertTrue( test( p, gps5 ) );
+        assertFalse( test( p, gps6 ) );
+        assertFalse( test( p, gps7 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
+    }
+
+    @Test
+    void testBoundingBox_ExclusiveLowerInclusiveUpper()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, false, gps5, true );
+
+        assertFalse( test( p, gps2 ) );
+        assertTrue( test( p, gps3 ) );
+        assertTrue( test( p, gps5 ) );
+        assertFalse( test( p, gps6 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
+    }
+
+    @Test
+    void testBoundingBox_InclusiveLowerExclusiveUpper()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, true, gps5, false );
+
+        assertFalse( test( p, gps1 ) );
+        assertTrue( test( p, gps2 ) );
+        assertTrue( test( p, gps3 ) );
+        assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
+    }
+
+    @Test
+    void testBoundingBox_ExclusiveLowerExclusiveUpper()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, false, gps5, false );
+
+        assertFalse( test( p, gps2 ) );
+        assertTrue( test( p, gps3 ) );
+        assertTrue( test( p, gps4 ) );
+        assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
+    }
+
+    @Test
+    void testBoundingBox_UpperUnbounded()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, false, null, false );
+
+        assertFalse( test( p, gps2 ) );
+        assertTrue( test( p, gps3 ) );
+        assertTrue( test( p, gps7 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
+    }
+
+    @Test
+    void testBoundingBox_LowerUnbounded()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, null, false, gps5, false );
+
+        assertTrue( test( p, gps1 ) );
+        assertTrue( test( p, gps3 ) );
+        assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, gps1_3d ) );
+    }
+
+    @Test
+    void testBoundingBox_Cartesian()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, car1, false, car2, true );
+
+        assertFalse( test( p, gps1 ) );
+        assertFalse( test( p, gps3 ) );
+        assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
+        assertTrue( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, car4 ) );
+        assertFalse( test( p, gps1_3d ) );
+        assertFalse( test( p, gps2_3d ) );
+    }
+
+    @Test
+    void testBoundingBox_Cartesian3D()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, car3, true, car4, true );
+
+        assertFalse( test( p, gps1 ) );
+        assertFalse( test( p, gps3 ) );
+        assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertTrue( test( p, car3 ) );
+        assertTrue( test( p, car4 ) );
+        assertFalse( test( p, gps1_3d ) );
+        assertFalse( test( p, gps2_3d ) );
+    }
+
+    @Test
+    void testBoundingBox_WGS84_3D()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps1_3d, true, gps2_3d, true );
+
+        assertFalse( test( p, gps1 ) );
+        assertFalse( test( p, gps3 ) );
+        assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car2 ) );
+        assertFalse( test( p, car3 ) );
+        assertFalse( test( p, car4 ) );
+        assertTrue( test( p, gps1_3d ) );
+        assertTrue( test( p, gps2_3d ) );
+    }
+
+    @Test
+    void testCRSBoundingBox()
+    {
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, CoordinateReferenceSystem.WGS_84 );
 
         assertTrue( test( p, gps2 ) );
         assertFalse( test( p, DateValue.date( -4000, 1, 31 ) ) );

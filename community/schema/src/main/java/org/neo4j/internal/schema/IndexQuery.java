@@ -42,6 +42,7 @@ public interface IndexQuery
         EXISTS,
         EXACT,
         RANGE,
+        BOUNDING_BOX,
         STRING_PREFIX,
         STRING_SUFFIX,
         STRING_CONTAINS,

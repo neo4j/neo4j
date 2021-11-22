@@ -51,8 +51,8 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
     private final SpaceFillingCurveConfiguration configuration;
 
     GenericNativeIndexReader( GBPTree<BtreeKey,NullValue> tree, IndexLayout<BtreeKey> layout,
-            IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
-            SpaceFillingCurveConfiguration configuration )
+                              IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
+                              SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, descriptor );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
@@ -60,7 +60,7 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
     }
 
     @Override
-    void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery[] predicates )
+    void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery... predicates )
     {
         QueryValidator.validateOrder( GenericNativeIndexProvider.CAPABILITY, constraints.order(), predicates );
         QueryValidator.validateCompositeQuery( predicates );
@@ -70,8 +70,8 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
     public void query( IndexProgressor.EntityValueClient client, QueryContext context, AccessMode accessMode,
                        IndexQueryConstraints constraints, PropertyIndexQuery... query )
     {
-        PropertyIndexQuery.GeometryRangePredicate geometryRangePredicate = getGeometryRangePredicateIfAny( query );
-        if ( geometryRangePredicate != null )
+        PropertyIndexQuery.BoundingBoxPredicate boundingBoxPredicate = getBoundingBoxPredicateIfAny( query );
+        if ( boundingBoxPredicate != null )
         {
             context.monitor().queried( descriptor );
             validateQuery( constraints, query );
@@ -81,9 +81,9 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
                 // into a query that is split into multiple sub-queries. Predicates both before and after will have to be accompanied each sub-query.
                 BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
                 client.initialize( descriptor, multiProgressor, accessMode, false, constraints, query );
-                double[] from = geometryRangePredicate.from() == null ? null : geometryRangePredicate.from().coordinate();
-                double[] to = geometryRangePredicate.to() == null ? null : geometryRangePredicate.to().coordinate();
-                CoordinateReferenceSystem crs = geometryRangePredicate.crs();
+                double[] from = boundingBoxPredicate.from() == null ? null : boundingBoxPredicate.from().coordinate();
+                double[] to = boundingBoxPredicate.to() == null ? null : boundingBoxPredicate.to().coordinate();
+                CoordinateReferenceSystem crs = boundingBoxPredicate.crs();
                 SpaceFillingCurve curve = spaceFillingCurveSettings.forCrs( crs );
                 List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );
                 for ( SpaceFillingCurve.LongRange range : ranges )
@@ -115,15 +115,15 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
      * Geometry range queries makes an otherwise straight-forward key construction complex in that a geometry range internally is performed
      * by executing multiple sub-range queries to the index. Each of those sub-range queries still needs to construct the full composite key -
      * in the case of a composite index. Therefore this method can be called either with null or non-null {@code crs} and {@code range} and
-     * constructing a key when coming across a {@link PropertyIndexQuery.GeometryRangePredicate} will use the provided crs/range instead
-     * of the predicate, where the specific range is one out of many sub-ranges calculated from the {@link PropertyIndexQuery.GeometryRangePredicate}
+     * constructing a key when coming across a {@link PropertyIndexQuery.BoundingBoxPredicate} will use the provided crs/range instead
+     * of the predicate, where the specific range is one out of many sub-ranges calculated from the {@link PropertyIndexQuery.BoundingBoxPredicate}
      * by the caller.
      *
      * @param treeKeyFrom the "from" key to construct from the query.
      * @param treeKeyTo the "to" key to construct from the query.
      * @param query the query to construct keys from to later send to {@link GBPTree} when reading.
      * @param crs {@link CoordinateReferenceSystem} for the specific {@code range}, if range is specified too.
-     * @param range sub-range of a larger {@link PropertyIndexQuery.GeometryRangePredicate} to use instead of {@link PropertyIndexQuery.GeometryRangePredicate}
+     * @param range sub-range of a larger {@link PropertyIndexQuery.BoundingBoxPredicate} to use instead of {@link PropertyIndexQuery.BoundingBoxPredicate}
      * in the query.
      * @return {@code true} if filtering is needed for the results from the reader, otherwise {@code false}.
      */
@@ -136,23 +136,42 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
             return false;
         }
 
-        boolean needsFiltering = false;
+        var needsFiltering = false;
         for ( int i = 0; i < query.length; i++ )
         {
-            PropertyIndexQuery predicate = query[i];
+            final var predicate = query[i];
             switch ( predicate.type() )
             {
-            case EXISTS:
-                treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
-                treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
-                break;
-            case EXACT:
-                ExactPredicate exactPredicate = (ExactPredicate) predicate;
-                treeKeyFrom.initFromValue( i, exactPredicate.value(), NEUTRAL );
-                treeKeyTo.initFromValue( i, exactPredicate.value(), NEUTRAL );
-                break;
-            case RANGE:
-                if ( isGeometryRangeQuery( predicate ) )
+                case EXISTS ->
+                {
+                    treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
+                    treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
+                }
+
+                case EXACT ->
+                {
+                    final var exactPredicate = (ExactPredicate) predicate;
+                    treeKeyFrom.initFromValue( i, exactPredicate.value(), NEUTRAL );
+                    treeKeyTo.initFromValue( i, exactPredicate.value(), NEUTRAL );
+                }
+
+                case RANGE ->
+                {
+                    if ( predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY )
+                    {
+                        treeKeyFrom.initValueAsLowest( i, ValueGroup.GEOMETRY_ARRAY );
+                        treeKeyTo.initValueAsHighest( i, ValueGroup.GEOMETRY_ARRAY );
+                        needsFiltering = true;
+                    }
+                    else
+                    {
+                        final var rangePredicate = (RangePredicate<?>) predicate;
+                        initFromForRange( i, rangePredicate, treeKeyFrom );
+                        initToForRange( i, rangePredicate, treeKeyTo );
+                    }
+                }
+
+                case BOUNDING_BOX ->
                 {
                     // Use the supplied SpaceFillingCurve range instead of the GeometryRangePredicate because at the time of calling this method
                     // the original geometry range have been split up into multiple sub-ranges and this invocation is for one of those sub-ranges.
@@ -162,39 +181,29 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
                     treeKeyTo.stateSlot( i ).writePointDerived( crs, range.max + 1, HIGH );
                     needsFiltering = true;
                 }
-                else if ( predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY )
+
+                case STRING_PREFIX ->
                 {
-                    treeKeyFrom.initValueAsLowest( i, ValueGroup.GEOMETRY_ARRAY );
-                    treeKeyTo.initValueAsHighest( i, ValueGroup.GEOMETRY_ARRAY );
+                    final var prefixPredicate = (StringPrefixPredicate) predicate;
+                    treeKeyFrom.stateSlot( i ).initAsPrefixLow( prefixPredicate.prefix() );
+                    treeKeyTo.stateSlot( i ).initAsPrefixHigh( prefixPredicate.prefix() );
+                }
+
+                case STRING_CONTAINS, STRING_SUFFIX ->
+                {
+                    treeKeyFrom.initValueAsLowest( i, ValueGroup.TEXT );
+                    treeKeyTo.initValueAsHighest( i, ValueGroup.TEXT );
                     needsFiltering = true;
                 }
-                else
-                {
-                    RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;
-                    initFromForRange( i, rangePredicate, treeKeyFrom );
-                    initToForRange( i, rangePredicate, treeKeyTo );
-                }
-                break;
-            case STRING_PREFIX:
-                StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
-                treeKeyFrom.stateSlot( i ).initAsPrefixLow( prefixPredicate.prefix() );
-                treeKeyTo.stateSlot( i ).initAsPrefixHigh( prefixPredicate.prefix() );
-                break;
-            case STRING_SUFFIX:
-            case STRING_CONTAINS:
-                treeKeyFrom.initValueAsLowest( i, ValueGroup.TEXT );
-                treeKeyTo.initValueAsHighest( i, ValueGroup.TEXT );
-                needsFiltering = true;
-                break;
-            default:
-                throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+
+                default -> throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
             }
         }
         return needsFiltering;
     }
 
     // all slots are required to be initialized such that the keys can be copied when scanning in parallel
-    private static boolean isAllQuery( PropertyIndexQuery[] predicates )
+    private static boolean isAllQuery( PropertyIndexQuery... predicates )
     {
         return predicates.length == 1 && predicates[0].type() == IndexQueryType.ALL_ENTRIES;
     }
@@ -210,7 +219,7 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
     }
 
     @Override
-    boolean initializeRangeForQuery( BtreeKey treeKeyFrom, BtreeKey treeKeyTo, PropertyIndexQuery[] query )
+    boolean initializeRangeForQuery( BtreeKey treeKeyFrom, BtreeKey treeKeyTo, PropertyIndexQuery... query )
     {
         return initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, null, null );
     }
@@ -253,20 +262,15 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
         return rangePredicate.toInclusive() ? HIGH : LOW;
     }
 
-    private static PropertyIndexQuery.GeometryRangePredicate getGeometryRangePredicateIfAny( PropertyIndexQuery[] predicates )
+    private static PropertyIndexQuery.BoundingBoxPredicate getBoundingBoxPredicateIfAny( PropertyIndexQuery[] predicates )
     {
-        for ( PropertyIndexQuery predicate : predicates )
+        for ( final var predicate : predicates )
         {
-            if ( isGeometryRangeQuery( predicate ) )
+            if ( predicate.type() == IndexQueryType.BOUNDING_BOX )
             {
-                return (PropertyIndexQuery.GeometryRangePredicate) predicate;
+                return (PropertyIndexQuery.BoundingBoxPredicate) predicate;
             }
         }
         return null;
-    }
-
-    private static boolean isGeometryRangeQuery( PropertyIndexQuery predicate )
-    {
-        return predicate.type() == IndexQueryType.RANGE && predicate.valueGroup() == ValueGroup.GEOMETRY;
     }
 }

@@ -210,7 +210,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
 
             return switch ( queryType )
             {
-                case EXACT, RANGE -> true;
+                case EXACT, BOUNDING_BOX -> true;
                 default -> false;
             };
         }

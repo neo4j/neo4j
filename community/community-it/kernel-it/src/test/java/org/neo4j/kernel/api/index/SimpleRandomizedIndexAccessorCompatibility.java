@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 
@@ -89,7 +90,7 @@ abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorC
             {
                 // The initial batch of data can simply be additions
                 updates = generateUpdatesFromValues( generateValuesFromType( types, uniqueValues, 20_000 ), nextId );
-                sortedValues.addAll( updates.stream().map( u -> new ValueAndId( u.values()[0], u.getEntityId() ) ).collect( Collectors.toList() ) );
+                sortedValues.addAll( updates.stream().map( u -> new ValueAndId( u.values()[0], u.getEntityId() ) ).toList() );
             }
             else
             {

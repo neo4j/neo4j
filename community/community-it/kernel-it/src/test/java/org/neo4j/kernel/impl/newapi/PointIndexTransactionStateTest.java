@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -164,11 +165,12 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
             IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
 
             int prop = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-            ops.assertEntityAndValueForSeek( expected, tx, index, point( 1, 1 ), PropertyIndexQuery.range( prop, point( 0, 0 ), true, point( 3, 3 ), true ) );
+            ops.assertEntityAndValueForSeek( expected, tx, index, point( 1, 1 ),
+                                             PropertyIndexQuery.boundingBox( prop, point( 0, 0 ), true, point( 3, 3 ), true ) );
         }
     }
 
-    private Value point( int x, int y )
+    private PointValue point( int x, int y )
     {
         return Values.pointValue( CoordinateReferenceSystem.CARTESIAN, x, y );
     }

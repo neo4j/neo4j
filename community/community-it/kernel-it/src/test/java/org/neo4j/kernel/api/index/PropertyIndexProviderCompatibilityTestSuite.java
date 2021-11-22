@@ -92,7 +92,7 @@ abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProvider
     /**
      * Not all indexes that support spatial types supports all types of queries on them.
      */
-    boolean supportsSpatialRangeQueries()
+    boolean supportsBoundingBoxQueries()
     {
         return supportsSpatial();
     }

@@ -115,26 +115,18 @@ public abstract class PropertyIndexQuery implements IndexQuery
         }
 
         ValueGroup valueGroup = requireNonNullElse( from, to ).valueGroup();
-        switch ( valueGroup )
+        return switch ( valueGroup )
         {
-        case NUMBER:
-            return new NumberRangePredicate( propertyKeyId,
-                                             (NumberValue) from, fromInclusive,
-                                             (NumberValue) to, toInclusive );
+            case NUMBER -> new NumberRangePredicate( propertyKeyId,
+                                                     (NumberValue) from, fromInclusive,
+                                                     (NumberValue) to, toInclusive );
 
-        case TEXT:
-            return new TextRangePredicate( propertyKeyId,
-                                           (TextValue) from, fromInclusive,
-                                           (TextValue) to, toInclusive );
+            case TEXT -> new TextRangePredicate( propertyKeyId,
+                                                 (TextValue) from, fromInclusive,
+                                                 (TextValue) to, toInclusive );
 
-        case GEOMETRY:
-            return new GeometryRangePredicate( propertyKeyId,
-                                               (PointValue) from, fromInclusive,
-                                               (PointValue) to, toInclusive );
-
-        default:
-            return new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
-        }
+            default -> new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
+        };
     }
 
     /**
@@ -149,13 +141,25 @@ public abstract class PropertyIndexQuery implements IndexQuery
         return new RangePredicate<>( propertyKeyId, valueGroup );
     }
 
+    public static BoundingBoxPredicate boundingBox( int propertyKeyId,
+                                                    PointValue from, boolean fromInclusive,
+                                                    PointValue to, boolean toInclusive )
+    {
+        return new BoundingBoxPredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
+    }
+
+    public static BoundingBoxPredicate boundingBox( int propertyKeyId, PointValue from, PointValue to )
+    {
+        return new BoundingBoxPredicate( propertyKeyId, from, to );
+    }
+
     /**
      * Create IndexQuery for retrieving all indexed entries with spatial value of the given
      * coordinate reference system.
      */
-    public static RangePredicate<?> range( int propertyKeyId, CoordinateReferenceSystem crs )
+    public static BoundingBoxPredicate boundingBox( int propertyKeyId, CoordinateReferenceSystem crs )
     {
-        return new GeometryRangePredicate( propertyKeyId, crs );
+        return new BoundingBoxPredicate( propertyKeyId, crs );
     }
 
     /**
@@ -448,14 +452,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
         {
             return toInclusive;
         }
-
-        /**
-         * @return true if the order defined for this type can also be relied on for bounds comparisons.
-         */
-        public boolean isRegularOrder()
-        {
-            return true;
-        }
     }
 
     public static final class NumberRangePredicate extends RangePredicate<NumberValue>
@@ -482,75 +478,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
         }
     }
 
-    public static final class GeometryRangePredicate extends RangePredicate<PointValue>
-    {
-        private final CoordinateReferenceSystem crs;
-
-        private GeometryRangePredicate( int propertyKeyId, CoordinateReferenceSystem crs,
-                                        PointValue from, boolean fromInclusive,
-                                        PointValue to, boolean toInclusive )
-        {
-            super( propertyKeyId, ValueGroup.GEOMETRY, from, fromInclusive, to, toInclusive );
-            this.crs = crs;
-        }
-
-        private GeometryRangePredicate( int propertyKeyId,
-                                        PointValue from, boolean fromInclusive,
-                                        PointValue to, boolean toInclusive )
-        {
-            this( propertyKeyId, requireNonNullElse( from, to ).getCoordinateReferenceSystem(),
-                  from, fromInclusive, to, toInclusive );
-        }
-
-        private GeometryRangePredicate( int propertyKeyId, CoordinateReferenceSystem crs )
-        {
-            this( propertyKeyId, crs, null, true, null, true );
-        }
-
-        @Override
-        public boolean acceptsValue( Value value )
-        {
-            if ( !(value instanceof PointValue) )
-            {
-                return false;
-            }
-
-            final var point = (PointValue) value;
-            if ( !point.getCoordinateReferenceSystem().equals( crs ) )
-            {
-                return false;
-            }
-
-            final var within = point.withinRange( from, fromInclusive, to, toInclusive );
-            return within != null && within;
-        }
-
-        public CoordinateReferenceSystem crs()
-        {
-            return crs;
-        }
-
-        public PointValue from()
-        {
-            return from;
-        }
-
-        public PointValue to()
-        {
-            return to;
-        }
-
-        /**
-         * The order defined for spatial types cannot be used for bounds comparisons.
-         * @return false
-         */
-        @Override
-        public boolean isRegularOrder()
-        {
-            return false;
-        }
-    }
-
     public static final class TextRangePredicate extends RangePredicate<TextValue>
     {
         private TextRangePredicate( int propertyKeyId,
@@ -568,6 +495,113 @@ public abstract class PropertyIndexQuery implements IndexQuery
         public String to()
         {
             return to == null ? null : to.stringValue();
+        }
+    }
+
+    /* Todo: remove fromInclusive and toInclusive when BTREE is removed or when new point comparisons have already been introduced;as they are currently kept
+             to keep consistent BTREE behaviour. The corresponding PropertyIndexQuery::boundingBox methods should be removed at the same time
+             (fromInclusive and toInclusive are effectively always 'true' for bounding box)
+     */
+    public static final class BoundingBoxPredicate extends PropertyIndexQuery
+    {
+        private final CoordinateReferenceSystem crs;
+        private final PointValue from;
+        private final boolean fromInclusive;
+        private final PointValue to;
+        private final boolean toInclusive;
+
+        private BoundingBoxPredicate( int propertyKeyId, CoordinateReferenceSystem crs,
+                                      PointValue from, boolean fromInclusive,
+                                      PointValue to, boolean toInclusive )
+        {
+            super( propertyKeyId );
+            this.crs = crs;
+            this.from = from;
+            this.fromInclusive = fromInclusive;
+            this.to = to;
+            this.toInclusive = toInclusive;
+        }
+
+        private BoundingBoxPredicate( int propertyKeyId,
+                                      PointValue from, boolean fromInclusive,
+                                      PointValue to, boolean toInclusive )
+        {
+            this( propertyKeyId, requireNonNullElse( from, to ).getCoordinateReferenceSystem(),
+                  from, fromInclusive, to, toInclusive );
+        }
+
+        private BoundingBoxPredicate( int propertyKeyId, PointValue from, PointValue to )
+        {
+            this( propertyKeyId, from, true, to, true );
+        }
+
+        private BoundingBoxPredicate( int propertyKeyId, CoordinateReferenceSystem crs )
+        {
+            this( propertyKeyId, crs, null, true, null, true );
+        }
+
+        @Override
+        public boolean acceptsValue( Value value )
+        {
+            if ( !(value instanceof final PointValue point) )
+            {
+                return false;
+            }
+
+            if ( !point.getCoordinateReferenceSystem().equals( crs ) )
+            {
+                return false;
+            }
+
+            final var within = point.withinRange( from, fromInclusive, to, toInclusive );
+            return within != null && within;
+        }
+
+        @Override
+        public ValueGroup valueGroup()
+        {
+            return ValueGroup.GEOMETRY;
+        }
+
+        public CoordinateReferenceSystem crs()
+        {
+            return crs;
+        }
+
+        public PointValue from()
+        {
+            return from;
+        }
+
+        public Value fromValue()
+        {
+            return from == null ? NO_VALUE : from;
+        }
+
+        public boolean fromInclusive()
+        {
+            return fromInclusive;
+        }
+
+        public PointValue to()
+        {
+            return to;
+        }
+
+        public Value toValue()
+        {
+            return to == null ? NO_VALUE : to;
+        }
+
+        public boolean toInclusive()
+        {
+            return toInclusive;
+        }
+
+        @Override
+        public IndexQueryType type()
+        {
+            return IndexQueryType.BOUNDING_BOX;
         }
     }
 

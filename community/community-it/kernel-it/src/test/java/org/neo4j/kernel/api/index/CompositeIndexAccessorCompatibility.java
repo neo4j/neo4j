@@ -32,7 +32,6 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -47,7 +46,6 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -73,7 +71,6 @@ import org.neo4j.values.storable.Values;
 
 import static java.time.LocalDate.ofEpochDay;
 import static java.util.Arrays.asList;
-import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -84,6 +81,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Pair.of;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.boundingBox;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
@@ -96,8 +94,6 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.epochDate;
-import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
-import static org.neo4j.values.storable.ValueGroup.GEOMETRY_ARRAY;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longArray;
@@ -259,8 +255,6 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     @Test
     void testIndexSeekExactWithRangeByBoolean() throws Exception
     {
-        assumeTrue( testSuite.supportsBooleanRangeQueries(), "Assume support for boolean range queries" );
-
         testIndexSeekExactWithRangeByBooleanType( BooleanValue.TRUE, BooleanValue.FALSE,
                 BooleanValue.FALSE,
                 BooleanValue.TRUE );
@@ -316,9 +310,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     @Test
     void testIndexSeekExactWithRangeBySpatial() throws Exception
     {
-        assumeTrue( testSuite.supportsSpatialRangeQueries(), "Assume support for spatial range queries" );
-
-        testIndexSeekExactWithRange( intValue( 100 ), intValue( 10 ),
+        testIndexSeekExactWithBoundingBox( intValue( 100 ), intValue( 10 ),
                 pointValue( WGS_84, -10D, -10D ),
                 pointValue( WGS_84, -1D, -1D ),
                 pointValue( WGS_84, 0D, 0D ),
@@ -343,35 +335,68 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 9L, descriptor.schema(), base2, obj4 ),
                 add( 10L, descriptor.schema(), base2, obj5 ) ) );
 
-        assertThat( query( exact( 0, base1 ), range( 1, obj2, true, obj4, false ) ) ).isEqualTo( asList( 2L, 3L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj4, true, null, false ) ) ).isEqualTo( asList( 4L, 5L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj4, false, null, true ) ) ).isEqualTo( singletonList( 5L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj5, false, obj2, true ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( exact( 0, base1 ), range( 1, null, false, obj3, false ) ) ).isEqualTo( asList( 1L, 2L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, null, true, obj3, true ) ) ).isEqualTo( asList( 1L, 2L, 3L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, true ) ) ).isEqualTo( singletonList( 2L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj3, false ) ) ).isEqualTo( singletonList( 2L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj2, true, obj4, false ) ) ).isEqualTo( asList( 7L, 8L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj4, true, null, false ) ) ).isEqualTo( asList( 9L, 10L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj4, false, null, true ) ) ).isEqualTo( singletonList( 10L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj5, false, obj2, true ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( exact( 0, base2 ), range( 1, null, false, obj3, false ) ) ).isEqualTo( asList( 6L, 7L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, null, true, obj3, true ) ) ).isEqualTo( asList( 6L, 7L, 8L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ) ).isEqualTo( singletonList( 7L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj3, false ) ) ).isEqualTo( singletonList( 7L ) );
+        assertThat( query( exact( 0, base1 ), range( 1, obj2, true, obj4, false ) ) ).containsExactly( 2L, 3L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj4, true, null, false ) ) ).containsExactly( 4L, 5L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj4, false, null, true ) ) ).containsExactly( 5L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj5, false, obj2, true ) ) ).isEmpty();
+        assertThat( query( exact( 0, base1 ), range( 1, null, false, obj3, false ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( exact( 0, base1 ), range( 1, null, true, obj3, true ) ) ).containsExactly( 1L, 2L, 3L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, true ) ) ).containsExactly( 2L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj3, false ) ) ).containsExactly( 2L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj2, true, obj4, false ) ) ).containsExactly( 7L, 8L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj4, true, null, false ) ) ).containsExactly( 9L, 10L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj4, false, null, true ) ) ).containsExactly( 10L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj5, false, obj2, true ) ) ).isEmpty();
+        assertThat( query( exact( 0, base2 ), range( 1, null, false, obj3, false ) ) ).containsExactly( 6L, 7L );
+        assertThat( query( exact( 0, base2 ), range( 1, null, true, obj3, true ) ) ).containsExactly( 6L, 7L, 8L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ) ).containsExactly( 7L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj3, false ) ) ).containsExactly( 7L );
 
         ValueGroup valueGroup = obj1.valueGroup();
-        if ( valueGroup != GEOMETRY && valueGroup != GEOMETRY_ARRAY )
-        {
-            assertThat( query( exact( 0, base1 ), range( 1, valueGroup ) ) ).isEqualTo( asList( 1L, 2L, 3L, 4L, 5L ) );
-            assertThat( query( exact( 0, base2 ), range( 1, valueGroup ) ) ).isEqualTo( asList( 6L, 7L, 8L, 9L, 10L ) );
-        }
-        else
-        {
-            CoordinateReferenceSystem crs = getCrs( obj1 );
-            assertThat( query( exact( 0, base1 ), range( 1, crs ) ) ).isEqualTo( asList( 1L, 2L, 3L, 4L, 5L ) );
-            assertThat( query( exact( 0, base2 ), range( 1, crs ) ) ).isEqualTo( asList( 6L, 7L, 8L, 9L, 10L ) );
-        }
+        assertThat( query( exact( 0, base1 ), range( 1, valueGroup ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
+        assertThat( query( exact( 0, base2 ), range( 1, valueGroup ) ) ).containsExactly( 6L, 7L, 8L, 9L, 10L );
+    }
+
+    private void testIndexSeekExactWithBoundingBox( Value base1, Value base2,
+                                                    PointValue obj1, PointValue obj2, PointValue obj3, PointValue obj4, PointValue obj5 )
+            throws Exception
+    {
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
+        assumeTrue( testSuite.supportsSpatial(), "Assume support for spacial value types" );
+        assumeTrue( testSuite.supportsBoundingBoxQueries(), "Assume support for bounding box queries" );
+
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), base1, obj1 ),
+                add( 2L, descriptor.schema(), base1, obj2 ),
+                add( 3L, descriptor.schema(), base1, obj3 ),
+                add( 4L, descriptor.schema(), base1, obj4 ),
+                add( 5L, descriptor.schema(), base1, obj5 ),
+                add( 6L, descriptor.schema(), base2, obj1 ),
+                add( 7L, descriptor.schema(), base2, obj2 ),
+                add( 8L, descriptor.schema(), base2, obj3 ),
+                add( 9L, descriptor.schema(), base2, obj4 ),
+                add( 10L, descriptor.schema(), base2, obj5 ) ) );
+
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj2, true, obj4, false ) ) ).containsExactly( 2L, 3L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj4, true, null, false ) ) ).containsExactly( 4L, 5L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj4, false, null, true ) ) ).containsExactly( 5L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj5, false, obj2, true ) ) ).isEmpty();
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, null, false, obj3, false ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, null, true, obj3, true ) ) ).containsExactly( 1L, 2L, 3L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj1, false, obj2, true ) ) ).containsExactly( 2L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj1, false, obj3, false ) ) ).containsExactly( 2L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj2, true, obj4, false ) ) ).containsExactly( 7L, 8L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj4, true, null, false ) ) ).containsExactly( 9L, 10L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj4, false, null, true ) ) ).containsExactly( 10L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj5, false, obj2, true ) ) ).isEmpty();
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, null, false, obj3, false ) ) ).containsExactly( 6L, 7L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, null, true, obj3, true ) ) ).containsExactly( 6L, 7L, 8L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj1, false, obj2, true ) ) ).containsExactly( 7L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj1, false, obj3, false ) ) ).containsExactly( 7L );
+
+        CoordinateReferenceSystem crs = getCrs( obj1 );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, crs ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, crs ) ) ).containsExactly( 6L, 7L, 8L, 9L, 10L );
     }
 
     private static CoordinateReferenceSystem getCrs( Value value )
@@ -388,30 +413,32 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         throw new IllegalArgumentException( "Expected some geometry value to get CRS from, but got " + value );
     }
 
-    private void testIndexSeekExactWithRangeByBooleanType( Value base1, Value base2, Value obj1, Value obj2 ) throws Exception
+    private void testIndexSeekExactWithRangeByBooleanType( BooleanValue base1, BooleanValue base2, BooleanValue obj1, BooleanValue obj2 ) throws Exception
     {
+        assumeTrue( testSuite.supportsBooleanRangeQueries(), "Assume support for boolean range queries" );
+
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), base1, obj1 ),
                 add( 2L, descriptor.schema(), base1, obj2 ),
                 add( 3L, descriptor.schema(), base2, obj1 ),
                 add( 4L, descriptor.schema(), base2, obj2 ) ) );
 
-        assertThat( query( exact( 0, base1 ), range( 1, obj1, true, obj2, true ) ) ).isEqualTo( asList( 1L, 2L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, true ) ) ).isEqualTo( singletonList( 2L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj1, true, obj2, false ) ) ).isEqualTo( singletonList( 1L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, false ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( exact( 0, base1 ), range( 1, null, true, obj2, true ) ) ).isEqualTo( asList( 1L, 2L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj1, true, null, true ) ) ).isEqualTo( asList( 1L, 2L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj1.valueGroup() ) ) ).isEqualTo( asList( 1L, 2L ) );
-        assertThat( query( exact( 0, base1 ), range( 1, obj2, true, obj1, true ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( exact( 0, base2 ), range( 1, obj1, true, obj2, true ) ) ).isEqualTo( asList( 3L, 4L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ) ).isEqualTo( singletonList( 4L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj1, true, obj2, false ) ) ).isEqualTo( singletonList( 3L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, false ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( exact( 0, base2 ), range( 1, null, true, obj2, true ) ) ).isEqualTo( asList( 3L, 4L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj1, true, null, true ) ) ).isEqualTo( asList( 3L, 4L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj1.valueGroup() ) ) ).isEqualTo( asList( 3L, 4L ) );
-        assertThat( query( exact( 0, base2 ), range( 1, obj2, true, obj1, true ) ) ).isEqualTo( EMPTY_LIST );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, true, obj2, true ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, true ) ) ).containsExactly( 2L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, true, obj2, false ) ) ).containsExactly( 1L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, false, obj2, false ) ) ).isEmpty();
+        assertThat( query( exact( 0, base1 ), range( 1, null, true, obj2, true ) ) ).containsExactly(  1L, 2L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj1, true, null, true ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( exact( 0, base1 ), range( 1, obj2, true, obj1, true ) ) ).isEmpty();
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, true, obj2, true ) ) ).containsExactly(  3L, 4L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ) ).containsExactly( 4L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, true, obj2, false ) ) ).containsExactly(  3L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, false ) ) ).isEmpty();
+        assertThat( query( exact( 0, base2 ), range( 1, null, true, obj2, true ) ) ).containsExactly( 3L, 4L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1, true, null, true ) ) ).containsExactly( 3L, 4L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj2, true, obj1, true ) ) ).isEmpty();
+        assertThat( query( exact( 0, base1 ), range( 1, obj1.valueGroup() ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( exact( 0, base2 ), range( 1, obj1.valueGroup() ) ) ).containsExactly( 3L, 4L );
     }
 
     /* stringPrefix */
@@ -433,14 +460,14 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 9L, descriptor.schema(), "b", "apA" ),
                 add( 10L, descriptor.schema(), "b", "b" ) ) );
 
-        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 1L, 3L, 4L ) );
-        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( Collections.singletonList( 2L ) );
-        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "ba" ) ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "" ) ) ) ).isEqualTo( asList( 1L, 2L, 3L, 4L, 5L ) );
-        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 6L, 8L, 9L ) );
-        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( Collections.singletonList( 7L ) );
-        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "ba" ) ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "" ) ) ) ).isEqualTo( asList( 6L, 7L, 8L, 9L, 10L ) );
+        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "a" ) ) ) ).containsExactly( 1L, 3L, 4L );
+        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "A" ) ) ) ).containsExactly( 2L );
+        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "ba" ) ) ) ).isEmpty();
+        assertThat( query( exact( 0, "a" ), stringPrefix( 1, stringValue( "" ) ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
+        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "a" ) ) ) ).containsExactly( 6L, 8L, 9L );
+        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "A" ) ) ) ).containsExactly( 7L );
+        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "ba" ) ) ) ).isEmpty();
+        assertThat( query( exact( 0, "b" ), stringPrefix( 1, stringValue( "" ) ) ) ).containsExactly( 6L, 7L, 8L, 9L, 10L );
     }
 
     @Test
@@ -461,11 +488,11 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 10L, descriptor.schema(), "b", false )
         ) );
 
-        assertThat( query( stringPrefix( 0, stringValue( "a" ) ), exists( 1 ) ) ).isEqualTo( asList( 1L, 3L, 4L, 6L, 8L, 9L ) );
-        assertThat( query( stringPrefix( 0, stringValue( "A" ) ), exists( 1 ) ) ).isEqualTo( asList( 2L, 7L ) );
-        assertThat( query( stringPrefix( 0, stringValue( "ba" ) ), exists( 1 ) ) ).isEqualTo( EMPTY_LIST );
+        assertThat( query( stringPrefix( 0, stringValue( "a" ) ), exists( 1 ) ) ).containsExactly( 1L, 3L, 4L, 6L, 8L, 9L );
+        assertThat( query( stringPrefix( 0, stringValue( "A" ) ), exists( 1 ) ) ).containsExactly( 2L, 7L );
+        assertThat( query( stringPrefix( 0, stringValue( "ba" ) ), exists( 1 ) ) ).isEmpty();
         assertThat( query( stringPrefix( 0, stringValue( "" ) ), exists( 1 ) ) )
-                .isEqualTo( asList( 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L ) );
+                .containsExactly( 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L );
     }
 
     /* testIndexSeekExactWithExists */
@@ -545,8 +572,8 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 2L, descriptor.schema(), b, Values.of( "abv" ) ),
                 add( 3L, descriptor.schema(), a, Values.of( false ) ) ) );
 
-        assertThat( query( exact( 0, a ), exists( 1 ) ) ).isEqualTo( asList( 1L, 3L ) );
-        assertThat( query( exact( 0, b ), exists( 1 ) ) ).isEqualTo( singletonList( 2L ) );
+        assertThat( query( exact( 0, a ), exists( 1 ) ) ).containsExactly( 1L, 3L );
+        assertThat( query( exact( 0, b ), exists( 1 ) ) ).containsExactly( 2L );
     }
 
     /* testIndexSeekRangeWithExists */
@@ -584,13 +611,13 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 1L, descriptor.schema(), false, "someString" ),
                 add( 2L, descriptor.schema(), true, 1000 ) ) );
 
-        assertThat( query( range( 0, BooleanValue.FALSE, true, BooleanValue.TRUE, true ), exists( 1 ) ) ).isEqualTo( asList( 1L, 2L ) );
-        assertThat( query( range( 0, BooleanValue.FALSE, false, BooleanValue.TRUE, true ), exists( 1 ) ) ).isEqualTo( singletonList( 2L ) );
-        assertThat( query( range( 0, BooleanValue.FALSE, true, BooleanValue.TRUE, false ), exists( 1 ) ) ).isEqualTo( singletonList( 1L ) );
-        assertThat( query( range( 0, BooleanValue.FALSE, false, BooleanValue.TRUE, false ), exists( 1 ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( range( 0, null, true, BooleanValue.TRUE, true ), exists( 1 ) ) ).isEqualTo( asList( 1L, 2L ) );
-        assertThat( query( range( 0, BooleanValue.FALSE, true, null, true ), exists( 1 ) ) ).isEqualTo( asList( 1L, 2L ) );
-        assertThat( query( range( 0, BooleanValue.TRUE, true, BooleanValue.FALSE, true ), exists( 1 ) ) ).isEqualTo( EMPTY_LIST );
+        assertThat( query( range( 0, BooleanValue.FALSE, true, BooleanValue.TRUE, true ), exists( 1 ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( range( 0, BooleanValue.FALSE, false, BooleanValue.TRUE, true ), exists( 1 ) ) ).containsExactly( 2L );
+        assertThat( query( range( 0, BooleanValue.FALSE, true, BooleanValue.TRUE, false ), exists( 1 ) ) ).containsExactly( 1L );
+        assertThat( query( range( 0, BooleanValue.FALSE, false, BooleanValue.TRUE, false ), exists( 1 ) ) ).isEmpty();
+        assertThat( query( range( 0, null, true, BooleanValue.TRUE, true ), exists( 1 ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( range( 0, BooleanValue.FALSE, true, null, true ), exists( 1 ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( range( 0, BooleanValue.TRUE, true, BooleanValue.FALSE, true ), exists( 1 ) ) ).isEmpty();
     }
 
     @Test
@@ -640,9 +667,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     @Test
     void testIndexSeekRangeWithExistsBySpatial() throws Exception
     {
-        assumeTrue( testSuite.supportsSpatialRangeQueries(), "Assume support for spatial range queries" );
-
-        testIndexSeekRangeWithExists(
+        testIndexSeekBoundingBoxWithExists(
                 pointValue( CARTESIAN, 0D, 0D ),
                 pointValue( CARTESIAN, 1D, 1D ),
                 pointValue( CARTESIAN, 2D, 2D ),
@@ -701,6 +726,7 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     private void testIndexSeekRangeWithExists( Value obj1, Value obj2, Value obj3, Value obj4, Value obj5 ) throws Exception
     {
         assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
+
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), obj1, Values.of( 100 ) ),
                 add( 2L, descriptor.schema(), obj2, Values.of( "someString" ) ),
@@ -708,21 +734,41 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 4L, descriptor.schema(), obj4, Values.of( true ) ),
                 add( 5L, descriptor.schema(), obj5, Values.of( 42 ) ) ) );
 
-        assertThat( query( range( 0, obj2, true, obj4, false ), exists( 1 ) ) ).isEqualTo( asList( 2L, 3L ) );
-        assertThat( query( range( 0, obj4, true, null, false ), exists( 1 ) ) ).isEqualTo( asList( 4L, 5L ) );
-        assertThat( query( range( 0, obj4, false, null, true ), exists( 1 ) ) ).isEqualTo( singletonList( 5L ) );
-        assertThat( query( range( 0, obj5, false, obj2, true ), exists( 1 ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( range( 0, null, false, obj3, false ), exists( 1 ) ) ).isEqualTo( asList( 1L, 2L ) );
-        assertThat( query( range( 0, null, true, obj3, true ), exists( 1 ) ) ).isEqualTo( asList( 1L, 2L, 3L ) );
-        ValueGroup valueGroup = obj1.valueGroup();
-        if ( valueGroup != GEOMETRY && valueGroup != GEOMETRY_ARRAY )
-        {
-            // This cannot be done for spatial values because each bound in a spatial query needs a coordinate reference system,
-            // and those are provided by Value instances, e.g. PointValue
-            assertThat( query( range( 0, obj1.valueGroup() ), exists( 1 ) ) ).isEqualTo( asList( 1L, 2L, 3L, 4L, 5L ) );
-        }
-        assertThat( query( range( 0, obj1, false, obj2, true ), exists( 1 ) ) ).isEqualTo( singletonList( 2L ) );
-        assertThat( query( range( 0, obj1, false, obj3, false ), exists( 1 ) ) ).isEqualTo( singletonList( 2L ) );
+        assertThat( query( range( 0, obj2, true, obj4, false ), exists( 1 ) ) ).containsExactly(  2L, 3L  );
+        assertThat( query( range( 0, obj4, true, null, false ), exists( 1 ) ) ).containsExactly( 4L, 5L );
+        assertThat( query( range( 0, obj4, false, null, true ), exists( 1 ) ) ).containsExactly( 5L );
+        assertThat( query( range( 0, obj5, false, obj2, true ), exists( 1 ) ) ).isEmpty();
+        assertThat( query( range( 0, null, false, obj3, false ), exists( 1 ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( range( 0, null, true, obj3, true ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
+        assertThat( query( range( 0, obj1, false, obj2, true ), exists( 1 ) ) ).containsExactly( 2L );
+        assertThat( query( range( 0, obj1, false, obj3, false ), exists( 1 ) ) ).containsExactly( 2L );
+
+        assertThat( query( range( 0, obj1.valueGroup() ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
+    }
+
+    private void testIndexSeekBoundingBoxWithExists( PointValue obj1, PointValue obj2, PointValue obj3, PointValue obj4, PointValue obj5 ) throws Exception
+    {
+        assumeTrue( testSuite.supportsGranularCompositeQueries(), "Assume support for granular composite queries" );
+        assumeTrue( testSuite.supportsSpatial(), "Assume support for spacial value types" );
+        assumeTrue( testSuite.supportsBoundingBoxQueries(), "Assume support for bounding box queries" );
+
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), obj1, Values.of( 100 ) ),
+                add( 2L, descriptor.schema(), obj2, Values.of( "someString" ) ),
+                add( 3L, descriptor.schema(), obj3, Values.of( epochDate( 300 ) ) ),
+                add( 4L, descriptor.schema(), obj4, Values.of( true ) ),
+                add( 5L, descriptor.schema(), obj5, Values.of( 42 ) ) ) );
+
+        assertThat( query( boundingBox( 0, obj2, true, obj4, false ), exists( 1 ) ) ).containsExactly( 2L, 3L );
+        assertThat( query( boundingBox( 0, obj4, true, null, false ), exists( 1 ) ) ).containsExactly( 4L, 5L );
+        assertThat( query( boundingBox( 0, obj4, false, null, true ), exists( 1 ) ) ).containsExactly( 5L );
+        assertThat( query( boundingBox( 0, obj5, false, obj2, true ), exists( 1 ) ) ).isEmpty();
+        assertThat( query( boundingBox( 0, null, false, obj3, false ), exists( 1 ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( boundingBox( 0, null, true, obj3, true ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
+        assertThat( query( boundingBox( 0, obj1, false, obj2, true ), exists( 1 ) ) ).containsExactly( 2L );
+        assertThat( query( boundingBox( 0, obj1, false, obj3, false ), exists( 1 ) ) ).containsExactly( 2L );
+
+        assertThat( query( boundingBox( 0, obj1.getCoordinateReferenceSystem() ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
     }
 
     /* IndexOrder */
@@ -1316,10 +1362,19 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         }
     }
 
-    private boolean hasContainsOrEndsWithQuery( PropertyIndexQuery[] theQuery )
+    private boolean hasContainsOrEndsWithQuery( PropertyIndexQuery... query )
     {
-        return Arrays.stream( theQuery )
-                .anyMatch( predicate -> predicate.type().equals( IndexQueryType.STRING_CONTAINS ) || predicate.type().equals( IndexQueryType.STRING_SUFFIX ) );
+        for ( final var predicate : query )
+        {
+            switch ( predicate.type() )
+            {
+            case STRING_CONTAINS, STRING_SUFFIX:
+                return true;
+            default:
+                break;
+            }
+        }
+        return false;
     }
 
     @Test

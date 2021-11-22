@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.EnumSet;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -46,7 +44,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
-import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 

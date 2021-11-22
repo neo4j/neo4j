@@ -60,8 +60,6 @@ import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     extends NativeIndexAccessorTests<KEY>
 {
-    abstract IndexCapability indexCapability();
-
     @Test
     void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd() throws Exception
     {
@@ -325,10 +323,15 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     private ValueType[] supportedTypesExcludingNonOrderable()
     {
         return RandomValues.excluding( valueCreatorUtil.supportedTypes(),
-                t -> t.valueGroup == ValueGroup.GEOMETRY ||
-                        t.valueGroup == ValueGroup.GEOMETRY_ARRAY ||
-                        t == ValueType.STRING ||
-                        t == ValueType.STRING_ARRAY );
+                                       type -> switch ( type )
+        {
+            case STRING, STRING_ARRAY -> true;  // exclude strings outside the Basic Multilingual Plane
+            default -> switch ( type.valueGroup.category() )
+            {
+                case GEOMETRY, GEOMETRY_ARRAY -> true;  // exclude spacial types
+                default -> false;
+            };
+        });
     }
 
     private static long entityIdOf( ValueIndexEntryUpdate<IndexDescriptor> update )

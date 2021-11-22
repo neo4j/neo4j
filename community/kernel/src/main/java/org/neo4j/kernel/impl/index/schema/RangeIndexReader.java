@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -44,7 +45,7 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
     }
 
     @Override
-    void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery[] predicates )
+    void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery... predicates )
     {
         validateNoUnsupportedPredicates( predicates );
         QueryValidator.validateOrder( RangeIndexProvider.CAPABILITY, constraints.order(), predicates );
@@ -52,7 +53,7 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
     }
 
     @Override
-    boolean initializeRangeForQuery( RangeKey treeKeyFrom, RangeKey treeKeyTo, PropertyIndexQuery[] predicates )
+    boolean initializeRangeForQuery( RangeKey treeKeyFrom, RangeKey treeKeyTo, PropertyIndexQuery... predicates )
     {
         if ( isAllQuery( predicates ) )
         {
@@ -62,32 +63,37 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
 
         for ( int i = 0; i < predicates.length; i++ )
         {
-            PropertyIndexQuery predicate = predicates[i];
+            final var predicate = predicates[i];
             switch ( predicate.type() )
             {
-            case EXISTS:
-                treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
-                treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
-                break;
-            case EXACT:
-                PropertyIndexQuery.ExactPredicate exactPredicate = (PropertyIndexQuery.ExactPredicate) predicate;
-                treeKeyFrom.initFromValue( i, exactPredicate.value(), NEUTRAL );
-                treeKeyTo.initFromValue( i, exactPredicate.value(), NEUTRAL );
-                break;
-            case RANGE:
-                throwIfGeometryRangeQuery( predicates, predicate );
+                case EXISTS ->
+                {
+                    treeKeyFrom.initValueAsLowest( i, ValueGroup.UNKNOWN );
+                    treeKeyTo.initValueAsHighest( i, ValueGroup.UNKNOWN );
+                }
 
-                PropertyIndexQuery.RangePredicate<?> rangePredicate = (PropertyIndexQuery.RangePredicate<?>) predicate;
-                initFromForRange( i, rangePredicate, treeKeyFrom );
-                initToForRange( i, rangePredicate, treeKeyTo );
-                break;
-            case STRING_PREFIX:
-                PropertyIndexQuery.StringPrefixPredicate prefixPredicate = (PropertyIndexQuery.StringPrefixPredicate) predicate;
-                treeKeyFrom.stateSlot( i ).initAsPrefixLow( prefixPredicate.prefix() );
-                treeKeyTo.stateSlot( i ).initAsPrefixHigh( prefixPredicate.prefix() );
-                break;
-            default:
-                throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+                case EXACT ->
+                {
+                    final var exactPredicate = (PropertyIndexQuery.ExactPredicate) predicate;
+                    treeKeyFrom.initFromValue( i, exactPredicate.value(), NEUTRAL );
+                    treeKeyTo.initFromValue( i, exactPredicate.value(), NEUTRAL );
+                }
+
+                case RANGE ->
+                {
+                    final var rangePredicate = (PropertyIndexQuery.RangePredicate<?>) predicate;
+                    initFromForRange( i, rangePredicate, treeKeyFrom );
+                    initToForRange( i, rangePredicate, treeKeyTo );
+                }
+
+                case STRING_PREFIX ->
+                {
+                    final var prefixPredicate = (PropertyIndexQuery.StringPrefixPredicate) predicate;
+                    treeKeyFrom.stateSlot( i ).initAsPrefixLow( prefixPredicate.prefix() );
+                    treeKeyTo.stateSlot( i ).initAsPrefixHigh( prefixPredicate.prefix() );
+                }
+
+                default -> throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
             }
         }
         return false;
@@ -149,29 +155,16 @@ public class RangeIndexReader extends NativeIndexReader<RangeKey>
 
     private static void validateNoUnsupportedPredicates( PropertyIndexQuery[] predicates )
     {
-        for ( PropertyIndexQuery predicate : predicates )
+        for ( final var predicate : predicates )
         {
-            throwIfGeometryRangeQuery( predicates, predicate );
-            throwIfStringSuffixOrContains( predicates, predicate );
-        }
-    }
-
-    private static void throwIfGeometryRangeQuery( PropertyIndexQuery[] predicates, PropertyIndexQuery predicate )
-    {
-        if ( predicate.type() == IndexQueryType.RANGE && predicate.valueGroup() == ValueGroup.GEOMETRY )
-        {
-            throw new IllegalArgumentException( format( "Tried to query index with illegal query. Geometry range predicate is not allowed " +
-                                                "for RANGE index. Query was: %s ", Arrays.toString( predicates ) ) );
-        }
-    }
-
-    private static void throwIfStringSuffixOrContains( PropertyIndexQuery[] predicates, PropertyIndexQuery predicate )
-    {
-        IndexQueryType type = predicate.type();
-        if ( type == IndexQueryType.STRING_SUFFIX || type == IndexQueryType.STRING_CONTAINS )
-        {
-            throw new IllegalArgumentException( format( "Tried to query index with illegal query. %s predicate is not allowed " +
-                                                        "for RANGE index. Query was: %s ", type, Arrays.toString( predicates ) ) );
+            final var type = predicate.type();
+            switch ( type )
+            {
+                case BOUNDING_BOX, STRING_CONTAINS, STRING_SUFFIX -> throw new IllegalArgumentException(
+                        format( "Tried to query index with illegal query. A %s predicate is not allowed for a %s index. Query was :%s",
+                                type, IndexType.RANGE, Arrays.toString( predicates ) ) );
+                default -> { }
+            }
         }
     }
 }
