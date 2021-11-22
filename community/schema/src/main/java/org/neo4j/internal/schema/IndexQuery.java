@@ -45,6 +45,6 @@ public interface IndexQuery
         STRING_PREFIX,
         STRING_SUFFIX,
         STRING_CONTAINS,
-        FULLTEXT_SEARCH
+        FULLTEXT_SEARCH,
     }
 }
