@@ -386,7 +386,8 @@ class Invocation
             // unwrap FabricException where possible.
             var rootCause = ((FabricException) cause).status();
             if ( cause.getCause() != null &&
-                 cause.getCause().getMessage().equals( "Executing queries that use periodic commit in an open transaction is not possible." ) )
+                 cause.getCause().getMessage().equals( "A query with 'PERIODIC COMMIT' can only be executed in an implicit transaction, " +
+                                                       "but tried to execute in an explicit transaction." ) )
             {
                 neo4jError = new Neo4jError( Status.Request.Invalid,
                                              "Routing of PERIODIC COMMIT is not currently supported. Please retry your request against the cluster leader" );

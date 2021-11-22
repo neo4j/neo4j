@@ -209,7 +209,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         checkNotTerminated();
         if ( transactionType != KernelTransaction.Type.IMPLICIT )
         {
-            throw new TransactionFailureException( "Can only start inner transactions in an implicit transaction." );
+            throw new TransactionFailureException( "A query with 'CALL { ... } IN TRANSACTIONS' can only be executed in an implicit transaction, " +
+                                                   "but tried to execute in an explicit transaction." );
         }
 
         // Create new InternalTransaction, creates new KernelTransaction
