@@ -28,7 +28,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 
 public final class StoreAssertions
 {
@@ -40,8 +39,10 @@ public final class StoreAssertions
     {
         Config configuration = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
         AssertableLogProvider logger = new AssertableLogProvider();
-        ConsistencyCheckService.Result result =
-                new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, configuration, null, logger, false, DEFAULT );
+        ConsistencyCheckService.Result result = new ConsistencyCheckService( databaseLayout )
+                .with( configuration )
+                .with( logger )
+                .runFullConsistencyCheck();
 
         assertTrue( result.isSuccessful(), "Consistency check for " + databaseLayout + " found inconsistencies:\n\n" + logger.serialize() );
     }

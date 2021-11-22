@@ -31,7 +31,6 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -406,9 +405,11 @@ class AllNodesInStoreExistInLabelIndexTest
 
     ConsistencyCheckService.Result fullConsistencyCheck() throws ConsistencyCheckIncompleteException
     {
-        ConsistencyCheckService service = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = db.databaseLayout();
         Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory() );
-        return service.runFullConsistencyCheck( databaseLayout, addAdditionalConfigToCC( config ), null, log, false, ConsistencyFlags.DEFAULT );
+        return new ConsistencyCheckService( databaseLayout )
+                .with( addAdditionalConfigToCC( config ) )
+                .with( log )
+                .runFullConsistencyCheck();
     }
 }

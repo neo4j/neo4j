@@ -36,7 +36,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -183,14 +182,14 @@ class MultipleIndexPopulationStressIT
     {
         // WHEN creating the indexes under stressful updates
         populateDbAndIndexes( nodeCount, relCount );
-        ConsistencyCheckService cc = new ConsistencyCheckService();
         Config config = Config.newBuilder()
                               .set( neo4j_home, directory.homePath() )
                               .set( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) )
                               .set( index_population_queue_threshold, concurrentUpdatesQueueFlushThreshold )
                               .build();
-        Result result =
-                cc.runFullConsistencyCheck( RecordDatabaseLayout.of( config ), config, null, NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
+        Result result = new ConsistencyCheckService( RecordDatabaseLayout.of( config ) )
+                .with( config )
+                .runFullConsistencyCheck();
         assertThat( result.isSuccessful() ).as( "Database consistency" )
                                            .withFailMessage( "%nExpecting database to be consistent, but it was not.%n%s%nDetailed report: '%s'%n",
                                                              result.summary(), result.reportFile() )

@@ -35,7 +35,6 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -44,7 +43,6 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.io.fs.FileUtils.writeAll;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -102,8 +100,9 @@ public class FullCheckCountsStoreIT
         assertTrue( corrupted );
 
         // when
-        ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout,
-                defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() ), null, NullLogProvider.getInstance(), false, DEFAULT );
+        ConsistencyCheckService.Result result = new ConsistencyCheckService( databaseLayout )
+                .with( defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() ) )
+                .runFullConsistencyCheck();
 
         // then
         assertThat( result.summary().getGenericErrors() ).contains( errorMessage );

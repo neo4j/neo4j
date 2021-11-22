@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -40,7 +39,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -70,7 +68,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -723,9 +720,9 @@ class FulltextIndexConsistencyCheckIT
     private ConsistencyCheckService.Result checkConsistency() throws ConsistencyCheckIncompleteException
     {
         Config config = Config.defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() );
-        ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
-        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, null,
-                NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
+        return new ConsistencyCheckService( databaseLayout )
+                .with( config )
+                .runFullConsistencyCheck();
     }
 
     private static IndexDescriptor getFulltextIndexDescriptor( Iterable<IndexDefinition> indexes )

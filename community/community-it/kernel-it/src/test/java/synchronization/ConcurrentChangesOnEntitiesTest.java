@@ -30,7 +30,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,7 +48,6 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 
 @Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
@@ -199,8 +197,10 @@ class ConcurrentChangesOnEntitiesTest
         LogProvider logProvider = new Log4jLogProvider( System.out );
         assertDoesNotThrow( () ->
         {
-            ConsistencyCheckService.Result result =
-                    new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, Config.defaults(), System.err, logProvider, false, DEFAULT );
+            ConsistencyCheckService.Result result = new ConsistencyCheckService( databaseLayout )
+                    .with( System.err )
+                    .with( logProvider )
+                    .runFullConsistencyCheck();
             Assertions.assertTrue( result.isSuccessful() );
         } );
     }

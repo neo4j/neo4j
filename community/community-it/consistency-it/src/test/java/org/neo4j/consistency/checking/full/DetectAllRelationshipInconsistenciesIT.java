@@ -120,9 +120,10 @@ public class DetectAllRelationshipInconsistenciesIT
 
         // THEN the checker should find it, where ever it is in the store
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        ConsistencyCheckService.Result result =
-                new ConsistencyCheckService().runFullConsistencyCheck( Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ),
-                        getTuningConfiguration(), null, logProvider, false, ConsistencyFlags.DEFAULT );
+        ConsistencyCheckService.Result result = new ConsistencyCheckService( Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ) )
+                .with( getTuningConfiguration() )
+                .with( logProvider )
+                .runFullConsistencyCheck();
         assertThat( result.isSuccessful() ).isFalse();
         LogAssertions.assertThat( logProvider ).containsMessages( sabotage.after.toString() );
 

@@ -31,13 +31,15 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.CheckConsistencyCommand;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -45,8 +47,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -54,12 +59,6 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @Neo4jLayoutExtension
 class CheckConsistencyCommandIT
@@ -134,33 +133,25 @@ class CheckConsistencyCommandIT
     }
 
     @Test
-    void runsConsistencyChecker() throws Exception
+    void runsConsistencyChecker()
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( neo4jLayout, "mydb" );
-        when( consistencyCheckService
-                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( OutputStream.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
-                        any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb" );
         checkConsistencyCommand.execute();
 
-        verify( consistencyCheckService )
-                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( OutputStream.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
-                        any( ConsistencyFlags.class ) );
+        consistencyCheckService.verifyArgument( DatabaseLayout.class, databaseLayout );
     }
 
     @Test
     void consistencyCheckerRespectDatabaseLock() throws CannotWriteException, IOException
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
@@ -178,42 +169,30 @@ class CheckConsistencyCommandIT
     }
 
     @Test
-    void enablesVerbosity() throws Exception
+    void enablesVerbosity()
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( neo4jLayout, "mydb" );
 
-        when( consistencyCheckService
-                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( OutputStream.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
-                        any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
-
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--verbose" );
         checkConsistencyCommand.execute();
 
-        verify( consistencyCheckService )
-                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( OutputStream.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
-                        any( ConsistencyFlags.class ) );
+        consistencyCheckService.verifyArgument( DatabaseLayout.class, databaseLayout );
+        consistencyCheckService.verifyArgument( Boolean.class, true );
     }
 
     @Test
-    void failsWhenInconsistenciesAreFound() throws Exception
+    void failsWhenInconsistenciesAreFound()
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService(
+                ConsistencyCheckService.Result.failure( Path.of( "/the/report/path" ), new ConsistencySummaryStatistics() ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
-        when( consistencyCheckService
-                .runFullConsistencyCheck( any( RecordDatabaseLayout.class ), any( Config.class ), any( OutputStream.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
-                        any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.failure( Path.of( "/the/report/path" ), new ConsistencySummaryStatistics() ) );
 
         CommandFailedException commandFailed =
                 assertThrows( CommandFailedException.class, () ->
@@ -226,103 +205,73 @@ class CheckConsistencyCommandIT
 
     @Test
     void shouldWriteReportFileToCurrentDirectoryByDefault()
-            throws IOException, ConsistencyCheckIncompleteException, CommandFailedException
+            throws CommandFailedException
 
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
-
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
-                any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb" );
         checkConsistencyCommand.execute();
 
-        verify( consistencyCheckService )
-                .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                        eq( Path.of( "" ) ), any( ConsistencyFlags.class ) );
+        consistencyCheckService.verifyArgument( Path.class, Path.of( "" ) );
     }
 
     @Test
     void shouldWriteReportFileToSpecifiedDirectory()
-            throws IOException, ConsistencyCheckIncompleteException, CommandFailedException
+            throws CommandFailedException
 
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
-
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
-                any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--report-dir=some-dir-or-other" );
         checkConsistencyCommand.execute();
 
-        verify( consistencyCheckService )
-                .runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                        anyBoolean(), eq( Path.of( "some-dir-or-other" ) ),
-                        any( ConsistencyFlags.class ) );
+        consistencyCheckService.verifyArgument( Path.class, Path.of( "some-dir-or-other" ) );
     }
 
     @Test
     void shouldCanonicalizeReportDirectory()
-            throws IOException, ConsistencyCheckIncompleteException, CommandFailedException
+            throws CommandFailedException
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
-
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
-                any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--report-dir=" + Paths.get( "..", "bar" ) );
         checkConsistencyCommand.execute();
 
-        verify( consistencyCheckService )
-                .runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                        anyBoolean(), eq( Path.of( "../bar" ) ),
-                        any( ConsistencyFlags.class ) );
+        consistencyCheckService.verifyArgument( Path.class, Path.of( "../bar" ) );
     }
 
     @Test
-    void passesOnCheckParameters() throws Exception
+    void passesOnCheckParameters()
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
-
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
-                any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--check-graph=false",
                 "--check-indexes=false", "--check-index-structure=true" );
         checkConsistencyCommand.execute();
 
-        verify( consistencyCheckService )
-                .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                        any(), eq( new ConsistencyFlags( false, false, true ) ) );
+        consistencyCheckService.verifyArgument( ConsistencyFlags.class, new ConsistencyFlags( false, false, true ) );
     }
 
     @Test
-    void databaseAndBackupAreMutuallyExclusive() throws Exception
+    void databaseAndBackupAreMutuallyExclusive()
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
-
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
-                any(), anyBoolean(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         MutuallyExclusiveArgsException incorrectUsage =
                 assertThrows( MutuallyExclusiveArgsException.class, () ->
@@ -336,7 +285,7 @@ class CheckConsistencyCommandIT
     @Test
     void backupNeedsToBePath()
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
@@ -354,28 +303,17 @@ class CheckConsistencyCommandIT
     @Test
     void canRunOnBackup() throws Exception
     {
-        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+        TrackingConsistencyCheckService consistencyCheckService = new TrackingConsistencyCheckService( ConsistencyCheckService.Result.success( null, null ) );
 
         RecordDatabaseLayout backupLayout = RecordDatabaseLayout.ofFlat( testDirectory.directory( "backup" ) );
         prepareBackupDatabase( backupLayout );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath ), consistencyCheckService );
 
-        when( consistencyCheckService
-                .runFullConsistencyCheck( eq( backupLayout ), any( Config.class ),
-                        any( OutputStream.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
-                        any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
-
         CommandLine.populateCommand( checkConsistencyCommand, "--backup=" + backupLayout.databaseDirectory() );
         checkConsistencyCommand.execute();
 
-        verify( consistencyCheckService )
-                .runFullConsistencyCheck( eq( backupLayout ), any( Config.class ),
-                        any( OutputStream.class ),
-                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
-                        any( ConsistencyFlags.class ) );
+        consistencyCheckService.verifyArgument( DatabaseLayout.class, backupLayout );
     }
 
     private void prepareBackupDatabase( DatabaseLayout backupLayout ) throws IOException
@@ -388,5 +326,133 @@ class CheckConsistencyCommandIT
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         managementService.shutdown();
+    }
+
+    private static class TrackingConsistencyCheckService extends ConsistencyCheckService
+    {
+        private final Map<Class<?>,Object> arguments;
+        private final Result result;
+
+        TrackingConsistencyCheckService( Result result )
+        {
+            super( null );
+            this.result = result;
+            this.arguments = new HashMap<>();
+        }
+
+        TrackingConsistencyCheckService( TrackingConsistencyCheckService from )
+        {
+            super( null );
+            this.result = from.result;
+            this.arguments = from.arguments;
+        }
+
+        @Override
+        public ConsistencyCheckService with( Config config )
+        {
+            arguments.put( Config.class, config );
+            super.with( config );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( Date timestamp )
+        {
+            arguments.put( Date.class, timestamp );
+            super.with( timestamp );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( DatabaseLayout layout )
+        {
+            arguments.put( DatabaseLayout.class, layout );
+            super.with( layout );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( OutputStream progressOutput )
+        {
+            arguments.put( OutputStream.class, progressOutput );
+            super.with( progressOutput );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( LogProvider logProvider )
+        {
+            arguments.put( LogProvider.class, logProvider );
+            super.with( logProvider );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( FileSystemAbstraction fileSystem )
+        {
+            arguments.put( FileSystemAbstraction.class, fileSystem );
+            super.with( fileSystem );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( PageCache pageCache )
+        {
+            arguments.put( PageCache.class, pageCache );
+            super.with( pageCache );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService verbose( boolean verbose )
+        {
+            arguments.put( Boolean.class, verbose );
+            super.verbose( verbose );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( Path reportDir )
+        {
+            arguments.put( Path.class, reportDir );
+            super.with( reportDir );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( ConsistencyFlags consistencyFlags )
+        {
+            arguments.put( ConsistencyFlags.class, consistencyFlags );
+            super.with( consistencyFlags );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( PageCacheTracer pageCacheTracer )
+        {
+            arguments.put( PageCacheTracer.class, pageCacheTracer );
+            super.with( pageCacheTracer );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public ConsistencyCheckService with( MemoryTracker memoryTracker )
+        {
+            arguments.put( MemoryTracker.class, memoryTracker );
+            super.with( memoryTracker );
+            return new TrackingConsistencyCheckService( this );
+        }
+
+        @Override
+        public Result runFullConsistencyCheck()
+        {
+            return result;
+        }
+
+        void verifyArgument( Class<?> type, Object expectedValue )
+        {
+            Object actualValue = arguments.get( type );
+            assertThat( actualValue ).isEqualTo( expectedValue );
+        }
     }
 }

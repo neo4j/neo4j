@@ -49,9 +49,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -71,7 +69,6 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -2073,9 +2070,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             try
             {
-                ConsistencyCheckService cc = new ConsistencyCheckService();
-                ConsistencyCheckService.Result result = cc.runFullConsistencyCheck(
-                        layout, Config.defaults(), null, NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
+                ConsistencyCheckService.Result result = new ConsistencyCheckService( layout ).runFullConsistencyCheck();
                 if ( !result.isSuccessful() )
                 {
                     Files.lines( result.reportFile() ).forEach( System.out::println );

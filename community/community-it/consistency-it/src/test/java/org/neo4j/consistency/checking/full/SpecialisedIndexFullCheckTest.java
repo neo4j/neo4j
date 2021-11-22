@@ -71,7 +71,6 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
@@ -274,10 +273,10 @@ class SpecialisedIndexFullCheckTest
             fixture.close();
 
             var config = Config.newBuilder().set( GraphDatabaseSettings.neo4j_home, testDirectory.homePath() ).build();
-
-            ConsistencyCheckService checkService = new ConsistencyCheckService();
-            return checkService.runFullConsistencyCheck( Neo4jLayout.of( config ).databaseLayout( "neo4j" ),
-                    config, null, logProvider, false, DEFAULT ).summary();
+            return new ConsistencyCheckService( Neo4jLayout.of( config ).databaseLayout( "neo4j" ) )
+                    .with( config )
+                    .with( logProvider )
+                    .runFullConsistencyCheck().summary();
         }
 
         private GraphStoreFixture createFixture()

@@ -94,7 +94,7 @@ public class CheckConsistencyCommand extends AbstractCommand
 
     public CheckConsistencyCommand( ExecutionContext ctx )
     {
-        this( ctx, new ConsistencyCheckService() );
+        this( ctx, new ConsistencyCheckService( null ) );
     }
 
     @VisibleForTesting
@@ -138,9 +138,15 @@ public class CheckConsistencyCommand extends AbstractCommand
                 try ( Log4jLogProvider logProvider = Util.configuredLogProvider( config, System.out ) )
                 {
                     consistencyCheckResult = consistencyCheckService
-                            .runFullConsistencyCheck( databaseLayout, config, progressOutput, logProvider, fileSystem,
-                                    verbose, options.getReportDir().normalize(),
-                                    new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure() ) );
+                            .with( databaseLayout )
+                            .with( config )
+                            .with( progressOutput )
+                            .with( logProvider )
+                            .with( fileSystem )
+                            .verbose( verbose )
+                            .with( options.getReportDir().normalize() )
+                            .with( new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure() ) )
+                            .runFullConsistencyCheck();
                 }
 
                 if ( !consistencyCheckResult.isSuccessful() )

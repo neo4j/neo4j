@@ -38,11 +38,11 @@ import java.util.function.Consumer;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -82,9 +82,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -765,10 +765,15 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             LogProvider logProvider, OutputStream progressOutput, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig )
             throws ConsistencyCheckIncompleteException
     {
-        ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         Config config = Config.defaults( neo4j_home, neo4jHome );
         adaptConfig.accept( config );
-        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressOutput, logProvider, fs, false, consistencyFlags );
+        return new ConsistencyCheckService( databaseLayout )
+                .with( config )
+                .with( progressOutput )
+                .with( logProvider )
+                .with( fs )
+                .with( consistencyFlags )
+                .runFullConsistencyCheck();
     }
 
     /**

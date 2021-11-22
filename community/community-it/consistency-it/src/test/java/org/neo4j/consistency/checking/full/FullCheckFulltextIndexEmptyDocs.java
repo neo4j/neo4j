@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -48,9 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 public class FullCheckFulltextIndexEmptyDocs
@@ -92,8 +89,12 @@ public class FullCheckFulltextIndexEmptyDocs
         ConsistencyCheckService.Result result;
         try
         {
-            result = new ConsistencyCheckService().runFullConsistencyCheck( layout, config, null, NullLogProvider.getInstance(), fs, pageCache,
-                    false, layout.databaseDirectory(), DEFAULT, NULL, INSTANCE );
+            result = new ConsistencyCheckService( layout )
+                    .with( config )
+                    .with( fs )
+                    .with( pageCache )
+                    .with( layout.databaseDirectory() )
+                    .runFullConsistencyCheck();
         }
         finally
         {

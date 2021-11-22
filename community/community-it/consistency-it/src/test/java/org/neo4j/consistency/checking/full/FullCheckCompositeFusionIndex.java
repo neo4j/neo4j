@@ -33,14 +33,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 
 @TestDirectoryExtension
 public class FullCheckCompositeFusionIndex
@@ -84,9 +82,8 @@ public class FullCheckCompositeFusionIndex
             throws ConsistencyCheckIncompleteException
     {
         var config = Config.newBuilder().set( GraphDatabaseSettings.neo4j_home, path ).build();
-
-        ConsistencyCheckService checkService = new ConsistencyCheckService();
-        return checkService.runFullConsistencyCheck( Neo4jLayout.of( config ).databaseLayout( "neo4j" ),
-                config, null, NullLogProvider.getInstance(), false, DEFAULT );
+        return new ConsistencyCheckService( Neo4jLayout.of( config ).databaseLayout( "neo4j" ) )
+                .with( config )
+                .runFullConsistencyCheck();
     }
 }

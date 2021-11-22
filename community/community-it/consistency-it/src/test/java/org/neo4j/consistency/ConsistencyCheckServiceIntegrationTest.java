@@ -38,7 +38,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -62,7 +61,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
@@ -81,10 +79,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -137,11 +133,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         prepareDbWithDeletedRelationshipPartOfTheChain();
 
-        Date timestamp = new Date();
-        ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = Config.defaults( settings() );
-
-        ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
+        ConsistencyCheckService.Result result = consistencyCheckService().runFullConsistencyCheck();
 
         assertFalse( result.isSuccessful() );
 
@@ -156,7 +148,6 @@ public class ConsistencyCheckServiceIntegrationTest
     void tracePageCacheAccessOnConsistencyCheck() throws ConsistencyCheckIncompleteException
     {
         prepareDbWithDeletedRelationshipPartOfTheChain();
-        ConsistencyCheckService service = new ConsistencyCheckService( new Date() );
         var pageCacheTracer = new DefaultPageCacheTracer();
         fixture.close();
         JobScheduler jobScheduler = JobSchedulerFactory.createScheduler();
@@ -166,9 +157,10 @@ public class ConsistencyCheckServiceIntegrationTest
         try ( Lifespan life = new Lifespan( jobScheduler );
               PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
         {
-            var result = service.runFullConsistencyCheck( fixture.databaseLayout(), Config.defaults( settings() ), null,
-                    NullLogProvider.getInstance(), testDirectory.getFileSystem(), pageCache, false, ConsistencyFlags.DEFAULT,
-                    pageCacheTracer, INSTANCE );
+            var result = consistencyCheckService()
+                    .with( pageCache )
+                    .with( pageCacheTracer )
+                    .runFullConsistencyCheck();
 
             assertFalse( result.isSuccessful() );
             assertThat( pageCacheTracer.pins() ).isGreaterThanOrEqualTo( 74 );
@@ -182,9 +174,7 @@ public class ConsistencyCheckServiceIntegrationTest
     void shouldFailOnDatabaseInNeedOfRecovery() throws IOException
     {
         nonRecoveredDatabase();
-        ConsistencyCheckService service = new ConsistencyCheckService();
-        Config defaults = Config.defaults( settings() );
-        var e = assertThrows( ConsistencyCheckIncompleteException.class, () -> runFullConsistencyCheck( service, defaults ) );
+        var e = assertThrows( ConsistencyCheckIncompleteException.class, () -> consistencyCheckService().runFullConsistencyCheck() );
         assertEquals( e.getCause().getMessage(),
                     Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.", "Please recover database.",
                             "To perform recovery please start database in single mode and perform clean shutdown." ) );
@@ -194,8 +184,7 @@ public class ConsistencyCheckServiceIntegrationTest
     void ableToDeleteDatabaseDirectoryAfterConsistencyCheckRun() throws ConsistencyCheckIncompleteException, IOException
     {
         prepareDbWithDeletedRelationshipPartOfTheChain();
-        ConsistencyCheckService service = new ConsistencyCheckService();
-        Result consistencyCheck = runFullConsistencyCheck( service, Config.defaults( settings() ) );
+        Result consistencyCheck = consistencyCheckService().runFullConsistencyCheck();
         assertFalse( consistencyCheck.isSuccessful() );
         // using commons file utils since they do not forgive not closed file descriptors on windows
         org.apache.commons.io.FileUtils.deleteDirectory( fixture.databaseLayout().databaseDirectory().toFile() );
@@ -204,13 +193,8 @@ public class ConsistencyCheckServiceIntegrationTest
     @Test
     void shouldSucceedIfStoreIsConsistent() throws Exception
     {
-        // given
-        Date timestamp = new Date();
-        ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = Config.defaults( settings() );
-
         // when
-        ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
+        ConsistencyCheckService.Result result = consistencyCheckService().runFullConsistencyCheck();
 
         // then
         assertTrue( result.isSuccessful() );
@@ -224,7 +208,6 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         breakNodeStore();
         Date timestamp = new Date();
-        ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
         Path logsDir = testDirectory.homePath();
         Config configuration = Config.newBuilder()
                 .set( settings() )
@@ -232,7 +215,10 @@ public class ConsistencyCheckServiceIntegrationTest
                 .build();
 
         // when
-        ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
+        ConsistencyCheckService.Result result = consistencyCheckService()
+                .with( configuration )
+                .with( timestamp )
+                .runFullConsistencyCheck();
 
         // then
         assertFalse( result.isSuccessful() );
@@ -246,9 +232,6 @@ public class ConsistencyCheckServiceIntegrationTest
     void shouldNotReportDuplicateForHugeLongValues() throws Exception
     {
         // given
-        ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = Config.defaults( settings() );
-
         String propertyKey = "itemId";
         Label label = Label.label( "Item" );
         fixture.apply( tx -> tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create() );
@@ -259,7 +242,7 @@ public class ConsistencyCheckServiceIntegrationTest
         } );
 
         // when
-        Result result = runFullConsistencyCheck( service, configuration );
+        Result result = consistencyCheckService().runFullConsistencyCheck();
 
         // then
         assertTrue( result.isSuccessful() );
@@ -278,9 +261,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Path schemaDir = findFile( databaseLayout, "schema" );
         FileUtils.deleteDirectory( schemaDir );
 
-        ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = Config.defaults( settings() );
-        Result result = runFullConsistencyCheck( service, configuration, databaseLayout );
+        Result result = consistencyCheckService().runFullConsistencyCheck();
 
         // then
         assertTrue( result.isSuccessful() );
@@ -304,12 +285,13 @@ public class ConsistencyCheckServiceIntegrationTest
             tx.createNode( label ).setProperty( propKey, "string" );
         } );
 
-        ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.newBuilder()
                 .set( settings() )
                 .set( GraphDatabaseSettings.default_schema_provider, NATIVE_BTREE10.providerName() )
                 .build();
-        Result result = runFullConsistencyCheck( service, configuration, databaseLayout );
+        Result result = consistencyCheckService()
+                .with( configuration )
+                .runFullConsistencyCheck();
         assertTrue( result.isSuccessful() );
     }
 
@@ -412,21 +394,16 @@ public class ConsistencyCheckServiceIntegrationTest
         } );
     }
 
-    private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
-            throws ConsistencyCheckIncompleteException
-    {
-        return runFullConsistencyCheck( service, configuration, fixture.databaseLayout() );
-    }
-
-    private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, DatabaseLayout databaseLayout )
-            throws ConsistencyCheckIncompleteException
-    {
-        fixture.close();
-        return service.runFullConsistencyCheck( databaseLayout, configuration, null, NullLogProvider.getInstance(), false, DEFAULT );
-    }
-
     protected String getRecordFormatName()
     {
         return StringUtils.EMPTY;
+    }
+
+    private ConsistencyCheckService consistencyCheckService()
+    {
+        fixture.close();
+        return new ConsistencyCheckService( fixture.databaseLayout() )
+                .with( testDirectory.getFileSystem() )
+                .with( Config.defaults( settings() ) );
     }
 }

@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -57,7 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
@@ -197,9 +194,8 @@ class CommunitySystemDatabaseIT
 
         managementService.shutdown();
 
-        ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
-        assertTrue( runConsistencyCheck( systemDatabaseLayout, consistencyCheckService ).isSuccessful() );
-        assertTrue( runConsistencyCheck( defaultDbLayout, consistencyCheckService ).isSuccessful() );
+        assertTrue( runConsistencyCheck( systemDatabaseLayout ).isSuccessful() );
+        assertTrue( runConsistencyCheck( defaultDbLayout ).isSuccessful() );
     }
 
     @Test
@@ -224,10 +220,10 @@ class CommunitySystemDatabaseIT
         }
     }
 
-    private static ConsistencyCheckService.Result runConsistencyCheck( DatabaseLayout systemDatabaseLayout, ConsistencyCheckService consistencyCheckService )
+    private static ConsistencyCheckService.Result runConsistencyCheck( DatabaseLayout databaseLayout )
             throws ConsistencyCheckIncompleteException
     {
-        return consistencyCheckService.runFullConsistencyCheck( systemDatabaseLayout, Config.defaults(), null, NullLogProvider.getInstance(), false, DEFAULT );
+        return new ConsistencyCheckService( databaseLayout ).runFullConsistencyCheck();
     }
 
     private static int countTransactionInLogicalStore( GraphDatabaseFacade facade ) throws IOException

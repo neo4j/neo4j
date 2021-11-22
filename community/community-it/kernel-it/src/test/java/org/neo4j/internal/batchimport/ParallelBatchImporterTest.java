@@ -75,7 +75,6 @@ import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.RandomSupport;
@@ -98,7 +97,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
@@ -249,9 +247,9 @@ public class ParallelBatchImporterTest
 
     static void assertConsistent( DatabaseLayout databaseLayout ) throws ConsistencyCheckIncompleteException
     {
-        ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
-        Result result = consistencyChecker.runFullConsistencyCheck( databaseLayout, Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) ), null,
-                NullLogProvider.getInstance(), false, DEFAULT );
+        Result result = new ConsistencyCheckService( databaseLayout )
+                .with( Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) ) )
+                .runFullConsistencyCheck();
         assertTrue(
             result.isSuccessful(), "Database contains inconsistencies, there should be a report in " + databaseLayout.databaseDirectory() );
     }

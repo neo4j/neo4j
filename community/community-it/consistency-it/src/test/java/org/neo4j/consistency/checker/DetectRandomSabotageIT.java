@@ -102,7 +102,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -122,7 +121,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
@@ -472,8 +470,9 @@ public class DetectRandomSabotageIT
         dbms.shutdown();
         Config.Builder builder = Config.newBuilder().set( neo4j_home, directory.homePath() );
         Config config = addConfig( builder ).build();
-        return new ConsistencyCheckService().runFullConsistencyCheck( RecordDatabaseLayout.of( config ), config, null,
-                NullLogProvider.getInstance(), false, DEFAULT );
+        return new ConsistencyCheckService( RecordDatabaseLayout.of( config ) )
+                .with( config )
+                .runFullConsistencyCheck();
     }
 
     protected <T> T addConfig( T t, SetConfigAction<T> action )

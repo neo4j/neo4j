@@ -50,7 +50,6 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 @Neo4jLayoutExtension
@@ -121,9 +120,11 @@ class ConcurrentUpdateIT
         finally
         {
             managementService.shutdown();
-            ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
             Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
-            consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, null, new Log4jLogProvider( System.out ), false, DEFAULT );
+            new ConsistencyCheckService( databaseLayout )
+                    .with( config )
+                    .with( new Log4jLogProvider( System.out ) )
+                    .runFullConsistencyCheck();
         }
     }
 

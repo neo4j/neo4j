@@ -64,7 +64,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
@@ -80,7 +79,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
@@ -153,9 +151,10 @@ class DenseNodeConcurrencyIT
             Config config = deps.resolveDependency( Config.class );
             RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.cast( database.databaseLayout() );
             dbms.shutdown();
-            ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck( databaseLayout, config, null,
-                    NullLogProvider.getInstance(),
-                    deps.resolveDependency( FileSystemAbstraction.class ), false, ConsistencyFlags.DEFAULT );
+            ConsistencyCheckService.Result result = new ConsistencyCheckService( databaseLayout )
+                    .with( config )
+                    .with( deps.resolveDependency( FileSystemAbstraction.class ) )
+                    .runFullConsistencyCheck();
             assertThat( result.isSuccessful() ).as( new Description()
             {
                 @Override
