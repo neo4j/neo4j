@@ -57,7 +57,7 @@ public class Neo4jJsonLogLayout extends Neo4jLogLayout
             @PluginAttribute( "timeZone" ) String timeZone,
             @PluginAttribute( value = "includeCategory", defaultBoolean = true ) boolean includeCategory )
     {
-        return new Neo4jJsonLogLayout( datePattern, timeZone, includeCategory, new DefaultConfiguration() );
+        return new Neo4jJsonLogLayout( datePattern, timeZone, includeCategory, new Neo4jConfiguration() );
     }
 
     @Override

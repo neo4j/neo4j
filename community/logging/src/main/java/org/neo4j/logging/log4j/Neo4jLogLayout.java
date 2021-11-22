@@ -67,7 +67,7 @@ public class Neo4jLogLayout extends AbstractStringLayout
     @PluginFactory
     public static Neo4jLogLayout createLayout( @PluginAttribute( "pattern" ) String pattern )
     {
-        return new Neo4jLogLayout( pattern, new DefaultConfiguration() );
+        return new Neo4jLogLayout( pattern, new Neo4jConfiguration() );
     }
 
     @Override

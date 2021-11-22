@@ -29,7 +29,6 @@ import org.apache.logging.log4j.core.appender.RollingFileAppender;
 import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
 import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
 import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.io.IOException;
@@ -91,14 +90,7 @@ public final class LogConfig
 
     private static void configureLogging( LoggerContext context, Builder builder )
     {
-        Configuration configuration = new DefaultConfiguration()
-        {
-            @Override
-            protected void setToDefault()
-            {
-                // no defaults
-            }
-        };
+        Configuration configuration = new Neo4jConfiguration();
 
         Neo4jLogLayout layout = getLayout( builder );
 
