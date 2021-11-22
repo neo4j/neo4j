@@ -27,18 +27,21 @@ public class CheckpointInfo
 {
     private final LogPosition transactionLogPosition;
     private final LogPosition checkpointEntryPosition;
+    private final LogPosition channelPositionAfterCheckpoint;
     private final StoreId storeId;
 
-    public CheckpointInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition )
+    public CheckpointInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint )
     {
-        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition );
+        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint );
     }
 
-    public CheckpointInfo( LogPosition transactionLogPosition, StoreId storeId, LogPosition checkpointEntryPosition )
+    public CheckpointInfo( LogPosition transactionLogPosition, StoreId storeId, LogPosition checkpointEntryPosition,
+            LogPosition channelPositionAfterCheckpoint )
     {
         this.transactionLogPosition = transactionLogPosition;
         this.storeId = storeId;
         this.checkpointEntryPosition = checkpointEntryPosition;
+        this.channelPositionAfterCheckpoint = channelPositionAfterCheckpoint;
     }
 
     public LogPosition getTransactionLogPosition()
@@ -51,6 +54,11 @@ public class CheckpointInfo
         return checkpointEntryPosition;
     }
 
+    public LogPosition getChannelPositionAfterCheckpoint()
+    {
+        return channelPositionAfterCheckpoint;
+    }
+
     public StoreId storeId()
     {
         return storeId;
@@ -59,7 +67,7 @@ public class CheckpointInfo
     @Override
     public String toString()
     {
-        return "CheckpointInfo{" + "transactionLogPosition=" + transactionLogPosition + ", checkpointEntryPosition=" + checkpointEntryPosition + ", storeId=" +
-                storeId + '}';
+        return "CheckpointInfo{" + "transactionLogPosition=" + transactionLogPosition + ", checkpointEntryPosition=" + checkpointEntryPosition +
+                ", channelPositionAfterCheckpoint=" + channelPositionAfterCheckpoint + ", storeId=" + storeId + '}';
     }
 }

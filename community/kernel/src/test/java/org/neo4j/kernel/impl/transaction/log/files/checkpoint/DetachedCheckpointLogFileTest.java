@@ -56,7 +56,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
-class CompositeCheckpointLogFileTest
+class DetachedCheckpointLogFileTest
 {
     @Inject
     private DatabaseLayout databaseLayout;

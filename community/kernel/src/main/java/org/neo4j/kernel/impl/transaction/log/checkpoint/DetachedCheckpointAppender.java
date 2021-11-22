@@ -27,10 +27,14 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.UncloseableChannel;
+import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
@@ -46,6 +50,8 @@ import org.neo4j.storageengine.api.StoreId;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
 
 public class DetachedCheckpointAppender extends LifecycleAdapter implements CheckpointAppender
 {
@@ -84,10 +90,23 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         long initialVersion = logVersionRepository.getCheckpointLogVersion();
         channel = channelAllocator.createLogChannel( initialVersion, context::getLastCommittedTransactionId );
         context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), initialVersion );
-        channel.position( channel.size() );
+        seekCheckpointChannel();
         buffer = new NativeScopedBuffer( kibiBytes( 1 ), context.getMemoryTracker() );
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, buffer );
         checkpointWriter = new DetachedCheckpointLogEntryWriter( writer );
+    }
+
+    private void seekCheckpointChannel() throws IOException
+    {
+        try ( var reader = new ReadAheadLogChannel( new UncloseableChannel( channel ), NO_MORE_CHANNELS, context.getMemoryTracker() );
+              var logEntryCursor = new LogEntryCursor( new VersionAwareLogEntryReader( NO_COMMANDS, true ), reader ) )
+        {
+            while ( logEntryCursor.next() )
+            {
+                logEntryCursor.get();
+            }
+            channel.position( reader.getCurrentPosition().getByteOffset() );
+        }
     }
 
     @Override

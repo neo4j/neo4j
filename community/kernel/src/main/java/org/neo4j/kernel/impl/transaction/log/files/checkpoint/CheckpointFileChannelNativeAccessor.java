@@ -19,19 +19,23 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * While technically checkpoint log files do not need store id to be present in file header its easier to reuse the same
- * log header as other files
- */
-public class CheckpointLogChannelAllocator extends TransactionLogChannelAllocator
+import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
+
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
+
+class CheckpointFileChannelNativeAccessor extends LogFileChannelNativeAccessor
 {
-    public CheckpointLogChannelAllocator( TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper )
+    CheckpointFileChannelNativeAccessor( TransactionLogFilesContext context )
     {
-        super( logFilesContext, fileHelper, new LogHeaderCache( 1 ), new CheckpointFileChannelNativeAccessor( logFilesContext ) );
+        super( context.getFileSystem(), context.getNativeAccess(), context.getLogProvider(), checkpointRotation( context ), context.getConfig(),
+                context.getDatabaseName() );
+    }
+
+    private static AtomicLong checkpointRotation( TransactionLogFilesContext context )
+    {
+        return new AtomicLong( context.getConfig().get( checkpoint_logical_log_rotation_threshold ) );
     }
 }

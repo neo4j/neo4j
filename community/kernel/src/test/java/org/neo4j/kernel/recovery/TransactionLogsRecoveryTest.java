@@ -38,6 +38,8 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -55,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -389,7 +392,17 @@ class TransactionLogsRecoveryTest
         assertTrue( recover( storeDir, logFiles ) );
 
         assertEquals( marker.getByteOffset(), Files.size( file ) );
-        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
+                ((DetachedCheckpointAppender) logFiles.getCheckpointFile().getCheckpointAppender()).getCurrentPosition() );
+
+        if ( NativeAccessProvider.getNativeAccess().isAvailable() )
+        {
+            assertEquals( ByteUnit.mebiBytes( 1 ), Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        }
+        else
+        {
+            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        }
     }
 
     @Test

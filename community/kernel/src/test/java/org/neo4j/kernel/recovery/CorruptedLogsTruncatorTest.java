@@ -37,6 +37,7 @@ import java.util.zip.ZipFile;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -73,6 +74,7 @@ class CorruptedLogsTruncatorTest
     private static final int TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES = 12;
     // There is one file for the separate checkpoints as well
     private static final int TOTAL_NUMBER_OF_LOG_FILES = 13;
+    private static final long ROTATION_THRESHOLD = 1024L;
 
     @Inject
     private FileSystemAbstraction fs;
@@ -98,7 +100,9 @@ class CorruptedLogsTruncatorTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
                 .withStoreId( StoreId.UNKNOWN )
-                .withConfig( Config.newBuilder().set( GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold, 1024L ).build() )
+                .withConfig( Config.newBuilder()
+                        .set( GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold, ROTATION_THRESHOLD )
+                        .build() )
                 .build();
         life.add( logFiles );
         logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fs, INSTANCE );
@@ -296,8 +300,17 @@ class CorruptedLogsTruncatorTest
             }
             checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + lastFileIndex, highestLogFileLength );
             checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".0", 192 * 4 /* checkpoints */ );
-            checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1",
-                    CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */ );
+            if ( NativeAccessProvider.getNativeAccess().isAvailable() )
+            {
+                // whole file is corrupted in above scenario and its preallocated
+                checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1", ROTATION_THRESHOLD );
+            }
+            else
+            {
+                // whole file is corrupted in above scenario and file does not have any empty space after last available data point
+                checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1",
+                        CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */ );
+            }
         }
     }
 

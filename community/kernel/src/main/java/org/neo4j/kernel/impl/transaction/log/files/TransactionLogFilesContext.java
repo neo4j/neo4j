@@ -136,7 +136,7 @@ public class TransactionLogFilesContext
         return tryPreallocateTransactionLogs;
     }
 
-    NativeAccess getNativeAccess()
+    public NativeAccess getNativeAccess()
     {
         return nativeAccess;
     }

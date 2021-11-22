@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -45,15 +46,18 @@ import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 @DbmsExtension( configurationCallback = "configure" )
 public class CheckpointLogFileRotationIT
 {
+    static final long ROTATION_THRESHOLD = kibiBytes( 1 );
     @Inject
     private GraphDatabaseService database;
     @Inject
-    private LogFiles logFiles;
+    LogFiles logFiles;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( checkpoint_logical_log_rotation_threshold, kibiBytes( 1 ) ).setConfig( checkpoint_logical_log_keep_threshold, 100 );
+        builder.setConfig( checkpoint_logical_log_rotation_threshold, ROTATION_THRESHOLD )
+               .setConfig( checkpoint_logical_log_keep_threshold, 100 )
+               .setConfig( GraphDatabaseSettings.preallocate_logical_logs, preallocateLogs() );
     }
 
     @Test
@@ -115,10 +119,20 @@ public class CheckpointLogFileRotationIT
         {
             if ( checkpointFile.getDetachedCheckpointLogFileVersion( matchedFile ) == 1 )
             {
-                assertThat( matchedFile.toFile() ).hasSize( CURRENT_FORMAT_LOG_HEADER_SIZE );
+                assertThat( matchedFile.toFile() ).hasSize( expectedNewFileSize() );
                 headerFileFound = true;
             }
         }
         assertTrue( headerFileFound );
+    }
+
+    protected long expectedNewFileSize()
+    {
+        return CURRENT_FORMAT_LOG_HEADER_SIZE;
+    }
+
+    protected boolean preallocateLogs()
+    {
+        return false;
     }
 }

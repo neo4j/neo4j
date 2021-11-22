@@ -66,8 +66,8 @@ public class CheckpointLogPruningIT
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 2 );
         assertThat( matchedFiles )
-                .areAtLeastOne( fineNameCondition( "checkpoint.20" ) )
-                .areAtLeastOne( fineNameCondition( "checkpoint.21" ) );
+                .areAtLeastOne( fileNameCondition( "checkpoint.20" ) )
+                .areAtLeastOne( fileNameCondition( "checkpoint.21" ) );
     }
 
     @Test
@@ -83,8 +83,8 @@ public class CheckpointLogPruningIT
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 2 );
         assertThat( matchedFiles )
-                .areAtLeastOne( fineNameCondition( "checkpoint.0" ) )
-                .areAtLeastOne( fineNameCondition( "checkpoint.1" ) );
+                .areAtLeastOne( fileNameCondition( "checkpoint.0" ) )
+                .areAtLeastOne( fileNameCondition( "checkpoint.1" ) );
     }
 
     @Test
@@ -100,11 +100,11 @@ public class CheckpointLogPruningIT
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 2 );
         assertThat( matchedFiles )
-                .areAtLeastOne( fineNameCondition( "checkpoint.1" ) )
-                .areAtLeastOne( fineNameCondition( "checkpoint.2" ) );
+                .areAtLeastOne( fileNameCondition( "checkpoint.1" ) )
+                .areAtLeastOne( fileNameCondition( "checkpoint.2" ) );
     }
 
-    private static Condition<Path> fineNameCondition( String name )
+    private static Condition<Path> fileNameCondition( String name )
     {
         return new Condition<>()
         {

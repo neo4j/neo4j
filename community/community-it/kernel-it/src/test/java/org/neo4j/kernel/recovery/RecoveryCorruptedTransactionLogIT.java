@@ -42,11 +42,15 @@ import java.util.stream.Stream;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.internal.recordstorage.Command;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
@@ -89,7 +93,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
@@ -106,6 +109,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -250,8 +254,15 @@ class RecoveryCorruptedTransactionLogIT
 
         logFiles = buildDefaultLogFiles( StoreId.UNKNOWN );
         assertEquals( 0, logFiles.getLogFile().getHighestLogVersion() );
-        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 * 3 /* checkpoint for setup, start and stop */,
-                Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        if ( NativeAccessProvider.getNativeAccess().isAvailable() )
+        {
+            assertEquals( ByteUnit.mebiBytes( 1 ), Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        }
+        else
+        {
+            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 * 3 /* checkpoint for setup, start and stop */,
+                    Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        }
     }
 
     @Test
@@ -267,7 +278,7 @@ class RecoveryCorruptedTransactionLogIT
 
         startStopDatabase();
         assertThat( logProvider ).assertExceptionForLogMessage( "Fail to read transaction log version 0.")
-                .hasMessageContaining( "Transaction log files with version 0 has some data available after last readable " +
+                .hasMessageContaining( "Transaction log file with version 0 has some data available after last readable " +
                         "log entry. Last readable position " + (996 + txOffsetAfterStart) );
     }
 
@@ -290,7 +301,7 @@ class RecoveryCorruptedTransactionLogIT
             assertThat( logProvider ).containsMessages( "Recovery required from position " +
                             "LogPosition{logVersion=0, byteOffset=" + initialTransactionOffset + "}" )
                     .assertExceptionForLogMessage( "Fail to read transaction log version 0." )
-                    .hasMessageContaining( "Transaction log files with version 0 has some data available after last readable log entry. " +
+                    .hasMessageContaining( "Transaction log file with version 0 has some data available after last readable log entry. " +
                             "Last readable position " + initialTransactionOffset );
             GraphDatabaseAPI restartedDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             assertEquals( initialTransactionOffset, getLastClosedTransactionOffset( restartedDb ) );
@@ -400,9 +411,9 @@ class RecoveryCorruptedTransactionLogIT
             var restartedDbms = databaseFactory.build();
             try
             {
-                StorageEngine storageEngine =
-                        ((GraphDatabaseAPI) restartedDbms.database( DEFAULT_DATABASE_NAME )).getDependencyResolver().resolveDependency( StorageEngine.class );
-                assertEquals( i, storageEngine.metadataProvider().getCheckpointLogVersion() );
+                var metadataProvider = ((GraphDatabaseAPI) restartedDbms.database( DEFAULT_DATABASE_NAME )).getDependencyResolver()
+                        .resolveDependency( MetadataProvider.class );
+                assertEquals( i, metadataProvider.getCheckpointLogVersion() );
             }
             finally
             {
@@ -442,6 +453,55 @@ class RecoveryCorruptedTransactionLogIT
 
         startStopDatabase();
         assertThat( logProvider ).doesNotContainMessage( "Fail to read transaction log version 0." );
+    }
+
+    @Test
+    void detectCorruptedCheckpointFileWithDataAfterLastRecord() throws IOException
+    {
+        DatabaseManagementService managementService = databaseFactory.build();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
+        generateTransaction( database );
+        managementService.shutdown();
+
+        appendDataAfterLastCheckpointRecordFromLastLogFile();
+
+        var dbms = databaseFactory.build();
+        try
+        {
+            var context = getDefaultDbContext( dbms );
+            assertFalse( context.database().isStarted() );
+            assertTrue( context.isFailed() );
+            assertThat( context.failureCause() ).getRootCause().hasMessageContaining(
+                    "Checkpoint log file with version 0 has some data available after last readable log entry." );
+        }
+        finally
+        {
+            dbms.shutdown();
+        }
+    }
+
+    @Test
+    void detectAndStartWithCorruptedCheckpointFileWithDataAfterLastRecord() throws IOException
+    {
+        DatabaseManagementService managementService = databaseFactory.build();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        logFiles = buildDefaultLogFiles( getStoreId( database ) );
+        generateTransaction( database );
+        managementService.shutdown();
+
+        appendDataAfterLastCheckpointRecordFromLastLogFile();
+
+        var dbms = databaseFactory.setConfig( fail_on_corrupted_log_files, false ).build();
+        try
+        {
+            var context = getDefaultDbContext( dbms );
+            assertTrue( context.database().isStarted() );
+        }
+        finally
+        {
+            dbms.shutdown();
+        }
     }
 
     @Test
@@ -665,7 +725,14 @@ class RecoveryCorruptedTransactionLogIT
         assertEquals( originalFileLength, fileSystem.getFileSize( highestLogFile ) );
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
-        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 4 * 192, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        if ( NativeAccessProvider.getNativeAccess().isAvailable() )
+        {
+            assertEquals( ByteUnit.mebiBytes( 1 ), Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        }
+        else
+        {
+            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 4 * 192, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        }
     }
 
     @Test
@@ -710,6 +777,21 @@ class RecoveryCorruptedTransactionLogIT
             try ( StoreChannel storeChannel = fileSystem.write( checkpointFile.getDetachedCheckpointFileForVersion( logPosition.getLogVersion() ) ) )
             {
                 storeChannel.truncate( logPosition.getByteOffset() );
+            }
+        }
+    }
+
+    private void appendDataAfterLastCheckpointRecordFromLastLogFile() throws IOException
+    {
+        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        var checkpoint = checkpointFile.findLatestCheckpoint();
+        if ( checkpoint.isPresent() )
+        {
+            LogPosition logPosition = checkpoint.get().getChannelPositionAfterCheckpoint();
+            try ( StoreChannel storeChannel = fileSystem.write( checkpointFile.getDetachedCheckpointFileForVersion( logPosition.getLogVersion() ) )  )
+            {
+                storeChannel.position( logPosition.getByteOffset() + 300 );
+                storeChannel.writeAll( ByteBuffer.wrap( "DeaD BeaF".getBytes() ) );
             }
         }
     }
@@ -930,6 +1012,12 @@ class RecoveryCorruptedTransactionLogIT
         long offset = getLastClosedTransactionOffset( database );
         managementService.shutdown();
         return offset;
+    }
+
+    private StandaloneDatabaseContext getDefaultDbContext( DatabaseManagementService dbms )
+    {
+        return (StandaloneDatabaseContext) ((GraphDatabaseAPI) dbms.database( SYSTEM_DATABASE_NAME )).getDependencyResolver()
+                .resolveDependency( DatabaseManager.class ).getDatabaseContext( DEFAULT_DATABASE_NAME ).orElseThrow();
     }
 
     private static Stream<Arguments> corruptedLogEntryWriters()

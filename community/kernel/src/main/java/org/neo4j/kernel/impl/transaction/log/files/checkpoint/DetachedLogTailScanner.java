@@ -33,6 +33,7 @@ import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -59,6 +60,8 @@ import static org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor
 public class DetachedLogTailScanner
 {
     static final long NO_TRANSACTION_ID = -1;
+    private static final String TRANSACTION_LOG_NAME = "Transaction";
+    private static final String CHECKPOINT_LOG_NAME = "Checkpoint";
     private final LogFiles logFiles;
     private final LogEntryReader logEntryReader;
     private final LogTailScannerMonitor monitor;
@@ -93,6 +96,7 @@ public class DetachedLogTailScanner
                 return noCheckpointLogTail( logFile, highestLogVersion, lowestLogVersion );
             }
             var checkpoint = lastAccessibleCheckpoint.get();
+            verifyCheckpointPosition( checkpoint.getChannelPositionAfterCheckpoint() );
             //found checkpoint pointing to existing position in existing log file
             if ( isValidCheckpoint( logFile, checkpoint ) )
             {
@@ -227,23 +231,48 @@ public class DetachedLogTailScanner
     {
         LogFile logFile = logFiles.getLogFile();
         long highestLogVersion = logFile.getHighestLogVersion();
-        try ( var channel = logFile.openForVersion( version ) )
+        try ( PhysicalLogVersionedStoreChannel channel = logFile.openForVersion( version ) )
         {
-            verifyLogVersion( version, logPosition );
-            long logFileSize = channel.size();
-            long channelLeftovers = subtractExact( logFileSize, logPosition.getByteOffset() );
-            if ( channelLeftovers != 0 )
+            verifyLogChannel( channel, logPosition, version, highestLogVersion, true, TRANSACTION_LOG_NAME );
+        }
+    }
+
+    protected void verifyCheckpointPosition( LogPosition lastCheckpointPosition ) throws IOException
+    {
+        long checkpointLogVersion = lastCheckpointPosition.getLogVersion();
+        var checkpointFile = logFiles.getCheckpointFile();
+        long highestLogVersion = checkpointFile.getHighestLogVersion();
+        try ( PhysicalLogVersionedStoreChannel channel = checkpointFile.openForVersion( checkpointLogVersion ) )
+        {
+            channel.position( lastCheckpointPosition.getByteOffset() );
+            if ( failOnCorruptedLogFiles )
             {
-                // channel has more data than entry reader can read. Only one valid case for this kind of situation is
-                // pre-allocated log file that has some space left
-
-                // if this log file is not the last one and we have some unreadable bytes in the end its an indication of corrupted log files
-                verifyLastFile( highestLogVersion, version, logPosition, logFileSize, channelLeftovers );
-
-                // to double check that even when we encountered end of records position we do not have anything after that
-                // we will try to read some data (up to 12K) in advance to check that only zero's are available there
-                verifyNoMoreReadableDataAvailable( version, channel, logPosition, channelLeftovers );
+                verifyLogChannel( channel, lastCheckpointPosition, checkpointLogVersion, highestLogVersion, false, CHECKPOINT_LOG_NAME );
             }
+        }
+    }
+
+    private void verifyLogChannel( PhysicalLogVersionedStoreChannel channel, LogPosition logPosition, long currentVersion, long highestVersion,
+            boolean checkLastFile, String logName )
+            throws IOException
+    {
+        verifyLogVersion( currentVersion, logPosition );
+        long logFileSize = channel.size();
+        long channelLeftovers = subtractExact( logFileSize, logPosition.getByteOffset() );
+        if ( channelLeftovers != 0 )
+        {
+            // channel has more data than entry reader can read. Only one valid case for this kind of situation is
+            // pre-allocated log file that has some space left
+
+            // if this log file is not the last one and we have some unreadable bytes in the end its an indication of corrupted log files
+            if ( checkLastFile )
+            {
+                verifyLastFile( highestVersion, currentVersion, logPosition, logFileSize, channelLeftovers, logName );
+            }
+
+            // to double check that even when we encountered end of records position we do not have anything after that
+            // we will try to read some data (up to 12K) in advance to check that only zero's are available there
+            verifyNoMoreReadableDataAvailable( currentVersion, channel, logPosition, channelLeftovers, logName );
         }
     }
 
@@ -266,18 +295,18 @@ public class DetachedLogTailScanner
                         "integrity might be compromised, please consider restoring from a consistent backup instead.", t );
     }
 
-    private static void verifyLastFile( long highestLogVersion, long version, LogPosition logPosition, long logFileSize, long channelLeftovers )
+    private static void verifyLastFile( long highestLogVersion, long version, LogPosition logPosition, long logFileSize, long channelLeftovers, String logName )
     {
         if ( version != highestLogVersion )
         {
             throw new RuntimeException(
-                    format( "Transaction log files with version %d has %d unreadable bytes. Was able to read upto %d but %d is available.",
-                            version, channelLeftovers, logPosition.getByteOffset(), logFileSize ) );
+                    format( "%s log files with version %d has %d unreadable bytes. Was able to read upto %d but %d is available.",
+                            logName, version, channelLeftovers, logPosition.getByteOffset(), logFileSize ) );
         }
     }
 
-    private void verifyNoMoreReadableDataAvailable( long version, LogVersionedStoreChannel channel, LogPosition logPosition, long channelLeftovers )
-            throws IOException
+    private void verifyNoMoreReadableDataAvailable( long version, LogVersionedStoreChannel channel, LogPosition logPosition, long channelLeftovers,
+            String logName ) throws IOException
     {
         long initialPosition = channel.position();
         try
@@ -290,8 +319,8 @@ public class DetachedLogTailScanner
                 byteBuffer.flip();
                 if ( !isAllZerosBuffer( byteBuffer ) )
                 {
-                    throw new RuntimeException( format( "Transaction log files with version %d has some data available after last readable log entry. " +
-                                    "Last readable position %d, read ahead buffer content: %s.", version, logPosition.getByteOffset(),
+                    throw new RuntimeException( format( "%s log file with version %d has some data available after last readable log entry. " +
+                                    "Last readable position %d, read ahead buffer content: %s.", logName, version, logPosition.getByteOffset(),
                             dumpBufferToString( byteBuffer ) ) );
                 }
             }

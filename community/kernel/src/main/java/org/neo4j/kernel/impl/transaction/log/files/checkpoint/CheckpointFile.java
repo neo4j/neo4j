@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.RotatableFile;
@@ -107,4 +108,12 @@ public interface CheckpointFile extends Lifecycle, RotatableFile
      * @return the lowest version found.
      */
     long getLowestLogVersion();
+
+    /**
+     * Open specific checkpoint log file channel
+     * @param checkpointLogVersion file number to open
+     * @return requested checkpoint log channel
+     * @throws IOException
+     */
+    PhysicalLogVersionedStoreChannel openForVersion( long checkpointLogVersion ) throws IOException;
 }

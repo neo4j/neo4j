@@ -43,7 +43,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -51,6 +50,7 @@ import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DbmsLogEntryWriterFactory;
+import org.neo4j.kernel.impl.transaction.UncloseableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -831,32 +831,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
             // that some other thread is rotating the log and has closed the underlying channel. But since we were
             // successful in emptying the buffer *UNDER THE LOCK* we know that the rotating thread included the changes
             // we emptied into the channel, and thus it is already flushed by that thread.
-        }
-    }
-
-    private static class UncloseableChannel extends DelegatingStoreChannel<LogVersionedStoreChannel> implements LogVersionedStoreChannel
-    {
-        UncloseableChannel( LogVersionedStoreChannel channel )
-        {
-            super( channel );
-        }
-
-        @Override
-        public long getVersion()
-        {
-            return delegate.getVersion();
-        }
-
-        @Override
-        public byte getLogFormatVersion()
-        {
-            return delegate.getLogFormatVersion();
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            // do not close since channel is shared
         }
     }
 }

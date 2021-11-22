@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
@@ -130,7 +131,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                 }
                 if ( checkpoint != null )
                 {
-                    return Optional.of( new CheckpointInfo( checkpoint, lastCheckpointLocation ) );
+                    return Optional.of( new CheckpointInfo( checkpoint, lastCheckpointLocation, lastLocation ) );
                 }
                 currentVersion--;
             }
@@ -168,8 +169,8 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     lastCheckpointLocation = lastLocation;
                     LogEntry logEntry = logEntryCursor.get();
                     checkpoint = verify( logEntry );
-                    checkpoints.add(  new CheckpointInfo( checkpoint, lastCheckpointLocation ) );
                     lastLocation = reader.getCurrentPosition();
+                    checkpoints.add(  new CheckpointInfo( checkpoint, lastCheckpointLocation, lastLocation ) );
                 }
                 currentVersion++;
             }
@@ -260,6 +261,12 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     public long getLowestLogVersion()
     {
         return visitLogFiles( new RangeLogVersionVisitor() ).getLowestVersion();
+    }
+
+    @Override
+    public PhysicalLogVersionedStoreChannel openForVersion( long checkpointLogVersion ) throws IOException
+    {
+        return channelAllocator.openLogChannel( checkpointLogVersion );
     }
 
     @Override
