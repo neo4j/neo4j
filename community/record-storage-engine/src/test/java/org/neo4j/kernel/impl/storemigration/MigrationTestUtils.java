@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -38,7 +39,6 @@ import org.neo4j.test.Unzip;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.fs.IoPrimitiveUtils.readAndFlip;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -151,5 +151,23 @@ public final class MigrationTestUtils
                 }
             }
         }
+    }
+
+    private static boolean readAndFlip( ReadableByteChannel channel, ByteBuffer buffer, int bytes )
+            throws IOException
+    {
+        buffer.clear();
+        buffer.limit( bytes );
+        while ( buffer.hasRemaining() )
+        {
+            int read = channel.read( buffer );
+
+            if ( read == -1 )
+            {
+                return false;
+            }
+        }
+        buffer.flip();
+        return true;
     }
 }

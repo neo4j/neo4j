@@ -19,12 +19,13 @@
  */
 package org.neo4j.test;
 
+import java.lang.reflect.Array;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -43,7 +44,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.io.fs.IoPrimitiveUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 
@@ -366,7 +366,7 @@ public class DbRepresentation
                 {
                     if ( value.getClass().isArray() )
                     {
-                        props.put( key, new ArrayList<>( Arrays.asList( IoPrimitiveUtils.asArray( value ) ) ) );
+                        props.put( key, asList( value ) );
                     }
                     else
                     {
@@ -411,6 +411,21 @@ public class DbRepresentation
         {
             return props.toString();
         }
+    }
+
+    private static List<?> asList( Object propertyValue )
+    {
+        if ( propertyValue.getClass().isArray() )
+        {
+            int length = Array.getLength( propertyValue );
+            var result = new ArrayList<>( length );
+            for ( int i = 0; i < length; i++ )
+            {
+                result.set( i, Array.get( propertyValue, i ) );
+            }
+            return result;
+        }
+        return List.of( propertyValue );
     }
 
     private interface DiffReport

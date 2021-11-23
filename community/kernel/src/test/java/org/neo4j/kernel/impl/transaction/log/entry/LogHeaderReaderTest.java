@@ -31,17 +31,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.IoPrimitiveUtils;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
-import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -208,27 +205,6 @@ class LogHeaderReaderTest
         ((StoreChannel) fileSystem.write( file )).close();
         IncompleteLogHeaderException exception = assertThrows( IncompleteLogHeaderException.class, () -> readLogHeader( fileSystem, file, INSTANCE ) );
         assertThat( exception.getMessage() ).contains( file.getFileName().toString() );
-    }
-
-    @Test
-    void shouldReadALongString() throws IOException
-    {
-        // given
-
-        // build a string longer than 32k
-        int stringSize = (int) (ByteUnit.kibiBytes( 32 )  + 1);
-        String lengthyString = "x".repeat( stringSize );
-
-        // we need 3 more bytes for writing the string length
-        InMemoryClosableChannel channel = new InMemoryClosableChannel( stringSize + 3 );
-
-        IoPrimitiveUtils.write3bLengthAndString( channel, lengthyString );
-
-        // when
-        String stringFromChannel = IoPrimitiveUtils.read3bLengthAndString( channel );
-
-        // then
-        assertEquals( lengthyString, stringFromChannel );
     }
 
     @Test
