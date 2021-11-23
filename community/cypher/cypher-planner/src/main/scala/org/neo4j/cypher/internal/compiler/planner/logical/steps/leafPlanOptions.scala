@@ -74,7 +74,7 @@ object leafPlanOptions extends LeafPlanFinder {
         }
       }
 
-    bestPlansPerAvailableSymbols.map(_.map(context.leafPlanUpdater.apply))
+    bestPlansPerAvailableSymbols
   }
 
   def leafPlanHeuristic(context: LogicalPlanningContext): SelectorHeuristic = new SelectorHeuristic {

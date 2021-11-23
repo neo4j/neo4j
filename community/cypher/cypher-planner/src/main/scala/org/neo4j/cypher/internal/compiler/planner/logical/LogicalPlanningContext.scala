@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrderFactory
@@ -62,7 +61,6 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   legacyCsvQuoteEscaping: Boolean = DEFAULT_LEGACY_STYLE_QUOTING,
                                   csvBufferSize: Int = 2 * 1024 * 1024,
                                   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-                                  leafPlanUpdater: LeafPlanUpdater = EmptyUpdater,
                                   costComparisonListener: CostComparisonListener,
                                   planningAttributes: PlanningAttributes,
                                   indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext = IndexCompatiblePredicatesProviderContext.default,
@@ -92,14 +90,6 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
   def withFusedLabelInfo(newLabelInfo: LabelInfo): LogicalPlanningContext =
     copy(input = input.withFusedLabelInfo(newLabelInfo))
-
-  def withAddedLeafPlanUpdater(newUpdater: LeafPlanUpdater): LogicalPlanningContext = {
-    copy(leafPlanUpdater = ChainedUpdater(leafPlanUpdater, newUpdater))
-  }
-
-  def withLeafPlanUpdater(newUpdater: LeafPlanUpdater): LogicalPlanningContext = {
-    copy(leafPlanUpdater = newUpdater)
-  }
 
   def withConfig(newConfig: QueryPlannerConfiguration): LogicalPlanningContext = {
     copy(config = newConfig)
@@ -137,19 +127,5 @@ case class LogicalPlanningContext(planContext: PlanContext,
   def withLastSolvedQueryPart(queryPart: SinglePlannerQuery): LogicalPlanningContext = {
     val hasUpdates = indexCompatiblePredicatesProviderContext.outerPlanHasUpdates || !queryPart.readOnlySelf
     copy(indexCompatiblePredicatesProviderContext = indexCompatiblePredicatesProviderContext.copy(outerPlanHasUpdates = hasUpdates))
-  }
-}
-
-object NodeIdName {
-  def unapply(v: Any, context: LogicalPlanningContext): Option[String] = v match {
-    case variable@Variable(_) if context.semanticTable.isNode(variable) => Some(variable.name)
-    case _ => None
-  }
-}
-
-object RelationshipIdName {
-  def unapply(v: Any, context: LogicalPlanningContext): Option[String] = v match {
-    case variable@Variable(_) if context.semanticTable.isRelationship(variable) => Some(variable.name)
-    case _ => None
   }
 }
