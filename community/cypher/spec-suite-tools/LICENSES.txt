@@ -27,6 +27,7 @@ Apache Software License, Version 2.0
   parboiled-core
   parboiled-scala
   Scala Compiler
+  scala-collection-compat
 ------------------------------------------------------------------------------
 
                                  Apache License
@@ -388,7 +389,8 @@ MIT License
   Cucumber-JVM: Plugin
   DataTable
   fastparse_2.12
-  sourcecode
+  geny_2.12
+  sourcecode_2.12
 ------------------------------------------------------------------------------
 
 The MIT License
