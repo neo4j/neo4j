@@ -28,7 +28,6 @@ Apache Software License, Version 2.0
   Jackson-annotations
   Jackson-core
   jackson-databind
-  Java Agent for Memory Measurements
   Java Concurrency Tools Core Library
   Java Native Access
   Jettison

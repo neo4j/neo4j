@@ -22,6 +22,7 @@ package org.neo4j.collection.trackable;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
@@ -36,7 +37,8 @@ public class HeapTrackingUnifiedSet<T> extends UnifiedSet<T> implements AutoClos
     private final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    static <T> HeapTrackingUnifiedSet<T> createUnifiedSet( MemoryTracker memoryTracker )
+    @VisibleForTesting
+    public static <T> HeapTrackingUnifiedSet<T> createUnifiedSet( MemoryTracker memoryTracker )
     {
         int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 1;
         memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( initialSizeToAllocate ) );
@@ -67,7 +69,8 @@ public class HeapTrackingUnifiedSet<T> extends UnifiedSet<T> implements AutoClos
         memoryTracker.releaseHeap( SHALLOW_SIZE + arrayHeapSize( trackedCapacity ) );
     }
 
-    static long arrayHeapSize( int arrayLength )
+    @VisibleForTesting
+    public static long arrayHeapSize( int arrayLength )
     {
         return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
     }

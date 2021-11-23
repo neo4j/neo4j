@@ -32,13 +32,14 @@ import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-class HeapTrackingUnifiedIdentityHashingSet<T> extends UnifiedSetWithHashingStrategy<T> implements AutoCloseable
+public class HeapTrackingUnifiedIdentityHashingSet<T> extends UnifiedSetWithHashingStrategy<T> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingUnifiedIdentityHashingSet.class );
     private final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    static <T> HeapTrackingUnifiedIdentityHashingSet<T> createUnifiedIdentityHashingSet( MemoryTracker memoryTracker )
+    @VisibleForTesting
+    public static <T> HeapTrackingUnifiedIdentityHashingSet<T> createUnifiedIdentityHashingSet( MemoryTracker memoryTracker )
     {
         int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 1;
         memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( initialSizeToAllocate ) );
@@ -71,12 +72,13 @@ class HeapTrackingUnifiedIdentityHashingSet<T> extends UnifiedSetWithHashingStra
     }
 
     @VisibleForTesting
-    int getIndex( T key )
+    public int getIndex( T key )
     {
         return index( key );
     }
 
-    static long arrayHeapSize( int arrayLength )
+    @VisibleForTesting
+    public static long arrayHeapSize( int arrayLength )
     {
         return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
     }

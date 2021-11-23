@@ -22,6 +22,7 @@ package org.neo4j.collection.trackable;
 import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
 
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
@@ -37,7 +38,8 @@ public class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCl
     final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    static HeapTrackingLongIntHashMap createLongIntHashMap( MemoryTracker memoryTracker )
+    @VisibleForTesting
+    public static HeapTrackingLongIntHashMap createLongIntHashMap( MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( SHALLOW_SIZE + arraysHeapSize( DEFAULT_INITIAL_CAPACITY ) );
         return new HeapTrackingLongIntHashMap( memoryTracker, DEFAULT_INITIAL_CAPACITY );
@@ -77,7 +79,8 @@ public class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCl
         return getOccupiedWithData() + (sentinelValues == null ? 0 : sentinelValues.size());
     }
 
-    static long arraysHeapSize( int arrayLength )
+    @VisibleForTesting
+    public static long arraysHeapSize( int arrayLength )
     {
         long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES );
         long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Integer.BYTES );

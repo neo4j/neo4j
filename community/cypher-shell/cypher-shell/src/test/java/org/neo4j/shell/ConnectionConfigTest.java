@@ -20,7 +20,9 @@
 package org.neo4j.shell;
 
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.SetEnvironmentVariable;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.shell.cli.Encryption;
 
@@ -29,8 +31,9 @@ import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
 class ConnectionConfigTest
 {
-    private final ConnectionConfig config = new ConnectionConfig( "bolt", "localhost", 1, "bob",
-            "pass", Encryption.DEFAULT, "db" );
+    private final Map<String,String> env = new HashMap<>();
+    private final Environment testEnvironment = new Environment( env );
+    private final ConnectionConfig config = new ConnectionConfig( "bolt", "localhost", 1, "bob", "pass", Encryption.DEFAULT, "db", new Environment() );
 
     @Test
     void scheme()
@@ -57,11 +60,11 @@ class ConnectionConfigTest
     }
 
     @Test
-    @SetEnvironmentVariable( key = ConnectionConfig.USERNAME_ENV_VAR, value = "alice" )
     void usernameDefaultsToEnvironmentVar()
     {
+        env.put( ConnectionConfig.USERNAME_ENV_VAR, "alice" );
         ConnectionConfig configWithEmptyParams = new ConnectionConfig( "bolt", "localhost", 1, "",
-                                                                       "", Encryption.DEFAULT, ABSENT_DB_NAME );
+                                                                       "", Encryption.DEFAULT, ABSENT_DB_NAME, testEnvironment );
         assertEquals( "alice", configWithEmptyParams.username() );
     }
 
@@ -72,11 +75,11 @@ class ConnectionConfigTest
     }
 
     @Test
-    @SetEnvironmentVariable( key = ConnectionConfig.PASSWORD_ENV_VAR, value = "ssap" )
     void passwordDefaultsToEnvironmentVar()
     {
+        env.put( ConnectionConfig.PASSWORD_ENV_VAR, "ssap" );
         ConnectionConfig configWithEmptyParams = new ConnectionConfig( "bolt", "localhost", 1, "",
-                                                                       "", Encryption.DEFAULT, ABSENT_DB_NAME );
+                                                                       "", Encryption.DEFAULT, ABSENT_DB_NAME, testEnvironment );
         assertEquals( "ssap", configWithEmptyParams.password() );
     }
 
@@ -87,11 +90,11 @@ class ConnectionConfigTest
     }
 
     @Test
-    @SetEnvironmentVariable( key = ConnectionConfig.DATABASE_ENV_VAR, value = "funnyDB" )
     void databaseDefaultsToEnvironmentVar()
     {
+        env.put( ConnectionConfig.DATABASE_ENV_VAR, "funnyDB" );
         ConnectionConfig configWithEmptyParams = new ConnectionConfig( "bolt", "localhost", 1, "",
-                                                                       "", Encryption.DEFAULT, ABSENT_DB_NAME );
+                                                                       "", Encryption.DEFAULT, ABSENT_DB_NAME, testEnvironment );
         assertEquals( "funnyDB", configWithEmptyParams.database() );
     }
 
@@ -104,8 +107,8 @@ class ConnectionConfigTest
     @Test
     void encryption()
     {
-        assertEquals( Encryption.DEFAULT, new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME ).encryption() );
-        assertEquals( Encryption.TRUE, new ConnectionConfig( "bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME ).encryption() );
-        assertEquals( Encryption.FALSE, new ConnectionConfig( "bolt", "", -1, "", "", Encryption.FALSE, ABSENT_DB_NAME ).encryption() );
+        assertEquals( Encryption.DEFAULT, new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ).encryption() );
+        assertEquals( Encryption.TRUE, new ConnectionConfig( "bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME, new Environment() ).encryption() );
+        assertEquals( Encryption.FALSE, new ConnectionConfig( "bolt", "", -1, "", "", Encryption.FALSE, ABSENT_DB_NAME, new Environment() ).encryption() );
     }
 }

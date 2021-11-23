@@ -25,9 +25,6 @@
     <properties>
         <moduleName>org.neo4j.cypher.internal.runtime.util</moduleName>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
-        <test.runner.jvm.settings.additional>
-            -javaagent:${settings.localRepository}/com/github/jbellis/jamm/${jamm.version}/jamm-${jamm.version}.jar
-        </test.runner.jvm.settings.additional>
     </properties>
 
     <licenses>
@@ -166,6 +163,7 @@
         <dependency>
             <groupId>com.github.jbellis</groupId>
             <artifactId>jamm</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- test dependencies -->

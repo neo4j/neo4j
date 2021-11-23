@@ -22,6 +22,7 @@ package org.neo4j.collection.trackable;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
@@ -30,7 +31,7 @@ import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-class HeapTrackingIntObjectHashMap<V> extends IntObjectHashMap<V> implements AutoCloseable
+public class HeapTrackingIntObjectHashMap<V> extends IntObjectHashMap<V> implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongObjectHashMap.class );
     private static final int DEFAULT_INITIAL_CAPACITY = 16;
@@ -38,7 +39,7 @@ class HeapTrackingIntObjectHashMap<V> extends IntObjectHashMap<V> implements Aut
     private final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    static <V> HeapTrackingIntObjectHashMap<V> createIntObjectHashMap( MemoryTracker memoryTracker )
+    public static <V> HeapTrackingIntObjectHashMap<V> createIntObjectHashMap( MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( SHALLOW_SIZE + arraysHeapSize( DEFAULT_INITIAL_CAPACITY ) );
         return new HeapTrackingIntObjectHashMap<>( memoryTracker, DEFAULT_INITIAL_CAPACITY );
@@ -68,7 +69,8 @@ class HeapTrackingIntObjectHashMap<V> extends IntObjectHashMap<V> implements Aut
         memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) + SHALLOW_SIZE );
     }
 
-    static long arraysHeapSize( int arrayLength )
+    @VisibleForTesting
+    public static long arraysHeapSize( int arrayLength )
     {
         long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Integer.BYTES );
         long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );

@@ -17,24 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.collector
+package org.neo4j.shell;
 
-object ResultDebug {
-  def asJson(result: Any, indent: String = ""): String =
-    result match {
-      case seq: Seq[_] =>
-        "\n" + indent + "[\n" +
-          seq.map(indent + asJson(_, indent = indent + "  ")).mkString(",\n") + "\n" +
-          indent + "]"
-      case map: Map[_, _] =>
-        "\n" + indent + "{\n" +
-          map.map {
-            case (key: String, value) => asJson(key, value, indent + "  ")
-          }.mkString(",\n") + "\n" +
-          indent + "}"
-      case x => x.toString
+import java.util.Map;
+
+public class Environment
+{
+    private final Map<String,String> env;
+
+    public Environment()
+    {
+        this( System.getenv() );
     }
 
-  def asJson(key: String, value: Any, indent: String): String =
-    indent + key + ": " + asJson(value, indent = indent + "  ")
+    public Environment( Map<String,String> env )
+    {
+        this.env = env;
+    }
+
+    String getVariable( String name )
+    {
+        return env.get( name );
+    }
 }

@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.memory.HeapEstimator;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
@@ -52,7 +53,7 @@ import org.neo4j.values.virtual.VirtualValues;
  * constant query collection. This is crucial to avoid bloating memory use for data import scenarios, and in general
  * to avoid hogging lot's of memory that will be long-lived and likely tenured.
  */
-class TruncatedQuerySnapshot
+public class TruncatedQuerySnapshot
 {
     final NamedDatabaseId databaseId;
     final int fullQueryTextHash;
@@ -67,7 +68,7 @@ class TruncatedQuerySnapshot
     static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TruncatedQuerySnapshot.class ) +
                                      HeapEstimator.shallowSizeOfInstance( Supplier.class );
 
-    TruncatedQuerySnapshot( NamedDatabaseId databaseId,
+    public TruncatedQuerySnapshot( NamedDatabaseId databaseId,
                             String fullQueryText,
                             Supplier<ExecutionPlanDescription> queryPlanSupplier,
                             MapValue queryParameters,
@@ -115,6 +116,18 @@ class TruncatedQuerySnapshot
     private static final ValueTruncater VALUE_TRUNCATER = new ValueTruncater();
     private static final int MAX_TEXT_PARAMETER_LENGTH = 100;
     private static final int MAX_PARAMETER_KEY_LENGTH = 1000;
+
+    @VisibleForTesting
+    public long estimatedHeap()
+    {
+        return estimatedHeap;
+    }
+
+    @VisibleForTesting
+    public MapValue queryParameters()
+    {
+        return queryParameters;
+    }
 
     static class ValueTruncater implements ValueMapper<AnyValue>
     {

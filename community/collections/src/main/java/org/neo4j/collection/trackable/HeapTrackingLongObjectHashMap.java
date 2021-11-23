@@ -22,6 +22,7 @@ package org.neo4j.collection.trackable;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
@@ -38,7 +39,8 @@ public class HeapTrackingLongObjectHashMap<V> extends LongObjectHashMap<V> imple
     protected final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    static <V> HeapTrackingLongObjectHashMap<V> createLongObjectHashMap( MemoryTracker memoryTracker )
+    @VisibleForTesting
+    public static <V> HeapTrackingLongObjectHashMap<V> createLongObjectHashMap( MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( SHALLOW_SIZE + arraysHeapSize( DEFAULT_INITIAL_CAPACITY ) );
         return new HeapTrackingLongObjectHashMap<>( memoryTracker, DEFAULT_INITIAL_CAPACITY );
@@ -68,7 +70,8 @@ public class HeapTrackingLongObjectHashMap<V> extends LongObjectHashMap<V> imple
         memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) + SHALLOW_SIZE );
     }
 
-    protected static long arraysHeapSize( int arrayLength )
+    @VisibleForTesting
+    public static long arraysHeapSize( int arrayLength )
     {
         long keyArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES );
         long valueArray = alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );

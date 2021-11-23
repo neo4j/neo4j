@@ -31,7 +31,6 @@ Apache Software License, Version 2.0
   Jackson-JAXRS: base
   Jackson-JAXRS: JSON
   Jakarta Bean Validation API
-  Java Agent for Memory Measurements
   Java Concurrency Tools Core Library
   Java Native Access
   Javassist

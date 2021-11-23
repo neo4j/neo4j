@@ -22,6 +22,7 @@ package org.neo4j.collection.trackable;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
@@ -36,7 +37,8 @@ public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements Aut
     private final MemoryTracker memoryTracker;
     private long trackedHeap;
 
-    static <K, V> HeapTrackingUnifiedMap<K,V> createUnifiedMap( MemoryTracker memoryTracker )
+    @VisibleForTesting
+    public static <K, V> HeapTrackingUnifiedMap<K,V> createUnifiedMap( MemoryTracker memoryTracker )
     {
         int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 2;
         long trackedHeap = arrayHeapSize( initialSizeToAllocate );
@@ -85,7 +87,8 @@ public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K,V> implements Aut
         memoryTracker.releaseHeap( SHALLOW_SIZE + trackedHeap );
     }
 
-    static long arrayHeapSize( int arrayLength )
+    @VisibleForTesting
+    public static long arrayHeapSize( int arrayLength )
     {
         return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * OBJECT_REFERENCE_BYTES );
     }

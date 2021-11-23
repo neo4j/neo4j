@@ -740,7 +740,7 @@ class MainIntegrationTest
         {
             shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, false, 100 ), true, new ShellParameterMap() );
             var systemDb = majorServerVersion >= 4 ? "system" : ""; // Before version 4 we don't support multi databases
-            shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, systemDb ) );
+            shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, systemDb, new Environment() ) );
             return systemDbConsumer.apply( shell );
         }
         catch ( Exception e )

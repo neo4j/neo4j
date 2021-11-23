@@ -8,7 +8,6 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Apache Log4j API
   Apache Log4j Core
-  Java Agent for Memory Measurements
   Java Native Access
   Jettison
   Lucene Common Analyzers

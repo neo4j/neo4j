@@ -65,7 +65,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongEnumerationList.class );
-    static final int DEFAULT_CHUNK_SIZE = 1024; // Must be a power of 2
+    public static final int DEFAULT_CHUNK_SIZE = 1024; // Must be a power of 2
 
     private final int chunkSize;
     private final int chunkShiftAmount;

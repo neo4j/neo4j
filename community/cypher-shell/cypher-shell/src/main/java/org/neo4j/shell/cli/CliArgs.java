@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Optional;
 
 import org.neo4j.shell.ConnectionConfig;
+import org.neo4j.shell.Environment;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.ShellParameterMap;
@@ -292,7 +293,7 @@ public class CliArgs
 
     public ConnectionConfig connectionConfig()
     {
-        return new ConnectionConfig( getScheme(), getHost(), getPort(), getUsername(), getPassword(), getEncryption(), getDatabase() );
+        return new ConnectionConfig( getScheme(), getHost(), getPort(), getUsername(), getPassword(), getEncryption(), getDatabase(), new Environment() );
     }
 
     public File getHistoryFile()

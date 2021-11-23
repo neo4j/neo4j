@@ -21,11 +21,8 @@ package org.neo4j.shell.state;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -250,29 +247,14 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             catch ( ServiceUnavailableException | SessionExpiredException e )
             {
                 String scheme = connectionConfig.scheme();
-                String fallbackScheme;
-                switch ( scheme )
-                {
-                case Scheme.NEO4J_URI_SCHEME:
-                    fallbackScheme = Scheme.BOLT_URI_SCHEME;
-                    break;
-                case Scheme.NEO4J_LOW_TRUST_URI_SCHEME:
-                    fallbackScheme = Scheme.BOLT_LOW_TRUST_URI_SCHEME;
-                    break;
-                case Scheme.NEO4J_HIGH_TRUST_URI_SCHEME:
-                    fallbackScheme = Scheme.BOLT_HIGH_TRUST_URI_SCHEME;
-                    break;
-                default:
-                    throw e;
-                }
-                connectionConfig = new ConnectionConfig(
-                        fallbackScheme,
-                        connectionConfig.host(),
-                        connectionConfig.port(),
-                        connectionConfig.username(),
-                        connectionConfig.password(),
-                        connectionConfig.encryption(),
-                        connectionConfig.database() );
+                String fallbackScheme = switch ( scheme )
+                        {
+                            case Scheme.NEO4J_URI_SCHEME -> Scheme.BOLT_URI_SCHEME;
+                            case Scheme.NEO4J_LOW_TRUST_URI_SCHEME -> Scheme.BOLT_LOW_TRUST_URI_SCHEME;
+                            case Scheme.NEO4J_HIGH_TRUST_URI_SCHEME -> Scheme.BOLT_HIGH_TRUST_URI_SCHEME;
+                            default -> throw e;
+                        };
+                connectionConfig = new ConnectionConfig( fallbackScheme, connectionConfig );
 
                 try
                 {
@@ -623,24 +605,13 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                                                    .withUserAgent( USER_AGENT );
         switch ( connectionConfig.encryption() )
         {
-        case TRUE:
-            configBuilder = configBuilder.withEncryption();
-            break;
-        case FALSE:
-            configBuilder = configBuilder.withoutEncryption();
-            break;
-        default:
-            // Do nothing
+        case TRUE -> configBuilder = configBuilder.withEncryption();
+        case FALSE -> configBuilder = configBuilder.withoutEncryption();
+        default -> {
+        }
+        // Do nothing
         }
         return driverProvider.apply( connectionConfig.driverUrl(), authToken, configBuilder.build() );
-    }
-
-    private List<BoltResult> executeWithRetry( List<Query> transactionStatements, BiFunction<Query, Transaction, BoltResult> biFunction )
-    {
-        return session.writeTransaction( tx ->
-                                                 transactionStatements.stream()
-                                                                      .map( transactionStatement -> biFunction.apply( transactionStatement, tx ) )
-                                                                      .collect( Collectors.toList() ) );
     }
 
     private boolean isSystemDb()
@@ -650,6 +621,6 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
 
     private static boolean procedureNotFound( ClientException e )
     {
-        return e.code().compareToIgnoreCase( "Neo.ClientError.Procedure.ProcedureNotFound" ) == 0;
+        return "Neo.ClientError.Procedure.ProcedureNotFound".compareToIgnoreCase( e.code() ) == 0;
     }
 }

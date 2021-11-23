@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.CypherShell;
+import org.neo4j.shell.Environment;
 import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Encryption;
@@ -61,7 +62,7 @@ class CypherShellMultiDatabaseIntegrationTest
         beginCommand = new Begin( shell );
         rollbackCommand = new Rollback( shell );
 
-        shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
+        shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
 
         // Multiple databases are only available from 4.0
         assumeTrue( majorVersion( shell.getServerVersion() ) >= 4 );
@@ -152,7 +153,7 @@ class CypherShellMultiDatabaseIntegrationTest
     {
         shell = new CypherShell( linePrinter, new PrettyConfig( Format.PLAIN, true, 1000 ), true, new ShellParameterMap() );
         useCommand = new Use( shell );
-        shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
+        shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
 
         useCommand.execute( SYSTEM_DB_NAME );
 

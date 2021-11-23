@@ -46,6 +46,7 @@ import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
 import org.neo4j.shell.ConnectionConfig;
+import org.neo4j.shell.Environment;
 import org.neo4j.shell.TriFunction;
 import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.exception.CommandException;
@@ -84,7 +85,7 @@ class BoltStateHandlerTest
     private final Logger logger = mock( Logger.class );
     private final Driver mockDriver = mock( Driver.class );
     private final OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler( mockDriver );
-    private final ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
+    private final ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
 
     @BeforeEach
     void setup()
@@ -441,7 +442,7 @@ class BoltStateHandlerTest
     {
         RecordingDriverProvider provider = new RecordingDriverProvider();
         BoltStateHandler handler = new BoltStateHandler( provider, false );
-        ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME );
+        ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME, new Environment() );
         handler.connect( config );
         assertTrue( provider.config.encrypted() );
     }
@@ -492,7 +493,7 @@ class BoltStateHandlerTest
     void shouldChangePasswordAndKeepSystemDbBookmark() throws CommandException
     {
         // Given
-        ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
+        ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
         Bookmark bookmark = InternalBookmark.parse( "myBookmark" );
         var newPassword = "newPW";
 
@@ -510,7 +511,7 @@ class BoltStateHandlerTest
         assertNull( handler.session );
 
         // When connecting to system db again
-        handler.connect( new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, SYSTEM_DB_NAME ) );
+        handler.connect( new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, SYSTEM_DB_NAME, new Environment() ) );
 
         // Then use bookmark for system DB
         verify( driverMock ).session( SessionConfig.builder()
@@ -524,7 +525,7 @@ class BoltStateHandlerTest
     @Test
     void shouldKeepOneBookmarkPerDatabase() throws CommandException
     {
-        ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, "database1" );
+        ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, "database1", new Environment() );
         Bookmark db1Bookmark = InternalBookmark.parse( "db1" );
         Bookmark db2Bookmark = InternalBookmark.parse( "db2" );
 
@@ -689,7 +690,7 @@ class BoltStateHandlerTest
             }
         };
         BoltStateHandler handler = new BoltStateHandler( provider, false );
-        ConnectionConfig config = new ConnectionConfig( initialScheme, "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
+        ConnectionConfig config = new ConnectionConfig( initialScheme, "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
         handler.connect( config );
 
         assertEquals( fallbackScheme, uriScheme[0] );
@@ -708,7 +709,7 @@ class BoltStateHandlerTest
 
         public void connect() throws CommandException
         {
-            connect( new ConnectionConfig( "bolt", "", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME ) );
+            connect( new ConnectionConfig( "bolt", "", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
         }
     }
 

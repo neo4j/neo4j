@@ -34,6 +34,13 @@ public class ConnectionConfig
     private String username;
     private String password;
     private String database;
+    private final Environment environment;
+
+    public ConnectionConfig( String scheme, ConnectionConfig connectionConfig )
+    {
+        this( scheme, connectionConfig.host, connectionConfig.port, connectionConfig.username, connectionConfig.password, connectionConfig.encryption,
+                connectionConfig.database, connectionConfig.environment );
+    }
 
     public ConnectionConfig( String scheme,
                              String host,
@@ -41,23 +48,25 @@ public class ConnectionConfig
                              String username,
                              String password,
                              Encryption encryption,
-                             String database )
+                             String database,
+                             Environment environment )
     {
         this.host = host;
         this.port = port;
-        this.username = fallbackToEnvVariable( username, USERNAME_ENV_VAR );
-        this.password = fallbackToEnvVariable( password, PASSWORD_ENV_VAR );
+        this.environment = environment;
+        this.username = fallbackToEnvVariable( environment, username, USERNAME_ENV_VAR );
+        this.password = fallbackToEnvVariable( environment, password, PASSWORD_ENV_VAR );
         this.encryption = encryption;
         this.scheme = scheme;
-        this.database = fallbackToEnvVariable( database, DATABASE_ENV_VAR );
+        this.database = fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR );
     }
 
     /**
      * @return preferredValue if not empty, else the contents of the fallback environment variable
      */
-    private static String fallbackToEnvVariable( String preferredValue, String fallbackEnvVar )
+    private static String fallbackToEnvVariable( Environment environment, String preferredValue, String fallbackEnvVar )
     {
-        String result = System.getenv( fallbackEnvVar );
+        String result = environment.getVariable( fallbackEnvVar );
         if ( result == null || !preferredValue.isEmpty() )
         {
             result = preferredValue;
@@ -117,6 +126,6 @@ public class ConnectionConfig
 
     public void setDatabase( String database )
     {
-        this.database = fallbackToEnvVariable( database, DATABASE_ENV_VAR );
+        this.database = fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR );
     }
 }

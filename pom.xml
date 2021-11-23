@@ -67,11 +67,8 @@
     <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <jdk.custom.options>
-      --add-opens java.base/java.lang=ALL-UNNAMED
       --add-opens java.base/java.nio=ALL-UNNAMED
       --add-opens java.base/java.io=ALL-UNNAMED
-      --add-opens java.base/java.util=ALL-UNNAMED
-      --add-opens java.base/java.util.concurrent=ALL-UNNAMED
       --add-opens java.base/sun.nio.ch=ALL-UNNAMED
     </jdk.custom.options>
     <test.runner.jvm/>

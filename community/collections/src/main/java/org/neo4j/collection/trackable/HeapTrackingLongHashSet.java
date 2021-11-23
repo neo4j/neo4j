@@ -22,6 +22,7 @@ package org.neo4j.collection.trackable;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
@@ -37,7 +38,8 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
     private final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    static HeapTrackingLongHashSet createLongHashSet( MemoryTracker memoryTracker )
+    @VisibleForTesting
+    public static HeapTrackingLongHashSet createLongHashSet( MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( DEFAULT_INITIAL_CAPACITY ) );
         return new HeapTrackingLongHashSet( memoryTracker );
@@ -86,7 +88,8 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
         memoryTracker.releaseHeap( arrayHeapSize( trackedCapacity ) + SHALLOW_SIZE );
     }
 
-    static long arrayHeapSize( int arrayLength )
+    @VisibleForTesting
+    public static long arrayHeapSize( int arrayLength )
     {
         return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES );
     }

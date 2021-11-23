@@ -29,7 +29,6 @@ Apache Software License, Version 2.0
   Apache Commons IO
   Apache Commons Lang
   jansi
-  Java Agent for Memory Measurements
   Java Concurrency Tools Core Library
   Java Native Access
   magnolia

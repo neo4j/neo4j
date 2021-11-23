@@ -157,7 +157,7 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable
     }
 
     @VisibleForTesting
-    int numberOfChunks()
+    public int numberOfChunks()
     {
         int i = 0;
         var chunk = first;
