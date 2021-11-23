@@ -130,6 +130,8 @@ public class StandardV4_3 extends BaseRecordFormats
     @Override
     public RecordFormats[] compatibleVersionsForRollingUpgrade()
     {
-        return new RecordFormats[] {StandardV4_0.RECORD_FORMATS};
+        // Technically this format is compatible with older formats in the same family.
+        // But we will never roll to it in this version, an older version of the binaries is needed for that.
+        return new RecordFormats[0];
     }
 }

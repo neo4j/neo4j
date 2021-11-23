@@ -24,7 +24,6 @@ package org.neo4j.kernel.impl.store.format;
  */
 public enum StoreVersion
 {
-    STANDARD_V4_0( "SF4.0.0", "4.0.0" ),
     STANDARD_V4_3( "SF4.3.0", "4.3.0" ),
     STANDARD_V5_0( "SF5.0.0", "5.0.0" ),
 

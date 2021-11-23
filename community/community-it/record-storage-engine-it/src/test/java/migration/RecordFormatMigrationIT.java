@@ -20,6 +20,7 @@
 package migration;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -31,8 +32,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
@@ -51,6 +52,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 
+// Not possible to test until the 5.0 formats are enabled
+@Disabled
 @TestDirectoryExtension
 class RecordFormatMigrationIT
 {
@@ -67,7 +70,7 @@ class RecordFormatMigrationIT
     @Test
     void failToDowngradeFormatWhenUpgradeNotAllowed()
     {
-        DatabaseManagementService managementService = startManagementService( StandardV4_3.NAME );
+        DatabaseManagementService managementService = startManagementService( StandardV5_0.NAME );
         GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
@@ -76,7 +79,7 @@ class RecordFormatMigrationIT
             transaction.commit();
         }
         managementService.shutdown();
-        managementService = startManagementService( StandardV4_0.NAME );
+        managementService = startManagementService( StandardV4_3.NAME );
         database = getDefaultDatabase( managementService );
         try
         {
@@ -92,7 +95,7 @@ class RecordFormatMigrationIT
     @Test
     void failToDowngradeFormatWheUpgradeAllowed()
     {
-        DatabaseManagementService managementService = startManagementService( StandardV4_3.NAME );
+        DatabaseManagementService managementService = startManagementService( StandardV5_0.NAME );
         GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
@@ -102,7 +105,7 @@ class RecordFormatMigrationIT
         }
         managementService.shutdown();
 
-        managementService = startDatabaseServiceWithUpgrade( databaseDirectory, StandardV4_0.NAME );
+        managementService = startDatabaseServiceWithUpgrade( databaseDirectory, StandardV4_3.NAME );
         database = getDefaultDatabase( managementService );
         try
         {
@@ -118,7 +121,7 @@ class RecordFormatMigrationIT
     @Test
     void skipMigrationIfFormatSpecifiedInConfig()
     {
-        DatabaseManagementService managementService = startManagementService( StandardV4_0.NAME );
+        DatabaseManagementService managementService = startManagementService( StandardV4_3.NAME );
         GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
@@ -128,17 +131,17 @@ class RecordFormatMigrationIT
         }
         managementService.shutdown();
 
-        managementService = startManagementService( StandardV4_0.NAME );
+        managementService = startManagementService( StandardV4_3.NAME );
         GraphDatabaseAPI nonUpgradedStore = getDefaultDatabase( managementService );
         RecordStorageEngine storageEngine = nonUpgradedStore.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        assertEquals( StandardV4_0.NAME, storageEngine.testAccessNeoStores().getRecordFormats().name() );
+        assertEquals( StandardV4_3.NAME, storageEngine.testAccessNeoStores().getRecordFormats().name() );
         managementService.shutdown();
     }
 
     @Test
     void requestMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime()
     {
-        DatabaseManagementService managementService = startManagementService( StandardV4_0.NAME );
+        DatabaseManagementService managementService = startManagementService( StandardV4_3.NAME );
         GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {
@@ -163,7 +166,7 @@ class RecordFormatMigrationIT
     @Test
     void latestRecordNotMigratedWhenFormatBumped()
     {
-        DatabaseManagementService managementService = startManagementService( StandardV4_0.NAME );
+        DatabaseManagementService managementService = startManagementService( StandardV4_3.NAME );
         GraphDatabaseAPI database = getDefaultDatabase( managementService );
         try ( Transaction transaction = database.beginTx() )
         {

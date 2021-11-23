@@ -41,7 +41,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -244,7 +244,7 @@ class StoreMigratorTest
         // Migrate with two storeversions that have the same FORMAT capabilities
         DatabaseLayout migrationLayout = neo4jLayout.databaseLayout( "migrationDir" );
         fileSystem.mkdirs( migrationLayout.databaseDirectory() );
-        migrator.migrate( dbLayout, migrationLayout, progressReporter, StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION, IndexImporterFactory.EMPTY );
+        migrator.migrate( dbLayout, migrationLayout, progressReporter, StandardV4_3.STORE_VERSION, StandardV4_3.STORE_VERSION, IndexImporterFactory.EMPTY );
 
         // Should not have started any migration
         assertFalse( progressReporter.started );
