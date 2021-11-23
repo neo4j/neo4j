@@ -25,7 +25,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.util.Objects.requireNonNull;
 
-abstract class PropertyConstraintDefinition implements ConstraintDefinition
+public abstract class PropertyConstraintDefinition implements ConstraintDefinition
 {
     protected final InternalSchemaActions actions;
     protected ConstraintDescriptor constraint;
@@ -34,6 +34,11 @@ abstract class PropertyConstraintDefinition implements ConstraintDefinition
     {
         this.actions = requireNonNull( actions );
         this.constraint = requireNonNull( constraint );
+    }
+
+    public ConstraintDescriptor getConstraintReference()
+    {
+        return constraint;
     }
 
     @Override
