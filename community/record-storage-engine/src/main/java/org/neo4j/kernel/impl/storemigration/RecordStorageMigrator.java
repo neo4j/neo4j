@@ -151,6 +151,9 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSAC
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
+import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V5_0;
+import static org.neo4j.kernel.impl.store.format.StoreVersion.HIGH_LIMIT_V5_0_0;
+import static org.neo4j.kernel.impl.store.format.StoreVersion.STANDARD_V5_0;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
@@ -282,6 +285,64 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, !requiresIdFilesMigration,
                         ExistingTargetStrategy.SKIP );
                 migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorContext, memoryTracker );
+            }
+
+            // First migration in 5.0 - when we are ready to force migration to these formats we can instead do a check on if the
+            // KernelVersion is before 5.0 (assuming we set the kernel version to 5.0 in this migration).
+            if ( ( STANDARD_V5_0.versionString().equals( newFormat.storeVersion() ) ||
+                  ALIGNED_V5_0.versionString().equals( newFormat.storeVersion() ) ||
+                  HIGH_LIMIT_V5_0_0.versionString().equals( newFormat.storeVersion() ) ) &&
+                 !newFormat.storeVersion().equals( oldFormat.storeVersion() ) )
+            {
+                List<DatabaseFile> databaseFiles =
+                        asList( RecordDatabaseFile.SCHEMA_STORE,
+                                RecordDatabaseFile.PROPERTY_STORE, RecordDatabaseFile.PROPERTY_ARRAY_STORE, RecordDatabaseFile.PROPERTY_STRING_STORE,
+                                RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
+                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, !requiresIdFilesMigration,
+                        ExistingTargetStrategy.SKIP );
+
+                IdGeneratorFactory idGeneratorFactory = requiresIdFilesMigration ?
+                                                        new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, migrationLayout.getDatabaseName() ) :
+                                                        new DefaultIdGeneratorFactory( fileSystem, immediate(), migrationLayout.getDatabaseName() );
+                StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, idGeneratorFactory );
+
+                // Token stores
+                try ( NeoStores dstStore = dstFactory.openNeoStores( false, StoreType.SCHEMA, StoreType.PROPERTY, StoreType.META_DATA );
+                      SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorContext,
+                              memoryTracker, dstStore.getMetaDataStore() ) )
+                {
+                    dstStore.start( cursorContext );
+
+                    SchemaRule foundNLIThatNeedsUpdate = null;
+                    Iterable<SchemaRule> all = dstAccess.getAll();
+                    for ( SchemaRule schemaRule : all )
+                    {
+                        // This is the previous labelscanstore that we want to make into a real complete record
+                        if ( schemaRule.schema().equals( IndexDescriptor.NLI_PROTOTYPE.schema() ) )
+                        {
+                            // It was never persisted and now needs to persisted with a new id.
+                            if ( schemaRule.getId() == IndexDescriptor.INJECTED_NLI_ID )
+                            {
+                                foundNLIThatNeedsUpdate = IndexDescriptor.NLI_PROTOTYPE.materialise( dstAccess.nextId() );
+                                break;
+                            }
+                            // It was persisted and is a record with no properties, rewriting it will give it properties.
+                            if ( IndexDescriptor.NLI_GENERATED_NAME.equals( schemaRule.getName() ) )
+                            {
+                                foundNLIThatNeedsUpdate = schemaRule;
+                                break;
+                            }
+                        }
+                    }
+                    if ( foundNLIThatNeedsUpdate != null )
+                    {
+                        dstAccess.writeSchemaRule( foundNLIThatNeedsUpdate );
+                    }
+
+                    // Set the kernelversion to a version with token indexes so we no longer inject a schema rule for nli.
+                    dstStore.getMetaDataStore().setKernelVersion( KernelVersion.V4_4, cursorContext );
+                    dstStore.flush( cursorContext );
+                }
             }
 
             if ( requiresCountsStoreMigration( oldFormat, newFormat ) )

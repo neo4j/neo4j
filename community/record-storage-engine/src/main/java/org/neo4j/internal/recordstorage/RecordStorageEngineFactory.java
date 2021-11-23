@@ -108,6 +108,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.LogFilesInitializer;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -540,7 +541,16 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 compactNodeIdSpace, pageCacheTracer, readBehaviour );
     }
 
+    /**
+     * @return SchemaRuleMigrationAccess that uses the latest kernel version and therefore never includes an injected node label index.
+     */
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContext cursorContext, MemoryTracker memoryTracker )
+    {
+        return createMigrationTargetSchemaRuleAccess( stores, cursorContext, memoryTracker, () -> KernelVersion.LATEST );
+    }
+
+    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContext cursorContext, MemoryTracker memoryTracker,
+            KernelVersionRepository kernelVersionRepository )
     {
         SchemaStore dstSchema = stores.getSchemaStore();
         TokenCreator propertyKeyTokenCreator = ( name, internal ) ->
@@ -576,7 +586,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         };
         var storeCursors = new CachedStoreCursors( stores, cursorContext );
         TokenHolders dstTokenHolders = loadTokenHolders( stores, propertyKeyTokenCreator, storeCursors );
-        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST ), cursorContext,
+        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, kernelVersionRepository ), cursorContext,
                 memoryTracker, storeCursors );
     }
 

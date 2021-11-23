@@ -70,6 +70,12 @@ class SchemaRuleMigrationTest
             }
 
             @Override
+            public long nextId()
+            {
+                throw new IllegalStateException( "Not expected behavior in this test" );
+            }
+
+            @Override
             public Iterable<SchemaRule> getAll()
             {
                 return List.of();

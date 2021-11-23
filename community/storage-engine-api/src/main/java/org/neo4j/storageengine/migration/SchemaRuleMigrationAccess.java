@@ -29,4 +29,6 @@ public interface SchemaRuleMigrationAccess extends Closeable
     Iterable<SchemaRule> getAll();
 
     void writeSchemaRule( SchemaRule rule ) throws KernelException;
+
+    long nextId();
 }

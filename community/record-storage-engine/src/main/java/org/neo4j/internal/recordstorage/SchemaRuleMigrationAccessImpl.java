@@ -63,6 +63,12 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     }
 
     @Override
+    public long nextId()
+    {
+        return schemaStorage.newRuleId( cursorContext );
+    }
+
+    @Override
     public void close() throws IOException
     {
         storeCursors.close();
