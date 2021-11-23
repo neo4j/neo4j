@@ -38,10 +38,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
-import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_1;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
-import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.test.extension.Inject;
@@ -72,9 +69,6 @@ class RecordStoreVersionTest
     @Test
     void shouldFindLatestOfFormats()
     {
-        assertVersionFindsLatest( StandardV4_0.RECORD_FORMATS, Standard.LATEST_RECORD_FORMATS );
-        assertVersionFindsLatest( StandardV3_4.RECORD_FORMATS, Standard.LATEST_RECORD_FORMATS );
-        assertVersionFindsLatest( PageAlignedV4_1.RECORD_FORMATS, PageAligned.LATEST_RECORD_FORMATS );
         assertVersionFindsLatest( PageAligned.LATEST_RECORD_FORMATS, PageAligned.LATEST_RECORD_FORMATS );
         assertVersionFindsLatest( Standard.LATEST_RECORD_FORMATS, Standard.LATEST_RECORD_FORMATS );
     }

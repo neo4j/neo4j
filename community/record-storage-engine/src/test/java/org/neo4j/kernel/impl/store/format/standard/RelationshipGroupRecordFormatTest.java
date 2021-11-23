@@ -80,6 +80,6 @@ class RelationshipGroupRecordFormatTest
 
     private static Collection<RecordFormats> formats()
     {
-        return asList( StandardV3_4.RECORD_FORMATS, StandardV4_0.RECORD_FORMATS );
+        return asList( StandardV4_3.RECORD_FORMATS, StandardV5_0.RECORD_FORMATS );
     }
 }

@@ -44,7 +44,7 @@ import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -86,7 +86,7 @@ class ImportPanicIT
             BatchImporter importer = new ParallelBatchImporter(
                     databaseLayout, testDirectory.getFileSystem(), PageCacheTracer.NULL,
                     Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitor.INVISIBLE, AdditionalInitialIds.EMPTY,
-                    Config.defaults(), StandardV3_4.RECORD_FORMATS, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    Config.defaults(), StandardV4_3.RECORD_FORMATS, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE );
             Iterable<DataFactory> nodeData =
                 DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );

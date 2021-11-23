@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV5_0;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
@@ -72,7 +71,6 @@ public class RecordFormatSelector
     private static final RecordFormats DEFAULT_FORMAT = PageAlignedV4_3.RECORD_FORMATS;
 
     private static final List<RecordFormats> KNOWN_FORMATS = asList(
-            StandardV3_4.RECORD_FORMATS,
             StandardV4_0.RECORD_FORMATS,
             StandardV4_3.RECORD_FORMATS,
             StandardV5_0.RECORD_FORMATS,
