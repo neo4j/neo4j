@@ -23,7 +23,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
@@ -52,7 +51,7 @@ public class Neo4jLogLayout extends AbstractStringLayout
     protected volatile Consumer<Log> headerLogger;
     protected volatile String headerClassName;
 
-    protected Neo4jLogLayout( String pattern, DefaultConfiguration config )
+    protected Neo4jLogLayout( String pattern, Neo4jConfiguration config )
     {
         super( config, StandardCharsets.UTF_8, null, null );
         this.eventSerializer = newSerializerBuilder()

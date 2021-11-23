@@ -21,7 +21,6 @@ package org.neo4j.logging.log4j;
 
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
@@ -42,7 +41,7 @@ public class Neo4jJsonLogLayout extends Neo4jLogLayout
     private final NameAbbreviator abbreviator;
     private final boolean includeCategory;
 
-    protected Neo4jJsonLogLayout( String datePattern, String timeZone, boolean includeCategory, DefaultConfiguration config )
+    protected Neo4jJsonLogLayout( String datePattern, String timeZone, boolean includeCategory, Neo4jConfiguration config )
     {
         super( "", config );
         this.includeCategory = includeCategory;
