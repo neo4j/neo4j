@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleKind;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 
@@ -73,6 +72,8 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 class SchemaChecker
 {
     private static final String CONSISTENCY_TOKEN_CHECKER_TAG = "consistencyTokenChecker";
+    private static final String CONSTRAINT_INDEX_RULE = "CONSTRAINT_INDEX_RULE";
+    private static final String UNIQUENESS_CONSTRAINT = "UNIQUENESS_CONSTRAINT";
     private final NeoStores neoStores;
     private final TokenHolders tokenHolders;
     private final IndexAccessors indexAccessors;
@@ -204,7 +205,7 @@ class SchemaChecker
                             {
                                 if ( rule.getOwningConstraintId().isPresent() ) // we only expect a pointer if we have an owner
                                 {
-                                    reporter.forSchema( record ).missingObligation( SchemaRuleKind.UNIQUENESS_CONSTRAINT.name() );
+                                    reporter.forSchema( record ).missingObligation( UNIQUENESS_CONSTRAINT );
                                 }
                             }
                             else
@@ -234,7 +235,7 @@ class SchemaChecker
                             ConstraintObligation obligation = constraintObligations.get( rule.getId() );
                             if ( obligation == null )
                             {
-                                reporter.forSchema( record ).missingObligation( SchemaRuleKind.CONSTRAINT_INDEX_RULE.name() );
+                                reporter.forSchema( record ).missingObligation( CONSTRAINT_INDEX_RULE );
                             }
                             else
                             {
