@@ -52,7 +52,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
-import org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.storemigration.LogsUpgrader;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
@@ -172,9 +171,8 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
 
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
-        IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
-        newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
+        newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 
@@ -201,12 +199,11 @@ public class StoreUpgraderInterruptionTestIT
         LogService logService = NullLogService.getInstance();
         var idMigratorTracer = new DefaultPageCacheTracer();
         var recordMigratorTracer = new DefaultPageCacheTracer();
-        IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, idMigratorTracer );
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
 
         var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, batchImporterFactory, INSTANCE );
-        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 
@@ -242,13 +239,12 @@ public class StoreUpgraderInterruptionTestIT
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
-        IdGeneratorMigrator idMigrator = new IdGeneratorMigrator( fs, pageCache, CONFIG, NULL );
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
 
         try
         {
-            newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator, idMigrator )
+            newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator )
                     .migrateIfNeeded( workingDatabaseLayout, false );
             fail( "Should throw exception" );
         }
@@ -258,7 +254,7 @@ public class StoreUpgraderInterruptionTestIT
         }
 
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
-        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator, idMigrator ).migrateIfNeeded( workingDatabaseLayout, false );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 

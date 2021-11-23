@@ -158,7 +158,6 @@ import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.F
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
-import static org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator.requiresIdFilesMigration;
 import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
@@ -250,7 +249,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals( oldFormat.dynamic() );
             boolean requiresPropertyMigration =
                     !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
-            boolean requiresIdFilesMigration = requiresIdFilesMigration( oldFormat, newFormat );
             // The FORMAT capability also includes the format family so this comparison is enough
             if ( !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT ) )
             {
@@ -263,7 +261,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
             // update necessary neostore records
             LogPosition logPosition = readLastTxLogPosition( migrationLayout );
-            updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, requiresIdFilesMigration,
+            updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, false,
                     cursorContext );
 
             if ( requiresSchemaStoreMigration( oldFormat, newFormat ) || requiresPropertyMigration )
@@ -282,7 +280,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                                 RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
                                 RecordDatabaseFile.LABEL_TOKEN_STORE, RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE,
                                 RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
-                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, !requiresIdFilesMigration,
+                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, true,
                         ExistingTargetStrategy.SKIP );
                 migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorContext, memoryTracker );
             }
@@ -623,7 +621,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
             fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStrcuture, Arrays.asList( storesFilesToMigrate ), true,
-                    !requiresIdFilesMigration( oldFormat, newFormat ), ExistingTargetStrategy.OVERWRITE );
+                    true, ExistingTargetStrategy.OVERWRITE );
         }
         else
         {

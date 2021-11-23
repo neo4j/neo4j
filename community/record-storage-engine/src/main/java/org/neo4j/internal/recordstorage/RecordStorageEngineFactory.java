@@ -98,7 +98,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreRollingUpgradeCompatibility;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
@@ -205,8 +204,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
         RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler, cacheTracer,
                 batchImporterFactory, memoryTracker );
-        IdGeneratorMigrator idGeneratorMigrator = new IdGeneratorMigrator( fs, pageCache, config, cacheTracer );
-        return List.of( recordStorageMigrator, idGeneratorMigrator );
+        return List.of( recordStorageMigrator );
     }
 
     @Override
