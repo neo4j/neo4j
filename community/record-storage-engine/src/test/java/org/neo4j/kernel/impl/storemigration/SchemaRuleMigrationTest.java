@@ -33,7 +33,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
@@ -48,7 +47,7 @@ import static org.mockito.Mockito.when;
 class SchemaRuleMigrationTest
 {
     private TokenHolders srcTokenHolders;
-    private SchemaStorage35 src;
+    private SchemaStorage src;
     private List<SchemaRule> writtenRules;
     private SchemaRuleMigrationAccess dst;
 
@@ -59,7 +58,7 @@ class SchemaRuleMigrationTest
                 StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                 StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        src = mock( SchemaStorage35.class );
+        src = mock( SchemaStorage.class );
         writtenRules = new ArrayList<>();
         dst = new SchemaRuleMigrationAccess()
         {

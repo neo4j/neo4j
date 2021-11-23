@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.impl.factory.Sets;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -28,12 +26,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -47,7 +41,6 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
@@ -69,7 +62,6 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
-import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
@@ -102,9 +94,6 @@ import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreRollingUpgradeCompatibility;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35StoreCursors;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -328,53 +317,18 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
               var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
         {
             stores.start( cursorContext );
-            RecordFormats format = stores.getRecordFormats();
             TokenHolders tokenHolders = loadReadOnlyTokens( stores, lenient, pageCacheTracer );
-            if ( format.hasCapability( FLEXIBLE_SCHEMA_STORE ) )
+            List<SchemaRule> rules = new ArrayList<>();
+            SchemaStorage storage = new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST );
+            if ( lenient )
             {
-                List<SchemaRule> rules = new ArrayList<>();
-                SchemaStorage storage = new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST );
-                if ( lenient )
-                {
-                    storage.getAllIgnoreMalformed( storeCursors ).forEach( rules::add );
-                }
-                else
-                {
-                    storage.getAll( storeCursors ).forEach( rules::add );
-                }
-                return rules;
+                storage.getAllIgnoreMalformed( storeCursors ).forEach( rules::add );
             }
             else
             {
-                try ( SchemaStore35 schemaStore35 = new SchemaStore35( databaseLayout.schemaStore(), databaseLayout.idSchemaStore(), config,
-                        SchemaIdType.SCHEMA, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, NullLogProvider.getInstance(), format, readOnly(),
-                        layout.getDatabaseName(), Sets.immutable.empty() );
-                        var schema35Cursors = new SchemaStore35StoreCursors( schemaStore35, cursorContext ) )
-                {
-                    schemaStore35.initialise( true, cursorContext );
-                    SchemaStorage35 schemaStorage35 = new SchemaStorage35( schemaStore35 );
-
-                    // Get rules and migrate to latest
-                    Map<Long,SchemaRule> ruleById = new LinkedHashMap<>();
-                    Iterable<SchemaRule> schemaRules = lenient
-                                                       ? schemaStorage35.getAllIgnoreMalformed( schema35Cursors )
-                                                       : schemaStorage35.getAll( schema35Cursors );
-                    schemaRules.forEach( rule -> ruleById.put( rule.getId(), rule ) );
-                    RecordStorageMigrator.schemaGenerateNames( schemaRules, tokenHolders, ruleById );
-                    return ruleById.values().stream()
-                            .map( schemaRuleMigration )
-                            .filter( Objects::nonNull )
-                            .collect( toList() );
-                }
-                catch ( KernelException e )
-                {
-                    if ( lenient )
-                    {
-                        return Collections.emptyList();
-                    }
-                    throw new RuntimeException( e );
-                }
+                storage.getAll( storeCursors ).forEach( rules::add );
             }
+            return rules;
         }
         catch ( IOException e )
         {

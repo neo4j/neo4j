@@ -32,10 +32,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.SplittableRandom;
 import java.util.function.Function;
@@ -53,7 +51,6 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RandomSchema;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
-import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -61,21 +58,17 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
-import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleSerialization35;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -96,7 +89,6 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
@@ -105,9 +97,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.impl.store.AbstractDynamicStore.allocateRecordsFromBytes;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -599,18 +589,4 @@ class RecordStorageMigratorIT
     {
         return txInfo -> txInfo.transactionId() == id && txInfo.commitTimestamp() == timestamp;
     }
-
-    public static List<DynamicRecord> allocateFrom( SchemaStore35 schemaStore35, SchemaRule rule, CursorContext cursorContext )
-    {
-        List<DynamicRecord> records = new ArrayList<>();
-        DynamicRecord record = schemaStore35.newRecord();
-        try ( var cursor = schemaStore35.openPageCursorForReading( rule.getId(), cursorContext ) )
-        {
-            schemaStore35.getRecordByCursor( rule.getId(), record, CHECK, cursor );
-        }
-        DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), schemaStore35 );
-        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorContext, INSTANCE );
-        return records;
-    }
-
 }

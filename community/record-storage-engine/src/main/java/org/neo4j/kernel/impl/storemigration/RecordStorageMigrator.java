@@ -67,7 +67,6 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
-import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -106,9 +105,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35StoreCursors;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
@@ -296,12 +292,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         asList( RecordDatabaseFile.SCHEMA_STORE,
                                 RecordDatabaseFile.PROPERTY_STORE, RecordDatabaseFile.PROPERTY_ARRAY_STORE, RecordDatabaseFile.PROPERTY_STRING_STORE,
                                 RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
-                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, !requiresIdFilesMigration,
+                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, true,
                         ExistingTargetStrategy.SKIP );
 
-                IdGeneratorFactory idGeneratorFactory = requiresIdFilesMigration ?
-                                                        new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, migrationLayout.getDatabaseName() ) :
-                                                        new DefaultIdGeneratorFactory( fileSystem, immediate(), migrationLayout.getDatabaseName() );
+                IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), migrationLayout.getDatabaseName() );
                 StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, idGeneratorFactory );
 
                 // Token stores
@@ -862,38 +856,32 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         StoreFactory dstFactory =
                 createStoreFactory( migrationLayout, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, migrationLayout.getDatabaseName() ) );
 
-        if ( newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) )
+        SchemaStorageCreator schemaStorageCreator = schemaStorageCreatorFlexible();
+        // Token stores
+        StoreType[] sourceStoresToOpen =
+                new StoreType[]{StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME, StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                                StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
+        sourceStoresToOpen = ArrayUtil.concat( sourceStoresToOpen, schemaStorageCreator.additionalStoresToOpen() );
+        try ( NeoStores srcStore = srcFactory.openNeoStores( sourceStoresToOpen );
+              var srcCursors = new CachedStoreCursors( srcStore, cursorContext );
+              NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
+              schemaStorageCreator )
         {
-            SchemaStorageCreator schemaStorageCreator =
-                    oldFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) ? schemaStorageCreatorFlexible()
-                                                                                             : schemaStorageCreator35( directoryLayout, oldFormat,
-                                                                                                     srcIdGeneratorFactory );
-            // Token stores
-            StoreType[] sourceStoresToOpen =
-                    new StoreType[] {StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME, StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
-                            StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
-            sourceStoresToOpen = ArrayUtil.concat( sourceStoresToOpen, schemaStorageCreator.additionalStoresToOpen() );
-            try ( NeoStores srcStore = srcFactory.openNeoStores( sourceStoresToOpen );
-                    var srcCursors = new CachedStoreCursors( srcStore, cursorContext );
-                    NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
-                    schemaStorageCreator )
+            dstStore.start( cursorContext );
+            TokenHolders srcTokenHolders = new TokenHolders( StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
+                    StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
+                    StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+            srcTokenHolders.setInitialTokens( allTokens( srcStore ), srcCursors );
+            SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorContext );
+
+            try ( SchemaRuleMigrationAccess dstAccess =
+                          RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorContext, memoryTracker );
+                  var schemaCursors = schemaStorageCreator.getSchemaStorageTokenCursors( srcCursors ) )
             {
-                dstStore.start( cursorContext );
-                TokenHolders srcTokenHolders = new TokenHolders( StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
-                        StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
-                        StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-                srcTokenHolders.setInitialTokens( allTokens( srcStore ), srcCursors );
-                SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorContext );
-
-                try ( SchemaRuleMigrationAccess dstAccess =
-                        RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorContext, memoryTracker );
-                        var schemaCursors = schemaStorageCreator.getSchemaStorageTokenCursors( srcCursors ) )
-                {
-                    migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, schemaCursors );
-                }
-
-                dstStore.flush( cursorContext );
+                migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, schemaCursors );
             }
+
+            dstStore.flush( cursorContext );
         }
     }
 
@@ -1090,54 +1078,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             public void close() throws IOException
             {
                 IOUtils.closeAll( schemaStore );
-            }
-        };
-    }
-
-    private SchemaStorageCreator schemaStorageCreator35( RecordDatabaseLayout directoryLayout, RecordFormats oldFormat,
-            IdGeneratorFactory srcIdGeneratorFactory )
-    {
-        return new SchemaStorageCreator()
-        {
-            private CursorContext cursorContext;
-            SchemaStore35 srcSchema;
-
-            @Override
-            public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, CursorContext cursorContext )
-            {
-                this.cursorContext = cursorContext;
-                srcSchema = new SchemaStore35(
-                        directoryLayout.schemaStore(),
-                        directoryLayout.idSchemaStore(),
-                        config,
-                        SchemaIdType.SCHEMA,
-                        srcIdGeneratorFactory,
-                        pageCache,
-                        NullLogProvider.getInstance(),
-                        oldFormat,
-                        readOnly(),
-                        directoryLayout.getDatabaseName(),
-                        immutable.empty() );
-                srcSchema.initialise( true, cursorContext );
-                return new SchemaStorage35( srcSchema );
-            }
-
-            @Override
-            public StoreType[] additionalStoresToOpen()
-            {
-                return new StoreType[0];
-            }
-
-            @Override
-            public StoreCursors getSchemaStorageTokenCursors( StoreCursors srcCursors )
-            {
-                return new SchemaStore35StoreCursors( srcSchema, cursorContext );
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                IOUtils.closeAll( srcSchema );
             }
         };
     }
