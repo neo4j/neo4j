@@ -185,13 +185,14 @@ public class ConfiguringPageCacheFactory
 
     public void dumpConfiguration()
     {
-        Long pageCacheMemory = config.get( pagecache_memory );
+        long pageCacheMemoryBytes = config.get( pagecache_memory );
+        String pageCacheMemory = ByteUnit.bytesToStringWithoutScientificNotation( pageCacheMemoryBytes );
         long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
-        String totalPhysicalMemMb = (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE)
-                                    ? "?" : "" + ByteUnit.Byte.toMebiBytes( totalPhysicalMemory );
-        long maxVmUsageMb = ByteUnit.Byte.toMebiBytes( Runtime.getRuntime().maxMemory() );
-        String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
-                     " Heap size: " + maxVmUsageMb + " MiB," +
+        String totalPhysicalMem = (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE)
+                                    ? "?" : "" + ByteUnit.bytesToString( totalPhysicalMemory );
+        String maxVmMem = ByteUnit.bytesToStringWithoutScientificNotation( Runtime.getRuntime().maxMemory() );
+        String msg = "Physical mem: " + totalPhysicalMem +
+                     " Heap size: " + maxVmMem +
                      " Page cache: " + pageCacheMemory + ".";
 
         log.info( msg );
