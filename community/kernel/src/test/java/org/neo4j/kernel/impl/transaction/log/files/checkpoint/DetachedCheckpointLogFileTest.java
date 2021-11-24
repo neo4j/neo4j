@@ -87,7 +87,7 @@ class DetachedCheckpointLogFileTest
     {
         LogPosition logPosition = new LogPosition( logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE );
         checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition, Instant.now(), "detached" );
-        CheckpointInfo lastCheckPoint = checkpointFile.getTailInformation().lastCheckPoint;
+        CheckpointInfo lastCheckPoint = buildLogFiles().getTailInformation().lastCheckPoint;
         assertThat( lastCheckPoint.getTransactionLogPosition() ).isEqualTo( logPosition );
     }
 

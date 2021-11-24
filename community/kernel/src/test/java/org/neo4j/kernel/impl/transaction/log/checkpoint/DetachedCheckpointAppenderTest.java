@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
@@ -107,7 +108,7 @@ class DetachedCheckpointAppenderTest
     {
         DetachedCheckpointAppender appender =
                 new DetachedCheckpointAppender( mock( TransactionLogChannelAllocator.class ), mock( TransactionLogFilesContext.class, RETURNS_MOCKS ),
-                        logFiles.getCheckpointFile(), NO_ROTATION );
+                        logFiles.getCheckpointFile(), NO_ROTATION, mock( DetachedLogTailScanner.class ) );
         assertDoesNotThrow( () -> appender.checkPoint( LogCheckPointEvent.NULL, UNSPECIFIED, Instant.now(), "test" ) );
     }
 

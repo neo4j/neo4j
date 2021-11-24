@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -58,6 +57,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -117,7 +117,7 @@ class DetachedLogTailScannerTest
                 .build();
     }
 
-    void writeCheckpoint( LogEntryWriter transactionLogWriter, CheckpointFile separateCheckpointFile, LogPosition logPosition ) throws IOException
+    void writeCheckpoint( CheckpointFile separateCheckpointFile, LogPosition logPosition ) throws IOException
     {
         separateCheckpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "test" );
     }
@@ -125,7 +125,7 @@ class DetachedLogTailScannerTest
     @Test
     void includeWrongPositionInException() throws Exception
     {
-        logFiles = LogFilesBuilder
+        var testTogFiles = LogFilesBuilder
                 .activeFilesBuilder( databaseLayout, fs, pageCache )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
@@ -143,14 +143,14 @@ class DetachedLogTailScannerTest
                 logFile( start(), commit( txId ) ) );
 
         // remove all tx log files
-        Path[] matchedFiles = logFiles.getLogFile().getMatchedFiles();
+        Path[] matchedFiles = testTogFiles.getLogFile().getMatchedFiles();
         for ( Path matchedFile : matchedFiles )
         {
             fs.delete( matchedFile );
         }
 
-        var e = assertThrows( RuntimeException.class, () -> logFiles.getTailInformation() );
-        Assertions.assertThat( e ).getRootCause().hasMessageContaining( "LogPosition{logVersion=8," ).hasMessageContaining(
+        var e = assertThrows( RuntimeException.class, testTogFiles::getTailInformation );
+        assertThat( e ).getRootCause().hasMessageContaining( "LogPosition{logVersion=8," ).hasMessageContaining(
                 "checkpoint does not point to a valid location in transaction logs." );
     }
 
@@ -164,7 +164,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void noLogFilesFound( int startLogVersion, int endLogVersion )
+    void noLogFilesFound( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given no files
         setupLogFiles( endLogVersion );
@@ -178,7 +178,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void oneLogFileNoCheckPoints( int startLogVersion, int endLogVersion )
+    void oneLogFileNoCheckPoints( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         setupLogFiles( endLogVersion, logFile() );
@@ -193,7 +193,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void oneLogFileNoCheckPointsOneStart( int startLogVersion, int endLogVersion )
+    void oneLogFileNoCheckPointsOneStart( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         long txId = 10;
@@ -208,7 +208,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void twoLogFilesNoCheckPoints( int startLogVersion, int endLogVersion )
+    void twoLogFilesNoCheckPoints( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         setupLogFiles( endLogVersion, logFile(), logFile() );
@@ -222,7 +222,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void twoLogFilesNoCheckPointsOneStart( int startLogVersion, int endLogVersion )
+    void twoLogFilesNoCheckPointsOneStart( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         long txId = 21;
@@ -237,7 +237,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void twoLogFilesNoCheckPointsOneStartWithoutCommit( int startLogVersion, int endLogVersion )
+    void twoLogFilesNoCheckPointsOneStartWithoutCommit( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         setupLogFiles( endLogVersion, logFile(), logFile( start() ) );
@@ -251,7 +251,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void twoLogFilesNoCheckPointsTwoCommits( int startLogVersion, int endLogVersion )
+    void twoLogFilesNoCheckPointsTwoCommits( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         long txId = 21;
@@ -266,7 +266,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void twoLogFilesCheckPointTargetsPrevious( int startLogVersion, int endLogVersion )
+    void twoLogFilesCheckPointTargetsPrevious( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         long txId = 6;
@@ -285,7 +285,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void twoLogFilesStartAndCommitInDifferentFiles( int startLogVersion, int endLogVersion )
+    void twoLogFilesStartAndCommitInDifferentFiles( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         long txId = 6;
@@ -302,7 +302,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void latestLogFileContainingACheckPointOnly( int startLogVersion, int endLogVersion )
+    void latestLogFileContainingACheckPointOnly( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         setupLogFiles( endLogVersion, logFile( checkPoint() ) );
@@ -316,7 +316,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void latestLogFileContainingACheckPointAndAStartBefore( int startLogVersion, int endLogVersion )
+    void latestLogFileContainingACheckPointAndAStartBefore( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         setupLogFiles( endLogVersion, logFile( start(), commit( 1 ), checkPoint() ) );
@@ -330,7 +330,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void twoLogFilesSecondIsCorruptedBeforeCommit( int startLogVersion, int endLogVersion ) throws IOException
+    void twoLogFilesSecondIsCorruptedBeforeCommit( int startLogVersion, int endLogVersion ) throws Exception
     {
         setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start(), commit( 2 ) ) );
 
@@ -346,7 +346,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void twoLogFilesSecondIsCorruptedBeforeAfterCommit( int startLogVersion, int endLogVersion ) throws IOException
+    void twoLogFilesSecondIsCorruptedBeforeAfterCommit( int startLogVersion, int endLogVersion ) throws Exception
     {
         int firstTxId = 2;
         setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start(), commit( firstTxId ), start(), commit( 3 ) ) );
@@ -363,7 +363,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void latestLogFileContainingACheckPointAndAStartAfter( int startLogVersion, int endLogVersion )
+    void latestLogFileContainingACheckPointAndAStartAfter( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         long txId = 35;
@@ -379,7 +379,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void latestLogFileContainingMultipleCheckPointsOneStartInBetween( int startLogVersion, int endLogVersion )
+    void latestLogFileContainingMultipleCheckPointsOneStartInBetween( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         setupLogFiles( endLogVersion, logFile( checkPoint(), start(), commit( 1 ), checkPoint() ) );
@@ -393,7 +393,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void latestLogFileContainingMultipleCheckPointsOneStartAfterBoth( int startLogVersion, int endLogVersion )
+    void latestLogFileContainingMultipleCheckPointsOneStartAfterBoth( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         long txId = 11;
@@ -408,7 +408,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void olderLogFileContainingACheckPointAndNewerFileContainingAStart( int startLogVersion, int endLogVersion )
+    void olderLogFileContainingACheckPointAndNewerFileContainingAStart( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         long txId = 11;
@@ -424,7 +424,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void olderLogFileContainingACheckPointAndNewerFileIsEmpty( int startLogVersion, int endLogVersion )
+    void olderLogFileContainingACheckPointAndNewerFileIsEmpty( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         StartEntry start = start();
@@ -440,6 +440,7 @@ class DetachedLogTailScannerTest
     @ParameterizedTest
     @MethodSource( "params" )
     void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStart( int startLogVersion, int endLogVersion )
+            throws Exception
     {
         // given
         long txId = 123;
@@ -456,7 +457,7 @@ class DetachedLogTailScannerTest
     @ParameterizedTest
     @MethodSource( "params" )
     void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStartWithoutCommit( int startLogVersion,
-        int endLogVersion )
+        int endLogVersion ) throws Exception
     {
         // given
         StartEntry start = start();
@@ -473,6 +474,7 @@ class DetachedLogTailScannerTest
     @ParameterizedTest
     @MethodSource( "params" )
     void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToALaterPositionThanStart( int startLogVersion, int endLogVersion )
+            throws Exception
     {
         // given
         PositionEntry position = position();
@@ -487,7 +489,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void latestLogEmptyStartEntryBeforeAndAfterCheckPointInTheLastButOneLog( int startLogVersion, int endLogVersion )
+    void latestLogEmptyStartEntryBeforeAndAfterCheckPointInTheLastButOneLog( int startLogVersion, int endLogVersion ) throws Exception
     {
         // given
         long txId = 432;
@@ -502,7 +504,7 @@ class DetachedLogTailScannerTest
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void printProgress( long startLogVersion, long endLogVersion )
+    void printProgress( long startLogVersion, long endLogVersion ) throws Exception
     {
         // given
         long txId = 6;
@@ -523,7 +525,7 @@ class DetachedLogTailScannerTest
 
     // === Below is code for helping the tests above ===
 
-    static void setupLogFiles( long endLogVersion, LogCreator... logFiles )
+    void setupLogFiles( long endLogVersion, LogCreator... logFiles ) throws Exception
     {
         Map<Entry, LogPosition> positions = new HashMap<>();
         long version = endLogVersion - logFiles.length;
@@ -531,6 +533,8 @@ class DetachedLogTailScannerTest
         {
             logFile.create( ++version, positions );
         }
+
+        this.logFiles = createLogFiles();
     }
 
     LogCreator logFile( Entry... entries )
@@ -560,19 +564,17 @@ class DetachedLogTailScannerTest
                         {
                             writer.writeStartEntry( 0, 0, previousChecksum, new byte[0] );
                         }
-                        else if ( entry instanceof CommitEntry )
+                        else if ( entry instanceof CommitEntry commitEntry )
                         {
-                            CommitEntry commitEntry = (CommitEntry) entry;
                             previousChecksum = writer.writeCommitEntry( commitEntry.txId, 0 );
                             lastTxId.set( commitEntry.txId );
                         }
-                        else if ( entry instanceof CheckPointEntry )
+                        else if ( entry instanceof CheckPointEntry checkPointEntry )
                         {
-                            CheckPointEntry checkPointEntry = (CheckPointEntry) entry;
                             Entry target = checkPointEntry.withPositionOfEntry;
                             LogPosition logPosition = target != null ? positions.get( target ) : currentPosition;
                             assert logPosition != null : "No registered log position for " + target;
-                            writeCheckpoint( writer, checkpointFile, logPosition );
+                            writeCheckpoint( checkpointFile, logPosition );
                         }
                         else if ( entry instanceof PositionEntry )
                         {

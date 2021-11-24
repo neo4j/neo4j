@@ -34,7 +34,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.annotations.documented.ReporterFactory;
@@ -1084,7 +1083,6 @@ class RecoveryIT
                                           .recoveryPredicate( RecoveryPredicate.ALL )
                                           .monitors( monitors )
                                           .extensionFactories( Iterables.cast( Services.loadAll( ExtensionFactory.class ) ) )
-                                          .logFiles( Optional.empty() )
                                           .startupChecker( null )
                                           .clock( Clock.systemUTC() )
                                           .force() );
@@ -1422,7 +1420,7 @@ class RecoveryIT
         LogFiles spiedLogFiles = Mockito.spy( buildLogFiles() );
         performRecovery( context( fileSystem, pageCache, EMPTY, Config.defaults(), databaseLayout, INSTANCE, IOController.DISABLED )
                                  .log( logProvider )
-                                 .logFiles( Optional.of( spiedLogFiles ) )
+                                 .logFiles( spiedLogFiles )
                                  .clock( fakeClock ) );
         verify( spiedLogFiles, times( 2 ) ).getTailInformation();
 
@@ -1515,7 +1513,6 @@ class RecoveryIT
                                           .recoveryPredicate( recoveryCriteria.toPredicate() )
                                           .monitors( monitors )
                                           .extensionFactories( Iterables.cast( Services.loadAll( ExtensionFactory.class ) ) )
-                                          .logFiles( Optional.empty() )
                                           .startupChecker( RecoveryStartupChecker.EMPTY_CHECKER )
                                           .clock( fakeClock ) );
         assertFalse( isRecoveryRequired( databaseLayout, config ) );

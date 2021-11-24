@@ -88,9 +88,10 @@ class RecoveryStartInformationProviderTest
         LogPosition txPosition = new LogPosition( 1L, 4242 );
         LogPosition checkpointPosition = new LogPosition( 2, 4 );
         LogPosition afterCheckpointPosition = new LogPosition( 4, 8 );
+        LogPosition readerPostPosition = new LogPosition( 5, 9 );
         when( logFiles.getTailInformation() ).thenReturn(
-                new LogTailInformation( new CheckpointInfo( txPosition, StoreId.UNKNOWN, checkpointPosition, afterCheckpointPosition ), true, 10L, false,
-                        currentLogVersion, LATEST.version(), StoreId.UNKNOWN ) );
+                new LogTailInformation( new CheckpointInfo( txPosition, StoreId.UNKNOWN, checkpointPosition, afterCheckpointPosition, readerPostPosition ),
+                        true, 10L, false, currentLogVersion, LATEST.version(), StoreId.UNKNOWN ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( logFiles, monitor ).get();

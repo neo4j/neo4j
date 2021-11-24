@@ -35,4 +35,10 @@ public class LoggingLogTailScannerMonitor implements LogTailScannerMonitor
     {
         log.warn( String.format( "Fail to read transaction log version %d.", version ), t );
     }
+
+    @Override
+    public void corruptedCheckpointFile( long version, Throwable t )
+    {
+        log.warn( String.format( "Fail to read checkpoint log version %d.", version ), t );
+    }
 }

@@ -167,9 +167,9 @@ class TransactionLogFileTest
         startStop( capturingNativeAccess, life );
 
         assertEquals( 2, capturingNativeAccess.getPreallocateCounter() );
-        assertEquals( 2, capturingNativeAccess.getEvictionCounter() );
-        assertEquals( 0, capturingNativeAccess.getAdviseCounter() );
-        assertEquals( 0, capturingNativeAccess.getKeepCounter() );
+        assertEquals( 5, capturingNativeAccess.getEvictionCounter() );
+        assertEquals( 3, capturingNativeAccess.getAdviseCounter() );
+        assertEquals( 3, capturingNativeAccess.getKeepCounter() );
     }
 
     @Test
@@ -183,9 +183,9 @@ class TransactionLogFileTest
         startStop( capturingNativeAccess, new LifeSupport() );
 
         assertEquals( 0, capturingNativeAccess.getPreallocateCounter() );
-        assertEquals( 2, capturingNativeAccess.getEvictionCounter() );
-        assertEquals( 2, capturingNativeAccess.getAdviseCounter() );
-        assertEquals( 2, capturingNativeAccess.getKeepCounter() );
+        assertEquals( 5, capturingNativeAccess.getEvictionCounter() );
+        assertEquals( 5, capturingNativeAccess.getAdviseCounter() );
+        assertEquals( 5, capturingNativeAccess.getKeepCounter() );
     }
 
     @Test

@@ -265,9 +265,9 @@ public final class Recovery
         /**
          * @param logFiles log files from database
          */
-        public Context logFiles( Optional<LogFiles> logFiles )
+        public Context logFiles( LogFiles logFiles )
         {
-            this.providedLogFiles = logFiles;
+            this.providedLogFiles = Optional.of( logFiles );
             return this;
         }
 
@@ -474,6 +474,10 @@ public final class Recovery
 
             if ( databaseHealth.isHealthy() )
             {
+                if ( logTailInfo.hasUnreadableBytesInCheckpointLogs() )
+                {
+                     logFiles.getCheckpointFile().rotate();
+                }
                 checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Recovery completed." ) );
             }
         }

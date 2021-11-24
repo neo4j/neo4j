@@ -60,9 +60,14 @@ public class LogTailInformation
         return lastCheckPoint == null && filesNotFound;
     }
 
+    public boolean hasUnreadableBytesInCheckpointLogs()
+    {
+        return lastCheckPoint != null && !lastCheckPoint.getChannelPositionAfterCheckpoint().equals( lastCheckPoint.getCheckpointFilePostReadPosition() );
+    }
+
     public boolean isRecoveryRequired()
     {
-        return recordAfterCheckpoint || logsMissing();
+        return recordAfterCheckpoint || logsMissing() || hasUnreadableBytesInCheckpointLogs();
     }
 
     public StoreId getStoreId()

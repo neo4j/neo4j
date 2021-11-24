@@ -143,13 +143,7 @@ class TransactionLogsRecoveryTest
     void setUp() throws Exception
     {
         storeDir = testDirectory.homePath();
-        logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withLogVersionRepository( logVersionRepository )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( logEntryReader() )
-                .withStoreId( StoreId.UNKNOWN )
-                .withConfig( Config.newBuilder().set( GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false ).build() )
-                .build();
+        logFiles = buildLogFiles();
         life = new LifeSupport();
         life.add( logFiles );
         life.start();
@@ -218,18 +212,21 @@ class TransactionLogsRecoveryTest
         };
         try
         {
+            var recoveryLogFiles = buildLogFiles();
+            life.add( recoveryLogFiles );
             StorageEngine storageEngine = mock( StorageEngine.class );
             when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
             final LogEntryReader reader = logEntryReader();
             Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( recoveryLogFiles, metadataCache, reader,
                                                                                    monitors, false, config );
-            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
+            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, recoveryLogFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
-            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
-                                                                               txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ), false )
+            life.add( new TransactionLogsRecovery(
+                    new DefaultRecoveryService( storageEngine, transactionIdStore, txStore, versionRepository, recoveryLogFiles, NO_MONITOR, mock( Log.class ),
+                            false )
             {
                 private int nr;
 
@@ -256,16 +253,15 @@ class TransactionLogsRecoveryTest
                             actual.visit( tx );
                             switch ( nr++ )
                             {
-                            case 0:
+                            case 0 -> {
                                 assertEquals( lastCommittedTxStartEntry, tx.getStartEntry() );
                                 assertEquals( lastCommittedTxCommitEntry, tx.getCommitEntry() );
-                                break;
-                            case 1:
+                            }
+                            case 1 -> {
                                 assertEquals( expectedStartEntry, tx.getStartEntry() );
                                 assertEquals( expectedCommitEntry, tx.getCommitEntry() );
-                                break;
-                            default:
-                                fail( "Too many recovered transactions" );
+                            }
+                            default -> fail( "Too many recovered transactions" );
                             }
                             return false;
                         }
@@ -362,7 +358,7 @@ class TransactionLogsRecoveryTest
         } );
 
         // WHEN
-        boolean recoveryRequired = recover( storeDir, logFiles );
+        boolean recoveryRequired = recovery( storeDir );
 
         // THEN
         assertTrue( recoveryRequired );
@@ -389,7 +385,7 @@ class TransactionLogsRecoveryTest
             writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
             return true;
         } );
-        assertTrue( recover( storeDir, logFiles ) );
+        assertTrue( recovery( storeDir ) );
 
         assertEquals( marker.getByteOffset(), Files.size( file ) );
         assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */,
@@ -427,7 +423,7 @@ class TransactionLogsRecoveryTest
             writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
             return true;
         } );
-        assertTrue( recover( storeDir, logFiles ) );
+        assertTrue( recovery( storeDir ) );
 
         assertEquals( marker.getByteOffset(), Files.size( file ) );
         assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
@@ -458,7 +454,7 @@ class TransactionLogsRecoveryTest
         } );
 
         // WHEN
-        boolean recoveryRequired = recover( storeDir, logFiles );
+        boolean recoveryRequired = recovery( storeDir );
 
         // THEN
         assertTrue( recoveryRequired );
@@ -489,7 +485,7 @@ class TransactionLogsRecoveryTest
         } );
 
         // WHEN
-        boolean recoveryRequired = recover( storeDir, logFiles );
+        boolean recoveryRequired = recovery( storeDir );
 
         // THEN
         assertTrue( recoveryRequired );
@@ -550,7 +546,7 @@ class TransactionLogsRecoveryTest
         var recoveryStartupChecker = new RecoveryStartupChecker( startupController, databaseId );
         var logsTruncator = mock( CorruptedLogsTruncator.class );
 
-        var exception = assertThrows( Exception.class, () -> recover( storeDir, logFiles, recoveryStartupChecker ) );
+        var exception = assertThrows( Exception.class, () -> recovery( storeDir, recoveryStartupChecker ) );
         var rootCause = getRootCause( exception );
         assertThat( rootCause ).isInstanceOf( DatabaseStartAbortedException.class );
 
@@ -558,12 +554,12 @@ class TransactionLogsRecoveryTest
         verify( monitor, never() ).recoveryCompleted( anyInt(), anyLong() );
     }
 
-    private boolean recover( Path storeDir, LogFiles logFiles )
+    private boolean recovery( Path storeDir ) throws IOException
     {
-        return recover( storeDir, logFiles, EMPTY_CHECKER );
+        return recovery( storeDir, EMPTY_CHECKER );
     }
 
-    private boolean recover( Path storeDir, LogFiles logFiles, RecoveryStartupChecker startupChecker )
+    private boolean recovery( Path storeDir, RecoveryStartupChecker startupChecker ) throws IOException
     {
         LifeSupport life = new LifeSupport();
 
@@ -578,6 +574,8 @@ class TransactionLogsRecoveryTest
         };
         try
         {
+            var logFiles = buildLogFiles();
+            life.add( logFiles );
             StorageEngine storageEngine = mock( StorageEngine.class );
             when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
             final LogEntryReader reader = logEntryReader();
@@ -629,5 +627,16 @@ class TransactionLogsRecoveryTest
             LogEntryWriter<?> first = new LogEntryWriter<>( writableLogChannel, version );
             visitor.visit( Pair.of( first, consumer ) );
         }
+    }
+
+    private LogFiles buildLogFiles() throws IOException
+    {
+        return LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
+                .withStoreId( StoreId.UNKNOWN )
+                .withConfig( Config.newBuilder().set( GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false ).build() )
+                .build();
     }
 }

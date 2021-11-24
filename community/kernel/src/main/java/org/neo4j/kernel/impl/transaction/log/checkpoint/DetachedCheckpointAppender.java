@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -69,9 +70,10 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private PhysicalLogVersionedStoreChannel channel;
     private LogVersionRepository logVersionRepository;
     private final Log log;
+    private final DetachedLogTailScanner logTailScanner;
 
     public DetachedCheckpointAppender( TransactionLogChannelAllocator channelAllocator, TransactionLogFilesContext context, CheckpointFile checkpointFile,
-            LogRotation checkpointRotation )
+            LogRotation checkpointRotation, DetachedLogTailScanner logTailScanner )
     {
         this.checkpointFile = requireNonNull( checkpointFile );
         this.context = requireNonNull( context );
@@ -80,6 +82,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         this.databaseHealth = requireNonNull( context.getDatabaseHealth() );
         this.logRotation = requireNonNull( checkpointRotation );
         this.log = context.getLogProvider().getLog( DetachedCheckpointAppender.class );
+        this.logTailScanner = logTailScanner;
     }
 
     @Override
@@ -98,6 +101,12 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
 
     private void seekCheckpointChannel() throws IOException
     {
+        // when we do recovery and know that tail is corrupted there is no reason to scroll to the end since we will do rotation later on before appending
+        // checkpoint after recovery.
+        if ( logTailScanner.getTailInformation().hasUnreadableBytesInCheckpointLogs() )
+        {
+            return;
+        }
         try ( var reader = new ReadAheadLogChannel( new UnclosableChannel( channel ), NO_MORE_CHANNELS, context.getMemoryTracker() );
               var logEntryCursor = new LogEntryCursor( new VersionAwareLogEntryReader( NO_COMMANDS, true ), reader ) )
         {

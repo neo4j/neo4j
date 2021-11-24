@@ -22,4 +22,6 @@ package org.neo4j.kernel.recovery;
 public interface LogTailScannerMonitor
 {
     void corruptedLogFile( long version, Throwable t );
+
+    void corruptedCheckpointFile( long version, Throwable t );
 }

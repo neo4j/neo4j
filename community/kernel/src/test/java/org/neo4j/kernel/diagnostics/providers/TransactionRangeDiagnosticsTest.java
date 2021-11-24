@@ -118,11 +118,12 @@ class TransactionRangeDiagnosticsTest
         StoreId storeId = new StoreId( 12345 );
         LogPosition checkpointLogPosition = new LogPosition( checkpointLogHighVersion, 34 );
         LogPosition afterCheckpointLogPosition = new LogPosition( checkpointLogHighVersion, 36 );
+        LogPosition readerPostPosition = new LogPosition( checkpointLogHighVersion, 36 );
         Database database = databaseWithLogFilesContainingLowestTxId( logs(
                 transactionLogsWithTransaction( txLogLowVersion, txLogHighVersion, 42 ),
                 checkpointLogsWithLastCheckpoint( checkpointLogLowVersion, checkpointLogHighVersion, new CheckpointInfo(
                         new LogEntryDetachedCheckpoint( KernelVersion.LATEST, checkpointLogPosition, 1234, storeId, "testing" ),
-                        checkpointLogPosition, afterCheckpointLogPosition ) ) ) );
+                        checkpointLogPosition, afterCheckpointLogPosition, readerPostPosition ) ) ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log logger = logProvider.getLog( getClass() );
 

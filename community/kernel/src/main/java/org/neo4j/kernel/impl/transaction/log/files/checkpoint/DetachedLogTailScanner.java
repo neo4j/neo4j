@@ -72,15 +72,15 @@ public class DetachedLogTailScanner
 
     private LogTailInformation logTailInformation;
 
-    public DetachedLogTailScanner( LogFiles logFiles, TransactionLogFilesContext context, CheckpointFile checkpointFile )
+    public DetachedLogTailScanner( LogFiles logFiles, TransactionLogFilesContext context, CheckpointFile checkpointFile, LogTailScannerMonitor monitor )
     {
         this.logFiles = logFiles;
         this.logEntryReader = context.getLogEntryReader();
-        this.monitor = context.getMonitors().newMonitor( LogTailScannerMonitor.class );
         this.memoryTracker = context.getMemoryTracker();
         this.checkPointFile = checkpointFile;
         this.fileSystem = context.getFileSystem();
         this.failOnCorruptedLogFiles = context.isFailOnCorruptedLogFiles();
+        this.monitor = monitor;
     }
 
     public LogTailInformation findLogTail()

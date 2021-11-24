@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -433,7 +432,7 @@ public class Database extends LifecycleAdapter
                             .recoveryPredicate( RecoveryPredicate.ALL )
                             .monitors( databaseMonitors )
                             .extensionFactories( extensionFactories )
-                            .logFiles( Optional.of( logFiles ) )
+                            .logFiles( logFiles )
                             .startupChecker( new RecoveryStartupChecker( startupController, namedDatabaseId ) )
                             .clock( clock ) );
 

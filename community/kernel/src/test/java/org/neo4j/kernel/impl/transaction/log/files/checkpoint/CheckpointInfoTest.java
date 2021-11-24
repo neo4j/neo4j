@@ -37,12 +37,14 @@ class CheckpointInfoTest
         var storeId = new StoreId( 3, 4, 5, 6, 7 );
         LogPosition position = new LogPosition( 1, 2 );
         LogPosition positionAfterCheckpoint = new LogPosition( 3, 4 );
-        var checkpointInfo = new CheckpointInfo( new LogEntryDetachedCheckpoint( KernelVersion.V4_2, logPosition, 2, storeId, "checkpoint" ), position,
-                positionAfterCheckpoint );
+        LogPosition postReaderPosition = new LogPosition( 5, 6 );
+        var checkpointInfo = new CheckpointInfo( new LogEntryDetachedCheckpoint( KernelVersion.LATEST, logPosition, 2, storeId, "checkpoint" ), position,
+                positionAfterCheckpoint, postReaderPosition );
 
         assertSame( logPosition, checkpointInfo.getTransactionLogPosition() );
         assertSame( storeId, checkpointInfo.storeId() );
         assertSame( position, checkpointInfo.getCheckpointEntryPosition() );
         assertSame( positionAfterCheckpoint, checkpointInfo.getChannelPositionAfterCheckpoint() );
+        assertSame( postReaderPosition, checkpointInfo.getCheckpointFilePostReadPosition() );
     }
 }
