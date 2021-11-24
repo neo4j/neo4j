@@ -26,6 +26,7 @@ import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -36,13 +37,17 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Neo4jLayoutExtension
@@ -54,6 +59,8 @@ class CsvImporterTest
     private TestDirectory testDir;
     @Inject
     private DatabaseLayout databaseLayout;
+    @Inject
+    private SuppressOutput suppressOutput;
 
     @Test
     void writesReportToSpecifiedReportFile() throws Exception
@@ -80,6 +87,28 @@ class CsvImporterTest
         csvImporter.doImport();
 
         assertTrue( Files.exists( reportLocation ) );
+    }
+
+    @Test
+    void complainsOnNonEmptyDirectoryUnlessForced() throws Exception
+    {
+        //Given
+        Path file = databaseLayout.getTransactionLogsDirectory().resolve( TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
+        List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
+        Files.write( file, lines, Charset.defaultCharset() );
+        Path reportLocation = testDir.file( "the_report" );
+
+        CsvImporter.Builder csvImporterBuilder = CsvImporter.builder()
+                                                            .withDatabaseConfig( Config.defaults() )
+                                                            .withDatabaseLayout( databaseLayout )
+                                                            .withCsvConfig( Configuration.TABS )
+                                                            .withFileSystem( testDir.getFileSystem() )
+                                                            .withReportFile( reportLocation.toAbsolutePath() );
+
+        //Then
+        assertThatThrownBy( () -> csvImporterBuilder.build().doImport() ).hasCauseInstanceOf( DirectoryNotEmptyException.class );
+        assertThat( suppressOutput.getErrorVoice().containsMessage( "Database already exist. Re-run with `--clean`" ) ).isTrue();
+        assertThatCode( () -> csvImporterBuilder.withClean( true ).build().doImport() ).doesNotThrowAnyException();
     }
 
     @Test

@@ -66,14 +66,14 @@ class ImportCommandTest
         }
         assertEquals( "USAGE" + lineSeparator() +
                         "" + lineSeparator() +
-                        "import [--expand-commands] [--verbose] [--cache-on-heap[=<true/false>]]" + lineSeparator() +
-                        "       [--high-io[=<true/false>]] [--ignore-empty-strings[=<true/false>]]" + lineSeparator() +
-                        "       [--ignore-extra-columns[=<true/false>]] [--legacy-style-quoting" + lineSeparator() +
-                        "       [=<true/false>]] [--multiline-fields[=<true/false>]] [--normalize-types" + lineSeparator() +
-                        "       [=<true/false>]] [--skip-bad-entries-logging[=<true/false>]]" + lineSeparator() +
-                        "       [--skip-bad-relationships[=<true/false>]] [--skip-duplicate-nodes" + lineSeparator() +
-                        "       [=<true/false>]] [--trim-strings[=<true/false>]]" + lineSeparator() +
-                        "       [--additional-config=<path>] [--array-delimiter=<char>]" + lineSeparator() +
+                        "import [--expand-commands] [--verbose] [--cache-on-heap[=<true/false>]] [--clean" + lineSeparator() +
+                        "       [=<true/false>]] [--high-io[=<true/false>]] [--ignore-empty-strings" + lineSeparator() +
+                        "       [=<true/false>]] [--ignore-extra-columns[=<true/false>]]" + lineSeparator() +
+                        "       [--legacy-style-quoting[=<true/false>]] [--multiline-fields" + lineSeparator() +
+                        "       [=<true/false>]] [--normalize-types[=<true/false>]]" + lineSeparator() +
+                        "       [--skip-bad-entries-logging[=<true/false>]] [--skip-bad-relationships" + lineSeparator() +
+                        "       [=<true/false>]] [--skip-duplicate-nodes[=<true/false>]] [--trim-strings" + lineSeparator() +
+                        "       [=<true/false>]] [--additional-config=<path>] [--array-delimiter=<char>]" + lineSeparator() +
                         "       [--bad-tolerance=<num>] [--database=<database>] [--delimiter=<char>]" + lineSeparator() +
                         "       [--id-type=<STRING|INTEGER|ACTUAL>] [--input-encoding=<character-set>]" + lineSeparator() +
                         "       [--max-memory=<size>] [--processors=<num>] [--quote=<char>]" + lineSeparator() +
@@ -101,6 +101,9 @@ class ImportCommandTest
                         "      --report-file=<path>   File in which to store the report of the" + lineSeparator() +
                         "                               csv-import." + lineSeparator() +
                         "                               Default: import.report" + lineSeparator() +
+                        "      --clean[=<true/false>] Clean will delete any existing database files" + lineSeparator() +
+                        "                               prior to the import." + lineSeparator() +
+                        "                               Default: false" + lineSeparator() +
                         "      --id-type=<STRING|INTEGER|ACTUAL>" + lineSeparator() +
                         "                             Each node must provide a unique id. This is used" + lineSeparator() +
                         "                               to find the correct nodes when creating" + lineSeparator() +

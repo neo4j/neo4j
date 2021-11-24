@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Path;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -112,6 +113,7 @@ class CsvImporter implements Importer
     private final PrintStream stdErr;
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
+    private final boolean clean;
 
     private CsvImporter( Builder b )
     {
@@ -136,11 +138,18 @@ class CsvImporter implements Importer
         this.memoryTracker = requireNonNull( b.memoryTracker );
         this.stdOut = requireNonNull( b.stdOut );
         this.stdErr = requireNonNull( b.stdErr );
+        this.clean = b.clean;
     }
 
     @Override
     public void doImport() throws IOException
     {
+        if ( clean )
+        {
+            fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
+            fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
+        }
+
         try ( OutputStream badOutput = fileSystem.openAsOutputStream( reportFile, false );
                 Collector badCollector = getBadCollector( skipBadEntriesLogging, badOutput ) )
         {
@@ -236,6 +245,10 @@ class CsvImporter implements Importer
         else if ( MissingRelationshipDataException.class.equals( e.getClass() ) )
         {
             printErrorMessage( "Relationship missing mandatory field", e, stackTrace, err );
+        }
+        else if ( DirectoryNotEmptyException.class.equals( e.getClass() ) )
+        {
+            printErrorMessage( "Database already exist. Re-run with `--clean` to remove the database prior to import", e, stackTrace, err );
         }
         // This type of exception is wrapped since our input code throws InputException consistently,
         // and so IllegalMultilineFieldException comes from the csv component, which has no access to InputException
@@ -413,6 +426,7 @@ class CsvImporter implements Importer
         private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
+        private boolean clean;
 
         Builder withDatabaseLayout( DatabaseLayout databaseLayout )
         {
@@ -539,6 +553,12 @@ class CsvImporter implements Importer
         Builder withStdErr( PrintStream stdErr )
         {
             this.stdErr = stdErr;
+            return this;
+        }
+
+        Builder withClean( boolean clean )
+        {
+            this.clean = clean;
             return this;
         }
 
