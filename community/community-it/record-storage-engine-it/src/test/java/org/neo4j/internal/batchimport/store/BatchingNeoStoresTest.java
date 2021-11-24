@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.store;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -137,7 +138,7 @@ class BatchingNeoStoresTest
         someDataInTheDatabase( config );
 
         // WHEN
-        IllegalStateException exception = assertThrows( IllegalStateException.class, () ->
+        DirectoryNotEmptyException exception = assertThrows( DirectoryNotEmptyException.class, () ->
         {
             try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
             {

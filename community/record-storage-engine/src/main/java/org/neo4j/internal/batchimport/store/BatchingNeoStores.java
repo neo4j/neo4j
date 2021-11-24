@@ -23,6 +23,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Predicate;
@@ -69,6 +70,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
@@ -95,6 +97,7 @@ import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_GROUP;
+import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
@@ -172,6 +175,21 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private boolean databaseExistsAndContainsData()
     {
+        TransactionLogFilesHelper logFilesHelper = new TransactionLogFilesHelper( fileSystem, databaseLayout.getTransactionLogsDirectory() );
+        TransactionLogFilesHelper checkpointFilesHelper =
+                new TransactionLogFilesHelper( fileSystem, databaseLayout.getTransactionLogsDirectory(), CHECKPOINT_FILE_PREFIX );
+        try
+        {
+            if ( logFilesHelper.getMatchedFiles().length > 0 || checkpointFilesHelper.getMatchedFiles().length > 0 )
+            {
+                return true;
+            }
+        }
+        catch ( IOException e )
+        {
+            //Could not check txlogs (does not exist?) Do nothing
+        }
+
         Path metaDataFile = databaseLayout.metadataStore();
         try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), databaseName, immutable.of( READ ) ) )
         {
@@ -183,8 +201,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             return false;
         }
 
-        try ( NeoStores stores = newStoreFactory( databaseLayout, idGeneratorFactory, pageCacheTracer, immutable.empty() ).openNeoStores( StoreType.NODE,
-                StoreType.RELATIONSHIP ) )
+        try ( NeoStores stores = newStoreFactory( databaseLayout, idGeneratorFactory, pageCacheTracer, immutable.empty() )
+                .openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP ) )
         {
             return stores.getNodeStore().getHighId() > 0 || stores.getRelationshipStore().getHighId() > 0;
         }
@@ -198,7 +216,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
      */
     public void createNew() throws IOException
     {
-        assertDatabaseIsEmptyOrNonExistent();
+        assertDatabaseIsNonExistent();
 
         // There may have been a previous import which was killed before it even started, where the label scan store could
         // be in a semi-initialized state. Better to be on the safe side and deleted it. We get her after determining that
@@ -220,11 +238,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         }
     }
 
-    public void assertDatabaseIsEmptyOrNonExistent()
+    public void assertDatabaseIsNonExistent() throws DirectoryNotEmptyException
     {
         if ( databaseExistsAndContainsData() )
         {
-            throw new IllegalStateException( databaseLayout.databaseDirectory() + " already contains data, cannot do import here" );
+            throw new DirectoryNotEmptyException( databaseLayout.databaseDirectory() + " already contains data, cannot do import here" );
         }
     }
 

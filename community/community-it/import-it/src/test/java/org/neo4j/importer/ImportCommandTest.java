@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -79,13 +80,13 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.String.format;
@@ -97,6 +98,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -176,7 +178,7 @@ class ImportCommandTest
     }
 
     @Test
-    void shouldNotCreateDuplicateTokenIndexes() throws Exception
+    void shouldNotImportOnEmptyExistingDatabase() throws Exception
     {
         // Given a db with default token indexes
         createDefaultDatabaseWithTokenIndexes();
@@ -185,16 +187,13 @@ class ImportCommandTest
         Path dbConfig = defaultConfig();
 
         // When csv is imported
-        runImport(
-                "--additional-config", dbConfig.toAbsolutePath().toString(),
-                "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
-                "--high-io", "false",
-                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
-
-        // Then no duplicate token indexes are created
-        assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
-        assertTokenIndexesCreated();
-        verifyData();
+        assertThatThrownBy( () ->
+            runImport(
+                    "--additional-config", dbConfig.toAbsolutePath().toString(),
+                    "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
+                    "--high-io", "false",
+                    "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() )
+        ).hasCauseInstanceOf( DirectoryNotEmptyException.class );
     }
 
     private void assertTokenIndexesCreated()
@@ -2341,7 +2340,7 @@ class ImportCommandTest
 
     private Path file( String localname )
     {
-        return databaseLayout.file( localname );
+        return testDirectory.file( localname );
     }
 
     private Path badFile()

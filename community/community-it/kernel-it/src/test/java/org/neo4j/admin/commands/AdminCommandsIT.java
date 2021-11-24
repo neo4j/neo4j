@@ -48,6 +48,7 @@ import org.neo4j.consistency.CheckConsistencyCommand;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.importer.ImportCommand;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -65,10 +66,13 @@ class AdminCommandsIT
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fs;
     private Path confDir;
     private PrintStream out;
     private PrintStream err;
     private ExecutionContext context;
+    private Path home;
 
     @BeforeEach
     void setup() throws Exception
@@ -76,7 +80,8 @@ class AdminCommandsIT
         out = mock( PrintStream.class );
         err = mock( PrintStream.class );
         confDir = testDirectory.directory( "test.conf" );
-        context = new ExecutionContext( testDirectory.homePath(), confDir, out, err, testDirectory.getFileSystem() );
+        home = testDirectory.homePath( "home" );
+        context = new ExecutionContext( home, confDir, out, err, testDirectory.getFileSystem() );
         Path configFile = confDir.resolve( "neo4j.conf" );
         Files.createFile( configFile, PosixFilePermissions.asFileAttribute( Set.of( OWNER_READ, OWNER_WRITE ) ) );
         GraphDatabaseSettings.strict_config_validation.name();
@@ -93,7 +98,6 @@ class AdminCommandsIT
         assertSuccess( new DiagnosticsReportCommand( context ), "--expand-commands" );
         assertSuccess( new LoadCommand( context, new Loader() ), "--expand-commands", "--from", "test" );
         assertSuccess( new MemoryRecommendationsCommand( context ), "--expand-commands" );
-        assertSuccess( new ImportCommand( context ), "--expand-commands", "--nodes=" + testDirectory.createFile( "foo.csv" ).toAbsolutePath() );
         assertSuccess( new DumpCommand( context, new Dumper( context.err() ) ), "--expand-commands", "--to", "test" );
         assertSuccess( new UnbindCommand( context ), "--expand-commands" );
     }
