@@ -227,13 +227,6 @@ public interface ProcedureITBase
                                 "totalPoolMemory :: STRING?, totalPoolMemoryBytes :: STRING?)",
                         "List all memory pools, including sub pools, currently registered at this instance that are visible to the user.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "db.createNodeKey",
-                        "(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, " +
-                        "config = {} :: MAP?) " +
-                        ":: (name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
-                        "Create a named node key constraint. Backing index will use specified index provider and configuration (optional). " +
-                        "Yield: name, labels, properties, providerName, status",
-                        stringArray( "architect", "admin" ), "SCHEMA", false ),
                 proc( "dbms.listActiveLocks", "(queryId :: STRING?) :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?)",
                         "List the active lock requests granted for the transaction executing the query with the given query id.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),

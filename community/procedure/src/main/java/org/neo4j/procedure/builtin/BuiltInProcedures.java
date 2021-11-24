@@ -520,24 +520,6 @@ public class BuiltInProcedures
         }
     }
 
-    public static class SchemaIndexInfo
-    {
-        public final String name;
-        public final List<String> labels;
-        public final List<String> properties;
-        public final String providerName;
-        public final String status;
-
-        public SchemaIndexInfo( String name, List<String> labels, List<String> properties, String providerName, String status )
-        {
-            this.name = name;
-            this.labels = labels;
-            this.properties = properties;
-            this.providerName = providerName;
-            this.status = status;
-        }
-    }
-
     public static class ConstraintResult
     {
         public final String name;

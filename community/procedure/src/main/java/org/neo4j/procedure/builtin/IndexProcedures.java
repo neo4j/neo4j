@@ -19,33 +19,19 @@
  */
 package org.neo4j.procedure.builtin;
 
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Stream;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 
 import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildAll;
 import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildUpdated;
@@ -85,95 +71,6 @@ public class IndexProcedures
         long millis = TimeUnit.SECONDS.toMillis( timeOutSeconds );
         IndexSamplingMode mode = foregroundRebuildUpdated( millis );
         indexingService.triggerIndexSampling( mode );
-    }
-
-    public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String constraintName, List<String> labels, List<String> properties,
-            IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap ) throws ProcedureException
-    {
-        return createIndex( constraintName, labels, properties, indexProviderDescriptor, configMap,
-                "node key constraint online",
-                ( schemaWrite, name, schema, provider, indexConfig ) -> {
-                    final IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema, provider )
-                            .withName( name )
-                            .withIndexConfig( indexConfig );
-                    schemaWrite.nodeKeyConstraintCreate( prototype );
-                } );
-    }
-
-    private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String name, List<String> labels, List<String> properties,
-            IndexProviderDescriptor indexProviderDescriptor, Map<String,Object> configMap, String statusMessage, IndexCreator indexCreator )
-            throws ProcedureException
-    {
-        IndexConfig indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap( configMap );
-        assertSingleLabel( labels );
-        assertValidIndexProvider( indexProviderDescriptor );
-        int labelId = getOrCreateLabelId( labels.get( 0 ) );
-        int[] propertyKeyIds = getOrCreatePropertyIds( properties );
-        try
-        {
-            SchemaWrite schemaWrite = ktx.schemaWrite();
-            LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptors.forLabel( labelId, propertyKeyIds );
-            indexCreator.create( schemaWrite, name, labelSchemaDescriptor, indexProviderDescriptor, indexConfig );
-            return Stream.of( new BuiltInProcedures.SchemaIndexInfo( name, labels, properties, indexProviderDescriptor.name(), statusMessage ) );
-        }
-        catch ( KernelException e )
-        {
-            throw new ProcedureException( e.status(), e, e.getMessage() );
-        }
-    }
-
-    private static void assertValidIndexProvider( IndexProviderDescriptor indexProviderDescriptor ) throws ProcedureException
-    {
-        if ( indexProviderDescriptor == FulltextIndexProviderFactory.DESCRIPTOR )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "Could not create index with specified index provider '%s'. To create fulltext index, please use '%s'.",
-                    indexProviderDescriptor.name(), "CREATE FULLTEXT INDEX ..." );
-        }
-        if ( indexProviderDescriptor != GenericNativeIndexProvider.DESCRIPTOR &&
-             indexProviderDescriptor != NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "Could not create index with specified index provider '%s'.", indexProviderDescriptor.name() );
-        }
-    }
-
-    private static void assertSingleLabel( List<String> labels ) throws ProcedureException
-    {
-        if ( labels.size() != 1 )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "Could not create index with specified label(s), need to provide exactly one but was " + labels );
-        }
-    }
-
-    private int getOrCreateLabelId( String labelName ) throws ProcedureException
-    {
-        try
-        {
-            return ktx.tokenWrite().labelGetOrCreateForName( labelName );
-        }
-        catch ( KernelException e )
-        {
-            throw new ProcedureException( e.status(), e, e.getMessage() );
-        }
-    }
-
-    private int[] getOrCreatePropertyIds( List<String> propertyKeyNames ) throws ProcedureException
-    {
-        int[] propertyKeyIds = new int[propertyKeyNames.size()];
-        for ( int i = 0; i < propertyKeyIds.length; i++ )
-        {
-            try
-            {
-                propertyKeyIds[i] = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyKeyNames.get( i ) );
-            }
-            catch ( KernelException e )
-            {
-                throw new ProcedureException( e.status(), e, e.getMessage() );
-            }
-        }
-        return propertyKeyIds;
     }
 
     private IndexDescriptor getIndex( String indexName ) throws ProcedureException
@@ -246,12 +143,5 @@ public class IndexProcedures
     private void triggerSampling( IndexDescriptor index )
     {
         indexingService.triggerIndexSampling( index, backgroundRebuildAll() );
-    }
-
-    @FunctionalInterface
-    private interface IndexCreator
-    {
-        void create( SchemaWrite schemaWrite, String name, LabelSchemaDescriptor descriptor, IndexProviderDescriptor indexProviderDescriptor,
-                IndexConfig indexConfig ) throws KernelException;
     }
 }
