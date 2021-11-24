@@ -137,6 +137,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                 var logPositionAfterCheckpoint = writer.getCurrentPosition();
                 logCheckPointEvent.appendToLogFile( logPositionBeforeCheckpoint, logPositionAfterCheckpoint );
                 forceAfterAppend( logCheckPointEvent );
+                logRotation.locklessRotateLogIfNeeded( logCheckPointEvent );
             }
             catch ( Throwable cause )
             {
@@ -144,7 +145,6 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                 throw cause;
             }
         }
-        logRotation.rotateLogIfNeeded( logCheckPointEvent );
     }
 
     public long getCurrentPosition()

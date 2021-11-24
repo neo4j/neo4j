@@ -25,11 +25,6 @@ package org.neo4j.kernel.impl.transaction.tracing;
 public interface LogForceEvents
 {
     /**
-     * Begin the process of forcing the transaction log file.
-     */
-    LogForceWaitEvent beginLogForceWait();
-
-    /**
      * Begin a batched force of the transaction log file.
      */
     LogForceEvent beginLogForce();

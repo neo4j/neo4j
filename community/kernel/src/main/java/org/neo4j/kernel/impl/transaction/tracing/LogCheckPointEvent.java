@@ -35,12 +35,6 @@ public interface LogCheckPointEvent extends LogForceEvents, LogRotateEvents, Aut
         }
 
         @Override
-        public LogForceWaitEvent beginLogForceWait()
-        {
-            return LogForceWaitEvent.NULL;
-        }
-
-        @Override
         public LogForceEvent beginLogForce()
         {
             return LogForceEvent.NULL;

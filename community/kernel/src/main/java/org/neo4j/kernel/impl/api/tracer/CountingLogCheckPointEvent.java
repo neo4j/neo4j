@@ -25,7 +25,6 @@ import java.util.function.BiConsumer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
-import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 
 /**
@@ -64,12 +63,6 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent
     public void appendToLogFile( LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint )
     {
         logFileAppendConsumer.accept( positionBeforeCheckpoint, positionAfterCheckpoint );
-    }
-
-    @Override
-    public LogForceWaitEvent beginLogForceWait()
-    {
-        return LogForceWaitEvent.NULL;
     }
 
     @Override

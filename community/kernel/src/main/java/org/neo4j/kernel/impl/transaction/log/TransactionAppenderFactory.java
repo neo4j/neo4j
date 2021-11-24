@@ -26,21 +26,14 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.dedicated_transaction_appender;
-
 public class TransactionAppenderFactory
 {
     public static TransactionAppender createTransactionAppender( LogFiles logFiles, TransactionIdStore transactionIdStore,
             TransactionMetadataCache transactionMetadataCache, Config config, Health databaseHealth, JobScheduler scheduler,
             LogProvider logProvider )
     {
-        if ( config.get( dedicated_transaction_appender ) )
-        {
-            var queue = new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, transactionMetadataCache, config, scheduler,
-                    logProvider );
-            return new QueueTransactionAppender( queue );
-        }
-
-        return new BatchingTransactionAppender( logFiles, transactionMetadataCache, transactionIdStore, databaseHealth );
+        var queue = new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, transactionMetadataCache, config, scheduler,
+                logProvider );
+        return new QueueTransactionAppender( queue );
     }
 }

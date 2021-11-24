@@ -241,12 +241,6 @@ public class DefaultTracer implements DatabaseTracer
         }
 
         @Override
-        public LogForceWaitEvent beginLogForceWait()
-        {
-            return LogForceWaitEvent.NULL;
-        }
-
-        @Override
         public LogForceEvent beginLogForce()
         {
             return LogForceEvent.NULL;

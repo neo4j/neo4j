@@ -74,38 +74,14 @@ public class FileLogRotation implements LogRotation
     }
 
     @Override
-    public boolean rotateLogIfNeeded( LogRotateEvents logRotateEvents ) throws IOException
-    {
-        /* We synchronize on the writer because we want to have a monitor that another thread
-         * doing force (think batching of writes), such that it can't see a bad state of the writer
-         * even when rotating underlying channels.
-         */
-        if ( rotatableFile.rotationNeeded() )
-        {
-            synchronized ( rotatableFile )
-            {
-                return locklessRotateLogIfNeeded( logRotateEvents );
-            }
-        }
-        return false;
-    }
-
-    @Override
     public boolean batchedRotateLogIfNeeded( LogRotateEvents logRotateEvents, long lastTransactionId ) throws IOException
     {
         if ( rotatableFile.rotationNeeded() )
         {
-            synchronized ( rotatableFile )
-            {
-                if ( rotatableFile.rotationNeeded() )
-                {
-                    TransactionLogFile logFile = (TransactionLogFile) rotatableFile;
-                    long version = logFile.getHighestLogVersion();
-                    doRotate( logRotateEvents, lastTransactionId, () -> version, () -> logFile.rotate( lastTransactionId ) );
-                    return true;
-                }
-                return false;
-            }
+            TransactionLogFile logFile = (TransactionLogFile) rotatableFile;
+            long version = logFile.getHighestLogVersion();
+            doRotate( logRotateEvents, lastTransactionId, () -> version, () -> logFile.rotate( lastTransactionId ) );
+            return true;
         }
         return false;
     }
@@ -125,10 +101,7 @@ public class FileLogRotation implements LogRotation
     @Override
     public void rotateLogFile( LogRotateEvents logRotateEvents ) throws IOException
     {
-        synchronized ( rotatableFile )
-        {
-            doRotate( logRotateEvents, lastTransactionIdSupplier.getAsLong(), currentFileVersionSupplier, rotatableFile::rotate );
-        }
+        doRotate( logRotateEvents, lastTransactionIdSupplier.getAsLong(), currentFileVersionSupplier, rotatableFile::rotate );
     }
 
     private void doRotate( LogRotateEvents logRotateEvents, long lastTransactionId, LongSupplier currentFileVersionSupplier, FileRotator fileRotator )

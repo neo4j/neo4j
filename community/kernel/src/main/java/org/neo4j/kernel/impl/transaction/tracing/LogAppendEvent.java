@@ -85,12 +85,6 @@ public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoClo
         }
 
         @Override
-        public LogForceWaitEvent beginLogForceWait()
-        {
-            return LogForceWaitEvent.NULL;
-        }
-
-        @Override
         public LogForceEvent beginLogForce()
         {
             return LogForceEvent.NULL;

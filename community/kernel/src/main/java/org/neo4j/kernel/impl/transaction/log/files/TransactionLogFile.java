@@ -22,11 +22,9 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
 
-import java.io.Flushable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -34,12 +32,7 @@ import java.util.OptionalLong;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.IOUtils;
@@ -69,7 +62,6 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
-import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -87,8 +79,6 @@ import static org.neo4j.util.Preconditions.checkArgument;
 public class TransactionLogFile extends LifecycleAdapter implements LogFile
 {
     private static final String TRANSACTION_LOG_FILE_ROTATION_TAG = "transactionLogFileRotation";
-    private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
-    private final Lock forceLock = new ReentrantLock();
     private final AtomicLong rotateAtSize;
     private final TransactionLogFilesHelper fileHelper;
     private final TransactionLogFilesContext context;
@@ -480,63 +470,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
         }
     }
 
-    /**
-     * Called by the appender that just appended a transaction to the log.
-     *
-     * @param logForceEvents A trace event for the given log append operation.
-     * @return {@code true} if we got lucky and were the ones forcing the log.
-     */
-    @Override
-    public boolean forceAfterAppend( LogForceEvents logForceEvents ) throws IOException
-    {
-        // There's a benign race here, where we add our link before we update our next pointer.
-        // This is okay, however, because unparkAll() spins when it sees a null next pointer.
-        ThreadLink threadLink = new ThreadLink( Thread.currentThread() );
-        threadLink.next = threadLinkHead.getAndSet( threadLink );
-        boolean attemptedForce = false;
-
-        try ( LogForceWaitEvent logForceWaitEvent = logForceEvents.beginLogForceWait() )
-        {
-            do
-            {
-                if ( forceLock.tryLock() )
-                {
-                    attemptedForce = true;
-                    try
-                    {
-                        forceLog( logForceEvents );
-                        // In the event of any failure a database panic will be raised and thrown here
-                    }
-                    finally
-                    {
-                        forceLock.unlock();
-
-                        // We've released the lock, so unpark anyone who might have decided park while we were working.
-                        // The most recently parked thread is the one most likely to still have warm caches, so that's
-                        // the one we would prefer to unpark. Luckily, the stack nature of the ThreadLinks makes it easy
-                        // to get to.
-                        ThreadLink nextWaiter = threadLinkHead.get();
-                        nextWaiter.unpark();
-                    }
-                }
-                else
-                {
-                    waitForLogForce();
-                }
-            }
-            while ( !threadLink.done );
-
-            // If there were many threads committing simultaneously and I wasn't the lucky one
-            // actually doing the forcing (where failure would throw panic exception) I need to
-            // explicitly check if everything is OK before considering this transaction committed.
-            if ( !attemptedForce )
-            {
-                databaseHealth.assertHealthy( IOException.class );
-            }
-        }
-        return attemptedForce;
-    }
-
     @Override
     public void locklessForce( LogForceEvents logForceEvents ) throws IOException
     {
@@ -763,74 +696,5 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
         }
 
         return logHeader;
-    }
-
-    private void forceLog( LogForceEvents logForceEvents ) throws IOException
-    {
-        ThreadLink links = threadLinkHead.getAndSet( ThreadLink.END );
-        try ( LogForceEvent logForceEvent = logForceEvents.beginLogForce() )
-        {
-            force();
-        }
-        catch ( final Throwable panic )
-        {
-            databaseHealth.panic( panic );
-            throw panic;
-        }
-        finally
-        {
-            unparkAll( links );
-        }
-    }
-
-    private static void unparkAll( ThreadLink links )
-    {
-        do
-        {
-            links.done = true;
-            links.unpark();
-            ThreadLink tmp;
-            do
-            {
-                // Spin because of the race:y update when consing.
-                tmp = links.next;
-            }
-            while ( tmp == null );
-            links = tmp;
-        }
-        while ( links != ThreadLink.END );
-    }
-
-    private void waitForLogForce()
-    {
-        long parkTime = TimeUnit.MILLISECONDS.toNanos( 100 );
-        LockSupport.parkNanos( this, parkTime );
-    }
-
-    private void force() throws IOException
-    {
-        // Empty buffer into writer. We want to synchronize with appenders somehow so that they
-        // don't append while we're doing that. The way rotation is coordinated we can't synchronize
-        // on logFile because it would cause deadlocks. Synchronizing on writer assumes that appenders
-        // also synchronize on writer.
-        Flushable flushable;
-        synchronized ( this )
-        {
-            databaseHealth.assertHealthy( IOException.class );
-            flushable = writer.prepareForFlush();
-        }
-        // Force the writer outside of the lock.
-        // This allows other threads access to the buffer while the writer is being forced.
-        try
-        {
-            flushable.flush();
-        }
-        catch ( ClosedChannelException ignored )
-        {
-            // This is ok, we were already successful in emptying the buffer, so the channel being closed here means
-            // that some other thread is rotating the log and has closed the underlying channel. But since we were
-            // successful in emptying the buffer *UNDER THE LOCK* we know that the rotating thread included the changes
-            // we emptied into the channel, and thus it is already flushed by that thread.
-        }
     }
 }

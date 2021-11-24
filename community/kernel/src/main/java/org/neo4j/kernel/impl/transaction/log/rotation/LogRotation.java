@@ -34,12 +34,6 @@ public interface LogRotation
     LogRotation NO_ROTATION = new LogRotation()
     {
         @Override
-        public boolean rotateLogIfNeeded( LogRotateEvents logRotateEvents )
-        {
-            return false;
-        }
-
-        @Override
         public boolean batchedRotateLogIfNeeded( LogRotateEvents logRotateEvents, long transactionId )
         {
             return false;
@@ -56,12 +50,6 @@ public interface LogRotation
         {
         }
     };
-
-    /**
-     * Rotates the underlying log if it is required. Returns true if rotation happened, false otherwise
-     * @param logRotateEvents A trace event for the current log append operation.
-     */
-    boolean rotateLogIfNeeded( LogRotateEvents logRotateEvents ) throws IOException;
 
     /**
      * Rotates the underlying log if it is required for batch updates. Returns true if rotation happened, false otherwise.
