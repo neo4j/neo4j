@@ -31,6 +31,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.NullLog;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
@@ -108,5 +110,22 @@ class ConfiguringPageCacheFactoryTest
             assertDoesNotThrow( () -> io.next( bigPageToExpand ) );
             assertEquals( bigPageToExpand, file.getLastPageId() );
         }
+    }
+
+    @Test
+    void shouldDumpConfigurationWithUnspecifiedPageCacheMemorySetting()
+    {
+        // givben
+        Config config = Config.defaults();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        ConfiguringPageCacheFactory factory =
+                new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, logProvider.getLog( ConfiguringPageCacheFactory.class ), jobScheduler,
+                        Clocks.nanoClock(), new MemoryPools() );
+
+        // when
+        factory.dumpConfiguration();
+
+        // then
+        LogAssertions.assertThat( logProvider ).containsMessages( "Page cache: <not specified>" );
     }
 }

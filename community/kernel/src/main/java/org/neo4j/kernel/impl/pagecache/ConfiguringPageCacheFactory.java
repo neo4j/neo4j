@@ -185,8 +185,8 @@ public class ConfiguringPageCacheFactory
 
     public void dumpConfiguration()
     {
-        long pageCacheMemoryBytes = config.get( pagecache_memory );
-        String pageCacheMemory = ByteUnit.bytesToStringWithoutScientificNotation( pageCacheMemoryBytes );
+        Long pageCacheMemoryBytes = config.get( pagecache_memory );
+        String pageCacheMemory = pageCacheMemoryBytes != null ? ByteUnit.bytesToStringWithoutScientificNotation( pageCacheMemoryBytes ) : "<not specified>";
         long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
         String totalPhysicalMem = (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE)
                                     ? "?" : "" + ByteUnit.bytesToString( totalPhysicalMemory );
