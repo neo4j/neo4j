@@ -124,7 +124,7 @@ class RecordStoreVersionTest
 
     private static Stream<Arguments> unsupportedVersions()
     {
-        return Stream.of( Arguments.of( "v0.A.4" ), Arguments.of( StoreVersion.HIGH_LIMIT_V3_4_0.versionString() ) );
+        return Stream.of( Arguments.of( "v0.A.4" ), Arguments.of( "vE.H.4" ), Arguments.of( "SF4.0.0" ), Arguments.of( "AF4.1.a" ), Arguments.of( "HL4.0.0" ) );
     }
 
     private void setupUnsupported( String version ) throws IOException
