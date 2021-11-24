@@ -150,6 +150,8 @@ public class PageAlignedV4_3 extends BaseRecordFormats
     @Override
     public RecordFormats[] compatibleVersionsForRollingUpgrade()
     {
-        return new RecordFormats[] {PageAlignedV4_1.RECORD_FORMATS};
+        // Technically this format is compatible with older formats in the same family.
+        // But we will never roll to it in this version, an older version of the binaries is needed for that.
+        return new RecordFormats[0];
     }
 }

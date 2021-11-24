@@ -27,7 +27,6 @@ public enum StoreVersion
     STANDARD_V4_3( "SF4.3.0", "4.3.0" ),
     STANDARD_V5_0( "SF5.0.0", "5.0.0" ),
 
-    ALIGNED_V4_1( "AF4.1.a", "4.1.0" ),
     ALIGNED_V4_3( "AF4.3.0", "4.3.0" ),
     ALIGNED_V5_0( "AF5.0.0", "5.0.0" ),
 

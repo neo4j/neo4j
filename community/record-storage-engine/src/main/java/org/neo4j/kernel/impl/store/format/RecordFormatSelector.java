@@ -38,7 +38,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_1;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV5_0;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -72,7 +71,6 @@ public class RecordFormatSelector
     private static final List<RecordFormats> KNOWN_FORMATS = asList(
             StandardV4_3.RECORD_FORMATS,
             StandardV5_0.RECORD_FORMATS,
-            PageAlignedV4_1.RECORD_FORMATS,
             PageAlignedV4_3.RECORD_FORMATS,
             PageAlignedV5_0.RECORD_FORMATS
     );
