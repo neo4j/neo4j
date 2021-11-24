@@ -30,7 +30,6 @@ public enum StoreVersion
     ALIGNED_V4_3( "AF4.3.0", "4.3.0" ),
     ALIGNED_V5_0( "AF5.0.0", "5.0.0" ),
 
-    HIGH_LIMIT_V3_0_0( "vE.H.0", "3.0.0" ),
     HIGH_LIMIT_V3_0_6( "vE.H.0b", "3.0.6" ),
     HIGH_LIMIT_V3_1_0( "vE.H.2", "3.1.0" ),
     HIGH_LIMIT_V3_2_0( "vE.H.3", "3.2.0" ),
