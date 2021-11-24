@@ -421,7 +421,7 @@ public class DbRepresentation
             var result = new ArrayList<>( length );
             for ( int i = 0; i < length; i++ )
             {
-                result.set( i, Array.get( propertyValue, i ) );
+                result.add( Array.get( propertyValue, i ) );
             }
             return result;
         }
