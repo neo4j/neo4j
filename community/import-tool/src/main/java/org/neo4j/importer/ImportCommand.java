@@ -41,13 +41,13 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.IndexConfig;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.util.VisibleForTesting;
@@ -96,6 +96,10 @@ public class ImportCommand extends AbstractCommand
     @Option( names = "--report-file", paramLabel = "<path>", defaultValue = DEFAULT_REPORT_FILE_NAME,
             description = "File in which to store the report of the csv-import." )
     private Path reportFile = Path.of( DEFAULT_REPORT_FILE_NAME );
+
+    @Option( names = "--force", arity = "0..1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
+            description = "Force will delete any existing database files prior to the import." )
+    private boolean force;
 
     @Option( names = "--id-type", paramLabel = "<STRING|INTEGER|ACTUAL>", description = "Each node must provide a unique id. This is used to find the " +
             "correct nodes when creating relationships. Possible values are:%n" +
@@ -249,7 +253,8 @@ public class ImportCommand extends AbstractCommand
                     .withSkipBadRelationships( skipBadRelationships )
                     .withNormalizeTypes( normalizeTypes )
                     .withVerbose( verbose )
-                    .withAutoSkipHeaders( autoSkipHeaders );
+                    .withAutoSkipHeaders( autoSkipHeaders )
+                    .withForce( force );
 
             nodes.forEach( n -> {
                 importerBuilder.addNodeFiles( n.key, n.files );
