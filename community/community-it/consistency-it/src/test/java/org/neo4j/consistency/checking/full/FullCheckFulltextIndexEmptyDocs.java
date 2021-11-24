@@ -70,7 +70,7 @@ public class FullCheckFulltextIndexEmptyDocs
                 .set( allow_upgrade, true )
                 .set( neo4j_home, testDirectory.homePath() ).build();
 
-        DatabaseManagementService managementService = startUp42Db( config );
+        DatabaseManagementService managementService = startUpOldDb( config );
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();
@@ -104,9 +104,9 @@ public class FullCheckFulltextIndexEmptyDocs
         return result;
     }
 
-    private DatabaseManagementService startUp42Db( Config config ) throws IOException
+    private DatabaseManagementService startUpOldDb( Config config ) throws IOException
     {
-        Unzip.unzip( getClass(), "SF4.0.0_fulltextWithEmptyDocs.zip", testDirectory.homePath() );
+        Unzip.unzip( getClass(), "SF4.3.0_fulltextWithEmptyDocs.zip", testDirectory.homePath() );
 
         return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( config ).build();
     }

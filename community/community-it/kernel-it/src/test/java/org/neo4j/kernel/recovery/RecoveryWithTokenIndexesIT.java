@@ -163,15 +163,17 @@ class RecoveryWithTokenIndexesIT
                 .set( allow_single_automatic_upgrade, false )
                 .set( allow_upgrade, true ).build();
 
-        // Database with 10 nodes with label 'label' and 10 relationships with type 'type'.
+        // Database with 10 nodes with label 'label' and 10 relationships with type 'type'. A 4.3 store that has 4.2 kernel version. Created by starting
+        // up a 4.2 store on 4.3 binaries but not doing any write transactions.
         int numberOfEntities = 10;
-        GraphDatabaseService database = createDatabaseOfOlderVersion( "4-2-data-10-nodes-rels.zip" );
+        GraphDatabaseService database = createDatabaseOfOlderVersion( "4-3-old-kernel-version-data-10-nodes-rels.zip" );
         DatabaseLayout layout = ((GraphDatabaseAPI) database).databaseLayout();
 
         verifyInjectedNLIExistAndOnline( database );
 
         managementService.shutdown();
-        // Remove check point from shutdown, store upgrade, and shutdown done when creating the 4.2 store.
+        // Remove check point from shutdown, store upgrade in 4.3, shutdown after upgrade in 4.3 and shutdown done when creating the 4.2 store.
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( layout, fileSystem );
         RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( layout, fileSystem );
         RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( layout, fileSystem );
         RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( layout, fileSystem );
@@ -205,9 +207,10 @@ class RecoveryWithTokenIndexesIT
                 .set( allow_single_automatic_upgrade, true )
                 .set( allow_upgrade, true ).build();
 
-        // Database with 10 nodes with label 'label' and 10 relationships with type 'type'.
+        // Database with 10 nodes with label 'label' and 10 relationships with type 'type'. A 4.3 store that has 4.2 kernel version. Created by starting
+        // up a 4.2 store on 4.3 binaries but not doing any write transactions.
         int numberOfEntities = 10;
-        GraphDatabaseService database = createDatabaseOfOlderVersion( "4-2-data-10-nodes-rels.zip" );
+        GraphDatabaseService database = createDatabaseOfOlderVersion( "4-3-old-kernel-version-data-10-nodes-rels.zip" );
         DatabaseLayout layout = ((GraphDatabaseAPI) database).databaseLayout();
 
         verifyInjectedNLIExistAndOnline( database );

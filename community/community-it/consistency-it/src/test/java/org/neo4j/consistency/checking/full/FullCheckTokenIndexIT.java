@@ -48,6 +48,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -200,10 +202,14 @@ public class FullCheckTokenIndexIT
 
     private GraphDatabaseAPI createDatabaseOfOlderVersion() throws IOException
     {
-        Unzip.unzip( getClass(), "4-2-data-10-nodes-rels.zip", testDirectory.homePath() );
+        // A 4.3 store that has 4.2 kernel version. Created by starting up a 4.2 store on 4.3 binaries but not doing any write transactions.
+        Unzip.unzip( getClass(), "4-3-old-kernel-version-data-10-nodes-rels.zip", testDirectory.homePath() );
 
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( config ).build();
-        return (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        MetaDataStore metaDataStore = database.getDependencyResolver().resolveDependency( MetaDataStore.class );
+        assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.V4_2 );
+        return database;
     }
 
     private ConsistencySummaryStatistics check( GraphDatabaseAPI database, Config config ) throws ConsistencyCheckIncompleteException, IOException
