@@ -262,13 +262,22 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
         return rangePredicate.toInclusive() ? HIGH : LOW;
     }
 
-    private static PropertyIndexQuery.BoundingBoxPredicate getBoundingBoxPredicateIfAny( PropertyIndexQuery[] predicates )
+    private static PropertyIndexQuery.BoundingBoxPredicate getBoundingBoxPredicateIfAny( PropertyIndexQuery... predicates )
     {
-        for ( final var predicate : predicates )
+        for ( int i = 0; i < predicates.length; i++ )
         {
-            if ( predicate.type() == IndexQueryType.BOUNDING_BOX )
+            final var predicate = predicates[i];
+            final var type = predicate.type();
+            if ( type == IndexQueryType.BOUNDING_BOX )
             {
                 return (PropertyIndexQuery.BoundingBoxPredicate) predicate;
+            }
+            // replace geometry range with bounding box
+            else if ( type == IndexQueryType.RANGE && predicate.valueGroup() == ValueGroup.GEOMETRY )
+            {
+                final var boundingBox = ((PropertyIndexQuery.BoundingBoxRangeWrapper) predicate).boundingBox();
+                predicates[i] = boundingBox;
+                return boundingBox;
             }
         }
         return null;

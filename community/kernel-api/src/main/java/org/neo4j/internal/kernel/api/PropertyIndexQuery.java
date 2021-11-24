@@ -125,6 +125,11 @@ public abstract class PropertyIndexQuery implements IndexQuery
                                                  (TextValue) from, fromInclusive,
                                                  (TextValue) to, toInclusive );
 
+            // Todo: remove special case with removal of wrapper
+            case GEOMETRY -> new BoundingBoxRangeWrapper( propertyKeyId,
+                                                          (PointValue) from, fromInclusive,
+                                                          (PointValue) to, toInclusive );
+
             default -> new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
         };
     }
@@ -602,6 +607,24 @@ public abstract class PropertyIndexQuery implements IndexQuery
         public IndexQueryType type()
         {
             return IndexQueryType.BOUNDING_BOX;
+        }
+    }
+
+    public static final class BoundingBoxRangeWrapper extends RangePredicate<PointValue>
+    {
+        private final BoundingBoxPredicate predicate;
+
+        private BoundingBoxRangeWrapper( int propertyKeyId,
+                                         PointValue from, boolean fromInclusive,
+                                         PointValue to, boolean toInclusive )
+        {
+            super( propertyKeyId, ValueGroup.GEOMETRY, from, fromInclusive, to, toInclusive );
+            predicate = new BoundingBoxPredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
+        }
+
+        public BoundingBoxPredicate boundingBox()
+        {
+            return predicate;
         }
     }
 
