@@ -75,7 +75,7 @@ class FabricPlannerTest
     with FragmentTestUtils
     with AstConstructionTestSupport {
 
-  private def makeConfig(fabricDbName: String) = new FabricConfig(Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0), false ) {
+  private def makeConfig(fabricDbName: String) = new FabricConfig( ()=>Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0), false ) {
 
     override def getFabricDatabaseName: Optional[NormalizedDatabaseName] = Optional.of(new NormalizedDatabaseName(fabricDbName))
   }
