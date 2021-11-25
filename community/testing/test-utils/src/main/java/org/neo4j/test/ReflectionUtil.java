@@ -37,11 +37,6 @@ public final class ReflectionUtil
     {
     }
 
-    public static <T> T getPrivateField( Object target, String fieldName, Class<T> fieldType ) throws Exception
-    {
-        return fieldType.cast( readField( target, fieldName, true ) );
-    }
-
     public static void verifyMethodExists( Class<?> owner, String methodName )
     {
         Set<String> methods = new HashSet<>();

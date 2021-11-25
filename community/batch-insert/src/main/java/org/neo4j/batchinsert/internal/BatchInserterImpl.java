@@ -964,6 +964,12 @@ public class BatchInserterImpl implements BatchInserter
         return neoStores;
     }
 
+    @VisibleForTesting
+    PageCache getPageCache()
+    {
+        return pageCache;
+    }
+
     void forceFlushChanges()
     {
         flushStrategy.forceFlush();

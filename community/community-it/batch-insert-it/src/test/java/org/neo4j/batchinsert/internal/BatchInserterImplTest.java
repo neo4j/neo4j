@@ -82,8 +82,7 @@ class BatchInserterImplTest
     {
         try ( var inserter = BatchInserters.inserter( databaseLayout, fileSystem, config ) )
         {
-            NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
-            PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
+            PageCache pageCache = ((BatchInserterImpl) inserter).getPageCache();
             long mappedMemoryTotalSize = MuninnPageCache.memoryRequiredForPages( pageCache.maxCachedPages() );
             assertThat( mappedMemoryTotalSize ).as( "memory mapped config is active" ).isGreaterThan( kibiBytes( 270 ) ).isLessThan( kibiBytes( 290 ) );
         }
