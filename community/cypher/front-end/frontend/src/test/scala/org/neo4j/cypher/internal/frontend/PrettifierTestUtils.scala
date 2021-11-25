@@ -18,9 +18,8 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.factory.neo4j.OpenCypherJavaCCParserWithFallback
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -32,8 +31,6 @@ import org.scalatest.Matchers
 trait PrettifierTestUtils extends Matchers {
 
   def prettifier: Prettifier
-
-  def parser: CypherParser
 
   def printComparison(a: Any, b: Option[Any]): Unit = {
     val width = 60
@@ -94,14 +91,7 @@ trait PrettifierTestUtils extends Matchers {
     println("  - ast2: " + parsed2)
   }
 
-  // We are not using OpenCypherJavaCCParserWithFallback here since we want to fallback on any parser failure, not just if we have a fallback trigger.
-  // That is because the new parser does not support some older constructs that we previously parsed for nicer error messages.
   private def parse(original: String): Statement =
-    try {
-      JavaCCParser.parse(original, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
-    } catch {
-      case _: OpenCypherExceptionFactory.SyntaxException =>
-        parser.parse(original, OpenCypherExceptionFactory(None))
-    }
+    OpenCypherJavaCCParserWithFallback.parse(original, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
 
 }

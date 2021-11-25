@@ -1084,9 +1084,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     procedureName <- _procedureName
     declaredArguments <- option(zeroOrMore(_expression))
     declaredResult <- option(_procedureResult)
-// TODO: add boolean when the PrettifierPropertyTest uses new parser, old parser can't handle YIELD *
-//    yieldAll <- if (declaredResult.isDefined) const(false) else boolean // can't have both YIELD * and declare results
-  } yield UnresolvedCall(procedureNamespace, procedureName, declaredArguments, declaredResult)(pos)
+    yieldAll <- if (declaredResult.isDefined) const(false) else boolean // can't have both YIELD * and declare results
+  } yield UnresolvedCall(procedureNamespace, procedureName, declaredArguments, declaredResult, yieldAll)(pos)
 
   def _foreach: Gen[Foreach] = for {
     variable <- _variable
@@ -1570,7 +1569,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     ImpersonateUserAction,
     AllUserActions, ShowUserAction, CreateUserAction, RenameUserAction, SetUserStatusAction, SetUserHomeDatabaseAction, SetPasswordsAction, AlterUserAction, DropUserAction,
     AllRoleActions, ShowRoleAction, CreateRoleAction, RenameRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
-    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,/* AlterDatabaseAction , SetDatabaseAccessAction,*/  //TODO: Add these when all generated identifiers are parsed in JavaCC
+    AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction, AlterDatabaseAction , SetDatabaseAccessAction,
     AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
   )
 
@@ -1747,13 +1746,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     wait <- _waitUntilComplete
   } yield DropDatabase(dbName, ifExists, additionalAction, wait)(pos)
 
-  /* TODO: Add these when all generated identifiers are parsed in JavaCC
   def _alterDatabase: Gen[AlterDatabase] = for {
     dbName <- _nameAsEither
     ifExists <- boolean
     access <- _access
   } yield AlterDatabase(dbName, ifExists, access)(pos)
-   */
 
   def _startDatabase: Gen[StartDatabase] = for {
     dbName <- _nameAsEither
@@ -1782,7 +1779,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     wait <- oneOf(NoWait, IndefiniteWait, TimeoutAfter(timeout))
   } yield wait
 
-  /* TODO: Add these when all generated identifiers are parsed in JavaCC
   def _aliasCommands: Gen[AdministrationCommand] = oneOf(
     _createAlias,
     _dropAlias,
@@ -1805,7 +1801,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     targetName <- _nameAsEither
     ifExists <- boolean
   } yield AlterDatabaseAlias(aliasName, targetName, ifExists)(pos)
-   */
 
   // Top level administration command
 
