@@ -245,7 +245,7 @@ import org.neo4j.exceptions.InternalException
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttributes: PlanningAttributes, idGen : IdGen) extends ListSupport {
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttributes: PlanningAttributes, idGen : IdGen, executionModel: ExecutionModel = ExecutionModel.default) extends ListSupport {
 
   implicit val implicitIdGen: IdGen = idGen
   private val solveds = planningAttributes.solveds
@@ -1823,8 +1823,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         case Some(ProvidedOrder.Both) => loop(current.lhs.get); loop(current.rhs.get)
         case Some(ProvidedOrder.Self) => // done
         case None =>
-          //noinspection NameBooleanParameters
-          AssertMacros.checkOnlyWhenAssertionsAreEnabled(false,
+          //If the executionModel doesn't provide order ending up here is expected
+          AssertMacros.checkOnlyWhenAssertionsAreEnabled(!executionModel.providedOrderPreserving,
             s"While marking leveraged order we encountered a plan with no provided order:\n ${LogicalPlanToPlanBuilderString(current)}")
       }
     }

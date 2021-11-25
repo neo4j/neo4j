@@ -78,7 +78,7 @@ case object QueryPlanner
         devNullListener
 
     val planningAttributes = from.planningAttributes
-    val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen)
+    val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen, context.executionModel)
     LogicalPlanningContext(
       planContext = context.planContext,
       logicalPlanProducer = logicalPlanProducer,
