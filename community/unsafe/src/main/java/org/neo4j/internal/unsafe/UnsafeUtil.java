@@ -438,14 +438,16 @@ public final class UnsafeUtil
      */
     public static long allocateMemory( long bytes, MemoryTracker memoryTracker ) throws NativeMemoryAllocationRefusedError
     {
+        memoryTracker.allocateNative( bytes );
+
         final long pointer = Native.malloc( bytes );
         if ( pointer == 0 )
         {
+            memoryTracker.releaseNative( bytes );
             throw new NativeMemoryAllocationRefusedError( bytes, memoryTracker.usedNativeMemory() );
         }
 
         addAllocatedPointer( pointer, bytes );
-        memoryTracker.allocateNative( bytes );
         if ( DIRTY_MEMORY )
         {
             setMemory( pointer, bytes, (byte) 0xA5 );

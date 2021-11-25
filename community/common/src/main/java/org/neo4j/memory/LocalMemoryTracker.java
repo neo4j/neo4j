@@ -117,7 +117,15 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
                     limitSettingName );
         }
 
-        this.memoryPool.reserveNative( bytes );
+        try
+        {
+            this.memoryPool.reserveNative( bytes );
+        }
+        catch ( MemoryLimitExceededException t )
+        {
+            allocatedBytesNative -= bytes;
+            throw t;
+        }
     }
 
     @Override
@@ -153,7 +161,15 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
         if ( allocatedBytesHeap > localHeapPool )
         {
             long grab = max( bytes, grabSize );
-            reserveHeapFromPool( grab );
+            try
+            {
+                reserveHeapFromPool( grab );
+            }
+            catch ( MemoryLimitExceededException t )
+            {
+                allocatedBytesHeap -= bytes;
+                throw t;
+            }
         }
     }
 
@@ -196,11 +212,18 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     @Override
     public void reset()
     {
-        checkState( allocatedBytesNative == 0, "Potential direct memory leak" );
-        memoryPool.releaseHeap( localHeapPool );
-        localHeapPool = 0;
-        allocatedBytesHeap = 0;
-        heapHighWaterMark = 0;
+        try
+        {
+            checkState( allocatedBytesNative == 0, "Potential direct memory leak" );
+        }
+        finally
+        {
+            memoryPool.releaseHeap( localHeapPool );
+            localHeapPool = 0;
+            allocatedBytesHeap = 0;
+            allocatedBytesNative = 0;
+            heapHighWaterMark = 0;
+        }
     }
 
     @Override
