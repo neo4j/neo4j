@@ -1059,6 +1059,21 @@ public final class CypherFunctions
         }
     }
 
+    public static TextValue threadSafeType( AnyValue item, DbAccess access, RelationshipScanCursor relCursor )
+    {
+        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( item instanceof VirtualRelationshipValue )
+        {
+            access.singleRelationship( ((VirtualRelationshipValue) item).id(), relCursor );
+            relCursor.next();
+            return Values.stringValue( access.relationshipTypeName( relCursor.type() ) );
+        }
+        else
+        {
+            throw new CypherTypeException( "Invalid input for function 'type()': Expected a Relationship, got: " + item );
+        }
+    }
+
     @CalledFromGeneratedCode
     public static boolean hasType( AnyValue entity, int typeToken, DbAccess access, RelationshipScanCursor relCursor )
     {
