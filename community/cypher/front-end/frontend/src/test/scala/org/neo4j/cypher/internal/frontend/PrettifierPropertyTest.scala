@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.ast.generator.AstGenerator
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
@@ -28,8 +27,6 @@ class PrettifierPropertyTest extends CypherFunSuite
   with PrettifierTestUtils {
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true, sensitiveParamsAsParams = true))
-
-  val parser = new CypherParser
 
   val astGenerator = new AstGenerator(simpleStrings = false)
 
