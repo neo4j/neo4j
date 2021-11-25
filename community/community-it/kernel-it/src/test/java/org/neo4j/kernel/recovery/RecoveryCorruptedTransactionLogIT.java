@@ -120,6 +120,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 @ExtendWith( RandomExtension.class )
 class RecoveryCorruptedTransactionLogIT
 {
+    private static final int CHECKPOINT_RECORD_SIZE = 192;
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
@@ -260,7 +261,7 @@ class RecoveryCorruptedTransactionLogIT
         }
         else
         {
-            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 * 3 /* checkpoint for setup, start and stop */,
+            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + CHECKPOINT_RECORD_SIZE * 3 /* checkpoint for setup, start and stop */,
                     Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
         }
     }
@@ -612,7 +613,7 @@ class RecoveryCorruptedTransactionLogIT
         assertEquals( originalFileLength, fileSystem.getFileSize( highestLogFile ) );
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
-        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 3 * 192, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 3 * CHECKPOINT_RECORD_SIZE, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
     }
 
     @ParameterizedTest( name = "[{index}] ({0})" )
@@ -653,7 +654,7 @@ class RecoveryCorruptedTransactionLogIT
         assertEquals( originalFileLength, fileSystem.getFileSize( highestLogFile ) );
         // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
         // during the setup and starting db as part of the test
-        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 3 * 192, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 3 * CHECKPOINT_RECORD_SIZE, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
     }
 
     @ParameterizedTest( name = "[{index}] ({0})" )
@@ -692,7 +693,7 @@ class RecoveryCorruptedTransactionLogIT
         assertEquals( 3, logFiles.getLogFile().getHighestLogVersion() );
         assertEquals( transactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions() );
         assertEquals( originalFileLength, fileSystem.getFileSize( highestLogFile ) );
-        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 6 * 192, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 6 * CHECKPOINT_RECORD_SIZE, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
     }
 
     @ParameterizedTest( name = "[{index}] ({0})" )
@@ -731,7 +732,7 @@ class RecoveryCorruptedTransactionLogIT
         }
         else
         {
-            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 4 * 192, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
+            assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 4 * CHECKPOINT_RECORD_SIZE, Files.size( logFiles.getCheckpointFile().getCurrentFile() ) );
         }
     }
 

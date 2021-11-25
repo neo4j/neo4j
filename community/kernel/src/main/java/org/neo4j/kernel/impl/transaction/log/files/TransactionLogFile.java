@@ -50,7 +50,7 @@ import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DbmsLogEntryWriterFactory;
-import org.neo4j.kernel.impl.transaction.UncloseableChannel;
+import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -713,7 +713,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     private LogPosition scanToEndOfLastLogEntry() throws IOException
     {
         // scroll all over possible checkpoints
-        try ( ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( new UncloseableChannel( channel ), memoryTracker ) )
+        try ( ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( new UnclosableChannel( channel ), memoryTracker ) )
         {
             LogEntryReader logEntryReader = context.getLogEntryReader();
             LogEntry entry;

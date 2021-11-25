@@ -27,7 +27,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.transaction.UncloseableChannel;
+import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -98,7 +98,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
 
     private void seekCheckpointChannel() throws IOException
     {
-        try ( var reader = new ReadAheadLogChannel( new UncloseableChannel( channel ), NO_MORE_CHANNELS, context.getMemoryTracker() );
+        try ( var reader = new ReadAheadLogChannel( new UnclosableChannel( channel ), NO_MORE_CHANNELS, context.getMemoryTracker() );
               var logEntryCursor = new LogEntryCursor( new VersionAwareLogEntryReader( NO_COMMANDS, true ), reader ) )
         {
             while ( logEntryCursor.next() )

@@ -24,9 +24,9 @@ import java.io.IOException;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 
-public class UncloseableChannel extends DelegatingStoreChannel<LogVersionedStoreChannel> implements LogVersionedStoreChannel
+public class UnclosableChannel extends DelegatingStoreChannel<LogVersionedStoreChannel> implements LogVersionedStoreChannel
 {
-    public UncloseableChannel( LogVersionedStoreChannel channel )
+    public UnclosableChannel( LogVersionedStoreChannel channel )
     {
         super( channel );
     }
