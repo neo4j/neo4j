@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.CacheabilityInfo
 import org.neo4j.cypher.internal.DefaultPlanStalenessCaller
 import org.neo4j.cypher.internal.ExecutableQuery
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.PlanStalenessCaller
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.CacheKey
@@ -38,6 +39,7 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches.Config.ExecutionPlanCac
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutableQueryCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.PreParserCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.QueryCacheStaleLogger
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -143,6 +145,11 @@ object CypherQueryCaches {
   object PreParserCache extends CacheCompanion {
     type Key = String
     type Value = PreParsedQuery
+
+    class Cache(
+      cacheFactory: CaffeineCacheFactory,
+      size: Int
+    ) extends LFUCache[Key, Value](cacheFactory, size)
   }
 
   object AstCache extends CacheCompanion {
@@ -153,6 +160,11 @@ object CypherQueryCaches {
       key: String,
       parameterTypes: ParameterTypeMap
     )
+
+    class Cache(
+      cacheFactory: CaffeineCacheFactory,
+      size: Int
+    ) extends LFUCache[Key, Value](cacheFactory, size)
   }
 
   object LogicalPlanCache extends CacheCompanion with CacheMonitorHelpers {
@@ -165,6 +177,13 @@ object CypherQueryCaches {
       notifications: IndexedSeq[InternalNotification],
       override val shouldBeCached: Boolean
     ) extends CacheabilityInfo
+
+    class Cache(
+      cacheFactory: CaffeineCacheFactory,
+      maximumSize: Int,
+      stalenessCaller: PlanStalenessCaller[Value],
+      tracer: CacheTracer[Key]
+    ) extends QueryCache[Key, Value](cacheFactory, maximumSize, stalenessCaller, tracer)
   }
 
   object ExecutionPlanCache extends CacheCompanion with CacheMonitorHelpers {
@@ -176,11 +195,25 @@ object CypherQueryCaches {
       logicalPlan: LogicalPlan,
       planningAttributesCacheKey: PlanningAttributesCacheKey
     )
+
+    abstract class Cache {
+      def computeIfAbsent(cacheWhen: => Boolean, key: => Key, compute: => Value): Value
+
+      def clear(): Long
+    }
+
   }
 
   object ExecutableQueryCache extends CacheCompanion with CacheMonitorHelpers {
     type Key = CacheKey[String]
     type Value = ExecutableQuery
+
+    class Cache(
+      cacheFactory: CaffeineCacheFactory,
+      maximumSize: Int,
+      stalenessCaller: PlanStalenessCaller[Value],
+      tracer: CacheTracer[Key]
+    ) extends QueryCache[Key, Value](cacheFactory, maximumSize, stalenessCaller, tracer)
   }
 
   // --- Logging ----------------------------------------------------
@@ -221,7 +254,7 @@ class CypherQueryCaches(
   /**
    * Caches pre-parsing
    */
-  object preParserCache extends LFUCache[String, PreParsedQuery](cacheFactory, config.cacheSize)
+  object preParserCache extends PreParserCache.Cache(cacheFactory, config.cacheSize)
 
   /**
    * Container for caches used by a single planner instance
@@ -231,7 +264,7 @@ class CypherQueryCaches(
     /**
      * Caches parsing
      */
-    object astCache extends LFUCache[AstCache.Key, AstCache.Value](cacheFactory, config.cacheSize) {
+    object astCache extends AstCache.Cache(cacheFactory, config.cacheSize) {
 
       def key(preParsedQuery: PreParsedQuery, params: MapValue): AstCache.Key =
         AstCache.AstCacheKey(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
@@ -240,7 +273,7 @@ class CypherQueryCaches(
     /**
      * Caches logical planning
      */
-    object logicalPlanCache extends QueryCache[LogicalPlanCache.Key, LogicalPlanCache.Value](
+    object logicalPlanCache extends LogicalPlanCache.Cache(
       cacheFactory = cacheFactory,
       maximumSize = config.cacheSize,
       stalenessCaller = new DefaultPlanStalenessCaller[LogicalPlanCache.Value](
@@ -258,14 +291,14 @@ class CypherQueryCaches(
   /**
    * Caches physical planning
    */
-  object executionPlanCache {
+  object executionPlanCache extends ExecutionPlanCache.Cache {
 
-    private type Cache = LFUCache[ExecutionPlanCache.Key, ExecutionPlanCache.Value]
+    private type InnerCache = LFUCache[ExecutionPlanCache.Key, ExecutionPlanCache.Value]
 
-    private val maybeCache: Option[Cache] = config.executionPlanCacheSize match {
+    private val maybeCache: Option[InnerCache] = config.executionPlanCacheSize match {
       case Disabled         => None
-      case Default          => Some(new Cache(cacheFactory, config.cacheSize))
-      case Sized(cacheSize) => Some(new Cache(cacheFactory, cacheSize))
+      case Default          => Some(new InnerCache(cacheFactory, config.cacheSize))
+      case Sized(cacheSize) => Some(new InnerCache(cacheFactory, cacheSize))
     }
 
     private val tracer: CacheTracer[ExecutionPlanCache.Key] =
@@ -308,7 +341,7 @@ class CypherQueryCaches(
   /**
    * Caches complete query processing
    */
-  object executableQueryCache extends QueryCache[ExecutableQueryCache.Key, ExecutableQueryCache.Value](
+  object executableQueryCache extends ExecutableQueryCache.Cache(
     cacheFactory = cacheFactory,
     maximumSize = config.cacheSize,
     stalenessCaller = new DefaultPlanStalenessCaller[ExecutableQuery](
