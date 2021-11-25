@@ -49,7 +49,7 @@ MIT License
   Cucumber-JVM: Gherkin Vintage
   Cucumber-JVM: Plugin
   DataTable
-  fastparse_2.12
-  geny_2.12
+  fastparse_2.13
+  geny_2.13
   mockito-core
 

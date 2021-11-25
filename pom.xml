@@ -117,8 +117,8 @@
     <bouncycastle.version>1.70</bouncycastle.version>
     <jetty.version>9.4.44.v20210927</jetty.version>
     <scala-maven-plugin.version>4.4.1</scala-maven-plugin.version>
-    <scala.version>2.12.15</scala.version>
-    <scala.binary.version>2.12</scala.binary.version>
+    <scala.version>2.13.7</scala.version>
+    <scala.binary.version>2.13</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <asm.version>9.2</asm.version>
     <metrics.version>4.2.8</metrics.version>
@@ -532,8 +532,6 @@
             <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
             <recompileMode>${scala.plugin.recompileMode}</recompileMode>
             <args>
-              <arg>-Xmax-classfile-name</arg>
-              <arg>100</arg>
               <arg>-Xlint:_,-missing-interpolator</arg>
               <arg>-target:jvm-${scala.target.vm}</arg>
               <arg>-nobootcp</arg>
@@ -1224,14 +1222,14 @@
       <dependency>
         <groupId>org.scala-lang.modules</groupId>
         <artifactId>scala-java8-compat_${scala.binary.version}</artifactId>
-        <version>0.8.0</version>
+        <version>1.0.2</version>
       </dependency>
 
       <!-- scala test dependencies -->
       <dependency>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest_${scala.binary.version}</artifactId>
-        <version>3.0.5</version>
+        <version>3.0.9</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -1263,13 +1261,13 @@
       <dependency>
         <groupId>org.scalacheck</groupId>
         <artifactId>scalacheck_${scala.binary.version}</artifactId>
-        <version>1.14.0</version>
+        <version>1.14.3</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.json4s</groupId>
         <artifactId>json4s-native_${scala.binary.version}</artifactId>
-        <version>3.6.5</version>
+        <version>3.6.11</version>
         <scope>test</scope>
       </dependency>
       <dependency>
