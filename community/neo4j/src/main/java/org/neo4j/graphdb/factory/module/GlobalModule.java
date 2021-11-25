@@ -271,36 +271,11 @@ public class GlobalModule
         capabilitiesService = loadCapabilities();
         globalDependencies.satisfyDependency( capabilitiesService );
         globalDependencies.satisfyDependency( tryResolveOrCreate( NativeAccess.class, NativeAccessProvider::getNativeAccess ) );
-
-        checkLegacyDefaultDatabase();
     }
 
     private <T> T tryResolveOrCreate( Class<T> clazz, Supplier<T> newInstanceMethod )
     {
         return externalDependencyResolver.containsDependency( clazz ) ? externalDependencyResolver.resolveDependency( clazz ) : newInstanceMethod.get();
-    }
-
-    private void checkLegacyDefaultDatabase()
-    {
-        if ( !globalConfig.isExplicitlySet( default_database ) )
-        {
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-            DatabaseLayout defaultDatabaseLayout = neo4jLayout.databaseLayout( globalConfig.get( default_database ) );
-            if ( storageEngineFactory.storageExists( fileSystem, defaultDatabaseLayout, pageCache ) )
-            {
-                return;
-            }
-            final String legacyDatabaseName = "graph.db";
-            DatabaseLayout legacyDatabaseLayout = neo4jLayout.databaseLayout( legacyDatabaseName );
-            if ( storageEngineFactory.storageExists( fileSystem, legacyDatabaseLayout, pageCache ) )
-            {
-                Log internalLog = logService.getInternalLog( getClass() );
-                globalConfig.set( default_database, legacyDatabaseName );
-                internalLog.warn(
-                        "Legacy `%s` database was found and default database was set to point to into it. Please consider setting default database explicitly.",
-                        legacyDatabaseName );
-            }
-        }
     }
 
     protected FileLockerService createFileLockerService()
