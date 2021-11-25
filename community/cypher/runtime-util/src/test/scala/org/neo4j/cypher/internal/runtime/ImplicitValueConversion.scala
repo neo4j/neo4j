@@ -59,6 +59,7 @@ import org.neo4j.values.virtual.VirtualValues.list
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.language.implicitConversions
+import scala.IterableOnce
 
 object ImplicitValueConversion {
 
@@ -113,7 +114,7 @@ object ImplicitValueConversion {
 
   implicit def toPathValue(p: PathImpl): VirtualPathValue = ValueUtils.fromPath(p)
 
-  implicit def toListValue(t: TraversableOnce[_]): ListValue =
+  implicit def toListValue(t: IterableOnce[_]): ListValue =
     ValueUtils.asListValue(t.toIterable.asJava)
 
   implicit def toValueTuple(t: (String, Any)): (String, AnyValue) = (t._1, ValueUtils.of(t._2))

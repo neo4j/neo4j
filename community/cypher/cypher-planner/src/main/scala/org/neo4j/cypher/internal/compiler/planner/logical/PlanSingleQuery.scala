@@ -65,7 +65,7 @@ case class PlanSingleQuery(planHead: HeadPlanner = PlanHead(),
     val remainingPartsWithExtras = {
       val allParts = query.allPlannerQueries
       assert(allParts.length == limitSelectivityConfigs.length, "We should have limit selectivities for all query parts.")
-      (allParts.tail, limitSelectivityConfigs.tail, allParts).zipped
+      allParts.tail.lazyZip(limitSelectivityConfigs.tail).lazyZip(allParts)
     }
 
     remainingPartsWithExtras.foldLeft((plans, context)) {

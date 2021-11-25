@@ -148,7 +148,7 @@ class CompositeValueIndexCursorTest extends CypherFunSuite {
         case IndexOrderAscending => Seq.fill(Random.nextInt(100))(Random.nextInt).sorted
         case IndexOrderDescending => Seq.fill(Random.nextInt(100))(Random.nextInt).sorted(Ordering.Int.reverse)
       }
-      randomArray(i) = cursorFor(randomInts:_*)
+      randomArray(i) = cursorFor(randomInts.toSeq:_*)
       totalSize += randomInts.size
       i += 1
     }

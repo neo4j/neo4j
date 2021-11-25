@@ -58,6 +58,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
+import scala.IterableOnce
 
 trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineHelper {
   self: CypherFunSuite with GraphDatabaseTestSupport =>
@@ -112,7 +113,7 @@ object ExecutionEngineHelper {
       case map: Map[_, _] => asJavaMapDeep(map.asInstanceOf[Map[String, Any]])
       case array: Array[Any] => array.map(asJavaValueDeep)
       case iterable: Iterable[_] => asJavaIterable(iterable.map(asJavaValueDeep))
-      case traversable: TraversableOnce[_] => asJavaIterable(traversable.map(asJavaValueDeep).toList)
+      case traversable: IterableOnce[_] => asJavaIterable(traversable.map(asJavaValueDeep).toList)
       case x => x.asInstanceOf[AnyRef]
     }
 

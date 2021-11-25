@@ -620,7 +620,7 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
       l =>
         predicates.HasLabelOrType(self.toCommandExpression(id, e.expression), l.name): Predicate
     }
-    commands.predicates.Ands(preds: _*)
+    commands.predicates.Ands(preds.toSeq: _*)
   }
 
   private def hasLabels(id: Id, e: internal.expressions.HasLabels, self: ExpressionConverters): Predicate = {
@@ -629,7 +629,7 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
         predicates.HasLabel(self.toCommandExpression(id, e.expression),
           commands.values.KeyToken.Unresolved(l.name, commands.values.TokenType.Label)): Predicate
     }
-    commands.predicates.Ands(preds: _*)
+    commands.predicates.Ands(preds.toSeq: _*)
   }
 
   private def hasTypes(id: Id, e: internal.expressions.HasTypes, self: ExpressionConverters): Predicate = {
@@ -638,7 +638,7 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
         predicates.HasType(self.toCommandExpression(id, e.expression),
           commands.values.KeyToken.Unresolved(l.name, commands.values.TokenType.RelType)): Predicate
     }
-    commands.predicates.Ands(preds: _*)
+    commands.predicates.Ands(preds.toSeq: _*)
   }
 
   private def mapItems(id: Id, items: Seq[(internal.expressions.PropertyKeyName, internal.expressions.Expression)],

@@ -17,10 +17,11 @@
 package org.neo4j.cypher.internal.util.symbols
 
 import scala.language.postfixOps
+import scala.IterableOnce
 
 object TypeSpec {
   def exact(types: CypherType*): TypeSpec = exact(types)
-  def exact[T <: CypherType](traversable: TraversableOnce[T]): TypeSpec =
+  def exact[T <: CypherType](traversable: IterableOnce[T]): TypeSpec =
     TypeSpec(traversable.map(t => TypeRange(t, t)))
   val all: TypeSpec = TypeSpec(TypeRange(CTAny, None))
   val none: TypeSpec = new TypeSpec(Vector.empty)
@@ -52,14 +53,14 @@ object TypeSpec {
   )
 
   private def apply(range: TypeRange): TypeSpec = new TypeSpec(Vector(range))
-  private def apply(ranges: TraversableOnce[TypeRange]): TypeSpec =
+  private def apply(ranges: IterableOnce[TypeRange]): TypeSpec =
     new TypeSpec(minimalRanges(ranges))
 
   /**
    * @param ranges a set of TypeRanges
    * @return a minimal set of TypeRanges that have the same intersection of types
    */
-  private def minimalRanges(ranges: TraversableOnce[TypeRange]): Vector[TypeRange] =
+  private def minimalRanges(ranges: IterableOnce[TypeRange]): Vector[TypeRange] =
     ranges.foldLeft(Vector.empty[TypeRange]) {
       case (set, range) =>
         if (set.exists(_ contains range))

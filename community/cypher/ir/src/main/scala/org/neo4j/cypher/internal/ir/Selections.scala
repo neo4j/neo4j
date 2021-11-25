@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
 import scala.collection.mutable.ArrayBuffer
+import scala.Iterable
 
 case class Selections private (predicates: Set[Predicate]) {
   def isEmpty: Boolean = predicates.isEmpty
@@ -145,7 +146,7 @@ case class Selections private (predicates: Set[Predicate]) {
 
   def ++(other: Selections): Selections = Selections(predicates ++ other.predicates)
 
-  def ++(expressions: Traversable[Expression]): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
+  def ++(expressions: Iterable[Expression]): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
 
   def nonEmpty: Boolean = !isEmpty
 }
@@ -172,7 +173,7 @@ object Selections {
     new Selections(keptPredicates)
   }
 
-  def from(expressions: Traversable[Expression]): Selections = Selections(expressions.flatMap(_.asPredicates).toSet)
+  def from(expressions: Iterable[Expression]): Selections = Selections(expressions.flatMap(_.asPredicates).toSet)
   def from(expressions: Expression): Selections = Selections(expressions.asPredicates)
 
   def containsPatternPredicates(e: Expression): Boolean = e match {

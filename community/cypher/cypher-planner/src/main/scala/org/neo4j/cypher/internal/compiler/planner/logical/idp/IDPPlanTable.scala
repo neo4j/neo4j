@@ -40,7 +40,7 @@ class IDPPlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
   }
 
   def removeAllTracesOf(solvables: Set[Solvable]): Unit = {
-    table.retain {
+    table.filterInPlace {
       case (k, _) => (k intersect solvables).isEmpty
     }
   }

@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.util.Ref
 
-import scala.compat.Platform.EOL
 
 object ScopeTreeVerifier {
   def verify(root: Scope): Seq[String] = {
@@ -26,7 +25,7 @@ object ScopeTreeVerifier {
       scope =>
         scope.symbolTable.collect {
           case (name, symbol) if name != symbol.name =>
-            s"'$name' points to symbol with different name '$symbol' in scope #${Ref(scope).toIdString}. Scope tree:$EOL$root"
+            s"'$name' points to symbol with different name '$symbol' in scope #${Ref(scope).toIdString}. Scope tree:${System.lineSeparator}$root"
         }
     }
     localSymbolTableIssues

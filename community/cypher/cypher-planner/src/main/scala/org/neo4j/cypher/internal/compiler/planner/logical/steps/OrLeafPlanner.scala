@@ -166,7 +166,7 @@ object OrLeafPlanner {
 
       // Predicates solved by only one plan each must be added inside an Ors
       val disjunctivePredicates = solvedQgs.flatMap(_.selections.flatPredicates.filterNot(predicatesSolvedByAllPlans.contains))
-      val qgWithPredicatesSolvedByAllPlans = qg.addPredicates(predicatesSolvedByAllPlans: _*)
+      val qgWithPredicatesSolvedByAllPlans = qg.addPredicates(predicatesSolvedByAllPlans.toSeq: _*)
 
       if (disjunctivePredicates.nonEmpty) {
         qgWithPredicatesSolvedByAllPlans.addPredicates(Ors(disjunctivePredicates)(InputPosition.NONE))

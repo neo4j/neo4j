@@ -119,7 +119,7 @@ class NodeLeftOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPipe
     val result = NodeLeftOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
 
     // then
-    result.toList shouldBe 'empty
+    result.toList shouldBe Symbol("empty")
     rhsIterator.fetched should equal(0)
   }
 

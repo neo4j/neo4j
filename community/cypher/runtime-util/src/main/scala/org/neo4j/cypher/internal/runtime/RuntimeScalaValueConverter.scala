@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.Eagerly.immutableMapValues
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.immutable
+import scala.IterableOnce
 
 // Converts java runtime values to scala runtime values
 //
@@ -47,7 +48,7 @@ class RuntimeScalaValueConverter(skip: Any => Boolean) {
     case javaList: java.util.List[_] => copyJavaList(javaList,() => new util.ArrayList[Any](javaList.size()))
     case javaIterable: lang.Iterable[_] => javaIterable.asScala.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
     case map: collection.Map[_, _] => immutableMapValues(map, asDeepScalaValue): immutable.Map[_, _]
-    case traversable: TraversableOnce[_] => traversable.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
+    case traversable: IterableOnce[_] => traversable.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
     case anything => anything
   }
 

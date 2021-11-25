@@ -51,7 +51,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
       RewriterStep.validatingRewriter(rewriter, step)
     }
 
-    val rewrittenStatement = from.statement().endoRewrite(inSequence(rewriters: _*))
+    val rewrittenStatement = from.statement().endoRewrite(inSequence(rewriters.toSeq: _*))
 
     from.withStatement(rewrittenStatement)
   }

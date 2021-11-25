@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 trait SemanticAnalysisTooling {
 
   def semanticCheckFold[A](
-                     traversable: Traversable[A]
+                     traversable: Iterable[A]
                    )(
                     f:A => SemanticCheck
   ): SemanticCheck =
@@ -47,7 +47,7 @@ trait SemanticAnalysisTooling {
       }
     }
 
-  def semanticCheck[A <: SemanticCheckable](traversable: TraversableOnce[A]): SemanticCheck =
+  def semanticCheck[A <: SemanticCheckable](traversable: IterableOnce[A]): SemanticCheck =
     state => traversable.foldLeft(SemanticCheckResult.success(state)){
       (r1:SemanticCheckResult, o:A) => {
         val r2 = o.semanticCheck(r1.state)
@@ -74,7 +74,7 @@ trait SemanticAnalysisTooling {
   def expectType(typeGen: TypeGenerator, expression: Expression, messageGen: (String, String) => String): SemanticCheck =
     s => expectType(typeGen(s), expression, messageGen)(s)
 
-  def expectType[Exp <: Expression](possibleTypes: TypeSpec, expressions:Traversable[Exp]):SemanticCheck =
+  def expectType[Exp <: Expression](possibleTypes: TypeSpec, expressions:Iterable[Exp]):SemanticCheck =
     state => expressions.foldLeft(SemanticCheckResult.success(state)){
       (r1:SemanticCheckResult, o:Exp) => {
         val r2 = expectType(possibleTypes, o)(r1.state)
@@ -164,10 +164,10 @@ trait SemanticAnalysisTooling {
     else
       check(state)
 
-  def unionOfTypes(traversable: TraversableOnce[Expression]): TypeGenerator = state =>
+  def unionOfTypes(traversable: IterableOnce[Expression]): TypeGenerator = state =>
     TypeSpec.union(traversable.map(types(_)(state)).toSeq: _*)
 
-  def leastUpperBoundsOfTypes(traversable: TraversableOnce[Expression]): TypeGenerator =
+  def leastUpperBoundsOfTypes(traversable: IterableOnce[Expression]): TypeGenerator =
     if (traversable.isEmpty)
       _ => CTAny.invariant
     else

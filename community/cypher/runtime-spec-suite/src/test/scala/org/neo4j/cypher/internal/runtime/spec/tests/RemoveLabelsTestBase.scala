@@ -48,7 +48,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
     val nodeCount = 2
     val labels = Seq("RemoveMe", "MeToo", "AndMe")
     given {
-      nodeGraph(2, labels:_*)
+      nodeGraph(2, labels.toSeq:_*)
     }
 
     removeLabelsTest(Seq("RemoveMe", "MeToo", "AndMe"), nodeCount*labels.size)

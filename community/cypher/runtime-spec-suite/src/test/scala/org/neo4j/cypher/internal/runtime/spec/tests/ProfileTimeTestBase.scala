@@ -496,7 +496,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val input = aRels.map(r => Array[Any](r))
 
     // then
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
     consume(runtimeResult)
 
     // then
@@ -552,7 +552,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
     consume(runtimeResult)
 
     // then
@@ -578,7 +578,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
     consume(runtimeResult)
 
     // then

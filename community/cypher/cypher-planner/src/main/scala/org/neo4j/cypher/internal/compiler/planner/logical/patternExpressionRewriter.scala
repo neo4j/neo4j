@@ -63,7 +63,7 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
     val exprScopes = expression.inputs.map {
       case (k, v) => k -> v.map(_.name)
     }
-    IdentityMap(exprScopes: _*)
+    IdentityMap(exprScopes.toSeq: _*)
   }
 
   private def computeReplacements(scopeMap: IdentityMap[Expression, Set[String]], that: AnyRef): IdentityMap[AnyRef, AnyRef] = {

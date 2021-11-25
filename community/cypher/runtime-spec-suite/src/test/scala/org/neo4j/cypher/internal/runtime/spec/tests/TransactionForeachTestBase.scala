@@ -843,7 +843,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       query,
       runtime,
       inputStream = inputStreamWithSideEffectInNewTxn(
-        inputValues(nodeRows:_*).stream(),
+        inputValues(nodeRows.toSeq:_*).stream(),
         (externalTx, offset) => {
           offset match {
             case 0L =>

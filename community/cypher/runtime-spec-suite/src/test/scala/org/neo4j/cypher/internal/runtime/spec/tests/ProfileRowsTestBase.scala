@@ -171,7 +171,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val input = aRels.map(r => Array[Any](r))
 
     // then
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
     consume(runtimeResult)
 
     // then
@@ -543,7 +543,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .nonFuseable()
       .expand("(x)-[r]->(y)")
-      .nodeByIdSeek("x", Set.empty, ids :_*)
+      .nodeByIdSeek("x", Set.empty, ids.toSeq :_*)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -595,7 +595,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .nonFuseable()
       .expand("(x)-[r2]->(y2)")
-      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, ids :_*)
+      .directedRelationshipByIdSeek("r", "x", "y", Set.empty, ids.toSeq :_*)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -647,7 +647,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .nonFuseable()
       .expand("(x)-[r2]->(y2)")
-      .undirectedRelationshipByIdSeek("r", "x", "y", Set.empty, ids :_*)
+      .undirectedRelationshipByIdSeek("r", "x", "y", Set.empty, ids.toSeq :_*)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -1795,7 +1795,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     val input = aRels.map(r => Array[Any](r))
 
     // then
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
     consume(runtimeResult)
 
     // then
@@ -1958,7 +1958,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
     consume(runtimeResult)
 
     // then
@@ -1982,7 +1982,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
       .input(variables = Seq("x", "y"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
     consume(runtimeResult)
 
     // then
@@ -2028,7 +2028,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
       .input(nodes = Seq("x", "y"))
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
     consume(runtimeResult)
 
     // then

@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
+import scala.Iterable
 
 /**
  * Piece of physical planning which
@@ -63,7 +64,7 @@ object expressionVariableAllocation {
     val availableExpressionVars = new AvailableExpressionVariables
 
     def allocateVariables(outerVars: List[ExpressionVariable],
-                          variables: Traversable[LogicalVariable]
+                          variables: Iterable[LogicalVariable]
                          ): List[ExpressionVariable] = {
       var innerVars = outerVars
       for (variable <- variables) {

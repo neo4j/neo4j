@@ -317,7 +317,7 @@ object StepSequencer {
                               allSteps: Seq[S],
                               initialConditions: Set[Condition],
                               fixedSeed: Option[Long]): AccumulatedSteps[Seq[S]] = {
-    val allPostConditions: Set[Condition] = allSteps.flatMap(_.postConditions)(collection.breakOut)
+    val allPostConditions: Set[Condition] = allSteps.iterator.flatMap(_.postConditions)(collection.breakOut)
 
     val numberOfTimesEachStepIsInvalidated = allSteps
       .flatMap(_.invalidatedConditions.collect { case s if introducingSteps.contains(s) => introducingSteps(s) })
@@ -329,7 +329,7 @@ object StepSequencer {
     // We need to be able to look at the original state, so we make a copy in the beginning
     val workingGraph = MutableDirectedGraph.copyOf(graph)
     // During the algorithm keep track of all conditions currently enabled
-    val currentConditions = initialConditions.to[mutable.Set]
+    val currentConditions = initialConditions.to(mutable.Set)
 
     def dealWithInvalidatedConditions(nextStep: S, startPoints: mutable.Set[S]): Unit = {
       currentConditions ++= nextStep.postConditions
@@ -391,10 +391,10 @@ object StepSequencer {
     val startPoints = {
       val nonEmpty = graph.allNodes.filter(graph.incoming(_).isEmpty)
       order match {
-        case None => nonEmpty.to[mutable.Set]
+        case None => nonEmpty.to(mutable.Set)
         case Some(order) =>
           implicit val implicitOrder: Ordering[S] = order
-          nonEmpty.to[mutable.SortedSet]
+          nonEmpty.to(mutable.SortedSet)
       }
     }
 

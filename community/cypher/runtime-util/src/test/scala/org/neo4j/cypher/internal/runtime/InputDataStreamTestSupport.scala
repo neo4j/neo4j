@@ -57,7 +57,7 @@ trait InputDataStreamTestSupport {
 
   def batchedInputValues(batchSize: Int, rows: Array[Any]*): InputValues = {
     val input = new InputValues()
-    rows.grouped(batchSize).foreach(batch => input.and(batch: _*))
+    rows.grouped(batchSize).foreach(batch => input.and(batch.toSeq: _*))
     input
   }
 

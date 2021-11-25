@@ -205,7 +205,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties:_*)))
+      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties.toSeq:_*)))
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -876,7 +876,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val input = aRels.map(r => Array[Any](r))
 
     // then
-    val runtimeResult = profile(logicalQuery, runtime, inputValues(input:_*))
+    val runtimeResult = profile(logicalQuery, runtime, inputValues(input.toSeq:_*))
     consume(runtimeResult)
 
     // then
@@ -963,7 +963,7 @@ trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties: _*)), unique = true)
+      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties.toSeq: _*)), unique = true)
       .build(readOnly = false)
 
     val result = profile(logicalQuery, runtime)
@@ -1575,7 +1575,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("l")
       .projection("labels(n) AS l")
-      .setLabels("n", labelsSet: _*)
+      .setLabels("n", labelsSet.toSeq: _*)
       .allNodeScan("n")
       .build(readOnly = false)
 

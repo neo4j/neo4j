@@ -24,6 +24,7 @@ import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.Map
 import scala.collection.Seq
+import scala.Iterable
 
 object IsList extends ListSupport {
   def unapply(x: Any):Option[Iterable[Any]] = {
@@ -88,7 +89,7 @@ trait ListSupport {
     case x: Array[_]        => x
     case x: Map[_, _]       => Iterable(x)
     case x: java.util.Map[_, _]   => Iterable(x.asScala)
-    case x: Traversable[_]  => x.toIterable
+    case x: Iterable[_]  => x.toIterable
     case x: Iterator[_]     => x.toIterable
     case x: java.lang.Iterable[_] => x.asScala.map {
       case y: java.util.Map[_, _] => y.asScala

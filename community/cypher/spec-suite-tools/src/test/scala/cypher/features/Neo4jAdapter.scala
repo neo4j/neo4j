@@ -61,7 +61,7 @@ object Neo4jAdapter {
   def apply(executionPrefix: String, graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
             dbConfig: collection.Map[Setting[_], Object], useBolt: Boolean): Neo4jAdapter = {
     val enhancedConfig =
-      (dbConfig + (BoltConnector.enabled -> true) + (BoltConnector.listen_address -> new SocketAddress("localhost", 0)))
+      (dbConfig ++ _root_.scala.collection.Map(BoltConnector.enabled -> true) ++ _root_.scala.collection.Map(BoltConnector.listen_address -> new SocketAddress("localhost", 0)))
         .asInstanceOf[Map[Setting[_], Object]]
     val managementService = createManagementService(enhancedConfig, graphDatabaseFactory)
     val config = Config.newBuilder().set(enhancedConfig.asJava).build()

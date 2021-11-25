@@ -58,9 +58,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
-import scala.collection.TraversableOnce
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.collection.IterableOnce
 
 case object UnnecessaryOptionalMatchesRemoved extends StepSequencer.Condition
 
@@ -261,7 +261,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
   }
 
   implicit class FlatMapWithTailable(in: IndexedSeq[QueryGraph]) {
-    def flatMapWithTail(f: (QueryGraph, Seq[QueryGraph]) => TraversableOnce[QueryGraph]): IndexedSeq[QueryGraph] = {
+    def flatMapWithTail(f: (QueryGraph, Seq[QueryGraph]) => IterableOnce[QueryGraph]): IndexedSeq[QueryGraph] = {
 
       @tailrec
       def recurse(that: QueryGraph, rest: Seq[QueryGraph], builder: mutable.Builder[QueryGraph, ListBuffer[QueryGraph]]): Unit = {

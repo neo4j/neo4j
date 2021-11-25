@@ -33,11 +33,12 @@ import org.neo4j.cypher.testing.api.Outgoing
 import org.neo4j.cypher.testing.api.Path
 import org.neo4j.cypher.testing.api.Relationship
 import org.neo4j.values.storable.DurationValue
+import scala.Iterable
 
 object CypherTestValueToString extends (Any => String) {
 
   def apply(value: Any): String = {
-    def convertList(elements: Traversable[_]): String = {
+    def convertList(elements: Iterable[_]): String = {
       val convertedElements = elements.map(CypherTestValueToString)
       s"[${convertedElements.mkString(", ")}]"
     }

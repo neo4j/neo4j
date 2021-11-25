@@ -194,19 +194,18 @@ final case class Scope(symbolTable: Map[String, Symbol],
     builder.toString()
   }
 
-  import scala.compat.Platform.EOL
 
   private def dumpSingle(indent: String, builder: StringBuilder): Unit = {
-    builder.append(s"$indent${self.toIdString} {$EOL")
+    builder.append(s"$indent${self.toIdString} {${System.lineSeparator}")
     dumpTree(s"  $indent", builder)
-    builder.append(s"$indent}$EOL")
+    builder.append(s"$indent}${System.lineSeparator}")
   }
 
   private def dumpTree(indent: String, builder: StringBuilder): Unit = {
     symbolTable.keys.toSeq.sorted.foreach { key =>
       val symbol = symbolTable(key)
       val symbolText = symbol.positionsAndUniqueIdString.toSeq.sorted.map(x => s"${x._1}(${x._2})").mkString(" ")
-      builder.append(s"$indent$key: $symbolText$EOL")
+      builder.append(s"$indent$key: $symbolText${System.lineSeparator}")
     }
     children.foreach { child => child.dumpSingle(indent, builder) }
   }

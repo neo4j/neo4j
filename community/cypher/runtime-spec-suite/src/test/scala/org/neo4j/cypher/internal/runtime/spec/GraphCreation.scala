@@ -474,7 +474,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   def nodePropertyGraph(nNodes: Int, properties: PartialFunction[Int, Map[String, Any]], labels: String*): Seq[Node] = {
     val labelArray = labels.map(Label.label)
     for (i <- 0 until nNodes) yield {
-      val node = runtimeTestSupport.tx.createNode(labelArray: _*)
+      val node = runtimeTestSupport.tx.createNode(labelArray.toSeq: _*)
       properties.runWith(_.foreach(kv => node.setProperty(kv._1, kv._2)))(i)
       node
     }

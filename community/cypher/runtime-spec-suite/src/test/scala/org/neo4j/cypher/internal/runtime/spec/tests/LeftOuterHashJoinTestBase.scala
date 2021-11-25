@@ -149,7 +149,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     // val baseSize = sizeHint / 8
     val baseSize = 1
     val seq = nodes.map(n => Array[Any](n))
-    val lhsRows = batchedInputValues(baseSize, seq: _*).stream()
+    val lhsRows = batchedInputValues(baseSize, seq.toSeq: _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

@@ -88,7 +88,7 @@ object ASTRewriter {
       RewriterStep.validatingRewriter(rewriter, step)
     }
 
-    val combined = inSequence(rewriters: _*)
+    val combined = inSequence(rewriters.toSeq: _*)
 
     statement.endoRewrite(combined)
   }

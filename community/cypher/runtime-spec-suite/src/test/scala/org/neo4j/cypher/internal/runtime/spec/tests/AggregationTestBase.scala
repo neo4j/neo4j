@@ -680,7 +680,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults(columns: _*)
+      .produceResults(columns.toSeq: _*)
       .aggregation(Seq.empty, Seq(
         "count(*) AS countStar",
         "count(x.num) AS count",
@@ -706,7 +706,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns(columns: _*)
+    runtimeResult should beColumns(columns.toSeq: _*)
       .withSingleRow(0, 0, 0, null, null, Collections.emptyList(), Collections.emptyList(),  null, null, null, null, 0, 0, 0, 0, 0, 0)
   }
 
@@ -725,7 +725,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults(columns: _*)
+      .produceResults(columns.toSeq: _*)
       .aggregation(Seq("x AS x"), Seq(
         "count(*) AS countStar",
         "count(x) AS count",
@@ -751,7 +751,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns(columns: _*)
+    runtimeResult should beColumns(columns.toSeq: _*)
       .withSingleRow(1, 1, 1, 1, 1, Collections.singletonList(1), Collections.singletonList(1),  1, 1, 1, 1, 1, 1, 0, 0, 0, 0)
   }
 

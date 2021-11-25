@@ -25,10 +25,10 @@ class ZeroOneOrManyTest extends CypherFunSuite {
   }
 
   test("one") {
-    ZeroOneOrMany(Seq('a)) should be(One('a))
+    ZeroOneOrMany(Seq(Symbol("a"))) should be(One(Symbol("a")))
   }
 
   test("many") {
-    ZeroOneOrMany(Seq('a, 'b)) should be(Many(Seq('a, 'b)))
+    ZeroOneOrMany(Seq(Symbol("a"), Symbol("b"))) should be(Many(Seq(Symbol("a"), Symbol("b"))))
   }
 }

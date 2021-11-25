@@ -1509,7 +1509,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // then
     val expectedLocks = Seq((EXCLUSIVE,INDEX_ENTRY), (EXCLUSIVE,INDEX_ENTRY), (SHARED,INDEX_ENTRY), (SHARED,INDEX_ENTRY), (SHARED,INDEX_ENTRY), (SHARED,LABEL))
     val expected = Seq(Array(nodes(0)), Array(nodes(10)), Array(nodes(20)))
-    runtimeResult should beColumns("x").withRows(expected).withLocks(expectedLocks:_*)
+    runtimeResult should beColumns("x").withRows(expected).withLocks(expectedLocks.toSeq:_*)
   }
 }
 

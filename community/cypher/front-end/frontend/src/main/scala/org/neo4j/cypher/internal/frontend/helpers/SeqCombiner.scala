@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.helpers
 
 import scala.reflect.ClassTag
+import scala.Iterable
 
 object SeqCombiner {
   /**
@@ -52,7 +53,7 @@ object SeqCombiner {
           List(C, 3, y),
           List(C, 3, z))
     */
-  def combine[A](xs: Traversable[Traversable[A]]): Seq[Seq[A]] =
+  def combine[A](xs: Iterable[Iterable[A]]): Seq[Seq[A]] =
     xs.foldLeft(Seq(Seq.empty[A])) {
       (x, y) => for (a <- x; b <- y) yield a :+ b
     }

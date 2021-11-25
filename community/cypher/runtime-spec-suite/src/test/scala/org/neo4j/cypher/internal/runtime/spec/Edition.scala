@@ -60,12 +60,12 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
 
   def copyWith(additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
     val newConfigs = configs ++ additionalConfigs
-    new Edition(graphBuilderFactory, runtimeContextManagerFactory, newConfigs: _*)
+    new Edition(graphBuilderFactory, runtimeContextManagerFactory, newConfigs.toSeq: _*)
   }
 
   def copyWith(newRuntimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT], additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
     val newConfigs = configs ++ additionalConfigs
-    new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, newConfigs: _*)
+    new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, newConfigs.toSeq: _*)
   }
 
   def getSetting[T](setting: Setting[T]): Option[T] = {

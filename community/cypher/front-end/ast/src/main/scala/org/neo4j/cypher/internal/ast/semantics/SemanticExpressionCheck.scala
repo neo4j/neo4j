@@ -122,6 +122,7 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 import scala.annotation.tailrec
 import scala.util.Try
+import scala.Iterable
 
 object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
@@ -603,11 +604,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
   /**
    * Build a semantic check over a traversable of expressions.
    */
-  def simple(traversable: Traversable[Expression]): SemanticCheck = check(SemanticContext.Simple, traversable, Seq())
+  def simple(traversable: Iterable[Expression]): SemanticCheck = check(SemanticContext.Simple, traversable, Seq())
 
   def check(
              ctx: SemanticContext,
-             traversable: Traversable[Expression],
+             traversable: Iterable[Expression],
              parents: Seq[Expression]
            ): SemanticCheck =
     semanticCheckFold(traversable)(expr => check(ctx, expr, parents))

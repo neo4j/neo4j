@@ -89,7 +89,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
       n <- Seq(r.getStartNode, r.getEndNode)
     } yield Array[Any](n, r)
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input.toSeq: _*))
 
     // then
     val expected = rels.map { r => Array(r, r.getStartNode, r.getEndNode) }
@@ -116,7 +116,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
       n = r.getStartNode
     } yield Array[Any](n, r)
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input.toSeq: _*))
 
     // then
     val expected = rels.map { r => Array(r, null) }

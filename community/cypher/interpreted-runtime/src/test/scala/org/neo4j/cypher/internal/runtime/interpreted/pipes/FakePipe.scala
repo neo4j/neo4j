@@ -29,15 +29,16 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.storageengine.api.RelationshipVisitor
 
 import scala.collection.Map
+import scala.Iterable
 
-case class FakePipe(data: Traversable[Map[String, Any]]) extends Pipe {
+case class FakePipe(data: Iterable[Map[String, Any]]) extends Pipe {
 
   private var _countingIterator: CountingIterator[CypherRow] = _
 
   def this(data: Iterator[Map[String, Any]]) = this(data.toList)
 
   override def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
-    _countingIterator = new CountingIterator(data.map(m => CypherRow(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))).toIterator)
+    _countingIterator = new CountingIterator(data.map(m => CypherRow(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))).iterator)
     _countingIterator
   }
 
