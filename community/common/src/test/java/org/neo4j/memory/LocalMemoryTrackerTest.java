@@ -22,8 +22,8 @@ package org.neo4j.memory;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 
 class LocalMemoryTrackerTest
@@ -77,10 +77,63 @@ class LocalMemoryTrackerTest
     }
 
     @Test
-    void throwsOnLimit()
+    void throwsOnLimitHeap()
     {
-        LocalMemoryTracker memoryTracker = new LocalMemoryTracker( NO_TRACKING, 10, 0, "settingName" );
-        MemoryLimitExceededException memoryLimitExceededException = assertThrows( MemoryLimitExceededException.class, () -> memoryTracker.allocateHeap( 100 ) );
-        assertThat( memoryLimitExceededException.getMessage() ).contains( "settingName" );
+        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 10, 0, "settingName" );
+        assertThatThrownBy( () -> memoryTracker.allocateHeap( 100 ) )
+                .isInstanceOf( MemoryLimitExceededException.class )
+                .hasMessageContaining( "settingName" );
+        assertThat( memoryTracker.estimatedHeapMemory() ).isEqualTo( 0 );
+    }
+
+    @Test
+    void throwsOnLimitNative()
+    {
+        var memoryTracker = new LocalMemoryTracker( NO_TRACKING, 10, 0, "settingName" );
+        assertThatThrownBy( () -> memoryTracker.allocateNative( 100 ) )
+                .isInstanceOf( MemoryLimitExceededException.class )
+                .hasMessageContaining( "settingName" );
+        assertThat( memoryTracker.usedNativeMemory() ).isEqualTo( 0 );
+    }
+
+    @Test
+    void throwsOnPoolLimitHeap()
+    {
+        var pool = new MemoryPoolImpl( 5, true, "poolSetting" );
+        var tracker = new LocalMemoryTracker( pool, 10, 0, "localSetting" );
+
+        assertThatThrownBy( () -> tracker.allocateHeap( 10 ) )
+                .isInstanceOf( MemoryLimitExceededException.class )
+                .hasMessageContaining( "poolSetting" );
+
+        assertThat( tracker.estimatedHeapMemory() ).isEqualTo( 0 );
+    }
+
+    @Test
+    void throwsOnPoolLimitNative()
+    {
+        var pool = new MemoryPoolImpl( 5, true, "poolSetting" );
+        var tracker = new LocalMemoryTracker( pool, 10, 0, "localSetting" );
+
+        assertThatThrownBy( () -> tracker.allocateNative( 10 ) )
+                .isInstanceOf( MemoryLimitExceededException.class )
+                .hasMessageContaining( "poolSetting" );
+
+        assertThat( tracker.usedNativeMemory() ).isEqualTo( 0 );
+    }
+
+    @Test
+    void reuseAfterReportedDirectMemoryLeak()
+    {
+        var tracker = new LocalMemoryTracker( NO_TRACKING, 10, 0, "localSetting" );
+        tracker.allocateNative( 10 );
+        assertThatThrownBy( tracker::reset )
+                .isInstanceOf( IllegalStateException.class )
+                .hasMessageContaining( "Potential direct memory leak" );
+
+        // can be reused after reset
+        tracker.allocateNative( 10 );
+        tracker.releaseNative( 10 );
+        tracker.reset();
     }
 }
