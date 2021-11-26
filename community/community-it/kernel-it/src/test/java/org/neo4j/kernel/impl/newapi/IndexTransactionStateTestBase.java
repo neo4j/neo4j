@@ -394,7 +394,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
         // since the cursor was already initialized in the code calling this method
         for ( Pair<Long,Value> pair : expected )
         {
-            tx.dataWrite().relationshipDelete( pair.first() );
+            deleteEntity( tx, pair.first() );
         }
         entityWithPropId( tx, anotherValueFoundByQuery );
 
