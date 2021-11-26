@@ -113,7 +113,7 @@ trait IndexCompatiblePredicatesProvider {
         val queryExpression = seekable.asQueryExpression
         IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate, solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Btree))
+          compatibleIndexTypes = Set(IndexType.Btree, IndexType.Point))
 
       // An index seek for this will almost satisfy the predicate, but with the possibility of some false positives.
       // Since it reduces the cardinality to almost the level of the predicate, we can use the predicate to calculate cardinality,
@@ -122,7 +122,7 @@ trait IndexCompatiblePredicatesProvider {
         val queryExpression = seekable.asQueryExpression
         IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate, solvedPredicate = Some(PartialDistanceSeekWrapper(predicate)), dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Btree))
+          compatibleIndexTypes = Set(IndexType.Btree, IndexType.Point))
 
       // MATCH (n:User) WHERE n.prop IS NOT NULL RETURN n
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
