@@ -26,14 +26,15 @@ import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageEngine;
 
 public class CommunityCommitProcessFactory implements CommitProcessFactory
 {
     @Override
     public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine, NamedDatabaseId databaseId,
-            DatabaseReadOnlyChecker readOnlyChecker )
+            DatabaseReadOnlyChecker readOnlyChecker, DatabaseHealth health )
     {
-        return new DatabaseTransactionCommitProcess( new InternalTransactionCommitProcess( appender, storageEngine ), readOnlyChecker );
+        return new DatabaseTransactionCommitProcess( new InternalTransactionCommitProcess( appender, storageEngine, health ), readOnlyChecker );
     }
 }

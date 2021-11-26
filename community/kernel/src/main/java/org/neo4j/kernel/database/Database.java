@@ -784,7 +784,8 @@ public class Database extends LifecycleAdapter
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
 
-        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine, namedDatabaseId, readOnlyDatabaseChecker );
+        TransactionCommitProcess transactionCommitProcess =
+                commitProcessFactory.create( appender, storageEngine, namedDatabaseId, readOnlyDatabaseChecker, databaseHealth );
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned

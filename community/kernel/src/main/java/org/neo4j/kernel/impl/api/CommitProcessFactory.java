@@ -22,10 +22,11 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageEngine;
 
 public interface CommitProcessFactory
 {
     TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine, NamedDatabaseId databaseId,
-            DatabaseReadOnlyChecker readOnlyDatabaseChecker );
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker, DatabaseHealth health );
 }

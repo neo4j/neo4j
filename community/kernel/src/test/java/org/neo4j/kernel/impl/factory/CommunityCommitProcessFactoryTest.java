@@ -25,6 +25,7 @@ import java.util.UUID;
 
 import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +43,8 @@ class CommunityCommitProcessFactoryTest
         var factory = new CommunityCommitProcessFactory();
 
         var commitProcess =
-                factory.create( mock( TransactionAppender.class ), mock( StorageEngine.class ), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), writable() );
+                factory.create( mock( TransactionAppender.class ), mock( StorageEngine.class ), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), writable(),
+                mock( DatabaseHealth.class ) );
 
         assertThat( commitProcess ).isInstanceOf( DatabaseTransactionCommitProcess.class );
     }
@@ -53,7 +55,8 @@ class CommunityCommitProcessFactoryTest
         var factory = new CommunityCommitProcessFactory();
 
         var commitProcess =
-                factory.create( mock( TransactionAppender.class ), mock( StorageEngine.class ), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), readOnly() );
+                factory.create( mock( TransactionAppender.class ), mock( StorageEngine.class ), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), readOnly(),
+                        mock( DatabaseHealth.class ) );
 
         assertThat( commitProcess ).isInstanceOf( DatabaseTransactionCommitProcess.class );
     }

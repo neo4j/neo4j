@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
@@ -34,11 +35,13 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
 {
     private final TransactionAppender appender;
     private final StorageEngine storageEngine;
+    private final DatabaseHealth health;
 
-    public InternalTransactionCommitProcess( TransactionAppender appender, StorageEngine storageEngine )
+    public InternalTransactionCommitProcess( TransactionAppender appender, StorageEngine storageEngine, DatabaseHealth health )
     {
         this.appender = appender;
         this.storageEngine = storageEngine;
+        this.health = health;
     }
 
     @Override
@@ -64,8 +67,9 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
         }
         catch ( Throwable cause )
         {
-            throw new TransactionFailureException( TransactionLogError, cause,
-                    "Could not append transaction representation to log" );
+            var exception = new TransactionFailureException( TransactionLogError, cause, "Could not append transaction representation to log" );
+            health.panic( exception );
+            throw exception;
         }
     }
 

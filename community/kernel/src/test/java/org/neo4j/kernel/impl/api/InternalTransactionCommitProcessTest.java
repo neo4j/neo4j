@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.TestableTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -66,9 +67,8 @@ class InternalTransactionCommitProcessTest
         doThrow( new IOException( rootCause ) ).when( appender ).append( any( TransactionToApply.class ),
                 any( LogAppendEvent.class ) );
         StorageEngine storageEngine = mock( StorageEngine.class );
-        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(
-                appender,
-                storageEngine );
+        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess( appender, storageEngine, databaseHealth );
 
         // WHEN
         TransactionFailureException exception =
@@ -89,9 +89,8 @@ class InternalTransactionCommitProcessTest
         StorageEngine storageEngine = mock( StorageEngine.class );
         doThrow( new IOException( rootCause ) ).when( storageEngine ).apply(
                 any( TransactionToApply.class ), any( TransactionApplicationMode.class ) );
-        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(
-                appender,
-                storageEngine );
+        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess( appender, storageEngine, databaseHealth );
         TransactionToApply transaction = mockedTransaction();
 
         // WHEN
@@ -115,9 +114,9 @@ class InternalTransactionCommitProcessTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
+        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
 
-        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(
-                appender, storageEngine );
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess( appender, storageEngine, databaseHealth );
         PhysicalTransactionRepresentation noCommandTx = new PhysicalTransactionRepresentation( Collections.emptyList() );
         noCommandTx.setHeader( new byte[0], -1, -1, -1, -1, ANONYMOUS );
 

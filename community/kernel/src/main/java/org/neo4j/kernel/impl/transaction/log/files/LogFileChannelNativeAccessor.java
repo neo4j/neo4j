@@ -28,7 +28,6 @@ import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
@@ -111,7 +110,6 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
         {
             log.error( "Switching database to read only mode." );
             markDatabaseReadOnly();
-            throw new RuntimeException( new ReadOnlyDbException( databaseName ) );
         }
         else
         {

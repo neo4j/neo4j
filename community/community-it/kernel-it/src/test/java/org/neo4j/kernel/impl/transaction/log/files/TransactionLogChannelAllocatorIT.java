@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.nativeimpl.LinuxNativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
@@ -42,7 +43,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -62,8 +62,8 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -145,12 +145,11 @@ class TransactionLogChannelAllocatorIT
         var logFileContext = createLogFileContext( getUnavailableBytes(), new PreallocationFailingChannelNativeAccess() );
         var nativeChannelAccessor = new LogFileChannelNativeAccessor( fileSystem, logFileContext );
         var unreasonableAllocator = new TransactionLogChannelAllocator( logFileContext, fileHelper, new LogHeaderCache( 10 ), nativeChannelAccessor );
-        var exception = assertThrows( RuntimeException.class, () -> unreasonableAllocator.createLogChannel( 10, () -> 1L ) );
-        assertThat( exception ).hasRootCauseInstanceOf( ReadOnlyDbException.class )
-                .hasRootCauseMessage( "This Neo4j instance is read only for the database neo4j" );
+        assertDoesNotThrow( () -> unreasonableAllocator.createLogChannel( 10, () -> 1L ) );
 
         assertThat( logProvider.serialize() ).containsSequence( "Warning! System is running out of disk space. " +
                 "Failed to preallocate log file since disk does not have enough space left. Please provision more space to avoid that." );
+        assertThat( config.get( GraphDatabaseSettings.read_only_databases ) ).contains( DEFAULT_DATABASE_NAME );
     }
 
     @Test

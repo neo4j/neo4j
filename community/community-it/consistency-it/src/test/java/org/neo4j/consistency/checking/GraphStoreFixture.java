@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -148,7 +149,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
         commitProcess = new InternalTransactionCommitProcess(
                 dependencyResolver.resolveDependency( TransactionAppender.class ),
-                dependencyResolver.resolveDependency( StorageEngine.class ) );
+                dependencyResolver.resolveDependency( StorageEngine.class ),
+                dependencyResolver.resolveDependency( DatabaseHealth.class ) );
         transactionIdStore = database.getDependencyResolver().resolveDependency(
                 TransactionIdStore.class );
 
