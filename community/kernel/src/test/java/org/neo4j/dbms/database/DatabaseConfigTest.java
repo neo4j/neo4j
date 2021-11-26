@@ -22,17 +22,21 @@ package org.neo4j.dbms.database;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.test.Race;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 class DatabaseConfigTest
@@ -66,6 +70,18 @@ class DatabaseConfigTest
         {
             assertEquals( 1, listeners[i].callCount );
         }
+    }
+
+    @Test
+    void shouldBeAbleToBuildConfigFromDatabaseConfig()
+    {
+        //Given
+        Config globalConfig = Config.defaults( default_database, "foo" );
+        Config dbConfig = new DatabaseConfig( Map.of(), globalConfig, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ) );
+        //When
+        Config newConfig = Config.newBuilder().fromConfig( dbConfig ).build();
+        //Then
+        assertThat( newConfig.get( default_database ) ).isEqualTo( "foo" );
     }
 
     private static class Listener implements SettingChangeListener<GraphDatabaseSettings.TransactionTracingLevel>
