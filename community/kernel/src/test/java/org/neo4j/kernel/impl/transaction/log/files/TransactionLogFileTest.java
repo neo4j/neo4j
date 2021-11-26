@@ -469,53 +469,6 @@ class TransactionLogFileTest
     }
 
     @Test
-    void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
-    {
-        LogFiles logFiles = buildLogFiles();
-        life.start();
-        life.add( logFiles );
-
-        LogFile logFile = logFiles.getLogFile();
-        var capturingChannel = wrappingFileSystem.getCapturingChannel();
-        ReentrantLock writeAllLock = capturingChannel.getWriteAllLock();
-        var flushesBefore = capturingChannel.getFlushCounter().get();
-        var writesBefore = capturingChannel.getWriteAllCounter().get();
-        writeAllLock.lock();
-
-        int executors = 10;
-        var executorService = Executors.newFixedThreadPool( executors );
-        try
-        {
-            var future = executorService.submit( () -> {
-                logFile.locklessForce( LogAppendEvent.NULL );
-                return true;
-            } );
-            while ( !writeAllLock.hasQueuedThreads() )
-            {
-                parkNanos( 100 );
-            }
-            writeAllLock.unlock();
-            var future2 = executorService.submit( () ->
-            {
-                logFile.locklessForce( LogAppendEvent.NULL );
-                return true;
-            } );
-            Futures.getAll( List.of(future, future2 ) );
-        }
-        finally
-        {
-            if ( writeAllLock.isLocked() )
-            {
-                writeAllLock.unlock();
-            }
-            executorService.shutdownNow();
-        }
-
-        assertThat( capturingChannel.getWriteAllCounter().get() - writesBefore ).isEqualTo( 2 );
-        assertThat( capturingChannel.getFlushCounter().get() - flushesBefore ).isEqualTo( 2 );
-    }
-
-    @Test
     void logFilesExternalReadersRegistration() throws IOException, ExecutionException
     {
         LogFiles logFiles = buildLogFiles();
