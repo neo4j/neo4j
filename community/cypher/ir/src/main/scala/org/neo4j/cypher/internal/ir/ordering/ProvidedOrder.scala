@@ -58,6 +58,7 @@ sealed trait ProvidedOrderFactory {
   def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder
   def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder
   def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder
+  def assertOnNoProvidedOrder: Boolean
 }
 
 case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
@@ -69,12 +70,15 @@ case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
 
   override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
     ProvidedOrder.desc(expression, projections)
+
+  override def assertOnNoProvidedOrder: Boolean = true
 }
 
 case object NoProvidedOrderFactory extends ProvidedOrderFactory {
   override def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder = ProvidedOrder.empty
   override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = ProvidedOrder.empty
   override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = ProvidedOrder.empty
+  override def assertOnNoProvidedOrder: Boolean = false
 }
 
 /**
