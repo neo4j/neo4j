@@ -659,10 +659,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(NodeByLabelScan(n, labelName(label), args.map(VariableParser.unescaped).toSet, indexOrder)(_)))
   }
 
-  def nodeByIdSeek(node: String, args: Set[String], ids: AnyVal*): IMPL = {
+  def nodeByIdSeek(node: String, args: Set[String], ids: Any*): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     val idExpressions = ids.map {
+      case x: Expression => x
+      case x: String => Parser.parseExpression(x)
       case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
       case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
       case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
