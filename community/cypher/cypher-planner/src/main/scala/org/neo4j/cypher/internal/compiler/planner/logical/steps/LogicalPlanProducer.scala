@@ -245,7 +245,7 @@ import org.neo4j.exceptions.InternalException
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
  * much testing
  */
-case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttributes: PlanningAttributes, idGen : IdGen, executionModel: ExecutionModel = ExecutionModel.default) extends ListSupport {
+case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttributes: PlanningAttributes, idGen : IdGen) extends ListSupport {
 
   implicit val implicitIdGen: IdGen = idGen
   private val solveds = planningAttributes.solveds
@@ -1053,7 +1053,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     // Aggregation functions may leverage the order of a preceding ORDER BY.
     // In practice, this is only collect and potentially user defined aggregations
     if (previousInterestingOrder.exists(_.requiredOrderCandidate.nonEmpty) && hasCollectOrUDF) {
-      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+      markOrderAsLeveragedBackwardsUntilOrigin(plan, context.executionModel)
     }
 
     plan
@@ -1073,7 +1073,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
     val plan = annotate(OrderedAggregation(left, grouping, aggregation, orderToLeverage), solved, context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left), context)
-    markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    markOrderAsLeveragedBackwardsUntilOrigin(plan, context.executionModel)
     plan
   }
 
@@ -1104,7 +1104,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withSkipExpression(count))))
     val plan = annotate(Skip(inner, count), solved, providedOrders.get(inner.id).fromLeft, context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
-      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+      markOrderAsLeveragedBackwardsUntilOrigin(plan, context.executionModel)
     }
     plan
   }
@@ -1176,7 +1176,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount))))
     val plan = annotate(Limit(inner, effectiveCount), solved, providedOrders.get(inner.id).fromLeft, context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
-      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+      markOrderAsLeveragedBackwardsUntilOrigin(plan, context.executionModel)
     }
     plan
   }
@@ -1190,7 +1190,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount))))
     val plan = annotate(ExhaustiveLimit(inner, effectiveCount), solved, providedOrders.get(inner.id).fromLeft, context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
-      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+      markOrderAsLeveragedBackwardsUntilOrigin(plan, context.executionModel)
     }
     plan
   }
@@ -1234,7 +1234,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val annotatedLimitPlan = annotate(limitPlan, solved, providedOrder, context)
 
     // The limit leverages the order, not the following optional
-    markOrderAsLeveragedBackwardsUntilOrigin(annotatedLimitPlan)
+    markOrderAsLeveragedBackwardsUntilOrigin(annotatedLimitPlan, context.executionModel)
 
     val plan = Optional(annotatedLimitPlan)
     annotate(plan, solved, providedOrder, context)
@@ -1259,7 +1259,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .updateQueryProjection(_.updatePagination(_.withLimitExpression(limit))))
     val top = annotate(Top(inner, sortColumns, limit), solved, context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self), context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
-      markOrderAsLeveragedBackwardsUntilOrigin(top)
+      markOrderAsLeveragedBackwardsUntilOrigin(top, context.executionModel)
     }
     top
   }
@@ -1273,7 +1273,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .updateQueryProjection(_.updatePagination(_.withLimitExpression(SignedDecimalIntegerLiteral("1")(InputPosition.NONE)))))
     val top = annotate(Top1WithTies(inner, sortColumns), solved, context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self), context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
-      markOrderAsLeveragedBackwardsUntilOrigin(top)
+      markOrderAsLeveragedBackwardsUntilOrigin(top, context.executionModel)
     }
     top
   }
@@ -1286,7 +1286,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
     val plan = annotate(PartialSort(inner, alreadySortedPrefix, stillToSortSuffix, None), solved, context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Left), context)
-    markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    markOrderAsLeveragedBackwardsUntilOrigin(plan, context.executionModel)
     plan
   }
 
@@ -1332,7 +1332,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val providedOrder = providedOrders.get(left.id).commonPrefixWith(providedOrders.get(right.id)).fromBoth
 
     val plan = annotate(OrderedUnion(left, right, sortedColumns), solved, providedOrder, context)
-    markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    markOrderAsLeveragedBackwardsUntilOrigin(plan, context.executionModel)
     plan
   }
 
@@ -1361,7 +1361,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       annotate(left.copyPlanWithIdGen(idGen), solved, providedOrders.get(left.id).fromLeft, context)
     } else {
       val plan = annotate(OrderedDistinct(left, returnAll.toMap, orderToLeverage), solved, providedOrders.get(left.id).fromLeft, context)
-      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+      markOrderAsLeveragedBackwardsUntilOrigin(plan, context.executionModel)
       plan
     }
   }
@@ -1399,7 +1399,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
     val providedOrder =  context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
     val plan = annotate(OrderedDistinct(left, expressions, orderToLeverage), solved, providedOrder, context)
-    markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    markOrderAsLeveragedBackwardsUntilOrigin(plan, context.executionModel)
     plan
   }
 
@@ -1641,7 +1641,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   /**
    * @param lastInterestingOrders the interesting order of the last part of the whole query, or `None` for UNION queries.
    */
-  def planProduceResult(inner: LogicalPlan, columns: Seq[String], lastInterestingOrders: Option[InterestingOrder]): LogicalPlan = {
+  def planProduceResult(inner: LogicalPlan,
+                        columns: Seq[String],
+                        lastInterestingOrders: Option[InterestingOrder],
+                        context: LogicalPlanningContext): LogicalPlan = {
     val produceResult = ProduceResult(inner, columns)
     solveds.copy(inner.id, produceResult.id)
     // Do not calculate cardinality for ProduceResult. Since the passed context does not have accurate label information
@@ -1650,7 +1653,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     providedOrders.set(produceResult.id, providedOrders.get(inner.id).fromLeft)
 
     if (lastInterestingOrders.exists(_.requiredOrderCandidate.nonEmpty)) {
-      markOrderAsLeveragedBackwardsUntilOrigin(produceResult)
+      markOrderAsLeveragedBackwardsUntilOrigin(produceResult, context.executionModel)
     }
 
     produceResult
@@ -1811,7 +1814,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
    *
    * @param lp the plan that leverages a provided order. Must be an already annotated plan.
    */
-  private def markOrderAsLeveragedBackwardsUntilOrigin(lp: LogicalPlan): Unit = {
+  private def markOrderAsLeveragedBackwardsUntilOrigin(lp: LogicalPlan, executionModel: ExecutionModel): Unit = {
     leveragedOrders.set(lp.id, true)
 
     def loop(current: LogicalPlan): Unit = {

@@ -78,7 +78,7 @@ case object QueryPlanner
         devNullListener
 
     val planningAttributes = from.planningAttributes
-    val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen, context.executionModel)
+    val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen)
     LogicalPlanningContext(
       planContext = context.planContext,
       logicalPlanProducer = logicalPlanProducer,
@@ -116,7 +116,7 @@ case object QueryPlanner
       case _ => None
     }
 
-    val planWithProduceResults = context.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder)
+    val planWithProduceResults = context.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder, context)
     VerifyBestPlan(plan = planWithProduceResults, expected = query.query, context = context)
     planWithProduceResults
   }
