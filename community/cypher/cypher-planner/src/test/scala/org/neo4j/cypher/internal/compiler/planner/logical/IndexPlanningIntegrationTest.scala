@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -1180,6 +1181,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setAllRelationshipsCardinality(1000)
       .setRelationshipCardinality("()-[:R]->()", 500)
       .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1)
+      .addSemanticFeature(SemanticFeature.RelationshipPatternPredicates)
       .build()
 
     val queries = Seq(

@@ -44,6 +44,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     OpenCypherJavaCCWithFallbackParsing andThen PreparatoryRewriting andThen SemanticAnalysis(warn = true, semanticFeatures:_*) andThen SemanticAnalysis(warn = false, semanticFeatures:_*)
 
   private val pipeline = pipelineWithSemanticFeatures()
+  private val pipelineWithRelationshipPatternPredicates = pipelineWithSemanticFeatures(SemanticFeature.RelationshipPatternPredicates)
 
   test("should fail for max() with no arguments") {
     val query = "RETURN max() AS max"
@@ -576,12 +577,24 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
-  test("should allow relationship pattern predicates in MATCH") {
+  test("should not allow relationship pattern predicates when semantic feature isn't set") {
     val query = "WITH 123 AS minValue MATCH (n)-[r:Relationship {prop: 42} WHERE r.otherProp > minValue]->(m) RETURN r AS result"
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
     pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "WHERE is not allowed inside a relationship pattern"
+    )
+  }
+
+  test("should allow relationship pattern predicates in MATCH") {
+    val query = "WITH 123 AS minValue MATCH (n)-[r:Relationship {prop: 42} WHERE r.otherProp > minValue]->(m) RETURN r AS result"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors shouldBe empty
   }
@@ -591,7 +604,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
       "Relationship pattern predicates are not allowed when a path length is specified"
@@ -603,7 +616,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
       "Variable `n` not defined"
@@ -615,7 +628,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
       "Relationship pattern predicates are not allowed in CREATE, but only in MATCH clause or inside a pattern comprehension"
@@ -627,7 +640,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
       "Relationship pattern predicates are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension"
@@ -639,7 +652,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors shouldBe empty
   }
@@ -649,7 +662,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
       "Variable `n` not defined"
@@ -663,7 +676,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
       "Relationship pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension"
@@ -680,7 +693,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors shouldBe empty
   }
@@ -693,7 +706,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
+    pipelineWithRelationshipPatternPredicates.transform(startState, context)
 
     context.errors.map(_.msg) shouldBe Seq(
       "Variable `n` not defined"

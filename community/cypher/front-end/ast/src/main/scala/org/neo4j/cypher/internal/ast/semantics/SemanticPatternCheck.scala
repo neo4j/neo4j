@@ -90,7 +90,9 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def checkRelationshipPatternPredicates(ctx: SemanticContext, pattern: RelationshipPattern): SemanticCheck =
     pattern.predicate.foldSemanticCheck { predicate =>
-      when (ctx != SemanticContext.Match) {
+      whenState(state => !state.features.contains(SemanticFeature.RelationshipPatternPredicates)) {
+        error("WHERE is not allowed inside a relationship pattern", predicate.position)
+      } chain when (ctx != SemanticContext.Match) {
         error(s"Relationship pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension", predicate.position)
       } chain pattern.length.foldSemanticCheck{ _ =>
         error("Relationship pattern predicates are not allowed when a path length is specified", predicate.position)
@@ -269,7 +271,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         if (variable.isDefined && !variableIsGenerated(variable.get)) || length.isDefined || properties.isDefined || predicate.isDefined =>
         error(
           """The semantics of using colon in the separation of alternative relationship types in conjunction with
-            |the use of variable binding, inlined property predicates, relationship pattern predicates, or variable length is no longer supported.
+            |the use of variable binding, inlined property predicates, or variable length is no longer supported.
             |Please separate the relationships types using `:A|B|C` instead""".stripMargin, x.position)
       case _ =>
         None
