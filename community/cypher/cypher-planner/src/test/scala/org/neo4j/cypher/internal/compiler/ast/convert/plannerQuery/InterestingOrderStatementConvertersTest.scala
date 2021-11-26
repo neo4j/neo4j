@@ -484,11 +484,13 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     // Ideally, we would want a different Interesting order for the `MATCH (a)` and for the `WITH count(a) AS count`.
     // In the MATCH part we cannot yet sort by count, but in the WITH part we can.
     q.findFirstRequiredOrder shouldBe Some(
-      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("count"), Map("count" -> varFor("count"))))
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("count"), Map("count" -> function("count", varFor("a")))))
     )
 
-    interestingOrders(q).take(2) should be(List(
-      InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("count"), Map("count" -> varFor("count")))),
+    interestingOrders(q) should be(List(
+      // Interesting order candidate found in the first query part. This is translated back to the function invocation.
+      InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("count"), Map("count" -> function("count", varFor("a"))))),
+      // Required order candidate found in the second query part. This is not aware of the function in the first part's horizon.
       InterestingOrder.required(RequiredOrderCandidate.asc(varFor("count"), Map("count" -> varFor("count"))))
     ))
   }
