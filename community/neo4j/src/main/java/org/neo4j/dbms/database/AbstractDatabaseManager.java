@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.factory.module.GlobalModule;

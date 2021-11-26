@@ -23,7 +23,7 @@ import java.util.Collections;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DatabaseConfig;
+import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;

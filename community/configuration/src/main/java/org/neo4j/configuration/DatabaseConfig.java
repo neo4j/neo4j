@@ -17,18 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.database;
+package org.neo4j.configuration;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GroupSetting;
-import org.neo4j.configuration.SettingChangeListener;
-import org.neo4j.configuration.SettingImpl;
-import org.neo4j.configuration.SettingObserver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -203,5 +198,10 @@ public class DatabaseConfig extends Config implements Lifecycle
     public void shutdown()
     {
 
+    }
+
+    Config getGlobalConfig()
+    {
+        return globalConfig;
     }
 }

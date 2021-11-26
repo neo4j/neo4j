@@ -223,6 +223,10 @@ public class Config implements Configuration
             {
                 throw new IllegalArgumentException( "Can only build a config from one other config." );
             }
+            while ( config instanceof DatabaseConfig )
+            {
+                config = ((DatabaseConfig) config).getGlobalConfig();
+            }
             fromConfig = config;
             return this;
         }
