@@ -124,6 +124,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     indexesGetForRelType(relTypeId, schema.IndexType.BTREE)
   }
 
+  override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+    indexesGetForLabel(labelId, Some(schema.IndexType.RANGE))
+  }
+
+  override def rangeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+    indexesGetForRelType(relTypeId, schema.IndexType.RANGE)
+  }
+
   override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     indexesGetForLabel(labelId, Some(schema.IndexType.TEXT))
   }

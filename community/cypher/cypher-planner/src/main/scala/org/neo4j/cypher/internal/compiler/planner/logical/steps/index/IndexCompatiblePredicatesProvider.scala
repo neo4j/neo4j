@@ -100,7 +100,7 @@ trait IndexCompatiblePredicatesProvider {
         IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Btree, IndexType.Text))
+          compatibleIndexTypes = Set(IndexType.Btree, IndexType.Range, IndexType.Text))
 
       // n.prop <|<=|>|>= value
       case predicate@AsValueRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
@@ -128,7 +128,7 @@ trait IndexCompatiblePredicatesProvider {
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty) =>
         IndexCompatiblePredicate(scannable.ident, scannable.property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
-          solvedPredicate = Some(predicate), dependencies = Set.empty, compatibleIndexTypes = Set(IndexType.Btree)).convertToScannable
+          solvedPredicate = Some(predicate), dependencies = Set.empty, compatibleIndexTypes = Set(IndexType.Btree, IndexType.Range)).convertToScannable
 
       // n.prop ENDS WITH 'substring'
       case predicate@EndsWith(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
@@ -151,7 +151,7 @@ trait IndexCompatiblePredicatesProvider {
       case _: StringType => Set(IndexType.Text)
       case _             => Set.empty
     }
-    Set[IndexType](IndexType.Btree) ++ otherIndexTypes
+    Set[IndexType](IndexType.Btree, IndexType.Range) ++ otherIndexTypes
   }
 
   /**

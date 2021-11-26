@@ -454,6 +454,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     withSetting(GraphDatabaseInternalSettings.planning_text_indexes_enabled, Boolean.box(enabled))
   }
 
+  def enablePlanningRangeIndexes(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    withSetting(GraphDatabaseInternalSettings.planning_range_indexes_enabled, Boolean.box(enabled))
+  }
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -529,6 +533,16 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
         indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.BTREE)
+      }
+
+      override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
+        indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.RANGE)
+      }
+
+      override def rangeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
+        indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.RANGE)
       }
 
       override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {

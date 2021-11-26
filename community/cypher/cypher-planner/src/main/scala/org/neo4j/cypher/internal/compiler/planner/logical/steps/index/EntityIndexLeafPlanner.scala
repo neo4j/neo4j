@@ -99,7 +99,7 @@ object EntityIndexLeafPlanner {
       solvedPredicate = None,
       dependencies = Set.empty,
       isImplicit = true,
-      compatibleIndexTypes = Set(IndexType.Btree)
+      compatibleIndexTypes = Set(IndexType.Btree, IndexType.Range)
     )
   }
 

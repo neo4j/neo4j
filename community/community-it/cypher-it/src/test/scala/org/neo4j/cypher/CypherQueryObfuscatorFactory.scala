@@ -99,6 +99,8 @@ class CypherQueryObfuscatorFactory {
     override def btreeIndexesGetForRelType(relTypeId: Int): Nothing = fail()
     override def textIndexesGetForLabel(labelId: Int): Nothing = fail()
     override def textIndexesGetForRelType(relTypeId: Int): Nothing = fail()
+    override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = fail()
+    override def rangeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = fail()
     override def indexExistsForLabel(labelId: Int): Nothing = fail()
     override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()

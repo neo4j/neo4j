@@ -36,14 +36,24 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
 
   /**
-   * Return all indexes (general and unique) for a given label, without taking any schema locks.
+   * Return all BTREE indexes (general and unique) for a given label, without taking any schema locks.
    */
   def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
 
   /**
-   * Return all indexes for a given relationship type, without taking any schema locks.
+   * Return all BTREE indexes for a given relationship type, without taking any schema locks.
    */
   def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
+
+  /**
+   * Return all range indexes (general and unique) for a given label, without taking any schema locks.
+   */
+  def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
+
+  /**
+   * Return all range indexes for a given relationship type, without taking any schema locks.
+   */
+  def rangeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
 
   /**
    * Return all text indexes for a given label, without taking any schema locks.

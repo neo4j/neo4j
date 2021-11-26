@@ -74,7 +74,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     in(property, listOfInt(1, 2)),
     isExact = true)
 
-  testFindIndexCompatiblePredicate("startsWith", startsWith(property, literalString("test")), indexTypes = Set(IndexType.Btree, IndexType.Text))
+  testFindIndexCompatiblePredicate("startsWith", startsWith(property, literalString("test")), indexTypes = Set(IndexType.Btree, IndexType.Range, IndexType.Text))
 
   testFindIndexCompatiblePredicate("endsWith", endsWith(property, literalString("test")), indexTypes = Set(IndexType.Btree, IndexType.Text))
 
@@ -109,7 +109,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
                                                argumentIds: Set[String] = Set.empty,
                                                dependencies: Set[String] = Set.empty,
                                                propertyTypes: Map[Expression, TypeSpec] = Map.empty,
-                                               indexTypes: Set[IndexType] = Set(IndexType.Btree),
+                                               indexTypes: Set[IndexType] = Set(IndexType.Btree, IndexType.Range),
                                                expectToExist: Boolean = true): Unit = {
     val predicates = Set(predicate)
     test(s"findIndexCompatiblePredicates ($name)") {

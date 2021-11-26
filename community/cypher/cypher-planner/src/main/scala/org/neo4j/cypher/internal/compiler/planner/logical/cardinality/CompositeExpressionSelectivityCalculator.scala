@@ -195,13 +195,25 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext, pl
   private def findNodeIndexMatches(queryGraph: QueryGraph,
                                    semanticTable: SemanticTable,
                                    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Set[IndexMatch] = {
-    NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext, planningTextIndexesEnabled = false).toSet[IndexMatch]
+    NodeIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph,
+      semanticTable,
+      planContext,
+      indexPredicateProviderContext,
+      planningTextIndexesEnabled = false,
+      planningRangeIndexesEnabled = false,
+      planningPointIndexesEnabled = false).toSet[IndexMatch]
   }
 
   private def findRelationshipIndexMatches(queryGraph: QueryGraph,
                                            semanticTable: SemanticTable,
                                            indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext): Set[IndexMatch] = {
-    RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph, semanticTable, planContext, indexPredicateProviderContext, planningTextIndexesEnabled = false).toSet[IndexMatch]
+    RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph(queryGraph,
+      semanticTable,
+      planContext,
+      indexPredicateProviderContext,
+      planningTextIndexesEnabled = false,
+      planningRangeIndexesEnabled = false,
+      planningPointIndexesEnabled = false).toSet[IndexMatch]
   }
 
   private case class NodeRelQgs(nodeQgs: Iterable[QueryGraph], relQgs: Iterable[QueryGraph]) {
