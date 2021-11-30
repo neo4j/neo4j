@@ -9,6 +9,7 @@ Apache Software License, Version 2.0
   casbah-commons
   casbah-core
   casbah-query
+  error-prone annotations
   Gherkin Repackaged Dependencies
   Joda convert
   Joda-Time
@@ -406,6 +407,7 @@ This Agreement is governed by the laws of the State of New York and the intellec
 
 ------------------------------------------------------------------------------
 MIT License
+  Checker Qual
   Gherkin
   SLF4J API Module
 ------------------------------------------------------------------------------

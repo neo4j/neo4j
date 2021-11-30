@@ -31,6 +31,7 @@ Apache Software License, Version 2.0
   casbah-commons
   casbah-core
   casbah-query
+  error-prone annotations
   Gherkin Repackaged Dependencies
   Joda convert
   Joda-Time
@@ -60,6 +61,7 @@ Eclipse Public License - v 1.0
   Eclipse Collections Main Library
 
 MIT License
+  Checker Qual
   Gherkin
   SLF4J API Module
 

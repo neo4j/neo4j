@@ -35,6 +35,7 @@ Apache Software License, Version 2.0
   Commons Lang
   Commons Logging
   ConcurrentLinkedHashMap
+  error-prone annotations
   fastinfoset
   Jackson module: JAXB Annotations
   Jackson-annotations
@@ -108,6 +109,9 @@ Eclipse Public License - v 1.0
 
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
+
+MIT License
+  Checker Qual
 
 Dependencies with multiple licenses
 -----------------------------------

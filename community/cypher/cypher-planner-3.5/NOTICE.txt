@@ -27,6 +27,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Caffeine cache
+  error-prone annotations
   parboiled-core
   parboiled-scala
 
@@ -43,6 +44,9 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+MIT License
+  Checker Qual
 
 Dependencies with multiple licenses
 -----------------------------------

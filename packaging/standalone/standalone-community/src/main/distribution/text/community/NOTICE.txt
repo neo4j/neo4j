@@ -59,6 +59,7 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   detect-libc
   disposables
+  error-prone annotations
   fastinfoset
   firebase
   forever-agent
@@ -220,6 +221,7 @@ MIT License
   canvg
   chai
   check-error
+  Checker Qual
   classnames
   co
   code-point-at
