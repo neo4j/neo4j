@@ -118,7 +118,6 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
         {
             log.error( "Switching database to read only mode." );
             markDatabaseReadOnly();
-            throw new RuntimeException( new ReadOnlyDbException( databaseName ) );
         }
         else
         {

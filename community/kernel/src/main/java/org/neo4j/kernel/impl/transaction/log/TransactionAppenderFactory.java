@@ -36,8 +36,7 @@ public class TransactionAppenderFactory
     {
         if ( config.get( dedicated_transaction_appender ) )
         {
-            var queue = new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, transactionMetadataCache, config, scheduler,
-                    logProvider );
+            var queue = new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, transactionMetadataCache, scheduler, logProvider );
             return new QueueTransactionAppender( queue );
         }
 

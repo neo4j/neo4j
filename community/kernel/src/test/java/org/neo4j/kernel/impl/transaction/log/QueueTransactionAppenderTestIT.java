@@ -136,8 +136,7 @@ class QueueTransactionAppenderTestIT
 
         life.shutdown();
 
-        assertThatThrownBy( () -> transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) ).hasRootCauseInstanceOf(
-                DatabaseShutdownException.class );
+        assertThatThrownBy( () -> transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) ).isInstanceOf( DatabaseShutdownException.class );
     }
 
     @Test
@@ -149,8 +148,7 @@ class QueueTransactionAppenderTestIT
         QueueTransactionAppender transactionAppender = createAppender( logFiles );
 
         TransactionToApply transactionToApply = createTransaction();
-        assertThatThrownBy( () -> transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) ).hasRootCauseInstanceOf(
-                DatabaseShutdownException.class );
+        assertThatThrownBy( () -> transactionAppender.append( transactionToApply, LogAppendEvent.NULL ) ).isInstanceOf( DatabaseShutdownException.class );
     }
 
     @Test
@@ -235,8 +233,7 @@ class QueueTransactionAppenderTestIT
 
     private QueueTransactionAppender createAppender( LogFiles logFiles )
     {
-        TransactionLogQueue logQueue =
-                new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, config, jobScheduler, logProvider );
+        var logQueue = new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider );
         return new QueueTransactionAppender( logQueue );
     }
 

@@ -390,53 +390,10 @@ class TransactionLogFileTest
         var flushesBefore = capturingChannel.getFlushCounter().get();
         var writesBefore = capturingChannel.getWriteAllCounter().get();
 
-        logFile.forceAfterAppend( LogAppendEvent.NULL );
+        logFile.locklessForce( LogAppendEvent.NULL );
 
         assertEquals( 1, capturingChannel.getFlushCounter().get() - flushesBefore );
         assertEquals( 1, capturingChannel.getWriteAllCounter().get() - writesBefore );
-    }
-
-    @Test
-    void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
-    {
-        LogFiles logFiles = buildLogFiles();
-        life.start();
-        life.add( logFiles );
-
-        LogFile logFile = logFiles.getLogFile();
-        var capturingChannel = wrappingFileSystem.getCapturingChannel();
-
-        var flushesBefore = capturingChannel.getFlushCounter().get();
-        var writesBefore = capturingChannel.getWriteAllCounter().get();
-        ReentrantLock writeAllLock = capturingChannel.getWriteAllLock();
-        writeAllLock.lock();
-
-        int executors = 10;
-        var executorService = Executors.newFixedThreadPool( executors );
-        try
-        {
-            List<Future<?>> futures = Stream.iterate( 0, i -> i + 1 )
-                    .limit( executors )
-                    .map( v -> executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) ) )
-                    .collect( toList() );
-            while ( !writeAllLock.hasQueuedThreads() )
-            {
-                parkNanos( 100 );
-            }
-            writeAllLock.unlock();
-            assertThat( futures ).hasSize( executors );
-            Futures.getAll( futures );
-        }
-        finally
-        {
-            if ( writeAllLock.isLocked() )
-            {
-                writeAllLock.unlock();
-            }
-            executorService.shutdownNow();
-        }
-        assertThat( capturingChannel.getFlushCounter().get() - flushesBefore ).isLessThanOrEqualTo( executors );
-        assertThat( capturingChannel.getWriteAllCounter().get() - writesBefore ).isLessThanOrEqualTo( executors );
     }
 
     @Test
@@ -509,46 +466,6 @@ class TransactionLogFileTest
         assertThat( Arrays.stream( logFile.getMatchedFiles() ).map( path -> path.getFileName().toString() ) ).contains( "neostore.transaction.db.1",
                 "neostore.transaction.db.2", "neostore.transaction.db.3", "neostore.transaction.db.4",
                 "neostore.transaction.db.5", "neostore.transaction.db.6", "neostore.transaction.db.7" );
-    }
-
-    @Test
-    void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
-    {
-        LogFiles logFiles = buildLogFiles();
-        life.start();
-        life.add( logFiles );
-
-        LogFile logFile = logFiles.getLogFile();
-        var capturingChannel = wrappingFileSystem.getCapturingChannel();
-        ReentrantLock writeAllLock = capturingChannel.getWriteAllLock();
-        var flushesBefore = capturingChannel.getFlushCounter().get();
-        var writesBefore = capturingChannel.getWriteAllCounter().get();
-        writeAllLock.lock();
-
-        int executors = 10;
-        var executorService = Executors.newFixedThreadPool( executors );
-        try
-        {
-            var future = executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) );
-            while ( !writeAllLock.hasQueuedThreads() )
-            {
-                parkNanos( 100 );
-            }
-            writeAllLock.unlock();
-            var future2 = executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) );
-            Futures.getAll( List.of(future, future2 ) );
-        }
-        finally
-        {
-            if ( writeAllLock.isLocked() )
-            {
-                writeAllLock.unlock();
-            }
-            executorService.shutdownNow();
-        }
-
-        assertThat( capturingChannel.getWriteAllCounter().get() - writesBefore ).isEqualTo( 2 );
-        assertThat( capturingChannel.getFlushCounter().get() - flushesBefore ).isEqualTo( 2 );
     }
 
     @Test

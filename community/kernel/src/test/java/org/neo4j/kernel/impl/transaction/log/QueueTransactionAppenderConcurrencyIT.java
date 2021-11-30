@@ -193,8 +193,7 @@ class QueueTransactionAppenderConcurrencyIT
 
     private QueueTransactionAppender createAppender( LogFiles logFiles )
     {
-        TransactionLogQueue logQueue =
-                new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, config, jobScheduler, logProvider );
+        TransactionLogQueue logQueue = new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider );
         return new QueueTransactionAppender( logQueue );
     }
 

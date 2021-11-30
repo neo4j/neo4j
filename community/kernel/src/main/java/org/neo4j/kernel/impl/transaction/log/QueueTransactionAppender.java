@@ -50,7 +50,7 @@ class QueueTransactionAppender extends LifecycleAdapter implements TransactionAp
     @Override
     public long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException, ExecutionException, InterruptedException
     {
-        long committedTxId = transactionLogQueue.submit( batch, logAppendEvent ).get();
+        long committedTxId = transactionLogQueue.submit( batch, logAppendEvent ).getCommittedTxId();
         publishAsCommitted( batch );
         return committedTxId;
     }

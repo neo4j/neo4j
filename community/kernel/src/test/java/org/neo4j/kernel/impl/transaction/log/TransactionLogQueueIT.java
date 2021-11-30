@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.ByteUnit;
@@ -73,7 +72,6 @@ class TransactionLogQueueIT
     private SimpleLogVersionRepository logVersionRepository;
     private SimpleTransactionIdStore transactionIdStore;
     private TransactionMetadataCache metadataCache;
-    private Config config;
     private DatabaseHealth databaseHealth;
     private NullLogProvider logProvider;
 
@@ -86,7 +84,6 @@ class TransactionLogQueueIT
         transactionIdStore = new SimpleTransactionIdStore();
         logProvider = NullLogProvider.getInstance();
         metadataCache = new TransactionMetadataCache();
-        config = Config.defaults();
         databaseHealth = new DatabaseHealth( NO_OP, logProvider.getLog( DatabaseHealth.class ) );
     }
 
@@ -110,7 +107,7 @@ class TransactionLogQueueIT
         for ( int i = 0; i < 100; i++ )
         {
             TransactionToApply transaction = createTransaction();
-            assertEquals( ++committedTransactionId, logQueue.submit( transaction, LogAppendEvent.NULL ).get() );
+            assertEquals( ++committedTransactionId, logQueue.submit( transaction, LogAppendEvent.NULL ).getCommittedTxId() );
         }
     }
 
@@ -123,12 +120,12 @@ class TransactionLogQueueIT
         TransactionLogQueue logQueue = createLogQueue( logFiles );
         life.add( logQueue );
 
-        assertDoesNotThrow( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).get() );
+        assertDoesNotThrow( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).getCommittedTxId() );
 
         logQueue.shutdown();
 
-        assertThatThrownBy( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).get() )
-                .hasRootCauseInstanceOf( DatabaseShutdownException.class );
+        assertThatThrownBy( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).getCommittedTxId() )
+                .isInstanceOf( DatabaseShutdownException.class );
     }
 
     @Test
@@ -140,11 +137,11 @@ class TransactionLogQueueIT
         TransactionLogQueue logQueue = createLogQueue( logFiles );
         life.add( logQueue );
 
-        assertDoesNotThrow( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).get() );
+        assertDoesNotThrow( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).getCommittedTxId() );
 
         logQueue.stop();
 
-        assertDoesNotThrow( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).get() );
+        assertDoesNotThrow( () -> logQueue.submit( createTransaction(), LogAppendEvent.NULL ).getCommittedTxId() );
     }
 
     private static TransactionToApply createTransaction()
@@ -156,7 +153,7 @@ class TransactionLogQueueIT
 
     private TransactionLogQueue createLogQueue( LogFiles logFiles )
     {
-        return new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, config, jobScheduler, logProvider );
+        return new TransactionLogQueue( logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider );
     }
 
     private LogFiles buildLogFiles( SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore ) throws IOException

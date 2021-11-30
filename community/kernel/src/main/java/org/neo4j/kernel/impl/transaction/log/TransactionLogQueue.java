@@ -20,16 +20,13 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.jctools.queues.MessagePassingQueue;
-import org.jctools.queues.MpscChunkedArrayQueue;
+import org.jctools.queues.MpscUnboundedXaddArrayQueue;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -42,13 +39,11 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
 
@@ -56,48 +51,50 @@ public class TransactionLogQueue extends LifecycleAdapter
 {
     private static final int CONSUMER_MAX_BATCH = 1024;
     private static final int INITIAL_CAPACITY = 128;
+    private static final int FAILED_TX_MARKER = -1;
+
     private final LogFiles logFiles;
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
     private final Health databaseHealth;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final MpscChunkedArrayQueue<TxQueueElement> txAppendQueue;
+    private final MpscUnboundedXaddArrayQueue<TxQueueElement> txAppendQueue;
     private final JobScheduler jobScheduler;
     private final Log log;
-    private JobHandle<?> jobHandle;
     private TransactionWriter transactionWriter;
+    private Thread logAppender;
     private volatile boolean stopped;
 
     public TransactionLogQueue( LogFiles logFiles, TransactionIdStore transactionIdStore, Health databaseHealth,
-            TransactionMetadataCache transactionMetadataCache, Config config, JobScheduler jobScheduler, LogProvider logProvider )
+            TransactionMetadataCache transactionMetadataCache, JobScheduler jobScheduler, LogProvider logProvider )
     {
         this.logFiles = logFiles;
         this.logRotation = logFiles.getLogFile().getLogRotation();
         this.transactionIdStore = transactionIdStore;
         this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.txAppendQueue = new MpscChunkedArrayQueue<>( INITIAL_CAPACITY, config.get( max_concurrent_transactions ) );
+        this.txAppendQueue = new MpscUnboundedXaddArrayQueue<>( INITIAL_CAPACITY );
         this.jobScheduler = jobScheduler;
         this.stopped = true;
         this.log = logProvider.getLog( getClass() );
     }
 
-    public Future<Long> submit( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException
+    public TxQueueElement submit( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException
     {
         if ( stopped )
         {
-            return CompletableFuture.failedFuture( new DatabaseShutdownException() );
+            throw new DatabaseShutdownException();
         }
         TxQueueElement txQueueElement = new TxQueueElement( batch, logAppendEvent );
         while ( !txAppendQueue.offer( txQueueElement ) )
         {
             if ( stopped )
             {
-                return CompletableFuture.failedFuture( new DatabaseShutdownException() );
+                throw new DatabaseShutdownException();
             }
-            parkNanos( MILLISECONDS.toNanos( 10 ) );
         }
-        return txQueueElement.resultFuture;
+        LockSupport.unpark( logAppender );
+        return txQueueElement;
     }
 
     @Override
@@ -105,7 +102,8 @@ public class TransactionLogQueue extends LifecycleAdapter
     {
         transactionWriter =
                 new TransactionWriter( txAppendQueue, logFiles.getLogFile(), transactionIdStore, databaseHealth, transactionMetadataCache, logRotation, log );
-        jobHandle = jobScheduler.schedule( Group.LOG_WRITER, transactionWriter );
+        logAppender = jobScheduler.threadFactory( Group.LOG_WRITER ).newThread( transactionWriter );
+        logAppender.start();
         stopped = false;
     }
 
@@ -114,42 +112,64 @@ public class TransactionLogQueue extends LifecycleAdapter
     {
         stopped = true;
         TransactionWriter writer = this.transactionWriter;
-        JobHandle<?> handle = this.jobHandle;
 
         if ( writer != null )
         {
             writer.stop();
         }
-        if ( handle != null )
-        {
-            handle.cancel();
-            try
-            {
-                handle.waitTermination();
-            }
-            catch ( CancellationException ignore )
-            {
-            }
-        }
+        logAppender.join();
     }
 
-    private static class TxQueueElement
+    static class TxQueueElement
     {
-        final TransactionToApply batch;
-        final LogAppendEvent logAppendEvent;
-        final CompletableFuture<Long> resultFuture;
+        private static final long PARK_TIME = MILLISECONDS.toNanos( 10 );
+
+        private final TransactionToApply batch;
+        private final LogAppendEvent logAppendEvent;
+        private final Thread executor;
+        private Thread[] threadsToNotify;
+        private Throwable throwable;
+        private volatile long txId;
 
         TxQueueElement( TransactionToApply batch, LogAppendEvent logAppendEvent )
         {
             this.batch = batch;
             this.logAppendEvent = logAppendEvent;
-            this.resultFuture = new CompletableFuture<>();
+            this.executor = Thread.currentThread();
+        }
+
+        public long getCommittedTxId()
+        {
+            while ( txId == 0 )
+            {
+                LockSupport.parkNanos( this, PARK_TIME );
+            }
+            var threads = this.threadsToNotify;
+            if ( threads != null )
+            {
+                for ( Thread thread : threads )
+                {
+                    LockSupport.unpark( thread );
+                }
+            }
+            var exception = throwable;
+            if ( exception != null )
+            {
+                throw new RuntimeException( exception );
+            }
+            return txId;
+        }
+
+        public void fail( Throwable throwable )
+        {
+            this.throwable = throwable;
+            this.txId = FAILED_TX_MARKER;
         }
     }
 
     private static class TransactionWriter implements Runnable
     {
-        private final MpscChunkedArrayQueue<TxQueueElement> txQueue;
+        private final MpscUnboundedXaddArrayQueue<TxQueueElement> txQueue;
         private final TransactionLogWriter transactionLogWriter;
         private final LogFile logFile;
         private final TransactionIdStore transactionIdStore;
@@ -161,7 +181,7 @@ public class TransactionLogQueue extends LifecycleAdapter
         private volatile boolean stopped;
         private final MessagePassingQueue.WaitStrategy waitStrategy;
 
-        TransactionWriter( MpscChunkedArrayQueue<TxQueueElement> txQueue, LogFile logFile, TransactionIdStore transactionIdStore, Health databaseHealth,
+        TransactionWriter( MpscUnboundedXaddArrayQueue<TxQueueElement> txQueue, LogFile logFile, TransactionIdStore transactionIdStore, Health databaseHealth,
                 TransactionMetadataCache transactionMetadataCache, LogRotation logRotation, Log log )
         {
             this.txQueue = txQueue;
@@ -173,7 +193,7 @@ public class TransactionLogQueue extends LifecycleAdapter
             this.transactionMetadataCache = transactionMetadataCache;
             this.logRotation = logRotation;
             this.log = log;
-            this.waitStrategy = new SleepingWaitingStrategy();
+            this.waitStrategy = new ParkYieldCombineWaitingStrategy();
         }
 
         @Override
@@ -199,7 +219,6 @@ public class TransactionLogQueue extends LifecycleAdapter
                         {
                             logFile.locklessForce( logAppendEvent );
                         }
-
                         txConsumer.complete();
                     }
                     else
@@ -207,11 +226,11 @@ public class TransactionLogQueue extends LifecycleAdapter
                         idleCounter = waitStrategy.idle( idleCounter );
                     }
                 }
-                catch ( Exception e )
+                catch ( Throwable t )
                 {
-                    log.error( "Transaction log applier failure.", e );
-                    databaseHealth.panic( e );
-                    txConsumer.cancelBatch( e );
+                    log.error( "Transaction log applier failure.", t );
+                    databaseHealth.panic( t );
+                    txConsumer.cancelBatch( t );
                 }
             }
 
@@ -219,12 +238,13 @@ public class TransactionLogQueue extends LifecycleAdapter
             TxQueueElement element;
             while ( (element = txQueue.poll()) != null )
             {
-                element.resultFuture.completeExceptionally( databaseShutdownException );
+                element.fail( databaseShutdownException );
             }
         }
 
         private static class TxConsumer implements MessagePassingQueue.Consumer<TxQueueElement>
         {
+            private static final int NOTIFY_GROUP_SIZE = 8;
             private final Health databaseHealth;
             private final TransactionIdStore transactionIdStore;
             private final TransactionLogWriter transactionLogWriter;
@@ -284,7 +304,7 @@ public class TransactionLogQueue extends LifecycleAdapter
                     }
                     catch ( Exception e )
                     {
-                        txQueueElement.resultFuture.completeExceptionally( e );
+                        txQueueElement.fail( e );
                         throwIfUnchecked( e );
                         throw new RuntimeException( e );
                     }
@@ -321,19 +341,37 @@ public class TransactionLogQueue extends LifecycleAdapter
 
             public void complete()
             {
-                for ( int i = 0; i < index; i++ )
+                int lastIndex = index - 1;
+                var threadGroup = new Thread[Math.min( NOTIFY_GROUP_SIZE, lastIndex )];
+                int groupIndex = 0;
+                for ( int i = 0; i < lastIndex; i++ )
                 {
-                    txElements[i].resultFuture.complete( txIds[i] );
+                    TxQueueElement txElement = txElements[i];
+                    if ( groupIndex == NOTIFY_GROUP_SIZE )
+                    {
+                        txElement.threadsToNotify = threadGroup;
+                        threadGroup = new Thread[Math.min( NOTIFY_GROUP_SIZE, lastIndex - i )];
+                        groupIndex = 0;
+
+                    }
+                    threadGroup[groupIndex++] = txElement.executor;
+                    txElement.txId = txIds[i];
                 }
+
+                TxQueueElement lastElement = txElements[lastIndex];
+                lastElement.threadsToNotify = threadGroup;
+                lastElement.txId = txIds[lastIndex];
+                LockSupport.unpark( lastElement.executor );
+
                 Arrays.fill( txElements, 0, index, null );
                 index = 0;
             }
 
-            public void cancelBatch( Exception e )
+            public void cancelBatch( Throwable t )
             {
                 for ( int i = 0; i < index; i++ )
                 {
-                    txElements[i].resultFuture.completeExceptionally( e );
+                    txElements[i].fail( t );
                 }
                 Arrays.fill( txElements, 0, index, null );
                 index = 0;
@@ -346,10 +384,19 @@ public class TransactionLogQueue extends LifecycleAdapter
         }
     }
 
-    private static class SleepingWaitingStrategy implements MessagePassingQueue.WaitStrategy
+    /**
+     * Message wait strategy that will try to wait at first for number of times for new work by using Thread.yield, and fallback to parkNanos
+     * if new work did not arrive.
+     * This is a strategy that should be good on systems with lots of work but may cause some increased latency spikes on systems with relatively small
+     * number of incoming transactions.
+     */
+    private static class ParkYieldCombineWaitingStrategy implements MessagePassingQueue.WaitStrategy
     {
-        private static final int YIELD_THRESHOLD = 100;
-        private static final int PARK_MILLIS = 10;
+        private static final int YIELD_THRESHOLD = 1000;
+        private static final int SHORT_PARK_THRESHOLD = 100_000;
+        private static final int LONG_PARK_COUNTER = SHORT_PARK_THRESHOLD + 1;
+        private static final int SHORT_PARK_TIME = 10;
+        private static final long LONG_PARK_TIME = MILLISECONDS.toNanos( 10 );
 
         @Override
         public int idle( int idleCounter )
@@ -358,9 +405,14 @@ public class TransactionLogQueue extends LifecycleAdapter
             {
                 Thread.yield();
             }
+            else if ( idleCounter < SHORT_PARK_THRESHOLD )
+            {
+                parkNanos( SHORT_PARK_TIME );
+            }
             else
             {
-                parkNanos( MILLISECONDS.toNanos( PARK_MILLIS ) );
+                parkNanos( LONG_PARK_TIME );
+                return LONG_PARK_COUNTER;
             }
             return idleCounter + 1;
         }
