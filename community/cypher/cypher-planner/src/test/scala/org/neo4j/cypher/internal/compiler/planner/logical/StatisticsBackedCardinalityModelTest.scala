@@ -478,7 +478,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .addNodeIndex("Person", Seq("prop"), propSelectivity, 1)
       .build()
 
-    val query = "MATCH (n:Person) WHERE distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5"
+    val query = "MATCH (n:Person) WHERE point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5"
 
     val planState = config.planState(query + " RETURN n")
     val plan = planState.logicalPlan
