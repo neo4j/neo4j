@@ -159,6 +159,8 @@ object Neo4jExceptionToExecutionFailed {
       VARIABLE_ALREADY_BOUND
     else if (msg.matches(semanticError("Only directed relationships are supported in ((CREATE)|(MERGE))")))
       REQUIRES_DIRECTED_RELATIONSHIP
+    else if (msg.matches(s"${DOTALL}Type mismatch: map key must be given as String, but was .+"))
+      MAP_ELEMENT_ACCESS_BY_NON_STRING
     else if (msg.matches(s"${DOTALL}Type mismatch: expected .+ but was .+"))
       INVALID_ARGUMENT_TYPE
     else if (msg.matches(semanticError("Variable `.+` not defined")))
