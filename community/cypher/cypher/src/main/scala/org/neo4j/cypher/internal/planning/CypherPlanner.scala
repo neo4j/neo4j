@@ -199,7 +199,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                         ): BaseState = {
 
     val key = caches.astCache.key(preParsedQuery, params)
-    caches.astCache.get(key).getOrElse {
+    val maybeValue = caches.astCache.get(key)
+    maybeValue.getOrElse {
       val parsedQuery = planner.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,

@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.CypherRuntimeConfiguration;
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
-import org.neo4j.cypher.internal.cache.CypherQueryCaches$;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
@@ -73,6 +72,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
 
         CypherQueryCaches queryCaches = makeCypherQueryCaches( spi, queryService, cypherConfig, cacheFactory, clock );
         CompilerFactory compilerFactory = makeCompilerFactory( queryService, spi, plannerConfig, runtimeConfig, queryCaches );
+        deps.satisfyDependency( queryCaches.statistics() );
 
         if ( isSystemDatabase )
         {

@@ -139,6 +139,8 @@ class QueryCache[QUERY_KEY <: AnyRef,
 
   private val inner: Cache[QUERY_KEY, CachedValue] = cacheFactory.createCache[QUERY_KEY, CachedValue](maximumSize)
 
+  def estimatedSize(): Long = inner.estimatedSize()
+
   /*
     * The cached value wraps the value and maintains a count of how many times it has been fetched from the cache
     * and whether or not it has been recompiled with expression code generation.
