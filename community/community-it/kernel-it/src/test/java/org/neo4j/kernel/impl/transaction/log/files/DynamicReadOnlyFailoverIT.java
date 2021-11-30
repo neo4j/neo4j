@@ -48,7 +48,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -105,22 +104,18 @@ class DynamicReadOnlyFailoverIT
             }
         } );
 
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node node = transaction.createNode();
-            node.setProperty( "a", RandomStringUtils.randomAscii( (int) (initialRotationThreshold + 100) ) );
-            transaction.commit();
-        }
-
-        assertThatThrownBy( () ->
+        var e = assertThrows( Exception.class, () ->
         {
             try ( Transaction transaction = database.beginTx() )
             {
-                transaction.createNode();
+                Node node = transaction.createNode();
+                node.setProperty( "a", RandomStringUtils.randomAscii( (int) (initialRotationThreshold + 100) ) );
                 transaction.commit();
             }
-        } ).hasMessageContaining( "read-only" );
+        } );
 
+        assertThat( e ).hasRootCauseInstanceOf( ReadOnlyDbException.class ).hasRootCauseMessage(
+                "This Neo4j instance is read only for the database " + database.databaseName() );
         assertDoesNotThrow( () ->
         {
             try ( Transaction transaction = database.beginTx() )
@@ -129,14 +124,15 @@ class DynamicReadOnlyFailoverIT
             }
         } );
 
-        assertThatThrownBy( () ->
+        var writeException = assertThrows( Exception.class, () ->
         {
             try ( Transaction transaction = database.beginTx() )
             {
                 transaction.createNode();
                 transaction.commit();
             }
-        } ).hasMessageContaining( "read-only" );
+        } );
+        assertThat( writeException ).hasMessageContaining( "read-only" );
     }
 
     @Test
