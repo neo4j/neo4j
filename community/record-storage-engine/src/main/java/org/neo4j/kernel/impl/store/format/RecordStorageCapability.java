@@ -32,11 +32,6 @@ import static org.neo4j.internal.helpers.ArrayUtil.contains;
 public enum RecordStorageCapability implements Capability
 {
     /**
-     * Store has schema support
-     */
-    SCHEMA( CapabilityType.STORE ),
-
-    /**
      * Store has dense node support
      */
     DENSE_NODES( CapabilityType.FORMAT, CapabilityType.STORE ),

@@ -22,12 +22,17 @@ package org.neo4j.kernel.impl.store.format;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,6 +43,10 @@ class BaseRecordFormatsTest
 {
     private static final RecordStorageCapability[] CAPABILITIES = RecordStorageCapability.values();
     private static final CapabilityType[] CAPABILITY_TYPES = CapabilityType.values();
+    private static final RecordStorageCapability additiveCapability =
+            Arrays.stream( CAPABILITIES ).filter( RecordStorageCapability::isAdditive ).findAny().orElse( null );
+    private static final RecordStorageCapability nonAdditiveCapability =
+            Arrays.stream( CAPABILITIES ).filter( capability -> !capability.isAdditive() ).findAny().orElse( null );
 
     @Inject
     private RandomSupport random;
@@ -49,50 +58,69 @@ class BaseRecordFormatsTest
         RecordStorageCapability[] capabilities = random.selection( CAPABILITIES, CAPABILITIES.length / 2, CAPABILITIES.length, false );
 
         // then
-        assertCompatibility( capabilities, capabilities, true, CAPABILITY_TYPES );
+        assertCompatible( capabilities, capabilities );
     }
 
     @Test
     void shouldReportCompatibilityForAdditiveAdditionalCapabilities()
     {
+        assumeTrue( additiveCapability != null );
+        assumeTrue( nonAdditiveCapability != null );
+
         // given
-        RecordStorageCapability[] from = array( RecordStorageCapability.SCHEMA );
-        RecordStorageCapability[] to = array( RecordStorageCapability.SCHEMA, RecordStorageCapability.POINT_PROPERTIES,
-            RecordStorageCapability.TEMPORAL_PROPERTIES );
+        RecordStorageCapability[] from = array( nonAdditiveCapability );
+        RecordStorageCapability[] to = array( nonAdditiveCapability, additiveCapability );
 
         // then
-        assertCompatibility( from, to, true, CAPABILITY_TYPES );
+        assertCompatible( from, to );
     }
 
     @Test
     void shouldReportIncompatibilityForChangingAdditionalCapabilities()
     {
+        assumeTrue( nonAdditiveCapability != null );
+        RecordStorageCapability anotherNonAdditiveCapability =
+                Arrays.stream( CAPABILITIES ).filter( capability -> !capability.isAdditive() && !capability.equals( nonAdditiveCapability ) ).findAny()
+                        .orElse( null );
+        assumeTrue( anotherNonAdditiveCapability != null );
+
         // given
-        RecordStorageCapability[] from = array( RecordStorageCapability.SCHEMA );
-        RecordStorageCapability[] to = array( RecordStorageCapability.SCHEMA, RecordStorageCapability.DENSE_NODES );
+        RecordStorageCapability[] from = array( nonAdditiveCapability );
+        RecordStorageCapability[] to = array( nonAdditiveCapability, anotherNonAdditiveCapability );
 
         // then
-        assertCompatibility( from, to, false, CapabilityType.STORE );
+        assertNotCompatible( from, to, Arrays.stream( CAPABILITY_TYPES ).filter( anotherNonAdditiveCapability::isType ).toList() );
     }
 
     @Test
     void shouldReportIncompatibilityForAdditiveRemovedCapabilities()
     {
+        assumeTrue( additiveCapability != null );
+        assumeTrue( nonAdditiveCapability != null );
+
         // given
-        RecordStorageCapability[] from = array( RecordStorageCapability.SCHEMA, RecordStorageCapability.POINT_PROPERTIES,
-                RecordStorageCapability.TEMPORAL_PROPERTIES );
-        RecordStorageCapability[] to = array( RecordStorageCapability.SCHEMA );
+        RecordStorageCapability[] from = array( nonAdditiveCapability, additiveCapability );
+        RecordStorageCapability[] to = array( nonAdditiveCapability );
 
         // then
-        assertCompatibility( from, to, false, CapabilityType.STORE );
+        assertNotCompatible( from, to, Arrays.stream( CAPABILITY_TYPES ).filter( additiveCapability::isType ).toList());
     }
 
-    private static void assertCompatibility( RecordStorageCapability[] from, RecordStorageCapability[] to, boolean compatible,
-            CapabilityType... capabilityTypes )
+    private static void assertCompatible( RecordStorageCapability[] from, RecordStorageCapability[] to )
     {
-        for ( CapabilityType type : capabilityTypes )
+        for ( CapabilityType type : CAPABILITY_TYPES )
         {
-            assertEquals( compatible, format( from ).hasCompatibleCapabilities( format( to ), type ) );
+            assertTrue( format( from ).hasCompatibleCapabilities( format( to ), type ) );
+        }
+    }
+
+    private static void assertNotCompatible( RecordStorageCapability[] from, RecordStorageCapability[] to, List<CapabilityType> incompatibleTypes )
+    {
+        RecordFormats formatFrom = format( from );
+        RecordFormats formatTo = format( to );
+        for ( CapabilityType type : CAPABILITY_TYPES )
+        {
+            assertEquals( !incompatibleTypes.contains( type ), formatFrom.hasCompatibleCapabilities( formatTo, type ) );
         }
     }
 
