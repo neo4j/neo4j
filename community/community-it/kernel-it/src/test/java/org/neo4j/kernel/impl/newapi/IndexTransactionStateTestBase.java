@@ -392,10 +392,6 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     {
         // Modify tx state with changes that should not be reflected in the cursor,
         // since the cursor was already initialized in the code calling this method
-        for ( Pair<Long,Value> pair : expected )
-        {
-            deleteEntity( tx, pair.first() );
-        }
         entityWithPropId( tx, anotherValueFoundByQuery );
 
         if ( needsValues )
@@ -442,8 +438,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
      * @param tx the transaction
      * @param index the index
      * @param needsValues if the index is expected to provide values
-     * @param anotherValueFoundByQuery a values that would be found by the index queries, if a entity with that value existed. This method
-     * will create a entity with that value, after initializing the cursor and assert that the new entity is not found.
+     * @param anotherValueFoundByQuery a value that would be found by the index queries, if an entity with that value existed. This method
+     * will create an entity with that value after initializing the cursor and assert that the new entity is not found.
      * @param queries the index queries
      */
     abstract void assertEntityAndValueForSeek( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
@@ -458,8 +454,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
      * @param tx the transaction
      * @param index the index
      * @param needsValues if the index is expected to provide values
-     * @param anotherValueFoundByQuery a values that would be found by, if a entity with that value existed. This method
-     * will create a entity with that value, after initializing the cursor and assert that the new entity is not found.
+     * @param anotherValueFoundByQuery a value that would be found if an entity with that value existed. This method
+     * will create an entity with that value after initializing the cursor and assert that the new entity is not found.
      */
     abstract void assertEntityAndValueForScan( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
             Object anotherValueFoundByQuery ) throws Exception;
