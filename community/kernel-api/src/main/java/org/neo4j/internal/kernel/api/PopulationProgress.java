@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.neo4j.graphdb.schema.IndexPopulationProgress;
-import org.neo4j.internal.helpers.collection.Pair;
 
 import static java.lang.String.format;
 
@@ -84,12 +83,12 @@ public interface PopulationProgress
 
     class MultiBuilder
     {
-        private final List<Pair<PopulationProgress,Float>> parts = new ArrayList<>();
+        private final List<PopulationProgressWeight> parts = new ArrayList<>();
         private float totalWeight;
 
         public MultiBuilder add( PopulationProgress part, float weight )
         {
-            parts.add( Pair.of( part, weight ) );
+            parts.add( new PopulationProgressWeight( part, weight ) );
             totalWeight += weight;
             return this;
         }
@@ -102,13 +101,13 @@ public interface PopulationProgress
                 @Override
                 public long getCompleted()
                 {
-                    return parts.stream().mapToLong( part -> part.first().getCompleted() ).sum();
+                    return parts.stream().mapToLong( part -> part.part.getCompleted() ).sum();
                 }
 
                 @Override
                 public long getTotal()
                 {
-                    return parts.stream().mapToLong( part -> part.first().getTotal() ).sum();
+                    return parts.stream().mapToLong( part -> part.part.getTotal() ).sum();
                 }
 
                 @Override
@@ -117,7 +116,7 @@ public interface PopulationProgress
                     float combined = 0;
                     for ( int i = 0; i < parts.size(); i++ )
                     {
-                        combined += parts.get( i ).first().getProgress() * weightFactors[i];
+                        combined += parts.get( i ).part.getProgress() * weightFactors[i];
                     }
                     return combined;
                 }
@@ -143,11 +142,15 @@ public interface PopulationProgress
             float weightSum = 0;
             for ( int i = 0; i < parts.size(); i++ )
             {
-                Pair<PopulationProgress,Float> part = parts.get( i );
-                weightFactors[i] = i == parts.size() - 1 ? 1 - weightSum : part.other() / totalWeight;
+                PopulationProgressWeight part = parts.get( i );
+                weightFactors[i] = i == parts.size() - 1 ? 1 - weightSum : part.weight / totalWeight;
                 weightSum += weightFactors[i];
             }
             return weightFactors;
+        }
+
+        private record PopulationProgressWeight(PopulationProgress part, float weight)
+        {
         }
     }
 }
