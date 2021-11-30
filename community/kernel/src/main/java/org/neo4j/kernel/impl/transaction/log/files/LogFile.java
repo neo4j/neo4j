@@ -129,6 +129,8 @@ public interface LogFile extends RotatableFile
 
     void combine( Path additionalSource ) throws IOException;
 
+    boolean forceAfterAppend( LogForceEvents logForceEvents ) throws IOException;
+
     void locklessForce( LogForceEvents logAppendEvents ) throws IOException;
 
     void flush() throws IOException;

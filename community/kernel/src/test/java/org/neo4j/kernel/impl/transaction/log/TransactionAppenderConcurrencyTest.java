@@ -62,15 +62,14 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
-import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -83,10 +82,10 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.dedicated_transaction_appender;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -106,6 +105,7 @@ public class TransactionAppenderConcurrencyTest
 
     private final LogFiles logFiles = mock( TransactionLogFiles.class );
     private final LogFile logFile = mock( LogFile.class );
+    private final LogRotation logRotation = LogRotation.NO_ROTATION;
     private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
@@ -138,12 +138,18 @@ public class TransactionAppenderConcurrencyTest
         jobScheduler.close();
     }
 
+    /*
+     * There was an issue where if multiple concurrent appending threads did append and they moved on
+     * to await a force, where the force would fail and the one doing the force would raise a panic...
+     * the other threads may not notice the panic and move on to mark those transactions as committed
+     * and notice the panic later (which would be too late).
+     */
     @Test
     void shouldHaveAllConcurrentAppendersSeePanic() throws Throwable
     {
         // GIVEN
-        Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, false ),
-                failMethod( TransactionLogFile.class, "locklessForce" ) );
+        Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
+                failMethod( TransactionLogFile.class, "force" ) );
         EphemeralFileSystemAbstraction efs = new EphemeralFileSystemAbstraction();
         FileSystemAbstraction fs = new AdversarialFileSystemAbstraction( adversary, efs );
         life.add( new FileSystemLifecycleAdapter( fs ) );
@@ -161,6 +167,17 @@ public class TransactionAppenderConcurrencyTest
 
         // WHEN
         int numberOfAppenders = 10;
+        final CountDownLatch trap = new CountDownLatch( numberOfAppenders );
+        final LogAppendEvent beforeForceTrappingEvent = new LogAppendEvent.Empty()
+        {
+            @Override
+            public LogForceWaitEvent beginLogForceWait()
+            {
+                trap.countDown();
+                awaitLatch( trap );
+                return super.beginLogForceWait();
+            }
+        };
         Race race = new Race();
         for ( int i = 0; i < numberOfAppenders; i++ )
         {
@@ -171,12 +188,11 @@ public class TransactionAppenderConcurrencyTest
                 // will append and be forced in the same batch, where the force will fail then
                 // all these transactions should fail. If there's any transaction not failing then
                 // it just didn't notice the panic, which would be potentially hazardous.
-                assertThatThrownBy( () ->
+                assertThrows( IOException.class, () ->
                     // Append to the log, the LogAppenderEvent will have all of the appending threads
                     // do wait for all of the other threads to start the force thing
-                    appender.append( tx(), LogAppendEvent.NULL )
-                ).isInstanceOf( ExecutionException.class )
-                 .hasRootCauseInstanceOf( IOException.class );
+                    appender.append( tx(), beforeForceTrappingEvent )
+                );
             } );
         }
 
@@ -187,19 +203,21 @@ public class TransactionAppenderConcurrencyTest
     @Test
     void databasePanicShouldHandleOutOfMemoryErrors() throws IOException, InterruptedException, ExecutionException
     {
+        final CountDownLatch panicLatch = new CountDownLatch( 1 );
+        final CountDownLatch adversaryLatch = new CountDownLatch( 1 );
         OutOfMemoryAwareFileSystem fs = new OutOfMemoryAwareFileSystem();
 
-        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         life.add( new FileSystemLifecycleAdapter( fs ) );
+        DatabaseHealth slowPanicDatabaseHealth = new SlowPanickingDatabaseHealth( panicLatch, adversaryLatch );
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
-                .withDatabaseHealth( databaseHealth )
+                .withDatabaseHealth( slowPanicDatabaseHealth )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
-        var appender = life.add( createTransactionAppender( databaseHealth, logFiles, jobScheduler ) );
+        var appender = life.add( createTransactionAppender( slowPanicDatabaseHealth, logFiles, jobScheduler ) );
         life.start();
 
         // Commit initial transaction
@@ -208,16 +226,25 @@ public class TransactionAppenderConcurrencyTest
         // Try to commit one transaction, will fail during flush with OOM, but not actually panic
         fs.shouldOOM = true;
         Future<Long> failingTransaction = executor.submit( () -> appender.append( tx(), LogAppendEvent.NULL ) );
-
-        var executionException = assertThrows( ExecutionException.class, failingTransaction::get );
-        assertThat( executionException ).getRootCause().isInstanceOf( OutOfMemoryError.class );
+        panicLatch.await();
 
         // Try to commit one additional transaction, should fail since database has already panicked
         fs.shouldOOM = false;
-        assertThatThrownBy( () -> appender.append( tx(), LogAppendEvent.NULL ) )
-                .isInstanceOf( ExecutionException.class )
-                .getCause().hasMessageContaining( "The database has encountered a critical error" )
-                .getRootCause().isInstanceOf( OutOfMemoryError.class );
+        var e = assertThrows( IOException.class, () -> appender.append( tx(), new LogAppendEvent.Empty()
+            {
+                @Override
+                public LogForceWaitEvent beginLogForceWait()
+                {
+                    adversaryLatch.countDown();
+                    return super.beginLogForceWait();
+                }
+            } ) );
+
+        assertThat( e ).hasMessageContaining( "The database has encountered a critical error" );
+
+        // Check that we actually got an OutOfMemoryError
+        var executionException = assertThrows( ExecutionException.class, failingTransaction::get );
+        assertThat( executionException ).hasCauseInstanceOf( OutOfMemoryError.class );
 
         // Check number of transactions, should only have one
         LogEntryReader logEntryReader = new VersionAwareLogEntryReader( new TestCommandReaderFactory() );
@@ -247,7 +274,7 @@ public class TransactionAppenderConcurrencyTest
     private TransactionAppender createTransactionAppender( DatabaseHealth databaseHealth, LogFiles logFiles, JobScheduler scheduler )
     {
         return TransactionAppenderFactory.createTransactionAppender( logFiles, transactionIdStore, transactionMetadataCache,
-                Config.defaults(),
+                Config.defaults( dedicated_transaction_appender, false ),
                 databaseHealth, scheduler, NullLogProvider.getInstance() );
     }
 
@@ -272,6 +299,34 @@ public class TransactionAppenderConcurrencyTest
                     super.writeAll( src );
                 }
             };
+        }
+    }
+
+    private static class SlowPanickingDatabaseHealth extends DatabaseHealth
+    {
+        private final CountDownLatch panicLatch;
+        private final CountDownLatch adversaryLatch;
+
+        SlowPanickingDatabaseHealth( CountDownLatch panicLatch, CountDownLatch adversaryLatch )
+        {
+            super( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
+            this.panicLatch = panicLatch;
+            this.adversaryLatch = adversaryLatch;
+        }
+
+        @Override
+        public void panic( Throwable cause )
+        {
+            panicLatch.countDown();
+            try
+            {
+                adversaryLatch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+            super.panic( cause );
         }
     }
 

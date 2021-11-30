@@ -390,10 +390,53 @@ class TransactionLogFileTest
         var flushesBefore = capturingChannel.getFlushCounter().get();
         var writesBefore = capturingChannel.getWriteAllCounter().get();
 
-        logFile.locklessForce( LogAppendEvent.NULL );
+        logFile.forceAfterAppend( LogAppendEvent.NULL );
 
         assertEquals( 1, capturingChannel.getFlushCounter().get() - flushesBefore );
         assertEquals( 1, capturingChannel.getWriteAllCounter().get() - writesBefore );
+    }
+
+    @Test
+    void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        LogFile logFile = logFiles.getLogFile();
+        var capturingChannel = wrappingFileSystem.getCapturingChannel();
+
+        var flushesBefore = capturingChannel.getFlushCounter().get();
+        var writesBefore = capturingChannel.getWriteAllCounter().get();
+        ReentrantLock writeAllLock = capturingChannel.getWriteAllLock();
+        writeAllLock.lock();
+
+        int executors = 10;
+        var executorService = Executors.newFixedThreadPool( executors );
+        try
+        {
+            List<Future<?>> futures = Stream.iterate( 0, i -> i + 1 )
+                    .limit( executors )
+                    .map( v -> executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) ) )
+                    .collect( toList() );
+            while ( !writeAllLock.hasQueuedThreads() )
+            {
+                parkNanos( 100 );
+            }
+            writeAllLock.unlock();
+            assertThat( futures ).hasSize( executors );
+            Futures.getAll( futures );
+        }
+        finally
+        {
+            if ( writeAllLock.isLocked() )
+            {
+                writeAllLock.unlock();
+            }
+            executorService.shutdownNow();
+        }
+        assertThat( capturingChannel.getFlushCounter().get() - flushesBefore ).isLessThanOrEqualTo( executors );
+        assertThat( capturingChannel.getWriteAllCounter().get() - writesBefore ).isLessThanOrEqualTo( executors );
     }
 
     @Test
@@ -486,20 +529,13 @@ class TransactionLogFileTest
         var executorService = Executors.newFixedThreadPool( executors );
         try
         {
-            var future = executorService.submit( () -> {
-                logFile.locklessForce( LogAppendEvent.NULL );
-                return true;
-            } );
+            var future = executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) );
             while ( !writeAllLock.hasQueuedThreads() )
             {
                 parkNanos( 100 );
             }
             writeAllLock.unlock();
-            var future2 = executorService.submit( () ->
-            {
-                logFile.locklessForce( LogAppendEvent.NULL );
-                return true;
-            } );
+            var future2 = executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) );
             Futures.getAll( List.of(future, future2 ) );
         }
         finally

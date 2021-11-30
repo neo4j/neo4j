@@ -173,6 +173,12 @@ class TransactionAppenderRotationIT
         }
 
         @Override
+        public LogForceWaitEvent beginLogForceWait()
+        {
+            return null;
+        }
+
+        @Override
         public LogForceEvent beginLogForce()
         {
             return null;

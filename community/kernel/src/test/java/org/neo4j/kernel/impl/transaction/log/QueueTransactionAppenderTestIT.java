@@ -262,6 +262,7 @@ class QueueTransactionAppenderTestIT
         ROTATED_FALSE,
         BEGIN_APPEND,
         CLOSE_APPEND,
+        LOG_FORCE_WAIT,
         LOG_FORCE,
         CLOSE
     }
@@ -294,6 +295,13 @@ class QueueTransactionAppenderTestIT
         {
             events.add( EventType.BEGIN_APPEND );
             return new RecordingTransactionAppendEvent( events );
+        }
+
+        @Override
+        public LogForceWaitEvent beginLogForceWait()
+        {
+            events.add( EventType.LOG_FORCE_WAIT );
+            return LogForceWaitEvent.NULL;
         }
 
         @Override

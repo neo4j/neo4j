@@ -17,20 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.tracing;
+package org.neo4j.kernel.impl.transaction.log.files;
 
-/**
- * Common interface for starting events around log force.
- */
-public interface LogForceEvents
+import java.util.concurrent.locks.LockSupport;
+
+class ThreadLink
 {
-    /**
-     * Begin the process of forcing the transaction log file.
-     */
-    LogForceWaitEvent beginLogForceWait();
+    final Thread thread;
+    volatile ThreadLink next;
+    volatile boolean done;
 
-    /**
-     * Begin a batched force of the transaction log file.
-     */
-    LogForceEvent beginLogForce();
+    ThreadLink( Thread thread )
+    {
+        this.thread = thread;
+    }
+
+    public void unpark()
+    {
+        LockSupport.unpark( thread );
+    }
+
+    static final ThreadLink END = new ThreadLink( null );
+
+    static
+    {
+        END.next = END;
+    }
 }

@@ -207,11 +207,11 @@ public class TransactionLogQueue extends LifecycleAdapter
                         idleCounter = waitStrategy.idle( idleCounter );
                     }
                 }
-                catch ( Throwable t )
+                catch ( Exception e )
                 {
-                    log.error( "Transaction log applier failure.", t );
-                    databaseHealth.panic( t );
-                    txConsumer.cancelBatch( t );
+                    log.error( "Transaction log applier failure.", e );
+                    databaseHealth.panic( e );
+                    txConsumer.cancelBatch( e );
                 }
             }
 
@@ -329,11 +329,11 @@ public class TransactionLogQueue extends LifecycleAdapter
                 index = 0;
             }
 
-            public void cancelBatch( Throwable t )
+            public void cancelBatch( Exception e )
             {
                 for ( int i = 0; i < index; i++ )
                 {
-                    txElements[i].resultFuture.completeExceptionally( t );
+                    txElements[i].resultFuture.completeExceptionally( e );
                 }
                 Arrays.fill( txElements, 0, index, null );
                 index = 0;
