@@ -40,7 +40,6 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexType;
@@ -307,11 +306,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     @VisibleForTesting
     MultipleIndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
     {
-        Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
+        Map<SchemaDescriptor,IndexPopulationUpdater> updaters = new HashMap<>();
         forEachPopulation( population ->
         {
             IndexUpdater updater = population.populator.newPopulatingUpdater( accessor, cursorContext );
-            updaters.put( population.schema(), Pair.of( population, updater ) );
+            updaters.put( population.schema(), new IndexPopulationUpdater( population, updater ) );
         }, cursorContext );
         return new MultipleIndexUpdater( this, updaters, logProvider, cursorContext );
     }
@@ -530,13 +529,13 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
 
     public static class MultipleIndexUpdater implements IndexUpdater
     {
-        private final Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;
+        private final Map<SchemaDescriptor,IndexPopulationUpdater> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
         private final Log log;
         private final CursorContext cursorContext;
 
         MultipleIndexUpdater( MultipleIndexPopulator multipleIndexPopulator,
-                Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters, LogProvider logProvider, CursorContext cursorContext )
+                Map<SchemaDescriptor,IndexPopulationUpdater> populationsWithUpdaters, LogProvider logProvider, CursorContext cursorContext )
         {
             this.multipleIndexPopulator = multipleIndexPopulator;
             this.populationsWithUpdaters = populationsWithUpdaters;
@@ -547,11 +546,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         @Override
         public void process( IndexEntryUpdate<?> update )
         {
-            Pair<IndexPopulation,IndexUpdater> pair = populationsWithUpdaters.get( update.indexKey().schema() );
-            if ( pair != null )
+            IndexPopulationUpdater populationUpdater = populationsWithUpdaters.get( update.indexKey().schema() );
+            if ( populationUpdater != null )
             {
-                IndexPopulation population = pair.first();
-                IndexUpdater updater = pair.other();
+                IndexPopulation population = populationUpdater.population;
+                IndexUpdater updater = populationUpdater.updater;
 
                 try
                 {
@@ -577,18 +576,15 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         @Override
         public void close()
         {
-            for ( Pair<IndexPopulation,IndexUpdater> pair : populationsWithUpdaters.values() )
+            for ( IndexPopulationUpdater populationUpdater : populationsWithUpdaters.values() )
             {
-                IndexPopulation population = pair.first();
-                IndexUpdater updater = pair.other();
-
                 try
                 {
-                    updater.close();
+                    populationUpdater.updater.close();
                 }
                 catch ( Throwable t )
                 {
-                    multipleIndexPopulator.cancel( population, t, cursorContext );
+                    multipleIndexPopulator.cancel( populationUpdater.population, t, cursorContext );
                 }
             }
             populationsWithUpdaters.clear();
@@ -907,5 +903,9 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         {
             delegate.setPhaseTracker( phaseTracker );
         }
+    }
+
+    private record IndexPopulationUpdater(IndexPopulation population, IndexUpdater updater)
+    {
     }
 }

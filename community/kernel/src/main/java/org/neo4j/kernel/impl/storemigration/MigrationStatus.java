@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,22 +49,17 @@ enum MigrationStatus
             return currentInfo;
         }
 
-        Pair<String,String> data = readFromFile( fs, stateFile, this );
-        return data == null ? null : data.other();
+        var stateInfo = readFromFile( fs, stateFile, this );
+        return stateInfo.map( s -> s.state ).orElse( null );
     }
 
     public static MigrationStatus readMigrationStatus( FileSystemAbstraction fs, Path stateFile )
     {
-        Pair<String,String> data = readFromFile( fs, stateFile, null );
-        if ( data == null )
-        {
-            return null;
-        }
-
-        return MigrationStatus.valueOf( data.first() );
+        var stateInfo = readFromFile( fs, stateFile, null );
+        return stateInfo.map( s -> MigrationStatus.valueOf( s.state ) ).orElse( null );
     }
 
-    private static Pair<String, String> readFromFile( FileSystemAbstraction fs, Path path, MigrationStatus expectedSate )
+    private static Optional<MigrationStateInfo> readFromFile( FileSystemAbstraction fs, Path path, MigrationStatus expectedSate )
     {
         try ( var reader = fs.openAsReader( path, UTF_8 ) )
         {
@@ -75,11 +71,11 @@ enum MigrationStatus
                         "Not in the expected state, expected=" + expectedSate.name() + ", actual=" + state );
             }
             String info = lineIterator.next().trim();
-            return Pair.of( state, info );
+            return Optional.of( new MigrationStateInfo( state, info ) );
         }
         catch ( NoSuchFileException e )
         {
-            return null;
+            return Optional.empty();
         }
         catch ( IOException e )
         {
@@ -112,5 +108,9 @@ enum MigrationStatus
         {
             throw new RuntimeException( e );
         }
+    }
+
+    record MigrationStateInfo(String state, String info)
+    {
     }
 }
