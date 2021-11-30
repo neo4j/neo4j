@@ -66,7 +66,7 @@ class ImportCommandTest
         }
         assertEquals( "USAGE" + lineSeparator() +
                         "" + lineSeparator() +
-                        "import [--expand-commands] [--verbose] [--cache-on-heap[=<true/false>]] [--clean" + lineSeparator() +
+                        "import [--expand-commands] [--verbose] [--cache-on-heap[=<true/false>]] [--force" + lineSeparator() +
                         "       [=<true/false>]] [--high-io[=<true/false>]] [--ignore-empty-strings" + lineSeparator() +
                         "       [=<true/false>]] [--ignore-extra-columns[=<true/false>]]" + lineSeparator() +
                         "       [--legacy-style-quoting[=<true/false>]] [--multiline-fields" + lineSeparator() +
@@ -101,7 +101,7 @@ class ImportCommandTest
                         "      --report-file=<path>   File in which to store the report of the" + lineSeparator() +
                         "                               csv-import." + lineSeparator() +
                         "                               Default: import.report" + lineSeparator() +
-                        "      --clean[=<true/false>] Clean will delete any existing database files" + lineSeparator() +
+                        "      --force[=<true/false>] Force will delete any existing database files" + lineSeparator() +
                         "                               prior to the import." + lineSeparator() +
                         "                               Default: false" + lineSeparator() +
                         "      --id-type=<STRING|INTEGER|ACTUAL>" + lineSeparator() +

@@ -113,7 +113,7 @@ class CsvImporter implements Importer
     private final PrintStream stdErr;
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
-    private final boolean clean;
+    private final boolean force;
 
     private CsvImporter( Builder b )
     {
@@ -138,13 +138,13 @@ class CsvImporter implements Importer
         this.memoryTracker = requireNonNull( b.memoryTracker );
         this.stdOut = requireNonNull( b.stdOut );
         this.stdErr = requireNonNull( b.stdErr );
-        this.clean = b.clean;
+        this.force = b.force;
     }
 
     @Override
     public void doImport() throws IOException
     {
-        if ( clean )
+        if ( force )
         {
             fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
             fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
@@ -248,7 +248,7 @@ class CsvImporter implements Importer
         }
         else if ( DirectoryNotEmptyException.class.equals( e.getClass() ) )
         {
-            printErrorMessage( "Database already exist. Re-run with `--clean` to remove the database prior to import", e, stackTrace, err );
+            printErrorMessage( "Database already exist. Re-run with `--force` to remove the database prior to import", e, stackTrace, err );
         }
         // This type of exception is wrapped since our input code throws InputException consistently,
         // and so IllegalMultilineFieldException comes from the csv component, which has no access to InputException
@@ -426,7 +426,7 @@ class CsvImporter implements Importer
         private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
-        private boolean clean;
+        private boolean force;
 
         Builder withDatabaseLayout( DatabaseLayout databaseLayout )
         {
@@ -556,9 +556,9 @@ class CsvImporter implements Importer
             return this;
         }
 
-        Builder withClean( boolean clean )
+        Builder withForce( boolean force )
         {
-            this.clean = clean;
+            this.force = force;
             return this;
         }
 

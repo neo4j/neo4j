@@ -107,8 +107,8 @@ class CsvImporterTest
 
         //Then
         assertThatThrownBy( () -> csvImporterBuilder.build().doImport() ).hasCauseInstanceOf( DirectoryNotEmptyException.class );
-        assertThat( suppressOutput.getErrorVoice().containsMessage( "Database already exist. Re-run with `--clean`" ) ).isTrue();
-        assertThatCode( () -> csvImporterBuilder.withClean( true ).build().doImport() ).doesNotThrowAnyException();
+        assertThat( suppressOutput.getErrorVoice().containsMessage( "Database already exist. Re-run with `--force`" ) ).isTrue();
+        assertThatCode( () -> csvImporterBuilder.withForce( true ).build().doImport() ).doesNotThrowAnyException();
     }
 
     @Test

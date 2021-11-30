@@ -96,9 +96,9 @@ public class ImportCommand extends AbstractCommand
             description = "File in which to store the report of the csv-import." )
     private Path reportFile = Path.of( DEFAULT_REPORT_FILE_NAME );
 
-    @Option( names = "--clean", arity = "0..1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
-            description = "Clean will delete any existing database files prior to the import." )
-    private boolean clean;
+    @Option( names = "--force", arity = "0..1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
+            description = "Force will delete any existing database files prior to the import." )
+    private boolean force;
 
     @Option( names = "--id-type", paramLabel = "<STRING|INTEGER|ACTUAL>", description = "Each node must provide a unique id. This is used to find the " +
             "correct nodes when creating relationships. Possible values are:%n" +
@@ -247,7 +247,7 @@ public class ImportCommand extends AbstractCommand
                     .withSkipBadRelationships( skipBadRelationships )
                     .withNormalizeTypes( normalizeTypes )
                     .withVerbose( verbose )
-                    .withClean( clean );
+                    .withForce( force );
 
             nodes.forEach( n -> {
                 importerBuilder.addNodeFiles( n.key, n.files );
