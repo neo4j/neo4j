@@ -50,6 +50,8 @@ trait IndexDescriptorCompatibility {
   def kernelToCypher(indexType: schema.IndexType): Option[IndexDescriptor.IndexType] = indexType match {
     case schema.IndexType.BTREE => Some(IndexDescriptor.IndexType.Btree)
     case schema.IndexType.TEXT => Some(IndexDescriptor.IndexType.Text)
+    case schema.IndexType.RANGE => Some(IndexDescriptor.IndexType.Range)
+    case schema.IndexType.POINT => Some(IndexDescriptor.IndexType.Point)
     case _ => None
   }
 
@@ -63,6 +65,8 @@ trait IndexDescriptorCompatibility {
   def cypherToKernel(indexType: spi.IndexDescriptor.IndexType): schema.IndexType = indexType match {
     case IndexDescriptor.IndexType.Btree => schema.IndexType.BTREE
     case IndexDescriptor.IndexType.Text => schema.IndexType.TEXT
+    case IndexDescriptor.IndexType.Range => schema.IndexType.RANGE
+    case IndexDescriptor.IndexType.Point => schema.IndexType.POINT
   }
 
   def toLabelSchemaDescriptor(tc: TransactionBoundReadTokenContext,

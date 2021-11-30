@@ -74,6 +74,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   debugOptions: CypherDebugOptions,
                                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
                                   planningTextIndexesEnabled: Boolean = true,
+                                 // TODO: Is it the right thing to do to have a default value of true?
+                                  planningRangeIndexesEnabled: Boolean = true,
+                                  planningPointIndexesEnabled: Boolean = true,
                                  ) {
 
   def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =

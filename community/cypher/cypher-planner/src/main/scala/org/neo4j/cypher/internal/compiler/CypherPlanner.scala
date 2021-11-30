@@ -48,6 +48,7 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.values.virtual.MapValue
 
 import java.time.Clock
+
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
@@ -131,4 +132,6 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   def pipelinedBatchSizeBig: Int = config.pipelinedBatchSizeBig
   def enabledSemanticFeatures: Seq[SemanticFeature] = CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures)
   def planningTextIndexesEnabled: Boolean = config.planningTextIndexesEnabled
+  def planningRangeIndexesEnabled: Boolean = config.planningRangeIndexesEnabled
+  def planningPointIndexesEnabled: Boolean = config.planningPointIndexesEnabled
 }

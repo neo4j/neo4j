@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherVersion
 
 import java.io.File
+
 import scala.collection.JavaConverters.asScalaSetConverter
 
 /**
@@ -86,6 +87,8 @@ class CypherConfiguration private (val config: Config) {
   val disallowSplittingTop: Boolean = config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
   val enableExtraSemanticFeatures: Set[String] = config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
   val planningTextIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_text_indexes_enabled)
+  val planningRangeIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_range_indexes_enabled)
+  val planningPointIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_point_indexes_enabled)
   val produceResultInSeparatePipeline: Boolean = config.get(GraphDatabaseInternalSettings.produce_result_in_separate_pipeline)
 
   //dynamic configurations
