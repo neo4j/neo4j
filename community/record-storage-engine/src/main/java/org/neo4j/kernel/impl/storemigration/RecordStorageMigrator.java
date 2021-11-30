@@ -239,7 +239,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, false,
                     cursorContext );
 
-            if ( requiresSchemaStoreMigration( oldFormat, newFormat ) || requiresPropertyMigration )
+            if ( requiresPropertyMigration )
             {
                 // Migration with the batch importer would have copied the property, property key token, and property key name stores
                 // into the migration directory, which is needed for the schema store migration. However, it might choose to skip
@@ -818,14 +818,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private static boolean requiresSchemaStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )
-    {
-        return oldFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) !=
-                newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE );
-    }
-
     /**
-     * Migration of the schema store is invoked if the old and new formats differ in their {@link RecordStorageCapability#FLEXIBLE_SCHEMA_STORE} capability.
+     * Migration of the schema store is invoked if the property store needs migration.
      */
     private void migrateSchemaStore( RecordDatabaseLayout directoryLayout, RecordDatabaseLayout migrationLayout, RecordFormats oldFormat,
             RecordFormats newFormat, CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException, KernelException

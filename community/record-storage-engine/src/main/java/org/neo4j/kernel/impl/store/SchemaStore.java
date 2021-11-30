@@ -40,7 +40,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -102,10 +101,6 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     // and to have it in reserve, just in case we might need it in the future.
     private static final IntStoreHeaderFormat VALID_STORE_HEADER = new IntStoreHeaderFormat( 0 );
 
-    // When the store format does not support the flexible schema store feature, then we won't even pretend to have a header,
-    // since that can run afoul of the id generators, which will be initialised with a max id of zero.
-    private static final IntStoreHeaderFormat DISABLED_STORE_HEADER = new ConstantIntStoreHeaderFormat( 0 );
-
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
     private final PropertyStore propertyStore;
 
@@ -124,13 +119,13 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schema(),
-                getStoreHeaderFormat( recordFormats ), recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
+                getStoreHeaderFormat(), recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
         this.propertyStore = propertyStore;
     }
 
-    private static IntStoreHeaderFormat getStoreHeaderFormat( RecordFormats recordFormats )
+    private static IntStoreHeaderFormat getStoreHeaderFormat()
     {
-        return recordFormats.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) ? VALID_STORE_HEADER : DISABLED_STORE_HEADER;
+        return VALID_STORE_HEADER;
     }
 
     public PropertyStore propertyStore()

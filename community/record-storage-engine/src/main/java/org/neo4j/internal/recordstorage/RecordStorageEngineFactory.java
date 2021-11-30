@@ -105,8 +105,8 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
-import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.KernelVersionRepository;
+import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -141,7 +141,6 @@ import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
-import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.FLEXIBLE_SCHEMA_STORE;
 
 @ServiceProvider
 public class RecordStorageEngineFactory implements StorageEngineFactory
@@ -450,29 +449,22 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 NullLogProvider.getInstance(), PageCacheTracer.NULL, DatabaseReadOnlyChecker.readOnly() ).openAllNeoStores();
                 CachedStoreCursors storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
         {
-            if ( neoStores.getRecordFormats().hasCapability( FLEXIBLE_SCHEMA_STORE ) )
+            // Injected NLI will be included if the store we're copying from is older than when token indexes were introduced.
+            IndexConfig config = IndexConfig.create();
+            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(),
+                    loadReadOnlyTokens( neoStores, true, PageCacheTracer.NULL ), neoStores.getMetaDataStore() );
+            schemaRuleAccess.tokenIndexes( storeCursors ).forEachRemaining( index ->
             {
-                // Injected NLI will be included if the store we're copying from is older than when token indexes were introduced.
-                IndexConfig config = IndexConfig.create();
-                SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(),
-                        loadReadOnlyTokens( neoStores, true, PageCacheTracer.NULL ), neoStores.getMetaDataStore() );
-                schemaRuleAccess.tokenIndexes( storeCursors ).forEachRemaining( index ->
+                if ( index.schema().entityType() == NODE )
                 {
-                    if ( index.schema().entityType() == NODE )
-                    {
-                        config.withLabelIndex( index.getName() );
-                    }
-                    if ( index.schema().entityType() == RELATIONSHIP )
-                    {
-                        config.withRelationshipTypeIndex( index.getName() );
-                    }
-                } );
-                return config;
-            }
-            else
-            {
-                return IndexConfig.create().withLabelIndex();
-            }
+                    config.withLabelIndex( index.getName() );
+                }
+                if ( index.schema().entityType() == RELATIONSHIP )
+                {
+                    config.withRelationshipTypeIndex( index.getName() );
+                }
+            } );
+            return config;
         }
     }
 

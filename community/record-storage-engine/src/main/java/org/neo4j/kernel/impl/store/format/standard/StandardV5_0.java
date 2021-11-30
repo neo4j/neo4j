@@ -50,7 +50,6 @@ public class StandardV5_0 extends BaseRecordFormats
                 RecordStorageCapability.DENSE_NODES,
                 RecordStorageCapability.POINT_PROPERTIES,
                 RecordStorageCapability.TEMPORAL_PROPERTIES,
-                RecordStorageCapability.FLEXIBLE_SCHEMA_STORE,
                 RecordStorageCapability.INTERNAL_TOKENS,
                 RecordStorageCapability.GBPTREE_ID_FILES,
                 IndexCapabilities.LuceneCapability.LUCENE_8,

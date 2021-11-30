@@ -62,11 +62,6 @@ public enum RecordStorageCapability implements Capability
     SECONDARY_RECORD_UNITS( CapabilityType.FORMAT ),
 
     /**
-     * The schema store can store arbitrary properties of schema elements, such as index configurations.
-     */
-    FLEXIBLE_SCHEMA_STORE( CapabilityType.STORE ),
-
-    /**
      * Tokens can be marked as internal, and internal tokens will not be shown in the product surface, but can still be used, well, internally.
      * <p>
      * This has {@link CapabilityType#STORE} because it is a format addition, and not a format change per se. We just use a record header bit that was free.
