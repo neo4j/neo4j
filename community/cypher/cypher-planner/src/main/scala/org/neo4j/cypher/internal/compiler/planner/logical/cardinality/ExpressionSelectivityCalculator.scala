@@ -85,6 +85,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   ).flatten
 
   private val indexTypesPriorityForPropertyExistence: Seq[IndexType] = Seq(
+    // TODO: offer range indexes here
     Some(IndexType.Btree),
     if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
   ).flatten
