@@ -32,8 +32,8 @@ import scala.collection.mutable
 
 trait HttpServerTestSupport {
   def boundInfo: InetSocketAddress
-  def start()
-  def stop()
+  def start(): Unit
+  def stop(): Unit
 }
 
 class HttpServerTestSupportBuilder {
@@ -42,27 +42,27 @@ class HttpServerTestSupportBuilder {
   private val filters = new mutable.HashMap[String, HttpExchange => Boolean]()
   private val transformations = new mutable.HashMap[String, HttpExchange => HttpExchange]()
 
-  def onPathReplyWithData(path: String, data: Array[Byte]) {
+  def onPathReplyWithData(path: String, data: Array[Byte]): Unit = {
     assert(path != null && !path.isEmpty)
     assert(data != null)
     allowedMethods = allowedMethods + HttpReplyer.GET
     mapping(path) = HttpReplyer.sendResponse(data)
   }
 
-  def onPathRedirectTo(path: String, redirectTo: String) {
+  def onPathRedirectTo(path: String, redirectTo: String): Unit = {
     assert(path != null && !path.isEmpty)
     assert(redirectTo != null && !redirectTo.isEmpty)
     allowedMethods = allowedMethods + HttpReplyer.GET
     mapping(path) = HttpReplyer.sendRedirect(redirectTo)
   }
 
-  def onPathReplyOnlyWhen(path: String, predicate: HttpExchange => Boolean) {
+  def onPathReplyOnlyWhen(path: String, predicate: HttpExchange => Boolean): Unit = {
     assert(path != null && !path.isEmpty)
     assert(mapping.contains(path))
     filters(path) = predicate
   }
 
-  def onPathTransformResponse(path: String, transformation: HttpExchange => HttpExchange) {
+  def onPathTransformResponse(path: String, transformation: HttpExchange => HttpExchange): Unit = {
     assert(path != null && !path.isEmpty)
     assert(mapping.contains(path))
     transformations(path) = transformation
@@ -93,12 +93,12 @@ class HttpServerTestSupportBuilder {
 
     def boundInfo = optServer.get.getAddress
 
-    def start() {
+    def start(): Unit = {
       optServer = Some(provideServer)
       val server = optServer.get
 
       server.createContext("/", new HttpHandler {
-        def handle(exchange: HttpExchange) {
+        def handle(exchange: HttpExchange): Unit = {
           if (!allowedMethods.contains(exchange.getRequestMethod)) {
             HttpReplyer.sendMethodNotAllowed(exchange)
             return
@@ -120,7 +120,7 @@ class HttpServerTestSupportBuilder {
       server.start()
     }
 
-    def stop() {
+    def stop(): Unit = {
       optServer.foreach(server => server.stop(0))
     }
   }
@@ -130,32 +130,32 @@ class HttpServerTestSupportBuilder {
     val GET = "GET"
     val POST = "POST"
 
-    def sendResponse(data: Array[Byte])(exchange: HttpExchange) {
+    def sendResponse(data: Array[Byte])(exchange: HttpExchange): Unit = {
       sendResponse(200, data)(exchange)
     }
 
-    def sendRedirect(location: String)(exchange: HttpExchange) {
+    def sendRedirect(location: String)(exchange: HttpExchange): Unit = {
       exchange.getResponseHeaders.set("Location", location)
       sendResponse(307, NO_DATA)(exchange)
     }
 
-    def sendNotFound(exchange: HttpExchange) {
+    def sendNotFound(exchange: HttpExchange): Unit = {
       sendResponse(404, NO_DATA)(exchange)
     }
 
-    def sendMethodNotAllowed(exchange: HttpExchange) {
+    def sendMethodNotAllowed(exchange: HttpExchange): Unit = {
       sendResponse(405, NO_DATA)(exchange)
     }
 
-    def sendBadRequest(exchange: HttpExchange) {
+    def sendBadRequest(exchange: HttpExchange): Unit = {
       sendResponse(400, NO_DATA)(exchange)
     }
 
-    def sendPermissionDenied(exchange: HttpExchange) {
+    def sendPermissionDenied(exchange: HttpExchange): Unit = {
       sendResponse(403, NO_DATA)(exchange)
     }
 
-    private def sendResponse(statusCode: Int, data: Array[Byte])(exchange: HttpExchange) {
+    private def sendResponse(statusCode: Int, data: Array[Byte])(exchange: HttpExchange): Unit = {
       exchange.sendResponseHeaders(statusCode, data.length)
       val os = exchange.getResponseBody
       try {

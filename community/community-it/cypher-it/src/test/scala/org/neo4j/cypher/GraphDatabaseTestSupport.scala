@@ -151,7 +151,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     startGraphDatabase(config)
   }
 
-  override protected def stopTest() {
+  override protected def stopTest(): Unit = {
     try {
       if (tx != null) {
         tx.close()
@@ -171,7 +171,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     }
   }
 
-  def assertInTx(f: => Option[String]) {
+  def assertInTx(f: => Option[String]): Unit = {
     inTestTx { f match {
         case Some(error) => fail(error)
         case _           =>

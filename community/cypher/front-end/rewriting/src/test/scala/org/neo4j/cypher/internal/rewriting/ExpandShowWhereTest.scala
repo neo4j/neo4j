@@ -87,7 +87,7 @@ class ExpandShowWhereTest extends CypherFunSuite with RewriteTest {
     )
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String, expectedDefaultColumns: List[String]) {
+  private def assertRewrite(originalQuery: String, expectedQuery: String, expectedDefaultColumns: List[String]): Unit = {
     val (expected, result) = getRewrite(originalQuery, expectedQuery)
 
     val updatedYield = expected.asInstanceOf[ReadAdministrationCommand].yieldOrWhere.map {

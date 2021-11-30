@@ -44,7 +44,7 @@ class SumFunction(val value: Expression)
 
   }
 
-  override def apply(data: ReadableRow, state: QueryState) {
+  override def apply(data: ReadableRow, state: QueryState): Unit = {
     val vl = value(data, state)
     actOnNumberOrDuration(vl,
       number => {

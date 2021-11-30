@@ -27,13 +27,13 @@ class TaskCloser {
    *
    * @param task This task will be called, with true if the query went OK, and a false if an error occurred
    */
-  def addTask(task: Boolean => Unit) {
+  def addTask(task: Boolean => Unit): Unit = {
     if(closed)
       throw new IllegalStateException("Already closed")
     _tasks += task
   }
 
-  def close(success: Boolean) {
+  def close(success: Boolean): Unit = {
     if (!closed) {
       closed = true
       var foundException: Option[Throwable] = None

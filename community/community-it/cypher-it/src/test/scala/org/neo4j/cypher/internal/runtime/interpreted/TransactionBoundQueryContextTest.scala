@@ -89,7 +89,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   var statement: KernelStatement = null
   val indexSearchMonitor = mock[IndexSearchMonitor]
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     super.beforeEach()
     managementService = new TestDatabaseManagementServiceBuilder().impermanent().build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
@@ -105,7 +105,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     statement.acquire()
   }
 
-  override def afterEach() {
+  override def afterEach(): Unit = {
     managementService.shutdown()
   }
 

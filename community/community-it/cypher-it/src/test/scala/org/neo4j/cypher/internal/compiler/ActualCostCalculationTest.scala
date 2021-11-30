@@ -291,7 +291,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     results.sortBy(_.elapsed).slice(5, results.size - 5)
   }
 
-  private def setUpDb(graph: GraphDatabaseQueryService, chunkSize: Int) {
+  private def setUpDb(graph: GraphDatabaseQueryService, chunkSize: Int): Unit = {
     graph.withTx { tx =>
       for (_ <- 1 to chunkSize) {
         val node = tx.createNode(LABEL)

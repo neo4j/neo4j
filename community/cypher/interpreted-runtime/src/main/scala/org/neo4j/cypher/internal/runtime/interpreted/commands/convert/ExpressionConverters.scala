@@ -62,8 +62,8 @@ trait ExpressionConverter {
 }
 
 trait ExpressionConversionLogger {
-  def failedToConvertExpression(expression: internal.expressions.Expression)
-  def failedToConvertProjection(projection: Map[String, expressions.Expression])
+  def failedToConvertExpression(expression: internal.expressions.Expression): Unit
+  def failedToConvertProjection(projection: Map[String, expressions.Expression]): Unit
   def warnings: Set[InternalNotification]
 }
 

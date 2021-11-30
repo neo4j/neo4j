@@ -161,7 +161,7 @@ sealed trait Children {
 
   def map(f: InternalPlanDescription => InternalPlanDescription): Children
 
-  def foreach[U](f: InternalPlanDescription => U) {
+  def foreach[U](f: InternalPlanDescription => U): Unit = {
     toIndexedSeq.foreach(f)
   }
 }
@@ -331,9 +331,9 @@ final case class ArgumentPlanDescription(id: Id,
 
   def name = "EmptyRow"
 
-  def render(builder: StringBuilder) {}
+  def render(builder: StringBuilder): Unit = {}
 
-  def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
+  def render(builder: StringBuilder, separator: String, levelSuffix: String): Unit = {}
 
   def addArgument(arg: Argument): InternalPlanDescription = copy(arguments = arguments :+ arg)
 

@@ -17,6 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 trait AstRewritingMonitor {
-  def abortedRewriting(obj: AnyRef)
-  def abortedRewritingDueToLargeDNF(obj: AnyRef)
+  def abortedRewriting(obj: AnyRef): Unit
+  def abortedRewritingDueToLargeDNF(obj: AnyRef): Unit
 }

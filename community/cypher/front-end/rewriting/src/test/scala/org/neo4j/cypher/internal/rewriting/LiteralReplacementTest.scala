@@ -135,7 +135,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(query, query, Map.empty)
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any], extractLiterals: LiteralExtractionStrategy = IfNoParameter) {
+  private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any], extractLiterals: LiteralExtractionStrategy = IfNoParameter): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val nameGenerator = new AnonymousVariableNameGenerator
     val original = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)

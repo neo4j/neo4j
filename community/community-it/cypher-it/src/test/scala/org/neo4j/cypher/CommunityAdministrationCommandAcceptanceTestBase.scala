@@ -25,7 +25,7 @@ import org.neo4j.exceptions.DatabaseAdministrationException
 
 abstract class CommunityAdministrationCommandAcceptanceTestBase extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
 
-  override protected def initTest() {
+  override protected def initTest(): Unit = {
     super.initTest()
     selectDatabase(SYSTEM_DATABASE_NAME)
   }

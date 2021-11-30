@@ -31,9 +31,9 @@ import java.util.concurrent.TimeUnit
 import scala.collection.immutable.BitSet
 
 trait IDPSolverMonitor {
-  def startIteration(iteration: Int)
-  def endIteration(iteration: Int, depth: Int, tableSize: Int)
-  def foundPlanAfter(iterations: Int)
+  def startIteration(iteration: Int): Unit
+  def endIteration(iteration: Int, depth: Int, tableSize: Int): Unit
+  def foundPlanAfter(iterations: Int): Unit
 }
 
 trait ExtraRequirement[-Result] {

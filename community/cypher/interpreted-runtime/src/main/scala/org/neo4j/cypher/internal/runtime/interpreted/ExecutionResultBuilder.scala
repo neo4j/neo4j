@@ -28,8 +28,8 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
 trait ExecutionResultBuilder {
-  def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
-  def addProfileDecorator(profileDecorator: PipeDecorator)
+  def setLoadCsvPeriodicCommitObserver(batchRowCount: Long): Unit
+  def addProfileDecorator(profileDecorator: PipeDecorator): Unit
   def build(params: MapValue,
             queryProfile: QueryProfile,
             prePopulateResults: Boolean,

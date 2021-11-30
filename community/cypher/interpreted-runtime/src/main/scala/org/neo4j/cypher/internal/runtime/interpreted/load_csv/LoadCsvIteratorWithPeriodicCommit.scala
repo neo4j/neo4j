@@ -38,7 +38,7 @@ class LoadCsvIteratorWithPeriodicCommit(loadCsvIterator: LoadCsvIterator)(onNext
 
   def innerHasNext: Boolean = loadCsvIterator.hasNext
 
-  def notifyCommit() {
+  def notifyCommit(): Unit = {
     lastCommitted = loadCsvIterator.lastProcessed - 1
   }
 

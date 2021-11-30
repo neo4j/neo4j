@@ -31,13 +31,13 @@ abstract class FunctionTestBase(funcName: String) extends SemanticFunSuite {
 
   protected val context: SemanticContext = SemanticContext.Simple
 
-  protected def testValidTypes(argumentTypes: TypeSpec*)(expected: TypeSpec) {
+  protected def testValidTypes(argumentTypes: TypeSpec*)(expected: TypeSpec): Unit = {
     val (result, invocation) = evaluateWithTypes(argumentTypes.toIndexedSeq)
     result.errors shouldBe empty
     types(invocation)(result.state) should equal(expected)
   }
 
-  protected def testInvalidApplication(argumentTypes: TypeSpec*)(message: String) {
+  protected def testInvalidApplication(argumentTypes: TypeSpec*)(message: String): Unit = {
     val (result, _) = evaluateWithTypes(argumentTypes.toIndexedSeq)
     result.errors should not be empty
     result.errors.head.msg should equal(message)

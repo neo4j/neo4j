@@ -32,7 +32,7 @@ class ProfilingTracerTest extends CypherFunSuite {
   class Clock extends ProfilingTracer.Clock {
     var nanoTime: Long = 0L
 
-    def progress(nanos: Long) {
+    def progress(nanos: Long): Unit = {
       assert(nanos > 0, "time must move forwards")
       nanoTime += nanos
     }

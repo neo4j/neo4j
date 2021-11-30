@@ -93,14 +93,14 @@ class ExpressionTest extends CypherFunSuite {
     result should equal(Not(CoercedPredicate(literal(true))))
   }
 
-  private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {
+  private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]): Unit = {
     merge(a, b, expected)
     merge(b, a, expected)
   }
 
   val e = new TestExpression
 
-  private def merge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {
+  private def merge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]): Unit = {
 
     val keys = (a.keys ++ b.keys).toSet
 

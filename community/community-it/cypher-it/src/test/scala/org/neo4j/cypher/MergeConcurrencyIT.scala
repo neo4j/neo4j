@@ -37,7 +37,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       "RETURN a, b, r"
 
     val runner = new Runnable {
-      def run() {
+      def run(): Unit = {
         try {
           (1 to nodeCount) foreach {
             x =>
@@ -70,7 +70,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     var exceptionsThrown = List.empty[Throwable]
 
     val runner = new Runnable {
-      def run() {
+      def run(): Unit = {
         try {
           (0 until nodeCount) foreach {
             x => executeWithRetry("MERGE (a:Label {id:$id})", "id" -> x)
@@ -102,7 +102,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     var exceptionsThrown = List.empty[Throwable]
 
     val runner = new Runnable {
-      def run() {
+      def run(): Unit = {
         try {
           (0 until nodeCount) foreach {
             x => executeWithRetry("MERGE (a:Label {id:$id})", "id" -> x)
@@ -138,7 +138,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     var exceptionsThrown = List.empty[Throwable]
 
     def createRunner(n1: Long, n2: Long) = new Runnable {
-      def run() {
+      def run(): Unit = {
         try {
           (0 until nodeCount) foreach {
             x => executeWithRetry(query, "id1" -> n1, "id2" -> n2)
@@ -173,7 +173,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     var exceptionsThrown = List.empty[Throwable]
 
     def createRunner(n1: Long, n2: Long) = new Runnable {
-      def run() {
+      def run(): Unit = {
         try {
           (0 until nodeCount) foreach {
             x => executeWithRetry(query, "id1" -> n1, "id2" -> n2)

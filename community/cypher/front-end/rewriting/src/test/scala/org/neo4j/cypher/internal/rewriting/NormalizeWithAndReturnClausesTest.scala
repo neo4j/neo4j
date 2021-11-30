@@ -900,12 +900,12 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     a[SyntaxException] shouldBe thrownBy { rewriting("MATCH (n) WITH n AS n ORDER BY max(n) RETURN n") }
   }
 
-  protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
+  protected override def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     // Expect no warnings
     assertRewriteAndWarnings(originalQuery, expectedQuery, Set.empty)
   }
 
-  protected def assertRewriteAndSemanticError(originalQuery: String, expectedQuery: String, semanticErrors: String*) {
+  protected def assertRewriteAndSemanticError(originalQuery: String, expectedQuery: String, semanticErrors: String*): Unit = {
     val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
     val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
     val result = endoRewrite(original)
@@ -918,7 +918,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     )
   }
 
-  protected def assertRewriteAndWarnings(originalQuery: String, expectedQuery: String, expectedWarnings: Set[InternalNotification]) {
+  protected def assertRewriteAndWarnings(originalQuery: String, expectedQuery: String, expectedWarnings: Set[InternalNotification]): Unit = {
     notificationLogger.clear()
     val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
     val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))

@@ -38,7 +38,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
   var resources: CSVResources = _
   var cleaner: ResourceManager = _
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     cleaner = mock[ResourceManager]
     resources = new CSVResources(cleaner)
   }

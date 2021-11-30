@@ -70,7 +70,7 @@ class OctalIntegerLiteralTest extends SemanticFunSuite {
     assert(SignedOctalIntegerLiteral("-0o1000000000000000000000")(DummyPosition(0)).value === Long.MinValue)
   }
 
-  private def assertSemanticError(stringValue: String, errorMessage: String) {
+  private def assertSemanticError(stringValue: String, errorMessage: String): Unit = {
     val literal = SignedOctalIntegerLiteral(stringValue)(DummyPosition(4))
     val result = SemanticExpressionCheck.check(SemanticContext.Simple, literal)(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, DummyPosition(4))))

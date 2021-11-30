@@ -445,7 +445,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     assertFailOnMixedNumberAndDuration("avg(x)")
   }
 
-  private def assertFailOnMixedNumberAndDuration(aggregatingFunction: String) {
+  private def assertFailOnMixedNumberAndDuration(aggregatingFunction: String): Unit = {
     // when
     val NUMBER: Array[Any] = Array(1.0)
     val DURATION: Array[Any] = Array(Duration.of(1, ChronoUnit.NANOS))

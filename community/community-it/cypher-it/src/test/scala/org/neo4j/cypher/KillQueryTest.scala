@@ -121,7 +121,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
 
     @volatile var tc: TransactionalContext = _
 
-    override def run() {
+    override def run(): Unit = {
       while (continue.get()) {
         val tx = graph.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)
         try {

@@ -29,13 +29,13 @@ class UpdateCounter {
   private var uncommittedRows = 0L
   private var totalRows = 0L
 
-  def +=(increment: Long) {
+  def +=(increment: Long): Unit = {
     require(increment > 0L, s"increment must be positive but was: $increment")
     uncommittedRows += increment
     totalRows += increment
   }
 
-  def resetIfPastLimit(limit: Long)(f: => Unit) {
+  def resetIfPastLimit(limit: Long)(f: => Unit): Unit = {
     if (uncommittedRows >= limit) {
       f
       uncommittedRows = 0

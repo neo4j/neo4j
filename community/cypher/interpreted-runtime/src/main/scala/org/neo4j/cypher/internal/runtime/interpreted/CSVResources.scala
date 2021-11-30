@@ -173,7 +173,7 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 object TheCookieManager {
   private lazy val theCookieManager = create
 
-  def ensureEnabled() {
+  def ensureEnabled(): Unit = {
     // Force lazy val to be evaluated
     theCookieManager != null
   }

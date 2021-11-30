@@ -81,7 +81,7 @@ class ProbeTable(memoryTracker: MemoryTracker) extends DefaultCloseListenable {
   private[this] var rowsWithNullInKey: EagerBuffer[CypherRow] =
     EagerBuffer.createEagerBuffer[CypherRow](memoryTracker, 16, 8192, GROW_NEW_CHUNKS_BY_100_PCT)
 
-  def addValue(key: LongArray, newValue: CypherRow) {
+  def addValue(key: LongArray, newValue: CypherRow): Unit = {
     table.put(key, newValue)
   }
 

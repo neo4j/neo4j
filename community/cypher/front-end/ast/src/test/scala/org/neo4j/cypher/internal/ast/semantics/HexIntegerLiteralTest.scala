@@ -44,7 +44,7 @@ class HexIntegerLiteralTest extends SemanticFunSuite {
     assert(SignedHexIntegerLiteral("-0x8000000000000000")(DummyPosition(0)).value === Long.MinValue)
   }
 
-  private def assertSemanticError(stringValue: String, errorMessage: String) {
+  private def assertSemanticError(stringValue: String, errorMessage: String): Unit = {
     val literal = SignedHexIntegerLiteral(stringValue)(DummyPosition(4))
     val result = SemanticExpressionCheck.check(SemanticContext.Simple, literal)(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, DummyPosition(4))))

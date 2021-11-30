@@ -102,7 +102,7 @@ class ListLiteralTest extends CypherFunSuite {
     def none(expected: Any) = check(expected, NoneInList.apply)
 
     private def check(expected: Any,
-                      collectionFunction: (Expression, String, Int, Predicate) => InList) {
+                      collectionFunction: (Expression, String, Int, Predicate) => InList): Unit = {
 
       val function = collectionFunction(Literal(VirtualValues.list(values.map(ValueUtils.of):_*)), "x", 0, CoercedPredicate(ExpressionVariable(0, "x")))
       val result = function(CypherRow.empty, QueryStateHelper.emptyWith(expressionVariables = new Array(1)))

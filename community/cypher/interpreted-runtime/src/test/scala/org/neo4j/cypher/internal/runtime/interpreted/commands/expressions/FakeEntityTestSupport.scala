@@ -38,7 +38,7 @@ trait FakeEntityTestSupport {
 
     def getElementId: String = "0"
 
-    def delete() {}
+    def delete(): Unit = {}
 
     def getStartNode: Node = start
 
@@ -60,7 +60,7 @@ trait FakeEntityTestSupport {
 
     def getProperty(key: String, defaultValue: AnyRef): AnyRef = null
 
-    def setProperty(key: String, value: AnyRef) {}
+    def setProperty(key: String, value: AnyRef): Unit = {}
 
     def removeProperty(key: String): AnyRef = null
 
@@ -81,7 +81,7 @@ trait FakeEntityTestSupport {
 
     def getRelationships(types: RelationshipType*): ResourceIterable[Relationship] = null
 
-    def delete() {}
+    def delete(): Unit = {}
 
     def getRelationships: ResourceIterable[Relationship] = null
 
@@ -113,7 +113,7 @@ trait FakeEntityTestSupport {
 
     def getProperty(key: String, defaultValue: AnyRef): AnyRef = null
 
-    def setProperty(key: String, value: AnyRef) {}
+    def setProperty(key: String, value: AnyRef): Unit = {}
 
     def removeProperty(key: String): AnyRef = null
 
@@ -125,11 +125,11 @@ trait FakeEntityTestSupport {
 
     override def toString: String = "Node"
 
-    def addLabel(label: Label) {
+    def addLabel(label: Label): Unit = {
       ???
     }
 
-    def removeLabel(label: Label) {
+    def removeLabel(label: Label): Unit = {
       ???
     }
 

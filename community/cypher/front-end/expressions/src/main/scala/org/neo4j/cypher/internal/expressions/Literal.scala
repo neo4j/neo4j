@@ -57,7 +57,7 @@ trait LiteralExtractor {
 }
 
 trait LiteralWriter {
-  def writeTo(extractor: LiteralExtractor)
+  def writeTo(extractor: LiteralExtractor): Unit
 }
 
 sealed trait Literal extends Expression with LiteralWriter {

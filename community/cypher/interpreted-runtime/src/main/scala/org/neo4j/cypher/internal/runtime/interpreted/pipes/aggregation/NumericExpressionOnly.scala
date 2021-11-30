@@ -30,7 +30,7 @@ trait NumericExpressionOnly {
 
   def value: Expression
 
-  def actOnNumber[U](obj: AnyValue, f: NumberValue => U) {
+  def actOnNumber[U](obj: AnyValue, f: NumberValue => U): Unit = {
     obj match {
       case IsNoValue() =>
       case number: NumberValue => f(number)

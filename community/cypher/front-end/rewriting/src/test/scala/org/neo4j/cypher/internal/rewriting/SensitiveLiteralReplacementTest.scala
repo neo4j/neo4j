@@ -72,7 +72,7 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
     assertRewrite(query, expectedPattern, Map())
   }
 
-  private def assertRewrite(originalQuery: String, matchExpectedPattern: Matcher[Any], replacements: Map[String, Any]) {
+  private def assertRewrite(originalQuery: String, matchExpectedPattern: Matcher[Any], replacements: Map[String, Any]): Unit = {
     val original = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)
 
     val (rewriter, replacedLiterals) = sensitiveLiteralReplacement(original)

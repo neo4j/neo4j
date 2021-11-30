@@ -40,11 +40,11 @@ abstract class CypherFunSuite
     with Matchers
     with BeforeAndAfterEach {
 
-  override protected def beforeEach() {
+  override protected def beforeEach(): Unit = {
     initTest()
   }
 
-  override protected def afterEach() {
+  override protected def afterEach(): Unit = {
     stopTest()
   }
 

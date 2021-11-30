@@ -61,7 +61,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
   implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   private val defaultLocale = Locale.getDefault
-  override def beforeAll() {
+  override def beforeAll(): Unit = {
     //we change locale so we don't need to bother
     //with number format and such here
     Locale.setDefault(Locale.US)

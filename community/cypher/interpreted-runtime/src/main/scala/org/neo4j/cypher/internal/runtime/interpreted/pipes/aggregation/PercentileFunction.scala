@@ -40,7 +40,7 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
   protected var perc: Double = 0
   protected var estimatedNumberValue: Long = -1
 
-  override def apply(data: ReadableRow, state: QueryState) {
+  override def apply(data: ReadableRow, state: QueryState): Unit = {
     actOnNumber(value(data, state), number => {
       if (count < 1) {
         perc = NumericHelper.asDouble(percentile(data, state)).doubleValue()

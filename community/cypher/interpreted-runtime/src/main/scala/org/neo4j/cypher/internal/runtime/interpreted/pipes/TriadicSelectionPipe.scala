@@ -65,7 +65,7 @@ extends PipeWithSource(left) {
 }
 
 abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: ClosingIterator[ROW]) extends ClosingIterator[ROW] {
-  def setState(state: LongHashSet)
+  def setState(state: LongHashSet): Unit
   def getKey(row: ROW): Any
   def getValue(row: ROW): Option[Long]
 

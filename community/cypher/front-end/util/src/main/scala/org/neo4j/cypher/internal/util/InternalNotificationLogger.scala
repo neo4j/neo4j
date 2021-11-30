@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.util
 sealed trait InternalNotificationLogger {
   def offset: Option[InputPosition] = None
 
-  def log(notification: InternalNotification)
+  def log(notification: InternalNotification): Unit
 
   def notifications: Set[InternalNotification]
 }
@@ -31,7 +31,7 @@ sealed trait InternalNotificationLogger {
  * A null implementation that discards all notifications.
  */
 case object devNullLogger extends InternalNotificationLogger {
-  override def log(notification: InternalNotification) {}
+  override def log(notification: InternalNotification): Unit = {}
 
   override def notifications: Set[InternalNotification] = Set.empty
 }

@@ -75,7 +75,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
 
   var context: UpdateCountingQueryContext = _
 
-  override def beforeEach() {
+  override def beforeEach(): Unit = {
     super.beforeEach()
     context = new UpdateCountingQueryContext(inner)
   }

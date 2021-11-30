@@ -78,7 +78,7 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineH
     case e: ScalarFailureException => fail(e.getMessage)
   }
 
-  protected def timeOutIn(length: Int, timeUnit: TimeUnit)(f: => Unit) {
+  protected def timeOutIn(length: Int, timeUnit: TimeUnit)(f: => Unit): Unit = {
     val future = Future {
       f
     }

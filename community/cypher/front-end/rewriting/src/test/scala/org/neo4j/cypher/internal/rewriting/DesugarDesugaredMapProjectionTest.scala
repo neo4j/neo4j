@@ -73,7 +73,7 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
       | }
       |} as x""".stripMargin)
 
-  def assertRewrite(originalQuery: String, expectedQuery: String) {
+  def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
     test(originalQuery + " is rewritten to " + expectedQuery) {
       def rewrite(q: String): Statement = {
         val exceptionFactory = OpenCypherExceptionFactory(None)

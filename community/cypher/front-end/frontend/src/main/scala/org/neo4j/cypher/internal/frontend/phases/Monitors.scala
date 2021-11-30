@@ -19,6 +19,6 @@ package org.neo4j.cypher.internal.frontend.phases
 import scala.reflect.ClassTag
 
 trait Monitors {
-  def addMonitorListener[T](monitor: T, tags: String*)
+  def addMonitorListener[T](monitor: T, tags: String*): Unit
   def newMonitor[T <: AnyRef : ClassTag](tags: String*): T
 }

@@ -43,7 +43,7 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
 
   def parseForRewriting(queryText: String): Statement = JavaCCParser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
 
-  private def assertRewrite(expectedQuery: String) {
+  private def assertRewrite(expectedQuery: String): Unit = {
     val original = parseForRewriting(testName)
     val result = original.endoRewrite(rewriter(SemanticChecker.check(original).state))
     val expected = parseForRewriting(expectedQuery)

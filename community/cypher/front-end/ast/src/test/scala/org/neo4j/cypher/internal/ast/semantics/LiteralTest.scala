@@ -159,7 +159,7 @@ class LiteralTest extends SemanticFunSuite {
     assertSemanticError(signedOctal("0o77777777777777777777777777777"), "integer is too large")
   }
 
-  private def assertSemanticError(literal: Literal, errorMessage: String) {
+  private def assertSemanticError(literal: Literal, errorMessage: String): Unit = {
     val result = SemanticExpressionCheck.simple(literal)(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, pos)))
   }

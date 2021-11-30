@@ -45,7 +45,7 @@ class SystemPropertyTestSupportTest extends CypherFunSuite {
 
   test("should get system properties") {
     (new SystemPropertyTestSupportFixture {
-      def apply() {
+      def apply(): Unit = {
         setSystemProperty("os.name" -> "Linux")
         getSystemProperty("os.name") should equal(("os.name", "Linux"))
       }
@@ -54,7 +54,7 @@ class SystemPropertyTestSupportTest extends CypherFunSuite {
 
   test("should return previous value when setting system properties") {
     (new SystemPropertyTestSupportFixture {
-      def apply() {
+      def apply(): Unit = {
         setSystemProperty("os.name" -> "Linux")
         setSystemProperty("os.name" -> "Mac OS") should equal(("os.name", "Linux"))
       }
@@ -63,7 +63,7 @@ class SystemPropertyTestSupportTest extends CypherFunSuite {
 
   test("should shadow system properties") {
     (new SystemPropertyTestSupportFixture {
-      def apply() {
+      def apply(): Unit = {
         setSystemProperty("os.name" -> "Linux")
         withSystemProperties("os.name" -> "Windows") {
           getSystemProperty("os.name") should equal(("os.name", "Windows"))
@@ -74,7 +74,7 @@ class SystemPropertyTestSupportTest extends CypherFunSuite {
 
   test("should restore system properties") {
     (new SystemPropertyTestSupportFixture {
-      def apply() {
+      def apply(): Unit = {
         setSystemProperty("os.name" -> "Linux")
         withSystemProperties("os.name" -> "Windows") {
           setSystemProperty("os.name" -> "Mac OS")

@@ -193,7 +193,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
     def exception: Throwable = ex
 
-    override def run() {
+    override def run(): Unit = {
       for ( i <- 0 until numExecutions ) {
         try {
           f()

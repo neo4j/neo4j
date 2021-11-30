@@ -119,7 +119,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
       DEFAULT_BUFFER_SIZE, false)
   }
 
-  override protected def beforeEach() {
+  override protected def beforeEach(): Unit = {
     val queryContext = mock[QueryContext]
     transactionalContext = mock[QueryTransactionalContext]
     val manager = new ResourceManager

@@ -30,7 +30,7 @@ import org.neo4j.values.storable.Values
 class CountFunction(value: Expression) extends AggregationFunction {
   var count: Long = 0
 
-  override def apply(data: ReadableRow, state: QueryState) {
+  override def apply(data: ReadableRow, state: QueryState): Unit = {
     value(data, state) match {
       case IsNoValue() =>
       case _    => count += 1

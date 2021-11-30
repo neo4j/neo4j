@@ -152,7 +152,7 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     returnItem.variable.position.offset should equal(expressionPos.offset)
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String, rewriteShowCommand: Boolean = false) {
+  private def assertRewrite(originalQuery: String, expectedQuery: String, rewriteShowCommand: Boolean = false): Unit = {
     val original = prepRewrite(originalQuery, rewriteShowCommand)
     val expected = prepRewrite(expectedQuery)
 

@@ -295,7 +295,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // HELPERS
 
   @throws(classOf[ParameterNotFoundException])
-  private def checkParameters(queryParams: Array[String], givenParams: MapValue, extractedParams: MapValue) {
+  private def checkParameters(queryParams: Array[String], givenParams: MapValue, extractedParams: MapValue): Unit = {
     var i = 0
     while (i < queryParams.length) {
       val key = queryParams(i)

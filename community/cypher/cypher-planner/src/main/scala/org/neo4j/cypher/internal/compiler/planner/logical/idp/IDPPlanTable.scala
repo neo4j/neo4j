@@ -35,7 +35,7 @@ class IDPPlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
 
   def apply(solved: Set[Solvable]): Option[LogicalPlan] = table.get(solved)
 
-  def put(solved: Set[Solvable], plan: LogicalPlan) {
+  def put(solved: Set[Solvable], plan: LogicalPlan): Unit = {
     table.put(solved, plan)
   }
 

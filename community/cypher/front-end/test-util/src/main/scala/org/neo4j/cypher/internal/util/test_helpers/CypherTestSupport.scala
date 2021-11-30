@@ -18,6 +18,6 @@ package org.neo4j.cypher.internal.util.test_helpers
 
 // Inherited by test mixin classes that need to manage resources
 trait CypherTestSupport {
-  protected def initTest() {}
-  protected def stopTest() {}
+  protected def initTest(): Unit = {}
+  protected def stopTest(): Unit = {}
 }

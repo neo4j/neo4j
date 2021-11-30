@@ -55,7 +55,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
     }
 
     @tailrec
-    private def prefetch() {
+    private def prefetch(): Unit = {
       nextItem = null
       if (unwindIterator != null && unwindIterator.hasNext) {
         nextItem = rowFactory.copyWith(context, variable, unwindIterator.next())
