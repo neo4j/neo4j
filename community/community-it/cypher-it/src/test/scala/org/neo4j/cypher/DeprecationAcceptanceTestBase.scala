@@ -418,15 +418,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotificationInSupportedVersions(query, DEPRECATED_PERIODIC_COMMIT)
   }
 
-  test("use point.distance rather than distance") {
-    val deprecated = Seq(" MATCH (n) WHERE distance(n.prop, point({x:0, y:0})) < 10 RETURN n")
-    val newSyntax = Seq(" MATCH (n) WHERE point.distance(n.prop, point({x:0, y:0})) < 10 RETURN n")
-    val detail = NotificationDetail.Factory.deprecatedName("distance", "point.distance")
-
-    assertNotificationInSupportedVersions(deprecated, DEPRECATED_FUNCTION, detail)
-    assertNoNotificationInSupportedVersions(newSyntax, DEPRECATED_FUNCTION)
-  }
-
   test("comparing points is deprecated") {
     val deprecated = Seq(
       "MATCH (n) WHERE n.prop < point({x:0, y:0}) RETURN n",

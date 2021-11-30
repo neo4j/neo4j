@@ -162,26 +162,6 @@ public class GraphDatabaseServiceExecuteTest
         }
     }
 
-    //TODO: remove in 5.0
-    @Test
-    void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNextLegacy()
-    {
-        try ( Transaction transaction = db.beginTx() )
-        {
-            // given a point create by one cypher query
-            Result execute = transaction.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
-            Point point = (Point) execute.next().get( "p" );
-            // when passing as params to a distance function
-            Result result = transaction.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
-                    map( "previous", point ) );
-
-            // then
-            Double dist = (Double) result.next().get( "dist" );
-            assertThat( dist, equalTo( 0.0 ) );
-            transaction.commit();
-        }
-    }
-
     @Test
     void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext()
     {
@@ -193,26 +173,6 @@ public class GraphDatabaseServiceExecuteTest
             // when passing as params to a distance function
             Result result = transaction.execute( "RETURN point.distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
                                                  map( "previous", point ) );
-
-            // then
-            Double dist = (Double) result.next().get( "dist" );
-            assertThat( dist, equalTo( 0.0 ) );
-            transaction.commit();
-        }
-    }
-
-    //TODO: remove in 5.0
-    @Test
-    void shouldBeAbleToUseExternalPointAsParameterToQueryLegacy()
-    {
-        // given a point created from public interface
-        Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
-
-        try ( Transaction transaction = db.beginTx() )
-        {
-            // when passing as params to a distance function
-            Result result = transaction.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
-                    map( "previous", point ) );
 
             // then
             Double dist = (Double) result.next().get( "dist" );
@@ -240,26 +200,6 @@ public class GraphDatabaseServiceExecuteTest
         }
     }
 
-    //TODO: remove in 5.0
-    @Test
-    void shouldBeAbleToUseExternalGeometryAsParameterToQueryLegacy()
-    {
-        // given a point created from public interface
-        Geometry geometry = makeFakePointAsGeometry( 144.317718, -37.031738, makeWGS84() );
-
-        // when passing as params to a distance function
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Result result = transaction.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
-                    map( "previous", geometry ) );
-
-            // then
-            Double dist = (Double) result.next().get( "dist" );
-            assertThat( dist, equalTo( 0.0 ) );
-            transaction.commit();
-        }
-    }
-
     @Test
     void shouldBeAbleToUseExternalGeometryAsParameterToQuery()
     {
@@ -271,26 +211,6 @@ public class GraphDatabaseServiceExecuteTest
         {
             Result result = transaction.execute( "RETURN point.distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
                                                  map( "previous", geometry ) );
-
-            // then
-            Double dist = (Double) result.next().get( "dist" );
-            assertThat( dist, equalTo( 0.0 ) );
-            transaction.commit();
-        }
-    }
-
-    //TODO: remove in 5.0
-    @Test
-    void shouldBeAbleToUseExternalPointArrayAsParameterToQueryLegacy()
-    {
-        // given a point created from public interface
-        Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
-        Point[] points = new Point[]{point, point};
-
-        // when passing as params to a distance function
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Result result = transaction.execute( "RETURN distance($points[0],$points[1]) AS dist", map( "points", points ) );
 
             // then
             Double dist = (Double) result.next().get( "dist" );
@@ -318,26 +238,6 @@ public class GraphDatabaseServiceExecuteTest
         }
     }
 
-    //TODO: remove in 5.0
-    @Test
-    void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunctionLegacy() throws Exception
-    {
-        // given procedure that produces a point
-        globalProcedures.registerProcedure( PointProcs.class );
-
-        try ( Transaction transaction = db.beginTx() )
-        {
-            // when calling procedure that produces a point
-            Result result = transaction.execute( "CALL spatial.point(144.317718, -37.031738) YIELD point " +
-                    "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), point) AS dist" );
-
-            // then
-            Double dist = (Double) result.next().get( "dist" );
-            assertThat( dist, equalTo( 0.0 ) );
-            transaction.commit();
-        }
-    }
-
     @Test
     void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunction() throws Exception
     {
@@ -355,28 +255,6 @@ public class GraphDatabaseServiceExecuteTest
             assertThat( dist, equalTo( 0.0 ) );
             transaction.commit();
         }
-    }
-
-    //TODO: remove in 5.0
-    @Test
-    void shouldBeAbleToUseResultsOfPointGeometryProcedureAsInputToDistanceFunctionLegacy() throws Exception
-    {
-        // given procedure that produces a point
-        globalProcedures.registerProcedure( PointProcs.class );
-
-        // when calling procedure that produces a point
-        try ( Transaction transaction = db.beginTx() )
-        {
-            Result result = transaction.execute( "CALL spatial.pointGeometry(144.317718, -37.031738) YIELD geometry " +
-                    "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), geometry) AS dist" );
-
-            // then
-            Object dist1 = result.next().get( "dist" );
-            Double dist = (Double) dist1;
-            assertThat( dist, equalTo( 0.0 ) );
-            transaction.commit();
-        }
-
     }
 
     @Test
@@ -415,7 +293,7 @@ public class GraphDatabaseServiceExecuteTest
             @Override
             public List<Coordinate> getCoordinates()
             {
-                return Arrays.asList( coord );
+                return List.of( coord );
             }
 
             @Override
@@ -441,7 +319,7 @@ public class GraphDatabaseServiceExecuteTest
             @Override
             public List<Coordinate> getCoordinates()
             {
-                return Arrays.asList( coord );
+                return List.of( coord );
             }
 
             @Override

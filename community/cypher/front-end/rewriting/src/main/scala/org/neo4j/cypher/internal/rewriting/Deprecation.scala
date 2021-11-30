@@ -350,13 +350,6 @@ object Deprecations {
           None,
           Some(DeprecatedBtreeIndexSyntax(h.position))
         )
-
-      // distance -> point.distance
-      case f@FunctionInvocation(namespace, FunctionName("distance"), _, _) if namespace.parts.isEmpty =>
-        Deprecation(
-          Some(Ref(f) -> renameFunctionTo(Namespace(List("point"))(f.position), "distance")(f)),
-          Some(DeprecatedFunctionNotification(f.position, "distance", "point.distance"))
-        )
     }
 
     private def hasBtreeOptions(options: Options): Boolean = options match {
