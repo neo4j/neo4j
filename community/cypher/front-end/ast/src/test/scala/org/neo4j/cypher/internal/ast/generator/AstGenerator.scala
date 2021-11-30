@@ -1766,6 +1766,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _showDatabase,
     _createDatabase,
     _dropDatabase,
+    _alterDatabase,
     _startDatabase,
     _stopDatabase
   )
@@ -1778,12 +1779,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     timeout <- posNum[Long]
     wait <- oneOf(NoWait, IndefiniteWait, TimeoutAfter(timeout))
   } yield wait
-
-  def _aliasCommands: Gen[AdministrationCommand] = oneOf(
-    _createAlias,
-    _dropAlias,
-    _alterAlias
-  )
 
   def _createAlias: Gen[CreateDatabaseAlias] = for {
     aliasName <- _nameAsEither
@@ -1802,10 +1797,16 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     ifExists <- boolean
   } yield AlterDatabaseAlias(aliasName, targetName, ifExists)(pos)
 
+  def _aliasCommands: Gen[AdministrationCommand] = oneOf(
+    _createAlias,
+    _dropAlias,
+    _alterAlias
+  )
+
   // Top level administration command
 
   def _adminCommand: Gen[AdministrationCommand] = for {
-    command <- oneOf(_userCommand, _roleCommand, _privilegeCommand, _multiDatabaseCommand)
+    command <- oneOf(_userCommand, _roleCommand, _privilegeCommand, _multiDatabaseCommand, _aliasCommands)
     use     <- frequency(1 -> some(_use), 9 -> const(None))
   } yield command.withGraph(use)
 
