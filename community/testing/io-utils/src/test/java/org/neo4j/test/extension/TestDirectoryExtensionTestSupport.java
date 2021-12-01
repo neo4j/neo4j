@@ -138,7 +138,7 @@ abstract class TestDirectoryExtensionTestSupport
         Path directory = testDirectory.homePath();
         assertNotNull( directory );
         assertTrue( fileSystem.fileExists( directory ) );
-        Path targetTestData = Paths.get( "target", "test data" );
+        Path targetTestData = Paths.get( "target", "test-data" );
         assertTrue( directory.toAbsolutePath().toString().contains( targetTestData.toString() ) );
     }
 

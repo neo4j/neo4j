@@ -20,6 +20,10 @@
 package org.neo4j.test.utils;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileHandle;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.util.VisibleForTesting;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,12 +33,10 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Random;
-
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileHandle;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.util.VisibleForTesting;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
 import static java.lang.String.format;
 
@@ -69,7 +71,8 @@ public class TestDirectory
      * around, so they can easily be compared with each other. This is useful
      * when you need to investigate a flaky test, for instance.
      */
-    private static final long JVM_EXECUTION_HASH = new Random().nextLong();
+    private static final LocalDateTime now = LocalDateTime.now(Clock.systemUTC());
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern( "dd_HH-mm-ss-SSS" ).withZone( ZoneOffset.UTC );
 
     private final FileSystemAbstraction fileSystem;
     private Path testClassBaseFolder;
@@ -250,10 +253,15 @@ public class TestDirectory
 
     public Path prepareDirectoryForTest( String test ) throws IOException
     {
-        String dir = "test" + DigestUtils.md5Hex( JVM_EXECUTION_HASH + test );
+        String dir = getDateTime() + "_" + DigestUtils.md5Hex(test).substring(0, 5);
         evaluateClassBaseTestFolder();
         register( test, dir );
         return cleanDirectory( dir );
+    }
+
+    private String getDateTime()
+    {
+        return DATE_TIME_FORMATTER.format( now );
     }
 
     @VisibleForTesting
@@ -320,7 +328,7 @@ public class TestDirectory
 
     private static Path testDataDirectoryOf( Class<?> owningTest )
     {
-        Path testData = locateTarget( owningTest ).resolve( "test data" );
+        Path testData = locateTarget( owningTest ).resolve( "test-data" );
         return testData.resolve( shorten( owningTest.getName() ) ).toAbsolutePath();
     }
 
