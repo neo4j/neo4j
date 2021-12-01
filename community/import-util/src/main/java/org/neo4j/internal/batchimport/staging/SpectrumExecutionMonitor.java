@@ -26,7 +26,6 @@ import org.neo4j.internal.batchimport.stats.DetailLevel;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.stats.StepStats;
-import org.neo4j.internal.helpers.collection.Pair;
 
 import static java.lang.Math.pow;
 import static java.lang.String.format;
@@ -121,7 +120,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         // reduce the width with the known extra characters we know we'll print in and around the spectrum
         width -= 2/*'[]' chars*/ + PROGRESS_WIDTH/*progress chars*/;
 
-        Pair<Step<?>,Float> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
+        WeightedStep bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
         QuantizedProjection projection = new QuantizedProjection( total, width );
         long lastDoneBatches = 0;
         int stepIndex = 0;
@@ -142,7 +141,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
                     stepWidth--;
                     builder.append( '|' );
                 }
-                boolean isBottleNeck = bottleNeck.first() == step;
+                boolean isBottleNeck = bottleNeck.step() == step;
                 String name =
                         (isBottleNeck ? "*" : "") +
                         stats.toString( additionalStatsLevel ) + (step.processors( 0 ) > 1

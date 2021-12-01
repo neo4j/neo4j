@@ -49,7 +49,6 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.storable.CSVHeaderInformation;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
@@ -65,6 +64,9 @@ import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
  */
 public class DataFactories
 {
+    private static final Pattern TYPE_SPEC_AND_OPTIONAL_PARAMETER = Pattern.compile( "(?<newTypeSpec>.+?)(?<optionalParameter>\\{.*})?$" );
+    private static final Supplier<ZoneId> DEFAULT_TIME_ZONE = () -> UTC;
+
     private DataFactories()
     {
     }
@@ -189,8 +191,6 @@ public class DataFactories
     {
         return defaultFormatRelationshipFileHeader( DEFAULT_TIME_ZONE, false );
     }
-
-    private static final Supplier<ZoneId> DEFAULT_TIME_ZONE = () -> UTC;
 
     public static Entry[] parseHeaderEntries( CharSeeker dataSeeker, Configuration config, IdType idType, Groups groups, Supplier<ZoneId> defaultTimeZone,
             HeaderEntryFactory entryFactory, Header.Monitor monitor )
@@ -410,9 +410,9 @@ public class DataFactories
             }
             else
             {
-                Pair<String, String> split = splitTypeSpecAndOptionalParameter(typeSpec);
-                typeSpec = split.first();
-                String optionalParameterString = split.other();
+                var specification = splitTypeSpecAndOptionalParameter(typeSpec);
+                typeSpec = specification.typeSpec();
+                String optionalParameterString = specification.optionalParameter();
                 if ( optionalParameterString != null )
                 {
                     if ( Extractors.PointExtractor.NAME.equals( typeSpec ) )
@@ -470,9 +470,9 @@ public class DataFactories
             }
             else
             {
-                Pair<String, String> split = splitTypeSpecAndOptionalParameter( typeSpec );
-                typeSpec = split.first();
-                String optionalParameterString = split.other();
+                var specification = splitTypeSpecAndOptionalParameter( typeSpec );
+                typeSpec = specification.typeSpec();
+                String optionalParameterString = specification.optionalParameter();
                 if ( optionalParameterString != null )
                 {
                     if ( Extractors.PointExtractor.NAME.equals( typeSpec ) )
@@ -531,9 +531,7 @@ public class DataFactories
         return Iterables.iterable( factories );
     }
 
-    private static final Pattern TYPE_SPEC_AND_OPTIONAL_PARAMETER = Pattern.compile( "(?<newTypeSpec>.+?)(?<optionalParameter>\\{.*})?$" );
-
-    private static Pair<String,String> splitTypeSpecAndOptionalParameter( String typeSpec )
+    private static Specification splitTypeSpecAndOptionalParameter( String typeSpec )
     {
         String optionalParameter = null;
         String newTypeSpec = typeSpec;
@@ -553,6 +551,10 @@ public class DataFactories
                 throw new IllegalArgumentException( errorMessage, e );
             }
         }
-        return Pair.of( newTypeSpec, optionalParameter );
+        return new Specification( newTypeSpec, optionalParameter );
+    }
+
+    private record Specification(String typeSpec, String optionalParameter)
+    {
     }
 }

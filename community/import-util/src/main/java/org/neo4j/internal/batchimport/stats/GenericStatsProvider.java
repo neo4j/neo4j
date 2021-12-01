@@ -31,21 +31,21 @@ import static java.lang.String.format;
  */
 public class GenericStatsProvider implements StatsProvider
 {
-    private final Collection<Pair<Key,Stat>> stats = new ArrayList<>();
+    private final Collection<KeyStatistics> stats = new ArrayList<>();
 
     public void add( Key key, Stat stat )
     {
-        this.stats.add( Pair.of( key, stat ) );
+        this.stats.add( new KeyStatistics( key, stat ) );
     }
 
     @Override
     public Stat stat( Key key )
     {
-        for ( Pair<Key,Stat> stat1 : stats )
+        for ( KeyStatistics stat1 : stats )
         {
-            if ( stat1.first().name().equals( key.name() ) )
+            if ( stat1.key().name().equals( key.name() ) )
             {
-                return stat1.other();
+                return stat1.stat();
             }
         }
         return null;
@@ -56,9 +56,9 @@ public class GenericStatsProvider implements StatsProvider
     {
         Key[] keys = new Key[stats.size()];
         int i = 0;
-        for ( Pair<Key,Stat> stat : stats )
+        for ( KeyStatistics stat : stats )
         {
-            keys[i++] = stat.first();
+            keys[i++] = stat.key();
         }
         return keys;
     }
@@ -67,11 +67,15 @@ public class GenericStatsProvider implements StatsProvider
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        for ( Pair<Key,Stat> stat : stats )
+        for ( KeyStatistics stat : stats )
         {
             builder.append( builder.length() > 0 ? ", " : "" )
-                    .append( format( "%s: %s", stat.first().shortName(), stat.other() ) );
+                    .append( format( "%s: %s", stat.key().shortName(), stat.stat() ) );
         }
         return builder.toString();
+    }
+
+    private record KeyStatistics(Key key, Stat stat)
+    {
     }
 }

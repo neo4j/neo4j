@@ -27,7 +27,6 @@ import java.util.Iterator;
 
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
-import org.neo4j.internal.helpers.collection.Pair;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,15 +45,15 @@ class StageExecutionTest
         StageExecution execution = new StageExecution( "Test", null, Configuration.DEFAULT, steps, Step.ORDER_SEND_DOWNSTREAM );
 
         // WHEN
-        Iterator<Pair<Step<?>,Float>> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, true ).iterator();
+        Iterator<WeightedStep> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, true ).iterator();
 
         // THEN
-        Pair<Step<?>,Float> fastest = ordered.next();
-        assertEquals( 1f / 2f, fastest.other(), 0f );
-        Pair<Step<?>,Float> faster = ordered.next();
-        assertEquals( 1f / 3f, faster.other(), 0f );
-        Pair<Step<?>,Float> fast = ordered.next();
-        assertEquals( 1f, fast.other(), 0f );
+        WeightedStep fastest = ordered.next();
+        assertEquals( 1f / 2f, fastest.weight(), 0f );
+        WeightedStep faster = ordered.next();
+        assertEquals( 1f / 3f, faster.weight(), 0f );
+        WeightedStep fast = ordered.next();
+        assertEquals( 1f, fast.weight(), 0f );
         assertFalse( ordered.hasNext() );
     }
 
@@ -70,17 +69,17 @@ class StageExecutionTest
         StageExecution execution = new StageExecution( "Test", null, Configuration.DEFAULT, steps, Step.ORDER_SEND_DOWNSTREAM );
 
         // WHEN
-        Iterator<Pair<Step<?>,Float>> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator();
+        Iterator<WeightedStep> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator();
 
         // THEN
-        Pair<Step<?>,Float> slowest = ordered.next();
-        assertEquals( 3f, slowest.other(), 0f );
-        Pair<Step<?>,Float> slower = ordered.next();
-        assertEquals( 2f, slower.other(), 0f );
-        Pair<Step<?>,Float> slow = ordered.next();
-        assertEquals( 1f, slow.other(), 0f );
-        Pair<Step<?>,Float> alsoSlow = ordered.next();
-        assertEquals( 1f, alsoSlow.other(), 0f );
+        WeightedStep slowest = ordered.next();
+        assertEquals( 3f, slowest.weight(), 0f );
+        WeightedStep slower = ordered.next();
+        assertEquals( 2f, slower.weight(), 0f );
+        WeightedStep slow = ordered.next();
+        assertEquals( 1f, slow.weight(), 0f );
+        WeightedStep alsoSlow = ordered.next();
+        assertEquals( 1f, alsoSlow.weight(), 0f );
         assertFalse( ordered.hasNext() );
     }
 }

@@ -86,15 +86,15 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
 
     private int assignProcessors( StageExecution execution, int permits )
     {
-        Pair<Step<?>,Float> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
-        Step<?> bottleNeckStep = bottleNeck.first();
+        WeightedStep bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
+        Step<?> bottleNeckStep = bottleNeck.step();
         long doneBatches = bottleNeckStep.longStat( done_batches );
-        if ( bottleNeck.other() > 1.0f &&
+        if ( bottleNeck.weight() > 1.0f &&
              batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
         {
             // Assign 1/10th of the remaining permits. This will have processors being assigned more
             // aggressively in the beginning of the run
-            int optimalProcessorIncrement = min( max( 1, (int) bottleNeck.other().floatValue() - 1 ), permits );
+            int optimalProcessorIncrement = min( max( 1, (int) bottleNeck.weight().floatValue() - 1 ), permits );
             int before = bottleNeckStep.processors( 0 );
             int after = bottleNeckStep.processors( max( optimalProcessorIncrement, permits / 10 ) );
             if ( after > before )
@@ -108,14 +108,14 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
 
     private void moveProcessorFromOverlyAssigned( StageExecution execution )
     {
-        List<Pair<Step<?>,Float>> steps = execution.stepsOrderedBy( Keys.avg_processing_time, true );
+        List<WeightedStep> steps = execution.stepsOrderedBy( Keys.avg_processing_time, true );
         for ( int i = 0; i < steps.size() - 1; i++ )
         {
-            Pair<Step<?>,Float> faster = steps.get( i );
-            Step<?> fasterStep = faster.first();
-            Pair<Step<?>,Float> slower = steps.get( i + 1 );
-            Step<?> slowerStep = slower.first();
-            int numberOfProcessors = faster.first().processors( 0 );
+            WeightedStep faster = steps.get( i );
+            Step<?> fasterStep = faster.step();
+            WeightedStep slower = steps.get( i + 1 );
+            Step<?> slowerStep = slower.step();
+            int numberOfProcessors = faster.step().processors( 0 );
             if ( numberOfProcessors == 1 || slowerStep.processors( 0 ) == slowerStep.maxProcessors() )
             {
                 continue;
@@ -124,7 +124,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
             // Translate the factor compared to the next (slower) step and see if this step would still
             // be faster if we decremented the processor count, with a slight conservative margin as well
             // (0.8 instead of 1.0 so that we don't decrement and immediately become the bottleneck ourselves).
-            float factorWithDecrementedProcessorCount = faster.other() * numberOfProcessors / (numberOfProcessors - 1);
+            float factorWithDecrementedProcessorCount = faster.weight() * numberOfProcessors / (numberOfProcessors - 1);
             if ( factorWithDecrementedProcessorCount < 0.8f )
             {
                 long doneBatches = fasterStep.longStat( done_batches );

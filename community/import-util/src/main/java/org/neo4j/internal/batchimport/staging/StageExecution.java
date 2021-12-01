@@ -29,7 +29,6 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.Stat;
-import org.neo4j.internal.helpers.collection.Pair;
 
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 
@@ -126,7 +125,7 @@ public class StageExecution implements StageControl, AutoCloseable
      * {@code 1.0} signals them being close to equal, and a value of for example {@code 0.5} signals that
      * the value of the current step is half that of the next step.
      */
-    public List<Pair<Step<?>,Float>> stepsOrderedBy( final Key stat, final boolean trueForAscending )
+    public List<WeightedStep> stepsOrderedBy( final Key stat, final boolean trueForAscending )
     {
         final List<Step<?>> steps = new ArrayList<>( pipeline );
         steps.sort( ( o1, o2 ) -> {
@@ -134,13 +133,13 @@ public class StageExecution implements StageControl, AutoCloseable
             long stat2 = o2.longStat( stat );
             return trueForAscending ? Long.compare( stat1, stat2 ) : Long.compare( stat2, stat1 );
         } );
-        List<Pair<Step<?>,Float>> result = new ArrayList<>();
+        List<WeightedStep> result = new ArrayList<>();
         for ( int i = 0, numSteps = steps.size(); i < numSteps - 1; i++ )
         {
             Step<?> current = steps.get( i );
-            result.add( Pair.of( current, (float) current.longStat( stat ) / (float) steps.get( i + 1 ).longStat( stat ) ) );
+            result.add( new WeightedStep( current, (float) current.longStat( stat ) / (float) steps.get( i + 1 ).longStat( stat ) ) );
                                }
-        result.add( Pair.of( steps.get( steps.size() - 1 ), 1.0f ) );
+        result.add( new WeightedStep( steps.get( steps.size() - 1 ), 1.0f ) );
         return result;
     }
 
@@ -244,6 +243,7 @@ public class StageExecution implements StageControl, AutoCloseable
         }
     }
 
+    @FunctionalInterface
     interface PanicMonitor
     {
         void receivedPanic( Throwable cause );
