@@ -36,6 +36,7 @@ import org.neo4j.shell.state.BoltResult;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.shell.prettyprint.OutputFormatter.repeat;
 
 public class TableOutputFormatter implements OutputFormatter
 {
@@ -89,7 +90,7 @@ public class TableOutputFormatter implements OutputFormatter
         StringBuilder builder = new StringBuilder( totalWidth );
         String headerLine = formatRow( builder, columnSizes, columns, new boolean[columnSizes.length] );
         int lineWidth = totalWidth - 2;
-        String dashes = "+" + OutputFormatter.repeat( '-', lineWidth ) + "+";
+        String dashes = "+" + String.valueOf( repeat( '-', lineWidth ) ) + "+";
 
         output.printOut( dashes );
         output.printOut( headerLine );
@@ -201,30 +202,69 @@ public class TableOutputFormatter implements OutputFormatter
             String txt = row[i];
             if ( txt != null )
             {
-                if ( txt.length() > length )
+                int offset = 0; // char offset in the string
+                int codePointCount = 0; // UTF code point counter (one code point can be multiple chars)
+
+                /*
+                 * Copy content of cell to output, UTF codepoint by codepoint,
+                 * until cell width is reached, string ends or line breaks.
+                 *
+                 * The reason we copy by codepoint (and not by char) is to
+                 * avoid breaking the string in the middle of a code point
+                 * which can lead to invalid characters in output when
+                 * wrapping.
+                 */
+                while ( codePointCount < length && offset < txt.length() )
+                {
+                    final int codepoint = txt.codePointAt( offset );
+
+                    // Stop at line breaks. Note that we skip the line break later in nextLineStart.
+                    if ( codepoint == '\n' || codepoint == '\r' )
+                    {
+                        break;
+                    }
+
+                    sb.appendCodePoint( codepoint );
+                    offset = txt.offsetByCodePoints( offset, 1 ); // Move offset to next code point
+                    ++codePointCount;
+                }
+
+                if ( offset < txt.length() )
+                // Content did not fit column
                 {
                     if ( wrap )
                     {
-                        sb.append( txt, 0, length );
-                        row[i] = txt.substring( length );
+                        row[i] = txt.substring( nextLineStart( txt, offset ) );
                         continuation[i] = true;
                         remainder = true;
                     }
+                    else if ( codePointCount < length )
+                    {
+                        sb.append( "…" );
+                        ++codePointCount;
+                    }
                     else
                     {
-                        sb.append( txt, 0, length - 1 );
-                        sb.append( "…" );
+                        int lastCodePoint = sb.codePointBefore( sb.length() );
+                        int lastLength = Character.charCount( lastCodePoint );
+                        sb.replace( sb.length() - lastLength, sb.length(), "…" );
                     }
                 }
                 else
+                // Content did fit column
                 {
                     row[i] = null;
-                    sb.append( OutputFormatter.rightPad( txt, length ) );
+                }
+
+                // Insert padding
+                if ( codePointCount < length )
+                {
+                    sb.append( repeat( ' ', length - codePointCount ) );
                 }
             }
             else
             {
-                sb.append( OutputFormatter.repeat( ' ', length ) );
+                sb.append( repeat( ' ', length ) );
             }
             if ( i == row.length - 1 || !continuation[i + 1] )
             {
@@ -241,6 +281,36 @@ public class TableOutputFormatter implements OutputFormatter
             formatRow( sb, columnSizes, row, continuation );
         }
         return sb.toString();
+    }
+
+    private static int nextLineStart( String txt, int start )
+    {
+        if ( start < txt.length() )
+        {
+            final char firstChar = txt.charAt( start );
+            if ( firstChar == '\n' )
+            {
+                return start + 1;
+            }
+            else if ( firstChar == '\r' )
+            {
+                int next = start + 1;
+                if ( next < txt.length() && txt.charAt( next ) == '\n' )
+                {
+                    return next + 1;
+                }
+                else
+                {
+                    return start + 1;
+                }
+            }
+            else
+            {
+                return start;
+            }
+        }
+
+        return txt.length();
     }
 
     @Override

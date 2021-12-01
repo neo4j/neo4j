@@ -93,11 +93,11 @@ public interface OutputFormatter
         return string != null && !string.trim().isEmpty();
     }
 
-    static String repeat( char c, int times )
+    static char[] repeat( char c, int times )
     {
         char[] chars = new char[times];
         Arrays.fill( chars, c );
-        return String.valueOf( chars );
+        return chars;
     }
 
     static String repeat( String c, int times )
@@ -108,28 +108,6 @@ public interface OutputFormatter
             sb.append( c );
         }
         return sb.toString();
-    }
-
-    static String rightPad( String str, int width )
-    {
-        return rightPad( str, width, ' ' );
-    }
-
-    static String rightPad( String str, int width, char c )
-    {
-        int actualSize = str.length();
-        if ( actualSize > width )
-        {
-            return str.substring( 0, width );
-        }
-        else if ( actualSize < width )
-        {
-            return str + repeat( c, width - actualSize );
-        }
-        else
-        {
-            return str;
-        }
     }
 
     static Map<String, Value> info( ResultSummary summary )
