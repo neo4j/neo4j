@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.values.storable.ArrayValue;
@@ -89,7 +88,7 @@ public enum GeometryType
                     byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader( data );
                     byte[] dataBody = new byte[data.length - dataHeader.length];
                     System.arraycopy( data, dataHeader.length, dataBody, 0, dataBody.length );
-                    Value dataValue = DynamicArrayStore.getRightArray( Pair.of( dataHeader, dataBody ) );
+                    Value dataValue = DynamicArrayStore.getRightArray( dataHeader, dataBody );
                     if ( dataValue instanceof FloatingPointArray )
                     {
                         FloatingPointArray numbers = (FloatingPointArray) dataValue;

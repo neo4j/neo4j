@@ -703,9 +703,9 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
     public TextValue getTextValueFor( Collection<DynamicRecord> dynamicRecords, StoreCursors storeCursors )
     {
-        Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING, storeCursors );
+        AbstractDynamicStore.HeavyRecordData source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING, storeCursors );
         // A string doesn't have a header in the data array
-        return Values.utf8Value( source.other() );
+        return Values.utf8Value( source.data() );
     }
 
     Value getArrayFor( PropertyBlock propertyBlock, StoreCursors storeCursors )

@@ -20,8 +20,10 @@
 package org.neo4j.consistency.checker;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
@@ -34,7 +36,6 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.SchemaRuleKey;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -104,8 +105,8 @@ class SchemaChecker
         long highId = schemaStore.getHighId();
         try ( RecordReader<SchemaRecord> schemaReader = new RecordReader<>( schemaStore, true, cursorContext ) )
         {
-            Map<Long,SchemaRecord> indexObligations = new HashMap<>();
-            Map<Long,Pair<SchemaRecord,IndexType>> constraintObligations = new HashMap<>();
+            MutableLongObjectMap<SchemaRecord> indexObligations = LongObjectMaps.mutable.empty();
+            MutableLongObjectMap<ConstraintObligation> constraintObligations = LongObjectMaps.mutable.empty();
             Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords = new HashMap<>();
 
             // KernelVersion only controls if there will be an injected NLI on non-upgraded stores. That index is not in the store and will
@@ -122,8 +123,9 @@ class SchemaChecker
         }
     }
 
-    private void buildObligationsMap( long highId, RecordReader<SchemaRecord> reader, SchemaStorage schemaStorage, Map<Long,SchemaRecord> indexObligations,
-            Map<Long,Pair<SchemaRecord,IndexType>> constraintObligations, Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords, StoreCursors storeCursors )
+    private void buildObligationsMap( long highId, RecordReader<SchemaRecord> reader, SchemaStorage schemaStorage,
+            MutableLongObjectMap<SchemaRecord> indexObligations, MutableLongObjectMap<ConstraintObligation> constraintObligations,
+            Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords, StoreCursors storeCursors )
     {
         for ( long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++ )
         {
@@ -147,11 +149,11 @@ class SchemaChecker
                     IndexDescriptor rule = (IndexDescriptor) schemaRule;
                     if ( rule.isUnique() && rule.getOwningConstraintId().isPresent() )
                     {
-                        Pair<SchemaRecord,IndexType> previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(),
-                                Pair.of( record.copy(), rule.getIndexType() ) );
+                        var previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(),
+                                new ConstraintObligation( record.copy(), rule.getIndexType() ) );
                         if ( previousObligation != null )
                         {
-                            reporter.forSchema( record ).duplicateObligation( previousObligation.first() );
+                            reporter.forSchema( record ).duplicateObligation( previousObligation.schemaRecord() );
                         }
                     }
                 }
@@ -175,8 +177,8 @@ class SchemaChecker
         }
     }
 
-    private void performSchemaCheck( long highId, RecordReader<SchemaRecord> reader, Map<Long,SchemaRecord> indexObligations,
-            Map<Long,Pair<SchemaRecord,IndexType>> constraintObligations, SchemaStorage schemaStorage,
+    private void performSchemaCheck( long highId, RecordReader<SchemaRecord> reader, MutableLongObjectMap<SchemaRecord> indexObligations,
+            MutableLongObjectMap<ConstraintObligation> constraintObligations, SchemaStorage schemaStorage,
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties, StoreCursors storeCursors )
     {
@@ -229,20 +231,20 @@ class SchemaChecker
                         ConstraintDescriptor rule = (ConstraintDescriptor) schemaRule;
                         if ( rule.enforcesUniqueness() )
                         {
-                            Pair<SchemaRecord,IndexType> obligation = constraintObligations.get( rule.getId() );
+                            ConstraintObligation obligation = constraintObligations.get( rule.getId() );
                             if ( obligation == null )
                             {
                                 reporter.forSchema( record ).missingObligation( SchemaRuleKind.CONSTRAINT_INDEX_RULE.name() );
                             }
                             else
                             {
-                                if ( obligation.first().getId() != rule.asIndexBackedConstraint().ownedIndexId() )
+                                if ( obligation.schemaRecord().getId() != rule.asIndexBackedConstraint().ownedIndexId() )
                                 {
-                                    reporter.forSchema( record ).uniquenessConstraintNotReferencingBack( obligation.first() );
+                                    reporter.forSchema( record ).uniquenessConstraintNotReferencingBack( obligation.schemaRecord() );
                                 }
-                                else if ( obligation.other() != rule.asIndexBackedConstraint().indexType() )
+                                else if ( obligation.indexType() != rule.asIndexBackedConstraint().indexType() )
                                 {
-                                    reporter.forSchema( record ).uniquenessConstraintReferencingIndexOfWrongType( obligation.first() );
+                                    reporter.forSchema( record ).uniquenessConstraintReferencingIndexOfWrongType( obligation.schemaRecord() );
                                 }
                             }
                         }
@@ -431,5 +433,9 @@ class SchemaChecker
         {
             throw new UnsupportedOperationException();
         }
+    }
+
+    private record ConstraintObligation(SchemaRecord schemaRecord, IndexType indexType)
+    {
     }
 }

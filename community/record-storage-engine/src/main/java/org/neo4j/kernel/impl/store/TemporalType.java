@@ -694,7 +694,7 @@ public enum TemporalType
         byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader( data );
         byte[] dataBody = new byte[data.length - dataHeader.length];
         System.arraycopy( data, dataHeader.length, dataBody, 0, dataBody.length );
-        Value dataValue = DynamicArrayStore.getRightArray( Pair.of( dataHeader, dataBody ) );
+        Value dataValue = DynamicArrayStore.getRightArray( dataHeader, dataBody );
         return find( header.temporalType ).decodeArray( dataValue );
     }
 

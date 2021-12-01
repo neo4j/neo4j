@@ -260,16 +260,16 @@ class NodeLabelsFieldTest
     {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
-        Long nodeId = 24L;
+        long nodeId = 24L;
         NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, storeCursors, oneByteLongs(56) );
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
 
         // WHEN
-        Pair<Long,long[]> pair = DynamicNodeLabels.getDynamicLabelsArrayAndOwner( initialRecords,
+        long owner = DynamicNodeLabels.getDynamicLabelsArrayOwner( initialRecords,
             nodeStore.getDynamicLabelStore(), StoreCursors.NULL );
 
         // THEN
-        assertEquals( nodeId,  pair.first() );
+        assertEquals( nodeId, owner );
     }
 
     @Test
@@ -297,7 +297,7 @@ class NodeLabelsFieldTest
     {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
-        Long nodeId = 42L;
+        long nodeId = 42L;
         NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, storeCursors, oneByteLongs( 57 ) );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -305,11 +305,11 @@ class NodeLabelsFieldTest
             nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore, NULL, StoreCursors.NULL, INSTANCE ) );
 
         // WHEN
-        Pair<Long,long[]> changedPair = DynamicNodeLabels.getDynamicLabelsArrayAndOwner( changedDynamicRecords,
+        long owner = DynamicNodeLabels.getDynamicLabelsArrayOwner( changedDynamicRecords,
             nodeStore.getDynamicLabelStore(), StoreCursors.NULL );
 
         // THEN
-        assertEquals( nodeId,  changedPair.first() );
+        assertEquals( nodeId, owner );
     }
 
     @Test

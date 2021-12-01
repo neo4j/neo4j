@@ -211,6 +211,6 @@ public abstract class TokenStore<RECORD extends TokenRecord>
                 records = nameRecord.getNameRecords().iterator();
             }
         }
-        return decodeString( nameStore.readFullByteArray( relevantRecords, PropertyType.STRING, storeCursors ).other() );
+        return decodeString( nameStore.readFullByteArray( relevantRecords, PropertyType.STRING, storeCursors ).data() );
     }
 }

@@ -31,7 +31,6 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
@@ -174,7 +173,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     /**
      * @return Pair&lt; header-in-first-record , all-other-bytes &gt;
      */
-    public static Pair<byte[], byte[]> readFullByteArrayFromHeavyRecords(
+    public static HeavyRecordData readFullByteArrayFromHeavyRecords(
             Iterable<DynamicRecord> records, PropertyType propertyType )
     {
         byte[] header = null;
@@ -205,7 +204,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             offset += currentArray.length - sourceOffset;
             sourceOffset = 0;
         }
-        return Pair.of( header, bArray );
+        return new HeavyRecordData( header, bArray );
     }
 
     @Override
@@ -226,7 +225,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
                 ", blockSize:" + getRecordDataSize() + "]";
     }
 
-    Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/> readFullByteArray( Iterable<DynamicRecord> records, PropertyType propertyType,
+    HeavyRecordData readFullByteArray( Iterable<DynamicRecord> records, PropertyType propertyType,
             StoreCursors storeCursors )
     {
         for ( DynamicRecord record : records )
@@ -254,5 +253,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             }
             super.writeHeader( cursor );
         }
+    }
+
+    record HeavyRecordData(byte[] header, byte[] data)
+    {
     }
 }

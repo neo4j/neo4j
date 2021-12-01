@@ -261,11 +261,11 @@ public class DynamicNodeLabels implements NodeLabels
         return LabelIdArray.stripNodeId( storedLongs );
     }
 
-    public static Pair<Long, long[]> getDynamicLabelsArrayAndOwner( Iterable<DynamicRecord> records,
+    public static long getDynamicLabelsArrayOwner( Iterable<DynamicRecord> records,
             AbstractDynamicStore dynamicLabelStore, StoreCursors storeCursors )
     {
         long[] storedLongs = (long[])
                 DynamicArrayStore.getRightArray( dynamicLabelStore.readFullByteArray( records, PropertyType.ARRAY, storeCursors ) ).asObject();
-        return Pair.of(storedLongs[0], LabelIdArray.stripNodeId( storedLongs ));
+        return storedLongs[0];
     }
 }

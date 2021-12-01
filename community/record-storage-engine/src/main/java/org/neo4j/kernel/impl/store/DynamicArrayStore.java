@@ -34,7 +34,6 @@ import java.util.Collection;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -49,6 +48,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.util.Bits;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CRSTable;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
@@ -320,10 +320,15 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
-    public static Value getRightArray( Pair<byte[],byte[]> data )
+    public static Value getRightArray( HeavyRecordData data )
     {
-        byte[] header = data.first();
-        byte[] bArray = data.other();
+        byte[] header = data.header();
+        byte[] bArray = data.data();
+        return getRightArray( header, bArray );
+    }
+
+    public static ArrayValue getRightArray( byte[] header, byte[] bArray )
+    {
         byte typeId = header[0];
         if ( typeId == PropertyType.STRING.intValue() )
         {
@@ -343,12 +348,12 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
         else if ( typeId == PropertyType.GEOMETRY.intValue() )
         {
-            GeometryType.GeometryHeader geometryHeader = GeometryType.GeometryHeader.fromArrayHeaderBytes(header);
+            GeometryType.GeometryHeader geometryHeader = GeometryType.GeometryHeader.fromArrayHeaderBytes( header );
             return GeometryType.decodeGeometryArray( geometryHeader, bArray );
         }
         else if ( typeId == PropertyType.TEMPORAL.intValue() )
         {
-            TemporalType.TemporalHeader temporalHeader = TemporalType.TemporalHeader.fromArrayHeaderBytes(header);
+            TemporalType.TemporalHeader temporalHeader = TemporalType.TemporalHeader.fromArrayHeaderBytes( header );
             return TemporalType.decodeTemporalArray( temporalHeader, bArray );
         }
         else

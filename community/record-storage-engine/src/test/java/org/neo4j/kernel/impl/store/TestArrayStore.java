@@ -30,13 +30,13 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.AbstractDynamicStore.HeavyRecordData;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -139,9 +139,9 @@ class TestArrayStore
         String[] array = new String[] { "first", "second" };
         Collection<DynamicRecord> records = new ArrayList<>();
         arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );
-        Pair<byte[], byte[]> loaded = loadArray( records );
-        assertStringHeader( loaded.first(), array.length );
-        ByteBuffer buffer = ByteBuffer.wrap( loaded.other() );
+        var loaded = loadArray( records );
+        assertStringHeader( loaded.header(), array.length );
+        ByteBuffer buffer = ByteBuffer.wrap( loaded.data() );
         for ( String item : array )
         {
             byte[] expectedData = UTF8.encode( item );
@@ -207,8 +207,8 @@ class TestArrayStore
     {
         Collection<DynamicRecord> records = new ArrayList<>();
         arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );
-        Pair<byte[],byte[]> loaded = loadArray( records );
-        assertGeometryHeader( loaded.first(),
+        var recordData = loadArray( records );
+        assertGeometryHeader( recordData.header(),
                 GeometryType.GEOMETRY_POINT.getGtype(),
                 2,
                 array[0].getCoordinateReferenceSystem().getTable().getTableId(),
@@ -221,9 +221,10 @@ class TestArrayStore
             pointDoubles[i] = array[i / dimension].coordinate()[i % dimension];
         }
 
-        byte[] doubleHeader = Arrays.copyOf( loaded.other(), DynamicArrayStore.NUMBER_HEADER_SIZE );
-        byte[] doubleBody = Arrays.copyOfRange( loaded.other(), DynamicArrayStore.NUMBER_HEADER_SIZE, loaded.other().length );
-        assertNumericArrayHeaderAndContent( pointDoubles, PropertyType.DOUBLE, numberOfBitsUsedForDoubles, Pair.of( doubleHeader, doubleBody ) );
+        byte[] doubleHeader = Arrays.copyOf( recordData.data(), DynamicArrayStore.NUMBER_HEADER_SIZE );
+        byte[] doubleBody = Arrays.copyOfRange( recordData.data(), DynamicArrayStore.NUMBER_HEADER_SIZE, recordData.data().length );
+        assertNumericArrayHeaderAndContent( pointDoubles, PropertyType.DOUBLE, numberOfBitsUsedForDoubles,
+                new HeavyRecordData( doubleHeader, doubleBody ) );
     }
 
     private static void assertStringHeader( byte[] header, int itemCount )
@@ -245,15 +246,15 @@ class TestArrayStore
             int expectedBitsUsedPerItem )
     {
         Collection<DynamicRecord> records = storeArray( array );
-        Pair<byte[], byte[]> asBytes = loadArray( records );
-        assertNumericArrayHeaderAndContent( array, type, expectedBitsUsedPerItem, asBytes );
+        var recordData = loadArray( records );
+        assertNumericArrayHeaderAndContent( array, type, expectedBitsUsedPerItem, recordData );
     }
 
     private static void assertNumericArrayHeaderAndContent( Object array, PropertyType type, int expectedBitsUsedPerItem,
-            Pair<byte[],byte[]> loadedBytesFromStore )
+            HeavyRecordData recordData )
     {
-        assertArrayHeader( loadedBytesFromStore.first(), type, expectedBitsUsedPerItem );
-        Bits bits = Bits.bitsFromBytes( loadedBytesFromStore.other() );
+        assertArrayHeader( recordData.header(), type, expectedBitsUsedPerItem );
+        Bits bits = Bits.bitsFromBytes( recordData.data() );
         int length = Array.getLength( array );
         for ( int i = 0; i < length; i++ )
         {
@@ -288,7 +289,7 @@ class TestArrayStore
         return records;
     }
 
-    private Pair<byte[], byte[]> loadArray( Collection<DynamicRecord> records )
+    private HeavyRecordData loadArray( Collection<DynamicRecord> records )
     {
         return arrayStore.readFullByteArray( records, PropertyType.ARRAY, StoreCursors.NULL );
     }
