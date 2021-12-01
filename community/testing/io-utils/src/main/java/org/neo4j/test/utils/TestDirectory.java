@@ -62,8 +62,8 @@ import static java.lang.String.format;
 public class TestDirectory
 {
     /**
-     * This value is mixed into the hash string, along with the test name,
-     * that we use for uniquely naming test directories.
+     * {@link TestDirectory#now}, {@link TestDirectory#DATE_TIME_FORMATTER} and hash(test_folder_name) are used to
+     * construct uniquely naming test directories.
      * By getting a new value here, every time the JVM is started, we the same
      * tests will get different directory names when executed many times in
      * different JVMs.
@@ -328,7 +328,7 @@ public class TestDirectory
 
     private static Path testDataDirectoryOf( Class<?> owningTest )
     {
-        Path testData = locateTarget( owningTest ).resolve( "test-data" );
+        Path testData = locateTarget( owningTest ).resolve( "test data" );
         return testData.resolve( shorten( owningTest.getName() ) ).toAbsolutePath();
     }
 
