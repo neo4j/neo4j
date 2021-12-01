@@ -25,7 +25,6 @@ import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,7 +45,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -63,7 +61,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 @ExtendWith( {SoftAssertionsExtension.class, RandomExtension.class} )
 @ImpermanentDbmsExtension
@@ -96,9 +94,9 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         // when   the queries and expected matches are generated
         queries = setupDatabase();
         // then   require there to be some queries to test against
-        assertThat( queries.valid ).as( "there are queries to test against" ).isNotEmpty();
+        assumeThat( queries.valid() ).as( "there are valid queries to test against" ).isNotEmpty();
 
-        maxNumberOfPartitions = calculateMaxNumberOfPartitions( queries.valid.queries() );
+        maxNumberOfPartitions = calculateMaxNumberOfPartitions( queries.valid().queries() );
     }
 
     protected final KernelTransaction beginTx()
@@ -159,12 +157,13 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
     }
 
     @Test
-    @EnabledIf( value = "invalidQueriesGenerated", disabledReason = "There were no invalid queries generated" )
     final void shouldThrowWithInvalidQuery() throws KernelException
     {
+        assumeThat( queries.invalid() ).as( "there are invalid queries to test against" ).isNotEmpty();
+
         try ( var tx = beginTx() )
         {
-            for ( final var query : queries.invalid )
+            for ( final var query : queries.invalid() )
             {
                 // given  an invalid query
                 // when   partitioned scan constructed
@@ -191,7 +190,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx.cursors() ).with( tx.cursorContext() ) )
             {
-                for ( final var entry : queries.valid )
+                for ( final var entry : queries.valid() )
                 {
                     final var query = entry.getKey();
                     // given  an empty database
@@ -223,7 +222,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             // when   the maximum number of partitions is calculated
             super.setup();
             // then   there should be at least enough to test partitioning
-            assertThat( maxNumberOfPartitions ).as( "max number of partitions is enough to test partitions" ).isGreaterThan( 1 );
+            assumeThat( maxNumberOfPartitions ).as( "max number of partitions is enough to test partitions" ).isGreaterThan( 1 );
         }
 
         @Test
@@ -232,7 +231,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx.cursors() ).with( tx.cursorContext() ) )
             {
-                for ( final var entry : queries.valid )
+                for ( final var entry : queries.valid() )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -296,7 +295,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             try ( var tx = beginTx();
                   var entities = factory.getCursor( tx.cursors() ).with( tx.cursorContext() ) )
             {
-                for ( final var entry : queries.valid )
+                for ( final var entry : queries.valid() )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -334,7 +333,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         {
             try ( var tx = beginTx() )
             {
-                for ( final var entry : queries.valid )
+                for ( final var entry : queries.valid() )
                 {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -398,14 +397,9 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         }
     }
 
-    private boolean invalidQueriesGenerated()
-    {
-        return !queries.invalid.isEmpty();
-    }
-
     private QUERY getFirstValidQuery()
     {
-        return queries.valid.iterator().next().getKey();
+        return queries.valid().iterator().next().getKey();
     }
 
     protected String getTokenIndexName( EntityType entityType )
@@ -413,9 +407,9 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         try ( var tx = beginTx() )
         {
             final var indexes = tx.schemaRead().index( SchemaDescriptors.forAnyEntityTokens( entityType ) );
-            assertThat( indexes.hasNext() ).as( "%s based token index exists", entityType ).isTrue();
+            assumeThat( indexes.hasNext() ).as( "%s based token index exists", entityType ).isTrue();
             final var index = indexes.next();
-            assertThat( indexes.hasNext() ).as( "only one %s based token index exists", entityType ).isFalse();
+            assumeThat( indexes.hasNext() ).as( "only one %s based token index exists", entityType ).isFalse();
             return index.getName();
         }
         catch ( Exception e )
@@ -472,11 +466,8 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         tx.dataWrite().nodeCreate();
     }
 
-    protected static final class Queries<QUERY extends Query<?>>
+    protected record Queries<QUERY extends Query<?>>(EntityIdsMatchingQuery<QUERY> valid, Set<QUERY> invalid)
     {
-        final EntityIdsMatchingQuery<QUERY> valid;
-        final Set<QUERY> invalid;
-
         public Queries( EntityIdsMatchingQuery<QUERY> valid, Set<QUERY> invalid )
         {
             this.valid = valid;

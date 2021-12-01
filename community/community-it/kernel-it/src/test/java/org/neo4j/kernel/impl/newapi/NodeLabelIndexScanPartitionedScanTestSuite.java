@@ -104,9 +104,6 @@ class NodeLabelIndexScanPartitionedScanTestSuite
                 throw new AssertionError( "failed to create database", e );
             }
 
-            // then   there should be some queries to match against
-            assertThat( nodesWithLabelId.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
-
             var numberOfCreatedNodes = 0;
             for ( final var entry : nodesWithLabelId )
             {

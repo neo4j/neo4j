@@ -46,7 +46,7 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
     // as using an int as source of values, ~half of ints will be covered by this range
     private static final Pair<Integer,Integer> RANGE = Pair.of( Integer.MIN_VALUE / 2, Integer.MAX_VALUE / 2 );
 
-    PropertyIndexSeekPartitionedScanTestSuite( IndexType index )
+    PropertyIndexSeekPartitionedScanTestSuite( TestIndexType index )
     {
         super( index );
     }
@@ -69,7 +69,7 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
                               .flatMap( propKeyId -> Arrays.stream( ValueType.values() )
                                       .map( type -> new PropertyRecord( propKeyId, type.toValue( 0 ), type ) ) )
                               .flatMap( prop -> queries( prop )
-                                      .map( query -> new PropertyKeySeekQuery( factory.getIndexName( tokenId, prop.id ), query ) ) ),
+                                      .map( query -> new PropertyKeySeekQuery( factory.getIndexName( tokenId, prop.id() ), query ) ) ),
 
                         // composite queries
                         queries( Arrays.stream( propKeyIds )
@@ -116,28 +116,28 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
 
         final var general = Stream.of(
                 PropertyIndexQuery.allEntries(),
-                PropertyIndexQuery.exists( prop.id ),
-                PropertyIndexQuery.exact( prop.id, prop.value ),
-                PropertyIndexQuery.range( prop.id, prop.type.toValue( RANGE.first() ), true, prop.type.toValue( RANGE.other() ), false ) );
+                PropertyIndexQuery.exists( prop.id() ),
+                PropertyIndexQuery.exact( prop.id(), prop.value() ),
+                PropertyIndexQuery.range( prop.id(), prop.type().toValue( RANGE.first() ), true, prop.type().toValue( RANGE.other() ), false ) );
 
         final var text = Stream.of(
-                PropertyIndexQuery.stringPrefix( prop.id, Values.utf8Value( "1" ) ),
-                PropertyIndexQuery.stringSuffix( prop.id, Values.utf8Value( "1" ) ),
-                PropertyIndexQuery.stringContains( prop.id, Values.utf8Value( "1" ) ) );
+                PropertyIndexQuery.stringPrefix( prop.id(), Values.utf8Value( "1" ) ),
+                PropertyIndexQuery.stringSuffix( prop.id(), Values.utf8Value( "1" ) ),
+                PropertyIndexQuery.stringContains( prop.id(), Values.utf8Value( "1" ) ) );
 
-        final var queries = prop.type == ValueType.TEXT
+        final var queries = prop.type() == ValueType.TEXT
                             ? Stream.concat( general, text )
                             : general;
 
-        return queries.filter( query -> query.acceptsValue( prop.value ) );
+        return queries.filter( query -> query.acceptsValue( prop.value() ) );
     }
 
     private static Stream<PropertyIndexQuery[]> queries( PropertyRecord... props )
     {
         final var allSingleQueries = Arrays.stream( props )
                                            .map( PropertyIndexSeekPartitionedScanTestSuite::queries )
-                                           .map( queries -> queries.collect( Collectors.toUnmodifiableList() ) )
-                                           .collect( Collectors.toUnmodifiableList() );
+                                           .map( Stream::toList )
+                                           .toList();
 
         // cartesian product of all single queries that match
         var compositeQueries = Stream.of( List.<PropertyIndexQuery>of() );
@@ -199,23 +199,9 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
         }
     }
 
-    protected static final class PropertyKeySeekQuery implements Query<PropertyIndexQuery[]>
+    protected record PropertyKeySeekQuery(String indexName, PropertyIndexQuery... queries)
+            implements Query<PropertyIndexQuery[]>
     {
-        private final String indexName;
-        private final PropertyIndexQuery[] queries;
-
-        PropertyKeySeekQuery( String indexName, PropertyIndexQuery... queries )
-        {
-            this.indexName = indexName;
-            this.queries = queries;
-        }
-
-        @Override
-        public String indexName()
-        {
-            return indexName;
-        }
-
         @Override
         public PropertyIndexQuery[] get()
         {

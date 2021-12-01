@@ -135,9 +135,6 @@ class RelationshipTypeIndexScanPartitionedScanTestSuite
                 throw new AssertionError( "failed to create database", e );
             }
 
-            // then   there should be some queries to match against
-            assertThat( relsWithRelTypeId.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
-
             var numberOfCreatedRels = 0;
             for ( final var entry : relsWithRelTypeId )
             {

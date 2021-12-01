@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -32,6 +31,7 @@ import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
@@ -45,9 +45,9 @@ import org.neo4j.values.storable.Values;
 abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CURSOR extends Cursor>
         implements PartitionedScanTestSuite.TestSuite<QUERY,IndexReadSession,CURSOR>
 {
-    private final IndexType index;
+    private final TestIndexType index;
 
-    PropertyIndexPartitionedScanTestSuite( IndexType index )
+    PropertyIndexPartitionedScanTestSuite( TestIndexType index )
     {
         this.index = index;
     }
@@ -67,7 +67,7 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
                                                       .withIndexType( index.type() )
                                                       .withIndexProvider( index.descriptor() )
                                                       .withName( indexFrom.other() ) )
-                     .collect( Collectors.toUnmodifiableList() );
+                     .toList();
     }
 
     abstract static class WithoutData<QUERY extends Query<?>, CURSOR extends Cursor>
@@ -97,18 +97,8 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
 
     }
 
-    protected static final class PropertyRecord
+    protected record PropertyRecord(int id, Value value, ValueType type)
     {
-        final int id;
-        final Value value;
-        final ValueType type;
-
-        PropertyRecord( int id, Value value, ValueType type )
-        {
-            this.id = id;
-            this.value = value;
-            this.type = type;
-        }
     }
 
     protected static PropertyRecord createRandomPropertyRecord( RandomSupport random, int propKeyId, int value )
@@ -236,22 +226,22 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
         }
     }
 
-    protected enum IndexType
+    protected enum TestIndexType
     {
-        BTREE( org.neo4j.internal.schema.IndexType.BTREE, GenericNativeIndexProvider.DESCRIPTOR ),
-        FUSION( org.neo4j.internal.schema.IndexType.BTREE, NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR ),
-        RANGE( org.neo4j.internal.schema.IndexType.RANGE, RangeIndexProvider.DESCRIPTOR );
+        BTREE( IndexType.BTREE, GenericNativeIndexProvider.DESCRIPTOR ),
+        FUSION( IndexType.BTREE, NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR ),
+        RANGE( IndexType.RANGE, RangeIndexProvider.DESCRIPTOR );
 
-        private final org.neo4j.internal.schema.IndexType type;
+        private final IndexType type;
         private final IndexProviderDescriptor descriptor;
 
-        IndexType( org.neo4j.internal.schema.IndexType type, IndexProviderDescriptor descriptor )
+        TestIndexType( IndexType type, IndexProviderDescriptor descriptor )
         {
             this.type = type;
             this.descriptor = descriptor;
         }
 
-        final org.neo4j.internal.schema.IndexType type()
+        final IndexType type()
         {
             return type;
         }

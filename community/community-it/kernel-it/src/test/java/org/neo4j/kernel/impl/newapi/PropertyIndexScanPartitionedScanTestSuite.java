@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.Cursor;
@@ -30,7 +29,7 @@ import org.neo4j.kernel.impl.newapi.PropertyIndexScanPartitionedScanTestSuite.Pr
 abstract class PropertyIndexScanPartitionedScanTestSuite<CURSOR extends Cursor>
         extends PropertyIndexPartitionedScanTestSuite<PropertyKeyScanQuery,CURSOR>
 {
-    PropertyIndexScanPartitionedScanTestSuite( IndexType index )
+    PropertyIndexScanPartitionedScanTestSuite( TestIndexType index )
     {
         super( index );
     }
@@ -63,46 +62,13 @@ abstract class PropertyIndexScanPartitionedScanTestSuite<CURSOR extends Cursor>
         }
     }
 
-    protected static final class PropertyKeyScanQuery implements Query<Void>
+    protected record PropertyKeyScanQuery(String indexName)
+            implements Query<Void>
     {
-        private final String indexName;
-
-        PropertyKeyScanQuery( String indexName )
-        {
-            this.indexName = indexName;
-        }
-
-        @Override
-        public String indexName()
-        {
-            return indexName;
-        }
-
         @Override
         public Void get()
         {
             return null;
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( this == obj )
-            {
-                return true;
-            }
-            if ( obj == null || getClass() != obj.getClass() )
-            {
-                return false;
-            }
-            final var that = (PropertyKeyScanQuery) obj;
-            return Objects.equals( indexName, that.indexName );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( indexName );
         }
 
         @Override

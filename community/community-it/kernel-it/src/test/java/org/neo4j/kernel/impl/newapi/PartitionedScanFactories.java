@@ -411,7 +411,7 @@ class PartitionedScanFactories
 
         final List<TAG> generate( int numberOfTags )
         {
-            return Stream.generate( this ).limit( numberOfTags ).collect( Collectors.toUnmodifiableList() );
+            return Stream.generate( this ).limit( numberOfTags ).toList();
         }
 
         final List<Integer> createIds( KernelTransaction tx, Iterable<TAG> tags ) throws KernelException

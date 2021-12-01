@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -62,23 +61,9 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
         abstract Queries<TokenScanQuery> createData( int numberOfEntities, List<Integer> tokenIds );
     }
 
-    protected static final class TokenScanQuery implements Query<TokenPredicate>
+    protected record TokenScanQuery(String indexName, TokenPredicate predicate)
+            implements Query<TokenPredicate>
     {
-        private final String name;
-        private final TokenPredicate predicate;
-
-        public TokenScanQuery( String name, TokenPredicate predicate )
-        {
-            this.name = name;
-            this.predicate = predicate;
-        }
-
-        @Override
-        public String indexName()
-        {
-            return name;
-        }
-
         @Override
         public TokenPredicate get()
         {
@@ -86,30 +71,9 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
         }
 
         @Override
-        public boolean equals( Object obj )
-        {
-            if ( this == obj )
-            {
-                return true;
-            }
-            if ( obj == null || getClass() != obj.getClass() )
-            {
-                return false;
-            }
-            final var that = (TokenScanQuery) obj;
-            return Objects.equals( name, that.name ) && Objects.equals( predicate.tokenId(), that.predicate.tokenId() );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( name, predicate.tokenId() );
-        }
-
-        @Override
         public String toString()
         {
-            return String.format( "%s[index='%s', pred='%s']", getClass().getSimpleName(), name, predicate.tokenId() );
+            return String.format( "%s[index='%s', pred='%s']", getClass().getSimpleName(), indexName, predicate.tokenId() );
         }
     }
 }

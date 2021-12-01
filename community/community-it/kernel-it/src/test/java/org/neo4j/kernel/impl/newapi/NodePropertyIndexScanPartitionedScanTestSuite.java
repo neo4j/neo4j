@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class NodePropertyIndexScanPartitionedScanTestSuite
         extends PropertyIndexScanPartitionedScanTestSuite<NodeValueIndexCursor>
 {
-    NodePropertyIndexScanPartitionedScanTestSuite( IndexType index )
+    NodePropertyIndexScanPartitionedScanTestSuite( TestIndexType index )
     {
         super( index );
     }
@@ -113,11 +113,11 @@ class NodePropertyIndexScanPartitionedScanTestSuite
                             {
                                 // when   properties are created
                                 final var prop = createRandomPropertyRecord( random, propKeyIds[i], propValues.next() );
-                                write.nodeSetProperty( nodeId, prop.id, prop.value );
+                                write.nodeSetProperty( nodeId, prop.id(), prop.value() );
                                 numberOfCreatedProperties++;
                                 assignedProperties[i] = prop;
                                 // when   and tracked against queries
-                                nodesInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( labelId, prop.id ) ) ).add( nodeId );
+                                nodesInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( labelId, prop.id() ) ) ).add( nodeId );
                             }
                         }
                         if ( Arrays.stream( assignedProperties ).allMatch( Objects::nonNull ) )
@@ -134,10 +134,7 @@ class NodePropertyIndexScanPartitionedScanTestSuite
                 throw new AssertionError( "failed to create database", e );
             }
 
-            // then   there should be some queries to match against
-            assertThat( nodesInIndex.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
-
-            // then   and the number created should be equal to what was asked
+            // then   the number created should be equal to what was asked
             assertThat( numberOfCreatedProperties ).as( "node properties created" ).isEqualTo( numberOfProperties );
 
             return new Queries<>( nodesInIndex );

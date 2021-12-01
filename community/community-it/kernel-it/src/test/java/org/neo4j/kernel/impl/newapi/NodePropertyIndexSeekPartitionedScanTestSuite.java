@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class NodePropertyIndexSeekPartitionedScanTestSuite
         extends PropertyIndexSeekPartitionedScanTestSuite<NodeValueIndexCursor>
 {
-    NodePropertyIndexSeekPartitionedScanTestSuite( IndexType index )
+    NodePropertyIndexSeekPartitionedScanTestSuite( TestIndexType index )
     {
         super( index );
     }
@@ -109,11 +109,11 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
                             {
                                 // when   properties are created
                                 final var prop = createRandomPropertyRecord( random, propKeyIds[i], propValues.next() );
-                                write.nodeSetProperty( nodeId, prop.id, prop.value );
+                                write.nodeSetProperty( nodeId, prop.id(), prop.value() );
                                 numberOfCreatedProperties++;
                                 assignedProperties[i] = prop;
                                 // when   and tracked against queries
-                                final var index = factory.getIndex( tx, labelId, prop.id );
+                                final var index = factory.getIndex( tx, labelId, prop.id() );
                                 tracking.generateAndTrack( nodeId, shouldIncludeExactQuery(), index, prop );
                             }
                         }
@@ -129,15 +129,10 @@ class NodePropertyIndexSeekPartitionedScanTestSuite
                 throw new AssertionError( "failed to create database", e );
             }
 
-            final var expected = tracking.get();
-
-            // then   there should be some queries to match against
-            assertThat( expected.valid.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
-
-            // then   and the number created should be equal to what was asked
+            // then   the number created should be equal to what was asked
             assertThat( numberOfCreatedProperties ).as( "node properties created" ).isEqualTo( numberOfProperties );
 
-            return expected;
+            return tracking.get();
         }
     }
 }

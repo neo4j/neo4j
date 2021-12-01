@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RelationshipPropertyIndexScanPartitionedScanTestSuite
         extends PropertyIndexScanPartitionedScanTestSuite<RelationshipValueIndexCursor>
 {
-    RelationshipPropertyIndexScanPartitionedScanTestSuite( IndexType index )
+    RelationshipPropertyIndexScanPartitionedScanTestSuite( TestIndexType index )
     {
         super( index );
     }
@@ -112,11 +112,11 @@ class RelationshipPropertyIndexScanPartitionedScanTestSuite
                         {
                             // when   properties are created
                             final var prop = createRandomPropertyRecord( random, propKeyIds[i], propValues.next() );
-                            write.relationshipSetProperty( relId, prop.id, prop.value );
+                            write.relationshipSetProperty( relId, prop.id(), prop.value() );
                             numberOfCreatedProperties++;
                             assignedProperties[i] = prop;
                             // when   and tracked against queries
-                            relsInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( relTypeId, prop.id ) ) ).add( relId );
+                            relsInIndex.getOrCreate( new PropertyKeyScanQuery( factory.getIndexName( relTypeId, prop.id() ) ) ).add( relId );
                         }
                     }
                     if ( Arrays.stream( assignedProperties ).allMatch( Objects::nonNull ) )
@@ -132,10 +132,7 @@ class RelationshipPropertyIndexScanPartitionedScanTestSuite
                 throw new AssertionError( "failed to create database", e );
             }
 
-            // then   there should be some queries to match against
-            assertThat( relsInIndex.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
-
-            // then   and the number created should be equal to what was asked
+            // then   the number created should be equal to what was asked
             assertThat( numberOfCreatedProperties ).as( "node properties created" ).isEqualTo( numberOfProperties );
 
             return new Queries<>( relsInIndex );

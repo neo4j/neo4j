@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RelationshipPropertyIndexSeekPartitionedScanTestSuite
         extends PropertyIndexSeekPartitionedScanTestSuite<RelationshipValueIndexCursor>
 {
-    RelationshipPropertyIndexSeekPartitionedScanTestSuite( IndexType index )
+    RelationshipPropertyIndexSeekPartitionedScanTestSuite( TestIndexType index )
     {
         super( index );
     }
@@ -108,11 +108,11 @@ class RelationshipPropertyIndexSeekPartitionedScanTestSuite
                         {
                             // when   properties are created
                             final var prop = createRandomPropertyRecord( random, propKeyIds[i], propValues.next() );
-                            write.relationshipSetProperty( relId, prop.id, prop.value );
+                            write.relationshipSetProperty( relId, prop.id(), prop.value() );
                             numberOfCreatedProperties++;
                             assignedProperties[i] = prop;
                             // when   and tracked against queries
-                            final var index = factory.getIndex( tx, relTypeId, prop.id );
+                            final var index = factory.getIndex( tx, relTypeId, prop.id() );
                             tracking.generateAndTrack( relId, shouldIncludeExactQuery(), index, prop );
                         }
                     }
@@ -127,15 +127,10 @@ class RelationshipPropertyIndexSeekPartitionedScanTestSuite
                 throw new AssertionError( "failed to create database", e );
             }
 
-            final var expected = tracking.get();
-
-            // then   there should be some queries to match against
-            assertThat( expected.valid.queries().size() ).as( "valid queries should exist" ).isGreaterThan( 0 );
-
-            // then   and the number created should be equal to what was asked
+            // then   the number created should be equal to what was asked
             assertThat( numberOfCreatedProperties ).as( "node properties created" ).isEqualTo( numberOfProperties );
 
-            return expected;
+            return tracking.get();
         }
     }
 }

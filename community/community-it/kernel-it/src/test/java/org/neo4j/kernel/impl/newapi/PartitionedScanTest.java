@@ -45,7 +45,7 @@ class PartitionedScanTest
         {
             BTree()
             {
-                super( IndexType.BTREE );
+                super( TestIndexType.BTREE );
             }
         }
 
@@ -54,7 +54,7 @@ class PartitionedScanTest
         {
             Fusion()
             {
-                super( IndexType.FUSION );
+                super( TestIndexType.FUSION );
             }
         }
 
@@ -63,7 +63,7 @@ class PartitionedScanTest
         {
             Range()
             {
-                super( IndexType.RANGE );
+                super( TestIndexType.RANGE );
             }
         }
     }
@@ -76,7 +76,7 @@ class PartitionedScanTest
         {
             BTree()
             {
-                super( IndexType.BTREE );
+                super( TestIndexType.BTREE );
             }
         }
 
@@ -85,7 +85,7 @@ class PartitionedScanTest
         {
             Range()
             {
-                super( IndexType.RANGE );
+                super( TestIndexType.RANGE );
             }
         }
     }
@@ -98,7 +98,7 @@ class PartitionedScanTest
         {
             BTree()
             {
-                super( IndexType.BTREE );
+                super( TestIndexType.BTREE );
             }
         }
 
@@ -107,7 +107,7 @@ class PartitionedScanTest
         {
             Fusion()
             {
-                super( IndexType.FUSION );
+                super( TestIndexType.FUSION );
             }
         }
 
@@ -116,7 +116,7 @@ class PartitionedScanTest
         {
             Range()
             {
-                super( IndexType.RANGE );
+                super( TestIndexType.RANGE );
             }
         }
     }
@@ -129,7 +129,7 @@ class PartitionedScanTest
         {
             BTree()
             {
-                super( IndexType.BTREE );
+                super( TestIndexType.BTREE );
             }
         }
 
@@ -138,7 +138,7 @@ class PartitionedScanTest
         {
             Range()
             {
-                super( IndexType.RANGE );
+                super( TestIndexType.RANGE );
             }
         }
     }
