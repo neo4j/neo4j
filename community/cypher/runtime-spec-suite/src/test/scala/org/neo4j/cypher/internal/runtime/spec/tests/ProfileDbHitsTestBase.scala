@@ -101,7 +101,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint + 1 + costOfLabelLookup) // label scan
+    queryProfile.operatorProfile(1).dbHits() should (be(sizeHint + costOfLabelLookup) or be(sizeHint + 1 + costOfLabelLookup)) // label scan
   }
 
   test("should profile dbHits of node index seek with range predicate") {
@@ -625,7 +625,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(1).dbHits() shouldBe (size / 2 * size) * (costOfGetPropertyChain + costOfProperty) // filter
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
     queryProfile.operatorProfile(3).dbHits() shouldBe size * size * (fusedCostOfGetPropertyChain + costOfProperty) // filter
-    queryProfile.operatorProfile(4).dbHits() should (be (size * size) or be (size * (1+size))) // all node scan
+    queryProfile.operatorProfile(4).dbHits().toInt should be > size // all node scan (in parallel scans we can have different number of db hits here)
     queryProfile.operatorProfile(5).dbHits() should (be (size) or be (size + 1)) // all node scan
   }
 
