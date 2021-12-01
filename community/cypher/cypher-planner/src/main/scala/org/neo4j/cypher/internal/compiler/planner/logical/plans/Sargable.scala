@@ -175,7 +175,7 @@ object AsValueRangeSeekable {
   }
 }
 
-// WHERE distance(p.prop, otherPoint) < number
+// WHERE point.distance(p.prop, otherPoint) < number
 // and the like
 object AsDistanceSeekable {
   def unapply(v: Any): Option[PointDistanceSeekable] = v match {

@@ -188,6 +188,10 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
           checkToSpecifiedTypeOfArgument(invocation, ToString.validInputTypes) ifOkChain
           specifyType(CTString, invocation)
 
+      //distance has been replaced with point.distance, make sure we provide a nice error message
+      case UnresolvedFunction if invocation.namespace.parts.isEmpty && invocation.functionName.name.toLowerCase == "distance" =>
+        SemanticError(s"'distance' has been replaced by 'point.distance'", invocation.position)
+
       case Distance =>
         checkArgs(invocation, 2) ifOkChain
           specifyType(CTFloat, invocation)
