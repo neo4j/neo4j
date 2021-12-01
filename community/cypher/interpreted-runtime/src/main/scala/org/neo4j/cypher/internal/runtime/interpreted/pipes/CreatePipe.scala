@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.WriteOperations
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -55,25 +56,16 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
       case _: VirtualNodeValue | _: VirtualRelationshipValue =>
         throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
       case IsMap(map) =>
-        map(state).foreach((k: String, v: AnyValue) => setProperty(entityId, k, v, state.query, ops))
+        val propertyMap = map(state)
+        val propertiesToSet = IntObjectMaps.mutable.withInitialCapacity[Value](propertyMap.size())
+        propertyMap.foreach {
+          case (_, noValue) if noValue eq Values.NO_VALUE => // Do nothing
+          case (name, value) => propertiesToSet.put(state.query.getOrCreatePropertyKeyId(name), makeValueNeoSafe(value))
+        }
+        ops.setProperties(entityId, propertiesToSet)
 
       case _ =>
         throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
-    }
-  }
-
-  /**
-   * Set property on node, or call `handleNoValue` if value is `NO_VALUE`.
-   */
-  protected def setProperty(entityId: Long,
-                            key: String,
-                            value: AnyValue,
-                            qtx: QueryContext,
-                            ops: WriteOperations[_, _]): Unit = {
-    //do not set properties for null values
-    if (!(value eq Values.NO_VALUE)) {
-      val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
-      ops.setProperty(entityId, propertyKeyId, makeValueNeoSafe(value))
     }
   }
 }
@@ -91,6 +83,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
                            data: CreateNodeCommand): (String, VirtualNodeValue) = {
     val labelIds = data.labels.map(_.getOrCreateId(state.query)).toArray
     val node = state.query.createNodeId(labelIds)
+
     data.properties.foreach(setProperties(context, state, node, _, state.query.nodeWriteOps))
     data.idName -> VirtualValues.node(node)
   }

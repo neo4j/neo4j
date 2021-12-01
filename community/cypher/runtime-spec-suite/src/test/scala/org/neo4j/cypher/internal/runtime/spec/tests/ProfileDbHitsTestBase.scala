@@ -1233,7 +1233,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val createLabelsHits = labels.size
     val createNodesHits = createCount
     val createPropKeyHits = createCount * properties.size
-    val setPropertyHits = createCount * properties.size
+    val setPropertyHits = createCount
     createProfile.dbHits() shouldBe (createNodesHits + createLabelsHits + createPropKeyHits + setPropertyHits)
   }
 
@@ -1722,9 +1722,10 @@ trait NonFusedWriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] extends Wr
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
 
     val createProfile = queryProfile.operatorProfile(2)
-    val propertyHits = createRelationships.size * properties.size * 2 // TODO Looks like we count to much here
+    val propertyHits = createRelationships.size
+    val propertyTokenHits = createRelationships.size * properties.size
     val relationshipHits = /* create relationships */ createRelationships.size + /* create relationship type */ createRelationships.size
     val nodeHits = createNodeCount
-    createProfile.dbHits() shouldBe (nodeHits + relationshipHits + propertyHits)
+    createProfile.dbHits() shouldBe (nodeHits + relationshipHits + propertyHits + propertyTokenHits)
   }
 }
