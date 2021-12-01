@@ -104,6 +104,7 @@ public enum Group
     CORE_STATE_APPLIER( "CoreStateApplier" ),
     AKKA_HELPER( "AkkaActorSystemRestarter" ),
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
+    CATCHUP_CHANNEL_POOL( "CatchupChannelPool" ),
     CATCHUP_CLIENT( "CatchupClient" ),
     CATCHUP_PROCESS( "CatchupProcess" ),
     CATCHUP_SERVER( "CatchupServer" ),
