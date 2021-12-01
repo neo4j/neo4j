@@ -72,7 +72,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(nodes))
     runtimeResult.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe sizeHint // limit
-    runtimeResult.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe sizeHint // union
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(3).rows().toInt should be >= sizeHint // union
   }
 
   test("limit 2 on top of union on rhs of apply") {

@@ -179,6 +179,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should keep input order") {
+    assume(!isParallel) // Parallel runtime cannot maintain provided order
     // given
     // (This is a sawtooth pattern)
     val f: Int => Int = i => i - ((i / 10) * 10) / 2

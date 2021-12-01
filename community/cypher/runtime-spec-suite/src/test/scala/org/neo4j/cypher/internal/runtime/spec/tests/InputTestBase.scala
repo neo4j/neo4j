@@ -122,6 +122,6 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
 
     // then
-    runtimeResult should beColumns("y").withRows(input.take(1))
+    runtimeResult should beColumns("y").withRows(rowCount(1))
   }
 }

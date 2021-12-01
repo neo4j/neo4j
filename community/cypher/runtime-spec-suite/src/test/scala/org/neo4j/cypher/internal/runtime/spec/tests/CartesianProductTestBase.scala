@@ -598,6 +598,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("preserves order with multiple index seeks") {
+    assume(!isParallel) // Parallel runtime cannot maintain provided order
     // given
     val nValues = 14 // gives 819 results in the range 0-12
     val inputRows = inputValues((0 until nValues).map { i =>
