@@ -101,13 +101,6 @@ public class DatabaseMigrator
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
-        IndexConfigMigrator indexConfigMigrator = new IndexConfigMigrator( fs, config, pageCache, logService, storageEngineFactory, indexProviderMap,
-                logService.getUserLog( IndexConfigMigrator.class ), pageCacheTracer, memoryTracker );
-        storeUpgrader.addParticipant( indexConfigMigrator );
-
-        IndexProviderMigrator indexProviderMigrator = new IndexProviderMigrator(
-                fs, config, pageCache, logService, storageEngineFactory, pageCacheTracer, memoryTracker );
-        storeUpgrader.addParticipant( indexProviderMigrator );
 
         // Do individual index provider migration last because they may delete files that we need in earlier steps.
         indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
