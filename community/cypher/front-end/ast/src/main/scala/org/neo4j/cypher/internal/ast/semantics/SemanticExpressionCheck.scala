@@ -473,38 +473,41 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         check(ctx, x.expr, x +: parents) chain
           check(ctx, x.idx, x +: parents) chain
           typeSwitch(x.expr) {
-            exprT =>
+            // if we don't know the type of the container (e.g. it's given as a parameter) then we can't do a semantic check, instead it will blow up in runtime
+            case exprT if !(exprT contains CTAny) =>
               typeSwitch(x.idx) {
                 idxT =>
                   val listT = CTList(CTAny).covariant & exprT
                   val nodeT = CTNode.covariant & exprT
                   val relT = CTRelationship.covariant & exprT
                   val mapT = CTMap.invariant & exprT
-                  val exprIsList = listT != TypeSpec.none && exprT != TypeSpec.all
-                  val exprIsNodeOrRel = (nodeT != TypeSpec.none || relT != TypeSpec.none) && exprT != TypeSpec.all
-                  val exprIsMap = mapT != TypeSpec.none && exprT != TypeSpec.all
-                  val idxIsInteger = (CTInteger.covariant & idxT) != TypeSpec.none
-                  val idxIsString = (CTString.covariant & idxT) != TypeSpec.none
+
+                  val exprIsList = listT.nonEmpty
+                  val exprIsNodeOrRel = nodeT.nonEmpty || relT.nonEmpty
+                  val exprIsMap = mapT.nonEmpty
+
+                  val idxIsInteger = (CTInteger.covariant & idxT).nonEmpty
+                  val idxIsString = (CTString.covariant & idxT).nonEmpty
 
                   if (exprIsList) {
-                    expectType(CTList(CTAny).covariant, x.expr) ifOkChain
-                      specifyType(types(x.expr)(_).unwrapLists, x) chain
+                      specifyType(listT.unwrapLists, x) chain
                       expectType(CTInteger.covariant, x.idx, (_: String, actual: String) => s"list index must be given as Integer, but was $actual")
                   } else if (exprIsMap) {
                     expectType(CTString.covariant, x.idx, (_: String, actual: String) => s"map key must be given as String, but was $actual")
                   } else if (exprIsNodeOrRel) {
                     expectType(CTString.covariant, x.idx, (_: String, actual: String) => s"node or relationship property key must be given as String, but was $actual")
                   } else {
-                    // if x.expr is not a container, infer expected container type from index type and raise error
                     if (idxIsString) {
                       expectType(CTMap.covariant, x.expr)
                     } else if (idxIsInteger) {
                       expectType(CTList(CTAny).covariant, x.expr)
                     } else {
-                      SemanticCheckResult.success
+                      expectType(TypeSpec.union(CTMap.covariant, CTList(CTAny).covariant), x.expr)
                     }
                   }
               }
+            case _ =>
+              SemanticCheckResult.success
           }
 
       // MAPS

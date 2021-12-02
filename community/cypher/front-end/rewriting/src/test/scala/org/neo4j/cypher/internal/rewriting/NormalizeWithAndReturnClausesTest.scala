@@ -383,11 +383,11 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("WITH: introduces aliases for complex ORDER BY expressions that depend on existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |WITH n.prop AS prop ORDER BY size(split(n.prop, ' ')[0])
+        |WITH n.prop AS prop ORDER BY size(n.prop[0])
         |RETURN prop
       """.stripMargin,
       """MATCH (n)
-        |WITH n.prop AS prop ORDER BY size(split(prop, ' ')[0])
+        |WITH n.prop AS prop ORDER BY size(prop[0])
         |RETURN prop AS prop
       """.stripMargin)
   }
@@ -395,22 +395,21 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("RETURN: introduces aliases for complex ORDER BY expressions that depend on existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |RETURN n.prop AS prop ORDER BY size(split(n.prop, ' ')[0])
-        |
+        |RETURN n.prop AS prop ORDER BY size(n.prop[0])
       """.stripMargin,
       """MATCH (n)
-        |RETURN n.prop AS prop ORDER BY size(split(prop, ' ')[0])
+        |RETURN n.prop AS prop ORDER BY size(prop[0])
       """.stripMargin)
   }
 
   test("introduces aliases for complex WHERE expressions that depend on existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |WITH n.prop AS prop WHERE size(split(n.prop, ' ')[0]) > 10
+        |WITH n.prop AS prop WHERE size(n.prop[0]) > 10
         |RETURN prop
       """.stripMargin,
       """MATCH (n)
-        |WITH n.prop AS prop WHERE size(split(prop, ' ')[0]) > 10
+        |WITH n.prop AS prop WHERE size(prop[0]) > 10
         |RETURN prop AS prop
       """.stripMargin)
   }
@@ -502,10 +501,10 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("RETURN: aliases complex expression") {
     assertRewrite(
       """MATCH (n)
-        |RETURN foo(split(n.prop, ' ')[0])
+        |RETURN foo(n.prop[0])
       """.stripMargin,
       """MATCH (n)
-        |RETURN foo(split(n.prop, ' ')[0]) AS `foo(split(n.prop, ' ')[0])`
+        |RETURN foo(n.prop[0]) AS `foo(n.prop[0])`
       """.stripMargin)
   }
 
