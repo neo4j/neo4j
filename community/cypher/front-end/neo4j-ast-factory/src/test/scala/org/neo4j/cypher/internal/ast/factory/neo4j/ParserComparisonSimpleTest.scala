@@ -383,6 +383,10 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
     assertSameAST(testName)
   }
 
+  test("MATCH (n wHeRe n.prop > 123)") {
+    assertSameAST(testName)
+  }
+
   test("MATCH (n:A:B:C {prop: 42} WHERE n.otherProp < 123)") {
     assertSameAST(testName)
   }

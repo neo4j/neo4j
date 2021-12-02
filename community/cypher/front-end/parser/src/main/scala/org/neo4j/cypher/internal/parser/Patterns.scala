@@ -141,7 +141,7 @@ trait Patterns extends Parser
   )
 
   private def MaybeWereSubClause: Rule1[Option[expressions.Expression]] = rule("a WHERE subclause") (
-    optional(WS ~ "WHERE" ~ WS ~ Expression)
+    optional(WS ~ keyword("WHERE") ~ WS ~ Expression)
   )
 }
 
