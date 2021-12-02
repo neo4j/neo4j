@@ -61,10 +61,10 @@ public class InspectingVisitor<KEY, VALUE> extends GBPTreeVisitor.Adaptor<KEY,VA
                 .map( LongLists.immutable::ofAll )
                 .collect( Collectors.toList() );
         return new GBPTreeInspection(
-                LongLists.immutable.ofAll( internalNodes ),
-                LongLists.immutable.ofAll( leafNodes ),
-                LongLists.immutable.ofAll( allNodes ),
-                LongLists.immutable.ofAll( offloadNodes ),
+                internalNodes.toImmutable(),
+                leafNodes.toImmutable(),
+                allNodes.toImmutable(),
+                offloadNodes.toImmutable(),
                 unmodifiableMap( allKeyCounts ),
                 immutableNodesPerLevel,
                 unmodifiableList( allFreelistEntries ),

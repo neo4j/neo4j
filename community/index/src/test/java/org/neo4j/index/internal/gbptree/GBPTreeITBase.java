@@ -21,9 +21,10 @@ package org.neo4j.index.internal.gbptree;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -35,11 +36,11 @@ import java.util.TreeMap;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Integer.max;
@@ -86,17 +87,18 @@ abstract class GBPTreeITBase<KEY,VALUE>
         pageCache.close();
     }
 
-    private Writer<KEY,VALUE> createWriter( GBPTree<KEY,VALUE> index ) throws IOException
+    private Writer<KEY,VALUE> createWriter( GBPTree<KEY,VALUE> index, WriterFactory factory ) throws IOException
     {
-        return index.writer( ratioToKeepInLeftOnSplit, NULL );
+        return factory.create( index, ratioToKeepInLeftOnSplit );
     }
 
     abstract TestLayout<KEY,VALUE> getLayout( RandomSupport random, int pageSize );
 
     abstract Class<KEY> getKeyClass();
 
-    @Test
-    void shouldStayCorrectAfterRandomModifications() throws Exception
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void shouldStayCorrectAfterRandomModifications( WriterFactory writerFactory ) throws Exception
     {
         // GIVEN
         Comparator<KEY> keyComparator = layout;
@@ -109,7 +111,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
         }
 
         // WHEN
-        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+        try ( Writer<KEY,VALUE> writer = createWriter( index, writerFactory ) )
         {
             for ( Map.Entry<KEY,VALUE> entry : data.entrySet() )
             {
@@ -162,19 +164,20 @@ abstract class GBPTreeITBase<KEY,VALUE>
             }
 
             index.checkpoint( NULL );
-            randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
+            randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds, writerFactory );
         }
 
         // and finally
         index.consistencyCheck( NULL );
     }
 
-    @Test
-    void shouldHandleRemoveEntireTree() throws Exception
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void shouldHandleRemoveEntireTree( WriterFactory writerFactory ) throws Exception
     {
         // given
         int numberOfNodes = 200_000;
-        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+        try ( Writer<KEY,VALUE> writer = createWriter( index, writerFactory ) )
         {
             for ( int i = 0; i < numberOfNodes; i++ )
             {
@@ -184,7 +187,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
 
         // when
         BitSet removed = new BitSet();
-        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+        try ( Writer<KEY,VALUE> writer = createWriter( index, writerFactory ) )
         {
             for ( int i = 0; i < numberOfNodes - numberOfNodes / 10; i++ )
             {
@@ -201,7 +204,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
         }
 
         int next = 0;
-        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+        try ( Writer<KEY,VALUE> writer = createWriter( index, writerFactory ) )
         {
             for ( int i = 0; i < numberOfNodes / 10; i++ )
             {
@@ -221,11 +224,12 @@ abstract class GBPTreeITBase<KEY,VALUE>
         index.consistencyCheck( NULL );
     }
 
-    @Test
-    void shouldHandleDescendingWithEmptyRange() throws IOException
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void shouldHandleDescendingWithEmptyRange( WriterFactory writerFactory ) throws IOException
     {
         // Write
-        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+        try ( Writer<KEY,VALUE> writer = createWriter( index, writerFactory ) )
         {
             long[] seeds = new long[]{0, 1, 4};
             for ( long seed : seeds )
@@ -245,11 +249,11 @@ abstract class GBPTreeITBase<KEY,VALUE>
         index.checkpoint( NULL );
     }
 
-    private void randomlyModifyIndex( GBPTree<KEY,VALUE> index, Map<KEY,VALUE> data, Random random, double removeProbability )
-            throws IOException
+    private void randomlyModifyIndex( GBPTree<KEY,VALUE> index, Map<KEY,VALUE> data, Random random, double removeProbability,
+            WriterFactory writerFactory ) throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;
-        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+        try ( Writer<KEY,VALUE> writer = createWriter( index, writerFactory ) )
         {
             for ( int i = 0; i < changeCount; i++ )
             {

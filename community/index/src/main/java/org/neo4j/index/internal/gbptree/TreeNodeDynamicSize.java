@@ -106,12 +106,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private final int inlineKeyValueSizeCap;
     private final int keyValueSizeCap;
     private final boolean msbIsOffload;
+    private final int totalSpace;
+    private final int halfSpace;
+
+    // Temporary tree state while making changes
     private final MutableIntStack deadKeysOffset = new IntArrayStack();
     private final MutableIntStack aliveKeysOffset = new IntArrayStack();
     private final int[] oldOffset;
     private final int[] newOffset;
-    private final int totalSpace;
-    private final int halfSpace;
     private final KEY tmpKeyLeft;
     private final KEY tmpKeyRight;
     private final OffloadStore<KEY,VALUE> offloadStore;
@@ -403,7 +405,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         setAllocOffset( cursor, newKeyValueOffset );
 
         // Write to offset array
-        insertSlotsAt( cursor, pos, 1, keyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffset() );
+        insertSlotsAt( cursor, pos, 1, keyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffsetSize() );
         cursor.setOffset( keyPosOffsetLeaf( pos ) );
         offsetFormat.putOffset( cursor, newKeyValueOffset );
     }
@@ -435,7 +437,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         setDeadSpace( cursor, deadSpace + keySize + valueSize + getOverhead( keySize, valueSize, offload ) );
 
         // Remove from offset array
-        removeSlotAt( cursor, pos, keyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffset() );
+        removeSlotAt( cursor, pos, keyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffsetSize() );
 
     }
 
@@ -468,7 +470,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         removeSlotAt( cursor, keyPos, keyCount, keyPosOffsetInternal( 0 ), keyChildSize() );
 
         // Zero pad empty area
-        zeroPad( cursor, keyPosOffsetInternal( keyCount - 1 ), bytesKeyOffset() + childSize() );
+        zeroPad( cursor, keyPosOffsetInternal( keyCount - 1 ), bytesKeyOffsetSize() + childSize() );
     }
 
     @Override
@@ -503,7 +505,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         cursor.copyTo( childOffset( keyCount ), cursor, childOffset( keyCount - 1 ), childSize() );
 
         // Zero pad empty area
-        zeroPad( cursor, keyPosOffsetInternal( keyCount - 1 ), bytesKeyOffset() + childSize() );
+        zeroPad( cursor, keyPosOffsetInternal( keyCount - 1 ), bytesKeyOffsetSize() + childSize() );
     }
 
     @Override
@@ -665,6 +667,21 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // There is your answer!
         return neededSpace <= allocSpace ? Overflow.NO :
                neededSpace <= allocSpace + deadSpace ? Overflow.NO_NEED_DEFRAG : Overflow.YES;
+    }
+
+    @Override
+    int availableSpace( PageCursor cursor, int currentKeyCount )
+    {
+        boolean isInternal = isInternal( cursor );
+        int deadSpace = getDeadSpace( cursor );
+        int allocSpace = getAllocSpace( cursor, currentKeyCount, isInternal ? INTERNAL : LEAF );
+        return allocSpace + deadSpace;
+    }
+
+    @Override
+    int leafUnderflowThreshold()
+    {
+        return halfSpace;
     }
 
     @Override
@@ -830,7 +847,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean leafUnderflow( PageCursor cursor, int keyCount )
     {
-        int halfSpace = this.halfSpace;
         int allocSpace = getAllocSpace( cursor, keyCount, LEAF );
         int deadSpace = getDeadSpace( cursor );
         int availableSpace = allocSpace + deadSpace;
@@ -874,7 +890,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         leftActiveSpace += lastChunkSize;
         rightActiveSpace -= lastChunkSize;
 
-        int halfSpace = this.halfSpace;
         boolean canRebalance = leftActiveSpace > halfSpace && rightActiveSpace > halfSpace;
         return canRebalance ? keysToMove : 0;
     }
@@ -889,26 +904,24 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
-            VALUE newValue, KEY newSplitter, double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration,
-            CursorContext cursorContext ) throws IOException
+    int findSplitter( PageCursor cursor, int keyCount, KEY newKey, VALUE newValue, int insertPos, KEY newSplitter, double ratioToKeepInLeftOnSplit,
+            CursorContext cursorContext )
     {
-        // Find split position
-        int keyCountAfterInsert = leftKeyCount + 1;
-        int splitPos = splitPosInLeaf( leftCursor, insertPos, newKey, newValue, keyCountAfterInsert, ratioToKeepInLeftOnSplit );
+        // Find middle
+        int keyCountAfterInsert = keyCount + 1;
+        int splitPos = splitPosInLeaf( cursor, insertPos, newKey, newValue, keyCountAfterInsert, ratioToKeepInLeftOnSplit );
 
         KEY leftInSplit;
         KEY rightInSplit;
         if ( splitPos == insertPos )
         {
-            leftInSplit = keyAt( leftCursor, tmpKeyLeft, splitPos - 1, LEAF, cursorContext );
+            leftInSplit = keyAt( cursor, tmpKeyLeft, splitPos - 1, LEAF, cursorContext );
             rightInSplit = newKey;
-
         }
         else
         {
             int rightPos = insertPos < splitPos ? splitPos - 1 : splitPos;
-            rightInSplit = keyAt( leftCursor, tmpKeyRight, rightPos, LEAF, cursorContext );
+            rightInSplit = keyAt( cursor, tmpKeyRight, rightPos, LEAF, cursorContext );
 
             if ( rightPos == insertPos )
             {
@@ -917,11 +930,19 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             else
             {
                 int leftPos = rightPos - 1;
-                leftInSplit = keyAt( leftCursor, tmpKeyLeft, leftPos, LEAF, cursorContext );
+                leftInSplit = keyAt( cursor, tmpKeyLeft, leftPos, LEAF, cursorContext );
             }
         }
         layout.minimalSplitter( leftInSplit, rightInSplit, newSplitter );
+        return splitPos;
+    }
 
+    @Override
+    void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey, VALUE newValue, KEY newSplitter, int splitPos,
+            double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException
+    {
+        // Find middle
+        int keyCountAfterInsert = leftKeyCount + 1;
         int rightKeyCount = keyCountAfterInsert - splitPos;
 
         if ( insertPos < splitPos )
@@ -1039,7 +1060,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int numberOfKeysToMove = leftKeyCount - fromPosInLeftNode;
 
         // Push keys and values in right sibling to the right
-        insertSlotsAt( rightCursor, 0, numberOfKeysToMove, rightKeyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffset() );
+        insertSlotsAt( rightCursor, 0, numberOfKeysToMove, rightKeyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffsetSize() );
 
         // Move (also updates keyCount of left)
         moveKeysAndValues( leftCursor, fromPosInLeftNode, rightCursor, 0, numberOfKeysToMove );
@@ -1102,7 +1123,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         defragmentLeaf( rightCursor );
 
         // Push keys and values in right sibling to the right
-        insertSlotsAt( rightCursor, 0, leftKeyCount, rightKeyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffset() );
+        insertSlotsAt( rightCursor, 0, leftKeyCount, rightKeyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffsetSize() );
 
         // Copy
         copyKeysAndValues( leftCursor, 0, rightCursor, 0, leftKeyCount );
@@ -1400,32 +1421,34 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return totalSpace - deadSpace - allocSpace;
     }
 
-    private int totalSpaceOfKeyValue( KEY key, VALUE value )
+    @Override
+    int totalSpaceOfKeyValue( KEY key, VALUE value )
     {
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
         boolean canInline = canInline( keySize + valueSize );
         if ( canInline )
         {
-            return bytesKeyOffset() + getOverhead( keySize, valueSize, false ) + keySize + valueSize;
+            return bytesKeyOffsetSize() + getOverhead( keySize, valueSize, false ) + keySize + valueSize;
         }
         else
         {
-            return bytesKeyOffset() + getOverhead( keySize, valueSize, true );
+            return bytesKeyOffsetSize() + getOverhead( keySize, valueSize, true );
         }
     }
 
-    private int totalSpaceOfKeyChild( KEY key )
+    @Override
+    int totalSpaceOfKeyChild( KEY key )
     {
         int keySize = layout.keySize( key );
         boolean canInline = canInline( keySize);
         if ( canInline )
         {
-            return bytesKeyOffset() + getOverhead( keySize, 0, false) + childSize() + keySize;
+            return bytesKeyOffsetSize() + getOverhead( keySize, 0, false) + childSize() + keySize;
         }
         else
         {
-            return bytesKeyOffset() + getOverhead( keySize, 0, true ) + childSize();
+            return bytesKeyOffsetSize() + getOverhead( keySize, 0, true ) + childSize();
         }
     }
 
@@ -1436,7 +1459,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int keySize = extractKeySize( keyValueSize );
         int valueSize = extractValueSize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
-        return bytesKeyOffset() + getOverhead( keySize, valueSize, offload ) + keySize + valueSize;
+        return bytesKeyOffsetSize() + getOverhead( keySize, valueSize, offload ) + keySize + valueSize;
     }
 
     private int totalSpaceOfKeyChild( PageCursor cursor, int pos )
@@ -1445,7 +1468,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         long keyValueSize = readKeyValueSize( cursor, msbIsOffload );
         int keySize = extractKeySize( keyValueSize );
         boolean offload = extractOffload( keyValueSize );
-        return bytesKeyOffset() + getOverhead( keySize, 0, offload ) + childSize() + keySize;
+        return bytesKeyOffsetSize() + getOverhead( keySize, 0, offload ) + childSize() + keySize;
     }
 
     @VisibleForTesting
@@ -1517,7 +1540,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private int keyPosOffsetLeaf( int pos )
     {
-        return offsetFormat.getHeaderLength() + pos * bytesKeyOffset();
+        return offsetFormat.getHeaderLength() + pos * bytesKeyOffsetSize();
     }
 
     private int keyPosOffsetInternal( int pos )
@@ -1528,7 +1551,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private int keyChildSize()
     {
-        return bytesKeyOffset() + SIZE_PAGE_REFERENCE;
+        return bytesKeyOffsetSize() + SIZE_PAGE_REFERENCE;
     }
 
     private static int childSize()
@@ -1536,7 +1559,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return SIZE_PAGE_REFERENCE;
     }
 
-    private int bytesKeyOffset()
+    private int bytesKeyOffsetSize()
     {
         return offsetFormat.offsetSize();
     }

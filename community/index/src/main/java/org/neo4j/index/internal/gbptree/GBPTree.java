@@ -33,12 +33,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.index.internal.gbptree.InternalTreeLogic.RemoveResult;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
@@ -46,7 +49,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -64,7 +66,12 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
+import static org.neo4j.index.internal.gbptree.TreeNode.generation;
+import static org.neo4j.index.internal.gbptree.TreeNode.isInternal;
+import static org.neo4j.index.internal.gbptree.TreeNode.keyCount;
+import static org.neo4j.index.internal.gbptree.TreeWriterCoordination.NO_COORDINATION;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.
@@ -365,6 +372,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      */
     private final Layout<KEY,VALUE> layout;
 
+    private final TreeNodeSelector.Factory bTreeNodeFormat;
+
     /**
      * Instance of {@link TreeNode} which handles reading/writing physical bytes from pages representing tree nodes.
      */
@@ -377,9 +386,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private final FreeListIdProvider freeList;
 
     /**
-     * A single instance {@link Writer} because tree only supports single writer.
+     * The single instance {@link Writer} returned by all {@link #writer(CursorContext)} and {@link #writer(double, CursorContext)} calls.
      */
-    private final SingleWriter writer;
+    private final GBPTreeWriter writer;
 
     /**
      * Tells whether or not there have been made changes (using {@link #writer(CursorContext)}) to this tree
@@ -389,20 +398,15 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private volatile boolean changesSinceLastCheckpoint;
 
     /**
-     * Lock with two individual parts. Writer lock and cleaner lock.
-     * <p>
-     * There are a few different scenarios that involve writing or flushing that can not be happen concurrently:
+     * These locks together controls access to cleaning, writing and checkpointing the tree.
      * <ul>
-     *     <li>Checkpoint and writing</li>
-     *     <li>Checkpoint and close</li>
-     *     <li>Write and checkpoint</li>
+     *     <li>Writing needs cleaner to have completed and shared checkpoint lock + writer lock</li>
+     *     <li>Checkpointing needs cleaner to have completed and exclusive checkpoint lock + writer lock</li>
      * </ul>
-     * For those scenarios, writer lock is taken.
-     * <p>
-     * If cleaning of crash pointers is needed the tree can not be allowed to perform a checkpoint until that job
-     * has finished. For this scenario, cleaner lock is taken.
      */
-    private final GBPTreeLock lock = new GBPTreeLock();
+    private volatile CountDownLatch cleanerLock;
+    private final ReadWriteLock checkpointLock = new ReentrantReadWriteLock();
+    private final ReadWriteLock writerLock = new ReentrantReadWriteLock();
 
     /**
      * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
@@ -508,6 +512,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      */
     private final Consumer<Throwable> exceptionDecorator = this::appendTreeInformation;
 
+    private final TreeNodeLatchService latchService;
+
+    private final OffloadStoreImpl<KEY,VALUE> offloadStore;
+
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
      * If the index doesn't exist it will be created and the {@link Layout} and {@code pageSize} will
@@ -605,10 +613,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 meta.verify( layout );
                 format = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
             }
+            this.bTreeNodeFormat = format;
             this.freeList = new FreeListIdProvider( pagedFile, rootId );
-            OffloadStoreImpl<KEY,VALUE> offloadStore = buildOffload( layout, freeList, pagedFile, pageSize );
+            this.offloadStore = buildOffload( layout, freeList, pagedFile, pageSize );
             this.bTreeNode = format.create( pageSize, layout, offloadStore );
-            this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout, monitor ) );
+            this.latchService = new TreeNodeLatchService();
+            this.writer =
+                    new GBPTreeWriter( NO_COORDINATION, new InternalTreeLogic<>( freeList, bTreeNode, layout, monitor, NO_COORDINATION ), bTreeNode, false );
 
             // Create or load state
             if ( created )
@@ -1098,7 +1109,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private List<KEY> partitionedSeekInternal( KEY fromInclusive, KEY toExclusive, int desiredNumberOfPartitions, CursorContext cursorContext )
             throws IOException
     {
-        Preconditions.checkArgument( layout.compare( fromInclusive, toExclusive ) <= 0, "Partitioned seek only supports forward seeking for the time being" );
+        checkArgument( layout.compare( fromInclusive, toExclusive ) <= 0, "Partitioned seek only supports forward seeking for the time being" );
 
         // Read enough splitter keys from root and downwards to create enough partitions.
         final var splitterKeysInRange = new TreeSet<>( layout );
@@ -1230,7 +1241,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
         // Block writers, or if there's a current writer then wait for it to complete and then block
         // From this point and till the lock is released we know that the tree won't change.
-        lock.writerAndCleanerLock();
+        awaitCleaner();
+        checkpointLock.writeLock().lock();
+        writerLock.writeLock().lock();
         try
         {
             assertRecoveryCleanSuccessful();
@@ -1263,7 +1276,24 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             // Unblock writers, any writes after this point and up until the next checkpoint will have
             // the new unstable generation.
-            lock.writerAndCleanerUnlock();
+            writerLock.writeLock().unlock();
+            checkpointLock.writeLock().unlock();
+        }
+    }
+
+    private void awaitCleaner()
+    {
+        if ( cleanerLock != null )
+        {
+            try
+            {
+                cleanerLock.await();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException( "Got interrupted while awaiting the cleaner lock, cannot continue execution beyond this point" );
+            }
         }
     }
 
@@ -1300,7 +1330,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 doClose();
                 return;
             }
-            lock.writerLock();
+            checkpointLock.writeLock().lock();
+            writerLock.writeLock().lock();
             try
             {
                 if ( closed )
@@ -1330,7 +1361,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             }
             finally
             {
-                lock.writerUnlock();
+                writerLock.writeLock().unlock();
+                checkpointLock.writeLock().unlock();
             }
         }
     }
@@ -1402,6 +1434,48 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return writer;
     }
 
+    /**
+     * Instantiates a {@link Writer} which can be active concurrently with other parallel writers, but not with the
+     * {@link #writer(CursorContext) single writer}. I.e. at any point in time there can be either:
+     * <ul>
+     *     <li>no writers</li>
+     *     <li>one {@link #writer(CursorContext) single writer}</li>
+     *     <li>one or more {@link #parallelWriter(CursorContext) parallel writers}</li>
+     * </ul>
+     * @param cursorContext context to track cursor access.
+     * @return a parallel {@link Writer} for updating the tree.
+     * @throws IOException on I/O error.
+     */
+    public Writer<KEY,VALUE> parallelWriter( CursorContext cursorContext ) throws IOException
+    {
+        return parallelWriter( InternalTreeLogic.DEFAULT_SPLIT_RATIO, cursorContext );
+    }
+
+    /**
+     * Instantiates a {@link Writer} which can be active concurrently with other parallel writers, but not with the
+     * {@link #writer(CursorContext) single writer}. I.e. at any point in time there can be either:
+     * <ul>
+     *     <li>no writers</li>
+     *     <li>one {@link #writer(CursorContext) single writer}</li>
+     *     <li>one or more {@link #parallelWriter(CursorContext) parallel writers}</li>
+     * </ul>
+     * @param ratioToKeepInLeftOnSplit Decide how much to keep in left node on split, 0=keep nothing, 0.5=split 50-50, 1=keep everything.
+     * @param cursorContext context to track cursor access.
+     * @return a parallel {@link Writer} for updating the tree.
+     * @throws IOException on I/O error.
+     */
+    public Writer<KEY,VALUE> parallelWriter( double ratioToKeepInLeftOnSplit, CursorContext cursorContext ) throws IOException
+    {
+        assertRecoveryCleanSuccessful();
+        TreeWriterCoordination traversalMonitor = new LatchCrabbingCoordination( latchService, bTreeNode.leafUnderflowThreshold() );
+        TreeNode<KEY,VALUE> treeNode = bTreeNodeFormat.create( pageSize, layout, offloadStore );
+        GBPTreeWriter writer =
+                new GBPTreeWriter( traversalMonitor, new InternalTreeLogic<>( freeList, treeNode, layout, monitor, traversalMonitor ), treeNode, true );
+        writer.initialize( ratioToKeepInLeftOnSplit, cursorContext );
+        changesSinceLastCheckpoint = true;
+        return writer;
+    }
+
     private void setRoot( long rootId, long rootGeneration )
     {
         this.root = new Root( rootId, rootGeneration );
@@ -1441,7 +1515,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
         else
         {
-            lock.cleanerLock();
+            cleanerLock = new CountDownLatch( 1 );
             monitor.cleanupRegistered();
 
             long generation = this.generation;
@@ -1452,7 +1526,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             CrashGenerationCleaner crashGenerationCleaner =
                     new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
                             stableGeneration, unstableGeneration, monitor, pageCacheTracer, treeName );
-            GBPTreeCleanupJob cleanupJob = new GBPTreeCleanupJob( crashGenerationCleaner, lock, monitor, indexFile );
+            GBPTreeCleanupJob cleanupJob = new GBPTreeCleanupJob( crashGenerationCleaner, cleanerLock, monitor, indexFile );
             recoveryCleanupWorkCollector.add( cleanupJob );
             return cleanupJob;
         }
@@ -1601,15 +1675,14 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private class SingleWriter implements Writer<KEY,VALUE>
+    private class GBPTreeWriter implements Writer<KEY,VALUE>
     {
-        /**
-         * Currently an index only supports one concurrent writer and so this boolean will act as
-         * guard so that only one writer ever exist.
-         */
-        private final AtomicBoolean writerTaken = new AtomicBoolean();
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private final StructurePropagation<KEY> structurePropagation;
+        private final TreeWriterCoordination coordination;
+        private final TreeNode<KEY,VALUE> bTreeNode;
+        private final boolean parallel;
+        private boolean writerLockAcquired;
         private PageCursor cursor;
         private CursorContext cursorContext;
 
@@ -1619,8 +1692,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         private long unstableGeneration;
         private double ratioToKeepInLeftOnSplit;
 
-        SingleWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
+        GBPTreeWriter( TreeWriterCoordination coordination, InternalTreeLogic<KEY,VALUE> treeLogic, TreeNode<KEY,VALUE> bTreeNode, boolean parallel )
         {
+            this.coordination = coordination;
+            this.bTreeNode = bTreeNode;
+            this.parallel = parallel;
             this.structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
             this.treeLogic = treeLogic;
         }
@@ -1630,14 +1706,14 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
          * <p>
          * Either fully initialized:
          * <ul>
-         *    <li>{@link #writerTaken} - true</li>
-         *    <li>{@link #lock} - writerLock locked</li>
+         *    <li>{@link #checkpointLock} - acquired read lock</li>
+         *    <li>{@link #writerLock} - acquired read/write lock depending on parallel or not</li>
          *    <li>{@link #cursor} - not null</li>
          * </ul>
          * Of fully closed:
          * <ul>
-         *    <li>{@link #writerTaken} - false</li>
-         *    <li>{@link #lock} - writerLock unlocked</li>
+         *    <li>{@link #checkpointLock} - released read lock</li>
+         *    <li>{@link #writerLockAcquired} - released read/write lock depending on parallel or not</li>
          *    <li>{@link #cursor} - null</li>
          * </ul>
          *
@@ -1647,26 +1723,30 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
          */
         void initialize( double ratioToKeepInLeftOnSplit, CursorContext cursorContext ) throws IOException
         {
-            if ( !writerTaken.compareAndSet( false, true ) )
+            if ( writerLockAcquired )
             {
-                throw new IllegalStateException( "Writer in " + this + " is already acquired by someone else. " +
-                        "Only a single writer is allowed. The writer will become available as soon as " +
-                        "acquired writer is closed" );
+                throw new IllegalStateException( format( "This writer has already been initialized %s. %s", this, GBPTree.this ) );
             }
+
+            // Block here until cleaning has completed, if cleaning was required
+            awaitCleaner();
+            acquireLockForWriter();
 
             boolean success = false;
             try
             {
-                // Block here until cleaning has completed, if cleaning was required
-                lock.writerAndCleanerLock();
+                writerLockAcquired = true;
                 assertRecoveryCleanSuccessful();
                 cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK, cursorContext );
                 this.cursorContext = cursorContext;
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
                 this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
-                assert assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
-                treeLogic.initialize( cursor, ratioToKeepInLeftOnSplit );
+                if ( !coordination.mustStartFromRoot() )
+                {
+                    assert assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
+                    treeLogic.initialize( cursor, ratioToKeepInLeftOnSplit );
+                }
                 success = true;
             }
             catch ( Throwable e )
@@ -1680,6 +1760,36 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 {
                     close();
                 }
+            }
+        }
+
+        private void acquireLockForWriter()
+        {
+            checkpointLock.readLock().lock();
+            try
+            {
+                if ( parallel )
+                {
+                    if ( !writerLock.readLock().tryLock() )
+                    {
+                        throw new IllegalStateException(
+                                "Single writer from GBPTree#writer() is active and cannot co-exist with parallel writers: " + GBPTree.this );
+                    }
+                }
+                else
+                {
+                    if ( !writerLock.writeLock().tryLock() )
+                    {
+                        throw new IllegalStateException(
+                                "Single writer from GBPTree#writer() is already acquired by someone else or one or more parallel writers are active: " +
+                                        GBPTree.this );
+                    }
+                }
+            }
+            catch ( Throwable t )
+            {
+                checkpointLock.readLock().unlock();
+                throw t;
             }
         }
 
@@ -1705,8 +1815,20 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             try
             {
-                treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, createIfNotExists,
-                        stableGeneration, unstableGeneration, cursorContext );
+                // Try optimistic mode first
+                coordination.initialize();
+                if ( !goToRoot() || !treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, createIfNotExists,
+                        stableGeneration, unstableGeneration, cursorContext ) )
+                {
+                    // OK, didn't work. Flip to pessimistic mode and try again.
+                    coordination.flipToPessimisticMode();
+                    assert structurePropagation.isEmpty();
+                    if ( !goToRoot() || !treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, createIfNotExists,
+                            stableGeneration, unstableGeneration, cursorContext ) )
+                    {
+                        throw new TreeInconsistencyException( "Unable to insert key:%s value:%s in pessimistic mode. %s", key, value, GBPTree.this );
+                    }
+                }
 
                 handleStructureChanges( cursorContext );
             }
@@ -1720,8 +1842,43 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 appendTreeInformation( t );
                 throw t;
             }
+            finally
+            {
+                coordination.reset();
+            }
 
             checkOutOfBounds( cursor );
+        }
+
+        private boolean goToRoot() throws IOException
+        {
+            if ( !coordination.mustStartFromRoot() )
+            {
+                return true;
+            }
+
+            long rootId;
+            while ( true )
+            {
+                rootId = root.id();
+                coordination.beforeTraversingToChild( rootId, 0 );
+                // check again, after locked
+                if ( root.id() != rootId )
+                {
+                    // There was a root change in between getting the root id and locking it
+                    coordination.reset();
+                }
+                else
+                {
+                    break;
+                }
+            }
+            TreeNode.goTo( cursor, "Root", rootId );
+            assert assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
+            treeLogic.initialize( cursor );
+            int keyCount = keyCount( cursor );
+            return coordination.arrivedAtChild( isInternal( cursor ), bTreeNode.availableSpace( cursor, keyCount ), generation( cursor ) != unstableGeneration,
+                    keyCount );
         }
 
         private void setRoot( long rootPointer )
@@ -1734,11 +1891,26 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         @Override
         public VALUE remove( KEY key )
         {
-            VALUE result;
+            VALUE removedValue = layout.newValue();
+            RemoveResult result;
             try
             {
-                result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
-                        stableGeneration, unstableGeneration, cursorContext );
+                // Try optimistic mode
+                coordination.initialize();
+                if ( !goToRoot() ||
+                        (result = treeLogic.remove( cursor, structurePropagation, key, removedValue, stableGeneration, unstableGeneration, cursorContext )) ==
+                                RemoveResult.FAIL )
+                {
+                    // OK, didn't work. Flip to pessimistic mode and try again.
+                    coordination.flipToPessimisticMode();
+                    assert structurePropagation.isEmpty();
+                    if ( !goToRoot() || (result =
+                            treeLogic.remove( cursor, structurePropagation, key, removedValue, stableGeneration, unstableGeneration, cursorContext )) ==
+                            RemoveResult.FAIL )
+                    {
+                        throw new TreeInconsistencyException( "Unable to remove key:%s in pessimistic mode. %s", key, GBPTree.this );
+                    }
+                }
 
                 handleStructureChanges( cursorContext );
             }
@@ -1752,9 +1924,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 appendTreeInformation( e );
                 throw e;
             }
+            finally
+            {
+                coordination.reset();
+            }
 
             checkOutOfBounds( cursor );
-            return result;
+            return result == RemoveResult.REMOVED ? removedValue : null;
         }
 
         private void handleStructureChanges( CursorContext cursorContext ) throws IOException
@@ -1784,13 +1960,21 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         @Override
         public void close()
         {
-            if ( !writerTaken.compareAndSet( true, false ) )
+            if ( !writerLockAcquired )
             {
-                throw new IllegalStateException( "Tried to close writer of " + GBPTree.this +
-                        ", but writer is already closed." );
+                throw new IllegalStateException( String.format( "Tried to close writer of %s, but writer is already closed. %s", this, GBPTree.this ) );
             }
             closeCursor();
-            lock.writerAndCleanerUnlock();
+            if ( parallel )
+            {
+                writerLock.readLock().unlock();
+            }
+            else
+            {
+                writerLock.writeLock().unlock();
+            }
+            checkpointLock.readLock().unlock();
+            writerLockAcquired = false;
         }
 
         private void closeCursor()
@@ -1800,6 +1984,12 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 cursor.close();
                 cursor = null;
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return coordination.toString();
         }
     }
 

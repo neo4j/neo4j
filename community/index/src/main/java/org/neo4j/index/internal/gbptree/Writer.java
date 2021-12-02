@@ -71,7 +71,7 @@ public interface Writer<KEY,VALUE> extends Closeable
      * Removes a key, returning it's associated value, if found.
      *
      * @param key key to remove.
-     * @return value which was associated with the remove key, if found, otherwise {@code null}.
+     * @return value which was associated with the removed key, if found, otherwise {@code null}.
      * @throws UncheckedIOException on index access error.
      */
     VALUE remove( KEY key );

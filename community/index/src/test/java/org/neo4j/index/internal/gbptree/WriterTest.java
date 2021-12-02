@@ -33,6 +33,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -225,6 +226,46 @@ class WriterTest
             assertEquals( key, cursor.key().longValue() );
             assertEquals( value + 1, cursor.value().longValue() );
             assertFalse( cursor.next() );
+        }
+    }
+
+    @Test
+    void shouldReturnNullRemovedValueIfNotFound() throws IOException
+    {
+        // given
+        long key = 999;
+        long value = 888;
+        try ( Writer<MutableLong, MutableLong> writer = tree.writer( NULL ) )
+        {
+            writer.put( new MutableLong( key ), new MutableLong( value ) );
+        }
+
+        // when
+        try ( Writer<MutableLong, MutableLong> writer = tree.writer( NULL ) )
+        {
+            MutableLong removedValue = writer.remove( new MutableLong( key + 1 ) );
+            // then
+            assertNull( removedValue );
+        }
+    }
+
+    @Test
+    void shouldReturnRemovedValueIfFound() throws IOException
+    {
+        // given
+        long key = 999;
+        long value = 888;
+        try ( Writer<MutableLong, MutableLong> writer = tree.writer( NULL ) )
+        {
+            writer.put( new MutableLong( key ), new MutableLong( value ) );
+        }
+
+        // when
+        try ( Writer<MutableLong, MutableLong> writer = tree.writer( NULL ) )
+        {
+            MutableLong removedValue = writer.remove( new MutableLong( key ) );
+            // then
+            assertEquals( new MutableLong( value ), removedValue );
         }
     }
 }

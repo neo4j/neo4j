@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @EphemeralTestDirectoryExtension
-class GBPTreeSingleWriterTest
+class GBPTreeWriterTest
 {
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( PageCacheConfig.config().withPageSize( 512 ) );

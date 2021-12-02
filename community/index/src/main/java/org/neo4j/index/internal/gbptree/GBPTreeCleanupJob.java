@@ -21,11 +21,12 @@ package org.neo4j.index.internal.gbptree;
 
 import java.nio.file.Path;
 import java.util.StringJoiner;
+import java.util.concurrent.CountDownLatch;
 
 class GBPTreeCleanupJob implements CleanupJob
 {
     private final CrashGenerationCleaner crashGenerationCleaner;
-    private final GBPTreeLock gbpTreeLock;
+    private final CountDownLatch lock;
     private final GBPTree.Monitor monitor;
     private final Path indexFile;
     private volatile boolean needed;
@@ -33,14 +34,14 @@ class GBPTreeCleanupJob implements CleanupJob
 
     /**
      * @param crashGenerationCleaner {@link CrashGenerationCleaner} to use for cleaning.
-     * @param gbpTreeLock {@link GBPTreeLock} to be released when job has either successfully finished or failed.
+     * @param lock {@link LongSpinLatch} to be released when job has either successfully finished or failed.
      * @param monitor {@link GBPTree.Monitor} to report to
      * @param indexFile Target file
      */
-    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, GBPTreeLock gbpTreeLock, GBPTree.Monitor monitor, Path indexFile )
+    GBPTreeCleanupJob( CrashGenerationCleaner crashGenerationCleaner, CountDownLatch lock, GBPTree.Monitor monitor, Path indexFile )
     {
         this.crashGenerationCleaner = crashGenerationCleaner;
-        this.gbpTreeLock = gbpTreeLock;
+        this.lock = lock;
         this.monitor = monitor;
         this.indexFile = indexFile;
         this.needed = true;
@@ -68,7 +69,7 @@ class GBPTreeCleanupJob implements CleanupJob
     @Override
     public void close()
     {
-        gbpTreeLock.cleanerUnlock();
+        lock.countDown();
         monitor.cleanupClosed();
     }
 

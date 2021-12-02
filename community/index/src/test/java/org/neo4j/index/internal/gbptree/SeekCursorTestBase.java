@@ -36,9 +36,9 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,7 +100,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         OffloadIdValidator idValidator = OffloadIdValidator.ALWAYS_TRUE;
         OffloadStoreImpl<KEY,VALUE> offloadStore = new OffloadStoreImpl<>( layout, id, pcFactory, idValidator, PAGE_SIZE );
         node = getTreeNode( PAGE_SIZE, layout, offloadStore );
-        treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR );
+        treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION );
         structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
 
         long firstPage = id.acquireNewId( stableGeneration, unstableGeneration, NULL );

@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static java.lang.String.format;
+
 /**
  * Logic for composing and decomposing stable/unstable generation number (unsigned int) to/from a single {@code long}.
  *
@@ -71,5 +73,10 @@ class Generation
     public static long stableGeneration( long generation )
     {
         return generation >>> STABLE_GENERATION_SHIFT;
+    }
+
+    public static String toString( long generation )
+    {
+        return format( "Generation[stable:%d, unstable:%d]", stableGeneration( generation ), unstableGeneration( generation ) );
     }
 }

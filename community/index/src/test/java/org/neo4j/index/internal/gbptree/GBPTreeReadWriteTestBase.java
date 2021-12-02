@@ -33,12 +33,12 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,7 +68,7 @@ abstract class GBPTreeReadWriteTestBase<KEY,VALUE>
     private Path indexFile;
 
     @AfterEach
-    private void tearDown()
+    void tearDown()
     {
         if ( pageCache != null )
         {

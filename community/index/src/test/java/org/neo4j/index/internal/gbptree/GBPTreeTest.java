@@ -29,6 +29,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -343,7 +345,7 @@ class GBPTreeTest
     /* Lifecycle tests */
 
     @Test
-    void shouldNotBeAbleToAcquireModifierTwice() throws Exception
+    void shouldNotBeAbleToAcquireWriterTwice() throws Exception
     {
         // GIVEN
         try ( PageCache pageCache = createPageCache( defaultPageSize );
@@ -352,7 +354,7 @@ class GBPTreeTest
             Writer<MutableLong,MutableLong> writer = index.writer( NULL );
 
             // WHEN
-            assertThatThrownBy( () -> index.writer( NULL ) ).isInstanceOf( IllegalStateException.class );
+            assertThatThrownBy( () -> executor.submit( () -> index.writer( NULL ) ).get() ).hasCauseInstanceOf( IllegalStateException.class );
 
             // Should be able to close old writer
             writer.close();
@@ -361,14 +363,15 @@ class GBPTreeTest
         }
     }
 
-    @Test
-    void shouldNotAllowClosingWriterMultipleTimes() throws Exception
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void shouldNotAllowClosingWriterMultipleTimes( WriterFactory writerFactory ) throws Exception
     {
         // GIVEN
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
         {
-            Writer<MutableLong,MutableLong> writer = index.writer( NULL );
+            Writer<MutableLong,MutableLong> writer = writerFactory.create( index );
             writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             writer.close();
 
@@ -376,8 +379,9 @@ class GBPTreeTest
         }
     }
 
-    @Test
-    void failureDuringInitializeWriterShouldNotFailNextInitialize() throws Exception
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void failureDuringInitializeWriterShouldNotFailNextInitialize( WriterFactory writerFactory ) throws Exception
     {
         // GIVEN
         IOException no = new IOException( "No" );
@@ -387,10 +391,10 @@ class GBPTreeTest
         {
             // WHEN
             assertTrue( throwOnNextIO.compareAndSet( false, true ) );
-            assertThatThrownBy( () -> index.writer( NULL ) ).isSameAs( no );
+            assertThatThrownBy( () -> writerFactory.create( index ) ).isSameAs( no );
 
             // THEN
-            try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
+            try ( Writer<MutableLong,MutableLong> writer = writerFactory.create( index ) )
             {
                 writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
             }
@@ -585,35 +589,6 @@ class GBPTreeTest
         }
     }
 
-    private Pair<TreeState,TreeState> readTreeStates( PageCache pageCache ) throws IOException
-    {
-        Pair<TreeState,TreeState> treeStatesBeforeOverwrite;
-        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME );
-              PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
-        {
-            treeStatesBeforeOverwrite = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
-        }
-        return treeStatesBeforeOverwrite;
-    }
-
-    private void verifyHeaderDataAfterClose( BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose )
-            throws IOException
-    {
-        byte[] expectedHeader = new byte[12];
-        random.nextBytes( expectedHeader );
-        try ( PageCache pageCache = createPageCache( defaultPageSize ) )
-        {
-
-            // GIVEN
-            try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
-            {
-                beforeClose.accept( index, expectedHeader );
-            }
-
-            verifyHeader( pageCache, expectedHeader );
-        }
-    }
-
     @Test
     void writeHeaderInDirtyTreeMustNotDeadlock() throws IOException
     {
@@ -780,15 +755,16 @@ class GBPTreeTest
 
     /* Mutex tests */
 
-    @Test
-    void checkPointShouldLockOutWriter() throws IOException, ExecutionException, InterruptedException
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void checkPointShouldLockOutWriter( WriterFactory writerFactory ) throws Exception
     {
         CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( monitor ).build() )
         {
             long key = 10;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
+            try ( Writer<MutableLong,MutableLong> writer = writerFactory.create( index ) )
             {
                 writer.put( new MutableLong( key ), new MutableLong( key ) );
             }
@@ -798,7 +774,7 @@ class GBPTreeTest
             Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( NULL ) ) );
             monitor.barrier.awaitUninterruptibly();
             // now we're in the smack middle of a checkpoint
-            Future<?> writerClose = executor.submit( throwing( () -> index.writer( NULL ).close() ) );
+            Future<?> writerClose = executor.submit( throwing( () -> writerFactory.create( index ).close() ) );
 
             // THEN
             shouldWait( writerClose );
@@ -809,8 +785,9 @@ class GBPTreeTest
         }
     }
 
-    @Test
-    void checkPointShouldWaitForWriter() throws IOException, ExecutionException, InterruptedException
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void checkPointShouldWaitForWriter( WriterFactory writerFactory ) throws Exception
     {
         // GIVEN
         try ( PageCache pageCache = createPageCache( defaultPageSize );
@@ -820,14 +797,17 @@ class GBPTreeTest
             Barrier.Control barrier = new Barrier.Control();
             Future<?> write = executor.submit( throwing( () ->
             {
-                try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
+                try ( Writer<MutableLong,MutableLong> writer = writerFactory.create( index ) )
                 {
                     writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
                     barrier.reached();
                 }
             } ) );
             barrier.awaitUninterruptibly();
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( NULL ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () ->
+            {
+                index.checkpoint( NULL );
+            } ) );
             shouldWait( checkpoint );
 
             // THEN
@@ -837,8 +817,9 @@ class GBPTreeTest
         }
     }
 
-    @Test
-    void closeShouldLockOutWriter() throws ExecutionException, InterruptedException, IOException
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void closeShouldLockOutWriter( WriterFactory writerFactory ) throws Exception
     {
         // GIVEN
         AtomicBoolean enabled = new AtomicBoolean();
@@ -847,7 +828,7 @@ class GBPTreeTest
         {
             GBPTree<MutableLong,MutableLong> index = index( pageCacheWithBarrier ).build();
             long key = 10;
-            try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
+            try ( Writer<MutableLong,MutableLong> writer = writerFactory.create( index ) )
             {
                 writer.put( new MutableLong( key ), new MutableLong( key ) );
             }
@@ -862,7 +843,7 @@ class GBPTreeTest
             {
                 try
                 {
-                    index.writer( NULL ).close();
+                    writerFactory.create( index ).close();
                 }
                 catch ( Exception e )
                 {
@@ -880,8 +861,9 @@ class GBPTreeTest
         }
     }
 
-    @Test
-    void writerShouldLockOutClose() throws ExecutionException, InterruptedException
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void singleWriterShouldLockOutClose( WriterFactory writerFactory ) throws Exception
     {
         // GIVEN
         try ( PageCache pageCache = createPageCache( defaultPageSize ) )
@@ -892,7 +874,7 @@ class GBPTreeTest
             Barrier.Control barrier = new Barrier.Control();
             Future<?> write = executor.submit( throwing( () ->
             {
-                try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
+                try ( Writer<MutableLong,MutableLong> writer = writerFactory.create( index ) )
                 {
                     writer.put( new MutableLong( 1 ), new MutableLong( 1 ) );
                     barrier.reached();
@@ -906,6 +888,36 @@ class GBPTreeTest
             barrier.release();
             close.get();
             write.get();
+        }
+    }
+
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void checkpointShouldLockOutClose( WriterFactory writerFactory ) throws Exception
+    {
+        CheckpointControlledMonitor monitor = new CheckpointControlledMonitor();
+        try ( PageCache pageCache = createPageCache( defaultPageSize );
+                GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( monitor ).build() )
+        {
+            long key = 10;
+            try ( Writer<MutableLong,MutableLong> writer = writerFactory.create( index ) )
+            {
+                writer.put( new MutableLong( key ), new MutableLong( key ) );
+            }
+
+            // WHEN
+            monitor.enabled = true;
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( NULL ) ) );
+            monitor.barrier.awaitUninterruptibly();
+            // now we're in the smack middle of a checkpoint
+            Future<?> close = executor.submit( throwing( index::close ) );
+
+            // THEN
+            shouldWait( close );
+            monitor.barrier.release();
+
+            close.get();
+            checkpoint.get();
         }
     }
 
@@ -1026,8 +1038,9 @@ class GBPTreeTest
         }
     }
 
-    @Test
-    void cleanJobShouldLockOutWriter() throws IOException, ExecutionException, InterruptedException
+    @EnumSource( WriterFactory.class )
+    @ParameterizedTest
+    void cleanJobShouldLockOutWriter( WriterFactory writerFactory ) throws IOException, ExecutionException, InterruptedException
     {
         // GIVEN
         makeDirty();
@@ -1043,12 +1056,70 @@ class GBPTreeTest
             monitor.barrier.awaitUninterruptibly();
 
             // THEN
-            Future<?> writer = executor.submit( throwing( () -> index.writer( NULL ).close() ) );
+            Future<?> writer = executor.submit( throwing( () -> writerFactory.create( index ).close() ) );
             shouldWait( writer );
 
             monitor.barrier.release();
             cleanup.get();
             writer.get();
+        }
+    }
+
+    @Test
+    void shouldFailToCreateParallelWriterWhenWriterActive() throws IOException
+    {
+        try ( PageCache pageCache = createPageCache( defaultPageSize );
+                GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
+        {
+            try ( Writer<MutableLong,MutableLong> singleWriter = index.writer( NULL ) )
+            {
+                assertThatThrownBy( () -> executor.submit( () -> index.parallelWriter( NULL ) ).get() ).hasCauseInstanceOf( IllegalStateException.class );
+            }
+            index.parallelWriter( NULL ).close();
+        }
+    }
+
+    @Test
+    void shouldFailToGetWriterWhenParallelWritersActive() throws IOException
+    {
+        try ( PageCache pageCache = createPageCache( defaultPageSize );
+                GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
+        {
+            try ( Writer<MutableLong,MutableLong> parallelWriter = index.parallelWriter( NULL ) )
+            {
+                assertThatThrownBy( () -> executor.submit( () -> index.writer( NULL ) ).get() ).hasCauseInstanceOf( IllegalStateException.class );
+            }
+            index.parallelWriter( NULL ).close();
+        }
+    }
+
+    @Test
+    void shouldCreateMultipleParallelWriters() throws Exception
+    {
+        try ( PageCache pageCache = createPageCache( defaultPageSize );
+                GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
+        {
+            int count = Integer.min( 4, Runtime.getRuntime().availableProcessors() );
+            CountDownLatch goal = new CountDownLatch( count );
+            List<Callable<Void>> writers = new ArrayList<>();
+            for ( int i = 0; i < count; i++ )
+            {
+                writers.add( () ->
+                {
+                    try ( var writer = index.parallelWriter( NULL ) )
+                    {
+                        goal.countDown();
+                        goal.await();
+                    }
+                    return null;
+                } );
+            }
+            List<Future<Void>> results = executor.invokeAll( writers );
+            goal.await();
+            for ( Future<Void> result : results )
+            {
+                result.get();
+            }
         }
     }
 
@@ -2047,6 +2118,91 @@ class GBPTreeTest
         }
     }
 
+    /* Parallel writer vs writer */
+
+    @Test
+    void shouldNotBeAbleToAcquireParallelWriterWhenWriterIsActive() throws IOException
+    {
+        // given
+        try ( PageCache pageCache = createPageCache( defaultPageSize );
+                GBPTree<MutableLong, MutableLong> index = index( pageCache ).build() )
+        {
+            try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
+            {
+                // when/then
+                assertThatThrownBy( () -> executor.submit( () -> index.parallelWriter( NULL ) ).get() ).hasCauseInstanceOf( IllegalStateException.class );
+            }
+        }
+    }
+
+    @Test
+    void shouldNotBeAbleToAcquireWriterWhenAtLeastOneParallelWriterIsActive() throws IOException
+    {
+        // given
+        try ( PageCache pageCache = createPageCache( defaultPageSize );
+                GBPTree<MutableLong, MutableLong> index = index( pageCache ).build() )
+        {
+            // Acquire them
+            List<Writer<MutableLong,MutableLong>> parallelWriters = new ArrayList<>();
+            for ( int i = 0; i < 4; i++ )
+            {
+                parallelWriters.add( index.parallelWriter( NULL ) );
+                assertThatThrownBy( () -> index.writer( NULL ) ).isInstanceOf( IllegalStateException.class );
+            }
+
+            // Close them
+            for ( Writer<MutableLong,MutableLong> parallelWriter : parallelWriters )
+            {
+                assertThatThrownBy( () -> index.writer( NULL ) ).isInstanceOf( IllegalStateException.class );
+                parallelWriter.close();
+            }
+
+            // then now it's OK
+            try ( Writer<MutableLong,MutableLong> writer = index.writer( NULL ) )
+            {
+            }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToAcquireMultipleParallelWritersAndWriteSomeInEach() throws IOException
+    {
+        // given
+        try ( PageCache pageCache = createPageCache( defaultPageSize );
+                GBPTree<MutableLong, MutableLong> index = index( pageCache ).build() )
+        {
+            // when
+            int count = 4;
+            List<Writer<MutableLong,MutableLong>> parallelWriters = new ArrayList<>();
+            for ( int i = 0; i < count; i++ )
+            {
+                Writer<MutableLong,MutableLong> writer = index.parallelWriter( NULL );
+                parallelWriters.add( writer );
+                writer.put( new MutableLong( i ), new MutableLong( i ) );
+            }
+            for ( Writer<MutableLong,MutableLong> parallelWriter : parallelWriters )
+            {
+                parallelWriter.close();
+            }
+
+            // then
+            for ( int r = 0; r < 2; r++ )
+            {
+                try ( Seeker<MutableLong,MutableLong> seek = index.seek( new MutableLong( 0 ), new MutableLong( count ), NULL ) )
+                {
+                    for ( long i = 0; i < count; i++ )
+                    {
+                        assertTrue( seek.next() );
+                        assertEquals( i, seek.key().longValue() );
+                        assertEquals( i, seek.value().longValue() );
+                    }
+                    assertFalse( seek.next() );
+                }
+                index.checkpoint( NULL );
+            }
+        }
+    }
+
     private static class ControlledRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
     {
         Queue<CleanupJob> jobs = new LinkedList<>();
@@ -2156,6 +2312,35 @@ class GBPTreeTest
                 };
             }
         };
+    }
+
+    private Pair<TreeState,TreeState> readTreeStates( PageCache pageCache ) throws IOException
+    {
+        Pair<TreeState,TreeState> treeStatesBeforeOverwrite;
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME );
+                PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+        {
+            treeStatesBeforeOverwrite = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+        }
+        return treeStatesBeforeOverwrite;
+    }
+
+    private void verifyHeaderDataAfterClose( BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose )
+            throws IOException
+    {
+        byte[] expectedHeader = new byte[12];
+        random.nextBytes( expectedHeader );
+        try ( PageCache pageCache = createPageCache( defaultPageSize ) )
+        {
+
+            // GIVEN
+            try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).build() )
+            {
+                beforeClose.accept( index, expectedHeader );
+            }
+
+            verifyHeader( pageCache, expectedHeader );
+        }
     }
 
     private void makeDirty() throws IOException

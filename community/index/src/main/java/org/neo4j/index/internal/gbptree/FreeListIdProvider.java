@@ -189,11 +189,11 @@ class FreeListIdProvider implements IdProvider
         }
     }
 
-    private synchronized boolean fillAcquireCache( long stableGeneration, CursorContext cursorContext ) throws IOException
+    private synchronized void fillAcquireCache( long stableGeneration, CursorContext cursorContext ) throws IOException
     {
         if ( !mayBeMoreToReadIntoCache )
         {
-            return false;
+            return;
         }
 
         try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
@@ -235,7 +235,7 @@ class FreeListIdProvider implements IdProvider
                 }
             }
             this.readMetaData = new ListHeadMetaData( readPageId, readPos );
-            return moreAfterThis;
+            mayBeMoreToReadIntoCache = moreAfterThis;
         }
     }
 
@@ -252,11 +252,7 @@ class FreeListIdProvider implements IdProvider
                 }
                 return entry.id;
             }
-
-            if ( mayBeMoreToReadIntoCache )
-            {
-                mayBeMoreToReadIntoCache = fillAcquireCache( stableGeneration, cursorContext );
-            }
+            fillAcquireCache( stableGeneration, cursorContext );
         }
         while ( mayBeMoreToReadIntoCache || !acquireCache.isEmpty() );
         return nextLastId();

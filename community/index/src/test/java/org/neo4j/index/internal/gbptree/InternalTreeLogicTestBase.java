@@ -36,19 +36,15 @@ import java.util.TreeSet;
 import java.util.stream.Stream;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
@@ -117,7 +113,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         OffloadStoreImpl<KEY, VALUE> offloadStore = new OffloadStoreImpl<>( layout, id, pcFactory, idValidator, PAGE_SIZE );
         node = getTreeNode( PAGE_SIZE, layout, offloadStore );
         adder = getAdder();
-        treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR );
+        treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION );
         dontCare = layout.newValue();
         structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
     }
@@ -130,7 +126,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustInsertAtFirstPositionInEmptyLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustInsertAtFirstPositionInEmptyLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -152,7 +148,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustSortCorrectlyOnInsertFirstInLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustSortCorrectlyOnInsertFirstInLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -179,7 +175,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustSortCorrectlyOnInsertLastInLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustSortCorrectlyOnInsertLastInLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -205,7 +201,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustSortCorrectlyOnInsertInMiddleOfLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustSortCorrectlyOnInsertInMiddleOfLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -232,7 +228,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustSplitWhenInsertingMiddleOfFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustSplitWhenInsertingMiddleOfFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -261,7 +257,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustSplitWhenInsertingLastInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustSplitWhenInsertingLastInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -271,7 +267,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
         {
             insert( key, value );
-            assertFalse( structurePropagation.hasRightKeyInsert );
+            assertThat( structurePropagation.hasRightKeyInsert ).isFalse();
 
             keyCount++;
             key = key( keyCount );
@@ -288,7 +284,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustSplitWhenInsertingFirstInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustSplitWhenInsertingFirstInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -299,7 +295,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
         {
             insert( key, value );
-            assertFalse( structurePropagation.hasRightKeyInsert );
+            assertThat( structurePropagation.hasRightKeyInsert ).isFalse();
 
             keyCount++;
             key = key( someHighSeed - keyCount );
@@ -316,7 +312,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustUpdatePointersInSiblingsToSplit( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustUpdatePointersInSiblingsToSplit( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -356,7 +352,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         }
 
         // Just to be sure
-        assertTrue( TreeNode.isInternal( readCursor ) );
+        assertThat( TreeNode.isInternal( readCursor ) ).isTrue();
         assertThat( TreeNode.keyCount( readCursor ) ).isEqualTo( 2 );
 
         // Assert child pointers and sibling pointers are intact
@@ -381,7 +377,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
         {
             insert( key, value );
-            assertFalse( structurePropagation.hasRightKeyInsert );
+            assertThat( structurePropagation.hasRightKeyInsert ).isFalse();
 
             keyCount++;
             key = key( random.nextLong() );
@@ -403,7 +399,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         KEY rightmostKeyInLeftChild = keyAt( child0,leftKeyCount - 1, LEAF );
         VALUE rightmostValueInLeftChild = valueAt( child0, leftKeyCount - 1 );
         goTo( readCursor, child1 );
-        assertEquals( YES, node.leafOverflow( readCursor, rightKeyCount, rightmostKeyInLeftChild, rightmostValueInLeftChild ) );
+        assertThat( node.leafOverflow( readCursor, rightKeyCount, rightmostKeyInLeftChild, rightmostValueInLeftChild ) ).isEqualTo( YES );
     }
 
     @ParameterizedTest
@@ -419,7 +415,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
         {
             insert( key, value );
-            assertFalse( structurePropagation.hasRightKeyInsert );
+            assertThat( structurePropagation.hasRightKeyInsert ).isFalse();
 
             keyCount++;
             key = key( random.nextLong() );
@@ -440,13 +436,13 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         KEY leftmostKeyInRightChild = keyAt( child1,0, LEAF );
         VALUE leftmostValueInRightChild = valueAt( child1, 0 );
         goTo( readCursor, child0 );
-        assertEquals( YES, node.leafOverflow( readCursor, leftKeyCount, leftmostKeyInRightChild, leftmostValueInRightChild ) );
+        assertThat( node.leafOverflow( readCursor, leftKeyCount, leftmostKeyInRightChild, leftmostValueInRightChild ) ).isEqualTo( YES );
     }
 
     /* REMOVE */
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustRemoveFirstInEmptyLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustRemoveFirstInEmptyLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -469,7 +465,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustRemoveFirstInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustRemoveFirstInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -502,7 +498,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustRemoveInMiddleInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustRemoveInMiddleInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -538,7 +534,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustRemoveLastInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustRemoveLastInFullLeaf( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         initialize();
         int maxKeyCount = 0;
@@ -570,7 +566,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustRemoveFromLeftChild( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustRemoveFromLeftChild( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         initialize();
         for ( int i = 0; numberOfRootSplits == 0; i++ )
@@ -593,7 +589,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustRemoveFromRightChildButNotFromInternalWithHitOnInternalSearch(
+    void writerMustRemoveFromRightChildButNotFromInternalWithHitOnInternalSearch(
         String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         initialize();
@@ -634,7 +630,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustNotRemoveWhenKeyDoesNotExist( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustNotRemoveWhenKeyDoesNotExist( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -652,7 +648,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
         // when
         generationManager.checkpoint();
-        assertNull( remove( key( maxKeyCount ), dontCare ) );
+        remove( key( maxKeyCount ), dontCare );
 
         // then
         root.goTo( readCursor );
@@ -665,7 +661,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustNotRemoveWhenKeyOnlyExistInInternal( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustNotRemoveWhenKeyOnlyExistInInternal( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -679,7 +675,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         // when key to remove exists in internal
         long currentRightChild = structurePropagation.rightChild;
         KEY keyToRemove = keyAt( currentRightChild, 0, LEAF );
-        assertEquals( getSeed( keyAt( root.id(), 0, INTERNAL ) ), getSeed( keyToRemove ) );
+        assertThat( getSeed( keyToRemove ) ).isEqualTo( getSeed( keyAt( root.id(), 0, INTERNAL ) ) );
 
         // and as first key in right child
         goTo( readCursor, currentRightChild );
@@ -702,7 +698,9 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         assertEquals( getSeed( keyAt( 0, LEAF ) ), getSeed( key( getSeed( keyToRemove ) + 1 ) ), "same seed" );
 
         // and when we remove same key again, nothing should change
-        assertNull( remove( keyToRemove, dontCare ) );
+        int keyCount = keyCount();
+        remove( keyToRemove, dontCare );
+        assertEquals( keyCount, keyCount() );
     }
 
     /* REBALANCE */
@@ -866,18 +864,18 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
         // left child should be a new node
         long newLeftChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
-        assertNotEquals( newLeftChild, oldLeftChild );
-        assertNotEquals( newLeftChild, oldMiddleChild );
+        assertThat( oldLeftChild ).isNotEqualTo( newLeftChild );
+        assertThat( oldMiddleChild ).isNotEqualTo( newLeftChild );
 
         // right child should be same old node
         long newRightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
-        assertEquals( newRightChild, oldRightChild );
+        assertThat( oldRightChild ).isEqualTo( newRightChild );
 
         // old left and old middle has new left as successor
         goTo( readCursor, oldLeftChild );
-        assertEquals( newLeftChild, successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( successor( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( newLeftChild );
         goTo( readCursor, oldMiddleChild );
-        assertEquals( newLeftChild, successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( successor( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( newLeftChild );
 
         // new left child contain keys from old left and old middle
         goTo( readCursor, oldRightChild );
@@ -948,18 +946,18 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
         // left child should be a new node
         long newLeftChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
-        assertNotEquals( newLeftChild, oldLeftChild );
-        assertNotEquals( newLeftChild, oldMiddleChild );
+        assertThat( oldLeftChild ).isNotEqualTo( newLeftChild );
+        assertThat( oldMiddleChild ).isNotEqualTo( newLeftChild );
 
         // right child should be same old node
         long newRightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
-        assertEquals( newRightChild, oldRightChild );
+        assertThat( oldRightChild ).isEqualTo( newRightChild );
 
         // old left and old middle has new left as successor
         goTo( readCursor, oldLeftChild );
-        assertEquals( newLeftChild, newestGeneration( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( newestGeneration( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( newLeftChild );
         goTo( readCursor, oldMiddleChild );
-        assertEquals( newLeftChild, successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( successor( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( newLeftChild );
 
         // new left child contain keys from old left and old middle
         goTo( readCursor, oldRightChild );
@@ -1062,14 +1060,14 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
         // THEN
         root.goTo( readCursor );
-        assertTrue( TreeNode.isLeaf( readCursor ) );
+        assertThat( TreeNode.isLeaf( readCursor ) ).isTrue();
     }
 
     /* OVERALL CONSISTENCY */
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustProduceConsistentTreeWithRandomInserts( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustProduceConsistentTreeWithRandomInserts( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -1092,7 +1090,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustProduceConsistentTreeWithRandomInsertsWithConflictingKeys(
+    void writerMustProduceConsistentTreeWithRandomInsertsWithConflictingKeys(
         String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
@@ -1117,7 +1115,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustOverwriteWithOverwriteMerger( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustOverwriteWithOverwriteMerger( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -1138,7 +1136,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     @ParameterizedTest
     @MethodSource( "generators" )
-    void modifierMustKeepExistingWithKeepExistingMerger( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
+    void writerMustKeepExistingWithKeepExistingMerger( String name, GenerationManager generationManager, boolean isCheckpointing ) throws Exception
     {
         // given
         initialize();
@@ -1180,7 +1178,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         // THEN
         root.goTo( readCursor );
         int searchResult = KeySearch.search( readCursor, node, LEAF, key, layout.newKey(), keyCount(), NULL );
-        assertTrue( KeySearch.isHit( searchResult ) );
+        assertThat( KeySearch.isHit( searchResult ) ).isTrue();
         int pos = KeySearch.positionOf( searchResult );
         assertEquals( 0, pos );
         assertEqualsKey( key, keyAt( pos, LEAF ) );
@@ -1212,13 +1210,13 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         goTo( readCursor, root.id() );
         // key1 should exist
         int searchResult = KeySearch.search( readCursor, node, LEAF, key1, layout.newKey(), keyCount(), NULL );
-        assertTrue( KeySearch.isHit( searchResult ) );
+        assertThat( KeySearch.isHit( searchResult ) ).isTrue();
         // key2 should not exist
         searchResult = KeySearch.search( readCursor, node, LEAF, key2, layout.newKey(), keyCount(), NULL );
-        assertFalse( KeySearch.isHit( searchResult ) );
+        assertThat( KeySearch.isHit( searchResult ) ).isFalse();
         // key3 should exist
         searchResult = KeySearch.search( readCursor, node, LEAF, key3, layout.newKey(), keyCount(), NULL );
-        assertTrue( KeySearch.isHit( searchResult ) );
+        assertThat( KeySearch.isHit( searchResult ) ).isTrue();
     }
 
     @Test
@@ -1256,7 +1254,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         {
             KEY key = key( lowestInsertedKey );
             insert( key, value( lowestInsertedKey ), remover );
-            assertTrue( expectedKeys.remove( key ) );
+            assertThat( expectedKeys.remove( key ) ).isTrue();
             lowestInsertedKey++;
         }
 
@@ -1277,10 +1275,10 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
             {
                 KEY key = layout.newKey();
                 node.keyAt( readCursor, key, i, LEAF, NULL );
-                assertTrue( expectedKeys.remove( key ) );
+                assertThat( expectedKeys.remove( key ) ).isTrue();
             }
         }
-        assertTrue( expectedKeys.isEmpty() );
+        assertThat( expectedKeys.isEmpty() ).isTrue();
     }
 
     /* CREATE NEW VERSION ON UPDATE */
@@ -1303,12 +1301,12 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         // THEN
         root.goTo( readCursor );
         assertEquals( 1, numberOfRootSuccessors );
-        assertEquals( successor, structurePropagation.midChild );
-        assertNotEquals( oldGenerationId, successor );
+        assertThat( structurePropagation.midChild ).isEqualTo( successor );
+        assertThat( successor ).isNotEqualTo( oldGenerationId );
         assertEquals( 1, keyCount() );
 
         goTo( readCursor, oldGenerationId );
-        assertEquals( successor, successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( successor( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( successor );
         assertEquals( 0, keyCount() );
     }
 
@@ -1333,12 +1331,12 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         // THEN
         root.goTo( readCursor );
         assertEquals( 1, numberOfRootSuccessors );
-        assertEquals( successor, structurePropagation.midChild );
-        assertNotEquals( oldGenerationId, successor );
+        assertThat( structurePropagation.midChild ).isEqualTo( successor );
+        assertThat( successor ).isNotEqualTo( oldGenerationId );
         assertEquals( 0, keyCount() );
 
         goTo( readCursor, oldGenerationId );
-        assertEquals( successor, successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( successor( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( successor );
         assertEquals( 1, keyCount() );
     }
 
@@ -1378,13 +1376,13 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         // THEN
         // root have new middle child
         long expectedNewMiddleChild = targetLastId + 1;
-        assertEquals( expectedNewMiddleChild, id.lastId() );
+        assertThat( id.lastId() ).isEqualTo( expectedNewMiddleChild );
         long newMiddleChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
-        assertEquals( expectedNewMiddleChild, newMiddleChild );
+        assertThat( newMiddleChild ).isEqualTo( expectedNewMiddleChild );
 
         // old middle child has successor
         goTo( readCursor, middleChild );
-        assertEquals( newMiddleChild, successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( successor( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( newMiddleChild );
 
         // old middle child has seen no change
         assertKeyAssociatedWithValue( middleKey, oldValue );
@@ -1435,18 +1433,20 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
         // WHEN
         generationManager.checkpoint();
-        assertNotNull( remove( firstKeyInMiddleChild, dontCare ) );
+        VALUE removedValue = layout.newValue();
+        remove( firstKeyInMiddleChild, removedValue );
+        assertNotEquals( 0, layout.compareValue( dontCare, removedValue ) );
 
         // THEN
         // root have new middle child
         long expectedNewMiddleChild = targetLastId + 1;
-        assertEquals( expectedNewMiddleChild, id.lastId() );
+        assertThat( id.lastId() ).isEqualTo( expectedNewMiddleChild );
         long newMiddleChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
-        assertEquals( expectedNewMiddleChild, newMiddleChild );
+        assertThat( newMiddleChild ).isEqualTo( expectedNewMiddleChild );
 
         // old middle child has successor
         goTo( readCursor, middleChild );
-        assertEquals( newMiddleChild, successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( successor( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( newMiddleChild );
 
         // old middle child has seen no change
         assertKeyAssociatedWithValue( firstKeyInMiddleChild, firstValueInMiddleChild );
@@ -1532,7 +1532,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
         // old root points to successor of root
         goTo( readCursor, oldRootId );
-        assertEquals( root.id(), successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( successor( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( root.id() );
     }
 
     @ParameterizedTest
@@ -1557,7 +1557,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         assertSiblings( leftInternal, rightInternal, TreeNode.NO_NODE_FLAG );
         goTo( readCursor, leftInternal );
         int leftInternalKeyCount = keyCount();
-        assertTrue( TreeNode.isInternal( readCursor ) );
+        assertThat( TreeNode.isInternal( readCursor ) ).isTrue();
         long leftLeaf = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         goTo( readCursor, leftLeaf );
         KEY firstKeyInLeaf = keyAt( 0, LEAF );
@@ -1569,24 +1569,24 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         for ( int i = 0; id.lastId() < targetLastId; i++ )
         {
             insert( key( seedOfFirstKeyInLeaf + i ), value( seedOfFirstKeyInLeaf + i ) );
-            assertFalse( structurePropagation.hasRightKeyInsert ); // there should be no root split
+            assertThat( structurePropagation.hasRightKeyInsert ).isFalse(); // there should be no root split
         }
 
         // THEN
         // root hasn't been split further
-        assertEquals( rootAfterInitialData, root.id() );
+        assertThat( root.id() ).isEqualTo( rootAfterInitialData );
 
         // there's an successor to left internal w/ one more key in
         root.goTo( readCursor );
         long successorLeftInternal = id.lastId();
-        assertEquals( successorLeftInternal, childAt( readCursor, 0, stableGeneration, unstableGeneration ) );
+        assertThat( childAt( readCursor, 0, stableGeneration, unstableGeneration ) ).isEqualTo( successorLeftInternal );
         goTo( readCursor, successorLeftInternal );
         int successorLeftInternalKeyCount = keyCount();
         assertEquals( leftInternalKeyCount + 1, successorLeftInternalKeyCount );
 
         // and left internal points to the successor
         goTo( readCursor, leftInternal );
-        assertEquals( successorLeftInternal, successor( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( successor( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( successorLeftInternal );
         assertSiblings( successorLeftInternal, rightInternal, TreeNode.NO_NODE_FLAG );
     }
 
@@ -1925,7 +1925,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         KEY readKey = layout.newKey();
         VALUE readValue = layout.newValue();
         int search = KeySearch.search( readCursor, node, LEAF, key, readKey, TreeNode.keyCount( readCursor ), NULL );
-        assertTrue( KeySearch.isHit( search ) );
+        assertThat( KeySearch.isHit( search ) ).isTrue();
         int keyPos = KeySearch.positionOf( search );
         node.valueAt( readCursor, readValue, keyPos, NULL );
         assertEqualsValue( expectedValue, readValue );
@@ -1935,24 +1935,24 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     {
         KEY readKey = layout.newKey();
         int search = KeySearch.search( readCursor, node, type, key, readKey, TreeNode.keyCount( readCursor ), NULL );
-        assertFalse( KeySearch.isHit( search ) );
+        assertThat( KeySearch.isHit( search ) ).isFalse();
     }
 
     private void assertSiblings( long left, long middle, long right ) throws IOException
     {
         long origin = readCursor.getCurrentPageId();
         goTo( readCursor, middle );
-        assertEquals( right, rightSibling( readCursor, stableGeneration, unstableGeneration ) );
-        assertEquals( left, leftSibling( readCursor, stableGeneration, unstableGeneration ) );
+        assertThat( rightSibling( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( right );
+        assertThat( leftSibling( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( left );
         if ( left != TreeNode.NO_NODE_FLAG )
         {
             goTo( readCursor, left );
-            assertEquals( middle, rightSibling( readCursor, stableGeneration, unstableGeneration ) );
+            assertThat( rightSibling( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( middle );
         }
         if ( right != TreeNode.NO_NODE_FLAG )
         {
             goTo( readCursor, right );
-            assertEquals( middle, leftSibling( readCursor, stableGeneration, unstableGeneration ) );
+            assertThat( leftSibling( readCursor, stableGeneration, unstableGeneration ) ).isEqualTo( middle );
         }
         goTo( readCursor, origin );
     }
@@ -1984,7 +1984,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     private void newRootFromSplit( StructurePropagation<KEY> split ) throws IOException
     {
-        assertTrue( split.hasRightKeyInsert );
+        assertThat( split.hasRightKeyInsert ).isTrue();
         long rootId = id.acquireNewId( stableGeneration, unstableGeneration, NULL );
         goTo( cursor, rootId );
         node.initializeInternal( cursor, stableGeneration, unstableGeneration );
@@ -2088,11 +2088,10 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         }
     }
 
-    private VALUE remove( KEY key, VALUE into ) throws IOException
+    private void remove( KEY key, VALUE into ) throws IOException
     {
-        VALUE result = treeLogic.remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration, NULL );
+        treeLogic.remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration, NULL );
         handleAfterChange();
-        return result;
     }
 
     private interface GenerationManager

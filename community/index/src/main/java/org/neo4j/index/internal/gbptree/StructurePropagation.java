@@ -172,6 +172,11 @@ class StructurePropagation<KEY>
         hasRightKeyReplace = false;
     }
 
+    boolean isEmpty()
+    {
+        return !hasLeftChildUpdate && !hasRightChildUpdate && !hasMidChildUpdate && !hasRightKeyInsert && !hasLeftKeyReplace && !hasRightKeyReplace;
+    }
+
     interface StructureUpdate
     {
         void update( StructurePropagation structurePropagation, long childId );

@@ -349,6 +349,18 @@ abstract class TreeNode<KEY,VALUE>
      */
     abstract Overflow leafOverflow( PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue );
 
+    abstract int availableSpace( PageCursor cursor, int currentKeyCount );
+
+    abstract int totalSpaceOfKeyValue( KEY key, VALUE value );
+
+    abstract int totalSpaceOfKeyChild( KEY key );
+
+    /**
+     * Threshold where if a leaf has more available space then it will cause underflow.
+     * @return the amount of available space, where a leaf having more available space than this threshold will cause it to underflow.
+     */
+    abstract int leafUnderflowThreshold();
+
     /**
      * Clean page with leaf node from garbage to make room for further insert without having to split.
      */
@@ -370,15 +382,18 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract boolean canMergeLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount );
 
+    abstract int findSplitter( PageCursor cursor, int keyCount, KEY newKey, VALUE newValue, int insertPos, KEY newSplitter, double ratioToKeepInLeftOnSplit,
+            CursorContext cursorContext );
+
     /**
      * Calculate where split should be done and move entries between leaves participating in split.
-     *
+     * <p>
      * Keys and values from left are divided between left and right and the new key and value is inserted where it belongs.
-     *
+     * <p>
      * Key count is updated.
      */
     abstract void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey, VALUE newValue, KEY newSplitter,
-            double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException;
+            int splitPos, double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException;
 
     /**
      * Performs the entry moving part of split in internal.

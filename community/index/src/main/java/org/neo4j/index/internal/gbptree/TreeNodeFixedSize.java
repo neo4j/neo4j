@@ -76,6 +76,8 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private final int keySize;
     private final int valueSize;
     private final int maxKeyCount;
+    private final int halfLeafKeyCount;
+    private final int halfLeafSpace;
 
     TreeNodeFixedSize( int pageSize, Layout<KEY,VALUE> layout )
     {
@@ -86,6 +88,8 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
                 keySize + SIZE_PAGE_REFERENCE);
         this.leafMaxKeyCount = Math.floorDiv( pageSize - BASE_HEADER_LENGTH, keySize + valueSize );
         this.maxKeyCount = Math.max( internalMaxKeyCount, leafMaxKeyCount );
+        this.halfLeafKeyCount = (leafMaxKeyCount + 1) / 2;
+        this.halfLeafSpace = halfLeafKeyCount * (keySize + valueSize);
 
         if ( internalMaxKeyCount < 2 )
         {
@@ -232,6 +236,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     @Override
     int childOffset( int pos )
     {
+        assert pos >= 0 : pos;
         return BASE_HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
     }
 
@@ -338,6 +343,38 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
+    int availableSpace( PageCursor cursor, int currentKeyCount )
+    {
+        boolean isInternal = isInternal( cursor );
+        return isInternal
+               ? internalMaxKeyCount - currentKeyCount * (keySize + childSize())
+               : leafAvailableSpace( currentKeyCount );
+    }
+
+    private int leafAvailableSpace( int currentKeyCount )
+    {
+        return (leafMaxKeyCount() - currentKeyCount) * (keySize + valueSize);
+    }
+
+    @Override
+    int totalSpaceOfKeyValue( KEY key, VALUE value )
+    {
+        return keySize + valueSize;
+    }
+
+    @Override
+    int totalSpaceOfKeyChild( KEY key )
+    {
+        return keySize + childSize();
+    }
+
+    @Override
+    int leafUnderflowThreshold()
+    {
+        return halfLeafSpace;
+    }
+
+    @Override
     void defragmentLeaf( PageCursor cursor )
     {   // no-op
     }
@@ -350,7 +387,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean leafUnderflow( PageCursor cursor, int keyCount )
     {
-        return keyCount < (leafMaxKeyCount() + 1) / 2;
+        return leafAvailableSpace( keyCount ) > halfLeafSpace;
     }
 
     @Override
@@ -372,10 +409,10 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
-            VALUE newValue, KEY newSplitter, double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration, CursorContext cursorContext )
+    int findSplitter( PageCursor cursor, int keyCount, KEY newKey, VALUE newValue, int insertPos, KEY newSplitter, double ratioToKeepInLeftOnSplit,
+            CursorContext cursorContext )
     {
-        int keyCountAfterInsert = leftKeyCount + 1;
+        int keyCountAfterInsert = keyCount + 1;
         int splitPos = splitPos( keyCountAfterInsert, ratioToKeepInLeftOnSplit );
 
         if ( splitPos == insertPos )
@@ -384,8 +421,16 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
         else
         {
-            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, LEAF, cursorContext );
+            keyAt( cursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, LEAF, cursorContext );
         }
+        return splitPos;
+    }
+
+    @Override
+    void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey, VALUE newValue, KEY newSplitter, int splitPos,
+            double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration, CursorContext cursorContext )
+    {
+        int keyCountAfterInsert = leftKeyCount + 1;
         int rightKeyCount = keyCountAfterInsert - splitPos;
 
         if ( insertPos < splitPos )
