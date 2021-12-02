@@ -26,9 +26,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.database.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
+import org.neo4j.graphdb.DatabaseShutdownException;
 
 public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository
 {
@@ -66,9 +68,14 @@ public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository
         return execute( TopologyGraphDbmsModel::getAllDatabaseIds );
     }
 
-    private <T>  T execute( Function<TopologyGraphDbmsModel,T> operation )
+    private <T> T execute( Function<TopologyGraphDbmsModel,T> operation )
     {
-        var systemDb = systemDatabaseSupplier.get().databaseFacade();
+        var databaseContext = systemDatabaseSupplier.get();
+        var systemDb = databaseContext.databaseFacade();
+        if ( !systemDb.isAvailable( 100 ) )
+        {
+            throw new DatabaseShutdownException( new DatabaseManagementException( "System database is not (yet) available" ) );
+        }
         try ( var tx = systemDb.beginTx() )
         {
             var model = new CommunityTopologyGraphDbmsModel( tx );
