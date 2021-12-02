@@ -62,7 +62,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext )
+    public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
     {
         switch ( mode )
         {

@@ -526,7 +526,7 @@ class FulltextIndexConsistencyCheckIT
         }
         IndexingService indexes = getIndexingService( db );
         IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
-        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, Values.stringValue( "value" ) ) );
         }
@@ -651,7 +651,7 @@ class FulltextIndexConsistencyCheckIT
         }
         IndexingService indexes = getIndexingService( db );
         IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
-        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             updater.process( IndexEntryUpdate.remove( relId, indexDescriptor, Values.stringValue( "value" ) ) );
         }

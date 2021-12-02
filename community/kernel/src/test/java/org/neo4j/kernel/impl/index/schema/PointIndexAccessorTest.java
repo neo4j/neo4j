@@ -148,7 +148,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
     {
         // given  an empty index
         // when   an unsupported value type is added
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
         {
             final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
             updater.process( IndexEntryUpdate.add( idGenerator().getAsLong(), INDEX_DESCRIPTOR, unsupportedValue ) );
@@ -169,7 +169,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
         // when   an unsupported value type is added
         final var entityId = idGenerator().getAsLong();
         final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
         {
             updater.process( IndexEntryUpdate.add( entityId, INDEX_DESCRIPTOR, unsupportedValue ) );
         }
@@ -181,7 +181,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
         }
 
         // when   the unsupported value type is changed to a supported value type
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
         {
             final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
             updater.process( IndexEntryUpdate.change( entityId, INDEX_DESCRIPTOR, unsupportedValue, supportedValue ) );
@@ -202,7 +202,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
         // when   a supported value type is added
         final var entityId = idGenerator().getAsLong();
         final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
         {
             updater.process( IndexEntryUpdate.add( entityId, INDEX_DESCRIPTOR, supportedValue ) );
         }
@@ -214,7 +214,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
         }
 
         // when   the supported value type is changed to an unsupported value type
-        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+        try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
         {
             final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
             updater.process( IndexEntryUpdate.change( entityId, INDEX_DESCRIPTOR, supportedValue, unsupportedValue ) );

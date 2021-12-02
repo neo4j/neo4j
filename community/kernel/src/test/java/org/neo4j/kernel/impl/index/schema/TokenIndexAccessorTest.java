@@ -114,7 +114,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
     void processMustThrowAfterClose() throws Exception
     {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL );
+        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false );
         updater.close();
 
         assertThrows( IllegalStateException.class, () -> updater.process( simpleUpdate() ) );
@@ -128,7 +128,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         List<TokenIndexEntryUpdate<?>> updates = generateSomeRandomUpdates( entityTokens, random );
 
         // When
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
         {
             for ( TokenIndexEntryUpdate<?> update : updates )
             {
@@ -320,7 +320,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         int labelId2 = 2;
         long nodeId1 = 10;
         long nodeId2 = 11;
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL ) )
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.change( nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );
             indexUpdater.process( IndexEntryUpdate.change( nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
@@ -344,7 +344,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         int labelId2 = 2;
         long nodeId1 = 10;
         long nodeId2 = 1280;
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL ) )
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.change( nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );
             indexUpdater.process( IndexEntryUpdate.change( nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
@@ -400,7 +400,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
 
         while ( currentMaxEntityId < numberOfEntities )
         {
-            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
+            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
             {
                 // Simply add random token ids to a new batch of 100 entities
                 for ( int i = 0; i < 100; i++ )
@@ -416,7 +416,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
             }
             additionalOperation.execute();
             // Interleave updates in id range lower than currentMaxEntityId
-            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
+            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
             {
                 for ( int i = 0; i < 100; i++ )
                 {
@@ -451,7 +451,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
 
     private void addToIndex( int tokenId, long... entityIds ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
         {
             for ( long entityId : entityIds )
             {

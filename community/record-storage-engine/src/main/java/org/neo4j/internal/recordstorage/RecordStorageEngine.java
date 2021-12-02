@@ -141,6 +141,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final ConstraintRuleAccessor constraintSemantics;
     private final LockService lockService;
     private final boolean consistencyCheckApply;
+    private final boolean parallelIndexUpdatesApply;
     private IndexUpdatesWorkSync indexUpdatesSync;
     private final IdController idController;
     private final PageCacheTracer cacheTracer;
@@ -218,6 +219,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
             storeEntityCounters = new RecordDatabaseEntityCounters( idGeneratorFactory, countsStore );
+            parallelIndexUpdatesApply = config.get( GraphDatabaseInternalSettings.parallel_index_updates_apply );
         }
         catch ( Throwable failure )
         {
@@ -343,7 +345,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         Preconditions.checkState( this.indexUpdateListener == null,
                 "Only supports a single listener. Tried to add " + listener + ", but " + this.indexUpdateListener + " has already been added" );
         this.indexUpdateListener = listener;
-        this.indexUpdatesSync = new IndexUpdatesWorkSync( listener );
+        this.indexUpdatesSync = new IndexUpdatesWorkSync( listener, parallelIndexUpdatesApply );
         this.integrityValidator.setIndexValidator( listener );
     }
 

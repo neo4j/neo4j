@@ -172,7 +172,7 @@ public class LuceneIndexAccessorIT
         config.set( GraphDatabaseSettings.read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
         try ( IndexAccessor onlineAccessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
         {
-            assertThrows( UnsupportedOperationException.class, () -> onlineAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) );
+            assertThrows( UnsupportedOperationException.class, () -> onlineAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) );
         }
     }
 
@@ -261,7 +261,7 @@ public class LuceneIndexAccessorIT
         {
             // given  an empty index
             // when   an unsupported value type is added
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
             {
                 final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
                 updater.process( IndexEntryUpdate.add( idGenerator().getAsLong(), descriptor, unsupportedValue ) );
@@ -285,7 +285,7 @@ public class LuceneIndexAccessorIT
             // when   an unsupported value type is added
             final var entityId = idGenerator().getAsLong();
             final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
             {
                 updater.process( IndexEntryUpdate.add( entityId, descriptor, unsupportedValue ) );
             }
@@ -297,7 +297,7 @@ public class LuceneIndexAccessorIT
             }
 
             // when   the unsupported value type is changed to a supported value type
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
             {
                 final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
                 updater.process( IndexEntryUpdate.change( entityId, descriptor, unsupportedValue, supportedValue ) );
@@ -322,7 +322,7 @@ public class LuceneIndexAccessorIT
             // when   a supported value type is added
             final var entityId = idGenerator().getAsLong();
             final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
             {
                 updater.process( IndexEntryUpdate.add( entityId, descriptor, supportedValue ) );
             }
@@ -334,7 +334,7 @@ public class LuceneIndexAccessorIT
             }
 
             // when   the supported value type is changed to an unsupported value type
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
             {
                 final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
                 updater.process( IndexEntryUpdate.change( entityId, descriptor, supportedValue, unsupportedValue ) );
@@ -351,7 +351,7 @@ public class LuceneIndexAccessorIT
     private static void removeSomeNodes( IndexDescriptor indexDescriptor, int nodes, IndexAccessor accessor, MutableLongSet expectedNodes )
             throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             for ( long id = 0; id < nodes; id++ )
             {
@@ -411,7 +411,7 @@ public class LuceneIndexAccessorIT
         MutableLong highEntityId = new MutableLong();
         for ( int i = 0; i < rounds; i++ )
         {
-            try ( IndexUpdater updater = index.newUpdater( IndexUpdateMode.RECOVERY, NULL ) )
+            try ( IndexUpdater updater = index.newUpdater( IndexUpdateMode.RECOVERY, NULL, false ) )
             {
                 for ( int j = 0; j < updatesPerRound; j++ )
                 {

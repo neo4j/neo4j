@@ -92,14 +92,14 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
     {
         // Making use of reentrant locks to ensure that the delegate's constructor is called under lock protection
         // while still retaining the lock until a call to close on the returned IndexUpdater
         lock.readLock().lock();
         try
         {
-            return new LockingIndexUpdater( delegate.newUpdater( mode, cursorContext ) );
+            return new LockingIndexUpdater( delegate.newUpdater( mode, cursorContext, parallel ) );
         }
         finally
         {

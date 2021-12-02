@@ -66,12 +66,19 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     }
 
     @Override
-    public NativeIndexUpdater<KEY> newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+    public NativeIndexUpdater<KEY> newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
     {
         assertOpen();
         try
         {
-            return singleUpdater.initialize( tree.writer( cursorContext ) );
+            if ( parallel )
+            {
+                return new NativeIndexUpdater<>( layout.newKey(), indexUpdateIgnoreStrategy() ).initialize( tree.parallelWriter( cursorContext ) );
+            }
+            else
+            {
+                return singleUpdater.initialize( tree.writer( cursorContext ) );
+            }
         }
         catch ( IOException e )
         {

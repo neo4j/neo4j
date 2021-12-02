@@ -607,55 +607,55 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         public void run()
         {
             for ( EntityUpdates update : updates )
+            {
+                try ( Transaction transaction = db.beginTx() )
                 {
-                    try ( Transaction transaction = db.beginTx() )
+                    Node node = transaction.getNodeById( update.getEntityId() );
+                    for ( int labelId : labelsNameIdMap.values() )
                     {
-                        Node node = transaction.getNodeById( update.getEntityId() );
-                        for ( int labelId : labelsNameIdMap.values() )
+                        LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyId );
+                        for ( IndexEntryUpdate<?> indexUpdate :
+                                update.valueUpdatesForIndexKeys( Collections.singleton( () -> schema ) ) )
                         {
-                            LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyId );
-                            for ( IndexEntryUpdate<?> indexUpdate :
-                                    update.valueUpdatesForIndexKeys( Collections.singleton( () -> schema ) ) )
+                            ValueIndexEntryUpdate<?> valueUpdate = (ValueIndexEntryUpdate<?>) indexUpdate;
+                            switch ( valueUpdate.updateMode() )
                             {
-                                ValueIndexEntryUpdate<?> valueUpdate = (ValueIndexEntryUpdate<?>) indexUpdate;
-                                switch ( valueUpdate.updateMode() )
-                                {
-                                case CHANGED:
-                                case ADDED:
-                                    node.addLabel(
-                                            Label.label( labelsIdNameMap.get( schema.getLabelId() ) ) );
-                                    node.setProperty( NAME_PROPERTY, valueUpdate.values()[0].asObject() );
-                                    break;
-                                case REMOVED:
-                                    node.addLabel(
-                                            Label.label( labelsIdNameMap.get( schema.getLabelId() ) ) );
-                                    node.delete();
-                                    break;
-                                default:
-                                    throw new IllegalArgumentException( valueUpdate.updateMode().name() );
-                                }
+                            case CHANGED:
+                            case ADDED:
+                                node.addLabel(
+                                        Label.label( labelsIdNameMap.get( schema.getLabelId() ) ) );
+                                node.setProperty( NAME_PROPERTY, valueUpdate.values()[0].asObject() );
+                                break;
+                            case REMOVED:
+                                node.addLabel(
+                                        Label.label( labelsIdNameMap.get( schema.getLabelId() ) ) );
+                                node.delete();
+                                break;
+                            default:
+                                throw new IllegalArgumentException( valueUpdate.updateMode().name() );
                             }
                         }
-                        transaction.commit();
                     }
+                    transaction.commit();
                 }
-                try ( StorageReader reader = storageEngine.newReader() )
+            }
+            try ( StorageReader reader = storageEngine.newReader() )
+            {
+                for ( EntityUpdates update : updates )
                 {
-                    for ( EntityUpdates update : updates )
-                    {
-                        Iterable<IndexDescriptor> relatedIndexes = schemaCache.getValueIndexesRelatedTo(
-                                update.entityTokensChanged(),
-                                update.entityTokensUnchanged(),
-                                update.propertiesChanged(), false, EntityType.NODE );
-                        Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates =
-                                update.valueUpdatesForIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL, StoreCursors.NULL, INSTANCE );
-                        indexService.applyUpdates( entryUpdates, NULL );
-                    }
+                    Iterable<IndexDescriptor> relatedIndexes = schemaCache.getValueIndexesRelatedTo(
+                            update.entityTokensChanged(),
+                            update.entityTokensUnchanged(),
+                            update.propertiesChanged(), false, EntityType.NODE );
+                    Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates =
+                            update.valueUpdatesForIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL, StoreCursors.NULL, INSTANCE );
+                    indexService.applyUpdates( entryUpdates, NULL, false );
                 }
-                catch ( UncheckedIOException | KernelException e )
-                {
-                    throw new RuntimeException( e );
-                }
+            }
+            catch ( UncheckedIOException | KernelException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 

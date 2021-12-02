@@ -188,7 +188,7 @@ class AccessUniqueDatabaseIndexTest
 
     private static void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {

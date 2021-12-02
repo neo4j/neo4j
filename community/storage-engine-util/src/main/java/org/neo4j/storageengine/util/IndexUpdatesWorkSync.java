@@ -39,10 +39,19 @@ import org.neo4j.util.concurrent.WorkSync;
 public class IndexUpdatesWorkSync
 {
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> workSync;
+    private final IndexUpdateListener listener;
+    private final boolean parallelApply;
 
-    public IndexUpdatesWorkSync( IndexUpdateListener listener )
+    /**
+     * @param parallelApply if {@code false} the updates from multiple concurrent applying transactions are work-synced where one thread
+     * will end up applying all the updates. Otherwise if {@code true} each thread will apply their updates itself, with the "parallel" note
+     * passed down to the updaters to arrange for this fact.
+     */
+    public IndexUpdatesWorkSync( IndexUpdateListener listener, boolean parallelApply )
     {
-        this.workSync = new WorkSync<>( listener );
+        this.listener = listener;
+        this.parallelApply = parallelApply;
+        this.workSync = parallelApply ? null : new WorkSync<>( listener );
     }
 
     public Batch newBatch()
@@ -82,7 +91,22 @@ public class IndexUpdatesWorkSync
             addSingleUpdates();
             if ( !updates.isEmpty() )
             {
-                workSync.apply( new IndexUpdatesWork( updates, cursorContext ) );
+                if ( parallelApply )
+                {
+                    // Just skip the work-sync if this is parallel apply and instead update straight in
+                    try
+                    {
+                        listener.applyUpdates( combinedUpdates( updates ), cursorContext, true );
+                    }
+                    catch ( IOException | KernelException e )
+                    {
+                        throw new ExecutionException( e );
+                    }
+                }
+                else
+                {
+                    workSync.apply( new IndexUpdatesWork( updates, cursorContext ) );
+                }
             }
         }
 
@@ -119,24 +143,24 @@ public class IndexUpdatesWorkSync
         {
             try
             {
-                material.applyUpdates( combinedUpdates(), cursorContext );
+                material.applyUpdates( combinedUpdates( updates ), cursorContext, false );
             }
             catch ( IOException | KernelException e )
             {
                 throw new UnderlyingStorageException( e );
             }
         }
+    }
 
-        private Iterable<IndexEntryUpdate<IndexDescriptor>> combinedUpdates()
+    private static Iterable<IndexEntryUpdate<IndexDescriptor>> combinedUpdates( List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates )
+    {
+        return () -> new NestingIterator<>( updates.iterator() )
         {
-            return () -> new NestingIterator<>( updates.iterator() )
+            @Override
+            protected Iterator<IndexEntryUpdate<IndexDescriptor>> createNestedIterator( Iterable<IndexEntryUpdate<IndexDescriptor>> item )
             {
-                @Override
-                protected Iterator<IndexEntryUpdate<IndexDescriptor>> createNestedIterator( Iterable<IndexEntryUpdate<IndexDescriptor>> item )
-                {
-                    return item.iterator();
-                }
-            };
-        }
+                return item.iterator();
+            }
+        };
     }
 }

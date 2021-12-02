@@ -164,7 +164,7 @@ class SpecialisedIndexFullCheckTest
                 if ( indexDescriptor.schema().entityType() == EntityType.NODE )
                 {
                     IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                     {
                         for ( long nodeId : indexedNodes )
                         {
@@ -200,7 +200,7 @@ class SpecialisedIndexFullCheckTest
                 if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP )
                 {
                     IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                     {
                         for ( long relId : indexedRelationships )
                         {
@@ -237,7 +237,7 @@ class SpecialisedIndexFullCheckTest
                 if ( indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique() )
                 {
                     IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                     {
                         updater.process( IndexEntryUpdate.add( newNode, indexDescriptor, values( indexDescriptor ) ) );
                     }

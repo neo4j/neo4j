@@ -46,12 +46,14 @@ class IndexUpdaterMap implements AutoCloseable
 {
     private final IndexUpdateMode indexUpdateMode;
     private final IndexMap indexMap;
+    private final boolean parallel;
     private final Map<IndexDescriptor,IndexUpdater> updaterMap;
 
-    IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode )
+    IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode, boolean parallel )
     {
         this.indexUpdateMode = indexUpdateMode;
         this.indexMap = indexMap;
+        this.parallel = parallel;
         this.updaterMap = new HashMap<>();
     }
 
@@ -63,7 +65,7 @@ class IndexUpdaterMap implements AutoCloseable
             IndexProxy indexProxy = indexMap.getIndexProxy( descriptor );
             if ( null != indexProxy )
             {
-                updater = indexProxy.newUpdater( indexUpdateMode, cursorContext );
+                updater = indexProxy.newUpdater( indexUpdateMode, cursorContext, parallel );
                 updaterMap.put( descriptor, updater );
             }
         }

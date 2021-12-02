@@ -40,9 +40,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -445,7 +443,7 @@ class FulltextIndexEntryUpdateTest
 
     private IndexUpdater getUpdater( IndexAccessor accessor )
     {
-        return accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL );
+        return accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false );
     }
 
     private BoundedIterable<Long> getReader( IndexAccessor accessor )

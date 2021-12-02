@@ -229,7 +229,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
             throws IndexNotFoundKernelException, IndexEntryConflictException
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
-        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE, CursorContext.NULL ) )
+        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE, CursorContext.NULL, false ) )
         {
             indexUpdater.process( add( nodeId, () -> descriptor, value ) );
         }

@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
@@ -203,9 +202,9 @@ class NeoStoresIT
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 4, cursorTracer.hits() );
-        assertEquals( 5, cursorTracer.pins() );
-        assertEquals( 5, cursorTracer.unpins() );
+        assertEquals( 3, cursorTracer.hits() );
+        assertEquals( 4, cursorTracer.pins() );
+        assertEquals( 4, cursorTracer.unpins() );
     }
 
     @Test

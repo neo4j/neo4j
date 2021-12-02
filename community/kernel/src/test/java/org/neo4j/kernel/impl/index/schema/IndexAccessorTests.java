@@ -65,7 +65,7 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
     void shouldHandleCloseWithoutCallsToProcess() throws Exception
     {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL );
+        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false );
 
         // when
         updater.close();
@@ -78,9 +78,9 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
     void requestForSecondUpdaterMustThrow() throws Exception
     {
         // given
-        try ( IndexUpdater ignored = accessor.newUpdater( ONLINE, NULL ) )
+        try ( IndexUpdater ignored = accessor.newUpdater( ONLINE, NULL, false ) )
         {
-            assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
+            assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL, false ) );
         }
     }
 
@@ -138,7 +138,7 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
         // given
         accessor.drop();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
+        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL, false ) );
     }
 
     @Test
@@ -147,7 +147,7 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
         // given
         accessor.close();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
+        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL, false ) );
     }
 
 }

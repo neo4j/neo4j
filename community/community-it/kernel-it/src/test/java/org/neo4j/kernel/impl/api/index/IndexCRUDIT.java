@@ -226,11 +226,11 @@ class IndexCRUDIT
         @Override
         public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
         {
-            return newUpdater( IndexUpdateMode.ONLINE, NULL );
+            return newUpdater( IndexUpdateMode.ONLINE, NULL, false );
         }
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext )
+        public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
         {
             return new CollectingIndexUpdater( updatesCommitted::addAll );
         }

@@ -24,13 +24,17 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -39,10 +43,9 @@ import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.InputStreamReadableChannel;
-import org.neo4j.io.fs.OutputStreamWritableChannel;
 import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -71,11 +74,12 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
     private final SystemNanoClock clock;
     private final Path storeDir;
     private final Path file;
-    private FlushableChannel channel;
-    private final Lock lock = new ReentrantLock();
-    private final LongAdder position = new LongAdder();
+    private StoreChannel channel;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final AtomicLong position = new AtomicLong();
     private final long rotationThreshold;
     private final long pruneThreshold;
+    private final ThreadLocal<Long> txIds = ThreadLocal.withInitial( () -> -1L );
 
     TokenScanWriteMonitor( FileSystemAbstraction fs, DatabaseLayout databaseLayout, EntityType entityType, Config config )
     {
@@ -115,24 +119,42 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
         return baseFile.resolveSibling( baseFile.getFileName() + ".writelog" );
     }
 
-    private FlushableChannel instantiateChannel() throws IOException
+    private StoreChannel instantiateChannel() throws IOException
     {
-        return new OutputStreamWritableChannel( fs.openAsOutputStream( file, false ) );
+        return fs.open( file, Set.of( StandardOpenOption.CREATE, StandardOpenOption.WRITE  ) );
     }
 
     @Override
     public void range( long range, int tokenId )
     {
+        write( TYPE_RANGE, buffer ->
+        {
+            buffer.putLong( range );
+            buffer.putInt( tokenId );
+        } );
+    }
+
+    private void write( byte type, Consumer<ByteBuffer> writer )
+    {
+        lock.readLock().lock();
         try
         {
-            channel.put( TYPE_RANGE );
-            channel.putLong( range );
-            channel.putInt( tokenId );
-            position.add( 1 + 8 + 4 );
+            ByteBuffer buffer = ByteBuffer.allocate( 32 );
+            buffer.put( type );
+            buffer.putLong( txIds.get() );
+            writer.accept( buffer );
+            buffer.flip();
+            int size = buffer.limit();
+            long pos = position.getAndAdd( size );
+            channel.writeAll( buffer, pos );
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
+        }
+        finally
+        {
+            lock.readLock().unlock();
         }
     }
 
@@ -150,17 +172,12 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
 
     private void prepare( byte type, long txId, int offset )
     {
-        try
+        txIds.set( txId );
+        write( type, buffer ->
         {
-            channel.put( type );
-            channel.putLong( txId );
-            channel.put( (byte) offset );
-            position.add( 1 + 8 + 1 );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+            buffer.putLong( txId );
+            buffer.put( (byte) offset );
+        } );
     }
 
     @Override
@@ -177,56 +194,35 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
 
     private void merge( byte type, TokenScanValue existingValue, TokenScanValue newValue )
     {
-        try
+        write( type, buffer ->
         {
-            channel.put( type );
-            channel.putLong( existingValue.bits );
-            channel.putLong( newValue.bits );
-            position.add( 1 + 8 + 8 );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+            buffer.putLong( existingValue.bits );
+            buffer.putLong( newValue.bits );
+        } );
     }
 
     @Override
     public void flushPendingUpdates()
     {
-        try
-        {
-            channel.put( TYPE_FLUSH );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        write( TYPE_FLUSH, buffer -> {} );
     }
 
     @Override
     public void writeSessionEnded()
     {
-        try
-        {
-            channel.put( TYPE_SESSION_END );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        write( TYPE_SESSION_END, buffer -> {} );
 
-        position.add( 1 );
-        long fileSize = position.sum();
+        long fileSize = position.get();
         if ( fileSize > rotationThreshold )
         {
             // Rotate
-            lock.lock();
+            lock.writeLock().lock();
             try
             {
-                channel.prepareForFlush().flush();
+                channel.flush();
                 channel.close();
                 moveAwayFile( fileSize );
-                position.reset();
+                position.set( 0 );
                 channel = instantiateChannel();
             }
             catch ( IOException e )
@@ -235,7 +231,7 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
             }
             finally
             {
-                lock.unlock();
+                lock.writeLock().unlock();
             }
 
             // Prune
@@ -258,6 +254,7 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
                 throw new UncheckedIOException( e );
             }
         }
+        txIds.set( -1L );
     }
 
     static long millisOf( Path file )
@@ -275,18 +272,13 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
     public void force()
     {
         // checkpoint does this
-        lock.lock();
         try
         {
-            channel.prepareForFlush().flush();
+            channel.force( false );
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
-        }
-        finally
-        {
-            lock.unlock();
         }
     }
 
@@ -447,6 +439,7 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
             while ( true )
             {
                 byte type = channel.get();
+                long txId = channel.getLong();
                 switch ( type )
                 {
                 case TYPE_RANGE:

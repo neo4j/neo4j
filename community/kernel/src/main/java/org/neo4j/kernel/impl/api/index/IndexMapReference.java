@@ -77,9 +77,9 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
+    IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode, boolean parallel )
     {
-        return new IndexUpdaterMap( indexMap, mode );
+        return new IndexUpdaterMap( indexMap, mode, parallel );
     }
 
     public void validateBeforeCommit( IndexDescriptor index, Value[] tuple, long entityId )

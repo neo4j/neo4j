@@ -54,7 +54,7 @@ public class SchemaLayouts implements LayoutBootstrapper
         return new String[]{
                 "Generic layout",
                 "Id range layout",
-                "Label scan layout",
+                "Token scan layout",
                 "Index statistics layout"
         };
     }

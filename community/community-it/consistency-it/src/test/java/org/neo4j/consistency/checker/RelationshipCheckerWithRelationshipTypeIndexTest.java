@@ -49,9 +49,9 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -402,7 +402,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
 
     private IndexUpdater relationshipTypeIndexWriter()
     {
-        return rtiProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL );
+        return rtiProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false );
     }
 
     private enum Density

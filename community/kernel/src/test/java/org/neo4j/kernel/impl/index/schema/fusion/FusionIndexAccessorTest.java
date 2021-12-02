@@ -46,9 +46,9 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -457,7 +457,7 @@ abstract class FusionIndexAccessorTest
     void shouldInstantiateUpdatersLazily()
     {
         // when getting a new reader, no part-reader should be instantiated
-        IndexUpdater updater = fusionIndexAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL );
+        IndexUpdater updater = fusionIndexAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false );
         for ( IndexAccessor aliveAccessor : aliveAccessors )
         {
             // then

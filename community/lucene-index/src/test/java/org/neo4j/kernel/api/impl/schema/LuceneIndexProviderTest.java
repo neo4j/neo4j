@@ -113,7 +113,7 @@ class LuceneIndexProviderTest
                 new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
 
         assertThrows( UnsupportedOperationException.class,
-                () -> getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).newUpdater( IndexUpdateMode.ONLINE, NULL ) );
+                () -> getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).newUpdater( IndexUpdateMode.ONLINE, NULL, false ) );
     }
 
     @Test

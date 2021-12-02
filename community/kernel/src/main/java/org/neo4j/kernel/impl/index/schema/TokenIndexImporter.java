@@ -50,7 +50,7 @@ public class TokenIndexImporter implements IndexImporter
         this.index = index;
         this.accessor = tokenIndexAccessor( layout, fs, cache, config );
         this.cursorContext = cursorContext;
-        this.updater = accessor.newUpdater( ONLINE, cursorContext );
+        this.updater = accessor.newUpdater( ONLINE, cursorContext, false );
     }
 
     @Override

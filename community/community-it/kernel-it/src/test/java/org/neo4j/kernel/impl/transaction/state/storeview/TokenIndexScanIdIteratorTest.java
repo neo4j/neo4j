@@ -67,7 +67,7 @@ class TokenIndexScanIdIteratorTest
 
         IndexProxy indexProxy = indexingService.getIndexProxy( index );
 
-        try ( IndexUpdater indexUpdater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+        try ( IndexUpdater indexUpdater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.change( 2, index, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
             indexUpdater.process( IndexEntryUpdate.change( 1, index, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );

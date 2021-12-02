@@ -261,7 +261,7 @@ class LuceneSchemaIndexIT
 
     private void generateUpdates( LuceneIndexAccessor indexAccessor, int nodesToUpdate ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             for ( int nodeId = 0; nodeId < nodesToUpdate; nodeId++ )
             {

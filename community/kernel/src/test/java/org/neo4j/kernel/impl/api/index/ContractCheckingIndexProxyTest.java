@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ThreadTestUtils;
 
@@ -131,9 +130,9 @@ class ContractCheckingIndexProxyTest
         // WHEN
         assertThrows( IllegalStateException.class, () ->
         {
-            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
             {
-                updater.process( (ValueIndexEntryUpdate<?>) null );
+                updater.process( null );
             }
         } );
     }
@@ -151,9 +150,9 @@ class ContractCheckingIndexProxyTest
 
         assertThrows( IllegalStateException.class, () ->
         {
-            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
             {
-                updater.process( (ValueIndexEntryUpdate<?>) null );
+                updater.process( null );
             }
         } );
     }
@@ -252,11 +251,6 @@ class ContractCheckingIndexProxyTest
         CountDownLatch latch = new CountDownLatch( 1 );
         final IndexProxy inner = new IndexProxyAdapter()
         {
-            @Override
-            public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
-            {
-                return super.newUpdater( mode, cursorContext );
-            }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
         Thread actionThread = createActionThread( () -> outer.close( NULL ) );
@@ -265,9 +259,9 @@ class ContractCheckingIndexProxyTest
         // WHEN
         Thread updaterThread = runInSeparateThread( () ->
         {
-            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
             {
-                updater.process( (ValueIndexEntryUpdate<?>) null );
+                updater.process( null );
                 try
                 {
                     actionThread.start();
@@ -332,7 +326,7 @@ class ContractCheckingIndexProxyTest
         var outer = newContractCheckingIndexProxy( new IndexProxyAdapter()
         {
             @Override
-            public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+            public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
             {
                 throw new IllegalStateException( "Can't create updater" );
             }
@@ -341,7 +335,7 @@ class ContractCheckingIndexProxyTest
 
         assertThatThrownBy( () ->
                 {
-                    try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                    try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                     {
                         // nothing
                     }

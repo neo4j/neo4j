@@ -67,10 +67,10 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
     {
         LazyInstanceSelector<IndexUpdater> updaterSelector = new LazyInstanceSelector<>( slot ->
-                instanceSelector.select( slot ).newUpdater( mode, cursorContext ) );
+                instanceSelector.select( slot ).newUpdater( mode, cursorContext, parallel ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 

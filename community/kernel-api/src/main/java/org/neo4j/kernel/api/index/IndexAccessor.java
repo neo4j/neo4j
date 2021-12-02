@@ -56,8 +56,12 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * This is called with IndexUpdateMode.RECOVERY when starting up after
      * a crash or similar. Updates given then may have already been applied to this index, so
      * additional checks must be in place so that data doesn't get duplicated, but is idempotent.
+     *
+     * @param mode apply updates with the hint that the existing state may not be valid.
+     * @param cursorContext the context to track cursor access.
+     * @param parallel hint that this updater will be used in parallel with other updaters concurrently on this index.
      */
-    IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext );
+    IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel );
 
     /**
      * Forces this index to disk. Called at certain points from within Neo4j for example when
@@ -71,7 +75,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
 
     /**
      * Refreshes this index, so that {@link #newValueReader() readers} created after completion of this call
-     * will see the latest updates. This happens automatically on closing {@link #newUpdater(IndexUpdateMode, CursorContext)}
+     * will see the latest updates. This happens automatically on closing {@link #newUpdater(IndexUpdateMode, CursorContext, boolean)}
      * w/ {@link IndexUpdateMode#ONLINE}, but not guaranteed for {@link IndexUpdateMode#RECOVERY}.
      * Therefore this call is complementary for updates that has taken place with {@link IndexUpdateMode#RECOVERY}.
      *
@@ -213,7 +217,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
         {
             return SwallowingIndexUpdater.INSTANCE;
         }
@@ -303,9 +307,9 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
         {
-            return delegate.newUpdater( mode, cursorContext );
+            return delegate.newUpdater( mode, cursorContext, parallel );
         }
 
         @Override

@@ -122,7 +122,7 @@ class NeoStoreTransactionApplierTest
     private final DynamicRecord two = new DynamicRecord( 2 ).initialize( true, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
     private final DynamicRecord three = new DynamicRecord( 3 ).initialize( true, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
     private final CommandsToApply transactionToApply = mock( CommandsToApply.class );
-    private final IndexUpdatesWorkSync indexUpdatesSync = new IndexUpdatesWorkSync( indexUpdateListener );
+    private final IndexUpdatesWorkSync indexUpdatesSync = new IndexUpdatesWorkSync( indexUpdateListener, false );
     private final IndexActivator indexActivator = new IndexActivator( indexingService );
 
     @BeforeEach

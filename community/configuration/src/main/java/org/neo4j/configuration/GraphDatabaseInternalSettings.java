@@ -801,4 +801,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                   "This setting is only useful for tests of the incomplete record format versions during their development." )
     public static final Setting<Boolean> include_versions_under_development =
             newBuilder( "unsupported.dbms.include_dev_record_format_versions", BOOL, false ).build();
+
+    @Description( "Whether or not to do parallel index writes during online transaction application" )
+    public static Setting<Boolean> parallel_index_updates_apply = newBuilder( "unsupported.dbms.parallel_index_updates_apply", BOOL, false ).build();
 }

@@ -208,7 +208,7 @@ class IndexingServiceTest
     void shouldBringIndexOnlineAndFlipOverToIndexAccessor() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) ).thenReturn( updater );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -221,7 +221,7 @@ class IndexingServiceTest
         waitForIndexesToComeOnline( indexingService, index );
         verify( populator, timeout( 10000 ) ).close( eq( true ), any() );
 
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             updater.process( add( 10, "foo" ) );
         }
@@ -231,7 +231,7 @@ class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).close( eq( true ), any() );
-        order.verify( accessor ).newUpdater( eq( IndexUpdateMode.ONLINE_IDEMPOTENT ), any() );
+        order.verify( accessor ).newUpdater( eq( IndexUpdateMode.ONLINE_IDEMPOTENT ), any(), anyBoolean() );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -240,7 +240,7 @@ class IndexingServiceTest
     void indexCreationShouldBeIdempotent() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) ).thenReturn( updater );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -300,7 +300,7 @@ class IndexingServiceTest
         populationStartBarrier.release();
 
         IndexEntryUpdate<?> value2 = add( 2, "value2" );
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             updater.process( value2 );
         }
@@ -334,7 +334,7 @@ class IndexingServiceTest
     void shouldStillReportInternalIndexStateAsPopulatingWhenConstraintIndexIsDonePopulating() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) ).thenReturn( updater );
         ValueIndexReader indexReader = mock( ValueIndexReader.class );
         when( accessor.newValueReader() ).thenReturn( indexReader );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( index ) ).when( indexReader ).query( any(), any(), any(), any(), any() );
@@ -351,7 +351,7 @@ class IndexingServiceTest
         // don't wait for index to come ONLINE here since we're testing that it doesn't
         verify( populator, timeout( 20000 ) ).close( eq( true ), any() );
 
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             updater.process( add( 10, "foo" ) );
         }
@@ -361,7 +361,7 @@ class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater );
         order.verify( populator ).create();
         order.verify( populator ).close( eq( true ), any() );
-        order.verify( accessor ).newUpdater( eq( IndexUpdateMode.ONLINE ), any() );
+        order.verify( accessor ).newUpdater( eq( IndexUpdateMode.ONLINE ), any(), anyBoolean() );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -603,7 +603,7 @@ class IndexingServiceTest
         life.start();
         life.shutdown();
 
-        var e = assertThrows( IllegalStateException.class, () -> indexingService.applyUpdates( asSet( add( 1, "foo" ) ) ,NULL ) );
+        var e = assertThrows( IllegalStateException.class, () -> indexingService.applyUpdates( asSet( add( 1, "foo" ) ) ,NULL, false ) );
         assertThat( e.getMessage() ).startsWith( "Can't apply index updates" );
     }
 
@@ -611,7 +611,7 @@ class IndexingServiceTest
     void applicationOfUpdatesShouldFlush() throws Exception
     {
         // Given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) ).thenReturn( updater );
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         life.start();
 
@@ -620,7 +620,7 @@ class IndexingServiceTest
         verify( populator, timeout( 10000 ) ).close( eq( true ), any() );
 
         // When
-        indexing.applyUpdates( asList( add( 1, "foo" ), add( 2, "bar" ) ), NULL );
+        indexing.applyUpdates( asList( add( 1, "foo" ), add( 2, "bar" ) ), NULL, false );
 
         // Then
         InOrder inOrder = inOrder( updater );
@@ -647,11 +647,11 @@ class IndexingServiceTest
 
         IndexAccessor accessor1 = mock( IndexAccessor.class );
         IndexUpdater updater1 = mock( IndexUpdater.class );
-        when( accessor1.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater1 );
+        when( accessor1.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) ).thenReturn( updater1 );
 
         IndexAccessor accessor2 = mock( IndexAccessor.class );
         IndexUpdater updater2 = mock( IndexUpdater.class );
-        when( accessor2.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater2 );
+        when( accessor2.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) ).thenReturn( updater2 );
 
         when( indexProvider.getOnlineAccessor( eq( index1 ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor1 );
         when( indexProvider.getOnlineAccessor( eq( index2 ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor2 );
@@ -668,7 +668,7 @@ class IndexingServiceTest
         // When
         indexing.applyUpdates( asList(
                 add( 1, "foo", index1 ),
-                add( 2, "bar", index2 ) ), NULL );
+                add( 2, "bar", index2 ) ), NULL, false );
 
         // Then
         verify( updater1 ).close();
@@ -748,11 +748,11 @@ class IndexingServiceTest
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndexes( AUTH_DISABLED, index );
         reset( accessor );
-        indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL );
+        indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL, false );
         // and WHEN starting, i.e. completing recovery
         life.start();
 
-        verify( accessor ).newUpdater( eq( RECOVERY ), any( CursorContext.class ) );
+        verify( accessor ).newUpdater( eq( RECOVERY ), any( CursorContext.class ), anyBoolean() );
     }
 
     @Test
@@ -781,7 +781,7 @@ class IndexingServiceTest
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndexes( AUTH_DISABLED, index );
         reset( accessor );
-        indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL );
+        indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL, false );
         // and WHEN starting, i.e. completing recovery
         life.start();
 
@@ -1188,7 +1188,7 @@ class IndexingServiceTest
         IndexAccessor accessor = mock( IndexAccessor.class );
         IndexUpdater updater = mock( IndexUpdater.class );
         when( accessor.newValueReader() ).thenReturn( ValueIndexReader.EMPTY );
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) ).thenReturn( updater );
         when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ),
                 any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor );
 
@@ -1257,7 +1257,7 @@ class IndexingServiceTest
 
         // when
         IndexProxy proxy = indexingService.getIndexProxy( indexDescriptor );
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             updater.process( IndexEntryUpdate.add( 123, indexDescriptor, stringValue( "some value" ) ) );
         }
@@ -1489,7 +1489,7 @@ class IndexingServiceTest
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
         {
             return updater;
         }

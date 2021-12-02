@@ -151,9 +151,9 @@ class IndexStatisticsStoreTest
 
             store.checkpoint( cursorContext );
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            assertThat( cursorTracer.pins() ).isEqualTo( 43 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 43 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 35 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 36 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 36 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 28 );
             assertThat( cursorTracer.faults() ).isEqualTo( 8 );
         }
     }

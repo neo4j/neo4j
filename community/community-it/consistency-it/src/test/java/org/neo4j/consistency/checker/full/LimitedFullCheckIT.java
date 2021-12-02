@@ -79,7 +79,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
                 // Don't close this accessor. It will be done when shutting down db.
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
 
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                 {
                     // There is already another node (created in generateInitialData()) that has this value
                     updater.process( IndexEntryUpdate.add( nodeId, indexRule, values( indexRule ) ) );
@@ -163,7 +163,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
             // Don't close this accessor. It will be done when shutting down db.
             IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
 
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
             {
                 long idToRemove = relToRemoveFromIndex;
                 if ( indexRule.schema().entityType() == EntityType.NODE )

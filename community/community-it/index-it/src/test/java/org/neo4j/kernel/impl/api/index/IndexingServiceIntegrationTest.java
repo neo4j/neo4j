@@ -130,13 +130,13 @@ public class IndexingServiceIntegrationTest
             try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnIndexUpdatesApply" ) ) )
             {
                 Iterable<IndexEntryUpdate<IndexDescriptor>> updates = List.of( add( 1, indexDescriptor, longValue( 4 ) ) );
-                indexingService.applyUpdates( updates, cursorContext );
+                indexingService.applyUpdates( updates, cursorContext, false );
 
                 PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-                assertEquals( 5L, cursorTracer.pins() );
-                assertEquals( 5L, cursorTracer.unpins() );
+                assertEquals( 4L, cursorTracer.pins() );
+                assertEquals( 4L, cursorTracer.unpins() );
                 assertEquals( 2L, cursorTracer.hits() );
-                assertEquals( 3L, cursorTracer.faults() );
+                assertEquals( 2L, cursorTracer.faults() );
             }
         }
     }

@@ -57,9 +57,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
     {
-        return getDelegate().newUpdater( mode, cursorContext );
+        return getDelegate().newUpdater( mode, cursorContext, parallel );
     }
 
     @Override

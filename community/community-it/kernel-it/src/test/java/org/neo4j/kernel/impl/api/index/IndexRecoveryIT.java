@@ -78,6 +78,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -257,7 +258,8 @@ class IndexRecoveryIT
                 .thenReturn( populator );
         when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
-        when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
+        when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) )
+                .thenReturn( SwallowingIndexUpdater.INSTANCE );
         when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
@@ -452,7 +454,7 @@ class IndexRecoveryIT
         private final Set<IndexEntryUpdate<?>> batchedUpdates = new HashSet<>();
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext )
+        public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
         {
             return new CollectingIndexUpdater( updates ->
             {

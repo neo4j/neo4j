@@ -59,12 +59,20 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
     {
         assertTreeOpen();
         try
         {
-            return singleUpdater.initialize( index.writer( cursorContext ) );
+            if ( parallel )
+            {
+                TokenIndexUpdater parallelUpdater = new TokenIndexUpdater( 1_000, writeMonitor );
+                return parallelUpdater.initialize( index.parallelWriter( cursorContext ) );
+            }
+            else
+            {
+                return singleUpdater.initialize( index.writer( cursorContext ) );
+            }
         }
         catch ( IOException e )
         {

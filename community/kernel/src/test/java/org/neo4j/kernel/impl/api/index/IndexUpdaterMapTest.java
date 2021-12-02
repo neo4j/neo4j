@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,15 +62,15 @@ class IndexUpdaterMapTest
         schemaIndexDescriptor1 = forSchema( forLabel( 2, 3 ), PROVIDER_DESCRIPTOR ).withName( "a" ).materialise( 0 );
         indexUpdater1 = mock( IndexUpdater.class );
         when( indexProxy1.getDescriptor() ).thenReturn( schemaIndexDescriptor1 );
-        when( indexProxy1.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( indexUpdater1 );
+        when( indexProxy1.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
         schemaIndexDescriptor = forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withName( "b" ).materialise( 1 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( schemaIndexDescriptor );
-        when( indexProxy2.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( indexUpdater2 );
+        when( indexProxy2.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ), anyBoolean() ) ).thenReturn( indexUpdater2 );
 
-        updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE );
+        updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE, false );
     }
 
     @Test

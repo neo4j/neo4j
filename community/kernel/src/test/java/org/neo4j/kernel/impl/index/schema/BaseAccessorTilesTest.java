@@ -42,10 +42,10 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -248,7 +248,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
 
     void processAll( List<IndexEntryUpdate<IndexDescriptor>> updates ) throws IndexEntryConflictException
     {
-        try ( NativeIndexUpdater<KEY> updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( NativeIndexUpdater<KEY> updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {

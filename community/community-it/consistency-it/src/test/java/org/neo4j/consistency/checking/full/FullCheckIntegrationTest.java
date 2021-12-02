@@ -360,7 +360,7 @@ public class FullCheckIntegrationTest
 
         IndexDescriptor rtiDescriptor = findTokenIndex( fixture, EntityType.RELATIONSHIP );
         IndexAccessor accessor = fixture.indexAccessorLookup().apply( rtiDescriptor );
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.change( relationshipId, rtiDescriptor, new long[]{}, new long[]{relationshipTypeId} ) );
         }
@@ -420,7 +420,7 @@ public class FullCheckIntegrationTest
     {
         IndexDescriptor tokenIndex = findTokenIndex( fixture, EntityType.NODE );
         IndexAccessor accessor = fixture.indexAccessorLookup().apply( tokenIndex );
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             for ( EntityTokenUpdate entityTokenUpdate : entityTokenUpdates )
             {
@@ -587,7 +587,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.NODE )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                 {
                     for ( long nodeId : indexedNodes )
                     {
@@ -623,7 +623,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                 {
                     for ( long relId : indexedRelationships )
                     {
@@ -662,7 +662,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique() )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                 {
                     updater.process( IndexEntryUpdate.add( newNode, indexDescriptor, values( indexDescriptor ) ) );
                 }
@@ -694,7 +694,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP && !indexDescriptor.isUnique() )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                 {
                     updater.process( IndexEntryUpdate.add( newRel, indexDescriptor, values( indexDescriptor ) ) );
                 }
@@ -730,7 +730,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique() )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                 {
                     updater.process( IndexEntryUpdate.change( id.get(), indexDescriptor, values( indexDescriptor ), otherValues( indexDescriptor ) ) );
                 }
@@ -768,7 +768,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                 {
                     updater.process( IndexEntryUpdate.change( id.get(), indexDescriptor, values( indexDescriptor ), otherValues( indexDescriptor ) ) );
                 }
@@ -816,7 +816,7 @@ public class FullCheckIntegrationTest
                 // Don't close this accessor. It will be done when shutting down db.
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
 
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                 {
                     // There is already another node (created in generateInitialData()) that has this value
                     updater.process( IndexEntryUpdate.add( nodeId, indexRule, values( indexRule ) ) );

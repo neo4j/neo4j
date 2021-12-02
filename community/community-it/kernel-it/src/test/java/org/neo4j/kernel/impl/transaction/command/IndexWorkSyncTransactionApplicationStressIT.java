@@ -257,7 +257,7 @@ class IndexWorkSyncTransactionApplicationStressIT
         private final ConcurrentMap<Value,Set<Long>> index = new ConcurrentHashMap<>();
 
         @Override
-        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext )
+        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel )
         {
             updates.forEach( rawUpdate ->
             {

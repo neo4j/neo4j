@@ -57,7 +57,7 @@ public interface IndexUpdateListener
      * @param updates stream of updates to apply.
      * @param cursorContext underlying page cursor context
      */
-    void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext ) throws IOException, KernelException;
+    void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel ) throws IOException, KernelException;
 
     /**
      * Called before commit to ask whether or not the particular indexReference is valid.
@@ -84,7 +84,7 @@ public interface IndexUpdateListener
         }
 
         @Override
-        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext )
+        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel )
         {
         }
 

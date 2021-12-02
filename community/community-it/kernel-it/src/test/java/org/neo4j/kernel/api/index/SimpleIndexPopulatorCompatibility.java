@@ -190,7 +190,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
         {
             // WHEN
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
             {
                 List<ValueIndexEntryUpdate<?>> updates = updates( valueSet2 );
                 for ( ValueIndexEntryUpdate<?> update : updates )
@@ -274,7 +274,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
         {
             // WHEN
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
             {
                 for ( NodeAndValue nodeAndValue : toRemove )
                 {

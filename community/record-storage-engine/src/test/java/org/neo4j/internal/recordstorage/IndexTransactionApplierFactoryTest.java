@@ -61,7 +61,7 @@ class IndexTransactionApplierFactoryTest
     {
         // GIVEN
         OrderVerifyingUpdateListener indexUpdateListener = new OrderVerifyingUpdateListener( 10, 15, 20 );
-        IndexUpdatesWorkSync indexUpdatesSync = new IndexUpdatesWorkSync( indexUpdateListener );
+        IndexUpdatesWorkSync indexUpdatesSync = new IndexUpdatesWorkSync( indexUpdateListener, false );
         PropertyStore propertyStore = mock( PropertyStore.class );
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
         final SchemaCache mock = mock( SchemaCache.class );
@@ -160,23 +160,20 @@ class IndexTransactionApplierFactoryTest
         @Override
         public void createIndexes( Subject subject, IndexDescriptor... indexes )
         {
-
         }
 
         @Override
         public void activateIndex( IndexDescriptor index )
         {
-
         }
 
         @Override
         public void dropIndex( IndexDescriptor index )
         {
-
         }
 
         @Override
-        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext )
+        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel )
         {
             for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {
@@ -188,7 +185,6 @@ class IndexTransactionApplierFactoryTest
         @Override
         public void validateIndex( long indexReference )
         {
-
         }
 
         void done()

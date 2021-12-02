@@ -468,7 +468,7 @@ public class DatabaseIndexAccessorTest
 
     private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             for ( IndexEntryUpdate<?> update : nodePropertyUpdates )
             {

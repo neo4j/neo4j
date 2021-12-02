@@ -116,9 +116,9 @@ public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingI
                 return new IndexAccessor.Delegating( actualAccessor )
                 {
                     @Override
-                    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+                    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
                     {
-                        IndexUpdater actualUpdater = actualAccessor.newUpdater( mode, cursorContext );
+                        IndexUpdater actualUpdater = actualAccessor.newUpdater( mode, cursorContext, parallel );
                         return new DelegatingIndexUpdater( actualUpdater )
                         {
                             @Override

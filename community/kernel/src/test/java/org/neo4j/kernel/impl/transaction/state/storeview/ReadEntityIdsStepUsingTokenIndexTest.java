@@ -47,11 +47,11 @@ import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -123,7 +123,7 @@ class ReadEntityIdsStepUsingTokenIndexTest
 
     private void populateTokenIndex( TokenIndexAccessor indexAccessor, BitSet entityIds, long count ) throws Exception
     {
-        try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL ) )
+        try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL, false ) )
         {
             long id = 0;
             for ( int i = 0; i < count; i++ )
@@ -157,7 +157,7 @@ class ReadEntityIdsStepUsingTokenIndexTest
         {
             // Apply some changes right in front of this point
             int numIds = random.nextInt( 5, 50 );
-            try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL ) )
+            try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL, false ) )
             {
                 for ( int i = 0; i < numIds; i++ )
                 {

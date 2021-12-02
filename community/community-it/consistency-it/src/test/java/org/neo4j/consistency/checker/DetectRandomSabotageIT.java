@@ -875,7 +875,7 @@ public class DetectRandomSabotageIT
                             // For now just test the remove case for relationship indexes
                             add = false;
                         }
-                        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT, NULL ) )
+                        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT, NULL, false ) )
                         {
                             if ( add )
                             {
@@ -926,7 +926,7 @@ public class DetectRandomSabotageIT
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
                         Set<String> labelNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
                         int labelId;
-                        try ( IndexUpdater writer = nliProxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                        try ( IndexUpdater writer = nliProxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                         {
                             if ( nodeRecord.inUse() )
                             {
@@ -999,7 +999,7 @@ public class DetectRandomSabotageIT
                         int typeId;
                         long[] typesAfter;
                         String operation;
-                        try ( IndexUpdater writer = rtiProxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                        try ( IndexUpdater writer = rtiProxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
                         {
                             if ( relationshipRecord.inUse() )
                             {

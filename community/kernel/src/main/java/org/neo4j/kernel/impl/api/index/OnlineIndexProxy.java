@@ -85,9 +85,9 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext )
+    public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
     {
-        IndexUpdater actual = accessor.newUpdater( escalateModeIfNecessary( mode ), cursorContext );
+        IndexUpdater actual = accessor.newUpdater( escalateModeIfNecessary( mode ), cursorContext, parallel );
         return started ? updateCountingUpdater( actual ) : actual;
     }
 

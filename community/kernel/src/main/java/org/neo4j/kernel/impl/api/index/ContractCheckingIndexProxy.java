@@ -92,7 +92,7 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
     {
         if ( IndexUpdateMode.ONLINE == mode )
         {
@@ -100,7 +100,7 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
             {
                 try
                 {
-                    return new DelegatingIndexUpdater( super.newUpdater( mode, cursorContext ) )
+                    return new DelegatingIndexUpdater( super.newUpdater( mode, cursorContext, parallel ) )
                     {
                         @Override
                         public void close() throws IndexEntryConflictException
@@ -126,7 +126,7 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
         }
         else
         {
-            return super.newUpdater( mode, cursorContext );
+            return super.newUpdater( mode, cursorContext, parallel );
         }
     }
 

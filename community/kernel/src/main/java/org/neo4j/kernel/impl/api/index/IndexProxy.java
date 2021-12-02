@@ -64,7 +64,7 @@ public interface IndexProxy extends MinimalIndexAccessor
 {
     void start();
 
-    IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext );
+    IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel );
 
     /**
      * Close this index context.

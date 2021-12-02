@@ -204,7 +204,7 @@ class CheckerTestBase
         {
             throw new RuntimeException( e );
         }
-        return indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL );
+        return indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false );
     }
 
     void initialData( KernelTransaction tx ) throws KernelException

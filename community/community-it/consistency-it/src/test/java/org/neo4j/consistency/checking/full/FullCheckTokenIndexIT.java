@@ -178,7 +178,7 @@ public class FullCheckTokenIndexIT
         IndexAccessors.IndexAccessorLookup indexAccessorLookup = new LookupAccessorsFromRunningDb( indexingService );
         IndexAccessor accessor = indexAccessorLookup.apply( index );
 
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.change( 100, index, new long[0], new long[]{1} ) );
         }

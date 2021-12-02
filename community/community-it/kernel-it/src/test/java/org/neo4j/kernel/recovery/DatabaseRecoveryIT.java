@@ -887,9 +887,9 @@ class DatabaseRecoveryIT
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext, boolean parallel )
         {
-            return wrap( super.newUpdater( mode, cursorContext ) );
+            return wrap( super.newUpdater( mode, cursorContext, parallel ) );
         }
 
         private IndexUpdater wrap( IndexUpdater actual )

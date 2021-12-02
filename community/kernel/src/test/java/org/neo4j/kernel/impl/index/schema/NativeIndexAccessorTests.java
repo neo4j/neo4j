@@ -109,7 +109,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     void processMustThrowAfterClose() throws Exception
     {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL );
+        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false );
         updater.close();
 
         assertThrows( IllegalStateException.class, () -> updater.process( simpleUpdate() ) );
@@ -120,7 +120,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
         {
             // when
             processAll( updater, updates );
@@ -357,7 +357,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         // when
         for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
+            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
             {
                 updater.process( update );
             }
@@ -651,7 +651,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     final void processAll( ValueIndexEntryUpdate<IndexDescriptor>... updates )
             throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
         {
             for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
             {

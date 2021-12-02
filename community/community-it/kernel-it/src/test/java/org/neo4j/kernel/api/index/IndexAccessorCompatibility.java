@@ -254,7 +254,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
      */
     void updateAndCommit( Collection<ValueIndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             for ( ValueIndexEntryUpdate<?> update : updates )
             {

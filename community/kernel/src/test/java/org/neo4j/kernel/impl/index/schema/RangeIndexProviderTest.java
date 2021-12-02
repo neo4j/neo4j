@@ -73,7 +73,7 @@ class RangeIndexProviderTest extends IndexProviderTests
         // when
         IndexDescriptor descriptor = descriptorUnique();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig(), tokenNameLookup );
-              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.add( 1, descriptor, someValue ) );
 

@@ -62,6 +62,7 @@ class TokenIndexWriteMonitorIT
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( GraphDatabaseInternalSettings.token_scan_write_log_enabled, true );
+        builder.setConfig( GraphDatabaseInternalSettings.parallel_index_updates_apply, false );
     }
 
     @BeforeEach

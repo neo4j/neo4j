@@ -37,10 +37,10 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Integer.max;
@@ -129,9 +129,9 @@ class TokenIndexUpdaterTest
 
         //Then
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isEqualTo( 5 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 4 );
+        assertThat( cursorTracer.pins() ).isEqualTo( 4 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
+        assertThat( cursorTracer.hits() ).isEqualTo( 3 );
         assertThat( cursorTracer.faults() ).isEqualTo( 1 );
     }
 
