@@ -396,18 +396,6 @@ public class DataFactories
             {
                 Pair<String, String> split = splitTypeSpecAndOptionalParameter(typeSpec);
                 typeSpec = split.first();
-                String optionalParameterString = split.other();
-                if ( optionalParameterString != null )
-                {
-                    if ( Extractors.PointExtractor.NAME.equals( typeSpec ) )
-                    {
-                        optionalParameter = PointValue.parseHeaderInformation( optionalParameterString );
-                    }
-                    else if ( Extractors.TimeExtractor.NAME.equals( typeSpec ) || Extractors.DateTimeExtractor.NAME.equals( typeSpec ) )
-                    {
-                        optionalParameter = TemporalValue.parseHeaderInformation( optionalParameterString );
-                    }
-                }
                 if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
                 {
                     type = Type.ID;
@@ -426,6 +414,7 @@ public class DataFactories
                 {
                     type = Type.PROPERTY;
                     extractor = propertyExtractor( sourceDescription, name, typeSpec, extractors, monitor );
+                    optionalParameter = parseOptionalParameter( extractor, split.other() );
                 }
             }
             return new Header.Entry( name, type, group, extractor, optionalParameter );
@@ -456,18 +445,6 @@ public class DataFactories
             {
                 Pair<String, String> split = splitTypeSpecAndOptionalParameter( typeSpec );
                 typeSpec = split.first();
-                String optionalParameterString = split.other();
-                if ( optionalParameterString != null )
-                {
-                    if ( Extractors.PointExtractor.NAME.equals( typeSpec ) )
-                    {
-                        optionalParameter = PointValue.parseHeaderInformation( optionalParameterString );
-                    }
-                    else if ( Extractors.TimeExtractor.NAME.equals( typeSpec ) || Extractors.DateTimeExtractor.NAME.equals( typeSpec ) )
-                    {
-                        optionalParameter = TemporalValue.parseHeaderInformation( optionalParameterString );
-                    }
-                }
 
                 if ( typeSpec.equalsIgnoreCase( Type.START_ID.name() ) )
                 {
@@ -492,10 +469,28 @@ public class DataFactories
                 {
                     type = Type.PROPERTY;
                     extractor = propertyExtractor( sourceDescription, name, typeSpec, extractors, monitor );
+                    optionalParameter = parseOptionalParameter( extractor, split.other() );
                 }
             }
             return new Header.Entry( name, type, group, extractor, optionalParameter );
         }
+    }
+
+    private static CSVHeaderInformation parseOptionalParameter( Extractor<?> extractor, String optionalParameterString )
+    {
+        if ( optionalParameterString != null )
+        {
+            if ( extractor instanceof Extractors.PointExtractor || extractor instanceof Extractors.PointArrayExtractor )
+            {
+                return PointValue.parseHeaderInformation( optionalParameterString );
+            }
+            else if ( extractor instanceof Extractors.TimeExtractor || extractor instanceof Extractors.DateTimeExtractor
+                      || extractor instanceof Extractors.TimeArrayExtractor || extractor instanceof Extractors.DateTimeArrayExtractor )
+            {
+                return TemporalValue.parseHeaderInformation( optionalParameterString );
+            }
+        }
+        return null;
     }
 
     private static Extractor<?> parsePropertyType( String typeSpec, Extractors extractors )

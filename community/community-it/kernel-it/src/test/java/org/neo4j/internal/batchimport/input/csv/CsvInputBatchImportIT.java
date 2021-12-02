@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,6 +101,7 @@ import org.neo4j.values.storable.PointValue;
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
@@ -191,12 +193,15 @@ class CsvInputBatchImportIT
             node.property( "date", LocalDate.of( 2018, i % 12 + 1, i % 28 + 1 ) );
             node.property( "time", OffsetTime.of( 1, i % 60, 0, 0, ZoneOffset.ofHours( 9 ) ) );
             node.property( "dateTime",
-                    ZonedDateTime.of( 2011, 9, 11, 8, i % 60, 0, 0, ZoneId.of( "Europe/Stockholm" ) ) );
+                           ZonedDateTime.of( 2011, 9, 11, 8, i % 60, 0, 0, ZoneId.of( "Europe/Stockholm" ) ) );
             node.property( "dateTime2",
-                    LocalDateTime.of( 2011, 9, 11, 8, i % 60, 0, 0 ) ); // No zone specified
+                           LocalDateTime.of( 2011, 9, 11, 8, i % 60, 0, 0 ) ); // No zone specified
             node.property( "localTime", LocalTime.of( 1, i % 60, 0 ) );
             node.property( "localDateTime", LocalDateTime.of( 2011, 9, 11, 8, i % 60 ) );
             node.property( "duration", Period.of( 2, -3, i % 30 ) );
+            node.property( "floatArray", new float[]{1.0f, 2.0f, 3.0f} );
+            node.property( "dateArray", new LocalDate[]{LocalDate.of( 2018, i % 12 + 1, i % 28 + 1 )} );
+            node.property( "pointArray", "\" { x : -8, y : " + i + " } \"" );
             node.labels( randomLabels( random.random() ) );
             nodes.add( node );
         }
@@ -242,7 +247,7 @@ class CsvInputBatchImportIT
         {
             // Header
             println( writer, "id:ID,name,pointA:Point{crs:WGS-84},pointB:Point,date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +
-                             "localDateTime:LocalDateTime,duration:Duration,some-labels:LABEL" );
+                             "localDateTime:LocalDateTime,duration:Duration,floatArray:float[],dateArray:date[],pointArray:point[],some-labels:LABEL" );
 
             // Data
             for ( InputEntity node : nodeData )
@@ -251,7 +256,7 @@ class CsvInputBatchImportIT
                 StringBuilder sb = new StringBuilder().append( node.id() ).append( ',' );
                 for ( int i = 0; i < node.propertyCount(); i++ )
                 {
-                    sb.append( node.propertyValue( i ) ).append( ',' );
+                    sb.append( serializePropertyValue( node.propertyValue( i ) ) ).append( ',' );
                 }
                 if ( csvLabels != null && !csvLabels.isEmpty() )
                 {
@@ -261,6 +266,19 @@ class CsvInputBatchImportIT
             }
         }
         return file;
+    }
+
+    private String serializePropertyValue( Object value )
+    {
+        if ( value.getClass().isArray() )
+        {
+            if ( value.getClass().getComponentType() == Float.TYPE )
+            {
+                return StringUtils.join( (float[]) value, ';' );
+            }
+            return StringUtils.join( (Object[]) value, ';' );
+        }
+        return value.toString();
     }
 
     private String csvLabels( String[] labels )
@@ -526,6 +544,14 @@ class CsvInputBatchImportIT
                         }
                     };
                 }
+                else if ( expectedValue instanceof float[] )
+                {
+                    verify = actualValue -> assertArrayEquals( (float[]) expectedValue, (float[]) actualValue );
+                }
+                else if ( expectedValue.getClass().isArray() )
+                {
+                    verify = actualValue -> assertArrayEquals( (Object[]) expectedValue, (Object[]) actualValue );
+                }
                 else
                 {
                     verify = actualValue -> assertEquals( expectedValue, actualValue );
@@ -560,6 +586,10 @@ class CsvInputBatchImportIT
                 assertEquals( CoordinateReferenceSystem.Cartesian.getName(), v.getCoordinateReferenceSystem().getName(), message );
             };
             propertyVerifiers.put( "pointB", verifyPointB );
+
+            // Special verifier for pointArray property
+            Consumer verifyPointArray = actualValue -> verifyPointB.accept( ((PointValue[]) actualValue)[0] );
+            propertyVerifiers.put( "pointArray", verifyPointArray );
 
             expectedNodePropertyVerifiers.put( nameOf( node ), propertyVerifiers );
 
