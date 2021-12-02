@@ -48,7 +48,7 @@ public enum DbmsRuntimeVersion implements ComponentVersion
      */
     V5_0( 6, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_50, KernelVersion.V5_0 );
 
-    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V5_0;
+    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V4_4;
 
     DbmsRuntimeVersion( int version, String componentName, String description, KernelVersion kernelVersion )
     {
