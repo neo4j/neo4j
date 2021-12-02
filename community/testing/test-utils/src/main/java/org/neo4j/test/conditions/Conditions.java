@@ -48,6 +48,11 @@ public final class Conditions
         return new Condition<>( v -> v.compareTo( value ) > 0, "Should be greater than " + value );
     }
 
+    public static <T extends Comparable<T>> Condition<T> greaterThanOrEqualTo( T value )
+    {
+        return new Condition<>( v -> v.compareTo( value ) >= 0, "Should be greater than or equal to " + value );
+    }
+
     public static <T extends Collection<?>> Condition<T> sizeCondition( int expectedSize )
     {
         return new Condition<>( v -> v.size() == expectedSize, "Size should be equal to " + expectedSize );
