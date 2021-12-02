@@ -40,10 +40,11 @@ public enum KernelVersion
     // has no command version of their own it relies on a bump of the parser set version to distinguish between versions unfortunately.
     // Also introduces token index and relationship property index features.
     V4_3_D4( (byte) 3 ),
-    V4_4( (byte) 4 ); // 4.4. Introduces RANGE, POINT and TEXT index types.
+    V4_4( (byte) 4 ), // 4.4. Introduces RANGE, POINT and TEXT index types.
+    V5_0( (byte) 5 ); // 5.0.
 
     public static final KernelVersion EARLIEST = V4_2;
-    public static final KernelVersion LATEST = V4_4;
+    public static final KernelVersion LATEST = V5_0;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED = V4_4;
     private static final ImmutableByteObjectMap<KernelVersion> versionMap =

@@ -41,9 +41,14 @@ public enum DbmsRuntimeVersion implements ComponentVersion
     /**
      * Range, Point and Text index types.
      */
-    V4_4( 5, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_44, KernelVersion.V4_4 );
+    V4_4( 5, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_44, KernelVersion.V4_4 ),
 
-    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V4_4;
+    /**
+     * Introduced new transaction log version
+     */
+    V5_0( 6, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_50, KernelVersion.V5_0 );
+
+    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V5_0;
 
     DbmsRuntimeVersion( int version, String componentName, String description, KernelVersion kernelVersion )
     {

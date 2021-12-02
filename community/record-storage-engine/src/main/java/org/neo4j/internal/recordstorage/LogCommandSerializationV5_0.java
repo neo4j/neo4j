@@ -17,19 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry;
+package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.KernelVersion;
 
-public class LogEntryParserSetV4_4 extends LogEntryParserSetV4_3
+class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
 {
-    LogEntryParserSetV4_4()
-    {
-        super( KernelVersion.V4_4 );
-    }
+    static final LogCommandSerializationV5_0 INSTANCE = new LogCommandSerializationV5_0();
 
-    public LogEntryParserSetV4_4( KernelVersion version )
+    @Override
+    KernelVersion version()
     {
-        super( version );
+        return KernelVersion.V5_0;
     }
 }
