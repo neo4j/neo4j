@@ -955,6 +955,7 @@ public class Operations implements Write, SchemaWrite
         if ( changedPropertyKeyIdsSet != null )
         {
             Labels labelsAfterSet = Labels.from( labelsAfter );
+            MutableIntSet existingPropertyKeyIdsBeforeChange = IntSets.mutable.of( existingPropertyKeyIds );
             for ( int key : changedPropertyKeyIds )
             {
                 Value value = properties.get( key );
@@ -967,7 +968,7 @@ public class Operations implements Write, SchemaWrite
                     boolean hasRelatedSchema = storageReader.hasRelatedSchema( labelsAfter, key, NODE );
                     if ( hasRelatedSchema )
                     {
-                        updater.onPropertyAdd( nodeCursor, propertyCursor, labelsAfter, key, afterPropertyKeyIds, value );
+                        updater.onPropertyAdd( nodeCursor, propertyCursor, labelsAfter, key, existingPropertyKeyIdsBeforeChange.toSortedArray(), value );
                     }
                 }
                 else // since it's in the changedPropertyKeyIds array we know that it's an actually changed value
@@ -978,9 +979,11 @@ public class Operations implements Write, SchemaWrite
                     boolean hasRelatedSchema = storageReader.hasRelatedSchema( labelsAfter, key, NODE );
                     if ( hasRelatedSchema )
                     {
-                        updater.onPropertyChange( nodeCursor, propertyCursor, labelsAfter, key, afterPropertyKeyIds, existingValue, value );
+                        updater.onPropertyChange( nodeCursor, propertyCursor, labelsAfter, key, existingPropertyKeyIdsBeforeChange.toSortedArray(),
+                                existingValue, value );
                     }
                 }
+                existingPropertyKeyIdsBeforeChange.add( key );
             }
         }
     }
@@ -1063,6 +1066,7 @@ public class Operations implements Write, SchemaWrite
         // add/change properties
         if ( hasPropertyAdditions )
         {
+            MutableIntSet existingPropertyKeyIdsBeforeChange = IntSets.mutable.of( existingPropertyKeyIds );
             for ( IntObjectPair<Value> property : propertiesKeyValueView )
             {
                 int key = property.getOne();
@@ -1079,7 +1083,7 @@ public class Operations implements Write, SchemaWrite
                         boolean hasRelatedSchema = storageReader.hasRelatedSchema( new long[]{type}, key, RELATIONSHIP );
                         if ( hasRelatedSchema )
                         {
-                            updater.onPropertyAdd( relationshipCursor, propertyCursor, type, key, afterPropertyKeyIds, value );
+                            updater.onPropertyAdd( relationshipCursor, propertyCursor, type, key, existingPropertyKeyIdsBeforeChange.toSortedArray(), value );
                         }
                     }
                     else if ( propertyHasChanged( existingValue, value ) )
@@ -1091,9 +1095,11 @@ public class Operations implements Write, SchemaWrite
                         boolean hasRelatedSchema = storageReader.hasRelatedSchema( new long[]{type}, key, RELATIONSHIP );
                         if ( hasRelatedSchema )
                         {
-                            updater.onPropertyChange( relationshipCursor, propertyCursor, type, key, afterPropertyKeyIds, existingValue, value );
+                            updater.onPropertyChange( relationshipCursor, propertyCursor, type, key, existingPropertyKeyIdsBeforeChange.toSortedArray(),
+                                    existingValue, value );
                         }
                     }
+                    existingPropertyKeyIdsBeforeChange.add( key );
                 }
             }
         }
