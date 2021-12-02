@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -127,7 +126,8 @@ public class SchemaCalculator
                 propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertyNameMapping.get( propId );
-                    ValueTypeListHelper valueTypeListHelper = relMappings.relationshipTypeIdANDPropertyTypeIdToValueType.get( Pair.of( typeId, propId ) );
+                    ValueTypeListHelper valueTypeListHelper =
+                            relMappings.relationshipTypeIdANDPropertyTypeIdToValueType.get( new RelationshipTypePropertyKey( typeId, propId ) );
                     if ( relMappings.nullableRelationshipTypes.contains( typeId ) )
                     {
                         results.add( new RelationshipPropertySchemaInfoResult( finalName, propName, valueTypeListHelper.getCypherTypesList(),
@@ -175,7 +175,8 @@ public class SchemaCalculator
                 propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertyNameMapping.get( propId );
-                    ValueTypeListHelper valueTypeListHelper = nodeMappings.labelSetANDNodePropertyKeyIdToValueType.get( Pair.of( labelSet, propId ) );
+                    ValueTypeListHelper valueTypeListHelper =
+                            nodeMappings.labelSetANDNodePropertyKeyIdToValueType.get( new LabelSetPropertyKey( labelSet, propId ) );
                     if ( nodeMappings.nullableLabelSets.contains( labelSet ) )
                     {
                         results.add( new NodePropertySchemaInfoResult( labels, labelNames, propName, valueTypeListHelper.getCypherTypesList(), false ) );
@@ -208,7 +209,7 @@ public class SchemaCalculator
                     int propertyKey = propertyCursor.propertyKey();
 
                     Value currentValue = propertyCursor.propertyValue();
-                    Pair<Integer,Integer> key = Pair.of( typeId, propertyKey );
+                    var key = new RelationshipTypePropertyKey( typeId, propertyKey );
                     updateValueTypeInMapping( currentValue, key, relMappings.relationshipTypeIdANDPropertyTypeIdToValueType );
 
                     propertyIds.add( propertyKey );
@@ -237,7 +238,7 @@ public class SchemaCalculator
 
                     propertyIds.addAll( oldPropertyKeySet );
                     propertyIds.forEach( id -> {
-                        Pair<Integer,Integer> key = Pair.of( typeId, id );
+                        var key = new RelationshipTypePropertyKey( typeId, id );
                         relMappings.relationshipTypeIdANDPropertyTypeIdToValueType.get( key ).setNullable();
                     } );
 
@@ -266,7 +267,7 @@ public class SchemaCalculator
                 {
                     Value currentValue = propertyCursor.propertyValue();
                     int propertyKeyId = propertyCursor.propertyKey();
-                    Pair<SortedLabels,Integer> key = Pair.of( labels, propertyKeyId );
+                    var key = new LabelSetPropertyKey( labels, propertyKeyId );
                     updateValueTypeInMapping( currentValue, key, nodeMappings.labelSetANDNodePropertyKeyIdToValueType );
 
                     propertyIds.add( propertyKeyId );
@@ -295,7 +296,7 @@ public class SchemaCalculator
 
                     propertyIds.addAll( oldPropertyKeySet );
                     propertyIds.forEach( id -> {
-                        Pair<SortedLabels,Integer> key = Pair.of( labels, id );
+                        var key = new LabelSetPropertyKey( labels, id );
                         nodeMappings.labelSetANDNodePropertyKeyIdToValueType.get( key ).setNullable();
                     } );
 
@@ -307,7 +308,7 @@ public class SchemaCalculator
         }
     }
 
-    private static <X, Y> void updateValueTypeInMapping( Value currentValue, Pair<X,Y> key, Map<Pair<X,Y>,ValueTypeListHelper> mappingToUpdate )
+    private static <T> void updateValueTypeInMapping( Value currentValue, T key, Map<T,ValueTypeListHelper> mappingToUpdate )
     {
         ValueTypeListHelper helper = mappingToUpdate.get( key );
         if ( helper == null )
@@ -372,7 +373,7 @@ public class SchemaCalculator
     private static class NodeMappings
     {
         final Map<SortedLabels,MutableIntSet> labelSetToPropertyKeys;
-        final Map<Pair<SortedLabels,Integer>,ValueTypeListHelper> labelSetANDNodePropertyKeyIdToValueType;
+        final Map<LabelSetPropertyKey,ValueTypeListHelper> labelSetANDNodePropertyKeyIdToValueType;
         final Set<SortedLabels> nullableLabelSets; // used for label combinations without properties -> all properties are viewed as nullable
         final Map<Integer,String> labelIdToLabelName;
 
@@ -385,6 +386,10 @@ public class SchemaCalculator
         }
     }
 
+    private record LabelSetPropertyKey(SortedLabels sortedLabels, int proprtyId)
+    {
+    }
+
     /*
       All mappings needed to describe Rels except for property infos
      */
@@ -392,7 +397,7 @@ public class SchemaCalculator
     {
         final Map<Integer,String> relationshipTypIdToRelationshipName;
         final Map<Integer,MutableIntSet> relationshipTypeIdToPropertyKeys;
-        final Map<Pair<Integer,Integer>,ValueTypeListHelper> relationshipTypeIdANDPropertyTypeIdToValueType;
+        final Map<RelationshipTypePropertyKey,ValueTypeListHelper> relationshipTypeIdANDPropertyTypeIdToValueType;
         final Set<Integer> nullableRelationshipTypes; // used for types without properties -> all properties are viewed as nullable
 
         RelationshipMappings( int relationshipTypeCount )
@@ -402,5 +407,9 @@ public class SchemaCalculator
             relationshipTypeIdANDPropertyTypeIdToValueType = new HashMap<>();
             nullableRelationshipTypes = new HashSet<>();
         }
+    }
+
+    private record RelationshipTypePropertyKey(int relationshipType, int propertyId)
+    {
     }
 }

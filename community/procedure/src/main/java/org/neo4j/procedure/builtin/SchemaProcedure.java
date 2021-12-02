@@ -74,7 +74,7 @@ public class SchemaProcedure
             TokenRead tokenRead = kernelTransaction.tokenRead();
             SchemaRead schemaRead = kernelTransaction.schemaRead();
 
-            List<Pair<String,Integer>> labelNamesAndIds = new ArrayList<>();
+            List<LabelNameId> labelNamesAndIds = new ArrayList<>();
 
             // Get all labels that are in use as seen by a super user
             List<Label> labelsInUse = stream( LABELS.inUse( kernelTransaction ) ).collect( Collectors.toList() );
@@ -87,7 +87,7 @@ public class SchemaProcedure
                 // Filter out labels that are denied or aren't explicitly allowed
                 if ( mode.allowsTraverseNode( labelId ) )
                 {
-                    labelNamesAndIds.add( Pair.of( labelName, labelId ) );
+                    labelNamesAndIds.add( new LabelNameId( labelName, labelId ) );
 
                     Map<String,Object> properties = new HashMap<>();
 
@@ -131,10 +131,10 @@ public class SchemaProcedure
                     List<VirtualNodeHack> startNodes = new LinkedList<>();
                     List<VirtualNodeHack> endNodes = new LinkedList<>();
 
-                    for ( Pair<String, Integer> labelNameAndId: labelNamesAndIds )
+                    for ( LabelNameId labelNameAndId: labelNamesAndIds )
                     {
-                        String labelName = labelNameAndId.first();
-                        int labelId = labelNameAndId.other();
+                        String labelName = labelNameAndId.name();
+                        int labelId = labelNameAndId.id();
 
                         Map<String,Object> properties = new HashMap<>();
                         VirtualNodeHack node = getOrCreateLabel( labelName, properties, nodes );
@@ -161,6 +161,10 @@ public class SchemaProcedure
 
         }
         return getGraphResult( nodes, relationships );
+    }
+
+    private record LabelNameId( String name, int id )
+    {
     }
 
     public static class GraphResult
