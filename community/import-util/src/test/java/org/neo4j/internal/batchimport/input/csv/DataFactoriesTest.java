@@ -34,6 +34,10 @@ import org.neo4j.internal.batchimport.input.DuplicateHeaderException;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.InputException;
+import org.neo4j.values.storable.CSVHeaderInformation;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TimeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -56,7 +60,7 @@ public class DataFactoriesTest
     public void shouldParseDefaultNodeFileHeaderCorrectly() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = seeker( "ID:ID,label-one:label,also-labels:LABEL,name,age:long" );
+        CharSeeker seeker = seeker( "ID:ID,label-one:label,also-labels:LABEL,name,age:long,location:Point{crs:WGS-84}" );
         IdType idType = IdType.STRING;
         Extractors extractors = new Extractors( ',' );
 
@@ -69,7 +73,32 @@ public class DataFactoriesTest
                 entry( "label-one", Type.LABEL, extractors.stringArray() ),
                 entry( "also-labels", Type.LABEL, extractors.stringArray() ),
                 entry( "name", Type.PROPERTY, extractors.string() ),
-                entry( "age", Type.PROPERTY, extractors.long_() ) ), header.entries() );
+                entry( "age", Type.PROPERTY, extractors.long_() ),
+                entry( "location", Type.PROPERTY, extractors.point(), PointValue.parseHeaderInformation( "{crs:WGS-84}" ) )
+        ), header.entries() );
+        seeker.close();
+    }
+
+    @Test
+    public void shouldParseNodeArrayTypesHeaderCorrectly() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = seeker( "ID:ID,longArray:long[],pointArray:Point[]{crs:WGS-84},timeArray:time[]{timezone:+02:00}," +
+                                    "dateTimeArray:datetime[]{timezone:+02:00}" );
+        IdType idType = IdType.STRING;
+        Extractors extractors = new Extractors( ',' );
+
+        // WHEN
+        Header header = defaultFormatNodeFileHeader().create( seeker, COMMAS, idType, groups );
+
+        // THEN
+        assertArrayEquals( array(
+                entry( "ID", Type.ID, CsvInput.idExtractor( idType, extractors ) ),
+                entry( "longArray", Type.PROPERTY, extractors.longArray() ),
+                entry( "pointArray", Type.PROPERTY, extractors.pointArray(), PointValue.parseHeaderInformation( "{crs:WGS-84}" ) ),
+                entry( "timeArray", Type.PROPERTY, extractors.timeArray(), TimeValue.parseHeaderInformation( "{timezone:+02:00}" ) ),
+                entry( "dateTimeArray", Type.PROPERTY, extractors.dateTimeArray(), DateTimeValue.parseHeaderInformation( "{timezone:+02:00}" ) )
+                           ), header.entries() );
         seeker.close();
     }
 
@@ -91,6 +120,31 @@ public class DataFactoriesTest
                 entry( "type", Type.TYPE, extractors.string() ),
                 entry( "date", Type.PROPERTY, extractors.long_() ),
                 entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );
+        seeker.close();
+    }
+
+    @Test
+    public void shouldParsetRelationshipArrayTypesFileHeaderCorrectly() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = seeker( ":START_ID\t:END_ID\ttype:TYPE\tlongArray:long[]\tpointArray:Point[]{crs:WGS-84}" +
+                                    "\ttimeArray:time[]{timezone:+02:00}\tdateTimeArray:datetime[]{timezone:+02:00}" );
+        IdType idType = IdType.ACTUAL;
+        Extractors extractors = new Extractors( '\t' );
+
+        // WHEN
+        Header header = defaultFormatRelationshipFileHeader().create( seeker, TABS, idType, groups );
+
+        // THEN
+        assertArrayEquals( array(
+                entry( null, Type.START_ID, CsvInput.idExtractor( idType, extractors ) ),
+                entry( null, Type.END_ID, CsvInput.idExtractor( idType, extractors ) ),
+                entry( "type", Type.TYPE, extractors.string() ),
+                entry( "longArray", Type.PROPERTY, extractors.longArray() ),
+                entry( "pointArray", Type.PROPERTY, extractors.pointArray(), PointValue.parseHeaderInformation( "{crs:WGS-84}" ) ),
+                entry( "timeArray", Type.PROPERTY, extractors.timeArray(), TimeValue.parseHeaderInformation( "{timezone:+02:00}" ) ),
+                entry( "dateTimeArray", Type.PROPERTY, extractors.dateTimeArray(), DateTimeValue.parseHeaderInformation( "{timezone:+02:00}" ) )
+        ), header.entries() );
         seeker.close();
     }
 
@@ -240,6 +294,10 @@ public class DataFactoriesTest
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )
     {
         return entry( name, type, null, extractor );
+    }
+    private Header.Entry entry( String name, Type type, Extractor<?> extractor, CSVHeaderInformation optionalParameter )
+    {
+        return new Header.Entry( name, type, groups.getOrCreate( null ), extractor, optionalParameter );
     }
 
     private Header.Entry entry( String name, Type type, String groupName, Extractor<?> extractor )

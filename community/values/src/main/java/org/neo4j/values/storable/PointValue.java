@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -707,6 +708,29 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
             {
                 throw new InvalidArgumentException( String.format( "Duplicate field '%s' is not allowed.", fieldName ) );
             }
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            PointBuilder that = (PointBuilder) o;
+            return srid == that.srid && Objects.equals( crs, that.crs ) && Objects.equals( x, that.x ) && Objects.equals( y, that.y ) &&
+                   Objects.equals( z, that.z ) && Objects.equals( longitude, that.longitude ) &&
+                   Objects.equals( latitude, that.latitude ) && Objects.equals( height, that.height );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( crs, x, y, z, longitude, latitude, height, srid );
         }
     }
 }

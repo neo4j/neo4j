@@ -410,20 +410,8 @@ public class DataFactories
             }
             else
             {
-                var specification = splitTypeSpecAndOptionalParameter(typeSpec);
-                typeSpec = specification.typeSpec();
-                String optionalParameterString = specification.optionalParameter();
-                if ( optionalParameterString != null )
-                {
-                    if ( Extractors.PointExtractor.NAME.equals( typeSpec ) )
-                    {
-                        optionalParameter = PointValue.parseHeaderInformation( optionalParameterString );
-                    }
-                    else if ( Extractors.TimeExtractor.NAME.equals( typeSpec ) || Extractors.DateTimeExtractor.NAME.equals( typeSpec ) )
-                    {
-                        optionalParameter = TemporalValue.parseHeaderInformation( optionalParameterString );
-                    }
-                }
+                var split = splitTypeSpecAndOptionalParameter(typeSpec);
+                typeSpec = split.typeSpec();
                 if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
                 {
                     type = Type.ID;
@@ -442,6 +430,7 @@ public class DataFactories
                 {
                     type = Type.PROPERTY;
                     extractor = propertyExtractor( sourceDescription, name, typeSpec, extractors, monitor );
+                    optionalParameter = parseOptionalParameter( extractor, split.optionalParameter() );
                 }
             }
             return new Header.Entry( name, type, group, extractor, optionalParameter );
@@ -470,20 +459,8 @@ public class DataFactories
             }
             else
             {
-                var specification = splitTypeSpecAndOptionalParameter( typeSpec );
-                typeSpec = specification.typeSpec();
-                String optionalParameterString = specification.optionalParameter();
-                if ( optionalParameterString != null )
-                {
-                    if ( Extractors.PointExtractor.NAME.equals( typeSpec ) )
-                    {
-                        optionalParameter = PointValue.parseHeaderInformation( optionalParameterString );
-                    }
-                    else if ( Extractors.TimeExtractor.NAME.equals( typeSpec ) || Extractors.DateTimeExtractor.NAME.equals( typeSpec ) )
-                    {
-                        optionalParameter = TemporalValue.parseHeaderInformation( optionalParameterString );
-                    }
-                }
+                var split = splitTypeSpecAndOptionalParameter( typeSpec );
+                typeSpec = split.typeSpec();
 
                 if ( typeSpec.equalsIgnoreCase( Type.START_ID.name() ) )
                 {
@@ -508,10 +485,28 @@ public class DataFactories
                 {
                     type = Type.PROPERTY;
                     extractor = propertyExtractor( sourceDescription, name, typeSpec, extractors, monitor );
+                    optionalParameter = parseOptionalParameter( extractor, split.optionalParameter() );
                 }
             }
             return new Header.Entry( name, type, group, extractor, optionalParameter );
         }
+    }
+
+    private static CSVHeaderInformation parseOptionalParameter( Extractor<?> extractor, String optionalParameterString )
+    {
+        if ( optionalParameterString != null )
+        {
+            if ( extractor instanceof Extractors.PointExtractor || extractor instanceof Extractors.PointArrayExtractor )
+            {
+                return PointValue.parseHeaderInformation( optionalParameterString );
+            }
+            else if ( extractor instanceof Extractors.TimeExtractor || extractor instanceof Extractors.DateTimeExtractor
+                      || extractor instanceof Extractors.TimeArrayExtractor || extractor instanceof Extractors.DateTimeArrayExtractor )
+            {
+                return TemporalValue.parseHeaderInformation( optionalParameterString );
+            }
+        }
+        return null;
     }
 
     private static Extractor<?> parsePropertyType( String typeSpec, Extractors extractors )
