@@ -39,7 +39,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
-import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
@@ -214,7 +213,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         {
             throw wrongLocksArgument( lockFlags );
         }
-        pageCacheTracer.openCursor();
 
         cursor.rewind();
         if ( ( pf_flags & PF_READ_AHEAD ) == PF_READ_AHEAD && ( pf_flags & PF_NO_FAULT ) != PF_NO_FAULT )
@@ -598,53 +596,50 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             long[] pages, long[] bufferAddresses, long[] flushStamps, int[] bufferLengths, int numberOfBuffers, int pagesToFlush, int pagesMerged,
             MajorFlushEvent flushEvent, boolean forClosing ) throws IOException
     {
-        FlushEvent flush = null;
-        boolean successful = false;
-        try
+        try ( var flush = flushEvent.beginFlush( pages, swapper, this, pagesToFlush, pagesMerged ) )
         {
-            // Write the pages vector
-            long firstPageRef = pages[0];
-            long startFilePageId = getFilePageId( firstPageRef );
-            flush = flushEvent.beginFlush( pages, swapper, this, pagesToFlush, pagesMerged );
-            long bytesWritten = swapper.write( startFilePageId, bufferAddresses, bufferLengths, numberOfBuffers, pagesToFlush );
-
-            // Update the flush event
-            flush.addBytesWritten( bytesWritten );
-            flush.addPagesFlushed( pagesToFlush );
-            flush.addPagesMerged( pagesMerged );
-            flush.done();
-            successful = true;
-
-            // There are now 0 'grabbed' pages
-        }
-        catch ( IOException ioe )
-        {
-            if ( flush != null )
+            boolean successful = false;
+            try
             {
-                flush.done( ioe );
+                // Write the pages vector
+                long firstPageRef = pages[0];
+                long startFilePageId = getFilePageId( firstPageRef );
+                long bytesWritten = swapper.write( startFilePageId, bufferAddresses, bufferLengths, numberOfBuffers, pagesToFlush );
+
+                // Update the flush event
+                flush.addBytesWritten( bytesWritten );
+                flush.addPagesFlushed( pagesToFlush );
+                flush.addPagesMerged( pagesMerged );
+                successful = true;
+
+                // There are now 0 'grabbed' pages
             }
-            throw ioe;
-        }
-        finally
-        {
-            // Always unlock all the pages in the vector
-            if ( forClosing )
+            catch ( IOException ioe )
             {
-                for ( int i = 0; i < pagesToFlush; i++ )
+                flush.setException( ioe );
+                throw ioe;
+            }
+            finally
+            {
+                // Always unlock all the pages in the vector
+                if ( forClosing )
                 {
-                    long pageRef = pages[i];
-                    if ( successful )
+                    for ( int i = 0; i < pagesToFlush; i++ )
                     {
-                        explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+                        long pageRef = pages[i];
+                        if ( successful )
+                        {
+                            explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+                        }
+                        unlockExclusive( pageRef );
                     }
-                    unlockExclusive( pageRef );
                 }
-            }
-            else
-            {
-                for ( int i = 0; i < pagesToFlush; i++ )
+                else
                 {
-                    unlockFlush( pages[i], flushStamps[i], successful );
+                    for ( int i = 0; i < pagesToFlush; i++ )
+                    {
+                        unlockFlush( pages[i], flushStamps[i], successful );
+                    }
                 }
             }
         }
@@ -653,21 +648,20 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     boolean flushLockedPage( long pageRef, long filePageId )
     {
         boolean success = false;
-        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
+        try ( var majorFlushEvent = pageCacheTracer.beginFileFlush( swapper );
+              var flushEvent = majorFlushEvent.beginFlush( pageRef, swapper, this ) )
         {
-            FlushEvent flush = flushEvent.beginFlush( pageRef, swapper, this );
             long address = getAddress( pageRef );
             try
             {
                 long bytesWritten = swapper.write( filePageId, address );
-                flush.addBytesWritten( bytesWritten );
-                flush.addPagesFlushed( 1 );
-                flush.done();
+                flushEvent.addBytesWritten( bytesWritten );
+                flushEvent.addPagesFlushed( 1 );
                 success = true;
             }
             catch ( IOException e )
             {
-                flush.done( e );
+                flushEvent.setException( e );
             }
         }
         return success;

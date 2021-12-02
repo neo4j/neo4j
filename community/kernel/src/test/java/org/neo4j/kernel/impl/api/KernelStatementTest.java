@@ -114,9 +114,18 @@ class KernelStatementTest
             statement.acquire();
 
             PageSwapper swapper = mock( PageSwapper.class, RETURNS_MOCKS );
-            cursorContext.getCursorTracer().beginPin( false, 1, swapper ).hit();
-            cursorContext.getCursorTracer().beginPin( false, 1, swapper ).hit();
-            cursorContext.getCursorTracer().beginPin( false, 1, swapper ).beginPageFault( 1, swapper ).done();
+            try ( var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
+            {
+                pinEvent.hit();
+            }
+            try ( var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
+            {
+                pinEvent.hit();
+            }
+            try ( var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
+            {
+                pinEvent.beginPageFault( 1, swapper ).close();
+            }
             assertEquals( 2, statement.getHits() );
             assertEquals( 1, statement.getFaults() );
 

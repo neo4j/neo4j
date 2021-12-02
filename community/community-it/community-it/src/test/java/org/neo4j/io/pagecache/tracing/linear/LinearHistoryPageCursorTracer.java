@@ -49,6 +49,18 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public long failedFaults()
+    {
+        return 0;
+    }
+
+    @Override
+    public long noFaults()
+    {
+        return 0;
+    }
+
+    @Override
     public long pins()
     {
         return 0;
@@ -115,6 +127,11 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public void unpin( long filePageId, PageSwapper swapper )
+    {
+    }
+
+    @Override
     public void reportEvents()
     {
         // nothing to do
@@ -124,6 +141,11 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     public String getTag()
     {
         return tag;
+    }
+
+    @Override
+    public void openCursor()
+    {
     }
 
     @Override

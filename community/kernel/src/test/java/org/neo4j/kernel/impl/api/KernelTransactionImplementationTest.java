@@ -50,8 +50,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -854,11 +852,14 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
                         for ( int j = 0; j <= iterations; j++ )
                         {
                             PageSwapper swapper = mock( PageSwapper.class, RETURNS_MOCKS );
-                            PinEvent pinEvent = cursorTracer.beginPin( false, 1, swapper );
-                            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
-                            pageFaultEvent.addBytesRead( 42 );
-                            pageFaultEvent.done();
-                            pinEvent.done();
+                            try ( var pinEvent = cursorTracer.beginPin( false, 1, swapper ) )
+                            {
+                                try ( var pageFaultEvent = pinEvent.beginPageFault( 1, swapper ) )
+                                {
+                                    pageFaultEvent.addBytesRead( 42 );
+                                }
+                            }
+                            cursorTracer.unpin( 1, swapper );
                         }
                     }
                     finally

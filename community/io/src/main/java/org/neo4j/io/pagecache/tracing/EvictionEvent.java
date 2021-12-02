@@ -50,7 +50,7 @@ public interface EvictionEvent extends AutoCloseablePageCacheTracerEvent
         }
 
         @Override
-        public void threwException( IOException exception )
+        public void setException( IOException exception )
         {
         }
 
@@ -79,5 +79,5 @@ public interface EvictionEvent extends AutoCloseablePageCacheTracerEvent
      * Indicates that the eviction caused an exception to be thrown.
      * This can happen if some kind of IO error occurs.
      */
-    void threwException( IOException exception );
+    void setException( IOException exception );
 }

@@ -2267,12 +2267,12 @@ public class PageListTest
         assertFalse( evictionNotified.get() );
     }
 
-    private static class EvictionAndFlushRecorderEvent implements EvictionEvent, FlushEvent
+    private static class EvictionRecorderEvent implements EvictionEvent
     {
         private long filePageId;
         private PageSwapper swapper;
         private IOException evictionException;
-        private long cachePageId;
+        private final long cachePageId;
         private boolean evictionClosed;
         private long bytesWritten;
         private boolean flushDone;
@@ -2280,12 +2280,10 @@ public class PageListTest
         private int pagesFlushed;
         private int pagesMerged;
 
-        EvictionAndFlushRecorderEvent( long cachePageId )
+        EvictionRecorderEvent( long cachePageId )
         {
             this.cachePageId = cachePageId;
         }
-
-        // --- EvictionEvent:
 
         @Override
         public void close()
@@ -2306,48 +2304,47 @@ public class PageListTest
         }
 
         @Override
-        public void threwException( IOException exception )
+        public void setException( IOException exception )
         {
             this.evictionException = exception;
         }
-
         @Override
         public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageTranslator )
         {
-            return this;
+            return new FlushRecorderEvent();
         }
 
-        // --- FlushEvent:
-
-        @Override
-        public void addBytesWritten( long bytes )
+        private class FlushRecorderEvent implements FlushEvent
         {
-            this.bytesWritten += bytes;
-        }
+            @Override
+            public void addBytesWritten( long bytes )
+            {
+                EvictionRecorderEvent.this.bytesWritten += bytes;
+            }
 
-        @Override
-        public void done()
-        {
-            this.flushDone = true;
-        }
+            @Override
+            public void close()
+            {
+                EvictionRecorderEvent.this.flushDone = true;
+            }
 
-        @Override
-        public void done( IOException exception )
-        {
-            this.flushDone = true;
-            this.flushException = exception;
-        }
+            @Override
+            public void setException( IOException exception )
+            {
+                EvictionRecorderEvent.this.flushException = exception;
+            }
 
-        @Override
-        public void addPagesFlushed( int pageCount )
-        {
-            this.pagesFlushed += pageCount;
-        }
+            @Override
+            public void addPagesFlushed( int pageCount )
+            {
+                EvictionRecorderEvent.this.pagesFlushed += pageCount;
+            }
 
-        @Override
-        public void addPagesMerged( int pagesMerged )
-        {
-            this.pagesMerged += pagesMerged;
+            @Override
+            public void addPagesMerged( int pagesMerged )
+            {
+                EvictionRecorderEvent.this.pagesMerged += pagesMerged;
+            }
         }
     }
 
@@ -2362,7 +2359,7 @@ public class PageListTest
         int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         PageList.unlockExclusive( pageRef );
-        EvictionAndFlushRecorderEvent recorder = new EvictionAndFlushRecorderEvent( pageRef );
+        EvictionRecorderEvent recorder = new EvictionRecorderEvent( pageRef );
         assertTrue( pageList.tryEvict( pageRef, any -> recorder ) );
         assertThat( recorder.evictionClosed ).isEqualTo( true );
         assertThat( recorder.filePageId ).isEqualTo( 42L );
@@ -2389,7 +2386,7 @@ public class PageListTest
         PageList.unlockExclusiveAndTakeWriteLock( pageRef );
         PageList.unlockWrite( pageRef ); // page is now modified
         assertTrue( PageList.isModified( pageRef ) );
-        EvictionAndFlushRecorderEvent recorder = new EvictionAndFlushRecorderEvent( pageRef );
+        EvictionRecorderEvent recorder = new EvictionRecorderEvent( pageRef );
         assertTrue( pageList.tryEvict( pageRef, any -> recorder ) );
         assertThat( recorder.evictionClosed ).isEqualTo( true );
         assertThat( recorder.filePageId ).isEqualTo( 42L );
@@ -2423,7 +2420,7 @@ public class PageListTest
         PageList.unlockExclusiveAndTakeWriteLock( pageRef );
         PageList.unlockWrite( pageRef ); // page is now modified
         assertTrue( PageList.isModified( pageRef ) );
-        EvictionAndFlushRecorderEvent recorder = new EvictionAndFlushRecorderEvent( pageRef );
+        EvictionRecorderEvent recorder = new EvictionRecorderEvent( pageRef );
         assertThrows( IOException.class, () -> pageList.tryEvict( pageRef, any -> recorder ) );
 
         assertThat( recorder.evictionClosed ).isEqualTo( true );

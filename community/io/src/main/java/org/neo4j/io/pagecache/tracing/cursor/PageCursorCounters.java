@@ -32,9 +32,19 @@ import org.neo4j.io.pagecache.context.CursorContext;
 public interface PageCursorCounters
 {
     /**
-     * @return The number of page faults observed thus far.
+     * @return The number of page faults observed thus far, both failed and successful.
      */
     long faults();
+
+    /**
+     * @return The number of failed page faults observed thus far.
+     */
+    long failedFaults();
+
+    /**
+     * @return The number of no-faults observed thus far.
+     */
+    long noFaults();
 
     /**
      * @return The number of page pins observed thus far.

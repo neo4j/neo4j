@@ -301,9 +301,12 @@ class ProcessorStepTest
         @Override
         protected void process( Integer batch, BatchSender sender, CursorContext cursorContext )
         {
-            var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, mock( PageSwapper.class, RETURNS_MOCKS ) );
-            pinEvent.hit();
-            pinEvent.done();
+            var swapper = mock( PageSwapper.class, RETURNS_MOCKS );
+            try ( var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
+            {
+                pinEvent.hit();
+            }
+            cursorContext.getCursorTracer().unpin( 1, swapper );
             nextExpected.incrementAndGet();
         }
     }

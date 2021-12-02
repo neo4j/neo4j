@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.tracing.PinEvent;
 
 final class MuninnWritePageCursor extends MuninnPageCursor
 {
@@ -38,7 +39,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         long pageRef = pinnedPageRef;
         if ( pageRef != 0 )
         {
-            pinEvent.done();
+            tracer.unpin( loadPlainCurrentPageId(), swapper );
             // Mark the page as dirty *after* our write access, to make sure it's dirty even if it was concurrently
             // flushed. Unlocking the write-locked page will mark it as dirty for us.
             if ( eagerFlush )
@@ -95,8 +96,10 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         storeCurrentPageId( nextPageId );
         nextPageId++;
         long filePageId = loadPlainCurrentPageId();
-        pinEvent = tracer.beginPin( true, filePageId, swapper );
-        pin( filePageId );
+        try ( var pinEvent = tracer.beginPin( true, filePageId, swapper ) )
+        {
+            pin( pinEvent, filePageId );
+        }
         return true;
     }
 
@@ -113,9 +116,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper ) throws FileIsNotMappedException
+    protected void pinCursorToPage( PinEvent pinEvent, long pageRef, long filePageId, PageSwapper swapper ) throws FileIsNotMappedException
     {
-        reset( pageRef );
+        reset( pinEvent, pageRef );
         // Check if we've been racing with unmapping. We want to do this before
         // we make any changes to the contents of the page, because once all
         // files have been unmapped, the page cache can be closed. And when

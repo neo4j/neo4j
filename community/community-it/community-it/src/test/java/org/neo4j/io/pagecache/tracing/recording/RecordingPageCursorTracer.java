@@ -62,6 +62,18 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     }
 
     @Override
+    public long failedFaults()
+    {
+        return 0;
+    }
+
+    @Override
+    public long noFaults()
+    {
+        return 0;
+    }
+
+    @Override
     public long pins()
     {
         return pins;
@@ -145,13 +157,13 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
                     }
 
                     @Override
-                    public void done()
+                    public void close()
                     {
                         pageFaulted( filePageId, swapper );
                     }
 
                     @Override
-                    public void fail( Throwable throwable )
+                    public void setException( Throwable throwable )
                     {
                     }
 
@@ -179,11 +191,21 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
             }
 
             @Override
-            public void done()
+            public void noFault()
+            {
+            }
+
+            @Override
+            public void close()
             {
                 pinned( filePageId, swapper, hit );
             }
         };
+    }
+
+    @Override
+    public void unpin( long filePageId, PageSwapper swapper )
+    {
     }
 
     @Override
@@ -198,6 +220,11 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     public String getTag()
     {
         return tag;
+    }
+
+    @Override
+    public void openCursor()
+    {
     }
 
     @Override

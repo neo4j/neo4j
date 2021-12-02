@@ -35,6 +35,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 public class DefaultPageCacheTracer implements PageCacheTracer
 {
     protected final LongAdder faults = new LongAdder();
+    protected final LongAdder noFaults = new LongAdder();
+    protected final LongAdder failedFaults = new LongAdder();
     protected final LongAdder evictions = new LongAdder();
     protected final LongAdder cooperativeEvictions = new LongAdder();
     protected final LongAdder pins = new LongAdder();
@@ -59,115 +61,9 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     private final boolean tracePageFileIndividually;
 
     private final PageCacheFlushEvent flushEvent = new PageCacheFlushEvent();
-
-    private final EvictionEvent evictionEvent = new EvictionEvent()
-    {
-        private PageFileSwapperTracer swapperTracer;
-
-        @Override
-        public void setFilePageId( long filePageId )
-        {
-        }
-
-        @Override
-        public void setSwapper( PageSwapper swapper )
-        {
-            this.swapperTracer = swapper.fileSwapperTracer();
-        }
-
-        @Override
-        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
-        {
-            flushEvent.swapperTracer = swapper.fileSwapperTracer();
-            return flushEvent;
-        }
-
-        @Override
-        public void threwException( IOException exception )
-        {
-            evictionExceptions.increment();
-            swapperTracer.evictionExceptions( 1 );
-        }
-
-        @Override
-        public void close()
-        {
-            evictions.increment();
-            if ( swapperTracer != null )
-            {
-                swapperTracer.evictions( 1 );
-            }
-        }
-    };
-
-    private final EvictionRunEvent evictionRunEvent = new EvictionRunEvent()
-    {
-        @Override
-        public void freeListSize( int size )
-        {
-
-        }
-
-        @Override
-        public EvictionEvent beginEviction( long cachePageId )
-        {
-            return evictionEvent;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
-
-    private final MajorFlushEvent majorFlushEvent = new MajorFlushEvent()
-    {
-
-        @Override
-        public FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush,
-                int mergedPages )
-        {
-            flushEvent.swapperTracer = swapper.fileSwapperTracer();
-            return flushEvent;
-        }
-
-        @Override
-        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
-        {
-            flushEvent.swapperTracer = swapper.fileSwapperTracer();
-            return flushEvent;
-        }
-
-        @Override
-        public void startFlush( int[][] translationTable )
-        {
-
-        }
-
-        @Override
-        public ChunkEvent startChunk( int[] chunk )
-        {
-            return ChunkEvent.NULL;
-        }
-
-        @Override
-        public void throttle( long millis )
-        {
-            ioLimitedTimes.increment();
-            ioLimitedMillis.add( millis );
-        }
-
-        @Override
-        public void reportIO( int completedIOs )
-        {
-            iopqPerformed.add( completedIOs );
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
+    private final EvictionEvent evictionEvent = new PageCacheEvictionEvent();
+    private final EvictionRunEvent evictionRunEvent = new DefaultEvictionRunEvent();
+    private final MajorFlushEvent majorFlushEvent = new DefaultPageCacheMajorFlushEvent();
 
     public DefaultPageCacheTracer()
     {
@@ -231,6 +127,18 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     public long faults()
     {
         return faults.sum();
+    }
+
+    @Override
+    public long failedFaults()
+    {
+        return failedFaults.sum();
+    }
+
+    @Override
+    public long noFaults()
+    {
+        return noFaults.sum();
     }
 
     @Override
@@ -402,6 +310,18 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public void noFaults( long noFaults )
+    {
+        this.noFaults.add( noFaults );
+    }
+
+    @Override
+    public void failedFaults( long failedFaults )
+    {
+        this.failedFaults.add( failedFaults );
+    }
+
+    @Override
     public void bytesRead( long bytesRead )
     {
         this.bytesRead.add( bytesRead );
@@ -461,14 +381,13 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
 
         @Override
-        public void done()
+        public void close()
         {
         }
 
         @Override
-        public void done( IOException exception )
+        public void setException( IOException exception )
         {
-            done();
         }
 
         @Override
@@ -483,6 +402,114 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         {
             merges.add( pagesMerged );
             swapperTracer.merges( pagesMerged );
+        }
+    }
+
+    private class PageCacheEvictionEvent implements EvictionEvent
+    {
+        private PageFileSwapperTracer swapperTracer;
+
+        @Override
+        public void setFilePageId( long filePageId )
+        {
+        }
+
+        @Override
+        public void setSwapper( PageSwapper swapper )
+        {
+            this.swapperTracer = swapper.fileSwapperTracer();
+        }
+
+        @Override
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
+        {
+            flushEvent.swapperTracer = swapper.fileSwapperTracer();
+            return flushEvent;
+        }
+
+        @Override
+        public void setException( IOException exception )
+        {
+            evictionExceptions.increment();
+            swapperTracer.evictionExceptions( 1 );
+        }
+
+        @Override
+        public void close()
+        {
+            evictions.increment();
+            if ( swapperTracer != null )
+            {
+                swapperTracer.evictions( 1 );
+            }
+        }
+    }
+
+    private class DefaultEvictionRunEvent implements EvictionRunEvent
+    {
+
+        @Override
+        public void freeListSize( int size )
+        {
+        }
+
+        @Override
+        public EvictionEvent beginEviction( long cachePageId )
+        {
+            return evictionEvent;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    }
+
+    private class DefaultPageCacheMajorFlushEvent implements MajorFlushEvent
+    {
+
+        @Override
+        public FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush,
+                                      int mergedPages )
+        {
+            flushEvent.swapperTracer = swapper.fileSwapperTracer();
+            return flushEvent;
+        }
+
+        @Override
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
+        {
+            flushEvent.swapperTracer = swapper.fileSwapperTracer();
+            return flushEvent;
+        }
+
+        @Override
+        public void startFlush( int[][] translationTable )
+        {
+        }
+
+        @Override
+        public ChunkEvent startChunk( int[] chunk )
+        {
+            return ChunkEvent.NULL;
+        }
+
+        @Override
+        public void throttle( long millis )
+        {
+            ioLimitedTimes.increment();
+            ioLimitedMillis.add( millis );
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
+            iopqPerformed.add( completedIOs );
+        }
+
+        @Override
+        public void close()
+        {
         }
     }
 }

@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PinEvent;
 
 final class MuninnReadPageCursor extends MuninnPageCursor
 {
@@ -38,7 +39,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     {
         if ( pinnedPageRef != 0 )
         {
-            pinEvent.done();
+            tracer.unpin( loadPlainCurrentPageId(), swapper );
         }
         lockStamp = 0; // make sure not to accidentally keep a lock state around
         clearPageCursorState();
@@ -57,8 +58,10 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         storeCurrentPageId( nextPageId );
         nextPageId++;
         long filePageId = loadPlainCurrentPageId();
-        pinEvent = tracer.beginPin( false, filePageId, swapper );
-        pin( filePageId );
+        try ( var pinEvent = tracer.beginPin( false, filePageId, swapper ) )
+        {
+            pin( pinEvent, filePageId );
+        }
         verifyContext();
         return true;
     }
@@ -76,9 +79,9 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
+    protected void pinCursorToPage( PinEvent pinEvent, long pageRef, long filePageId, PageSwapper swapper )
     {
-        reset( pageRef );
+        reset( pinEvent, pageRef );
         if ( updateUsage )
         {
             PageList.incrementUsage( pageRef );
@@ -134,7 +137,8 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         // The page might have been evicted while we held the optimistic
         // read lock, so we need to check with page.pin that this is still
         // the page we're actually interested in:
-        if ( !PageList.isBoundTo( pageRef, pagedFile.swapperId, loadPlainCurrentPageId() ) )
+        var filePageId = loadPlainCurrentPageId();
+        if ( !PageList.isBoundTo( pageRef, pagedFile.swapperId, filePageId ) )
         {
             // This is no longer the page we're interested in, so we have
             // to redo the pinning.
@@ -148,8 +152,13 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             // is closed, or in case we have PF_NO_FAULT and the page is no longer
             // in memory.
             clearPageReference();
+            // trace unpin before trying pin again
+            tracer.unpin( filePageId, swapper );
             // Then try pin again.
-            pin( loadPlainCurrentPageId() );
+            try ( var pinEvent = tracer.beginPin( false, filePageId, swapper ) )
+            {
+                pin( pinEvent, filePageId );
+            }
         }
     }
 

@@ -48,10 +48,22 @@ public interface PageFileSwapperTracer extends PageFileCounters
     void hits( long hits );
 
     /**
-     * Report number of observed faults
-     * @param faults number of faults
+     * Report number of observed fault attempts
+     * @param faults number of fault attempts
      */
     void faults( long faults );
+
+    /**
+     * Report number of observed no-faults
+     * @param noFaults number of no-faults
+     */
+    void noFaults( long noFaults );
+
+    /**
+     * Report number of observed failed faults
+     * @param failedFaults number of failed faults
+     */
+    void failedFaults( long failedFaults );
 
     /**
      * Report number of bytes read
@@ -112,6 +124,16 @@ public interface PageFileSwapperTracer extends PageFileCounters
         }
 
         @Override
+        public void noFaults( long noFaults )
+        {
+        }
+
+        @Override
+        public void failedFaults( long failedFaults )
+        {
+        }
+
+        @Override
         public void bytesRead( long bytesRead )
         {
         }
@@ -143,6 +165,18 @@ public interface PageFileSwapperTracer extends PageFileCounters
 
         @Override
         public long faults()
+        {
+            return 0;
+        }
+
+        @Override
+        public long failedFaults()
+        {
+            return 0;
+        }
+
+        @Override
+        public long noFaults()
         {
             return 0;
         }

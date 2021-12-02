@@ -70,7 +70,6 @@ public abstract class MuninnPageCursor extends PageCursor
     protected PageSwapper swapper;
     protected int swapperId;
     protected long pinnedPageRef;
-    protected PinEvent pinEvent;
     protected long pageId;
     protected int pf_flags;
     protected boolean eagerFlush;
@@ -131,6 +130,7 @@ public abstract class MuninnPageCursor extends PageCursor
         this.updateUsage = !isFlagRaised( pf_flags, PF_TRANSIENT );
         this.noFault = isFlagRaised( pf_flags, PF_NO_FAULT );
         this.noGrow = noFault || isFlagRaised( pf_flags, PagedFile.PF_NO_GROW );
+        this.tracer.openCursor();
     }
 
     private static boolean isFlagRaised( int flagSet, int flag )
@@ -160,7 +160,7 @@ public abstract class MuninnPageCursor extends PageCursor
         storeCurrentPageId( UNBOUND_PAGE_ID );
     }
 
-    public final void reset( long pageRef )
+    public final void reset( PinEvent pinEvent, long pageRef )
     {
         this.pinnedPageRef = pageRef;
         this.offset = 0;
@@ -218,7 +218,6 @@ public abstract class MuninnPageCursor extends PageCursor
             return; // already closed
         }
         closeLinks( this );
-        tracer.closeCursor();
     }
 
     private void closeLinks( MuninnPageCursor cursor )
@@ -236,6 +235,7 @@ public abstract class MuninnPageCursor extends PageCursor
                 preFetcher.cancel();
                 preFetcher = null;
             }
+            tracer.closeCursor();
             cursor = cursor.linkedCursor;
         }
     }
@@ -315,10 +315,12 @@ public abstract class MuninnPageCursor extends PageCursor
 
     /**
      * Pin the desired file page to this cursor, page faulting it into memory if it isn't there already.
+     *
+     * @param pinEvent
      * @param filePageId The file page id we want to pin this cursor to.
      * @throws IOException if anything goes wrong with the pin, most likely during a page fault.
      */
-    protected void pin( long filePageId ) throws IOException
+    protected void pin( PinEvent pinEvent, long filePageId ) throws IOException
     {
         int chunkId = MuninnPagedFile.computeChunkId( filePageId );
         // The chunkOffset is the addressing offset into the chunk array object for the relevant array slot. Using
@@ -350,7 +352,7 @@ public abstract class MuninnPageCursor extends PageCursor
                 boolean locked = tryLockPage( pageRef );
                 if ( locked && PageList.isBoundTo( pageRef, swapperId, filePageId ) )
                 {
-                    pinCursorToPage( pageRef, filePageId, swapper );
+                    pinCursorToPage( pinEvent, pageRef, filePageId, swapper );
                     pinEvent.hit();
                     return;
                 }
@@ -361,7 +363,7 @@ public abstract class MuninnPageCursor extends PageCursor
             }
             else
             {
-                if ( uncommonPin( filePageId, chunkIndex, chunk ) )
+                if ( uncommonPin( pinEvent, filePageId, chunkIndex, chunk ) )
                 {
                     return;
                 }
@@ -369,13 +371,13 @@ public abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    private boolean uncommonPin( long filePageId, int chunkIndex, int[] chunk ) throws IOException
+    private boolean uncommonPin( PinEvent pinEvent, long filePageId, int chunkIndex, int[] chunk ) throws IOException
     {
         if ( noFault )
         {
             // The only page state that needs to be cleared is the currentPageId, since it was set prior to pin.
             storeCurrentPageId( UNBOUND_PAGE_ID );
-            pinEvent.done();
+            pinEvent.noFault();
             return true;
         }
         // Looks like there's no mapping, so we'd like to do a page fault.
@@ -389,8 +391,8 @@ public abstract class MuninnPageCursor extends PageCursor
             if ( (int) MuninnPagedFile.TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex ) == UNMAPPED_TTE )
             {
                 // Sweet, we didn't race with any other fault on this translation table entry.
-                long pageRef = pageFault( filePageId, swapper, chunkIndex, chunk, latch );
-                pinCursorToPage( pageRef, filePageId, swapper );
+                long pageRef = pageFault( pinEvent, filePageId, swapper, chunkIndex, chunk, latch );
+                pinCursorToPage( pinEvent, pageRef, filePageId, swapper );
                 return true;
             }
             // Oops, looks like we raced with another page fault on this file page.
@@ -403,7 +405,8 @@ public abstract class MuninnPageCursor extends PageCursor
         return false;
     }
 
-    private long pageFault( long filePageId, PageSwapper swapper, int chunkIndex, int[] chunk, LatchMap.Latch latch ) throws IOException
+    private long pageFault( PinEvent pinEvent, long filePageId, PageSwapper swapper, int chunkIndex, int[] chunk,
+                            LatchMap.Latch latch ) throws IOException
     {
         // We are page faulting. This is a critical time, because we currently have the given latch in the chunk array
         // slot that we are faulting into. We MUST make sure to release that latch, and remove it from the chunk, no
@@ -411,7 +414,7 @@ public abstract class MuninnPageCursor extends PageCursor
         // If we manage to get a free page to fault into, then we will also be taking a write lock on that page, to
         // protect it against concurrent eviction as we assigning a binding to the page. If anything goes wrong, then
         // we must make sure to release that write lock as well.
-        try ( PageFaultEvent faultEvent = pinEvent.beginPageFault( filePageId, swapper ) )
+        try ( var faultEvent = pinEvent.beginPageFault( filePageId, swapper ) )
         {
             long pageRef;
             int pageId;
@@ -472,8 +475,7 @@ public abstract class MuninnPageCursor extends PageCursor
     private void abortPageFault( Throwable throwable, int[] chunk, int chunkIndex, PageFaultEvent faultEvent )
     {
         MuninnPagedFile.TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, UNMAPPED_TTE );
-        faultEvent.fail( throwable );
-        pinEvent.done();
+        faultEvent.setException( throwable );
     }
 
     long assertPagedFileStillMappedAndGetIdOfLastPage() throws FileIsNotMappedException
@@ -485,7 +487,7 @@ public abstract class MuninnPageCursor extends PageCursor
 
     protected abstract void convertPageFaultLock( long pageRef );
 
-    protected abstract void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
+    protected abstract void pinCursorToPage( PinEvent pinEvent, long pageRef, long filePageId, PageSwapper swapper )
             throws FileIsNotMappedException;
 
     protected abstract boolean tryLockPage( long pageRef );

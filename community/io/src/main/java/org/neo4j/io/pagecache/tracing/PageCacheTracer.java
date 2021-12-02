@@ -89,6 +89,18 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public long failedFaults()
+        {
+            return 0;
+        }
+
+        @Override
+        public long noFaults()
+        {
+            return 0;
+        }
+
+        @Override
         public long evictions()
         {
             return 0;
@@ -223,6 +235,16 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public void noFaults( long noFaults )
+        {
+        }
+
+        @Override
+        public void failedFaults( long failedFaults )
+        {
+        }
+
+        @Override
         public void bytesRead( long bytesRead )
         {
         }
@@ -317,8 +339,6 @@ public interface PageCacheTracer extends PageCacheCounters
     /**
      * A background eviction has begun. Called from the background eviction thread.
      *
-     * This call will be paired with a following PageCacheTracer#endPageEviction call.
-     *
      * The method returns an EvictionRunEvent to represent the event of this eviction run.
      **/
     EvictionRunEvent beginPageEvictions( int pageCountToEvict );
@@ -358,10 +378,22 @@ public interface PageCacheTracer extends PageCacheCounters
     void hits( long hits );
 
     /**
-     * Report number of observed faults
-     * @param faults number of faults
+     * Report number of observed fault attempts
+     * @param faults number of fault attempts
      */
     void faults( long faults );
+
+    /**
+     * Report number of observed no-faults
+     * @param noFaults number of no-faults
+     */
+    void noFaults( long noFaults );
+
+    /**
+     * Report number of observed failed faults
+     * @param failedFaults number of failed faults
+     */
+    void failedFaults( long failedFaults );
 
     /**
      * Report number of bytes read

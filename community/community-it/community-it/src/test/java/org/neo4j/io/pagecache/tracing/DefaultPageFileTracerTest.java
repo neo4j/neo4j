@@ -47,8 +47,8 @@ class DefaultPageFileTracerTest
     void pageCursorEventReportPinUnpinEventsToFileTracer()
     {
         var cursorTracer = pageCacheTracer.createPageCursorTracer( "pageCursorEventReportPinUnpinEventsToFileTracer" );
-        PinEvent pinEvent = cursorTracer.beginPin( false, 1, swapper );
-        pinEvent.done();
+        cursorTracer.beginPin( false, 1, swapper ).close();
+        cursorTracer.unpin( 1, swapper );
 
         assertEquals( 1, swapperTracer.pins() );
         assertEquals( 0, swapperTracer.hits() );
@@ -59,9 +59,11 @@ class DefaultPageFileTracerTest
     void pageCursorEventReportPinUnpinHitEventsToFileTracer()
     {
         var cursorTracer = pageCacheTracer.createPageCursorTracer( "pageCursorEventReportPinUnpinHitEventsToFileTracer" );
-        PinEvent pinEvent = cursorTracer.beginPin( false, 1, swapper );
-        pinEvent.hit();
-        pinEvent.done();
+        try ( var pinEvent = cursorTracer.beginPin( false, 1, swapper ) )
+        {
+            pinEvent.hit();
+        }
+        cursorTracer.unpin( 1, swapper );
 
         assertEquals( 1, swapperTracer.pins() );
         assertEquals( 1, swapperTracer.hits() );
@@ -72,13 +74,14 @@ class DefaultPageFileTracerTest
     void pageCursorEventReportPageFaultAndBytesReadEventsToFileTracer()
     {
         var cursorTracer = pageCacheTracer.createPageCursorTracer( "pageCursorEventReportPageFaultAndBytesReadEventsToFileTracer" );
-        PinEvent pinEvent = cursorTracer.beginPin( false, 1, swapper );
-
-        PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
-        pageFaultEvent.addBytesRead( 123 );
-        pageFaultEvent.done();
-
-        pinEvent.done();
+        try ( var pinEvent = cursorTracer.beginPin( false, 1, swapper ) )
+        {
+            try ( var pageFaultEvent = pinEvent.beginPageFault( 1, swapper ) )
+            {
+                pageFaultEvent.addBytesRead( 123 );
+            }
+        }
+        cursorTracer.unpin( 1, swapper );
 
         assertEquals( 1, swapperTracer.pins() );
         assertEquals( 1, swapperTracer.unpins() );
@@ -90,17 +93,16 @@ class DefaultPageFileTracerTest
     void pageCursorEventReportEvictionExceptionEventsToFileTracer()
     {
         var cursorTracer = pageCacheTracer.createPageCursorTracer( "pageCursorEventReportEvictionExceptionEventsToFileTracer" );
-        PinEvent pinEvent = cursorTracer.beginPin( false, 1, swapper );
-
-        PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
-        try ( EvictionEvent evictionEvent = pageFaultEvent.beginEviction( 2 ) )
+        try ( var pinEvent = cursorTracer.beginPin( false, 1, swapper ) )
         {
-            evictionEvent.setSwapper( swapper );
-            evictionEvent.threwException( new IOException() );
+            try ( var pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
+                  var evictionEvent = pageFaultEvent.beginEviction( 2 ) )
+            {
+                evictionEvent.setSwapper( swapper );
+                evictionEvent.setException( new IOException() );
+            }
         }
-        pageFaultEvent.done();
-
-        pinEvent.done();
+        cursorTracer.unpin( 1, swapper );
 
         assertEquals( 1, swapperTracer.pins() );
         assertEquals( 1, swapperTracer.unpins() );
@@ -112,21 +114,18 @@ class DefaultPageFileTracerTest
     void pageCursorEventReportEvictionEventsToFileTracer()
     {
         var cursorTracer = pageCacheTracer.createPageCursorTracer( "pageCursorEventReportEvictionEventsToFileTracer" );
-        PinEvent pinEvent = cursorTracer.beginPin( false, 1, swapper );
-
-        PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
-        try ( EvictionEvent evictionEvent = pageFaultEvent.beginEviction( 2 ) )
+        try ( var pinEvent = cursorTracer.beginPin( false, 1, swapper );
+              var pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
+              var evictionEvent = pageFaultEvent.beginEviction( 2 ) )
         {
             evictionEvent.setSwapper( swapper );
             FlushEvent flushEvent = evictionEvent.beginFlush( 1, swapper, Mockito.mock( PageReferenceTranslator.class ) );
             flushEvent.addPagesMerged( 11 );
             flushEvent.addPagesFlushed( 22 );
             flushEvent.addBytesWritten( 33 );
-            flushEvent.done();
         }
-        pageFaultEvent.done();
 
-        pinEvent.done();
+        cursorTracer.unpin( 1, swapper );
 
         assertEquals( 1, swapperTracer.pins() );
         assertEquals( 1, swapperTracer.unpins() );

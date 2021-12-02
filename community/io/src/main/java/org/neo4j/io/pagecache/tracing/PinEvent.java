@@ -22,9 +22,22 @@ package org.neo4j.io.pagecache.tracing;
 import org.neo4j.io.pagecache.PageSwapper;
 
 /**
- * Begin pinning a page.
+ * PinEvent describes attempt to pin a page. Possible outcomes of the pin event are:
+ *  1. hit - successful pin
+ *  2. successful fault - successful pin
+ *  3. failed fault - failed pin
+ *  4. no fault - "successfully cancelled pin", no hit, but fault not happened because PF_NO_FAULT flag set
+ *
+ *  Invariants (equations):
+ *   - faults == successful faults + failed faults
+ *   - pins == hits + faults + no faults = hits + successful faults + failed faults + no faults = unpins + failed faults + no faults
+ *   - unpins == hits + successful faults = hits + faults - failed faults
+ *
+ *   Note: default of implementation of PageCacheTracing counts total number of faults and number of failed faults.
+ *   Thus, number of successful faults is calculated from those counters using subtraction.
+ *
  */
-public interface PinEvent
+public interface PinEvent extends AutoCloseablePageCacheTracerEvent
 {
     /**
      * A PinEvent that does nothing other than return the PageFaultEvent.NULL.
@@ -48,7 +61,12 @@ public interface PinEvent
         }
 
         @Override
-        public void done()
+        public void noFault()
+        {
+        }
+
+        @Override
+        public void close()
         {
         }
     };
@@ -71,7 +89,13 @@ public interface PinEvent
     void hit();
 
     /**
-     * The pinning has completed and the page is now unpinned.
+     * No page fault happened because PF_NO_FAULT is set
      */
-    void done();
+    void noFault();
+
+    /**
+     * Pinning complete. All related faults and flushes are completed.
+     */
+    @Override
+    void close();
 }

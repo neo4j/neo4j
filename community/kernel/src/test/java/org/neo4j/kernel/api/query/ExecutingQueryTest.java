@@ -421,6 +421,18 @@ class ExecutingQueryTest
             return faults;
         }
 
+        @Override
+        public long failedFaults()
+        {
+            return 0;
+        }
+
+        @Override
+        public long noFaults()
+        {
+            return 0;
+        }
+
         public void faults( long increment )
         {
             faults += increment;

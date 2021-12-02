@@ -26,9 +26,19 @@ package org.neo4j.io.pagecache.monitoring;
 public interface PageFileCounters
 {
     /**
-     * @return The number of page faults observed thus far.
+     * @return The number of page faults observed thus far, both failed and successful.
      */
     long faults();
+
+    /**
+     * @return The number of failed page faults observed thus far.
+     */
+    long failedFaults();
+
+    /**
+     * @return The number of no-faults observed thus far.
+     */
+    long noFaults();
 
     /**
      * @return The number of page evictions observed thus far.

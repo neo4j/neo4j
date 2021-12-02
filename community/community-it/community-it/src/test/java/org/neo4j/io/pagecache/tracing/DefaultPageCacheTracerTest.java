@@ -60,15 +60,16 @@ class DefaultPageCacheTracerTest
         assertEquals( "second", second.getTag() );
         assertEquals( "third", third.getTag() );
 
-        first.beginPin( false, 1, swapper ).done();
-        first.beginPin( false, 1, swapper ).done();
+        first.beginPin( false, 1, swapper ).close();
+        first.beginPin( false, 1, swapper ).close();
 
         assertEquals( 2, first.pins() );
         assertEquals( 0, second.pins() );
         assertEquals( 0, third.pins() );
 
         PinEvent secondPin = second.beginPin( true, 2, swapper );
-        secondPin.beginPageFault( 2, swapper ).done();
+        secondPin.beginPageFault( 2, swapper ).close();
+        secondPin.close();
 
         assertEquals( 2, first.pins() );
         assertEquals( 1, second.pins() );
@@ -90,7 +91,6 @@ class DefaultPageCacheTracerTest
                 FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 10 );
-                flushEvent.done();
             }
 
             try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction( 0 ) )
@@ -98,8 +98,7 @@ class DefaultPageCacheTracerTest
                 FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 1 );
-                flushEvent.done();
-                evictionEvent.threwException( new IOException() );
+                evictionEvent.setException( new IOException() );
             }
 
             try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction( 0 ) )
@@ -107,8 +106,7 @@ class DefaultPageCacheTracerTest
                 FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 2 );
-                flushEvent.done();
-                evictionEvent.threwException( new IOException() );
+                evictionEvent.setException( new IOException() );
             }
 
             evictionRunEvent.beginEviction( 0 ).close();
@@ -128,14 +126,13 @@ class DefaultPageCacheTracerTest
                 var flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 10 );
-                flushEvent.done();
             }
 
             evictionRunEvent.beginEviction( 0 ).close();
         }
         try ( var pageCursorTracer = tracer.createPageCursorTracer( "tag" ) )
         {
-            PinEvent pinEvent = pageCursorTracer.beginPin( false, 0, swapper );
+            try ( var pinEvent = pageCursorTracer.beginPin( false, 0, swapper ) )
             {
                 try ( var pageFaultEvent = pinEvent.beginPageFault( 4, swapper );
                       var evictionEvent = pageFaultEvent.beginEviction( 0 ) )
@@ -144,10 +141,9 @@ class DefaultPageCacheTracerTest
                     var flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
                     flushEvent.addBytesWritten( 12 );
                     flushEvent.addPagesFlushed( 1 );
-                    flushEvent.done();
                 }
             }
-            pinEvent.done();
+            pageCursorTracer.unpin( 0, swapper );
         }
 
         assertCounts( 1, 1, 0, 1, 3, 0, 11, 0, 0, 24, 0, 0, 0d, 1 );
@@ -170,9 +166,9 @@ class DefaultPageCacheTracerTest
     {
         try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
-            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
-            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
-            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).close();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).close();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).close();
         }
 
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0 );
@@ -181,15 +177,15 @@ class DefaultPageCacheTracerTest
         {
             var flushEvent1 = fileFlush.beginFlush( 0, swapper, pageReferenceTranslator );
             flushEvent1.addPagesFlushed( 1 );
-            flushEvent1.done();
+            flushEvent1.close();
 
             var flushEvent2 = fileFlush.beginFlush( 0, swapper, pageReferenceTranslator );
             flushEvent2.addPagesFlushed( 2 );
-            flushEvent2.done();
+            flushEvent2.close();
 
             var flushEvent3 = fileFlush.beginFlush( 0, swapper, pageReferenceTranslator );
             flushEvent3.addPagesFlushed( 3 );
-            flushEvent3.done();
+            flushEvent3.close();
         }
 
         assertCounts( 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0d, 0 );
@@ -200,9 +196,9 @@ class DefaultPageCacheTracerTest
     {
         try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
-            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
-            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
-            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).close();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).close();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).close();
         }
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0 );
 
@@ -210,15 +206,15 @@ class DefaultPageCacheTracerTest
         {
             var flushEvent1 = fileFlush.beginFlush( new long[]{0}, swapper, pageReferenceTranslator, 0, 1 );
             flushEvent1.addPagesMerged( 1 );
-            flushEvent1.done();
+            flushEvent1.close();
 
             var flushEvent2 = fileFlush.beginFlush( new long[]{0}, swapper, pageReferenceTranslator, 0, 2 );
             flushEvent2.addPagesMerged( 2 );
-            flushEvent2.done();
+            flushEvent2.close();
 
             var flushEvent3 = fileFlush.beginFlush( new long[]{0}, swapper, pageReferenceTranslator, 0, 3 );
             flushEvent3.addPagesMerged( 3 );
-            flushEvent3.done();
+            flushEvent3.close();
         }
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0d, 0 );
     }

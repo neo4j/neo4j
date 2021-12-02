@@ -171,16 +171,15 @@ class HEvents
         }
 
         @Override
-        public void done()
+        public void close()
         {
-            close();
+            super.close();
         }
 
         @Override
-        public void done( IOException exception )
+        public void setException( IOException exception )
         {
             this.exception = exception;
-            done();
         }
 
         @Override
@@ -296,14 +295,13 @@ class HEvents
         }
 
         @Override
-        public void hit()
+        public void noFault()
         {
         }
 
         @Override
-        public void done()
+        public void hit()
         {
-            close();
         }
 
         @Override
@@ -346,16 +344,15 @@ class HEvents
         }
 
         @Override
-        public void done()
+        public void close()
         {
-            close();
+            super.close();
         }
 
         @Override
-        public void fail( Throwable throwable )
+        public void setException( Throwable throwable )
         {
             this.exception = throwable;
-            done();
         }
 
         @Override
@@ -409,7 +406,7 @@ class HEvents
         }
 
         @Override
-        public void threwException( IOException exception )
+        public void setException( IOException exception )
         {
             this.exception = exception;
         }

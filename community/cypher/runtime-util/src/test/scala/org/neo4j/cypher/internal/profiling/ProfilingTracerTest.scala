@@ -147,7 +147,8 @@ class ProfilingTracerTest extends CypherFunSuite {
     1 to 100 foreach { _ => {
         val pin = cursorTracer.beginPin(false, 1, swapper)
         pin.hit()
-        pin.done()
+        pin.close()
+        cursorTracer.unpin(1, swapper)
       }
     }
 
@@ -166,8 +167,9 @@ class ProfilingTracerTest extends CypherFunSuite {
     1 to 17 foreach { _ => {
       val pin = cursorTracer.beginPin(false, 1, swapper)
       val pageFault = pin.beginPageFault(1, swapper)
-      pageFault.done()
-      pin.done()
+      pageFault.close()
+      pin.close()
+      cursorTracer.unpin(1, swapper)
     }
     }
 

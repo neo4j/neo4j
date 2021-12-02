@@ -49,7 +49,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.Inject;
@@ -827,9 +826,12 @@ class FreeIdScannerTest
         public InternalMarker getMarker( CursorContext cursorContext )
         {
             InternalMarker actual = instantiateRealMarker();
-            PinEvent pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, mock( PageSwapper.class, RETURNS_MOCKS ) );
-            pinEvent.hit();
-            pinEvent.done();
+            var swapper = mock( PageSwapper.class, RETURNS_MOCKS );
+            try ( var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
+            {
+                pinEvent.hit();
+            }
+            cursorContext.getCursorTracer().unpin( 1, swapper );
             return new InternalMarker()
             {
                 @Override

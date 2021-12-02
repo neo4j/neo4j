@@ -19,9 +19,12 @@
  */
 package org.neo4j.io.pagecache.tracing.cursor;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -44,7 +47,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
      * Just flip DEBUG_PINS = true.
      */
     private static final boolean DEBUG_PINS = false;
-    private static final ConcurrentMap<PinEvent,Exception> PIN_DEBUG_MAP = DEBUG_PINS ? new ConcurrentHashMap<>() : null;
+    private static final ConcurrentMap<Pair<Path,Long>,Exception> PIN_DEBUG_MAP = DEBUG_PINS ? new ConcurrentHashMap<>() : null;
 
     private static final boolean CHECK_REPORTED_COUNTERS = flag( DefaultPageCursorTracer.class, "CHECK_REPORTED_COUNTERS", false );
 
@@ -52,6 +55,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private long unpins;
     private long hits;
     private long faults;
+    private long noFaults;
+    private long failedFaults;
     private long bytesRead;
     private long bytesWritten;
     private long evictions;
@@ -81,6 +86,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public void openCursor()
+    {
+        pageCacheTracer.openCursor();
+    }
+
+    @Override
     public void closeCursor()
     {
         pageCacheTracer.closeCursor();
@@ -93,6 +104,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         this.unpins += cursorTracer.unpins();
         this.hits += cursorTracer.hits();
         this.faults += cursorTracer.faults();
+        this.noFaults += cursorTracer.noFaults();
+        this.failedFaults += cursorTracer.failedFaults();
         this.bytesRead += cursorTracer.bytesRead();
         this.bytesWritten += cursorTracer.bytesWritten();
         this.evictions += cursorTracer.evictions();
@@ -125,6 +138,14 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         {
             pageCacheTracer.faults( faults );
         }
+        if ( noFaults > 0 )
+        {
+            pageCacheTracer.noFaults( noFaults );
+        }
+        if ( failedFaults > 0 )
+        {
+            pageCacheTracer.failedFaults( failedFaults );
+        }
         if ( bytesRead > 0 )
         {
             pageCacheTracer.bytesRead( bytesRead );
@@ -156,8 +177,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 
     private void checkCounters()
     {
-        boolean pinsMismatch = pins != unpins;
-        if ( pinsMismatch )
+        boolean pinsInvariant = pins == hits + faults + noFaults;
+        boolean unpinsInvariant = unpins == hits + faults - failedFaults;
+        if ( !(pinsInvariant && unpinsInvariant) )
         {
             throw new RuntimeException( "Mismatch cursor counters. " + this );
         }
@@ -166,9 +188,10 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     @Override
     public String toString()
     {
-        return "PageCursorTracer{" + "pins=" + pins + ", unpins=" + unpins + ", hits=" + hits + ", faults=" + faults + ", bytesRead=" + bytesRead +
-                ", bytesWritten=" + bytesWritten + ", evictions=" + evictions + ", evictionExceptions=" + evictionExceptions + ", flushes=" + flushes +
-                ", merges=" + merges + ", tag='" + tag + '\'' + (DEBUG_PINS ? ", current (yet unpinned) pins:" + currentPins() : "" ) + '}';
+        return "PageCursorTracer{" + "pins=" + pins + ", unpins=" + unpins + ", hits=" + hits + ", faults=" + faults + ", noFaults=" + noFaults +
+               ", failedFaults=" + failedFaults + ", bytesRead=" + bytesRead +
+               ", bytesWritten=" + bytesWritten + ", evictions=" + evictions + ", evictionExceptions=" + evictionExceptions + ", flushes=" + flushes +
+               ", merges=" + merges + ", tag='" + tag + '\'' + (DEBUG_PINS ? ", current (yet unpinned) pins:" + currentPins() : "") + '}';
     }
 
     private String currentPins()
@@ -192,6 +215,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         unpins = 0;
         hits = 0;
         faults = 0;
+        noFaults = 0;
+        failedFaults = 0;
         bytesRead = 0;
         bytesWritten = 0;
         evictions = 0;
@@ -204,6 +229,18 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     public long faults()
     {
         return faults;
+    }
+
+    @Override
+    public long failedFaults()
+    {
+        return failedFaults;
+    }
+
+    @Override
+    public long noFaults()
+    {
+        return noFaults;
     }
 
     @Override
@@ -269,22 +306,22 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     @Override
     public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
     {
-        pins++;
-        PageFileSwapperTracer swapperTracer = swapper.fileSwapperTracer();
-        swapperTracer.pins( 1 );
         if ( DEBUG_PINS )
         {
-            DefaultPinEvent event = new DefaultPinEvent();
-            event.eventHits = 1;
-            event.swapperTracer = swapperTracer;
-            PIN_DEBUG_MAP.put( event, new Exception() );
-            return event;
+            PIN_DEBUG_MAP.put( Pair.of( swapper.path(), filePageId), new Exception() );
         }
-        else
+        pinTracingEvent.swapperTracer = swapper.fileSwapperTracer();
+        return pinTracingEvent;
+    }
+
+    @Override
+    public void unpin( long filePageId, PageSwapper swapper )
+    {
+        unpins++;
+        swapper.fileSwapperTracer().unpins( 1 );
+        if ( DEBUG_PINS )
         {
-            pinTracingEvent.eventHits = 1;
-            pinTracingEvent.swapperTracer = swapperTracer;
-            return pinTracingEvent;
+            PIN_DEBUG_MAP.remove( Pair.of( swapper.path(), filePageId ) );
         }
     }
 
@@ -295,7 +332,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 
     private class DefaultPinEvent implements PinEvent
     {
-        private int eventHits = 1;
         private PageFileSwapperTracer swapperTracer;
 
         @Override
@@ -306,7 +342,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         @Override
         public PageFaultEvent beginPageFault( long filePageId, PageSwapper pageSwapper )
         {
-            eventHits = 0;
             pageFaultEvent.swapperTracer = pageSwapper.fileSwapperTracer();
             return pageFaultEvent;
         }
@@ -314,19 +349,22 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         @Override
         public void hit()
         {
-            hits += eventHits;
-            swapperTracer.hits( eventHits );
+            hits++;
+            swapperTracer.hits( 1 );
         }
 
         @Override
-        public void done()
+        public void noFault()
         {
-            unpins++;
-            swapperTracer.unpins( 1 );
-            if ( DEBUG_PINS )
-            {
-                PIN_DEBUG_MAP.remove( this );
-            }
+            noFaults++;
+            swapperTracer.noFaults( 1 );
+        }
+
+        @Override
+        public void close()
+        {
+            pins++;
+            swapperTracer.pins( 1 );
         }
     }
 
@@ -342,16 +380,17 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public void done()
+        public void close()
         {
             faults++;
             swapperTracer.faults( 1 );
         }
 
         @Override
-        public void fail( Throwable throwable )
+        public void setException( Throwable throwable )
         {
-            done();
+            failedFaults++;
+            swapperTracer.failedFaults( 1 );
         }
 
         @Override
@@ -383,14 +422,13 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public void done()
+        public void close()
         {
         }
 
         @Override
-        public void done( IOException exception )
+        public void setException( IOException exception )
         {
-            done();
         }
 
         @Override
@@ -431,7 +469,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public void threwException( IOException exception )
+        public void setException( IOException exception )
         {
             evictionExceptions++;
             swapperTracer.evictionExceptions( 1 );

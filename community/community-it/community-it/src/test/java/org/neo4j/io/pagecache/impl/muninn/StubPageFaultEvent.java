@@ -38,12 +38,12 @@ class StubPageFaultEvent implements PageFaultEvent
     }
 
     @Override
-    public void done()
+    public void close()
     {
     }
 
     @Override
-    public void fail( Throwable throwable )
+    public void setException( Throwable throwable )
     {
     }
 

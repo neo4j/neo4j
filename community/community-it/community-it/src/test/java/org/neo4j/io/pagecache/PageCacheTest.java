@@ -2713,7 +2713,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
         // Then we should see pins and unpins pair up exactly.
-        assertThat( tracer.unpins() ).isEqualTo( tracer.pins() );
+        assertThat( tracer.pins() ).isEqualTo( tracer.unpins() + tracer.failedFaults() );
     }
 
     @Test

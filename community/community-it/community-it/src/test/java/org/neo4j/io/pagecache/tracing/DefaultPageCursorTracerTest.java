@@ -71,64 +71,39 @@ class DefaultPageCursorTracerTest
     @Test
     void countPinsAndUnpins()
     {
-        pageCursorTracer.beginPin( true, 0, swapper ).done();
-        pageCursorTracer.beginPin( true, 0, swapper );
+        pageCursorTracer.beginPin( true, 0, swapper ).close();
+        pageCursorTracer.unpin( 0, swapper );
+        pageCursorTracer.beginPin( true, 0, swapper ).close();
 
         assertEquals( 2, pageCursorTracer.pins() );
         assertEquals( 1, pageCursorTracer.unpins() );
     }
 
     @Test
-    void noHitForPinEventWithPageFault()
-    {
-        pinFaultAndHit();
-
-        assertEquals( 1, pageCursorTracer.pins() );
-        assertEquals( 1, pageCursorTracer.faults() );
-        assertEquals( 0, pageCursorTracer.hits() );
-    }
-
-    @Test
-    void hitForPinEventWithoutPageFault()
+    void countHits()
     {
         pinAndHit();
 
         assertEquals( 1, pageCursorTracer.pins() );
         assertEquals( 1, pageCursorTracer.hits() );
-    }
-
-    @Test
-    void countHitsOnlyForPinEventsWithoutPageFaults()
-    {
-        pinAndHit();
-        pinAndHit();
-        pinAndHit();
-        pinFaultAndHit();
-        pinFaultAndHit();
-        pinAndHit();
-        pinAndHit();
-
-        assertEquals( 7, pageCursorTracer.pins() );
-        assertEquals( 5, pageCursorTracer.hits() );
+        assertEquals( 1, pageCursorTracer.unpins() );
     }
 
     @Test
     void countPageFaultsAndBytesRead()
     {
-        PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
+        try ( var pinEvent = pageCursorTracer.beginPin( true, 0, swapper ) )
         {
-            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, swapper );
+            try ( var pageFaultEvent = pinEvent.beginPageFault( 1, swapper ) )
             {
                 pageFaultEvent.addBytesRead( 42 );
             }
-            pageFaultEvent.done();
-            pageFaultEvent = pinEvent.beginPageFault( 3, swapper );
+            try ( var pageFaultEvent = pinEvent.beginPageFault( 3, swapper ) )
             {
                 pageFaultEvent.addBytesRead( 42 );
             }
-            pageFaultEvent.done();
         }
-        pinEvent.done();
+        pageCursorTracer.unpin( 0, swapper );
 
         assertEquals( 1, pageCursorTracer.pins() );
         assertEquals( 1, pageCursorTracer.unpins() );
@@ -137,21 +112,50 @@ class DefaultPageCursorTracerTest
     }
 
     @Test
+    void countNoFaults()
+    {
+        try ( var pinEvent = pageCursorTracer.beginPin( true, 0, swapper ) )
+        {
+            pinEvent.noFault();
+        }
+        pageCursorTracer.unpin( 0, swapper );
+
+        assertEquals( 1, pageCursorTracer.pins() );
+        assertEquals( 1, pageCursorTracer.noFaults() );
+        assertEquals( 1, pageCursorTracer.unpins() );
+    }
+
+    @Test
+    void countFailedFaults()
+    {
+        try ( var pinEvent = pageCursorTracer.beginPin( true, 0, swapper ) )
+        {
+            try ( var pageFaultEvent = pinEvent.beginPageFault( 1, swapper ) )
+            {
+                pageFaultEvent.setException( null );
+            }
+        }
+
+        assertEquals( 1, pageCursorTracer.pins() );
+        assertEquals( 1, pageCursorTracer.faults() );
+        assertEquals( 1, pageCursorTracer.failedFaults() );
+    }
+
+    @Test
     void countPageEvictions()
     {
-        PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
+        try ( var pinEvent = pageCursorTracer.beginPin( true, 0, swapper ) )
         {
-            PageFaultEvent faultEvent = pinEvent.beginPageFault( 1, swapper );
+            try ( var faultEvent = pinEvent.beginPageFault( 1, swapper ) )
             {
                 EvictionEvent evictionEvent = faultEvent.beginEviction( 0 );
                 evictionEvent.setSwapper( swapper );
                 evictionEvent.setFilePageId( 0 );
-                evictionEvent.threwException( new IOException( "exception" ) );
+                evictionEvent.setException( new IOException( "exception" ) );
                 evictionEvent.close();
             }
-            faultEvent.done();
         }
-        pinEvent.done();
+        pageCursorTracer.unpin( 0, swapper );
 
         assertEquals( 1, pageCursorTracer.pins() );
         assertEquals( 1, pageCursorTracer.unpins() );
@@ -163,28 +167,29 @@ class DefaultPageCursorTracerTest
     @Test
     void countFlushesAndBytesWritten()
     {
-        PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
+        try ( var pinEvent = pageCursorTracer.beginPin( true, 0, swapper ) )
         {
-            PageFaultEvent faultEvent = pinEvent.beginPageFault( 3, swapper );
+            try ( PageFaultEvent faultEvent = pinEvent.beginPageFault( 3, swapper ) )
             {
                 EvictionEvent evictionEvent = faultEvent.beginEviction( 0 );
                 {
                     evictionEvent.setSwapper( swapper );
-                    FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, referenceTranslator );
-                    flushEvent.addBytesWritten( 27 );
-                    flushEvent.addPagesMerged( 10 );
-                    flushEvent.done();
-                    FlushEvent flushEvent1 = evictionEvent.beginFlush( 1, swapper, referenceTranslator );
-                    flushEvent1.addBytesWritten( 13 );
-                    flushEvent1.addPagesFlushed( 2 );
-                    flushEvent1.addPagesMerged( 2 );
-                    flushEvent1.done();
+                    try ( var flushEvent = evictionEvent.beginFlush( 0, swapper, referenceTranslator ) )
+                    {
+                        flushEvent.addBytesWritten( 27 );
+                        flushEvent.addPagesMerged( 10 );
+                    }
+                    try ( var flushEvent1 = evictionEvent.beginFlush( 1, swapper, referenceTranslator ) )
+                    {
+                        flushEvent1.addBytesWritten( 13 );
+                        flushEvent1.addPagesFlushed( 2 );
+                        flushEvent1.addPagesMerged( 2 );
+                    }
                 }
                 evictionEvent.close();
             }
-            faultEvent.done();
         }
-        pinEvent.done();
+        pageCursorTracer.unpin( 0, swapper );
 
         assertEquals( 1, pageCursorTracer.pins() );
         assertEquals( 1, pageCursorTracer.unpins() );
@@ -204,6 +209,9 @@ class DefaultPageCursorTracerTest
         assertEquals( 1, cacheTracer.pins() );
         assertEquals( 1, cacheTracer.unpins() );
         assertEquals( 1, cacheTracer.faults() );
+        assertEquals( 1, cacheTracer.hits() );
+        assertEquals( 1, cacheTracer.noFaults() );
+        assertEquals( 1, cacheTracer.failedFaults() );
         assertEquals( 1, cacheTracer.evictions() );
         assertEquals( 1, cacheTracer.cooperativeEvictions() );
         assertEquals( 1, cacheTracer.evictionExceptions() );
@@ -219,6 +227,9 @@ class DefaultPageCursorTracerTest
         assertEquals( 3, cacheTracer.pins() );
         assertEquals( 3, cacheTracer.unpins() );
         assertEquals( 3, cacheTracer.faults() );
+        assertEquals( 3, cacheTracer.hits() );
+        assertEquals( 3, cacheTracer.noFaults() );
+        assertEquals( 3, cacheTracer.failedFaults() );
         assertEquals( 3, cacheTracer.evictions() );
         assertEquals( 3, cacheTracer.cooperativeEvictions() );
         assertEquals( 3, cacheTracer.evictionExceptions() );
@@ -237,6 +248,9 @@ class DefaultPageCursorTracerTest
         assertEquals( 1, cacheTracer.pins() );
         assertEquals( 1, cacheTracer.unpins() );
         assertEquals( 1, cacheTracer.faults() );
+        assertEquals( 1, cacheTracer.hits() );
+        assertEquals( 1, cacheTracer.noFaults() );
+        assertEquals( 1, cacheTracer.failedFaults() );
         assertEquals( 1, cacheTracer.evictions() );
         assertEquals( 1, cacheTracer.cooperativeEvictions() );
         assertEquals( 1, cacheTracer.evictionExceptions() );
@@ -252,6 +266,9 @@ class DefaultPageCursorTracerTest
         assertEquals( 3, cacheTracer.pins() );
         assertEquals( 3, cacheTracer.unpins() );
         assertEquals( 3, cacheTracer.faults() );
+        assertEquals( 3, cacheTracer.hits() );
+        assertEquals( 3, cacheTracer.noFaults() );
+        assertEquals( 3, cacheTracer.failedFaults() );
         assertEquals( 3, cacheTracer.evictions() );
         assertEquals( 3, cacheTracer.cooperativeEvictions() );
         assertEquals( 3, cacheTracer.evictionExceptions() );
@@ -266,7 +283,7 @@ class DefaultPageCursorTracerTest
     {
         assertEquals( 0d, pageCursorTracer.hitRatio(), 0.0001 );
 
-        pinFaultAndHit();
+        pinAndFault();
 
         assertEquals( 0.0 / 1, pageCursorTracer.hitRatio(), 0.0001 );
 
@@ -274,9 +291,9 @@ class DefaultPageCursorTracerTest
 
         assertEquals( 1.0 / 2, pageCursorTracer.hitRatio(), 0.0001 );
 
-        pinFaultAndHit();
-        pinFaultAndHit();
-        pinFaultAndHit();
+        pinAndFault();
+        pinAndFault();
+        pinAndFault();
         pinAndHit();
         pinAndHit();
 
@@ -300,22 +317,26 @@ class DefaultPageCursorTracerTest
         for ( int i = 0; i < 5; i++ )
         {
             DummyPageSwapper dummyPageSwapper = new DummyPageSwapper( "a", 4 );
-            PinEvent pinEvent = tracer.beginPin( false, 1, dummyPageSwapper );
-            pinEvent.hit();
-            try ( PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, dummyPageSwapper ) )
+            try ( var pinEvent = tracer.beginPin( false, 1, dummyPageSwapper ) )
             {
-                pageFaultEvent.addBytesRead( 16 );
-                try ( EvictionEvent evictionEvent = pageFaultEvent.beginEviction( 3 ) )
+                pinEvent.hit();
+                pinEvent.noFault();
+                try ( PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 1, dummyPageSwapper ) )
                 {
-                    evictionEvent.setSwapper( dummyPageSwapper );
-                    FlushEvent flushEvent = evictionEvent.beginFlush( 1, dummyPageSwapper, pageRef -> (int) pageRef );
-                    flushEvent.addPagesMerged( 7 );
-                    flushEvent.addBytesWritten( 17 );
-                    flushEvent.done();
+                    pageFaultEvent.addBytesRead( 16 );
+                    pageFaultEvent.setException( null );
+                    try ( EvictionEvent evictionEvent = pageFaultEvent.beginEviction( 3 ) )
+                    {
+                        evictionEvent.setSwapper( dummyPageSwapper );
+                        try ( var flushEvent = evictionEvent.beginFlush( 1, dummyPageSwapper, pageRef -> (int) pageRef ) )
+                        {
+                            flushEvent.addPagesMerged( 7 );
+                            flushEvent.addBytesWritten( 17 );
+                        }
+                    }
                 }
-                pageFaultEvent.done();
             }
-            pinEvent.done();
+            tracer.unpin( 1, dummyPageSwapper );
         }
         pageCursorTracer.merge( tracer );
 
@@ -323,53 +344,63 @@ class DefaultPageCursorTracerTest
         assertEquals( 5, pageCursorTracer.unpins() );
         assertEquals( 5, pageCursorTracer.evictions() );
         assertEquals( 35, pageCursorTracer.merges() );
-        assertEquals( 10, pageCursorTracer.faults() );
+        assertEquals( 5, pageCursorTracer.faults() );
+        assertEquals( 5, pageCursorTracer.noFaults() );
+        assertEquals( 5, pageCursorTracer.failedFaults() );
         assertEquals( 80, pageCursorTracer.bytesRead() );
         assertEquals( 85, pageCursorTracer.bytesWritten() );
     }
 
     private void generateEventSet()
     {
-        PinEvent pinEvent = pageCursorTracer.beginPin( false, 0, swapper );
+        try ( var pinEvent = pageCursorTracer.beginPin( false, 0, swapper ) )
         {
-            PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 4, swapper );
-            pageFaultEvent.addBytesRead( 150 );
+            pinEvent.hit();
+            pinEvent.noFault();
+            try ( var pageFaultEvent = pinEvent.beginPageFault( 4, swapper ) )
             {
-                EvictionEvent evictionEvent = pageFaultEvent.beginEviction( 0 );
+                pageFaultEvent.setException( null );
+                pageFaultEvent.addBytesRead( 150 );
+                try ( var evictionEvent = pageFaultEvent.beginEviction( 0 ) )
                 {
                     evictionEvent.setSwapper( swapper );
-                    FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, referenceTranslator );
-                    flushEvent.addBytesWritten( 10 );
-                    flushEvent.addPagesFlushed( 1 );
-                    flushEvent.addPagesMerged( 1 );
-                    flushEvent.done();
+                    try ( var flushEvent = evictionEvent.beginFlush( 0, swapper, referenceTranslator ) )
+                    {
+                        flushEvent.addBytesWritten( 10 );
+                        flushEvent.addPagesFlushed( 1 );
+                        flushEvent.addPagesMerged( 1 );
+                    }
+                    evictionEvent.setException( new IOException( "eviction exception" ) );
                 }
-                evictionEvent.threwException( new IOException( "eviction exception" ) );
-                evictionEvent.close();
             }
-            pageFaultEvent.done();
         }
-        pinEvent.done();
+        pageCursorTracer.unpin( 0, swapper );
     }
 
     private PageCursorTracer createTracer()
     {
-        return new DefaultPageCursorTracer( cacheTracer, TEST_TRACER );
+        var tracer = new DefaultPageCursorTracer( cacheTracer, TEST_TRACER );
+        // ignore invariants check as here we produce "impossible" sequences of events in order to test tracer
+        tracer.setIgnoreCounterCheck( true );
+        return tracer;
     }
 
     private void pinAndHit()
     {
-        PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
-        pinEvent.hit();
-        pinEvent.done();
+        try ( var pinEvent = pageCursorTracer.beginPin( true, 0, swapper ) )
+        {
+            pinEvent.hit();
+        }
+        pageCursorTracer.unpin( 0, swapper );
     }
 
-    private void pinFaultAndHit()
+    private void pinAndFault()
     {
-        PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
-        PageFaultEvent pageFaultEvent = pinEvent.beginPageFault( 6, swapper );
-        pinEvent.hit();
-        pageFaultEvent.done();
-        pinEvent.done();
+        try ( var pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
+              var fault = pinEvent.beginPageFault( 0, swapper );)
+        {
+            fault.addBytesRead( 0 );
+        }
+        pageCursorTracer.unpin( 0, swapper );
     }
 }

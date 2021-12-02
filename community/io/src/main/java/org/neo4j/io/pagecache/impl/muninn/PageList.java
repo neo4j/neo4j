@@ -28,7 +28,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionEventOpportunity;
-import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 
@@ -502,22 +501,23 @@ class PageList implements PageReferenceTranslator
     private static void flushModifiedPage( long pageRef, EvictionEvent evictionEvent, long filePageId, PageSwapper swapper, PageList pageReferenceTranslator )
             throws IOException
     {
-        FlushEvent flushEvent = evictionEvent.beginFlush( pageRef, swapper, pageReferenceTranslator );
-        try
+        try ( var flushEvent = evictionEvent.beginFlush( pageRef, swapper, pageReferenceTranslator ) )
         {
-            long address = getAddress( pageRef );
-            long bytesWritten = swapper.write( filePageId, address );
-            explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
-            flushEvent.addBytesWritten( bytesWritten );
-            flushEvent.addPagesFlushed( 1 );
-            flushEvent.done();
-        }
-        catch ( IOException e )
-        {
-            unlockExclusive( pageRef );
-            flushEvent.done( e );
-            evictionEvent.threwException( e );
-            throw e;
+            try
+            {
+                long address = getAddress( pageRef );
+                long bytesWritten = swapper.write( filePageId, address );
+                explicitlyMarkPageUnmodifiedUnderExclusiveLock( pageRef );
+                flushEvent.addBytesWritten( bytesWritten );
+                flushEvent.addPagesFlushed( 1 );
+            }
+            catch ( IOException e )
+            {
+                unlockExclusive( pageRef );
+                flushEvent.setException( e );
+                evictionEvent.setException( e );
+                throw e;
+            }
         }
     }
 

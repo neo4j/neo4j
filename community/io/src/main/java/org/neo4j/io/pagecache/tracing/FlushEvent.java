@@ -24,7 +24,7 @@ import java.io.IOException;
 /**
  * Begin flushing modifications from an in-memory page to the backing file.
  */
-public interface FlushEvent
+public interface FlushEvent extends AutoCloseablePageCacheTracerEvent
 {
     /**
      * A FlushEvent implementation that does nothing.
@@ -37,12 +37,7 @@ public interface FlushEvent
         }
 
         @Override
-        public void done()
-        {
-        }
-
-        @Override
-        public void done( IOException exception )
+        public void setException( IOException exception )
         {
         }
 
@@ -55,6 +50,11 @@ public interface FlushEvent
         public void addPagesMerged( int pagesMerged )
         {
         }
+
+        @Override
+        public void close()
+        {
+        }
     };
 
     /**
@@ -63,15 +63,8 @@ public interface FlushEvent
     void addBytesWritten( long bytes );
 
     /**
-     * The page flush has completed successfully.
+     * Add up a number of pages that has been flushed.
      */
-    void done();
-
-    /**
-     * The page flush did not complete successfully, but threw the given exception.
-     */
-    void done( IOException exception );
-
     void addPagesFlushed( int pageCount );
 
     /**
@@ -79,4 +72,15 @@ public interface FlushEvent
      * @param pagesMerged number of merged pages
      */
     void addPagesMerged( int pagesMerged );
+
+    /**
+     * The page flush threw the given exception.
+     */
+    void setException( IOException exception );
+
+    /**
+     * The page flush has completed.
+     */
+    @Override
+    void close();
 }

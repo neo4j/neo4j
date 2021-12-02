@@ -122,6 +122,18 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public long failedFaults()
+    {
+        return 0;
+    }
+
+    @Override
+    public long noFaults()
+    {
+        return 0;
+    }
+
+    @Override
     public long pins()
     {
         return pins.get();
@@ -258,6 +270,16 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public void noFaults( long noFaults )
+    {
+    }
+
+    @Override
+    public void failedFaults( long failedFaults )
+    {
+    }
+
+    @Override
     public void bytesRead( long bytesRead )
     {
     }
@@ -356,7 +378,7 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
         }
 
         @Override
-        public void threwException( IOException exception )
+        public void setException( IOException exception )
         {
         }
 

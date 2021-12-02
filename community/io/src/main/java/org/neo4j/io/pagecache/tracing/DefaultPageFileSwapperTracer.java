@@ -27,6 +27,8 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
     private final LongAdder unpins = new LongAdder();
     private final LongAdder hits = new LongAdder();
     private final LongAdder faults = new LongAdder();
+    private final LongAdder failedFaults = new LongAdder();
+    private final LongAdder noFaults = new LongAdder();
     private final LongAdder bytesRead = new LongAdder();
     private final LongAdder bytesWritten = new LongAdder();
     private final LongAdder evictions = new LongAdder();
@@ -72,6 +74,18 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
     public void faults( long faults )
     {
         this.faults.add( faults );
+    }
+
+    @Override
+    public void noFaults( long noFaults )
+    {
+        this.noFaults.add( noFaults );
+    }
+
+    @Override
+    public void failedFaults( long failedFaults )
+    {
+        this.failedFaults.add( failedFaults );
     }
 
     /**
@@ -138,6 +152,18 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer
     public long faults()
     {
         return faults.sum();
+    }
+
+    @Override
+    public long failedFaults()
+    {
+        return failedFaults.sum();
+    }
+
+    @Override
+    public long noFaults()
+    {
+        return noFaults.sum();
     }
 
     @Override

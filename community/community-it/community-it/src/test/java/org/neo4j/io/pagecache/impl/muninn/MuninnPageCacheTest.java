@@ -401,6 +401,51 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    void countOpenedAndClosedLinkedCursors() throws IOException
+    {
+        DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 42, defaultPageCacheTracer ) )
+        {
+            int iterations = 14;
+            for ( int i = 0; i < iterations; i++ )
+            {
+                writeInitialDataTo( file( "a" + i ) );
+                try ( var cursorContext = new CursorContext( defaultPageCacheTracer.createPageCursorTracer( "countOpenedAndClosedCursors" ) );
+                        PagedFile pagedFile = map( pageCache, file( "a" + i ), 8 ) )
+                {
+                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
+                    {
+                        cursor.openLinkedCursor( 1 );
+                        assertEquals( i * 7 + 2, defaultPageCacheTracer.openedCursors() );
+                        assertEquals( i * 7, defaultPageCacheTracer.closedCursors() );
+
+                        assertTrue( cursor.next() );
+                        cursor.putLong( 0L );
+                    }
+                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
+                    {
+                        cursor.openLinkedCursor( 1 );
+                        assertEquals( i * 7 + 4, defaultPageCacheTracer.openedCursors() );
+                        assertEquals( i * 7 + 2, defaultPageCacheTracer.closedCursors() );
+                    }
+                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
+                    {
+                        assertTrue( cursor.next() );
+                        cursor.openLinkedCursor( 1 );
+                        cursor.openLinkedCursor( 1 ); // opening new linked cursor closes previous one
+                        assertEquals( i * 7 + 7, defaultPageCacheTracer.openedCursors() );
+                        assertEquals( i * 7 + 5, defaultPageCacheTracer.closedCursors() );
+                    }
+                    pagedFile.setDeleteOnClose( true );
+                }
+            }
+
+            assertEquals( iterations * 7, defaultPageCacheTracer.openedCursors() );
+            assertEquals( iterations * 7, defaultPageCacheTracer.closedCursors() );
+        }
+    }
+
+    @Test
     void shouldBeAbleToSetDeleteOnCloseFileAfterItWasMapped() throws IOException
     {
         DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
@@ -550,6 +595,33 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 assertFalse( cursor.next() );
             }
             assertEquals( 2, cursorContext.getCursorTracer().pins() );
+            assertEquals( 2, cursorContext.getCursorTracer().noFaults() );
+            assertEquals( 0, cursorContext.getCursorTracer().unpins() );
+            assertEquals( 2, pagedFile.pageFileCounters().pins() );
+            assertEquals( 2, pagedFile.pageFileCounters().noFaults() );
+            assertEquals( 0, pagedFile.pageFileCounters().unpins() );
+        }
+    }
+
+    @Test
+    void finishPinEventWhenRetryOnEvictedPage() throws IOException
+    {
+        writeInitialDataTo( file( "a" ) );
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer( true );
+        PageCursorTracer pageCursorTracer = cacheTracer.createPageCursorTracer( "finishPinEventWhenOpenedWithNoFaultOption" );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, cacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+        {
+            CursorContext cursorContext = new CursorContext( pageCursorTracer );
+            try ( var readCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
+            {
+                assertTrue( readCursor.next() ); // first pin
+
+                var clockArm = pageCache.evictPages( 1, 0, cacheTracer.beginPageEvictions( 1 ) );
+                assertThat( clockArm ).isEqualTo( 1L );
+                assertTrue( readCursor.shouldRetry() ); // another pin
+            }
+            assertEquals( 2, cursorContext.getCursorTracer().pins() );
             assertEquals( 2, cursorContext.getCursorTracer().unpins() );
             assertEquals( 2, pagedFile.pageFileCounters().pins() );
             assertEquals( 2, pagedFile.pageFileCounters().unpins() );
@@ -568,13 +640,13 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 PagedFile pagedFileB = map( pageCache, file( "b" ), 8 );)
         {
             CursorContext cursorContext = new CursorContext( pageCursorTracer );
-            try ( PageCursor cursor = pagedFileA.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext ) )
+            try ( PageCursor cursor = pagedFileA.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
             {
                 assertTrue( cursor.next() );
                 assertTrue( cursor.next() );
                 assertFalse( cursor.next() );
             }
-            try ( PageCursor cursor = pagedFileB.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext ) )
+            try ( PageCursor cursor = pagedFileB.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
             {
                 assertTrue( cursor.next() );
                 assertTrue( cursor.next() );
@@ -587,6 +659,34 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertEquals( 2, pagedFileA.pageFileCounters().unpins() );
             assertEquals( 2, pagedFileB.pageFileCounters().pins() );
             assertEquals( 2, pagedFileB.pageFileCounters().unpins() );
+        }
+    }
+
+    @Test
+    void finishPinEventReportedPerFileAsInTransaction() throws IOException
+    {
+        writeInitialDataTo( file( "a" ) );
+        writeInitialDataTo( file( "b" ) );
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer( true );
+        PageCursorTracer pageCursorTracer = cacheTracer.createPageCursorTracer( "finishPinEventReportedPerFile" );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 4, cacheTracer );
+              PagedFile pagedFileA = map( pageCache, file( "a" ), 8 );
+              PagedFile pagedFileB = map( pageCache, file( "b" ), 8 );)
+        {
+            CursorContext cursorContext = new CursorContext( pageCursorTracer );
+            try ( PageCursor cursorA = pagedFileA.io( 0, PF_SHARED_READ_LOCK, cursorContext );
+                  PageCursor cursorB = pagedFileB.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
+            {
+                assertTrue( cursorA.next() );
+                assertTrue( cursorB.next() );
+            }
+            assertEquals( 2, cursorContext.getCursorTracer().pins() );
+            assertEquals( 2, cursorContext.getCursorTracer().unpins() );
+
+            assertEquals( 1, pagedFileA.pageFileCounters().pins() );
+            assertEquals( 1, pagedFileA.pageFileCounters().unpins() );
+            assertEquals( 1, pagedFileB.pageFileCounters().pins() );
+            assertEquals( 1, pagedFileB.pageFileCounters().unpins() );
         }
     }
 
@@ -2005,7 +2105,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                     @Override
                     public void setCachePageId( long cachePageId )
                     {
-
                     }
 
                     @Override
@@ -2016,25 +2115,16 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                             @Override
                             public void addBytesRead( long bytes )
                             {
-
                             }
 
                             @Override
                             public void setCachePageId( long cachePageId )
                             {
-
                             }
 
                             @Override
-                            public void done()
+                            public void setException( Throwable throwable )
                             {
-
-                            }
-
-                            @Override
-                            public void fail( Throwable throwable )
-                            {
-
                             }
 
                             @Override
@@ -2048,19 +2138,27 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                             {
                                 return null;
                             }
+
+                            @Override
+                            public void close()
+                            {
+                            }
                         };
                     }
 
                     @Override
                     public void hit()
                     {
-
                     }
 
                     @Override
-                    public void done()
+                    public void noFault()
                     {
+                    }
 
+                    @Override
+                    public void close()
+                    {
                     }
                 };
             }

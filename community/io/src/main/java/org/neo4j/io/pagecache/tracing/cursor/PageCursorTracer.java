@@ -32,8 +32,6 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
  * Performs event tracing related to particular page cursors and expose simple counters around them.
  * Since events of each particular page cursor are part of whole page cache events, each particular page cursor
  * tracer will eventually report them to global page cache counters/tracers.
- *
- * @see PageCursorTracer
  */
 public interface PageCursorTracer extends PageCursorCounters, Closeable
 {
@@ -41,6 +39,18 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
     {
         @Override
         public long faults()
+        {
+            return 0;
+        }
+
+        @Override
+        public long failedFaults()
+        {
+            return 0;
+        }
+
+        @Override
+        public long noFaults()
         {
             return 0;
         }
@@ -112,15 +122,24 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
         }
 
         @Override
+        public void unpin( long filePageId, PageSwapper swapperTracer )
+        {
+        }
+
+        @Override
         public void reportEvents()
         {
-
         }
 
         @Override
         public String getTag()
         {
             return EMPTY;
+        }
+
+        @Override
+        public void openCursor()
+        {
         }
 
         @Override
@@ -134,7 +153,15 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
         }
     };
 
+    /**
+     * Pin the page
+     */
     PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper );
+
+    /**
+     * Unpin the page
+     */
+    void unpin( long filePageId, PageSwapper swapper );
 
     /**
      * Report to global page cache tracer events observed by current page cursor tracer.
@@ -153,6 +180,11 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
     {
         reportEvents();
     }
+
+    /**
+     * Page cache cursor opened
+     */
+    void openCursor();
 
     /**
      * Page cache cursor closed

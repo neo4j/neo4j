@@ -93,9 +93,12 @@ class EncodeGroupsStepTest
     {
         when( store.nextId( any( CursorContext.class ) ) ).thenAnswer( invocation -> {
             CursorContext cursorContext = invocation.getArgument( 0 );
-            var event = cursorContext.getCursorTracer().beginPin( false, 1, mock( PageSwapper.class, RETURNS_MOCKS ) );
-            event.hit();
-            event.done();
+            var swapper = mock( PageSwapper.class, RETURNS_MOCKS );
+            try ( var event = cursorContext.getCursorTracer().beginPin( false, 1, swapper ) )
+            {
+                event.hit();
+            }
+            cursorContext.getCursorTracer().unpin( 1, swapper );
             return 1L;
         } );
         var cacheTracer = new DefaultPageCacheTracer();

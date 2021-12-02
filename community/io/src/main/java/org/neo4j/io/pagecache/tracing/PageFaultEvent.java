@@ -19,12 +19,10 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-import java.io.Closeable;
-
 /**
  * Begin a page fault as part of a pin event.
  */
-public interface PageFaultEvent extends EvictionEventOpportunity, Closeable
+public interface PageFaultEvent extends EvictionEventOpportunity, AutoCloseablePageCacheTracerEvent
 {
     /**
      * A PageFaultEvent that does nothing.
@@ -37,12 +35,7 @@ public interface PageFaultEvent extends EvictionEventOpportunity, Closeable
         }
 
         @Override
-        public void done()
-        {
-        }
-
-        @Override
-        public void fail( Throwable throwable )
+        public void setException( Throwable throwable )
         {
         }
 
@@ -62,6 +55,11 @@ public interface PageFaultEvent extends EvictionEventOpportunity, Closeable
         public void setCachePageId( long cachePageId )
         {
         }
+
+        @Override
+        public void close()
+        {
+        }
     };
 
     /**
@@ -75,24 +73,19 @@ public interface PageFaultEvent extends EvictionEventOpportunity, Closeable
     void setCachePageId( long cachePageId );
 
     /**
-     * The page fault completed successfully.
-     */
-    void done();
-
-    /**
-     * The page fault did not complete successfully, but instead caused the given Throwable to be thrown.
-     */
-    void fail( Throwable throwable );
-
-    @Override
-    default void close()
-    {
-        done();
-    }
-
-    /**
      * Update free list size as result of fault
      * @param freeListSize new free list size
      */
     void freeListSize( int freeListSize );
+
+    /**
+     * The page fault did not complete successfully, but instead caused the given Throwable to be thrown.
+     */
+    void setException( Throwable throwable );
+
+    /**
+     * The page fault completed.
+     */
+    @Override
+    void close();
 }

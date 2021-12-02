@@ -194,6 +194,18 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public void noFaults( long noFaults )
+    {
+        delegate.noFaults( noFaults );
+    }
+
+    @Override
+    public void failedFaults( long failedFaults )
+    {
+        delegate.failedFaults( failedFaults );
+    }
+
+    @Override
     public void bytesRead( long bytesRead )
     {
         delegate.bytesRead( bytesRead );
@@ -287,6 +299,18 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public long faults()
     {
         return delegate.faults();
+    }
+
+    @Override
+    public long failedFaults()
+    {
+        return delegate.failedFaults();
+    }
+
+    @Override
+    public long noFaults()
+    {
+        return delegate.noFaults();
     }
 
     @Override
