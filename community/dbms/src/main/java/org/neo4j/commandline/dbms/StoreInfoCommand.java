@@ -235,16 +235,16 @@ public class StoreInfoCommand extends AbstractCommand
             this.inUse = inUse;
         }
 
-        List<Pair<InfoType,String>> printFields()
+        List<StoreInfoField> printFields()
         {
             return List.of(
-                    Pair.of( InfoType.DatabaseName, databaseName ),
-                    Pair.of( InfoType.InUse, Boolean.toString( inUse ) ),
-                    Pair.of( InfoType.StoreFormat, storeFormat ),
-                    Pair.of( InfoType.StoreFormatIntroduced, storeFormatIntroduced ),
-                    Pair.of( InfoType.StoreFormatSuperseded, storeFormatSuperseded ),
-                    Pair.of( InfoType.LastCommittedTransaction, Long.toString( lastCommittedTransaction ) ),
-                    Pair.of( InfoType.RecoveryRequired, Boolean.toString( recoveryRequired ) ) );
+                    new StoreInfoField( InfoType.DatabaseName, databaseName ),
+                    new StoreInfoField( InfoType.InUse, Boolean.toString( inUse ) ),
+                    new StoreInfoField( InfoType.StoreFormat, storeFormat ),
+                    new StoreInfoField( InfoType.StoreFormatIntroduced, storeFormatIntroduced ),
+                    new StoreInfoField( InfoType.StoreFormatSuperseded, storeFormatSuperseded ),
+                    new StoreInfoField( InfoType.LastCommittedTransaction, Long.toString( lastCommittedTransaction ) ),
+                    new StoreInfoField( InfoType.RecoveryRequired, Boolean.toString( recoveryRequired ) ) );
         }
 
         String print( boolean structured )
@@ -252,13 +252,17 @@ public class StoreInfoCommand extends AbstractCommand
             if ( !structured )
             {
                 return printFields().stream()
-                                    .filter( p -> Objects.nonNull( p.other() ) )
-                                    .map( p -> p.first().justifiedPretty( p.other() ) )
+                                    .filter( p -> Objects.nonNull( p.value() ) )
+                                    .map( p -> p.type().justifiedPretty( p.value() ) )
                                     .collect( Collectors.joining( System.lineSeparator() ) );
             }
             return printFields().stream()
-                                .map( p -> p.first().structuredJson( p.other() ) )
+                                .map( p -> p.type().structuredJson( p.value() ) )
                                 .collect( Collectors.joining( ",", "{", "}" ) );
+        }
+
+        private record StoreInfoField(InfoType type, String value)
+        {
         }
     }
 
