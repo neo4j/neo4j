@@ -16,12 +16,10 @@
  */
 package org.neo4j.cypher.internal.v3_5.ast
 
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.v3_5.expressions.{LogicalVariable, Variable}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{SemanticAnalysisTooling, SemanticCheck}
+import org.neo4j.cypher.internal.v3_5.expressions.{LogicalVariable, ProcedureOutput, Variable}
 import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.cypher.internal.v3_5.util.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticAnalysisTooling
-import org.neo4j.cypher.internal.v3_5.expressions.{ProcedureOutput, Variable}
 
 object ProcedureResultItem {
   def apply(output: ProcedureOutput, variable: Variable)(position: InputPosition): ProcedureResultItem =
@@ -44,6 +42,6 @@ case class ProcedureResultItem(output: Option[ProcedureOutput], variable: Logica
   def semanticCheck(types: Map[String, CypherType]): SemanticCheck =
     types
       .get(outputName)
-      .map { typ => declareVariable(variable, typ): SemanticCheck }
+      .map { typ => declareVariable(variable, typ.covariant): SemanticCheck }
       .getOrElse(error(s"Unknown procedure output: `$outputName`", position))
 }
