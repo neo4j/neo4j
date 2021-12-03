@@ -59,7 +59,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .enablePlanningRangeIndexes()
       .build()
 
-  test("should not plan btree index usage if predicate depends on variable from same QueryGraph") {
+  test("should not plan btree index seek if predicate depends on variable from same QueryGraph") {
     val cfg = plannerConfigForBtreeIndexOnLabelPropTests()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
@@ -111,10 +111,74 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     }
   }
 
-  test("should not plan range index usage if predicate depends on variable from same QueryGraph") {
+  test("should prefer range index over btree index if both are available") {
+    val cfg =
+      plannerBaseConfigForIndexOnLabelPropTests()
+        .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
+        .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
+        .enablePlanningRangeIndexes()
+        .build()
+
+    for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
+      val plan = cfg.plan(s"MATCH (a:Label) WHERE a.prop $op 'test' RETURN a").stripProduceResults
+
+      plan shouldEqual cfg.subPlanBuilder()
+        .nodeIndexOperator(s"a:Label(prop $op 'test')", indexType = IndexType.RANGE)
+        .build()
+    }
+  }
+
+  test("should not plan range index if feature flag is not set") {
+    val cfg =
+      plannerBaseConfigForIndexOnLabelPropTests()
+        .build()
+
+    for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
+      val plan = cfg.plan(s"MATCH (a:Label) WHERE a.prop $op 'test' RETURN a").stripProduceResults
+
+      plan shouldEqual cfg.subPlanBuilder()
+        .filter(s"a.prop $op 'test'")
+        .nodeByLabelScan("a", "Label", IndexOrderNone)
+        .build()
+    }
+  }
+
+  test("should not use range index if predicate is for points") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
-    for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
+    for (predicate <- List("point.withinBBox(a.prop, point({x:1, y:1}), point({x:2, y:2}))", "point.distance(a.prop, point({x:1, y:1})) < 10")) {
+      val plan = cfg.plan(s"MATCH (a:Label) WHERE $predicate RETURN a").stripProduceResults
+
+      plan shouldEqual cfg.subPlanBuilder()
+        .filter(predicate)
+        .nodeByLabelScan("a", "Label", IndexOrderNone)
+        .build()
+    }
+  }
+
+  test("should use range index if value to compare with is of type point") {
+    val cfg = plannerConfigForRangeIndexOnLabelPropTests()
+
+    for (op <- List("=", "<", "<=", ">", ">=")) {
+      val plan = cfg.plan(
+        s"""WITH point({x:1, y:1}) AS point
+           |MATCH (a:Label)
+           |WHERE a.prop $op point
+           |RETURN a""".stripMargin).stripProduceResults
+
+      plan shouldEqual cfg.subPlanBuilder()
+        .apply()
+        .|.nodeIndexOperator(s"a:Label(prop $op point)", argumentIds = Set("point"), indexType = IndexType.RANGE)
+        .projection("point({x: 1, y: 1}) AS point")
+        .argument()
+        .build()
+    }
+  }
+
+  test("should not plan range index seek if predicate depends on variable from same QueryGraph") {
+    val cfg = plannerConfigForRangeIndexOnLabelPropTests()
+
+    for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
       val plan = cfg.plan(s"MATCH (a)-[r]->(b:Label) WHERE b.prop $op a.prop RETURN a").stripProduceResults
 
       val planWithLabelScan = cfg.subPlanBuilder()
@@ -160,6 +224,22 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .projection("{prop: 'foo'} AS foo")
         .argument()
         .build()
+    }
+  }
+
+  test("should not plan range index usage for string comparison predicates") {
+    val cfg = plannerConfigForRangeIndexOnLabelPropTests()
+
+    for (op <- List("ENDS WITH", "CONTAINS")) {
+      val plan = cfg.plan(s"MATCH (a)-[r]->(b:Label) WHERE b.prop $op 'test' RETURN a").stripProduceResults
+
+      val planWithLabelScan = cfg.subPlanBuilder()
+        .expandAll("(b)<-[r]-(a)")
+        .filter(s"b.prop $op 'test'")
+        .nodeByLabelScan("b", "Label")
+        .build()
+
+      plan should be(planWithLabelScan)
     }
   }
 
