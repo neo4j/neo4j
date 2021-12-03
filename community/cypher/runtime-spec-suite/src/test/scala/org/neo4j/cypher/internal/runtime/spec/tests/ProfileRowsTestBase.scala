@@ -783,6 +783,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows with limit + expand on RHS of Apply") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val nodeCount = sizeHint * 10
     given {
       circleGraph(nodeCount)
@@ -812,6 +813,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows with limit + expand on RHS of ConditionalApply non-nullable") {
+    assume(!(isParallel && runOnlySafeScenarios))
     val nodeCount = sizeHint
     given {
       circleGraph(nodeCount)
