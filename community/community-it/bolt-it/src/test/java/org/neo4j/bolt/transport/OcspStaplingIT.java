@@ -215,7 +215,7 @@ class OcspStaplingIT
 
                 respGen.addResponse( certificateID, CertificateStatus.GOOD );
 
-                BasicOCSPResp resp = respGen.build( new JcaContentSignerBuilder( "SHA1withRSA" ).build( privateKey ), certChain, new Date() );
+                BasicOCSPResp resp = respGen.build( new JcaContentSignerBuilder( "SHA256withRSA" ).build( privateKey ), certChain, new Date() );
                 OCSPRespBuilder rGen = new OCSPRespBuilder();
 
                 OCSPResp ocspResp = rGen.build( OCSPRespBuilder.SUCCESSFUL, resp );
@@ -265,7 +265,7 @@ class OcspStaplingIT
 
                 respGen.addResponse( certificateID, CertificateStatus.GOOD );
 
-                BasicOCSPResp resp = respGen.build( new JcaContentSignerBuilder( "SHA1withRSA" ).build( privateKey ), certChain, new Date() );
+                BasicOCSPResp resp = respGen.build( new JcaContentSignerBuilder( "SHA256withRSA" ).build( privateKey ), certChain, new Date() );
                 OCSPRespBuilder rGen = new OCSPRespBuilder();
 
                 OCSPResp ocspResp = rGen.build( OCSPRespBuilder.SUCCESSFUL, resp );
