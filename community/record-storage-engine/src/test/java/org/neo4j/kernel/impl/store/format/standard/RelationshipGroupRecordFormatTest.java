@@ -29,11 +29,10 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,12 +58,9 @@ class RelationshipGroupRecordFormatTest
             cursor.next();
             RelationshipGroupRecord group = new RelationshipGroupRecord( 2 )
                     .initialize( true, Short.MAX_VALUE + offset, 1, 2, 3, 4, 5 );
-            if ( formats.hasCapability( RecordStorageCapability.GROUP_DEGREES_STORE ) )
-            {
-                group.setHasExternalDegreesOut( random.nextBoolean() );
-                group.setHasExternalDegreesIn( random.nextBoolean() );
-                group.setHasExternalDegreesLoop( random.nextBoolean() );
-            }
+            group.setHasExternalDegreesOut( random.nextBoolean() );
+            group.setHasExternalDegreesIn( random.nextBoolean() );
+            group.setHasExternalDegreesLoop( random.nextBoolean() );
             cursor.setOffset( offset );
             format.write( group, cursor, recordSize, cursor.getCurrentPageSize() / recordSize );
 

@@ -681,51 +681,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         fileOperation( MOVE, fileSystem, migrationLayout, directoryLayout,
                 Iterables.iterable( RecordDatabaseFile.allValues() ), true, // allow to skip non existent source files
                 true, ExistingTargetStrategy.OVERWRITE );
-        RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
-        RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
-
-        // The addition of the group degrees store is additive and so if upgrading to a version where it's now present ...
-        if ( !oldFormat.hasCapability( RecordStorageCapability.GROUP_DEGREES_STORE ) && newFormat.hasCapability( RecordStorageCapability.GROUP_DEGREES_STORE ) )
-        {
-            var rebuilder = createGroupDegreesRebuilder( directoryLayout );
-            // ... then just create an empty such store, so that there will be no rebuild triggered on the first startup (which would not find anything anyway)
-            try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
-                    directoryLayout.relationshipGroupDegreesStore(), fileSystem, immediate(), rebuilder, writable(),
-                    cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, directoryLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ),
-                    logService.getUserLogProvider() );
-                    var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "empty group degrees store rebuild" ) ) )
-            {
-                groupDegreesStore.start( cursorContext, StoreCursors.NULL, memoryTracker );
-                groupDegreesStore.checkpoint( cursorContext );
-            }
-        }
-    }
-
-    private GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder createGroupDegreesRebuilder( RecordDatabaseLayout directoryLayout ) throws IOException
-    {
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) ) )
-        {
-            // The store keeps track of committed transactions.
-            // It is essential that it starts with the transaction
-            // that is the last committed one at the upgrade time.
-            long lastTxId = MetaDataStore.getRecord( pageCache, directoryLayout.metadataStore(), LAST_TRANSACTION_ID, directoryLayout.getDatabaseName(),
-                    cursorContext );
-            return new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
-            {
-
-                @Override
-                public void rebuild( RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-                {
-
-                }
-
-                @Override
-                public long lastCommittedTxId()
-                {
-                    return lastTxId;
-                }
-            };
-        }
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( RecordDatabaseLayout migrationStructure, RecordDatabaseLayout sourceDirectoryStructure,

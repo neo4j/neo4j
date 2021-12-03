@@ -39,12 +39,7 @@ public enum RecordStorageCapability implements Capability
     /**
      * Records can spill over into secondary units (another record with a header saying it's a secondary unit to another record).
      */
-    SECONDARY_RECORD_UNITS( CapabilityType.FORMAT ),
-
-    /**
-     * Degrees for dense nodes can be stored in a group degrees store which has support for atomic non-blocking updates.
-     */
-    GROUP_DEGREES_STORE( true, CapabilityType.STORE );
+    SECONDARY_RECORD_UNITS( CapabilityType.FORMAT );
 
     private final CapabilityType[] types;
     private final boolean additive;

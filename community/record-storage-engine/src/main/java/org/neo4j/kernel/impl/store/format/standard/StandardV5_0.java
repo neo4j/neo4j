@@ -48,8 +48,7 @@ public class StandardV5_0 extends BaseRecordFormats
                 FormatFamily.standard.formatCapability(),
                 IndexCapabilities.LuceneCapability.LUCENE_8,
                 IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
-                IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG,
-                RecordStorageCapability.GROUP_DEGREES_STORE );
+                IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG );
     }
 
     @Override
