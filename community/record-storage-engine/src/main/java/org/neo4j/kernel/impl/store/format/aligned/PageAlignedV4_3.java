@@ -66,7 +66,6 @@ public class PageAlignedV4_3 extends BaseRecordFormats
     {
         super( ALIGNED_V4_3.versionString(), ALIGNED_V4_3.introductionVersion(), 2,
                 FormatFamily.aligned.formatCapability(),
-                RecordStorageCapability.GBPTREE_ID_FILES,
                 IndexCapabilities.LuceneCapability.LUCENE_8,
                 IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
                 IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG,

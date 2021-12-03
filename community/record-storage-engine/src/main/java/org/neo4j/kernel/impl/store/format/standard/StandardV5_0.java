@@ -46,7 +46,6 @@ public class StandardV5_0 extends BaseRecordFormats
     {
         super( STORE_VERSION, StoreVersion.STANDARD_V5_0.introductionVersion(), 11,
                 FormatFamily.standard.formatCapability(),
-                RecordStorageCapability.GBPTREE_ID_FILES,
                 IndexCapabilities.LuceneCapability.LUCENE_8,
                 IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
                 IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG,
