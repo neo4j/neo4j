@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Modifier
+
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
@@ -855,7 +856,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", argumentIds = Set("a", "b"))
       .apply()
       .|.nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending, indexType = IndexType.TEXT)
-      .nodeIndexOperator("x:Honey(prop2 = 10, prop)")
+      .apply()
+      .|.nodeIndexOperator("x:Honey(prop2 = 10, prop)")
+      .nodeIndexOperator("x:Honey(prop = variable)", argumentIds = Set("variable"))
       .build()
   })
 

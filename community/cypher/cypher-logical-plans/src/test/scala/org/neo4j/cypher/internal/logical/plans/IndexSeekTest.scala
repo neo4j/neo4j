@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
 import org.neo4j.cypher.internal.util.InputPosition
@@ -73,6 +74,7 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder, indexType) => "b:Y(dogs = 2 OR 5, cats = 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue("dogs"), NODE_TYPE, 0), prop("cats", getValue("cats"), NODE_TYPE, 1)), CompositeQueryExpression(Seq(exactInts(2, 5), exactInt(4))), args, indexOrder, indexType),
     (getValue, args, indexOrder, indexType) => "b:Y(dogs = 2, cats = 4 OR 5)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue("dogs"), NODE_TYPE, 0), prop("cats", getValue("cats"), NODE_TYPE, 1)), CompositeQueryExpression(Seq(exactInt(2), exactInts(4, 5))), args, indexOrder, indexType),
     (getValue, args, indexOrder, indexType) => "b:Y(dogs = 2 OR 3, cats = 4 OR 5)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue("dogs"), NODE_TYPE, 0), prop("cats", getValue("cats"), NODE_TYPE, 1)), CompositeQueryExpression(Seq(exactInts(2, 3), exactInts(4, 5))), args, indexOrder, indexType),
+    (getValue, args, indexOrder, indexType) => "b:Y(name = varName)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0)), variable("varName"), args, indexOrder, indexType),
     (getValue, args, indexOrder, indexType) => "b:Y(name = 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE)), exactString("hi"), args, indexOrder, indexType),
     (getValue, args, indexOrder, indexType) => "b:Y(name < 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE)), lt(string("hi")), args, indexOrder, indexType),
     (getValue, args, indexOrder, indexType) => "b:Y(name <= 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE)), lte(string("hi")), args, indexOrder, indexType),
@@ -94,7 +96,7 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder, indexType) => "b:Y(name CONTAINS 'hi', dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder, indexType)),
     (getValue, args, indexOrder, indexType) => "b:Y(name)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE)), args, indexOrder, indexType)),
     (getValue, args, indexOrder, indexType) => "b:Y(name, dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder, indexType)),
-    (getValue, args, indexOrder, indexType) => "b:Y(name, dogs = 3)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder, indexType))
+    (getValue, args, indexOrder, indexType) => "b:Y(name, dogs = 3)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)), args, indexOrder, indexType)),
   )
 
   val relTestCaseCreators: List[(String => GetValueFromIndexBehavior, Set[String], IndexOrder, IndexType) => (String, LogicalPlan)] = List(
@@ -167,6 +169,8 @@ class IndexSeekTest extends CypherFunSuite {
   private def exactInts(ints: Int*) = ManyQueryExpression(ListLiteral(ints.map(i => intLiteral(i)))(pos))
 
   private def exactString(x: String) = SingleQueryExpression(string(x))
+
+  private def variable(name: String) = SingleQueryExpression(Variable(name)(pos))
 
   private def string(x: String) = StringLiteral(x)(pos)
   private def intLiteral(x: Int) = SignedDecimalIntegerLiteral(x.toString)(pos)
