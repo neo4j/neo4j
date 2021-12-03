@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.transport.pipeline;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -30,17 +31,22 @@ import org.neo4j.memory.MemoryTracker;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 class UnauthenticatedChannelProtectorTest
 {
     @Test
     void shouldInstallAuthenticationHandlersAfterChannelCreated()
     {
+        var channel = mock( Channel.class );
         var pipeline = mock( ChannelPipeline.class );
+        when( channel.pipeline() ).thenReturn( pipeline );
         var memoryTracker = mock( MemoryTracker.class );
 
         var protector =
-                new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, -1, memoryTracker );
+                new UnauthenticatedChannelProtector( channel, Duration.ZERO, -1, memoryTracker );
 
         InOrder inOrder = inOrder( pipeline, memoryTracker );
         protector.afterChannelCreated();
@@ -52,10 +58,12 @@ class UnauthenticatedChannelProtectorTest
     @Test
     void shouldInstallByteAccumulatorBeforeBoltProtocolInstalled()
     {
+        var channel = mock( Channel.class );
         var pipeline = mock( ChannelPipeline.class );
+        when( channel.pipeline() ).thenReturn( pipeline );
         var memoryTracker = mock( MemoryTracker.class );
 
-        var protector = new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, 0, memoryTracker );
+        var protector = new UnauthenticatedChannelProtector( channel, Duration.ZERO, 0, memoryTracker );
 
         var inOrder = inOrder( pipeline, memoryTracker );
         protector.beforeBoltProtocolInstalled();
@@ -67,10 +75,13 @@ class UnauthenticatedChannelProtectorTest
     @Test
     void shouldRemoveHandlersWhenIsDisabled()
     {
+        var channel = mock( Channel.class );
+        when( channel.isActive() ).thenReturn( true );
         var pipeline = mock( ChannelPipeline.class );
+        when( channel.pipeline() ).thenReturn( pipeline );
         var memoryTracker = mock( MemoryTracker.class );
 
-        var protector = new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, 0, memoryTracker );
+        var protector = new UnauthenticatedChannelProtector( channel, Duration.ZERO, 0, memoryTracker );
 
         InOrder inOrder = inOrder( pipeline, memoryTracker );
         protector.disable();
@@ -78,5 +89,22 @@ class UnauthenticatedChannelProtectorTest
         inOrder.verify( pipeline ).remove( BytesAccumulator.class );
         inOrder.verify( memoryTracker ).releaseHeap( AuthenticationTimeoutHandler.SHALLOW_SIZE + BytesAccumulator.SHALLOW_SIZE );
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldIgnoreDisableCallWhenChannelIsInactive()
+    {
+        var channel = mock( Channel.class );
+        when( channel.isActive() ).thenReturn( false );
+        var pipeline = mock( ChannelPipeline.class );
+        when( channel.pipeline() ).thenReturn( pipeline );
+        var memoryTracker = mock( MemoryTracker.class );
+
+        var protector = new UnauthenticatedChannelProtector( channel, Duration.ZERO, 0, memoryTracker );
+        protector.disable();
+
+        verify( channel ).isActive();
+        verify( memoryTracker ).allocateHeap( AuthenticationTimeoutHandler.SHALLOW_SIZE );
+        verifyNoMoreInteractions( channel, pipeline, memoryTracker );
     }
 }
