@@ -21,6 +21,8 @@ package org.neo4j.bolt.v41.messaging;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackOutput;
@@ -31,6 +33,8 @@ import org.neo4j.logging.internal.NullLogService;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class BoltResponseMessageWriterV41Test extends BoltResponseMessageWriterV3Test
@@ -105,6 +109,27 @@ class BoltResponseMessageWriterV41Test extends BoltResponseMessageWriterV3Test
         verify( output ).beginMessage();
         verify( output ).messageSucceeded();
         verify( delegator ).flush();
+    }
+
+    @Test
+    void shouldSkipKeepAliveWhenInvokedAfterClose() throws IOException
+    {
+        // Given
+        var output = mock( PackOutput.class );
+        var delegator = mock( BoltResponseMessageWriterV3.class );
+        when( delegator.output() ).thenReturn( output );
+
+        var timer = timedOutTimer();
+        var writer = newWriter( delegator, timer );
+
+        // When
+        writer.close();
+        writer.keepAlive();
+
+        // Then
+        verify( delegator ).close();
+        verifyNoMoreInteractions( delegator );
+        verifyNoInteractions( output );
     }
 
     @Test
