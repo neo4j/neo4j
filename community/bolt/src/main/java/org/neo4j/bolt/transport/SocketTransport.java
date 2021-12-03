@@ -90,7 +90,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
                 memoryTracker.allocateHeap( HeapEstimator.sizeOf( ch ) );
 
                 memoryTracker.allocateHeap( UnauthenticatedChannelProtector.SHALLOW_SIZE + BoltChannel.SHALLOW_SIZE );
-                var channelProtector = new UnauthenticatedChannelProtector( ch.pipeline(), channelTimeout, maxMessageSize, memoryTracker );
+                var channelProtector = new UnauthenticatedChannelProtector( ch, channelTimeout, maxMessageSize, memoryTracker );
                 BoltChannel boltChannel = newBoltChannel( ch, channelProtector, memoryTracker );
                 connectionTracker.add( boltChannel );
                 ch.closeFuture().addListener( future -> connectionTracker.remove( boltChannel ) );
