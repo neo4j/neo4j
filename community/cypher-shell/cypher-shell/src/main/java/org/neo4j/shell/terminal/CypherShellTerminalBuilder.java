@@ -115,7 +115,8 @@ public class CypherShellTerminalBuilder
         {
             var attributes = new Attributes();
             attributes.setLocalFlag( Attributes.LocalFlag.ECHO, false );
-            jLineTerminal.jansi( false ).jna( false ).dumb( true ).type( Terminal.TYPE_DUMB ).attributes( attributes );
+            jLineTerminal.jna( false ).jansi( false ); // Certain environments (osx) can't handle jna/jansi mode when running tests in maven
+            jLineTerminal.dumb( true ).type( Terminal.TYPE_DUMB ).attributes( attributes );
         }
 
         var reader = LineReaderBuilder.builder()
@@ -127,7 +128,6 @@ public class CypherShellTerminalBuilder
             .option( LineReader.Option.DISABLE_EVENT_EXPANSION, true ) // Disable '!' history expansion
             .option( LineReader.Option.DISABLE_HIGHLIGHTER, true )
             .variable( LineReader.DISABLE_COMPLETION, true )
-            .variable( LineReader.SECONDARY_PROMPT_PATTERN, JlineTerminal.INDENT_CONTINUATION_PROMPT_PATTERN ) // Pad continuation prompts
             .build();
 
         return new JlineTerminal( reader, isInteractive, logger );

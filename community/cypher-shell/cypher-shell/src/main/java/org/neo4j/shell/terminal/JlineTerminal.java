@@ -41,7 +41,6 @@ import static java.util.stream.StreamSupport.stream;
  */
 public class JlineTerminal implements CypherShellTerminal
 {
-    static final String INDENT_CONTINUATION_PROMPT_PATTERN = "%P ";
     static final String NO_CONTINUATION_PROMPT_PATTERN = "  ";
 
     private final LineReader jLineReader;
@@ -196,7 +195,16 @@ public class JlineTerminal implements CypherShellTerminal
 
         private String continuationPromptPattern( String prompt )
         {
-            return prompt.length() > PROMPT_MAX_LENGTH ? NO_CONTINUATION_PROMPT_PATTERN : INDENT_CONTINUATION_PROMPT_PATTERN;
+            if ( prompt.length() > PROMPT_MAX_LENGTH )
+            {
+                return NO_CONTINUATION_PROMPT_PATTERN;
+            }
+            else
+            {
+                // Note, jline has built in support for this using '%P', but that causes a bug in certain environments
+                // https://github.com/jline/jline3/issues/751
+                return " ".repeat( prompt.length() );
+            }
         }
 
         @Override
