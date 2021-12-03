@@ -488,6 +488,127 @@ class TableOutputFormatterTest
                 "| (:Person {name: \"Mark\"})-[:TEST {since: 2016}]->(:Person {name: \"Mark\"}) |" ) );
     }
 
+    @Test
+    void wrapUnicodeContent()
+    {
+        // GIVEN
+        Result result = mockResult( asList( "c1" ), "xx", "😅😅", "🐞🐞🐞🐞🐞🐞" );
+        // WHEN
+        ToStringLinePrinter printer = new ToStringLinePrinter();
+        new TableOutputFormatter( true, 1 ).formatAndCount( new ListBoltResult( result.list(), result.consume() ), printer );
+        String table = printer.result();
+        // THEN
+        assertThat( table, is( String.join( NEWLINE,
+                                            "+------+",
+                                            "| c1   |",
+                                            "+------+",
+                                            "| \"xx\" |",
+                                            "| \"😅😅\" |",
+                                            "| \"🐞🐞🐞 |",
+                                            "\\ 🐞🐞🐞\" |",
+                                            "+------+",
+                                            NEWLINE ) ) );
+    }
+
+    @Test
+    void truncateUnicodeContent()
+    {
+        // GIVEN
+        Result result = mockResult( asList( "c1" ), "xx", "😅😅", "🐞🐞🐞🐞🐞🐞" );
+        // WHEN
+        ToStringLinePrinter printer = new ToStringLinePrinter();
+        new TableOutputFormatter( false, 1 ).formatAndCount( new ListBoltResult( result.list(), result.consume() ), printer );
+        String table = printer.result();
+        // THEN
+        assertThat( table, is( String.join( NEWLINE,
+                                            "+------+",
+                                            "| c1   |",
+                                            "+------+",
+                                            "| \"xx\" |",
+                                            "| \"😅😅\" |",
+                                            "| \"🐞🐞… |",
+                                            "+------+",
+                                            NEWLINE ) ) );
+    }
+
+    @Test
+    void wrapMultilineStringContent()
+    {
+        // GIVEN
+        Result result = mockResult( asList( "c1" ), "xxxxx", "1\n2", "1234567", "123456\n7", "1234567\n12345678" );
+        // WHEN
+        ToStringLinePrinter printer = new ToStringLinePrinter();
+        new TableOutputFormatter( true, 1 ).formatAndCount( new ListBoltResult( result.list(), result.consume() ), printer );
+        String table = printer.result();
+        // THEN
+        assertThat( table, is( String.join( NEWLINE,
+                                            "+---------+",
+                                            "| c1      |",
+                                            "+---------+",
+                                            "| \"xxxxx\" |",
+                                            "| \"1      |",
+                                            "\\ 2\"      |",
+                                            "| \"123456 |",
+                                            "\\ 7\"      |",
+                                            "| \"123456 |",
+                                            "\\ 7\"      |",
+                                            "| \"123456 |",
+                                            "\\ 7       |",
+                                            "\\ 1234567 |",
+                                            "\\ 8\"      |",
+                                            "+---------+",
+                                            NEWLINE ) ) );
+    }
+
+    @Test
+    void truncateMultilineStringContent()
+    {
+        // GIVEN
+        Result result = mockResult( asList( "c1" ), "xxxxx", "1\n2", "1234567", "123456\n7", "1234567\n12345678" );
+        // WHEN
+        ToStringLinePrinter printer = new ToStringLinePrinter();
+        new TableOutputFormatter( false, 1 ).formatAndCount( new ListBoltResult( result.list(), result.consume() ), printer );
+        String table = printer.result();
+        // THEN
+        assertThat( table, is( String.join( NEWLINE,
+                                            "+---------+",
+                                            "| c1      |",
+                                            "+---------+",
+                                            "| \"xxxxx\" |",
+                                            "| \"1…     |",
+                                            "| \"12345… |",
+                                            "| \"12345… |",
+                                            "| \"12345… |",
+                                            "+---------+",
+                                            NEWLINE ) ) );
+    }
+
+    @Test
+    void wrapMultilineStringContentWithEmptyLines()
+    {
+        // GIVEN
+        Result result = mockResult( asList( "c1" ), "xxxxx", "1\n2\n3\n\n4", "1\n" );
+        // WHEN
+        ToStringLinePrinter printer = new ToStringLinePrinter();
+        new TableOutputFormatter( true, 1 ).formatAndCount( new ListBoltResult( result.list(), result.consume() ), printer );
+        String table = printer.result();
+        // THEN
+        assertThat( table, is( String.join( NEWLINE,
+                                            "+---------+",
+                                            "| c1      |",
+                                            "+---------+",
+                                            "| \"xxxxx\" |",
+                                            "| \"1      |",
+                                            "\\ 2       |",
+                                            "\\ 3       |",
+                                            "\\         |",
+                                            "\\ 4\"      |",
+                                            "| \"1      |",
+                                            "\\ \"       |",
+                                            "+---------+",
+                                            NEWLINE ) ) );
+    }
+
     private static String formatResult( Result result )
     {
         ToStringLinePrinter printer = new ToStringLinePrinter();
