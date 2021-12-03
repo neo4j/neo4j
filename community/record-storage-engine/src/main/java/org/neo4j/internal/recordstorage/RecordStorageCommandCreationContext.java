@@ -87,7 +87,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
         this.propertyCreator =
                 new PropertyCreator( new StandardDynamicRecordAllocator( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordDataSize() ),
                         new StandardDynamicRecordAllocator( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordDataSize() ), propertyStore,
-                        propertyTraverser, propertyStore.allowStorePointsAndTemporal(), cursorContext, memoryTracker );
+                        propertyTraverser, cursorContext, memoryTracker );
     }
 
     private long nextId( StoreType storeType )

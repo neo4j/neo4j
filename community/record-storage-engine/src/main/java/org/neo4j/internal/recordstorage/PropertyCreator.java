@@ -42,24 +42,21 @@ public class PropertyCreator
     private final DynamicRecordAllocator arrayRecordAllocator;
     private final IdSequence propertyRecordIdGenerator;
     private final PropertyTraverser traverser;
-    private final boolean allowStorePointsAndTemporal;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
 
     public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.allowStorePointsAndTemporal(),
-                cursorContext, memoryTracker );
+        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, cursorContext, memoryTracker );
     }
 
     PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator, IdSequence propertyRecordIdGenerator,
-            PropertyTraverser traverser, boolean allowStorePointsAndTemporal, CursorContext cursorContext, MemoryTracker memoryTracker )
+            PropertyTraverser traverser, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         this.stringRecordAllocator = stringRecordAllocator;
         this.arrayRecordAllocator = arrayRecordAllocator;
         this.propertyRecordIdGenerator = propertyRecordIdGenerator;
         this.traverser = traverser;
-        this.allowStorePointsAndTemporal = allowStorePointsAndTemporal;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
     }
@@ -191,8 +188,7 @@ public class PropertyCreator
 
     public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
     {
-        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, allowStorePointsAndTemporal, cursorContext,
-                memoryTracker );
+        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, cursorContext, memoryTracker );
         return block;
     }
 

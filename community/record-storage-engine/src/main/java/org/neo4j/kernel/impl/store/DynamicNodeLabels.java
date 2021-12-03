@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -242,8 +241,7 @@ public class DynamicNodeLabels implements NodeLabels
     {
         long[] storedLongs = LabelIdArray.prependNodeId( nodeId, labels );
         List<DynamicRecord> records = new ArrayList<>();
-        // since we can't store points in long array we passing false as possibility to store points
-        DynamicArrayStore.allocateRecords( records, storedLongs, allocator, false, cursorContext, memoryTracker );
+        DynamicArrayStore.allocateRecords( records, storedLongs, allocator, cursorContext, memoryTracker );
         return records;
     }
 

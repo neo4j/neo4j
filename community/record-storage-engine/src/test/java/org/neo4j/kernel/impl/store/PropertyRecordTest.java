@@ -156,7 +156,7 @@ class PropertyRecordTest
     private static void addBlock( PropertyRecord record, int key, int value )
     {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, key, Values.of( value ), null, null, true, NULL, INSTANCE );
+        PropertyStore.encodeValue( block, key, Values.of( value ), null, null, NULL, INSTANCE );
         for ( long valueBlock : block.getValueBlocks() )
         {
             record.addLoadedBlock( valueBlock );

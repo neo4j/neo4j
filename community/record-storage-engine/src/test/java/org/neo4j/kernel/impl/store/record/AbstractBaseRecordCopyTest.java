@@ -137,7 +137,7 @@ class AbstractBaseRecordCopyTest
             // Dynamic records will not be written and read by the property record format,
             // that happens in the store where it delegates to a "sub" store.
             encodeValue( block, random.nextInt( 16 ), random.nextValue(),
-                    stringAllocator, arrayAllocator, true, NULL, INSTANCE );
+                    stringAllocator, arrayAllocator, NULL, INSTANCE );
             int tentativeBlocksWithThisOne = blocksOccupied + block.getValueBlocks().length;
             if ( tentativeBlocksWithThisOne <= 4 )
             {

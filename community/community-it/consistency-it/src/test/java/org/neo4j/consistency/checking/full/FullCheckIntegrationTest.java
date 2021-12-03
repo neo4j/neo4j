@@ -1433,7 +1433,7 @@ public class FullCheckIntegrationTest
                     {
                         return StandardDynamicRecordAllocator.allocateRecord( next.arrayProperty() );
                     }
-                }, true, NULL, INSTANCE );
+                }, NULL, INSTANCE );
                 assertThat( allocatedRecords.size() ).isGreaterThan( 1 );
                 DynamicRecord array = allocatedRecords.get( 0 );
                 array.setType( ARRAY.intValue() );
@@ -2950,7 +2950,7 @@ public class FullCheckIntegrationTest
             {
                 PropertyRecord record = new PropertyRecord( id ).initialize( true, prev, next );
                 PropertyBlock block = new PropertyBlock();
-                PropertyStore.encodeValue( block, propertyKeyId, Values.intValue( 10 ), null, null, false, NULL, INSTANCE );
+                PropertyStore.encodeValue( block, propertyKeyId, Values.intValue( 10 ), null, null, NULL, INSTANCE );
                 record.addPropertyBlock( block );
                 return record;
             }
@@ -3319,7 +3319,7 @@ public class FullCheckIntegrationTest
         protoProperties.forEachKeyValue( ( keyId, value ) ->
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator, true, NULL, INSTANCE );
+            PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator, NULL, INSTANCE );
             blocks.add( block );
         } );
 

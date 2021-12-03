@@ -73,8 +73,7 @@ public class PropertyValueRecordSizeCalculator implements PropertySizeCalculator
         for ( Value value : values )
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, 0 /*doesn't matter*/, value, stringRecordCounter, arrayRecordCounter, true,
-                    cursorContext, memoryTracker );
+            PropertyStore.encodeValue( block, 0 /*doesn't matter*/, value, stringRecordCounter, arrayRecordCounter, cursorContext, memoryTracker );
             if ( block.getValueBlocks().length > freeBlocksInCurrentRecord )
             {
                 propertyRecordsUsed++;

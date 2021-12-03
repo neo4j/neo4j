@@ -41,12 +41,10 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
-import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CRSTable;
@@ -106,7 +104,6 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
-    private final boolean allowStorePointsAndTemporal;
 
     public DynamicArrayStore(
             Path path,
@@ -124,8 +121,6 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         super( path, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration,
                 recordFormats.dynamic(), recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
-        allowStorePointsAndTemporal = recordFormats.hasCapability( RecordStorageCapability.POINT_PROPERTIES )
-                && recordFormats.hasCapability( RecordStorageCapability.TEMPORAL_PROPERTIES );
     }
 
     public static byte[] encodeFromNumbers( Object array, int offsetBytes )
@@ -220,18 +215,10 @@ public class DynamicArrayStore extends AbstractDynamicStore
             Collection<DynamicRecord> target,
             byte[] bytes,
             DynamicRecordAllocator recordAllocator,
-            boolean allowsStorage,
-            Capability storageCapability, CursorContext cursorContext,
+            CursorContext cursorContext,
             MemoryTracker memoryTracker )
     {
-        if ( allowsStorage )
-        {
-            allocateRecordsFromBytes( target, bytes, recordAllocator, cursorContext, memoryTracker );
-        }
-        else
-        {
-            throw new UnsupportedFormatCapabilityException( storageCapability );
-        }
+        allocateRecordsFromBytes( target, bytes, recordAllocator, cursorContext, memoryTracker );
     }
 
     private static void allocateFromString( Collection<DynamicRecord> target, String[] array,
@@ -263,11 +250,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public void allocateRecords( Collection<DynamicRecord> target, Object array, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        allocateRecords( target, array, this, allowStorePointsAndTemporal, cursorContext, memoryTracker );
+        allocateRecords( target, array, this, cursorContext, memoryTracker );
     }
 
     public static void allocateRecords( Collection<DynamicRecord> target, Object array,
-            DynamicRecordAllocator recordAllocator, boolean allowStorePointsAndTemporal, CursorContext cursorContext, MemoryTracker memoryTracker )
+            DynamicRecordAllocator recordAllocator, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         if ( !array.getClass().isArray() )
         {
@@ -282,37 +269,37 @@ public class DynamicArrayStore extends AbstractDynamicStore
         else if ( type.equals( PointValue.class ) )
         {
             allocateFromCompositeType( target,GeometryType.encodePointArray( (PointValue[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.POINT_PROPERTIES, cursorContext, memoryTracker );
+                    recordAllocator, cursorContext, memoryTracker );
         }
         else if ( type.equals( LocalDate.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDateArray( (LocalDate[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorContext, memoryTracker );
+                    recordAllocator, cursorContext, memoryTracker );
         }
         else if ( type.equals( LocalTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeLocalTimeArray( (LocalTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorContext, memoryTracker );
+                    recordAllocator, cursorContext, memoryTracker );
         }
         else if ( type.equals( LocalDateTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeLocalDateTimeArray( (LocalDateTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorContext, memoryTracker );
+                    recordAllocator, cursorContext, memoryTracker );
         }
         else if ( type.equals( OffsetTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeTimeArray( (OffsetTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorContext, memoryTracker );
+                    recordAllocator, cursorContext, memoryTracker );
         }
         else if ( type.equals( ZonedDateTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDateTimeArray( (ZonedDateTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorContext, memoryTracker );
+                    recordAllocator, cursorContext, memoryTracker );
         }
         else if ( type.equals( DurationValue.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDurationArray( (DurationValue[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES, cursorContext, memoryTracker );
+                    recordAllocator, cursorContext, memoryTracker );
         }
         else
         {

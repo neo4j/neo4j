@@ -46,8 +46,6 @@ public class StandardV4_3 extends BaseRecordFormats
     {
         super( STORE_VERSION, StoreVersion.STANDARD_V4_3.introductionVersion(), 10,
                 FormatFamily.standard.formatCapability(),
-                RecordStorageCapability.POINT_PROPERTIES,
-                RecordStorageCapability.TEMPORAL_PROPERTIES,
                 RecordStorageCapability.INTERNAL_TOKENS,
                 RecordStorageCapability.GBPTREE_ID_FILES,
                 IndexCapabilities.LuceneCapability.LUCENE_8,
