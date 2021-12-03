@@ -78,7 +78,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
             {
                 ch.config().setAllocator( allocator );
 
-                var channelProtector = new UnauthenticatedChannelProtector( ch.pipeline(), channelTimeout, maxMessageSize );
+                var channelProtector = new UnauthenticatedChannelProtector( ch, channelTimeout, maxMessageSize );
                 BoltChannel boltChannel = newBoltChannel( ch, channelProtector );
                 connectionTracker.add( boltChannel );
                 ch.closeFuture().addListener( future -> connectionTracker.remove( boltChannel ) );

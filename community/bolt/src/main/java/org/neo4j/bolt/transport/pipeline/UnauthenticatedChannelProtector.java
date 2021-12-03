@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.transport.pipeline;
 
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.Channel;
 
 import java.time.Duration;
 
@@ -28,31 +28,29 @@ import java.time.Duration;
  */
 public class UnauthenticatedChannelProtector implements ChannelProtector
 {
-    private final Duration channelTimeout;
-    private final ChannelPipeline pipeline;
+
+    private final Channel channel;
     private final long maxMessageSize;
 
     private AuthenticationTimeoutHandler timeoutHandler;
 
-    public UnauthenticatedChannelProtector( ChannelPipeline pipeline, Duration channelTimeout, long maxMessageSize )
+    public UnauthenticatedChannelProtector( Channel ch, Duration channelTimeout, long maxMessageSize )
     {
-        this.channelTimeout = channelTimeout;
-        this.pipeline = pipeline;
+        this.channel = ch;
         this.maxMessageSize = maxMessageSize;
+
+        this.timeoutHandler = new AuthenticationTimeoutHandler( channelTimeout );
     }
 
     public void afterChannelCreated()
     {
-        // Adds auth timeout handlers.
-        // The timer is counting down after installation.
-        this.timeoutHandler = new AuthenticationTimeoutHandler( channelTimeout );
-        pipeline.addLast( timeoutHandler );
+        this.channel.pipeline().addLast( timeoutHandler );
     }
 
     public void beforeBoltProtocolInstalled()
     {
         // Adds limits on how many bytes are allowed.
-        pipeline.addLast( new BytesAccumulator( maxMessageSize ) );
+        this.channel.pipeline().addLast( new BytesAccumulator( maxMessageSize ) );
     }
 
     @Override
@@ -66,11 +64,19 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
 
     public void disable()
     {
+        // Netty ensures that channel pipelines are cleared when a channel becomes inactive, causing further interactions with the pipeline to fail.
+        // Cleanup of the remaining resources managed by this implementation has already been performed by the time of this call (via the channel inactivity
+        // listeners registered during channel initialization).
+        if ( !this.channel.isActive() )
+        {
+            return;
+        }
+
         // Removes auth timeout handlers.
-        pipeline.remove( AuthenticationTimeoutHandler.class );
+        this.channel.pipeline().remove( AuthenticationTimeoutHandler.class );
         timeoutHandler = null;
 
         // Remove byte limits
-        pipeline.remove( BytesAccumulator.class );
+        this.channel.pipeline().remove( BytesAccumulator.class );
     }
 }
