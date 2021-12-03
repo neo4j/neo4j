@@ -208,7 +208,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
         QueryGraph.empty, Seq.empty, Seq.empty)
     ))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   test("overlap when reading and merging on the same property, no label on MATCH") {
@@ -223,7 +223,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
         QueryGraph.empty, Seq.empty, Seq.empty)
     ))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   test("no overlap when reading and merging on the same property but different labels") {
@@ -239,7 +239,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
         QueryGraph.empty, Seq.empty, Seq.empty)
     ))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe false
   }
 
   private def createNode(name: String, labels: String*) =
