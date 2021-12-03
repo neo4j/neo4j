@@ -276,16 +276,27 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description(
-            "Number of threads to allocate to Cypher worker threads for the parallel runtime. If set to 0, two workers will be started"
-                    + " for every physical core in the system. If set to -1, no workers will be started and the parallel runtime cannot be used.")
-    public static final Setting<Integer> cypher_worker_count =
-            newBuilder("internal.cypher.number_of_workers", INT, 0).build();
+    @Description( "Number of threads to allocate to Cypher worker threads for the parallel runtime. If set to 0, two workers will be started" +
+                  " for every physical core in the system. If set to -1, no workers will be started and the parallel runtime cannot be used." )
+    public static final Setting<Integer> cypher_worker_count = newBuilder( "internal.cypher.number_of_workers", INT, 0 ).build();
 
-    public enum CypherOperatorEngine {
-        DEFAULT,
-        COMPILED,
-        INTERPRETED
+    public enum CypherWorkerManagement
+    {
+        DEFAULT, FIXED_THREADS, THREAD_POOL
+    }
+    @Internal
+    @Description( "The worker management determines how the Cypher parallel runtime will distribute query execution work between multiple threads." )
+    public static final Setting<CypherWorkerManagement> cypher_worker_management = newBuilder( "unsupported.cypher.worker_management",
+            ofEnum( CypherWorkerManagement.class ), CypherWorkerManagement.DEFAULT ).build();
+
+    @Internal
+    @Description( "Feature flag to force produce result to always be in a separate pipeline" )
+    public static final Setting<Boolean> produce_result_in_separate_pipeline =
+            newBuilder( "unsupported.cypher.produce_result_in_separate_pipeline", BOOL, false ).build();
+
+    public enum CypherOperatorEngine
+    {
+        DEFAULT, COMPILED, INTERPRETED
     }
 
     @Internal
