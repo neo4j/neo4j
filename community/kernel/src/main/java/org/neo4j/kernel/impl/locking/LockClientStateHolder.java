@@ -167,6 +167,16 @@ public final class LockClientStateHolder
     }
 
     /**
+     * Check if prepared
+     *
+     * @return true if client is prepared, false otherwise
+     */
+    public boolean isPrepared()
+    {
+        return isPrepare( clientState.get() );
+    }
+
+    /**
      * Reset state to initial state disregard any current state or number of active clients
      */
     public void reset()

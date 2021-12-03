@@ -25,18 +25,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.ActiveLock;
@@ -44,6 +48,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -52,6 +57,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.Race.throwing;
 
@@ -102,6 +108,71 @@ class ForsetiLockManagerTest
         } ) );
 
         race.go( 3, TimeUnit.MINUTES ); //Should not timeout (livelock)
+    }
+
+    @Test
+    void testSameThreadMultipleClientCommitDirectDeadlock()
+    {
+        config = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, Duration.ofMinutes( 1 ) );
+
+        //Given
+        try ( Locks.Client client1 = manager.newClient();
+              Locks.Client client2 = manager.newClient(); )
+        {
+            client1.initialize( LeaseService.NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, config );
+            client2.initialize( LeaseService.NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, config );
+
+            //When
+            client2.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0 );
+            client2.prepareForCommit();
+
+            //Then (1 waiting for 2), 2 committing
+            assertThatThrownBy( () -> client1.acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0 ) )
+                    .isInstanceOf( DeadlockDetectedException.class ).hasMessageContaining( "committing on the same thread" );
+
+        }
+    }
+
+    @Test
+    void testSameThreadMultipleClientCommitIndirectDeadlock() throws TimeoutException
+    {
+        config = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, Duration.ofMinutes( 1 ) );
+
+        //Given
+        try ( OtherThreadExecutor executor1 = new OtherThreadExecutor( "test1" );
+              OtherThreadExecutor executor2 = new OtherThreadExecutor( "test2" );
+              Locks.Client client1 = manager.newClient();
+              Locks.Client client2 = manager.newClient();
+              Locks.Client client3 = manager.newClient();
+              Locks.Client client4 = manager.newClient() )
+        {
+            client1.initialize( LeaseService.NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, config );
+            client2.initialize( LeaseService.NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, config );
+            client3.initialize( LeaseService.NoLeaseClient.INSTANCE, 3, EmptyMemoryTracker.INSTANCE, config );
+            client4.initialize( LeaseService.NoLeaseClient.INSTANCE, 4, EmptyMemoryTracker.INSTANCE, config );
+
+            //When
+            client4.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0 );
+            executor1.executeDontWait( () ->
+                                      {
+                                          client3.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
+                                          client3.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0 );
+                                          return null;
+                                      } );
+            executor1.waitUntilWaiting( details -> details.isAt( ForsetiClient.class, "acquireExclusive" ) );
+            executor2.executeDontWait( () ->
+                                      {
+                                          client2.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 2 );
+                                          client2.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
+                                          return null;
+                                      } );
+            executor2.waitUntilWaiting( details -> details.isAt( ForsetiClient.class, "acquireExclusive" ) );
+
+            client4.prepareForCommit();
+            //Then (1 waiting for 2 waiting for 3 waiting for 4), 4 committing
+            assertThatThrownBy( () -> client1.acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 2 ) )
+                    .isInstanceOf( DeadlockDetectedException.class ).hasMessageContaining( "committing on the same thread" );
+        }
     }
 
     @Test

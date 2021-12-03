@@ -140,6 +140,7 @@ public class ForsetiClient implements Locks.Client
     private final long clientId;
     private volatile MemoryTracker memoryTracker;
     private static final long CONCURRENT_NODE_SIZE = HeapEstimator.LONG_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE;
+    private volatile long prepareThreadId;
 
     public ForsetiClient( ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps, SystemNanoClock clock, boolean verboseDeadlocks, long clientId )
     {
@@ -622,6 +623,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public void prepareForCommit()
     {
+        prepareThreadId = Thread.currentThread().getId();
         stateHolder.prepare( this );
     }
 
@@ -949,6 +951,18 @@ public class ForsetiClient implements Locks.Client
             }
             Thread.yield();
         }
+        else if ( tries % 10000 == 9999 ) //Each try sleeps for up to 1ms, so 10000 tries will be every ~10s
+        {
+            for ( ForsetiClient client : waitList )
+            {
+                if ( clientCommittingByCurrentThread( client ) && isDeadlockReal( lock ) )
+                {
+                    String message = this + " can't acquire " + lock + " on " + type + "(" + resourceId +
+                                    "), because we are waiting for " + client + " that is committing on the same thread";
+                    throw new DeadlockDetectedException( message );
+                }
+            }
+        }
     }
 
     @VisibleForTesting
@@ -1012,6 +1026,12 @@ public class ForsetiClient implements Locks.Client
         }
     }
 
+    private boolean clientCommittingByCurrentThread( ForsetiClient otherClient )
+    {
+        return otherClient.transactionId != transactionId() &&
+                otherClient.stateHolder.isPrepared() && Thread.currentThread().getId() == otherClient.prepareThreadId;
+    }
+
     private void clearAndCopyWaitList( ForsetiLockManager.Lock lock )
     {
         clearWaitList();
@@ -1039,8 +1059,8 @@ public class ForsetiClient implements Locks.Client
         do
         {
             waitedUpon.addAll( nextWaitedUpon );
-            collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
-            if ( nextOwners.contains( this ) && lock.detectDeadlock( this ) != null  )
+            boolean foundSameThreadClientCycle = collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
+            if ( foundSameThreadClientCycle || nextOwners.contains( this ) && lock.detectDeadlock( this ) != null )
             {
                 return true;
             }
@@ -1054,12 +1074,19 @@ public class ForsetiClient implements Locks.Client
         return false;
     }
 
-    private static void collectNextOwners( Set<ForsetiLockManager.Lock> waitedUpon, Set<ForsetiClient> owners, Set<ForsetiLockManager.Lock> nextWaitedUpon,
+    /**
+     * @return true if found a client in the lock graph that is committing by us, false otherwise
+     */
+    private boolean collectNextOwners( Set<ForsetiLockManager.Lock> waitedUpon, Set<ForsetiClient> owners, Set<ForsetiLockManager.Lock> nextWaitedUpon,
             Set<ForsetiClient> nextOwners )
     {
         nextWaitedUpon.clear();
         for ( ForsetiClient owner : owners )
         {
+            if ( clientCommittingByCurrentThread( owner ) )
+            {
+                return true;
+            }
             ForsetiLockManager.Lock waitingForLock = owner.waitingForLock;
             if ( waitingForLock != null && !waitingForLock.isClosed() && !waitedUpon.contains( waitingForLock ) )
             {
@@ -1070,6 +1097,7 @@ public class ForsetiClient implements Locks.Client
         {
             lck.collectOwners( nextOwners );
         }
+        return false;
     }
 
     String describeWaitList()
