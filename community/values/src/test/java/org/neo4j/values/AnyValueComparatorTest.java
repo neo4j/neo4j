@@ -43,9 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.values.Comparison.EQUAL;
 import static org.neo4j.values.Comparison.GREATER_THAN;
-import static org.neo4j.values.Comparison.GREATER_THAN_AND_EQUAL;
 import static org.neo4j.values.Comparison.SMALLER_THAN;
-import static org.neo4j.values.Comparison.SMALLER_THAN_AND_EQUAL;
 import static org.neo4j.values.Comparison.UNDEFINED;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
@@ -188,9 +186,6 @@ class AnyValueComparatorTest
                 case SMALLER_THAN:
                     assertEquals( cmpVal, comparison.value() );
                     break;
-                //The rest of the values doesn't have defined order
-                case GREATER_THAN_AND_EQUAL:
-                case SMALLER_THAN_AND_EQUAL:
                 case UNDEFINED:
                 default:
                 }
@@ -316,7 +311,7 @@ class AnyValueComparatorTest
         PointValue pointValue2 = pointValue( CoordinateReferenceSystem.CARTESIAN, 1.0, 2.0 );
 
         assertTernaryCompare( pointValue1, pointValue1, EQUAL );
-        assertTernaryCompare( pointValue1, pointValue2, SMALLER_THAN_AND_EQUAL );
+        assertTernaryCompare( pointValue1, pointValue2, UNDEFINED );
         assertTernaryCompare( pointValue1, Values.doubleArray( new double[]{1.0, 1.0} ), UNDEFINED );
         assertTernaryCompare( pointValue1, pointValue( CoordinateReferenceSystem.WGS_84, 1.0, 1.0 ), UNDEFINED );
     }
@@ -356,26 +351,11 @@ class AnyValueComparatorTest
         assertThat( comparison ).isEqualTo( expected );
         switch ( expected )
         {
-        case GREATER_THAN:
-            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( SMALLER_THAN );
-            break;
-        case EQUAL:
-            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( EQUAL );
-            break;
-        case SMALLER_THAN:
-            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( GREATER_THAN );
-            break;
-        case UNDEFINED:
-            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( UNDEFINED );
-            break;
-        case GREATER_THAN_AND_EQUAL:
-            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( SMALLER_THAN_AND_EQUAL );
-            break;
-        case SMALLER_THAN_AND_EQUAL:
-            assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( GREATER_THAN_AND_EQUAL );
-            break;
-        default:
-            fail( "Was not expecting " + expected );
+        case GREATER_THAN -> assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( SMALLER_THAN );
+        case EQUAL -> assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( EQUAL );
+        case SMALLER_THAN -> assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( GREATER_THAN );
+        case UNDEFINED -> assertThat( comparator.ternaryCompare( b, a ) ).isEqualTo( UNDEFINED );
+        default -> fail( "Was not expecting " + expected );
         }
     }
 

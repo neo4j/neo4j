@@ -51,8 +51,6 @@ public enum Comparison
                     return -1;
                 }
             },
-    GREATER_THAN_AND_EQUAL,
-    SMALLER_THAN_AND_EQUAL,
     UNDEFINED;
 
     /**

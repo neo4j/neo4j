@@ -151,20 +151,13 @@ public final class CypherBoolean
             return FALSE;
         }
         Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
-        switch ( comparison )
-        {
-        case GREATER_THAN_AND_EQUAL:
-        case GREATER_THAN:
-        case EQUAL:
-        case SMALLER_THAN_AND_EQUAL:
-            return FALSE;
-        case SMALLER_THAN:
-            return TRUE;
-        case UNDEFINED:
-            return NO_VALUE;
-        default:
-            throw new InternalException( comparison + " is not a known comparison", null );
-        }
+        return switch ( comparison )
+                {
+                    case GREATER_THAN, EQUAL -> FALSE;
+                    case SMALLER_THAN -> TRUE;
+                    case UNDEFINED -> NO_VALUE;
+                    default -> throw new InternalException( comparison + " is not a known comparison", null );
+                };
     }
 
     @CalledFromGeneratedCode
@@ -175,20 +168,13 @@ public final class CypherBoolean
             return FALSE;
         }
         Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
-        switch ( comparison )
-        {
-        case GREATER_THAN_AND_EQUAL:
-        case GREATER_THAN:
-            return FALSE;
-        case EQUAL:
-        case SMALLER_THAN_AND_EQUAL:
-        case SMALLER_THAN:
-            return TRUE;
-        case UNDEFINED:
-            return NO_VALUE;
-        default:
-            throw new InternalException( comparison + " is not a known comparison", null );
-        }
+        return switch ( comparison )
+                {
+                    case GREATER_THAN -> FALSE;
+                    case EQUAL, SMALLER_THAN -> TRUE;
+                    case UNDEFINED -> NO_VALUE;
+                    default -> throw new InternalException( comparison + " is not a known comparison", null );
+                };
     }
 
     @CalledFromGeneratedCode
@@ -199,20 +185,13 @@ public final class CypherBoolean
             return FALSE;
         }
         Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
-        switch ( comparison )
-        {
-        case GREATER_THAN:
-            return TRUE;
-        case GREATER_THAN_AND_EQUAL:
-        case EQUAL:
-        case SMALLER_THAN_AND_EQUAL:
-        case SMALLER_THAN:
-            return FALSE;
-        case UNDEFINED:
-            return NO_VALUE;
-        default:
-            throw new InternalException( comparison + " is not a known comparison", null );
-        }
+        return switch ( comparison )
+                {
+                    case GREATER_THAN -> TRUE;
+                    case EQUAL, SMALLER_THAN -> FALSE;
+                    case UNDEFINED -> NO_VALUE;
+                    default -> throw new InternalException( comparison + " is not a known comparison", null );
+                };
     }
 
     @CalledFromGeneratedCode
@@ -223,20 +202,13 @@ public final class CypherBoolean
             return FALSE;
         }
         Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
-        switch ( comparison )
-        {
-        case GREATER_THAN_AND_EQUAL:
-        case GREATER_THAN:
-        case EQUAL:
-            return TRUE;
-        case SMALLER_THAN_AND_EQUAL:
-        case SMALLER_THAN:
-            return FALSE;
-        case UNDEFINED:
-            return NO_VALUE;
-        default:
-            throw new InternalException( comparison + " is not a known comparison", null );
-        }
+        return switch ( comparison )
+                {
+                    case GREATER_THAN, EQUAL -> TRUE;
+                    case SMALLER_THAN -> FALSE;
+                    case UNDEFINED -> NO_VALUE;
+                    default -> throw new InternalException( comparison + " is not a known comparison", null );
+                };
     }
 
     @CalledFromGeneratedCode

@@ -247,156 +247,21 @@ class PointValueTest
         assertThat( pointValue( CARTESIAN, 1, 2 ).unsafeTernaryCompareTo( pointValue( WGS_84, 1, 2 ) ) )
                 .as( "Different CRS should be incomparable" ).isEqualTo( Comparison.UNDEFINED );
         assertThat( pointValue( CARTESIAN, 2, 3 ).unsafeTernaryCompareTo( pointValue( CARTESIAN, 1, 2 ) ) )
-                .as( "Point greater on both dimensions is greater" ).isEqualTo( Comparison.GREATER_THAN );
+                .as( "Point greater on both dimensions is UNDEFINED" ).isEqualTo( Comparison.UNDEFINED );
         assertThat( pointValue( CARTESIAN, 2, 2 ).unsafeTernaryCompareTo( pointValue( CARTESIAN, 1, 2 ) ) )
-                .as( "Point greater on first dimensions is >=" ).isEqualTo( Comparison.GREATER_THAN_AND_EQUAL );
+                .as( "Point greater on first dimensions is UNDEFINED" ).isEqualTo( Comparison.UNDEFINED );
         assertThat( pointValue( CARTESIAN, 1, 3 ).unsafeTernaryCompareTo( pointValue( CARTESIAN, 1, 2 ) ) )
-                .as( "Point greater on second dimensions is >=" ).isEqualTo( Comparison.GREATER_THAN_AND_EQUAL );
+                .as( "Point greater on second dimensions is UNDEFINED" ).isEqualTo( Comparison.UNDEFINED );
         assertThat( pointValue( CARTESIAN, 0, 1 ).unsafeTernaryCompareTo( pointValue( CARTESIAN, 1, 2 ) ) )
-                .as( "Point smaller on both dimensions is smaller" ).isEqualTo( Comparison.SMALLER_THAN );
+                .as( "Point smaller on both dimensions is UNDEFINED" ).isEqualTo( Comparison.UNDEFINED );
         assertThat( pointValue( CARTESIAN, 0, 2 ).unsafeTernaryCompareTo( pointValue( CARTESIAN, 1, 2 ) ) )
-                .as( "Point smaller on first dimensions is <=" ).isEqualTo( Comparison.SMALLER_THAN_AND_EQUAL );
+                .as( "Point smaller on first dimensions is UNDEFINED" ).isEqualTo( Comparison.UNDEFINED );
         assertThat( pointValue( CARTESIAN, 1, 1 ).unsafeTernaryCompareTo( pointValue( CARTESIAN, 1, 2 ) ) )
-                .as( "Point smaller on second dimensions is <=" ).isEqualTo( Comparison.SMALLER_THAN_AND_EQUAL );
+                .as( "Point smaller on second dimensions is UNDEFINED" ).isEqualTo( Comparison.UNDEFINED );
         assertThat( pointValue( CARTESIAN, 2, 1 ).unsafeTernaryCompareTo( pointValue( CARTESIAN, 1, 2 ) ) )
                 .as( "Point greater on first and smaller on second dimensions is UNDEFINED" ).isEqualTo( Comparison.UNDEFINED );
         assertThat( pointValue( CARTESIAN, 0, 3 ).unsafeTernaryCompareTo( pointValue( CARTESIAN, 1, 2 ) ) )
                 .as( "Point smaller on first and greater on second dimensions is UNDEFINED" ).isEqualTo( Comparison.UNDEFINED );
-    }
-
-    @Test
-    public final void shouldComparePointWithin()
-    {
-        // Edge cases
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, null, false ) )
-                .as( "Always within no bounds" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( WGS_84, 1, 2 ), true, null, false ) )
-                .as( "Different CRS for lower bound should be undefined" ).isNull();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, pointValue( WGS_84, 1, 2 ), true ) )
-                .as( "Different CRS for upper bound should be undefined" ).isNull();
-
-        // Lower bound
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), true, null, false ) )
-                .as( "Within same lower bound if inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), false, null, false ) )
-                .as( "Not within same lower bound if not inclusive" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 0, 1 ), true, null, false ) )
-                .as( "Within smaller lower bound if inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 0, 1 ), false, null, false ) )
-                .as( "Within smaller lower bound if not inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 1 ), true, null, false ) )
-                .as( "Within partially smaller lower bound if inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 1 ), false, null, false ) )
-                .as( "Not within partially smaller lower bound if not inclusive" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 2, 1 ), false, null, false ) )
-                .as( "Invalid if lower bound both greater and less than" ).isNull();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 2, 1 ), true, null, false ) )
-                .as( "Invalid if lower bound both greater and less than even when inclusive" ).isNull();
-
-        // Upper bound
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, pointValue( CARTESIAN, 1, 2 ), true ) )
-                .as( "Within same upper bound if inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, pointValue( CARTESIAN, 1, 2 ), false ) )
-                .as( "Not within same upper bound if not inclusive" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, pointValue( CARTESIAN, 2, 3 ), true ) )
-                .as( "Within larger upper bound if inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, pointValue( CARTESIAN, 2, 3 ), false ) )
-                .as( "Within larger upper bound if not inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, pointValue( CARTESIAN, 2, 2 ), true ) )
-                .as( "Within partially larger upper bound if inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, pointValue( CARTESIAN, 2, 2 ), false ) )
-                .as( "Not within partially larger upper bound if not inclusive" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, pointValue( CARTESIAN, 2, 1 ), false ) )
-                .as( "Invalid if upper bound both greater and less than" ).isNull();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( null, false, pointValue( CARTESIAN, 2, 1 ), true ) )
-                .as( "Invalid if upper bound both greater and less than even when inclusive" ).isNull();
-
-        // Lower and upper bounds invalid
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 2, 1 ), true, pointValue( CARTESIAN, 1, 2 ), true ) )
-                .as( "Undefined if lower bound greater than upper bound" ).isNull();
-
-        // Lower and upper bounds equal
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), true, pointValue( CARTESIAN, 1, 2 ), false ) )
-                .as( "Not within same bounds if inclusive on lower" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), false, pointValue( CARTESIAN, 1, 2 ), true ) )
-                .as( "Not within same bounds if inclusive on upper" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), true, pointValue( CARTESIAN, 1, 2 ), true ) )
-                .as( "Within same bounds if inclusive on both" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), false, pointValue( CARTESIAN, 1, 2 ), false ) )
-                .as( "Not within same bounds if not inclusive" ).isFalse();
-
-        // Lower and upper bounds define 0x1 range
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), true, pointValue( CARTESIAN, 1, 2 ), false ) )
-                .as( "Not within same bounds if inclusive on lower" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), false, pointValue( CARTESIAN, 1, 2 ), true ) )
-                .as( "Not within same bounds if inclusive on upper" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), true, pointValue( CARTESIAN, 1, 2 ), true ) )
-                .as( "Within same bounds if inclusive on both" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 2 ), false, pointValue( CARTESIAN, 1, 2 ), false ) )
-                .as( "Not within same bounds if not inclusive" ).isFalse();
-
-        // Lower and upper bounds define 1x1 range
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 0, 1 ), true, pointValue( CARTESIAN, 1, 2 ), true ) )
-                .as( "Within smaller lower bound if inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 0, 1 ), false, pointValue( CARTESIAN, 1, 2 ), true ) )
-                .as( "Within smaller lower bound if inclusive on upper" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 0, 1 ), false, pointValue( CARTESIAN, 1, 2 ), false ) )
-                .as( "Not within smaller lower bound if not inclusive" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 1 ), true, pointValue( CARTESIAN, 2, 3 ), false ) )
-                .as( "Within partially smaller lower bound if inclusive" ).isTrue();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 1, 1 ), false, pointValue( CARTESIAN, 2, 3 ), false ) )
-                .as( "Not within partially smaller lower bound if not inclusive" ).isFalse();
-        assertThat( pointValue( CARTESIAN, 1, 2 ).withinRange( pointValue( CARTESIAN, 0, 1 ), false, pointValue( CARTESIAN, 2, 3 ), false ) )
-                .as( "Within wider bounds" ).isTrue();
-    }
-
-    @Test
-    public final void shouldComparePointWithinTwoBoundsExhaustive()
-    {
-        for ( int minx = -5; minx < 5; minx++ )
-        {
-            for ( int maxx = -5; maxx < 5; maxx++ )
-            {
-                for ( int miny = -5; miny < 5; miny++ )
-                {
-                    for ( int maxy = -5; maxy < 5; maxy++ )
-                    {
-                        final var min = pointValue( CARTESIAN, minx, miny );
-                        final var max = pointValue( CARTESIAN, maxx, maxy );
-                        for ( int x = -5; x < 5; x++ )
-                        {
-                            for ( int y = -5; y < 5; y++ )
-                            {
-                                final var point = pointValue( CARTESIAN, x, y );
-                                final var invalidRange = minx > maxx || miny > maxy;
-                                final var undefinedMin = x > minx && y < miny || y > miny && x < minx;
-                                final var undefinedMax = x < maxx && y > maxy || y < maxy && x > maxx;
-                                final var ii = (invalidRange || undefinedMin || undefinedMax) ? null : x >= minx && y >= miny && x <= maxx && y <= maxy;
-                                final var ix = (invalidRange || undefinedMin || undefinedMax) ? null : x >= minx && y >= miny && x < maxx && y < maxy;
-                                final var xi = (invalidRange || undefinedMin || undefinedMax) ? null : x > minx && y > miny && x <= maxx && y <= maxy;
-                                final var xx = (invalidRange || undefinedMin || undefinedMax) ? null : x > minx && y > miny && x < maxx && y < maxy;
-                                // inclusive:inclusive
-                                assertThat( point.withinRange( min, true, max, true ) )
-                                        .as( "{%d,%d}.withinRange({%d,%d}, true, {%d,%d}, true", x, y, minx, miny, maxx, maxy )
-                                        .isEqualTo( ii );
-                                // inclusive:exclusive
-                                assertThat( point.withinRange( min, true, max, false ) )
-                                        .as( "{%d,%d}.withinRange({%d,%d}, true, {%d,%d}, false", x, y, minx, miny, maxx, maxy )
-                                        .isEqualTo( ix );
-                                // exclusive:inclusive
-                                assertThat( point.withinRange( min, false, max, true ) )
-                                        .as( "{%d,%d}.withinRange({%d,%d}, false, {%d,%d}, true", x, y, minx, miny, maxx, maxy )
-                                        .isEqualTo( xi );
-                                // exclusive:exclusive
-                                assertThat( point.withinRange( min, false, max, false ) )
-                                        .as( "{%d,%d}.withinRange({%d,%d}, false, {%d,%d}, false", x, y, minx, miny, maxx, maxy )
-                                        .isEqualTo( xx );
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     //-------------------------------------------------------------

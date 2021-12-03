@@ -31,6 +31,7 @@ import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.Comparison;
+import org.neo4j.values.Equality;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.PrettyPrinter;
 import org.neo4j.values.virtual.MapValue;
@@ -234,51 +235,9 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
     @Override
     public Comparison unsafeTernaryCompareTo( Value otherValue )
     {
-        PointValue other = (PointValue) otherValue;
-
-        if ( this.crs.getCode() != other.crs.getCode() || this.coordinate.length != other.coordinate.length )
-        {
-            return Comparison.UNDEFINED;
-        }
-
-        int eq = 0;
-        int gt = 0;
-        int lt = 0;
-        for ( int i = 0; i < coordinate.length; i++ )
-        {
-            int cmpVal = Double.compare( this.coordinate[i], other.coordinate[i] );
-            if ( cmpVal > 0 )
-            {
-                gt++;
-            }
-            else if ( cmpVal < 0 )
-            {
-                lt++;
-            }
-            else
-            {
-                eq++;
-            }
-        }
-        if ( eq == coordinate.length )
+        if ( ternaryEquals( otherValue ) == Equality.TRUE )
         {
             return Comparison.EQUAL;
-        }
-        else if ( gt == coordinate.length )
-        {
-            return Comparison.GREATER_THAN;
-        }
-        else if ( lt == coordinate.length )
-        {
-            return Comparison.SMALLER_THAN;
-        }
-        else if ( lt == 0 )
-        {
-            return Comparison.GREATER_THAN_AND_EQUAL;
-        }
-        else if ( gt == 0 )
-        {
-            return Comparison.SMALLER_THAN_AND_EQUAL;
         }
         else
         {
@@ -368,73 +327,6 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
         {
             return SIZE_3D;
         }
-    }
-
-    /**
-     * Checks if this point is greater than (or equal) to lower and smaller than (or equal) to upper.
-     *
-     * @param lower point this value should be greater than
-     * @param includeLower governs if the lower comparison should be inclusive
-     * @param upper point this value should be smaller than
-     * @param includeUpper governs if the upper comparison should be inclusive
-     * @return true if this value is within the described range
-     */
-    public Boolean withinRange( PointValue lower, boolean includeLower, PointValue upper, boolean includeUpper )
-    {
-        // Unbounded
-        if ( lower == null && upper == null )
-        {
-            return true;
-        }
-
-        // Invalid bounds (lower greater than upper)
-        if ( lower != null && upper != null )
-        {
-            Comparison comparison = lower.unsafeTernaryCompareTo( upper );
-            if ( comparison == Comparison.UNDEFINED || comparison == Comparison.GREATER_THAN || comparison == Comparison.GREATER_THAN_AND_EQUAL )
-            {
-                return null;
-            }
-        }
-
-        // Lower bound defined
-        if ( lower != null )
-        {
-            Comparison comparison = this.unsafeTernaryCompareTo( lower );
-            if ( comparison == Comparison.UNDEFINED )
-            {
-                return null;
-            }
-            else if ( comparison == Comparison.SMALLER_THAN || comparison == Comparison.SMALLER_THAN_AND_EQUAL ||
-                    (comparison == Comparison.EQUAL || comparison == Comparison.GREATER_THAN_AND_EQUAL) && !includeLower )
-            {
-                if ( upper != null && this.unsafeTernaryCompareTo( upper ) == Comparison.UNDEFINED )
-                {
-                    return null;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        }
-
-        // Upper bound defined
-        if ( upper != null )
-        {
-            Comparison comparison = this.unsafeTernaryCompareTo( upper );
-            if ( comparison == Comparison.UNDEFINED )
-            {
-                return null;
-            }
-            else if ( comparison == Comparison.GREATER_THAN || comparison == Comparison.GREATER_THAN_AND_EQUAL ||
-                    (comparison == Comparison.EQUAL || comparison == Comparison.SMALLER_THAN_AND_EQUAL) && !includeUpper )
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     public static PointValue fromMap( MapValue map )
