@@ -46,6 +46,7 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
     private final MessageWriterTimer timer;
     private boolean inRecord;
     private boolean shouldFlushAfterRecord;
+    private boolean closed;
 
     public BoltResponseMessageWriterV41( PackProvider packerProvider, PackOutput output, LogService logService,
             SystemNanoClock clock, Duration keepAliveInterval )
@@ -77,11 +78,11 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
     public void keepAlive() throws IOException
     {
         // Double-check locking. The timeout variable inside timer is volatile.
-        if ( timer.isTimedOut() )
+        if ( !this.closed && timer.isTimedOut() )
         {
             synchronized ( this )
             {
-                if ( timer.isTimedOut() )
+                if ( !this.closed && timer.isTimedOut() )
                 {
                     flushBufferOrSendKeepAlive();
                 }
@@ -125,6 +126,7 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
     @Override
     public synchronized void close() throws IOException
     {
+        this.closed = true;
         delegator.close();
     }
 
@@ -172,7 +174,7 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
         }
         catch ( Throwable e )
         {
-            delegator.log().error( "Failed to write NOOP because: %s", e );
+            delegator.log().error( "Failed to write NOOP", e );
             throw e;
         }
     }
