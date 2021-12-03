@@ -69,7 +69,6 @@ public class PageAlignedV4_3 extends BaseRecordFormats
                 IndexCapabilities.LuceneCapability.LUCENE_8,
                 IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
                 IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG,
-                RecordStorageCapability.KERNEL_VERSION,
                 RecordStorageCapability.GROUP_DEGREES_STORE );
     }
 

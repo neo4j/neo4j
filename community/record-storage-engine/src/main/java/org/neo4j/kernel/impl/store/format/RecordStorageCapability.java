@@ -41,8 +41,6 @@ public enum RecordStorageCapability implements Capability
      */
     SECONDARY_RECORD_UNITS( CapabilityType.FORMAT ),
 
-    KERNEL_VERSION( true, CapabilityType.STORE ),
-
     /**
      * Degrees for dense nodes can be stored in a group degrees store which has support for atomic non-blocking updates.
      */
