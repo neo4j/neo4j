@@ -66,7 +66,6 @@ public class PageAlignedV5_0 extends BaseRecordFormats
     {
         super( ALIGNED_V5_0.versionString(), ALIGNED_V5_0.introductionVersion(), 3,
                 FormatFamily.aligned.formatCapability(),
-                RecordStorageCapability.INTERNAL_TOKENS,
                 RecordStorageCapability.GBPTREE_ID_FILES,
                 IndexCapabilities.LuceneCapability.LUCENE_8,
                 IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
