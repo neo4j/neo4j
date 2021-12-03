@@ -315,41 +315,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     dstStore.flush( cursorContext );
                 }
             }
-
-            if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
-            {
-                migrateCountsStore( directoryLayout, migrationLayout, oldFormat, cursorContext, memoryTracker );
-            }
         }
-    }
-
-    /**
-     * Rebuilds the counts store by reading from the store that is being migrated from.
-     * Instead of a rebuild this could have been done by reading the old counts store, but since we don't want any of that complex
-     * code lingering in the code base a rebuild is cleaner, but will require a longer migration time. Worth it?
-     */
-    private void migrateCountsStore( RecordDatabaseLayout directoryLayout, RecordDatabaseLayout migrationLayout, RecordFormats oldFormat,
-            CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException
-    {
-        // Just read from the old store (nodes, relationships, highLabelId, highRelationshipTypeId). This way we don't have to try and figure
-        // out which stores, if any, have been migrated to the new format. The counts themselves are equivalent in both the old and the migrated stores.
-        StoreFactory oldStoreFactory = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() );
-        try ( NeoStores oldStores = oldStoreFactory.openAllNeoStores();
-                var storeCursors = new CachedStoreCursors( oldStores, cursorContext );
-                GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), fileSystem, immediate(),
-                        new CountsComputer( oldStores, pageCache, cacheTracer, directoryLayout, memoryTracker, logService.getInternalLog( getClass() ) ),
-                        writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, migrationLayout.getDatabaseName(),
-                        config.get( counts_store_max_cached_entries ), NullLogProvider.getInstance() ) )
-        {
-            countsStore.start( cursorContext, storeCursors, memoryTracker );
-            countsStore.checkpoint( cursorContext );
-        }
-    }
-
-    private static boolean requiresCountsStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )
-    {
-        return !oldFormat.hasCapability( RecordStorageCapability.GBPTREE_COUNTS_STORE ) &&
-                newFormat.hasCapability( RecordStorageCapability.GBPTREE_COUNTS_STORE );
     }
 
     void writeLastTxInformation( DatabaseLayout migrationStructure, TransactionId txInfo ) throws IOException
@@ -717,12 +683,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 true, ExistingTargetStrategy.OVERWRITE );
         RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
         RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
-        if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
-        {
-            // Delete the old counts store
-            fileSystem.deleteFile( directoryLayout.databaseDirectory().resolve( "neostore.counts.db.a" ) );
-            fileSystem.deleteFile( directoryLayout.databaseDirectory().resolve( "neostore.counts.db.b" ) );
-        }
 
         // The addition of the group degrees store is additive and so if upgrading to a version where it's now present ...
         if ( !oldFormat.hasCapability( RecordStorageCapability.GROUP_DEGREES_STORE ) && newFormat.hasCapability( RecordStorageCapability.GROUP_DEGREES_STORE ) )

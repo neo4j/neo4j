@@ -41,11 +41,6 @@ public enum RecordStorageCapability implements Capability
      */
     SECONDARY_RECORD_UNITS( CapabilityType.FORMAT ),
 
-    /**
-     * ID files (neostore.xyz.id) are backed by {@link GBPTree}, transactional and recoverable.
-     */
-    GBPTREE_COUNTS_STORE( CapabilityType.STORE ),
-
     KERNEL_VERSION( true, CapabilityType.STORE ),
 
     /**
