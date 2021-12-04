@@ -20,10 +20,10 @@ import org.neo4j.cypher.internal.ast.generator.AstGenerator
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 class PrettifierPropertyTest extends CypherFunSuite
-  with GeneratorDrivenPropertyChecks
+  with ScalaCheckDrivenPropertyChecks
   with PrettifierTestUtils {
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier(alwaysParens = true, alwaysBacktick = true, sensitiveParamsAsParams = true))

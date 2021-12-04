@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.util.Fby
 import org.neo4j.cypher.internal.util.Last
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
-import org.neo4j.cypher.internal.util.NonEmptyList.canBuildFrom
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NonEmptyListTest extends CypherFunSuite {
@@ -46,14 +45,6 @@ class NonEmptyListTest extends CypherFunSuite {
     builder.clear()
 
     builder.result() should equal(None)
-  }
-
-  test("Should construct builders via canBuildFrom") {
-    canBuildFrom(Seq(1)).result() should equal(None)
-    (canBuildFrom(Seq(1)) += 2).result() should equal(Some(NonEmptyList(2)))
-
-    val result = Seq(1, 2, 3).map(_.toString): Option[NonEmptyList[String]]
-    result should equal(Some(NonEmptyList("1", "2", "3")))
   }
 
   test("Should convert to NonEmptyList") {

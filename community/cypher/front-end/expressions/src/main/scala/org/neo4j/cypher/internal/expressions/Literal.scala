@@ -20,6 +20,7 @@ import java.util
 
 import org.neo4j.cypher.internal.util.InputPosition
 
+import scala.language.postfixOps
 import scala.util.matching.Regex
 
 /**

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.collection.convert.Wrappers.JListWrapper
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 object FoldableTest {
   trait Exp extends Foldable
@@ -158,13 +158,13 @@ class FoldableTest extends CypherFunSuite {
   }
 
   test("should get children in wrapping list") {
-    val ast = JListWrapper(java.util.List.of(Val(1), Add(Val(2), Val(3))))
+    val ast = java.util.List.of(Val(1), Add(Val(2), Val(3))).asScala
 
     ast.treeChildren.toList shouldEqual (Seq(Val(1), Add(Val(2), Val(3))))
   }
 
   test("should get children in wrapping list in reverse") {
-    val ast = JListWrapper(java.util.List.of(Val(1), Add(Val(2), Val(3))))
+    val ast = java.util.List.of(Val(1), Add(Val(2), Val(3))).asScala
 
     ast.reverseTreeChildren.toList shouldEqual (Seq(Add(Val(2), Val(3)), Val(1)))
   }
@@ -208,7 +208,7 @@ class FoldableTest extends CypherFunSuite {
   test("should not get any children in empty lists") {
     val astEmptyList = Seq.empty[FoldableTest]
     val astEmptyOption = Option.empty[FoldableTest]
-    val astEmptyWrappingList = JListWrapper(java.util.List.of[FoldableTest]())
+    val astEmptyWrappingList = java.util.List.of[FoldableTest]()
     val astEmptyVector = Vector.empty[FoldableTest]
 
     astEmptyList.treeChildren.toList shouldEqual Seq.empty

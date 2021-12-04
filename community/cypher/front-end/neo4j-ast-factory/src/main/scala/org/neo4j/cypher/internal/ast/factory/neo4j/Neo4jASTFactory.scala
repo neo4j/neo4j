@@ -400,8 +400,8 @@ import java.lang
 import java.nio.charset.StandardCharsets
 import java.util
 import java.util.stream.Collectors
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.mapAsScalaMap
+import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.util.Either
 
 final case class Privilege(privilegeType: PrivilegeType, resource: ActionResource, qualifier: util.List[PrivilegeQualifier])
@@ -498,7 +498,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                                    loadCsv: Clause,
                                    queryBody: util.List[Clause]): Query =
     Query(Some(PeriodicCommitHint(Option(batchSize).map(UnsignedDecimalIntegerLiteral(_)(periodicCommitPosition)))(periodicCommitPosition)),
-      SingleQuery(loadCsv +: queryBody.asScala)(loadCsv.position)
+      SingleQuery(loadCsv +: queryBody.asScala.toSeq)(loadCsv.position)
     )(p)
 
   override def useClause(p: InputPosition,
@@ -1203,7 +1203,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
       case ConstraintVersion.CONSTRAINT_VERSION_2 => ConstraintVersion2
     }
 
-    val properties = javaProperties.asScala
+    val properties = javaProperties.asScala.toSeq
     constraintType match {
       case ConstraintType.UNIQUE => ast.CreateUniquePropertyConstraint(variable, LabelName(label.string)(label.pos), properties, Option(name),
         ifExistsDo(replace, ifNotExists), asOptionsAst(options), containsOn, constraintVersionScala)(p)
@@ -1225,7 +1225,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                               variable: Variable,
                               label: StringPos[InputPosition],
                               javaProperties: util.List[Property]): SchemaCommand = {
-    val properties = javaProperties.asScala
+    val properties = javaProperties.asScala.toSeq
     constraintType match {
       case ConstraintType.UNIQUE => DropUniquePropertyConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
       case ConstraintType.NODE_KEY => DropNodeKeyConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
@@ -1364,13 +1364,13 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   override def grantRoles(p: InputPosition,
                           roles: util.List[SimpleEither[String, Parameter]],
                           users: util.List[SimpleEither[String, Parameter]]): GrantRolesToUsers = {
-    GrantRolesToUsers(roles.asScala.map(_.asScala), users.asScala.map(_.asScala))(p)
+    GrantRolesToUsers(roles.asScala.map(_.asScala).toSeq, users.asScala.map(_.asScala).toSeq)(p)
   }
 
   override def revokeRoles(p: InputPosition,
                            roles: util.List[SimpleEither[String, Parameter]],
                            users: util.List[SimpleEither[String, Parameter]]): RevokeRolesFromUsers = {
-    RevokeRolesFromUsers(roles.asScala.map(_.asScala), users.asScala.map(_.asScala))(p)
+    RevokeRolesFromUsers(roles.asScala.map(_.asScala).toSeq, users.asScala.map(_.asScala).toSeq)(p)
   }
 
   // User commands
@@ -1483,19 +1483,19 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   override def grantPrivilege(p: InputPosition,
                               roles: util.List[SimpleEither[String, Parameter]],
                               privilege: Privilege): AdministrationCommand =
-    GrantPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala))(p)
+    GrantPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala).toSeq)(p)
 
   override def denyPrivilege(p: InputPosition, roles: util.List[SimpleEither[String, Parameter]], privilege: Privilege): AdministrationCommand =
-    DenyPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala))(p)
+    DenyPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala).toSeq)(p)
 
   override def revokePrivilege(p: InputPosition,
                                roles: util.List[SimpleEither[String, Parameter]],
                                privilege: Privilege,
                                revokeGrant: Boolean,
                                revokeDeny: Boolean): AdministrationCommand = (revokeGrant, revokeDeny) match {
-    case (true, false) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala), RevokeGrantType()(p))(p)
-    case (false, true) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala), RevokeDenyType()(p))(p)
-    case _             => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala), RevokeBothType()(p))(p)
+    case (true, false) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala).toSeq, RevokeGrantType()(p))(p)
+    case (false, true) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala).toSeq, RevokeDenyType()(p))(p)
+    case _             => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala.map(_.asScala).toSeq, RevokeBothType()(p))(p)
   }
 
   override def databasePrivilege(p: InputPosition, action: AdministrationAction, scope: util.List[DatabaseScope], qualifier: util.List[PrivilegeQualifier]): Privilege =
@@ -1576,11 +1576,11 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   // Resources
 
-  override def propertiesResource(p: InputPosition, properties: util.List[String]): ActionResource = PropertiesResource(properties.asScala)(p)
+  override def propertiesResource(p: InputPosition, properties: util.List[String]): ActionResource = PropertiesResource(properties.asScala.toSeq)(p)
 
   override def allPropertiesResource(p: InputPosition): ActionResource = AllPropertyResource()(p)
 
-  override def labelsResource(p: InputPosition, labels: util.List[String]): ActionResource = LabelsResource(labels.asScala)(p)
+  override def labelsResource(p: InputPosition, labels: util.List[String]): ActionResource = LabelsResource(labels.asScala.toSeq)(p)
 
   override def allLabelsResource(p: InputPosition): ActionResource = AllLabelResource()(p)
 
@@ -1779,7 +1779,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   private def asOptionsAst(options: SimpleEither[util.Map[String, Expression], Parameter]) =
     Option(options).map(_.asScala) match {
-      case Some(Left(map)) => OptionsMap(mapAsScalaMap(map).toMap)
+      case Some(Left(map)) => OptionsMap(map.asScala.toMap)
       case Some(Right(param)) => OptionsParam(param)
       case None => NoOptions
     }

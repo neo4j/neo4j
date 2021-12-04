@@ -25,14 +25,12 @@ Apache Software License, Version 2.0
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
   scala-collection-compat
+  scala-xml
   scalactic
   scalatest
 
 BSD - Scala License
   Scala Library
-
-BSD License
-  scala-xml
 
 Eclipse Public License v2.0
   JUnit Jupiter API

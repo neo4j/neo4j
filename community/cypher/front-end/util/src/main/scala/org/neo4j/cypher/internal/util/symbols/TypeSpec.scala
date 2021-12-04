@@ -16,13 +16,13 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
+import scala.annotation.tailrec
 import scala.language.postfixOps
-import scala.IterableOnce
 
 object TypeSpec {
   def exact(types: CypherType*): TypeSpec = exact(types)
-  def exact[T <: CypherType](traversable: IterableOnce[T]): TypeSpec =
-    TypeSpec(traversable.map(t => TypeRange(t, t)))
+  def exact[T <: CypherType](iterableOnce: IterableOnce[T]): TypeSpec =
+    TypeSpec(iterableOnce.iterator.map(t => TypeRange(t, t)))
   val all: TypeSpec = TypeSpec(TypeRange(CTAny, None))
   val none: TypeSpec = new TypeSpec(Vector.empty)
   def union(typeSpecs: TypeSpec*): TypeSpec = TypeSpec(typeSpecs.flatMap(_.ranges))
@@ -61,7 +61,7 @@ object TypeSpec {
    * @return a minimal set of TypeRanges that have the same intersection of types
    */
   private def minimalRanges(ranges: IterableOnce[TypeRange]): Vector[TypeRange] =
-    ranges.foldLeft(Vector.empty[TypeRange]) {
+    ranges.iterator.foldLeft(Vector.empty[TypeRange]) {
       case (set, range) =>
         if (set.exists(_ contains range))
           set
@@ -186,6 +186,8 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
   override def canEqual(that: Any): Boolean = that.isInstanceOf[TypeSpec]
 
   def toStrings: IndexedSeq[String] = toStrings(Vector.empty, ranges, identity)
+
+  @tailrec
   private def toStrings(
       acc: IndexedSeq[String],
       rs: Seq[TypeRange],

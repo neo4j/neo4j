@@ -407,13 +407,13 @@ object AstGenerator {
     choose(0, OR_MORE_UPPER_BOUND).flatMap(listOfN(_, gen))
 
   def zeroOrMore[T](seq: Seq[T]): Gen[Seq[T]] =
-    choose(0, Math.min(OR_MORE_UPPER_BOUND, seq.size)).flatMap(pick(_, seq))
+    choose(0, Math.min(OR_MORE_UPPER_BOUND, seq.size)).flatMap(pick(_, seq)).map(_.toSeq)
 
   def oneOrMore[T](gen: Gen[T]): Gen[List[T]] =
     choose(1, OR_MORE_UPPER_BOUND).flatMap(listOfN(_, gen))
 
   def oneOrMore[T](seq: Seq[T]): Gen[Seq[T]] =
-    choose(1, Math.min(OR_MORE_UPPER_BOUND, seq.size)).flatMap(pick(_, seq))
+    choose(1, Math.min(OR_MORE_UPPER_BOUND, seq.size)).flatMap(pick(_, seq)).map(_.toSeq)
 
   def tuple[A, B](ga: Gen[A], gb: Gen[B]): Gen[(A, B)] = for {
     a <- ga
@@ -589,7 +589,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     exprs <- listOfN(4, _expression)
     pairs = exprs.sliding(2)
     gens = pairs.map(p => _predicateComparisonPar(p.head, p.last)).toList
-    chain <- sequence(gens)(Buildable.buildableCanBuildFrom)
+    chain <- sequence(gens)(Buildable.buildableFactory)
   } yield Ands(chain)(pos)
 
   def _predicateUnary: Gen[Expression] = for {

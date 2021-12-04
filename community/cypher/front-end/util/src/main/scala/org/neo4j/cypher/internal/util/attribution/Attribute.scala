@@ -129,7 +129,7 @@ trait Attribute[KEY, VALUE] {
       copied.copyFrom(original)
       copied
     }
-  }
+  }.toSeq
 
   private def resizeArray(requiredSize: Int): Unit = {
     while (array.size < requiredSize)

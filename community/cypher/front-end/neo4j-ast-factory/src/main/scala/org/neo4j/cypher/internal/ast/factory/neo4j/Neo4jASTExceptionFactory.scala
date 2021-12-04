@@ -35,7 +35,7 @@ class Neo4jASTExceptionFactory(inner: CypherExceptionFactory) extends ASTExcepti
                                offset: Int,
                                line: Int,
                                column: Int): Exception = {
-    val exp: Seq[String] = asScalaBuffer(expected)
+    val exp: Seq[String] = asScala(expected).toSeq
 
     val message =
       new StringBuilder("Invalid input '")

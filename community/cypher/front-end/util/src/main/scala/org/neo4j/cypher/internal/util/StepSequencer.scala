@@ -70,7 +70,8 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
 
       is.groupBy(_._1)
         .filter(_._2.size > 1)
-        .mapValues(_.map(_._2.right.get))
+        .view
+        .mapValues(_.map(_._2.toOption.get))
         .foreach {
           case (condition, steps) =>
             throw new IllegalArgumentException(s"Found same post-condition $condition in these steps: $steps.")
@@ -86,7 +87,8 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
         _ = { if (invalidatedCondition.isInstanceOf[NegatedCondition]) throw new IllegalArgumentException(s"Step $step has an negated invalidated condition: $invalidatedCondition. That is not allowed.") }
       } yield invalidatedCondition -> step
       is.groupBy(_._1)
-        .mapValues(_.map(_._2).toSet)
+        .view
+        .mapValues(_.map(_._2).toSet).toMap
         .withDefaultValue(Set.empty)
     }
 
@@ -152,12 +154,12 @@ object StepSequencer {
   private case object ByInitialCondition
 
   trait Condition {
-    def unary_!(): Condition = NegatedCondition(this)
+    def unary_! : Condition = NegatedCondition(this)
   }
 
   private case class NegatedCondition(inner: Condition) extends Condition {
     override def toString: String = s"!$inner"
-    override def unary_!(): Condition = inner
+    override def unary_! : Condition = inner
   }
 
   trait Step {
@@ -317,12 +319,14 @@ object StepSequencer {
                               allSteps: Seq[S],
                               initialConditions: Set[Condition],
                               fixedSeed: Option[Long]): AccumulatedSteps[Seq[S]] = {
-    val allPostConditions: Set[Condition] = allSteps.iterator.flatMap(_.postConditions)(collection.breakOut)
+    val allPostConditions: Set[Condition] = allSteps.iterator.flatMap(_.postConditions).to(Set)
 
     val numberOfTimesEachStepIsInvalidated = allSteps
       .flatMap(_.invalidatedConditions.collect { case s if introducingSteps.contains(s) => introducingSteps(s) })
       .groupBy(identity)
+      .view
       .mapValues(_.size)
+      .toMap
       .withDefaultValue(0)
     val order = heuristicStepOrdering(numberOfTimesEachStepIsInvalidated, allSteps, fixedSeed)
 
@@ -419,5 +423,5 @@ object StepSequencer {
     }
 
     result
-  }
+  }.toSeq
 }

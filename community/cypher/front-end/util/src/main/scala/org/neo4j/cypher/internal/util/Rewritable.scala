@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import java.lang.reflect.Method
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 object Rewriter {
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter =
@@ -39,7 +40,7 @@ object Rewritable {
   implicit class IteratorEq[A <: AnyRef](val iterator: Iterator[A]) {
     def eqElements[B <: AnyRef](that: Iterator[B]): Boolean = {
       while (iterator.hasNext && that.hasNext) {
-        if (!(iterator.next eq that.next))
+        if (!(iterator.next() eq that.next()))
           return false
       }
       !iterator.hasNext && !that.hasNext
@@ -153,14 +154,14 @@ object topDown {
   private class TopDownRewriter(rewriter: Rewriter, val stopper: AnyRef => Boolean)
       extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
-      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val initialStack = mutable.Stack((List(that), new mutable.ListBuffer[AnyRef]()))
       val result = rec(initialStack)
       assert(result.size == 1)
       result.head
     }
 
     @tailrec
-    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+    private def rec(stack: mutable.Stack[(List[AnyRef], mutable.ListBuffer[AnyRef])]): mutable.ListBuffer[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -168,7 +169,7 @@ object topDown {
           newChildren
         } else {
           val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = Rewritable.dupAny(job, newChildren)
+          val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
           stack.push((jobs, doneJobs += doneJob))
           rec(stack)
         }
@@ -179,7 +180,7 @@ object topDown {
         } else {
           val rewrittenJob = newJob.rewrite(rewriter)
           stack.push((rewrittenJob :: jobs, doneJobs))
-          stack.push((rewrittenJob.treeChildren.toList, new mutable.MutableList()))
+          stack.push((rewrittenJob.treeChildren.toList, new mutable.ListBuffer()))
         }
         rec(stack)
       }
@@ -197,14 +198,14 @@ object topDownWithParent {
   private class TopDownWithParentRewriter(rewriter: RewriterWithParent, val stopper: AnyRef => Boolean)
     extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
-      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val initialStack = mutable.Stack((List(that), new ListBuffer[AnyRef]()))
       val result = rec(initialStack)
       assert(result.size == 1)
       result.head
     }
 
     @tailrec
-    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+    private def rec(stack: mutable.Stack[(List[AnyRef], mutable.ListBuffer[AnyRef])]): mutable.ListBuffer[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -212,7 +213,7 @@ object topDownWithParent {
           newChildren
         } else {
           val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = Rewritable.dupAny(job, newChildren)
+          val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
           stack.push((jobs, doneJobs += doneJob))
           rec(stack)
         }
@@ -231,7 +232,7 @@ object topDownWithParent {
           }
           val rewrittenJob = newJob.rewrite(rewriter, maybeParent)
           stack.push((rewrittenJob :: jobs, doneJobs))
-          stack.push((rewrittenJob.treeChildren.toList, new mutable.MutableList()))
+          stack.push((rewrittenJob.treeChildren.toList, new ListBuffer()))
         }
         rec(stack)
       }
@@ -247,14 +248,14 @@ object bottomUp {
   private class BottomUpRewriter(val rewriter: Rewriter, val stopper: AnyRef => Boolean)
       extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
-      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val initialStack = mutable.Stack((List(that), new ListBuffer[AnyRef]()))
       val result = rec(initialStack)
       assert(result.size == 1)
       result.head
     }
 
     @tailrec
-    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+    private def rec(stack: mutable.Stack[(List[AnyRef], mutable.ListBuffer[AnyRef])]): mutable.ListBuffer[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -262,7 +263,7 @@ object bottomUp {
           newChildren
         } else {
           val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = Rewritable.dupAny(job, newChildren)
+          val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
           val rewrittenDoneJob = doneJob.rewrite(rewriter)
           stack.push((jobs, doneJobs += rewrittenDoneJob))
           rec(stack)
@@ -273,7 +274,7 @@ object bottomUp {
           val (job :: jobs, doneJobs) = stack.pop()
           stack.push((jobs, doneJobs += job))
         } else {
-          stack.push((next.treeChildren.toList, new mutable.MutableList()))
+          stack.push((next.treeChildren.toList, new ListBuffer()))
         }
         rec(stack)
       }
@@ -289,14 +290,14 @@ object bottomUpWithRecorder {
   private class BottomUpRewriter(val rewriter: Rewriter, val stopper: AnyRef => Boolean, val recorder: (AnyRef, AnyRef) => Unit)
     extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
-      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val initialStack = mutable.Stack((List(that), new ListBuffer[AnyRef]()))
       val result = rec(initialStack)
       assert(result.size == 1)
       result.head
     }
 
     @tailrec
-    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+    private def rec(stack: mutable.Stack[(List[AnyRef], mutable.ListBuffer[AnyRef])]): mutable.ListBuffer[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -304,7 +305,7 @@ object bottomUpWithRecorder {
           newChildren
         } else {
           val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = Rewritable.dupAny(job, newChildren)
+          val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
           val rewrittenDoneJob = doneJob.rewrite(rewriter)
           if (!(doneJob eq rewrittenDoneJob))
             recorder(doneJob, rewrittenDoneJob)
@@ -317,7 +318,7 @@ object bottomUpWithRecorder {
           val (job :: jobs, doneJobs) = stack.pop()
           stack.push((jobs, doneJobs += job))
         } else {
-          stack.push((next.treeChildren.toList, new mutable.MutableList()))
+          stack.push((next.treeChildren.toList, new ListBuffer()))
         }
         rec(stack)
       }

@@ -75,13 +75,13 @@ object combineSetProperty extends Rewriter with StepSequencer.Step with ASTRewri
               itemsToCombine += itemsArray(i + 1).asInstanceOf[SetPropertyItem]
               i += 1
             }
-            newItems += combine(map, itemsToCombine)
+            newItems += combine(map, itemsToCombine.toSeq)
 
           case item =>
             newItems += item
         }
         i += 1
       }
-      s.copy(items = newItems)(s.position)
+      s.copy(items = newItems.toSeq)(s.position)
   })
 }
