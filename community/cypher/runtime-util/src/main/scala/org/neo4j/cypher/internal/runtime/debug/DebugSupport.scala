@@ -105,6 +105,16 @@ object DebugSupport {
         log(str.format(x1, x2, x3))
       }
 
+    def log(str: String, x1: Any, x2: Any, x3: Any, x4: Any): Unit =
+      if (enabled) {
+        log(str.format(x1, x2, x3, x4))
+      }
+
+    def log(str: String, x1: Any, x2: Any, x3: Any, x4: Any, x5: Any): Unit =
+      if (enabled) {
+        log(str.format(x1, x2, x3, x4, x5))
+      }
+
     def log(throwable: Throwable): Unit = {
       if (enabled) {
         throwable.printStackTrace()
