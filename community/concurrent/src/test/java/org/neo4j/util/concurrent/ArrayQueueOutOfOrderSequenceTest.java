@@ -32,6 +32,7 @@ import java.util.function.LongFunction;
 import static java.lang.Integer.max;
 import static java.lang.Thread.sleep;
 import static java.util.Arrays.copyOfRange;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -254,6 +255,16 @@ class ArrayQueueOutOfOrderSequenceTest
         // when/then verifications are made inside the race
         executorService.shutdown();
         executorService.awaitTermination( 10, TimeUnit.MINUTES );
+    }
+
+    @Test
+    void shouldThrowOnOfferingLowerOrEqualToHighestGapFree()
+    {
+        // given
+        OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 4, 10, new long[]{0} );
+
+        // when
+        assertThatThrownBy( () -> sequence.offer( 4, new long[]{3} ) ).isInstanceOf( IllegalStateException.class );
     }
 
     private static void assertGet( OutOfOrderSequence sequence, long number, long[] meta )

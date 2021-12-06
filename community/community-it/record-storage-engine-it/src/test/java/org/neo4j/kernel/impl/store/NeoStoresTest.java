@@ -620,7 +620,7 @@ public class NeoStoresTest
             MetaDataStore store = neoStore.getMetaDataStore();
             var cacheTracer = new DefaultPageCacheTracer();
             var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionCloseCall" ) );
-            store.transactionClosed( 0, 6666, 15, cursorContext );
+            store.transactionClosed( store.nextCommittingTransactionId(), 6666, 15, cursorContext );
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertEquals( 1, cursorTracer.pins() );
