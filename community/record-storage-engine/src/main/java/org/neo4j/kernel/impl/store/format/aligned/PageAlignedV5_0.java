@@ -23,7 +23,6 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.LabelTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.IndexCapabilities;
 
 import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V5_0;
 
@@ -65,10 +63,7 @@ public class PageAlignedV5_0 extends BaseRecordFormats
     private PageAlignedV5_0()
     {
         super( ALIGNED_V5_0.versionString(), ALIGNED_V5_0.introductionVersion(), 3,
-                FormatFamily.aligned.formatCapability(),
-                IndexCapabilities.LuceneCapability.LUCENE_8,
-                IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
-                IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG );
+                FormatFamily.aligned.formatCapability() );
     }
 
     @Override

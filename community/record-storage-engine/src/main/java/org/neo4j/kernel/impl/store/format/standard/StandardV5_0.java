@@ -23,7 +23,6 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -34,7 +33,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.IndexCapabilities;
 
 public class StandardV5_0 extends BaseRecordFormats
 {
@@ -45,10 +43,7 @@ public class StandardV5_0 extends BaseRecordFormats
     public StandardV5_0()
     {
         super( STORE_VERSION, StoreVersion.STANDARD_V5_0.introductionVersion(), 11,
-                FormatFamily.standard.formatCapability(),
-                IndexCapabilities.LuceneCapability.LUCENE_8,
-                IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
-                IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG );
+                FormatFamily.standard.formatCapability() );
     }
 
     @Override

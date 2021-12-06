@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.IndexCapabilities;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -163,17 +162,10 @@ public class StoreUpgrader
                 if ( storeVersion.isPresent() )
                 {
                     StoreVersion version = storageEngineFactory.versionInformation( storeVersion.get() );
-                    if ( version.hasCapability( IndexCapabilities.LuceneCapability.LUCENE_5 ) )
+                    String configuredVersion = storeVersionCheck.configuredVersion();
+                    if ( configuredVersion != null && !version.isCompatibleWith( storageEngineFactory.versionInformation( configuredVersion ) ) )
                     {
-                        throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
-                    }
-                    else
-                    {
-                        String configuredVersion = storeVersionCheck.configuredVersion();
-                        if ( configuredVersion != null && !version.isCompatibleWith( storageEngineFactory.versionInformation( configuredVersion ) ) )
-                        {
-                            throw new UpgradeNotAllowedException();
-                        }
+                        throw new UpgradeNotAllowedException();
                     }
                 }
             }
