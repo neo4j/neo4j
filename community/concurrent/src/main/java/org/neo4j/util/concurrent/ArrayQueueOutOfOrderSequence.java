@@ -56,6 +56,11 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
             return true;
         }
 
+        if ( number <= highestGapFreeNumber )
+        {
+            throw new IllegalStateException( "Was offered " + number + ", but highest gap-free is " + highestGapFreeNumber +
+                    " and was only expecting values higher than that" );
+        }
         outOfOrderQueue.offer( highestGapFreeNumber, number, pack( meta ) );
         return false;
     }

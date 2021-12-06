@@ -89,7 +89,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
     static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     private static final String METADATA_REFRESH_TAG = "metadataRefresh";
-    private static final UUID NOT_INITIALIZED_UUID = new UUID( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
+    static final UUID NOT_INITIALIZED_UUID = new UUID( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
 
     // Positions of meta-data records
     public enum Position
@@ -160,7 +160,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile int upgradeTxChecksumField = (int) FIELD_NOT_INITIALIZED;
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeCommitTimestampField = FIELD_NOT_INITIALIZED;
-    private volatile UUID externalStoreUUID = NOT_INITIALIZED_UUID;
+    private volatile UUID externalStoreUUID;
+    private volatile UUID databaseUUID;
     private volatile long kernelVersion = FIELD_NOT_INITIALIZED;
     private final PageCacheTracer pageCacheTracer;
 
@@ -230,6 +231,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
+    protected void initialise( boolean createIfNotExists, CursorContext cursorContext )
+    {
+        super.initialise( createIfNotExists, cursorContext );
+        refreshFields();
+    }
+
+    @Override
     public long getHighId()
     {
         Position[] values = Position.values();
@@ -251,8 +259,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public KernelVersion kernelVersion()
     {
         assertNotClosed();
-        checkInitialized( kernelVersion );
-
         if ( kernelVersion == FIELD_NOT_PRESENT )
         {
             throw new IllegalStateException( "KernelVersion unavailable. KernelVersion is not present in pre-4.3 stores" );
@@ -264,7 +270,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long getCheckpointLogVersion()
     {
         assertNotClosed();
-        checkInitialized( checkpointLogVersionField );
         return checkpointLogVersionField;
     }
 
@@ -296,6 +301,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             setRecord( EXTERNAL_STORE_UUID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursor, cursorContext );
             setRecord( EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursor, cursorContext );
+            externalStoreUUID = uuid;
         }
     }
 
@@ -314,7 +320,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset, cursor, cursorContext );
             setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp, cursor, cursorContext );
         }
-        checkInitialized( lastCommittingTxField.get() );
         lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         highestCommittedTransaction.set( transactionId, checksum, commitTimestamp );
@@ -457,8 +462,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             setRecord( DATABASE_ID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursor, cursorContext );
             setRecord( DATABASE_ID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursor, cursorContext );
+            databaseUUID = uuid;
         }
-        refreshFields();
     }
 
     public static Optional<UUID> getDatabaseIdUuid( PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext )
@@ -478,24 +483,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     @Override
     public Optional<UUID> getDatabaseIdUuid( CursorContext cursorContext )
     {
-        try
-        {
-            long msb = FIELD_NOT_INITIALIZED;
-            long lsb = FIELD_NOT_INITIALIZED;
-            try ( PageCursor cursor = openPageCursorForReading( 0, cursorContext ) )
-            {
-                if ( cursor.next() )
-                {
-                    msb = getRecordValue( cursor, Position.DATABASE_ID_MOST_SIGN_BITS, FIELD_NOT_INITIALIZED );
-                    lsb = getRecordValue( cursor, DATABASE_ID_LEAST_SIGN_BITS, FIELD_NOT_INITIALIZED );
-                }
-            }
-            return instantiateDatabaseIdUuid( msb, lsb );
-        }
-        catch ( IOException e )
-        {
-            return Optional.empty();
-        }
+        assertNotClosed();
+        var databaseUUID = this.databaseUUID;
+        return isNotInitializedUUID( databaseUUID ) ? Optional.empty() : Optional.of( databaseUUID );
     }
 
     private static Optional<UUID> instantiateDatabaseIdUuid( long msb, long lsb )
@@ -521,7 +511,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public Optional<ExternalStoreId> getExternalStoreId()
     {
         assertNotClosed();
-        var externalStoreUUID = getExternalStoreUUID();
+        var externalStoreUUID = this.externalStoreUUID;
         return isNotInitializedUUID( externalStoreUUID ) ? Optional.empty() : Optional.of( new ExternalStoreId( externalStoreUUID ) );
     }
 
@@ -539,7 +529,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long getUpgradeTime()
     {
         assertNotClosed();
-        checkInitialized( upgradeTimeField );
         return upgradeTimeField;
     }
 
@@ -582,16 +571,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         }
     }
 
-    private UUID getExternalStoreUUID()
-    {
-        assertNotClosed();
-        if ( isNotInitializedUUID( externalStoreUUID ) )
-        {
-            refreshFields();
-        }
-        return externalStoreUUID;
-    }
-
     private static boolean isNotInitializedUUID( UUID uuid )
     {
         return NOT_INITIALIZED_UUID.equals( uuid );
@@ -600,7 +579,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long getCreationTime()
     {
         assertNotClosed();
-        checkInitialized( creationTimeField );
         return creationTimeField;
     }
 
@@ -619,7 +597,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long getRandomNumber()
     {
         assertNotClosed();
-        checkInitialized( randomNumberField );
         return randomNumberField;
     }
 
@@ -639,7 +616,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long getCurrentLogVersion()
     {
         assertNotClosed();
-        checkInitialized( versionField );
         return versionField;
     }
 
@@ -709,7 +685,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long getStoreVersion()
     {
         assertNotClosed();
-        checkInitialized( storeVersionField );
         return storeVersionField;
     }
 
@@ -728,7 +703,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long getLatestConstraintIntroducingTx()
     {
         assertNotClosed();
-        checkInitialized( latestConstraintIntroducingTxField );
         return latestConstraintIntroducingTxField;
     }
 
@@ -771,6 +745,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                     BASE_TX_COMMIT_TIMESTAMP );
 
             externalStoreUUID = readExternalStoreUUID( cursor );
+            databaseUUID = readDatabaseUUID( cursor );
 
             upgradeTransaction = new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
             checkpointLogVersionField = getRecordValue( cursor, CHECKPOINT_LOG_VERSION, 0 );
@@ -790,6 +765,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         long mostSignificantBits = getRecordValue( cursor, EXTERNAL_STORE_UUID_MOST_SIGN_BITS, FIELD_NOT_INITIALIZED );
         long leastSignificantBits = getRecordValue( cursor, EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, FIELD_NOT_INITIALIZED );
+        return new UUID( mostSignificantBits, leastSignificantBits );
+    }
+
+    private UUID readDatabaseUUID( PageCursor cursor )
+    {
+        long mostSignificantBits = getRecordValue( cursor, DATABASE_ID_MOST_SIGN_BITS, FIELD_NOT_INITIALIZED );
+        long leastSignificantBits = getRecordValue( cursor, DATABASE_ID_LEAST_SIGN_BITS, FIELD_NOT_INITIALIZED );
         return new UUID( mostSignificantBits, leastSignificantBits );
     }
 
@@ -867,7 +849,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long nextCommittingTransactionId()
     {
         assertNotClosed();
-        checkInitialized( lastCommittingTxField.get() );
         return lastCommittingTxField.incrementAndGet();
     }
 
@@ -875,7 +856,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long committingTransactionId()
     {
         assertNotClosed();
-        checkInitialized( lastCommittingTxField.get() );
         return lastCommittingTxField.get();
     }
 
@@ -883,7 +863,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public void transactionCommitted( long transactionId, int checksum, long commitTimestamp, CursorContext cursorContext )
     {
         assertNotClosed();
-        checkInitialized( lastCommittingTxField.get() );
         if ( highestCommittedTransaction.offer( transactionId, checksum, commitTimestamp ) )
         {
             // We need to synchronize here in order to guarantee that the three fields are written consistently
@@ -922,7 +901,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long getLastCommittedTransactionId()
     {
         assertNotClosed();
-        checkInitialized( lastCommittingTxField.get() );
         return highestCommittedTransaction.get().transactionId();
     }
 
@@ -930,7 +908,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public TransactionId getLastCommittedTransaction()
     {
         assertNotClosed();
-        checkInitialized( lastCommittingTxField.get() );
         return highestCommittedTransaction.get();
     }
 
@@ -938,7 +915,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public TransactionId getUpgradeTransaction()
     {
         assertNotClosed();
-        checkInitialized( upgradeTxIdField );
         return upgradeTransaction;
     }
 
@@ -946,7 +922,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public long getLastClosedTransactionId()
     {
         assertNotClosed();
-        checkInitialized( lastCommittingTxField.get() );
         return lastClosedTx.getHighestGapFreeNumber();
     }
 
@@ -954,22 +929,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public ClosedTransactionMetadata getLastClosedTransaction()
     {
         assertNotClosed();
-        checkInitialized( lastCommittingTxField.get() );
         long[] longs = lastClosedTx.get();
         return new ClosedTransactionMetadata( longs[0], new LogPosition( longs[1], longs[2] ) );
-    }
-
-    /**
-     * Ensures that all fields are read from the store, by checking the initial value of the field in question
-     *
-     * @param field the value
-     */
-    private void checkInitialized( long field )
-    {
-        if ( field == FIELD_NOT_INITIALIZED )
-        {
-            refreshFields();
-        }
     }
 
     @Override
