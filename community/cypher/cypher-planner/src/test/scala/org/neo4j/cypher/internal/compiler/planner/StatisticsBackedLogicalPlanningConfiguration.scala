@@ -497,14 +497,16 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
         indexes.propertyIndexes.find { indexDef =>
-          indexDef.entityType == resolveEntityType(index) &&
+          indexDef.indexType == index.indexType.toPublicApi &&
+            indexDef.entityType == resolveEntityType(index) &&
             indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
         }.flatMap(indexDef => Selectivity.of(indexDef.uniqueValueSelectivity))
       }
 
       override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = {
         indexes.propertyIndexes.find { indexDef =>
-          indexDef.entityType == resolveEntityType(index) &&
+          indexDef.indexType == index.indexType.toPublicApi &&
+            indexDef.entityType == resolveEntityType(index) &&
             indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
         }.flatMap(indexDef => Selectivity.of(indexDef.propExistsSelectivity))
       }
@@ -714,7 +716,11 @@ class StatisticsBackedLogicalPlanningConfiguration(
     val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-    val metrics = SimpleMetricsFactory.newMetrics(planContext, simpleExpressionEvaluator, options.executionModel, plannerConfiguration.planningTextIndexesEnabled)
+    val metrics = SimpleMetricsFactory.newMetrics(planContext,
+      simpleExpressionEvaluator,
+      options.executionModel,
+      plannerConfiguration.planningTextIndexesEnabled,
+      plannerConfiguration.planningRangeIndexesEnabled)
 
     val iDPSolverConfig = new ConfigurableIDPSolverConfig(plannerConfiguration.idpMaxTableSize, plannerConfiguration.idpIterationDuration)
 

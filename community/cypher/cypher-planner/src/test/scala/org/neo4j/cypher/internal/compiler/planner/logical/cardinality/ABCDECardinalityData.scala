@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.util.Random
 
@@ -43,12 +44,18 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
   val Csel = .01 // How selective a :C predicate is
   val Dsel = .001 // How selective a :D predicate is
   val Esel = Bsel // How selective a :E predicate is
+  val Tsel = Bsel
+  val R1sel = Bsel
+  val R2sel = Bsel
 
   val A = N * Asel // Nodes with label A
   val B = N * Bsel // Nodes with label B
   val C = N * Csel // Nodes with label C
   val D = N * Dsel // Nodes with label D
   val E = N * Esel // Nodes with label E
+  val R1 = N * R1sel
+  val R2 = N * R2sel
+  val T = N * Tsel // Nodes with label T
 
   val Aprop = 0.5         // Unique selectivity of index on :A(prop)
   val Bprop = 0.003       // Unique selectivity of index on :B(prop)
@@ -59,6 +66,13 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
   val DfooBarBazExists = 0.2 // Exists selectivity of index on :D(foo, bar, baz)
   val EsomeUnique = 0.3   // Unique selectivity of index on :E(some)
   val EsomeExists = 0.5   // Exists selectivity of index on :E(some)
+  val TpropExists = 0.7   // Exists selectivity of index on :T(prop)
+  val TpropUnique = 0.3   // Unique selectivity of index on :T(prop)
+
+  val R1propExists = 0.8   // Exists selectivity of index on :R1(prop)
+  val R1propUnique = 0.2   // Unique selectivity of index on :R1(prop)
+  val R2fooBarExists = 0.9   // Exists selectivity of index on :R2(foo, bar)
+  val R2fooBarUnique = 0.1   // Unique selectivity of index on :R2(foo, bar)
 
   val T1prop = 0.003 // Selectivity of index on :T1(prop)
   val T2propFooExists = 0.2   // Exists selectivity of index on :T2(prop, foo)
@@ -196,6 +210,8 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
   val R = A_ANY_ANY + B_ANY_ANY + C_ANY_ANY + D_ANY_ANY + E_ANY_ANY
   val R_sel = R / (N * N)
 
+  def getIndexType: IndexType
+
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
       .setAllNodesCardinality(N)
@@ -205,14 +221,25 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
       .setLabelCardinality("C", C)
       .setLabelCardinality("D", D)
       .setLabelCardinality("E", E)
+      .setLabelCardinality("R1", R1)
+      .setLabelCardinality("R2", R2)
+      .setLabelCardinality("T", T)
       .setLabelCardinality("EMPTY", 0)
 
-      .addNodeIndex("A", Seq("prop"), 1.0, Aprop)
-      .addNodeIndex("B", Seq("prop"), 1.0, Bprop)
-      .addNodeIndex("A", Seq("bar"), 1.0, Abar)
-      .addNodeIndex("C", Seq("prop", "bar"), CpropBarExists, CpropBarUnique)
-      .addNodeIndex("D", Seq("foo", "bar", "baz"), DfooBarBazExists, DfooBarBazUnique)
-      .addNodeIndex("E", Seq("some"), EsomeExists, EsomeUnique)
+      .addNodeIndex("A", Seq("prop"), 1.0, Aprop, indexType = getIndexType)
+      .addNodeIndex("B", Seq("prop"), 1.0, Bprop, indexType = getIndexType)
+      .addNodeIndex("A", Seq("bar"), 1.0, Abar, indexType = getIndexType)
+      .addNodeIndex("C", Seq("prop", "bar"), CpropBarExists, CpropBarUnique, indexType = getIndexType)
+      .addNodeIndex("D", Seq("foo", "bar", "baz"), DfooBarBazExists, DfooBarBazUnique, indexType = getIndexType)
+      .addNodeIndex("E", Seq("some"), EsomeExists, EsomeUnique, indexType = getIndexType)
+
+      .addNodeIndex("T", Seq("prop"), TpropExists, TpropUnique, indexType = IndexType.TEXT)
+
+      // make sure that we can cope with duplicate indexes
+      .addNodeIndex("R1", Seq("prop"), R1propExists, R1propUnique, indexType = IndexType.RANGE)
+      .addNodeIndex("R2", Seq("foo", "bar"), R2fooBarExists, R2fooBarUnique, indexType = IndexType.RANGE)
+      .addNodeIndex("R1", Seq("prop"), R1propExists, R1propUnique, indexType = IndexType.BTREE)
+      .addNodeIndex("R2", Seq("foo", "bar"), R2fooBarExists, R2fooBarUnique, indexType = IndexType.BTREE)
 
       .addNodeExistenceConstraint("C", "bar")
 
@@ -304,6 +331,6 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
       .setRelationshipCardinality("(:E)-[:T1]->(:E)", E_T1_E)
       .setRelationshipCardinality("(:E)-[:T2]->(:E)", E_T2_E)
 
-      .addRelationshipIndex("T1", Seq("prop"), 1.0, T1prop)
-      .addRelationshipIndex("T2", Seq("prop", "foo"), T2propFooExists, T2propFooUnique)
+      .addRelationshipIndex("T1", Seq("prop"), 1.0, T1prop, indexType = getIndexType)
+      .addRelationshipIndex("T2", Seq("prop", "foo"), T2propFooExists, T2propFooUnique, indexType = getIndexType)
 }

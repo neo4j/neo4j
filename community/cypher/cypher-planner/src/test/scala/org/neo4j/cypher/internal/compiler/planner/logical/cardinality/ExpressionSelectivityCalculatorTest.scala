@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL_CARDINALITY
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY
 import org.neo4j.cypher.internal.util.Cardinality
@@ -63,14 +64,16 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
+abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  def getIndexType: IndexDescriptor.IndexType
 
   // NODES
 
-  protected val indexPersonBtree: IndexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(0), Seq(PropertyKeyId(0)))
+  protected val indexPersonBtree: IndexDescriptor = IndexDescriptor.forLabel(getIndexType, LabelId(0), Seq(PropertyKeyId(0)))
   protected val indexPersonText: IndexDescriptor = indexPersonBtree.copy(indexType = IndexDescriptor.IndexType.Text)
 
-  protected val indexAnimal: IndexDescriptor = IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, LabelId(1), Seq(PropertyKeyId(0)))
+  protected val indexAnimal: IndexDescriptor = IndexDescriptor.forLabel(getIndexType, LabelId(1), Seq(PropertyKeyId(0)))
 
   protected val nProp: Property = prop("n", "nodeProp")
 
@@ -87,7 +90,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   // RELATIONSHIPS
 
-  protected val indexFriends: IndexDescriptor = IndexDescriptor.forRelType(IndexDescriptor.IndexType.Btree, RelTypeId(0), Seq(PropertyKeyId(0)))
+  protected val indexFriends: IndexDescriptor = IndexDescriptor.forRelType(getIndexType, RelTypeId(0), Seq(PropertyKeyId(0)))
 
   protected val rProp: Property = prop("r", "relProp")
 
@@ -484,82 +487,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
       +- 0.00000001)
   }
 
-  // POINT DISTANCE
-
-  private val fakePoint = trueLiteral
-  private val nPropDistance = nPredicate(lessThan(function(Seq("point"), "distance", nProp, fakePoint), literalInt(3)))
-  private val rPropDistance = nPredicate(lessThan(function(Seq("point"), "distance", rProp, fakePoint), literalInt(3)))
-  test("distance with no label") {
-    val calculator = setUpCalculator()
-    calculator(nPropDistance.expr) should equal(DEFAULT_RANGE_SELECTIVITY)
-  }
-
-  test("distance with one label") {
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
-
-    val labelResult = calculator(nIsPerson.expr)
-    labelResult.factor should equal(0.1)
-    calculator(nPropDistance.expr).factor should equal(
-      0.2 // n.prop IS NOT NULL
-        * DEFAULT_RANGE_SEEK_FACTOR // point distance
-    )
-  }
-
-  test("distance with one relType, oneIndex") {
-    val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexFriends.relType -> 1000.0),
-      indexCardinalities = Map(indexFriends -> 200.0)))
-
-    val friendsIndexSelectivity = (
-      friendsPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR // point distance
-      )
-
-    calculator(rPropDistance.expr).factor should equal(friendsIndexSelectivity)
-  }
-
-  test("distance with two labels, two indexes") {
-    val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
-      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
-      indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
-
-    val labelResult1 = calculator(nIsPerson.expr)
-    val labelResult2 = calculator(nIsAnimal.expr)
-    labelResult1.factor should equal(0.1)
-    labelResult2.factor should equal(0.08)
-
-    val personIndexSelectivity = (
-      personPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR // point distance
-      )
-    val animalIndexSelectivity = (
-      animalPropIsNotNullSel
-        * DEFAULT_RANGE_SEEK_FACTOR // point distance
-      )
-
-    calculator(nPropDistance.expr).factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
-      +- 0.00000001)
-  }
-
-  test("distance in AndedPropertyInequalities") {
-    val inequality = lessThan(function(Seq("point"), "distance", nProp, fakePoint), rProp)
-    val predicate = AndedPropertyInequalities(varFor("r"), rProp, NonEmptyList(inequality))
-
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
-
-    val distanceResult = calculator(predicate)
-
-    distanceResult.factor should equal(
-      0.2 // exists n.prop
-        * DEFAULT_RANGE_SEEK_FACTOR // point distance
-    )
-  }
-
   // STARTS WITH, ENDS WITH, CONTAINS
 
-  private val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
-    Seq(startsWith _, endsWith _, contains _)
-      .map(mkExpr => (mkExpr, mkExpr(null, null).getClass.getSimpleName))
+  protected val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)]
 
   test("starts with/ends with/contains length 0, no label") {
     for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
@@ -1320,7 +1250,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val stats = mock[GraphStatistics]
     when(stats.nodesAllCardinality()).thenReturn(2000.0)
     when(stats.nodesWithLabelCardinality(Some(indexPersonBtree.label))).thenReturn(1000.0)
-    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner, planningTextIndexesEnabled = false)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner, planningTextIndexesEnabled = false, planningRangeIndexesEnabled = false)
 
     val result = calculator(PartialPredicate[HasLabels](hasLabels, mock[HasLabels]), labelInfo, Map.empty)
 
@@ -1331,7 +1261,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val stats = mock[GraphStatistics]
     when(stats.nodesAllCardinality()).thenReturn(MIN_NODES_ALL_CARDINALITY)
     when(stats.nodesWithLabelCardinality(any())).thenReturn(MIN_NODES_WITH_LABEL_CARDINALITY)
-    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner, planningTextIndexesEnabled = false)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner, planningTextIndexesEnabled = false, planningRangeIndexesEnabled = false)
     implicit val semanticTable: SemanticTable = SemanticTable()
 
     val expr = HasLabels(null, Seq(labelName("Foo")))(pos)
@@ -1388,20 +1318,6 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     in10000Result should be <= isNotNullSel
   }
 
-  //Point bbox
-  test("point.withinBBox(p, p1, p2) should have same selectivity as p1 <= p <= p2") {
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
-    val lowerLeft = function("point", mapOf("x" -> literalInt(0), "y" -> literalInt(0)))
-    val upperRight = function("point", mapOf("x" -> literalInt(10), "y" -> literalInt(10)))
-    val inequality = nPredicate(nAnded(NonEmptyList(
-      greaterThanOrEqual(nProp, lowerLeft),
-      lessThanOrEqual(nProp, upperRight)
-    )))
-    val bbox = nPredicate(function(List("point"), "withinBBox", nProp, lowerLeft, upperRight))
-
-    calculator(inequality.expr) should equal(calculator(bbox.expr))
-  }
-
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {
@@ -1420,11 +1336,15 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
       .addTypeInfo(literalInt(7), CTInteger)
   }
 
-  protected def setUpCalculator(labelInfo: LabelInfo = Map.empty, relTypeInfo: RelTypeInfo = Map.empty, stats: GraphStatistics = mockStats(), planningTextIndexesEnabled: Boolean = true): Expression => Selectivity = {
+  protected def setUpCalculator(labelInfo: LabelInfo = Map.empty,
+                                relTypeInfo: RelTypeInfo = Map.empty,
+                                stats: GraphStatistics = mockStats(),
+                                planningTextIndexesEnabled: Boolean = true,
+                                planningRangeIndexesEnabled: Boolean = true): Expression => Selectivity = {
     implicit val semanticTable: SemanticTable = setupSemanticTable()
 
     val combiner = IndependenceCombiner
-    val calculator = ExpressionSelectivityCalculator(stats, combiner, planningTextIndexesEnabled)
+    val calculator = ExpressionSelectivityCalculator(stats, combiner, planningTextIndexesEnabled, planningRangeIndexesEnabled)
     exp: Expression => calculator(exp, labelInfo, relTypeInfo)
   }
 
@@ -1487,11 +1407,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     }
   }
 
-  private def nPredicate(expr: Expression) = Predicate(Set("n"), expr)
-  private def rPredicate(expr: Expression) = Predicate(Set("r"), expr)
+  protected def nPredicate(expr: Expression): Predicate = Predicate(Set("n"), expr)
+  protected def rPredicate(expr: Expression): Predicate = Predicate(Set("r"), expr)
 
-  private def nAnded(exprs: NonEmptyList[InequalityExpression]) = AndedPropertyInequalities(varFor("n"), nProp, exprs)
-  private def rAnded(exprs: NonEmptyList[InequalityExpression]) = AndedPropertyInequalities(varFor("r"), rProp, exprs)
+  protected def nAnded(exprs: NonEmptyList[InequalityExpression]): Expression = AndedPropertyInequalities(varFor("n"), nProp, exprs)
+  protected def rAnded(exprs: NonEmptyList[InequalityExpression]): Expression = AndedPropertyInequalities(varFor("r"), rProp, exprs)
 }
 
 object ExpressionSelectivityCalculatorTest {
@@ -1512,4 +1432,106 @@ object ExpressionSelectivityCalculatorTest {
       case IndexDescriptor.EntityType.Relationship(relType) => relType
     }
   }
+}
+
+class BtreeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalculatorTest {
+  override def getIndexType: IndexDescriptor.IndexType = IndexType.Btree
+
+  override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
+    Seq(startsWith _, endsWith _, contains _)
+      .map(mkExpr => (mkExpr, mkExpr(null, null).getClass.getSimpleName))
+
+  // POINT DISTANCE
+
+  private val fakePoint = trueLiteral
+  private val nPropDistance = nPredicate(lessThan(function(Seq("point"), "distance", nProp, fakePoint), literalInt(3)))
+  private val rPropDistance = nPredicate(lessThan(function(Seq("point"), "distance", rProp, fakePoint), literalInt(3)))
+  test("distance with no label") {
+    val calculator = setUpCalculator()
+    calculator(nPropDistance.expr) should equal(DEFAULT_RANGE_SELECTIVITY)
+  }
+
+  test("distance with one label") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+    val labelResult = calculator(nIsPerson.expr)
+    labelResult.factor should equal(0.1)
+    calculator(nPropDistance.expr).factor should equal(
+      0.2 // n.prop IS NOT NULL
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
+    )
+  }
+
+  test("distance with one relType, oneIndex") {
+    val calculator = setUpCalculator(relTypeInfo = rFriendsRelTypeInfo, stats = mockStats(
+      labelOrRelCardinalities = Map(indexFriends.relType -> 1000.0),
+      indexCardinalities = Map(indexFriends -> 200.0)))
+
+    val friendsIndexSelectivity = (
+      friendsPropIsNotNullSel
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
+      )
+
+    calculator(rPropDistance.expr).factor should equal(friendsIndexSelectivity)
+  }
+
+  test("distance with two labels, two indexes") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 200.0, indexAnimal -> 400.0)))
+
+    val labelResult1 = calculator(nIsPerson.expr)
+    val labelResult2 = calculator(nIsAnimal.expr)
+    labelResult1.factor should equal(0.1)
+    labelResult2.factor should equal(0.08)
+
+    val personIndexSelectivity = (
+      personPropIsNotNullSel
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
+      )
+    val animalIndexSelectivity = (
+      animalPropIsNotNullSel
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
+      )
+
+    calculator(nPropDistance.expr).factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+      +- 0.00000001)
+  }
+
+  test("distance in AndedPropertyInequalities") {
+    val inequality = lessThan(function(Seq("point"), "distance", nProp, fakePoint), rProp)
+    val predicate = AndedPropertyInequalities(varFor("r"), rProp, NonEmptyList(inequality))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+    val distanceResult = calculator(predicate)
+
+    distanceResult.factor should equal(
+      0.2 // exists n.prop
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
+    )
+  }
+
+  // POINT BOUNDING BOX
+
+  test("point.withinBBox(p, p1, p2) should have same selectivity as p1 <= p <= p2") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val lowerLeft = function("point", mapOf("x" -> literalInt(0), "y" -> literalInt(0)))
+    val upperRight = function("point", mapOf("x" -> literalInt(10), "y" -> literalInt(10)))
+    val inequality = nPredicate(nAnded(NonEmptyList(
+      greaterThanOrEqual(nProp, lowerLeft),
+      lessThanOrEqual(nProp, upperRight)
+    )))
+    val bbox = nPredicate(function(List("point"), "withinBBox", nProp, lowerLeft, upperRight))
+
+    calculator(inequality.expr) should equal(calculator(bbox.expr))
+  }
+}
+
+class RangeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalculatorTest {
+  override def getIndexType: IndexDescriptor.IndexType = IndexType.Range
+
+  override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
+    Seq(startsWith _)
+      .map(mkExpr => (mkExpr, mkExpr(null, null).getClass.getSimpleName))
 }

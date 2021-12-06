@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -76,6 +77,10 @@ object IndexDescriptor {
   object EntityType {
     final case class Node(label: LabelId) extends EntityType
     final case class Relationship(relType: RelTypeId) extends EntityType
+    def of(id: NameId): EntityType = id match {
+      case labelId: LabelId => Node(labelId)
+      case relTypeId: RelTypeId => Relationship(relTypeId)
+    }
   }
 
   sealed trait IndexType {

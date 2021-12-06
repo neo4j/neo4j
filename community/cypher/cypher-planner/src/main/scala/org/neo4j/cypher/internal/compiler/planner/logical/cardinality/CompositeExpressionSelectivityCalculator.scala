@@ -84,11 +84,17 @@ import scala.annotation.tailrec
  *
  * @see #selectivityForCompositeIndexPredicates(SelectivitiesForPredicates, SelectivityCombiner)
  */
-case class CompositeExpressionSelectivityCalculator(planContext: PlanContext, planningTextIndexesEnabled: Boolean) extends SelectivityCalculator {
+case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
+                                                    planningTextIndexesEnabled: Boolean,
+                                                    planningRangeIndexesEnabled: Boolean) extends SelectivityCalculator {
 
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
-  private val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(planContext.statistics, combiner, planningTextIndexesEnabled)
+  private val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(
+    planContext.statistics,
+    combiner,
+    planningTextIndexesEnabled,
+    planningRangeIndexesEnabled)
 
   private val nodeIndexMatchCache = CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch]] {
     (a, b, c) => findNodeIndexMatches(a, b, c)
@@ -199,8 +205,10 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext, pl
       semanticTable,
       planContext,
       indexPredicateProviderContext,
+      // text indexes do not support composite indexes
       planningTextIndexesEnabled = false,
-      planningRangeIndexesEnabled = false,
+      planningRangeIndexesEnabled = planningRangeIndexesEnabled,
+      // point indexes do not support composite indexes
       planningPointIndexesEnabled = false).toSet[IndexMatch]
   }
 
@@ -211,8 +219,10 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext, pl
       semanticTable,
       planContext,
       indexPredicateProviderContext,
+      // text indexes do not support composite indexes
       planningTextIndexesEnabled = false,
-      planningRangeIndexesEnabled = false,
+      planningRangeIndexesEnabled = planningRangeIndexesEnabled,
+      // point indexes do not support composite indexes
       planningPointIndexesEnabled = false).toSet[IndexMatch]
   }
 

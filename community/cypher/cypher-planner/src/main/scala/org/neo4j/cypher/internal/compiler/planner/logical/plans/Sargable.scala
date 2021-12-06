@@ -61,12 +61,14 @@ import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SeekRange
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.Last
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 object WithSeekableArgs {
@@ -309,6 +311,19 @@ case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args:
             Seekable.cypherTypeForTypeSpec(unwrapLists(getTypeSpec(args.expr)))
         }
     }
+  }
+
+  def findCompatibleIndexTypes(semanticTable: SemanticTable): Set[IndexType] =
+    PropertySeekable.findCompatibleIndexTypes(propertyValueType(semanticTable))
+}
+
+object PropertySeekable {
+  def findCompatibleIndexTypes(cypherType: CypherType): Set[IndexType] = {
+    val otherIndexTypes = cypherType match {
+      case _: StringType => Set(IndexType.Text)
+      case _             => Set.empty
+    }
+    Set[IndexType](IndexType.Btree, IndexType.Range) ++ otherIndexTypes
   }
 }
 

@@ -23,12 +23,14 @@ import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
+import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType.Node
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType.Relationship
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -37,10 +39,14 @@ import org.neo4j.cypher.internal.util.Selectivity
 /**
  * Test that CompositeExpressionSelectivityCalculator returns the same results as ExpressionSelectivityCalculator for single expressions.
  */
-class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends ExpressionSelectivityCalculatorTest {
-  override protected def setUpCalculator(labelInfo: LabelInfo, relTypeInfo: RelTypeInfo, stats: GraphStatistics, planningTextIndexesEnabled: Boolean): Expression => Selectivity = {
+abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends ExpressionSelectivityCalculatorTest {
+  override protected def setUpCalculator(labelInfo: LabelInfo,
+                                         relTypeInfo: RelTypeInfo,
+                                         stats: GraphStatistics,
+                                         planningTextIndexesEnabled: Boolean,
+                                         planningRangeIndexesEnabled: Boolean): Expression => Selectivity = {
     val semanticTable = setupSemanticTable()
-    val compositeCalculator = CompositeExpressionSelectivityCalculator(mockPlanContext(stats), planningTextIndexesEnabled)
+    val compositeCalculator = CompositeExpressionSelectivityCalculator(mockPlanContext(stats), planningTextIndexesEnabled, planningRangeIndexesEnabled)
     exp: Expression => {
       compositeCalculator(Selections.from(exp), labelInfo, relTypeInfo, semanticTable, IndexCompatiblePredicatesProviderContext.default)
     }
@@ -70,4 +76,20 @@ class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends 
 
     override def txStateHasChanges(): Boolean = false
   }
+}
+
+class BtreeCompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest {
+  override def getIndexType: IndexDescriptor.IndexType = IndexType.Btree
+
+  override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
+    Seq(startsWith _, contains _, endsWith _)
+      .map(mkExpr => (mkExpr, mkExpr(null, null).getClass.getSimpleName))
+}
+
+class RangeCompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest {
+  override def getIndexType: IndexDescriptor.IndexType = IndexType.Range
+
+  override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
+    Seq(startsWith _)
+      .map(mkExpr => (mkExpr, mkExpr(null, null).getClass.getSimpleName))
 }

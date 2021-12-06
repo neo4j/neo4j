@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertySeekab
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PropertySeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.PropertySeekable.findCompatibleIndexTypes
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.Seekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.MultipleExactPredicate
@@ -49,8 +50,6 @@ import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.symbols.StringType
 
 trait IndexCompatiblePredicatesProvider {
 
@@ -82,14 +81,14 @@ trait IndexCompatiblePredicatesProvider {
         val exactness = if (queryExpression.isInstanceOf[SingleQueryExpression[_]]) SingleExactPredicate else MultipleExactPredicate
         IndexCompatiblePredicate(seekable.ident, seekable.expr, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = exactness, solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
-          compatibleIndexTypes = findCompatibleIndexTypes(seekable.propertyValueType(semanticTable)))
+          compatibleIndexTypes = seekable.findCompatibleIndexTypes(semanticTable))
 
       // ... = n.prop
       // In some rare cases, we can't rewrite these predicates cleanly,
       // and so planning needs to search for these cases explicitly
       case predicate@Equals(lhs, prop@Property(variable: LogicalVariable, _)) if valid(variable, lhs.dependencies) =>
         val expr = SingleQueryExpression(lhs)
-        val compatibleIndexTypes: Set[IndexType] = findCompatibleIndexTypes(PropertySeekable(prop, variable, SingleSeekableArg(lhs)).propertyValueType(semanticTable))
+        val compatibleIndexTypes: Set[IndexType] = PropertySeekable(prop, variable, SingleSeekableArg(lhs)).findCompatibleIndexTypes(semanticTable)
         IndexCompatiblePredicate(variable, prop, predicate, expr, Seekable.cypherTypeForTypeSpec(semanticTable.getActualTypeFor(prop)),
           predicateExactness = SingleExactPredicate, solvedPredicate = Some(predicate), dependencies = lhs.dependencies,
           compatibleIndexTypes = compatibleIndexTypes)
@@ -144,14 +143,6 @@ trait IndexCompatiblePredicatesProvider {
     val implicitCompatiblePredicates = implicitIndexCompatiblePredicates(planContext, indexPredicateProviderContext, predicates, explicitCompatiblePredicates, valid)
 
     explicitCompatiblePredicates ++ implicitCompatiblePredicates
-  }
-
-  private def findCompatibleIndexTypes(cypherType: CypherType): Set[IndexType] = {
-    val otherIndexTypes = cypherType match {
-      case _: StringType => Set(IndexType.Text)
-      case _             => Set.empty
-    }
-    Set[IndexType](IndexType.Btree, IndexType.Range) ++ otherIndexTypes
   }
 
   /**

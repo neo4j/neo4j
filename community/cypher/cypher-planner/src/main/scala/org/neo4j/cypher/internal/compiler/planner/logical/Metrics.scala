@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
@@ -188,14 +189,17 @@ trait MetricsFactory {
                               expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def newCostModel(executionModel: ExecutionModel): CostModel
   def newQueryGraphCardinalityModel(planContext: PlanContext, calculator: SelectivityCalculator): QueryGraphCardinalityModel
-  def newSelectivityCalculator(planContext: PlanContext, planningTextIndexesEnabled: Boolean): SelectivityCalculator =
-    CompositeExpressionSelectivityCalculator(planContext, planningTextIndexesEnabled)
+  def newSelectivityCalculator(planContext: PlanContext, planningTextIndexesEnabled: Boolean, planningRangeIndexesEnabled: Boolean): SelectivityCalculator =
+    CompositeExpressionSelectivityCalculator(planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled)
 
-  def newMetrics(planContext: PlanContext, expressionEvaluator: ExpressionEvaluator, executionModel: ExecutionModel, planningTextIndexesEnabled: Boolean): Metrics = {
-    val selectivityCalculator = newSelectivityCalculator(planContext, planningTextIndexesEnabled)
+  def newMetrics(planContext: PlanContext,
+                 expressionEvaluator: ExpressionEvaluator,
+                 executionModel: ExecutionModel,
+                 planningTextIndexesEnabled: Boolean,
+                 planningRangeIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue()): Metrics = {
+    val selectivityCalculator = newSelectivityCalculator(planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled)
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
     Metrics(newCostModel(executionModel), cardinality)
   }
 }
-

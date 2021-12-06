@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
@@ -43,7 +42,8 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
 
-import scala.annotation.nowarn
+import java.util.concurrent.TimeUnit
+
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
@@ -52,7 +52,7 @@ trait GraphIcing {
   implicit class RichNode(n: Node) {
     def labels: List[String] = n.getLabels.asScala.map(_.name()).toList
 
-    def addLabels(input: String*) {
+    def addLabels(input: String*): Unit = {
       input.foreach(l => n.addLabel(label(l)))
     }
   }
@@ -144,6 +144,21 @@ trait GraphIcing {
         tx.execute(s"CREATE CONSTRAINT $nameString FOR (n:$label) REQUIRE (n.$property) $constraintPredicate OPTIONS {indexProvider: '$provider'}")
       })
       getNodeConstraint(label, Seq(property))
+    }
+
+    def createConstraint(label: String,
+                         properties: Seq[String],
+                         constraintPredicate: ConstraintPredicate,
+                         provider: IndexProviderDescriptor,
+                         name: Option[String] = None): ConstraintDefinition = {
+      assert(properties.nonEmpty, "Constraints must have at least one property")
+      val nameString = name.map(n => s"`$n`").getOrElse("")
+      val propertyString = properties.map(prop => s"n.$prop").mkString(", ")
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT $nameString FOR (n:$label) REQUIRE ($propertyString) ${constraintPredicate.cypherRepresentation} OPTIONS {indexProvider: '${provider.name()}'}")
+      })
+
+      getNodeConstraint(label, properties)
     }
 
     def createNodeIndex(label: String, properties: String*): IndexDefinition = {
@@ -480,4 +495,18 @@ trait GraphIcing {
 final case class TxCounts(commits: Long = 0, rollbacks: Long = 0, active: Long = 0) {
   def +(other: TxCounts) = TxCounts(commits + other.commits, rollbacks + other.rollbacks, active + other.active)
   def -(other: TxCounts) = TxCounts(commits - other.commits, rollbacks - other.rollbacks, active - other.active)
+}
+
+sealed trait ConstraintPredicate {
+  val cypherRepresentation: String
+}
+
+object ConstraintPredicate {
+  case object NodeKey extends ConstraintPredicate {
+    val cypherRepresentation: String = "IS NODE KEY"
+  }
+
+  case object Uniqueness extends ConstraintPredicate {
+    val cypherRepresentation: String = "IS UNIQUE"
+  }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDECardinalityData
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -32,11 +33,13 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.TestName
+import org.neo4j.graphdb.schema.IndexType
 
+import scala.annotation.nowarn
 import scala.math.cbrt
 import scala.math.sqrt
 
-class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with ABCDECardinalityData with TestName {
+abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with ABCDECardinalityData with TestName {
 
   test("MATCH (n)") {
     expectCardinality(N)
@@ -94,6 +97,22 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(E * EsomeExists * or(EsomeUnique, EsomeUnique))
   }
 
+  test("MATCH (n:R1) WHERE n.prop = 42") {
+    expectCardinality(R1 * R1propExists * R1propUnique)
+  }
+
+  test("MATCH (n:R1) WHERE n.prop STARTS WITH '42'") {
+    expectCardinality(R1 * R1propExists * DEFAULT_RANGE_SEEK_FACTOR / "42".length)
+  }
+
+  test("MATCH (n:R2) WHERE n.foo = 42 AND n.bar = 23") {
+    expectCardinality(R2 * R2fooBarExists * R2fooBarUnique)
+  }
+
+  test("MATCH (n:R2) WHERE n.foo = 42 AND n.bar STARTS WITH '23'") {
+    expectCardinality(R2 * R2fooBarExists * sqrt(R2fooBarUnique) * DEFAULT_RANGE_SEEK_FACTOR / "23".length)
+  }
+
   test("MATCH (a:A) WHERE a.prop STARTS WITH 'p'") {
     expectCardinality(A * DEFAULT_RANGE_SEEK_FACTOR)
   }
@@ -116,6 +135,14 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 
   test("MATCH (a:B) WHERE a.prop = 42 OR a.bar = 43") {
     expectCardinality(B * or(Bprop, DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY))
+  }
+
+  test("MATCH (t:T) WHERE t.prop STARTS WITH ''") {
+    expectCardinality(T * TpropExists)
+  }
+
+  test("MATCH (t:T) WHERE t.prop = 'Test'") {
+    expectCardinality(T * TpropExists * TpropUnique)
   }
 
   test("MATCH (a) WHERE false") {
@@ -730,4 +757,14 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 
   private def expectPlanCardinality(findPlanId: PartialFunction[LogicalPlan, Boolean], expected: Double): Unit =
     planShouldHaveCardinality(testName, findPlanId, expected)
+}
+
+class BtreeAssumeIndependenceQueryGraphCardinalityModelTest extends AssumeIndependenceQueryGraphCardinalityModelTest {
+  override def getIndexType: IndexType = IndexType.BTREE: @nowarn("msg=Symbol BTREE is deprecated") // we accept to use BTREE for now
+}
+
+class RangeAssumeIndependenceQueryGraphCardinalityModelTest extends AssumeIndependenceQueryGraphCardinalityModelTest {
+  override def getIndexType: IndexType = IndexType.RANGE
+
+  override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder = super.plannerBuilder().enablePlanningRangeIndexes()
 }

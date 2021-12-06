@@ -351,7 +351,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
                           debugOptions: CypherDebugOptions = CypherDebugOptions.default
                          ): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel, cypherConfig.planningTextIndexesEnabled)
+      val metrics = metricsFactory.newMetrics(planContext,
+        mock[ExpressionEvaluator],
+        config.executionModel,
+        cypherConfig.planningTextIndexesEnabled,
+        cypherConfig.planningRangeIndexesEnabled)
       def context = ContextHelper.create(planContext = planContext,
         cypherExceptionFactory = exceptionFactory,
         queryGraphSolver = queryGraphSolver,

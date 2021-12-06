@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
@@ -76,19 +77,44 @@ import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
-case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner, planningTextIndexesEnabled: Boolean) {
+case class ExpressionSelectivityCalculator(stats: GraphStatistics,
+                                           combiner: SelectivityCombiner,
+                                           planningTextIndexesEnabled: Boolean,
+                                           planningRangeIndexesEnabled: Boolean) {
 
+  /**
+   * Index type priority to be used to calculate selectivities of exists predicates, given that a substring predicate is used.
+    */
   private val indexTypesPriorityForSubstringSargable: Seq[IndexType] = Seq(
     if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
+    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
     Some(IndexType.Btree),
   ).flatten
 
   private val indexTypesPriorityForPropertyExistence: Seq[IndexType] = Seq(
-    // TODO: offer range indexes here
+    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
     Some(IndexType.Btree),
     if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
   ).flatten
+
+  private def indexTypesForPropertyEquality: Seq[IndexType] = Seq(
+    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
+    Some(IndexType.Btree),
+    if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
+  ).flatten
+
+  private val indexTypesForRangeSeeks: Seq[IndexType] = Seq(
+    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
+    Some(IndexType.Btree),
+  ).flatten
+
+  def getTypeIfPossible(semanticTable: SemanticTable, expression: Expression): TypeSpec =
+    semanticTable.types
+      .get(expression)
+      .map(_.actual)
+      .getOrElse(TypeSpec.none)
 
   def apply(exp: Expression, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo)(implicit semanticTable: SemanticTable): Selectivity = exp match {
     // WHERE a:Label
@@ -105,15 +131,20 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE x.prop =/IN ...
     case AsPropertySeekable(seekable) =>
-      calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, labelInfo, relTypeInfo, seekable.propertyKey)
+      calculateSelectivityForPropertyEquality(seekable.name,
+        seekable.findCompatibleIndexTypes(semanticTable),
+        seekable.args.sizeHint,
+        labelInfo,
+        relTypeInfo,
+        seekable.propertyKey)
 
     // WHERE x.prop STARTS WITH 'prefix'
     case AsStringRangeSeekable(seekable@PrefixRangeSeekable(PrefixRange(StringLiteral(prefix)), _, _, _)) =>
-      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, relTypeInfo, seekable.propertyKeyName, Some(prefix))
+      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, relTypeInfo, seekable.propertyKeyName, Some(prefix), prefix = true)
 
     // WHERE x.prop STARTS WITH expression
     case AsStringRangeSeekable(seekable@PrefixRangeSeekable(_:PrefixRange[_], _, _, _)) =>
-      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, relTypeInfo, seekable.propertyKeyName, None)
+      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, relTypeInfo, seekable.propertyKeyName, None, prefix = true)
 
     // WHERE x.prop CONTAINS 'substring'
     case Contains(Property(Variable(name), propertyKey), StringLiteral(substring)) =>
@@ -197,14 +228,16 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                        relTypeInfo: RelTypeInfo,
                                                        propertyKey: PropertyKeyName)
                                                       (implicit semanticTable: SemanticTable): Selectivity = {
+    val indexTypesAbleToAnswerIsNotNull: Set[IndexType] = Set(IndexType.Btree, IndexType.Range)
+
     val indexPropertyExistsSelectivities =
       multipleIndexPropertyExistsSelectivitiesFor(variable, labelInfo, relTypeInfo, propertyKey, indexTypesPriorityForPropertyExistence).map {
         case (selectivity, indexType) =>
-          if (indexType == IndexType.Btree)
+          if (indexTypesAbleToAnswerIsNotNull.contains(indexType))
             selectivity
           else
             Selectivity
-              .of(selectivity.factor + (selectivity.negate * DEFAULT_PROPERTY_SELECTIVITY).factor) // not as accurate as BTREE, but can be an improvement over the default value
+              .of(selectivity.factor + (selectivity.negate * DEFAULT_PROPERTY_SELECTIVITY).factor) // not as accurate as BTREE/RANGE, but can be an improvement over the default value
               .getOrElse(DEFAULT_PROPERTY_SELECTIVITY)
       }
 
@@ -267,23 +300,29 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForPropertyEquality(variable: String,
+                                                      compatibleIndexTypes: Set[IndexType],
                                                       sizeHint: Option[Int],
                                                       labelInfo: LabelInfo,
                                                       relTypeInfo: RelTypeInfo,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
+    val indexTypesToConsider = indexTypesForPropertyEquality filter compatibleIndexTypes
     indexSelectivityWithSizeHint(sizeHint, { size =>
       val labels = labelInfo.getOrElse(variable, Set.empty)
       val relTypes = relTypeInfo.get(variable)
       val indexSelectivities = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
 
-        val descriptor: Option[IndexDescriptor] = (name, semanticTable.id(propertyKey)) match {
-          case (labelName: LabelName, Some(propKeyId)) => semanticTable.id(labelName).map(id => IndexDescriptor.forLabel(IndexType.Btree, id, Seq(propKeyId)))
-          case (relTypeName: RelTypeName, Some(propKeyId)) => semanticTable.id(relTypeName).map(id => IndexDescriptor.forRelType(IndexType.Btree, id, Seq(propKeyId)))
-          case _ => None
+        def descriptorCreator(nameId: Option[NameId], propertyKeyId: PropertyKeyId) =
+          nameId.map(id => indexTypesToConsider.map(IndexDescriptor(_, EntityType.of(id), Seq(propertyKeyId))))
+            .getOrElse(Seq.empty)
+
+        val descriptors: Seq[IndexDescriptor] = (name, semanticTable.id(propertyKey)) match {
+          case (labelName: LabelName, Some(propKeyId))     => descriptorCreator(semanticTable.id(labelName), propKeyId)
+          case (relTypeName: RelTypeName, Some(propKeyId)) => descriptorCreator(semanticTable.id(relTypeName), propKeyId)
+          case _ => Seq.empty
         }
 
-        descriptor.flatMap(indexSelectivityForPropertyEquality(_, size))
+        descriptors.flatMap(indexSelectivityForPropertyEquality(_, size)).headOption
       }
 
       combiner.orTogetherSelectivities(indexSelectivities)
@@ -294,7 +333,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
   private def indexSelectivityForPropertyEquality(descriptor: IndexDescriptor, size: Int): Option[Selectivity] =
     selectivityForPropertyEquality(stats.indexPropertyIsNotNullSelectivity(descriptor), stats.uniqueValueSelectivity(descriptor), size)
-
 
   private def defaultSelectivityForPropertyEquality(size: Int): Option[Selectivity] =
     selectivityForPropertyEquality(Some(DEFAULT_PROPERTY_SELECTIVITY), Some(DEFAULT_EQUALITY_SELECTIVITY), size)
@@ -330,12 +368,13 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
       ids match {
         case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
-          val descriptor = labelOrRelTypeId match {
-            case labelId: LabelId => IndexDescriptor.forLabel(IndexType.Btree, labelId, Seq(propertyKeyId))
-            case relTypeId: RelTypeId => IndexDescriptor.forRelType(IndexType.Btree, relTypeId, Seq(propertyKeyId))
+          val descriptorCreator = labelOrRelTypeId match {
+            case labelId: LabelId => IndexDescriptor.forLabel(_, labelId, Seq(propertyKeyId))
+            case relTypeId: RelTypeId => IndexDescriptor.forRelType(_, relTypeId, Seq(propertyKeyId))
           }
 
           for {
+            descriptor <- indexTypesForRangeSeeks.map(descriptorCreator)
             propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
             propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
           } yield {
@@ -411,7 +450,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                        labelInfo: LabelInfo,
                                                        relTypeInfo: RelTypeInfo,
                                                        propertyKey: PropertyKeyName,
-                                                       maybeString: Option[String])
+                                                       maybeString: Option[String],
+                                                       prefix: Boolean = false)
                                                       (implicit semanticTable: SemanticTable): Selectivity = {
     val stringLength = getStringLength(maybeString)
 
@@ -457,7 +497,7 @@ object ExpressionSelectivityCalculator {
    * given that the property IS NOT NULL.
    */
   def indexSelectivityForSubstringSargable(maybeString: Option[String],
-                                           indexType: IndexType = IndexType.Btree): Selectivity = {
+                                           indexType: IndexType = IndexType.Range): Selectivity = {
     indexSelectivityForSubstringSargable(getStringLength(maybeString), indexType)
   }
 

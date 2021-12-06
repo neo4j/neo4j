@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CardinalityModelIntegrationTest
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
@@ -34,12 +35,14 @@ import org.neo4j.graphdb.schema.IndexType
 
 import scala.math.sqrt
 
-class StatisticsBackedCardinalityModelTest extends CypherFunSuite with CardinalityModelIntegrationTest {
+abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with CardinalityModelIntegrationTest {
 
   val allNodes = 733.0
   val personCount = 324.0
   val relCount = 50.0
   val rel2Count = 78.0
+
+  def getIndexType: IndexType
 
   test("query containing a WITH and LIMIT on low/fractional cardinality") {
     val i = .1
@@ -156,7 +159,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
-      .addNodeIndex("Person", Seq("age"), 0.3, 0.2)
+      .addNodeIndex("Person", Seq("age"), 0.3, 0.2, indexType = getIndexType)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a, 1 AS x WHERE a.age = 20",
       i * 0.3 * 0.2)
@@ -209,7 +212,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setLabelCardinality("Person", i)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH count(a) AS count, a.name AS name WHERE count > 20",
-        Math.sqrt(i) * DEFAULT_RANGE_SELECTIVITY)
+      Math.sqrt(i) * DEFAULT_RANGE_SELECTIVITY)
   }
 
   private val signature = ProcedureSignature(
@@ -416,7 +419,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     val config = plannerBuilder()
       .setAllNodesCardinality(nodes)
       .setLabelCardinality("Foo", inboundCardinality)
-      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
+      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity, indexType = getIndexType)
       .build()
 
     queryShouldHaveCardinality(config, s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
@@ -430,7 +433,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     val config = plannerBuilder()
       .setAllNodesCardinality(500)
       .setLabelCardinality("Foo", inboundCardinality)
-      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
+      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity, indexType = getIndexType)
       .build()
 
     queryShouldHaveCardinality(config, s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
@@ -446,7 +449,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setRelationshipCardinality("(:A)-[:R]->()", inboundCardinality)
       .setRelationshipCardinality("()-[:R]->()", inboundCardinality)
       .setAllRelationshipsCardinality(10)
-      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity)
+      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity, indexType = getIndexType)
       .build()
 
     queryShouldHaveCardinality(config, s"MATCH (a:A)-[r:R]->() WHERE r.prop IS NOT NULL",
@@ -462,43 +465,21 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setRelationshipCardinality("(:A)-[:R]->()", inboundCardinality)
       .setRelationshipCardinality("()-[:R]->()", inboundCardinality)
       .setAllRelationshipsCardinality(10)
-      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity)
+      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity, indexType = getIndexType)
       .build()
 
     queryShouldHaveCardinality(config, s"MATCH (a:A)-[r]->() WHERE r:R AND r.prop IS NOT NULL",
       inboundCardinality * whereSelectivity)
   }
 
-  test ("should use distance seekable predicate for cardinality estimation") {
-    val labelCardinality = 50
-    val propSelectivity = 0.5
-    val config = plannerBuilder()
-      .setAllNodesCardinality(100)
-      .setLabelCardinality("Person", labelCardinality)
-      .addNodeIndex("Person", Seq("prop"), propSelectivity, 1)
-      .build()
-
-    val query = "MATCH (n:Person) WHERE point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5"
-
-    val planState = config.planState(query + " RETURN n")
-    val plan = planState.logicalPlan
-    val cardinalities = planState.planningAttributes.effectiveCardinalities
-    val nodeIndexSeekCardinality = plan.flatten.collectFirst{case lp:NodeIndexSeek => cardinalities.get(lp.id)}.get
-
-    nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
-
-    queryShouldHaveCardinality(config, query,
-      labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
-  }
-
-  test ("should only use predicates marked as solved for cardinality estimation of node index seek") {
+  test("should only use predicates marked as solved for cardinality estimation of node index seek") {
     val labelCardinality = 50
     val existsSelectivity = 0.5
     val uniqueSelectivity = 0.1
     val config = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", labelCardinality)
-      .addNodeIndex("Person", Seq("prop1", "prop2"), existsSelectivity, uniqueSelectivity)
+      .addNodeIndex("Person", Seq("prop1", "prop2"), existsSelectivity, uniqueSelectivity, indexType = getIndexType)
       .build()
 
     val query = "MATCH (n:Person) WHERE n.prop1 > 0 AND n.prop2 = 0"
@@ -506,7 +487,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     val planState = config.planState(query + " RETURN n")
     val plan = planState.logicalPlan
     val cardinalities = planState.planningAttributes.effectiveCardinalities
-    val nodeIndexSeekCardinality = plan.flatten.collectFirst{case lp:NodeIndexSeek => cardinalities.get(lp.id)}.get
+    val nodeIndexSeekCardinality = plan.flatten.collectFirst { case lp: NodeIndexSeek => cardinalities.get(lp.id) }.get
 
     // The range selectivity defaults to equality selectivity if there are few unique values.
     nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * existsSelectivity * sqrt(uniqueSelectivity))
@@ -667,4 +648,36 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       queryShouldHaveCardinality(cfg, q, aNodeCount * textIndexSelectivity)
     }
   }
+}
+
+class BtreeStatisticsBackedCardinalityModelTest extends StatisticsBackedCardinalityModelTest {
+  override def getIndexType = IndexType.BTREE
+
+  test("should use distance seekable predicate for cardinality estimation") {
+    val labelCardinality = 50
+    val propSelectivity = 0.5
+    val config = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", labelCardinality)
+      .addNodeIndex("Person", Seq("prop"), propSelectivity, 1, indexType = IndexType.BTREE)
+      .build()
+
+    val query = "MATCH (n:Person) WHERE point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5"
+
+    val planState = config.planState(query + " RETURN n")
+    val plan = planState.logicalPlan
+    val cardinalities = planState.planningAttributes.effectiveCardinalities
+    val nodeIndexSeekCardinality = plan.flatten.collectFirst { case lp: NodeIndexSeek => cardinalities.get(lp.id) }.get
+
+    nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
+
+    queryShouldHaveCardinality(config, query,
+      labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
+  }
+}
+
+class RangeStatisticsBackedCardinalityModelTest extends StatisticsBackedCardinalityModelTest {
+  override def getIndexType = IndexType.RANGE
+
+  override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder = super.plannerBuilder().enablePlanningRangeIndexes()
 }
