@@ -30,6 +30,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -68,6 +69,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -702,16 +704,8 @@ class MetaDataStoreTest
     @Test
     void readAllFieldsMustThrowOnPageOverflow()
     {
-        try ( MetaDataStore store = newMetaDataStore() )
-        {
-            // Apparently this is possible, and will trick MetaDataStore into thinking the field is not initialised.
-            // Thus it will reload all fields from the file, even though this ends up being the actual value in the
-            // file. We do this because creating a proper MetaDataStore automatically initialises all fields.
-            store.setUpgradeTime( MetaDataStore.FIELD_NOT_INITIALIZED, NULL );
-            fakePageCursorOverflow = true;
-            assertThrows( UnderlyingStorageException.class, store::getUpgradeTime );
-            fakePageCursorOverflow = false;
-        }
+        fakePageCursorOverflow = true;
+        assertThrows( UnderlyingStorageException.class, this::newMetaDataStore );
     }
 
     @Test
@@ -807,9 +801,9 @@ class MetaDataStoreTest
         try ( MetaDataStore ignored = newMetaDataStore( pageCacheTracer ) )
         {
             assertThat( pageCacheTracer.faults() ).isOne();
-            assertThat( pageCacheTracer.pins() ).isEqualTo( 20 );
-            assertThat( pageCacheTracer.unpins() ).isEqualTo( 20 );
-            assertThat( pageCacheTracer.hits() ).isEqualTo( 19 );
+            assertThat( pageCacheTracer.pins() ).isEqualTo( 19 );
+            assertThat( pageCacheTracer.unpins() ).isEqualTo( 19 );
+            assertThat( pageCacheTracer.hits() ).isEqualTo( 18 );
         }
     }
 
@@ -993,6 +987,75 @@ class MetaDataStoreTest
         }
     }
 
+    @Test
+    void shouldLoadAllFieldsOnOpen()
+    {
+        // given
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        try ( var store = newMetaDataStore( pageCacheTracer ) )
+        {
+            var pinsBefore = pageCacheTracer.pins();
+            readAllFields( store );
+            var pinsAfter = pageCacheTracer.pins();
+            assertThat( pinsAfter ).isEqualTo( pinsBefore );
+        }
+    }
+
+    private void readAllFields( MetaDataStore store )
+    {
+        store.getStoreVersion();
+        store.getUpgradeTransaction();
+        store.getLastCommittedTransaction();
+        store.getUpgradeTime();
+        store.getLastClosedTransaction();
+        store.getCreationTime();
+        store.getCheckpointLogVersion();
+        store.getRandomNumber();
+        store.getLatestConstraintIntroducingTx();
+        store.getExternalStoreId();
+        store.getStoreId();
+        // getDatabaseIdUuid actually reads from store, but must not refresh fields
+        store.getDatabaseIdUuid( NULL );
+    }
+
+    @Test
+    void shouldGenerateCorrectTransactionIdSequenceWhenConcurrentlyReadingOtherFields() throws IOException
+    {
+        // given an existing meta data store with its external store ID UUID set to uninitialized (as if the db was from an older version)
+        newMetaDataStore().close();
+        MetaDataStore.setExternalStoreUUID( pageCache, databaseLayout.metadataStore(), MetaDataStore.NOT_INITIALIZED_UUID, databaseLayout.getDatabaseName(),
+                NULL );
+
+        try ( var store = newMetaDataStore() )
+        {
+            var numCommitted = new AtomicLong();
+            var race = new Race().withEndCondition( () -> numCommitted.get() >= 10_000 );
+            var numCommitters = 4;
+            var bitSets = new BitSet[numCommitters];
+            for ( int i = 0; i < numCommitters; i++ )
+            {
+                bitSets[i] = new BitSet();
+            }
+            race.addContestants( numCommitters, c -> () ->
+            {
+                var nextTxId = store.nextCommittingTransactionId();
+                bitSets[c].set( toIntExact( nextTxId ) );
+                numCommitted.incrementAndGet();
+            } );
+            race.addContestants( 2, () -> readAllFields( store ) );
+            race.goUnchecked();
+
+            var combined = new BitSet();
+            var expectedCardinality = 0;
+            for ( int i = 0; i < numCommitters; i++ )
+            {
+                combined.or( bitSets[i] );
+                expectedCardinality += bitSets[i].cardinality();
+            }
+            assertThat( combined.cardinality() ).isEqualTo( expectedCardinality );
+        }
+    }
+
     private MetaDataStore newMetaDataStore()
     {
         return newMetaDataStore( PageCacheTracer.NULL );
@@ -1006,5 +1069,4 @@ class MetaDataStoreTest
                         pageCacheWithFakeOverflow, fs, logProvider, pageCacheTracer, writable() );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
-
 }

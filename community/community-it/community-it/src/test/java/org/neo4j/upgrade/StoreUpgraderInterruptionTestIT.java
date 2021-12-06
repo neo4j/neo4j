@@ -216,9 +216,9 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDatabaseLayout );
 
         assertEquals( 43, idMigratorTracer.faults() );
-        assertEquals( 82, idMigratorTracer.hits() );
-        assertEquals( 125, idMigratorTracer.pins() );
-        assertEquals( 125, idMigratorTracer.unpins() );
+        assertEquals( 83, idMigratorTracer.hits() );
+        assertEquals( 126, idMigratorTracer.pins() );
+        assertEquals( 126, idMigratorTracer.unpins() );
 
         assertEquals( 61, recordMigratorTracer.faults() );
         assertEquals( 228, recordMigratorTracer.hits() );
