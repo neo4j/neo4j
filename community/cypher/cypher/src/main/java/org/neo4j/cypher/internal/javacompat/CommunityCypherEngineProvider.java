@@ -79,7 +79,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
             CypherPlannerConfiguration innerPlannerConfig = CypherPlannerConfiguration.fromCypherConfiguration( cypherConfig, spi.config(), false );
             CypherQueryCaches innerQueryCaches = makeCypherQueryCaches( spi, queryService, cypherConfig, cacheFactory, clock );
             CompilerFactory innerCompilerFactory = makeCompilerFactory( queryService, spi, innerPlannerConfig, runtimeConfig, innerQueryCaches );
-            return new SystemExecutionEngine( queryService, innerQueryCaches, spi.logProvider(), compilerFactory, innerCompilerFactory );
+            return new SystemExecutionEngine( queryService, spi.logProvider(), queryCaches, compilerFactory, innerQueryCaches, innerCompilerFactory );
         }
         else if ( spi.config().get( GraphDatabaseInternalSettings.snapshot_query ) )
         {
@@ -92,7 +92,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
     }
 
     private CypherQueryCaches makeCypherQueryCaches( SPI spi, GraphDatabaseCypherService queryService, CypherConfiguration cypherConfig,
-                                                    CaffeineCacheFactory cacheFactory, Clock clock )
+                                                     CaffeineCacheFactory cacheFactory, Clock clock )
     {
         return new CypherQueryCaches(
                 new CypherQueryCaches.Config( cypherConfig ),

@@ -41,13 +41,17 @@ class SystemExecutionEngine extends ExecutionEngine
      * This is used for processing system database commands, where the outer Cypher engine will only understand administration commands
      * and translate them into normal Cypher against the SYSTEM database, processed by the inner Cypher runtime, which understands normal Cypher.
      */
-    SystemExecutionEngine( GraphDatabaseQueryService queryService, CypherQueryCaches queryCaches, LogProvider logProvider,
-                           CompilerFactory systemCompilerFactory, CompilerFactory normalCompilerFactory )
+    SystemExecutionEngine( GraphDatabaseQueryService queryService,
+                           LogProvider logProvider,
+                           CypherQueryCaches systemQueryCaches,
+                           CompilerFactory systemCompilerFactory,
+                           CypherQueryCaches normalQueryCaches,
+                           CompilerFactory normalCompilerFactory )
     {
         innerCypherExecutionEngine =
-                makeExecutionEngine( queryService, queryCaches, logProvider, new CompilerLibrary( normalCompilerFactory, this::normalExecutionEngine ) );
+                makeExecutionEngine( queryService, normalQueryCaches, logProvider, new CompilerLibrary( normalCompilerFactory, this::normalExecutionEngine ) );
         cypherExecutionEngine = // only understands ddl
-                makeExecutionEngine( queryService, queryCaches, logProvider, new CompilerLibrary( systemCompilerFactory, this::normalExecutionEngine ) );
+                makeExecutionEngine( queryService, systemQueryCaches, logProvider, new CompilerLibrary( systemCompilerFactory, this::normalExecutionEngine ) );
     }
 
     org.neo4j.cypher.internal.ExecutionEngine normalExecutionEngine()
