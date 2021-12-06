@@ -567,12 +567,12 @@ public class ImportLogic implements Closeable
     public void close() throws IOException
     {
         // We're done, do some final logging about it
-        long totalTimeMillis = currentTimeMillis() - startTime;
+        long totalTimeMillis = startTime > 0 ? currentTimeMillis() - startTime : 0;
         DataStatistics state = getState( DataStatistics.class );
         String additionalInformation = Objects.toString( state, "Data statistics is not available." );
         executionMonitor.done( successful, totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation,
                 bytesToString( peakMemoryUsage ) ) );
-        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + additionalInformation );
+        log.info( "Import " + (successful ? "completed successfully" : "failed") + ", took " + duration( totalTimeMillis ) + ". " + additionalInformation );
         closeAll( nodeRelationshipCache, nodeLabelsCache, idMapper );
     }
 
