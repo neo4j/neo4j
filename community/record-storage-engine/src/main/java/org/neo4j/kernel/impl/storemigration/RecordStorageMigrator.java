@@ -57,10 +57,6 @@ import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
-import org.neo4j.internal.counts.GBPTreeCountsStore;
-import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
-import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -93,7 +89,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -102,7 +97,6 @@ import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -128,7 +122,6 @@ import org.neo4j.token.api.TokenNotFoundException;
 import static java.util.Arrays.asList;
 import static org.apache.commons.io.IOUtils.lineIterator;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -236,8 +229,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
             // update necessary neostore records
             LogPosition logPosition = readLastTxLogPosition( migrationLayout );
-            updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, false,
-                    cursorContext );
+            updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, cursorContext );
 
             if ( requiresPropertyMigration )
             {
@@ -684,13 +676,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( RecordDatabaseLayout migrationStructure, RecordDatabaseLayout sourceDirectoryStructure,
-            String versionToMigrateTo, LogPosition lastClosedTxLogPosition, boolean requiresIdFilesMigration, CursorContext cursorContext ) throws IOException
+            String versionToMigrateTo, LogPosition lastClosedTxLogPosition, CursorContext cursorContext ) throws IOException
     {
         final Path storeDirNeoStore = sourceDirectoryStructure.metadataStore();
         final Path migrationDirNeoStore = migrationStructure.metadataStore();
         String databaseName = sourceDirectoryStructure.getDatabaseName();
         fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStructure, Iterables.iterable( CommonDatabaseFile.METADATA_STORE ), true,
-                !requiresIdFilesMigration, ExistingTargetStrategy.SKIP );
+                true, ExistingTargetStrategy.SKIP );
 
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_ID,
                 MetaDataStore.getRecord( pageCache, storeDirNeoStore, LAST_TRANSACTION_ID, databaseName, cursorContext ), databaseName, cursorContext );
