@@ -400,7 +400,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
           }
 
           test(s"$verb $roleKeyword `$$f00`,bar $preposition abc,`$$a&c`") {
-            yields(func(Seq("$f00", "bar"), Seq("abc", "$a&c")))
+            yields(func(Seq("$f00", "bar"), Seq("abc", s"$$a&c")))
           }
 
           // Should fail to parse if not following the pattern $command $roleKeyword role(s) $preposition user(s)
@@ -449,19 +449,19 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
       }
   }
 
-  test("GRANT ROLE $a TO $x") {
+  test(s"GRANT ROLE $$a TO $$x") {
     yields(ast.GrantRolesToUsers(Seq(param("a")), Seq(param("x"))))
   }
 
-  test("REVOKE ROLE $a FROM $x") {
+  test(s"REVOKE ROLE $$a FROM $$x") {
     yields(ast.RevokeRolesFromUsers(Seq(param("a")), Seq(param("x"))))
   }
 
-  test("GRANT ROLES a, $b, $c TO $x, y, z") {
+  test(s"GRANT ROLES a, $$b, $$c TO $$x, y, z") {
     yields(ast.GrantRolesToUsers(Seq(literal("a"), param("b"), param("c")), Seq(param("x"), literal("y"), literal("z"))))
   }
 
-  test("REVOKE ROLES a, $b, $c FROM $x, y, z") {
+  test(s"REVOKE ROLES a, $$b, $$c FROM $$x, y, z") {
     yields(ast.RevokeRolesFromUsers(Seq(literal("a"), param("b"), param("c")), Seq(param("x"), literal("y"), literal("z"))))
   }
 }

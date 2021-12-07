@@ -484,67 +484,67 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
 
   // fulltext loop
   Seq(
-    ("(n:Person)", fulltextNodeIndex(_, List("Person"), _, _, _)),
-    ("(n:Person|Colleague|Friend)", fulltextNodeIndex(_, List("Person", "Colleague", "Friend"), _, _, _)),
-    ("()-[n:R]->()", fulltextRelIndex(_, List("R"), _, _, _)),
-    ("()<-[n:R|S]-()", fulltextRelIndex(_, List("R", "S"), _, _, _))
+    ("(n:Person)", true, List("Person")),
+    ("(n:Person|Colleague|Friend)", true, List("Person", "Colleague", "Friend")),
+    ("()-[n:R]->()", false, List("R")),
+    ("()<-[n:R|S]-()", false, List("R", "S"))
   ).foreach {
-    case (pattern, createIndex: CreateFulltextIndexFunction) =>
+    case (pattern, isNodeIndex: Boolean, labelsOrTypes:List[String]) =>
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name]") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, None, ast.IfExistsThrowError, NoOptions))
       }
 
       test(s"USE neo4j CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name]") {
-        yields(_ => createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, NoOptions).withGraph(Some(use(varFor("neo4j")))))
+        yields(_ => fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, None, ast.IfExistsThrowError, NoOptions).withGraph(Some(use(varFor("neo4j")))))
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name, n.age]") {
-        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsThrowError, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name"), prop("n", "age")), labelsOrTypes, None, ast.IfExistsThrowError, NoOptions))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n.name]") {
-        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, Some("my_index"), ast.IfExistsThrowError, NoOptions))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n.name, n.age]") {
-        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsThrowError, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name"), prop("n", "age")), labelsOrTypes, Some("my_index"), ast.IfExistsThrowError, NoOptions))
       }
 
       test(s"CREATE FULLTEXT INDEX `$$my_index` FOR $pattern ON EACH [n.name]") {
-        yields(createIndex(List(prop("n", "name")), Some("$my_index"), ast.IfExistsThrowError, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, Some("$my_index"), ast.IfExistsThrowError, NoOptions))
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX FOR $pattern ON EACH [n.name]") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsReplace, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, None, ast.IfExistsReplace, NoOptions))
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX my_index FOR $pattern ON EACH [n.name, n.age]") {
-        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsReplace, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name"), prop("n", "age")), labelsOrTypes, Some("my_index"), ast.IfExistsReplace, NoOptions))
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX IF NOT EXISTS FOR $pattern ON EACH [n.name]") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsInvalidSyntax, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, None, ast.IfExistsInvalidSyntax, NoOptions))
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX my_index IF NOT EXISTS FOR $pattern ON EACH [n.name]") {
-        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsInvalidSyntax, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, Some("my_index"), ast.IfExistsInvalidSyntax, NoOptions))
       }
 
       test(s"CREATE FULLTEXT INDEX IF NOT EXISTS FOR $pattern ON EACH [n.name, n.age]") {
-        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsDoNothing, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name"), prop("n", "age")), labelsOrTypes, None, ast.IfExistsDoNothing, NoOptions))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index IF NOT EXISTS FOR $pattern ON EACH [n.name]") {
-        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsDoNothing, NoOptions))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, Some("my_index"), ast.IfExistsDoNothing, NoOptions))
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {indexProvider : 'fulltext-1.0'}") {
-        yields(createIndex(List(prop("n", "name")),
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes,
           None, ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("fulltext-1.0")))))
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {indexProvider : 'fulltext-1.0', indexConfig : {`fulltext.analyzer`: 'some_analyzer'}}") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, None, ast.IfExistsThrowError,
           OptionsMap(Map("indexProvider" -> literalString("fulltext-1.0"),
             "indexConfig"   -> mapOf("fulltext.analyzer" -> literalString("some_analyzer"))
           ))
@@ -552,7 +552,7 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {indexConfig : {`fulltext.eventually_consistent`: false}, indexProvider : 'fulltext-1.0'}") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, None, ast.IfExistsThrowError,
           OptionsMap(Map("indexProvider" -> literalString("fulltext-1.0"),
             "indexConfig"   -> mapOf("fulltext.eventually_consistent" -> falseLiteral)
           ))
@@ -560,7 +560,7 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {indexConfig : {`fulltext.analyzer`: 'some_analyzer', `fulltext.eventually_consistent`: true}}") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, None, ast.IfExistsThrowError,
           OptionsMap(Map("indexConfig" -> mapOf(
             "fulltext.analyzer" -> literalString("some_analyzer"),
             "fulltext.eventually_consistent" -> trueLiteral
@@ -569,15 +569,15 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {nonValidOption : 42}") {
-        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, OptionsMap(Map("nonValidOption" -> literalInt(42)))))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, None, ast.IfExistsThrowError, OptionsMap(Map("nonValidOption" -> literalInt(42)))))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n.name] OPTIONS {}") {
-        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, OptionsMap(Map.empty)))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, Some("my_index"), ast.IfExistsThrowError, OptionsMap(Map.empty)))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n.name] OPTIONS $$options") {
-        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, OptionsParam(parameter("options", CTMap))))
+        yields(fulltextIndex(isNodeIndex, List(prop("n", "name")), labelsOrTypes, Some("my_index"), ast.IfExistsThrowError, OptionsParam(parameter("options", CTMap))))
       }
 
       test(s"CREATE FULLTEXT INDEX $$my_index FOR $pattern ON EACH [n.name]") {
@@ -1187,7 +1187,18 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
                              options: Options): InputPosition => ast.CreateIndex =
     ast.CreateLookupIndex(varFor("r"), isNodeIndex = false, function(Type.name, varFor("r")), name, ifExistsDo, options)
 
-  type CreateFulltextIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Map[String, expressions.Expression]) => InputPosition => ast.CreateIndex
+  private def fulltextIndex(isNodeIndex: Boolean,
+                            props: List[expressions.Property],
+                            labelOrTypes: List[String],
+                            name: Option[String],
+                            ifExistsDo: ast.IfExistsDo,
+                            options: Options): InputPosition => ast.CreateIndex = {
+    if (isNodeIndex) {
+      fulltextNodeIndex(props, labelOrTypes, name, ifExistsDo, options)
+    } else {
+      fulltextRelIndex(props, labelOrTypes, name, ifExistsDo, options)
+    }
+  }
 
   private def fulltextNodeIndex(props: List[expressions.Property],
                                 labels: List[String],
