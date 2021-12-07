@@ -49,6 +49,22 @@ class ConcatListTest
     }
 
     @Test
+    void shouldKeepRepresentationWithEmptyListConcatenation()
+    {
+        // Given
+        ListValue list = list( stringValue( "foo" ) );
+        ListValue emptyList = EMPTY_LIST;
+
+        // When
+        ListValue concat = concat( list, emptyList );
+        ListValue concatReverse = concat( emptyList, list );
+
+        // Then
+        assertEquals( concat.itemValueRepresentation(), concatReverse.itemValueRepresentation() );
+        assertEquals( concat.itemValueRepresentation(), list.itemValueRepresentation() );
+    }
+
+    @Test
     void shouldHandleSingleListConcatenation()
     {
         // Given
