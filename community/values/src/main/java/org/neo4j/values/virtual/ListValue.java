@@ -495,7 +495,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             ValueRepresentation representation = null;
             for ( ListValue list : lists )
             {
-                representation = representation == null ? list.itemValueRepresentation() : representation.coerce( list.itemValueRepresentation() );
+                if ( list.nonEmpty() )
+                {
+                    representation = representation == null ? list.itemValueRepresentation() : representation.coerce( list.itemValueRepresentation() );
+                }
             }
             this.itemValueRepresentation = representation;
             this.lists = lists;
