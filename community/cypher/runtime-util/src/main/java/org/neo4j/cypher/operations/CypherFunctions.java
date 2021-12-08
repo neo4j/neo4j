@@ -1283,23 +1283,6 @@ public final class CypherFunctions
         }
     }
 
-    public static IntegralValue length3_5( AnyValue item )
-    {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( item instanceof VirtualPathValue )
-        {
-            return length( item );
-        }
-        else if ( item instanceof TextValue || item instanceof SequenceValue )
-        {
-            return size( item );
-        }
-        else
-        {
-            throw new CypherTypeException( "Invalid input for function 'length3_5()': Expected a Path, String or List, got: " + item );
-        }
-    }
-
     public static Value toBoolean( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";

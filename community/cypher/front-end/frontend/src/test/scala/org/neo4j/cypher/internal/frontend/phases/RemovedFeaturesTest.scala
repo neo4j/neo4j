@@ -25,30 +25,6 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
   override def astRewriteAndAnalyze: Boolean = false
 
   override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] = SyntaxDeprecationWarningsAndReplacements(Deprecations.removedFeaturesIn4_0)
-  private val deprecatedNameMap4_0 = Deprecations.removedFeaturesIn4_0.removedFunctionsRenames
-
-  test("should rewrite removed function names regardless of casing") {
-    for ((oldName, newName) <- deprecatedNameMap4_0) {
-      assertRewritten(s"RETURN $oldName($$param) AS f", s"RETURN $newName($$param) AS f")
-      assertRewritten(s"RETURN ${oldName.toLowerCase()}($$param) AS f", s"RETURN $newName($$param) AS f")
-      assertRewritten(s"RETURN ${oldName.toUpperCase()}($$param) AS f", s"RETURN $newName($$param) AS f")
-    }
-  }
-
-  test("should not touch new function names regardless of casing") {
-    for (newName <- deprecatedNameMap4_0.values) {
-      assertNotRewritten(s"RETURN $newName($$param) AS f")
-      assertNotRewritten(s"RETURN ${newName.toLowerCase()}($$param) AS f")
-      assertNotRewritten(s"RETURN ${newName.toUpperCase()}($$param) AS f")
-    }
-  }
-
-  test("should rewrite length of strings and collections to size regardless of casing") {
-    for (lengthFunc <- Seq("length", "LENGTH", "leNgTh")) {
-      assertRewritten(s"RETURN $lengthFunc('a string') AS f", s"RETURN size('a string') AS f")
-      assertRewritten(s"RETURN $lengthFunc([1, 2, 3]) AS f", s"RETURN size([1, 2, 3]) AS f")
-    }
-  }
 
   test("should rewrite filter to list comprehension") {
     assertRewritten(

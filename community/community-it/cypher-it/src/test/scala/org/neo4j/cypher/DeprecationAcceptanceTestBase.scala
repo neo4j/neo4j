@@ -39,7 +39,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION
-import org.neo4j.graphdb.impl.notification.NotificationCode.LENGTH_ON_NON_PATH
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_MAX
@@ -412,30 +411,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 
-  test("deprecated toInt") {
-    val query = "RETURN toInt('1') AS one"
-    val detail = NotificationDetail.Factory.deprecatedName("toInt", "toInteger")
-    assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
-  }
-
-  test("deprecated upper") {
-    val query = "RETURN upper('foo') AS upper"
-    val detail = NotificationDetail.Factory.deprecatedName("upper", "toUpper")
-    assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
-  }
-
-  test("deprecated lower") {
-    val query = "RETURN lower('BAR') AS lower"
-    val detail = NotificationDetail.Factory.deprecatedName("lower", "toLower")
-    assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
-  }
-
-  test("deprecated rels") {
-    val query = "MATCH p = ()-->() RETURN rels(p) AS r"
-    val detail = NotificationDetail.Factory.deprecatedName("rels", "relationships")
-    assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
-  }
-
   test("deprecated filter") {
     val query = "WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds"
     val detail = NotificationDetail.Factory.deprecatedName("filter(...)", "[...]")
@@ -446,17 +421,5 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     val query = "WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens"
     val detail = NotificationDetail.Factory.deprecatedName("extract(...)", "[...]")
     assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
-  }
-
-  test("deprecated length of string") {
-    assertNotificationInLastMajorVersion("RETURN length('a string')", LENGTH_ON_NON_PATH)
-  }
-
-  test("deprecated length of list") {
-    assertNotificationInLastMajorVersion("RETURN length([1, 2, 3])", LENGTH_ON_NON_PATH)
-  }
-
-  test("deprecated length of pattern expression") {
-    assertNotificationInLastMajorVersion("MATCH (a) WHERE a.name='Alice' RETURN length((a)-->()-->())", LENGTH_ON_NON_PATH)
   }
 }

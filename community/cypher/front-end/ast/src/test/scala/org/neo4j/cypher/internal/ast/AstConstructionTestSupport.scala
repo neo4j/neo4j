@@ -103,7 +103,6 @@ import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Id
-import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.Sum
@@ -510,9 +509,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
                   limit: Option[Limit] = None,
                   where: Option[Where] = None): Yield =
     Yield(returnItems, orderBy, skip, limit, where)(pos)
-
-  def length3_5(argument: Expression): Length3_5 =
-    Length3_5(argument)(pos)
 
   def range(lower: Option[Int], upper: Option[Int]): Range =
     Range(lower.map(literalUnsignedInt), upper.map(literalUnsignedInt))(pos)

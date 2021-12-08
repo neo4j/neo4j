@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.ListComprehension
-import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
@@ -52,8 +51,6 @@ import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.expressions.functions.Length
-import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
@@ -77,14 +74,11 @@ import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTPoint
-
-import scala.collection.immutable.TreeMap
 
 object Deprecations {
 
@@ -437,21 +431,8 @@ object Deprecations {
 
   // This is functionality that has been removed in 4.0 but still should work (but be deprecated) when using CYPHER 3.5
   case object removedFeaturesIn4_0 extends SyntacticDeprecations {
-    val removedFunctionsRenames: Map[String, String] =
-      TreeMap(
-        "toInt" -> "toInteger",
-        "upper" -> "toUpper",
-        "lower" -> "toLower",
-        "rels" -> "relationships"
-      )(CaseInsensitiveOrdered)
 
     override val find: PartialFunction[Any, Deprecation] = {
-
-      case f@FunctionInvocation(_, FunctionName(name), _, _) if removedFunctionsRenames.contains(name) =>
-        Deprecation(
-          Some(Ref(f) -> renameFunctionTo(removedFunctionsRenames(name))(f)),
-          Some(DeprecatedFunctionNotification(f.position, name, removedFunctionsRenames(name)))
-        )
 
       // extract => list comprehension
       case e@ExtractExpression(scope, expression) =>
@@ -466,28 +447,7 @@ object Deprecations {
           Some(Ref(e) -> ListComprehension(ExtractScope(scope.variable, scope.innerPredicate, None)(scope.position), expression)(e.position)),
           Some(DeprecatedFunctionNotification(e.position, "filter(...)", "[...]"))
         )
-
-      // length of a string, collection or pattern expression
-      case f@FunctionInvocation(_, _, _, args)
-        if f.function == Length && args.nonEmpty &&
-          (args.head.isInstanceOf[StringLiteral] || args.head.isInstanceOf[ListLiteral] || args.head.isInstanceOf[PatternExpression]) =>
-        Deprecation(
-          Some(Ref(f) -> renameFunctionTo("size")(f)),
-          Some(LengthOnNonPathNotification(f.position))
-        )
-
-      // length of anything else
-      case f@FunctionInvocation(_, _, _, Seq(argumentExpr)) if f.function == Length =>
-        Deprecation(
-          Some(Ref(f) -> Length3_5(argumentExpr)(f.position)),
-          None
-        )
     }
-  }
-
-  object CaseInsensitiveOrdered extends Ordering[String] {
-    def compare(x: String, y: String): Int =
-      x.compareToIgnoreCase(y)
   }
 }
 

@@ -81,14 +81,6 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
         case QualifiedName(Seq(), qn) if qn.equalsIgnoreCase("not") =>
           SemanticError(s"Unknown function '$qualifiedName'. " +
             s"If you intended to use the negation expression, surround it with parentheses.", position)
-        case QualifiedName(_, "toInt") =>
-          SemanticError(s"The function toInt() is no longer supported. Please use toInteger() instead", position)
-        case QualifiedName(_, "lower") =>
-          SemanticError(s"The function lower() is no longer supported. Please use toLower() instead", position)
-        case QualifiedName(_, "upper") =>
-          SemanticError(s"The function upper() is no longer supported. Please use toUpper() instead", position)
-        case QualifiedName(_, "rels") =>
-          SemanticError(s"The function rels() is no longer supported. Please use relationships() instead", position)
         case _ => SemanticError(s"Unknown function '$qualifiedName'", position)
       }
     case Some(signature) =>

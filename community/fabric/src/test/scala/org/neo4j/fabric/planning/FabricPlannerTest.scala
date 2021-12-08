@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -1483,29 +1482,6 @@ class FabricPlannerTest
           query(return_(parameter("p", ct.int).as("p")))
         )
 
-    }
-  }
-
-  "Misc:" - {
-    "allow length() on lists in CYPHER 3.5 mode" in {
-      val q =
-        """EXPLAIN
-          |CYPHER 3.5
-          |WITH range(1, 10) AS list
-          |RETURN length(list) AS result
-          |""".stripMargin
-
-      val res = plan(q).query.withoutLocalAndRemote
-
-      val expectedResult = init(defaultUse).exec(
-        query = query(
-          with_(function("range", literal(1), literal(10)) as "list"),
-          return_(length3_5(varFor("list")) as "result"),
-        ),
-        outputColumns = Seq("result")
-      )
-
-      res shouldBe expectedResult
     }
   }
 
