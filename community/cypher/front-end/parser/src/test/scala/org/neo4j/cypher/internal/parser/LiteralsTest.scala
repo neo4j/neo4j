@@ -89,14 +89,6 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("$0") shouldGive expressions.Parameter("0", CTAny)(t)
   }
 
-  test("can parse legacy parameter syntax") {
-    implicit val parserToTest = OldParameter
-
-    parsing("{p}") shouldGive expressions.ParameterWithOldSyntax("p", CTAny)(t)
-    parsing("{`the funny horse`}") shouldGive expressions.ParameterWithOldSyntax("the funny horse", CTAny)(t)
-    parsing("{0}") shouldGive expressions.ParameterWithOldSyntax("0", CTAny)(t)
-  }
-
   test("variables are not allowed to start with currency symbols") {
     implicit val parserToTest = Variable
 

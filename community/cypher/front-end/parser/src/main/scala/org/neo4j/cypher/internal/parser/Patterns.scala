@@ -139,7 +139,7 @@ trait Patterns extends Parser
   )
 
   private def MaybeProperties: Rule1[Option[expressions.Expression]] = rule("a property map") (
-    optional(WS ~ (MapLiteral | Parameter | OldParameter))
+    optional(WS ~ (MapLiteral | Parameter))
   )
 
   private def MaybeWhereSubClause: Rule1[Option[expressions.Expression]] = rule("a WHERE subclause") (

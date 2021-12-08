@@ -78,7 +78,6 @@ import org.neo4j.cypher.internal.expressions.OctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.ParameterWithOldSyntax
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -328,9 +327,6 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         check(ctx, x.node, x +: parents) chain
           expectType(CTMap.covariant | CTAny.invariant, x.node) chain
           specifyType(CTAny.covariant, x)
-
-      case x:ParameterWithOldSyntax =>
-        SemanticError("The old parameter syntax `{param}` is no longer supported. Please use `$param` instead", x.position)
 
       case x:Parameter =>
         specifyType(x.parameterType.covariant, x)

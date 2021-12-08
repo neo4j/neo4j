@@ -863,12 +863,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public Object oldParameter( NULL p, Object v )
-    {
-        throw new UnsupportedOperationException( "oldParameter is not a literal" );
-    }
-
-    @Override
     public Object newDouble( NULL p, String image )
     {
         return Double.valueOf( image );

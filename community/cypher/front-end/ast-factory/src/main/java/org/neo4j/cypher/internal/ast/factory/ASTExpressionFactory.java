@@ -52,8 +52,6 @@ public interface ASTExpressionFactory<
 
     PARAMETER newSensitiveStringParameter( POS p, String offset );
 
-    EXPRESSION oldParameter( POS p, VARIABLE v );
-
     EXPRESSION newDouble( POS p, String image );
 
     EXPRESSION newDecimalInteger( POS p, String image, boolean negated );

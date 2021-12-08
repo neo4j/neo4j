@@ -138,9 +138,6 @@ trait Literals extends Parser
   private def parameterName: Rule1[String] = rule("a parameter") {
     (ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches
   }
-  def OldParameter: Rule1[expressions.ParameterWithOldSyntax] = rule("a parameter (old syntax)") {
-    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (expressions.ParameterWithOldSyntax(_, CTAny))
-  }
 
   def NumberLiteral: Rule1[expressions.Literal] = rule("a number") (
       DoubleLiteral

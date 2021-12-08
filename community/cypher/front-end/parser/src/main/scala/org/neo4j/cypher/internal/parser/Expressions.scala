@@ -163,7 +163,6 @@ trait Expressions extends Parser
       NumberLiteral
     | StringLiteral
     | Parameter
-    | OldParameter
     | keyword("TRUE") ~ push(expressions.True()(_))
     | keyword("FALSE") ~ push(expressions.False()(_))
     | keyword("NULL") ~ push(expressions.Null()(_))

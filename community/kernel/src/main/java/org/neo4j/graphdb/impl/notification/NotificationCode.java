@@ -98,11 +98,6 @@ public enum NotificationCode
             "The semantics of using colon in the separation of alternative relationship types in conjunction with the " +
             "use of variable binding, inlined property predicates, or variable length will change in a future version."
     ),
-    DEPRECATED_PARAMETER_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The parameter syntax `{param}` is deprecated, please use `$param` instead"
-    ),
     DEPRECATED_CREATE_INDEX_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

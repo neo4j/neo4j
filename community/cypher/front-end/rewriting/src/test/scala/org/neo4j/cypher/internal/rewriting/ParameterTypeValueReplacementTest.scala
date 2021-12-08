@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ParameterTypeValueReplacementTest extends CypherFunSuite {
-  // This class does not work with the old parameter syntax
 
   test("single integer parameter should be rewritten") {
     val params = Map("param" -> CTInteger)
@@ -56,10 +55,10 @@ class ParameterTypeValueReplacementTest extends CypherFunSuite {
     assertRewrite("MATCH (n) WHERE n.foo STARTS WITH $param1 AND n.bar = $param2 AND n.baz = $param3 RETURN n", params)
   }
 
-  private def assertRewrite(originalQuery: String, parameterTypes: Map[String, CypherType]) {
+  private def assertRewrite(originalQuery: String, parameterTypes: Map[String, CypherType]): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val nameGenerator = new AnonymousVariableNameGenerator
-    val original: Statement = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator) // Do not use the old parameter syntax here
+    val original: Statement = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)
 
     original.findAllByClass[Parameter].size should equal(parameterTypes.size) // make sure we use all given parameters in the query
 

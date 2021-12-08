@@ -2215,7 +2215,6 @@ EXPRESSION Properties() :
     (
         LOOKAHEAD( 3 ) e=MapLiteral()
         | e=Parameter( ParameterType.ANY )
-        | e=OldParameter()
     )
     {
         return e;
@@ -2566,7 +2565,6 @@ EXPRESSION Expression1() :
         | LOOKAHEAD( 3 ) e=MapLiteral()
         | LOOKAHEAD( 3 ) e=ExistsSubQuery() // `exists { match` should not be a map-projection
         | LOOKAHEAD( 2 ) e=MapProjection()
-        | e=OldParameter()
         | LOOKAHEAD( 3 ) e=ListComprehension() // before literal because it takes precedence
         | LOOKAHEAD( PatternComprehensionPrefix() ) e=PatternComprehension() // Only after matching up to "WHERE" or "|" can we be sure it is a PatternComprehension and not a ListLiteral.
         | LOOKAHEAD( 3 ) e=ListLiteral()
@@ -2965,18 +2963,6 @@ PARAMETER Parameter( ParameterType type ) :
         v=Variable() { return astFactory.newParameter( pos( t ), v, type ); }
         | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newParameter( pos( t ), token.image, type ); }
     )
-}
-
-EXPRESSION OldParameter() :
-{
-    Token t;
-    VARIABLE v;
-}
-{
-    t=<LCURLY> v=Variable() <RCURLY>
-    {
-        return astFactory.oldParameter( pos( t ), v );
-    }
 }
 
 EXPRESSION FunctionInvocation() :

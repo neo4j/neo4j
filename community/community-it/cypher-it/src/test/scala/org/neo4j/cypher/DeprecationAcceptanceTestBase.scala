@@ -32,7 +32,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_DROP_INDE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_FUNCTION
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PARAMETER_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PERIODIC_COMMIT
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_POINTS_COMPARE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
@@ -448,14 +447,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     val query = "WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens"
     val detail = NotificationDetail.Factory.deprecatedName("extract(...)", "[...]")
     assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
-  }
-
-  test("deprecated parameter syntax") {
-    assertNotificationInLastMajorVersion("RETURN {param} AS parameter", DEPRECATED_PARAMETER_SYNTAX)
-  }
-
-  test("deprecated parameter syntax for property map") {
-    assertNotificationInLastMajorVersion("CREATE (:Label {props})", DEPRECATED_PARAMETER_SYNTAX)
   }
 
   test("deprecated length of string") {

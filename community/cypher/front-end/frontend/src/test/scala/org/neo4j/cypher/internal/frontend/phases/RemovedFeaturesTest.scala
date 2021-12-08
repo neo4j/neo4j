@@ -62,10 +62,6 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
       "RETURN [x IN ['a', 'aa', 'aaa'] | size(x)] AS f")
   }
 
-  test("should rewrite old parameter syntax") {
-    assertRewritten("RETURN {param} AS p", "RETURN $param AS p")
-  }
-
   test("should rewrite legacy type separator") {
     assertRewritten("MATCH ()-[a:A|:B]-() RETURN a", "MATCH ()-[a:A|B]-() RETURN a")
     assertRewritten("MATCH ()-[:A|:B*]-() RETURN a", "MATCH ()-[:A|B*]-() RETURN a")

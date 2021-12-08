@@ -72,13 +72,6 @@ case class AutoExtractedParameter(name: String,
   def writeTo(literalExtractor: LiteralExtractor): Unit = writer.writeTo(literalExtractor)
 }
 
-case class ParameterWithOldSyntax(name: String,
-                                  parameterType: CypherType)(val position: InputPosition) extends Parameter {
-  override def hashCode(): Int = super.hashCode()
-  override def canEqual(that: Any): Boolean = that.isInstanceOf[ExplicitParameter] || that.isInstanceOf[ParameterWithOldSyntax]
-  override def equals(obj: Any): Boolean = super.equals(obj)
-}
-
 trait SensitiveParameter {
   val name: String
   val position: InputPosition
