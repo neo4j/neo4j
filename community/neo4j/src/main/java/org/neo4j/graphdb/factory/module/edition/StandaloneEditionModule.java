@@ -88,7 +88,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
             GlobalTransactionEventListeners txListeners, LifeSupport globalLife, LogProvider logProvider )
     {
         var systemGraphReadOnlyLookup = new SystemGraphReadOnlyDatabaseLookupFactory( databaseManager, logProvider );
-        var configReadOnlyLookup = new ConfigBasedLookupFactory( globalConfig );
+        var configReadOnlyLookup = new ConfigBasedLookupFactory( globalConfig, databaseManager.databaseIdRepository() );
         var globalChecker = new ReadOnlyDatabases( systemGraphReadOnlyLookup, configReadOnlyLookup );
         var configListener = new ConfigReadOnlyDatabaseListener( globalChecker, globalConfig );
         var systemGraphListener = new SystemGraphReadOnlyListener( txListeners, globalChecker );

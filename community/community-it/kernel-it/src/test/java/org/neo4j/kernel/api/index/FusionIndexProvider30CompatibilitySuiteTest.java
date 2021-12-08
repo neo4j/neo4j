@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.mockito.Mockito;
+
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,9 +35,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.monitoring.Monitors;
 
+import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -47,8 +52,11 @@ class FusionIndexProvider30CompatibilitySuiteTest extends PropertyIndexProviderC
         Monitors monitors = new Monitors();
         String monitorTag = "";
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-        var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config ) );
         var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
+        DatabaseIdRepository databaseIdRepository = mock( DatabaseIdRepository.class );
+        Mockito.when( databaseIdRepository.getByName( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( defaultDatabaseId ) );
+
+        var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, databaseIdRepository ) );
         var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return NativeLuceneFusionIndexProviderFactory30.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker,
                 recoveryCleanupWorkCollector, PageCacheTracer.NULL, DEFAULT_DATABASE_NAME );

@@ -19,15 +19,19 @@
  */
 package org.neo4j.configuration.database.readonly;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,15 +39,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConfigBasedLookupTest
 {
-    private final NamedDatabaseId foo = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
-    private final NamedDatabaseId bar = DatabaseIdFactory.from( "bar", UUID.randomUUID() );
-    private final NamedDatabaseId baz = DatabaseIdFactory.from( "baz", UUID.randomUUID() );
+    private static final NamedDatabaseId foo = DatabaseIdFactory.from( "foo", UUID.randomUUID() );
+    private static final NamedDatabaseId bar = DatabaseIdFactory.from( "bar", UUID.randomUUID() );
+    private static final NamedDatabaseId baz = DatabaseIdFactory.from( "baz", UUID.randomUUID() );
     private final Set<NamedDatabaseId> databases = Set.of( foo, bar, baz );
+    private static final DatabaseIdRepository databaseIdRepository = Mockito.mock( DatabaseIdRepository.class);
+
+    @BeforeAll
+    static void setup()
+    {
+        Mockito.when( databaseIdRepository.getByName( "foo" ) ).thenReturn( Optional.of( foo ) );
+        Mockito.when( databaseIdRepository.getByName( "bar" ) ).thenReturn( Optional.of( bar ) );
+        Mockito.when( databaseIdRepository.getByName( "baz" ) ).thenReturn( Optional.of( baz ) );
+    }
 
     @Test
     void withDefaultConfigDatabaseAreWritable()
     {
-        var lookupFactory = new ConfigBasedLookupFactory( Config.defaults() );
+        var lookupFactory = new ConfigBasedLookupFactory( Config.defaults(), databaseIdRepository );
         var lookup = lookupFactory.lookupReadOnlyDatabases();
         for ( var db : databases )
         {
@@ -55,7 +68,7 @@ public class ConfigBasedLookupTest
     void readOnlyDefaultShouldIncludeAllDatabases()
     {
         var config = Config.defaults( GraphDatabaseSettings.read_only_database_default, true );
-        var lookupFactory = new ConfigBasedLookupFactory( config );
+        var lookupFactory = new ConfigBasedLookupFactory( config, databaseIdRepository );
         var lookup = lookupFactory.lookupReadOnlyDatabases();
         for ( var db : databases )
         {
@@ -67,7 +80,7 @@ public class ConfigBasedLookupTest
     void readOnlyLookupShouldIncludeAllConfiguredDatabases()
     {
         var config = Config.defaults( GraphDatabaseSettings.read_only_databases, Set.of( foo.name(), bar.name() ) );
-        var lookupFactory = new ConfigBasedLookupFactory( config );
+        var lookupFactory = new ConfigBasedLookupFactory( config, databaseIdRepository );
         var lookup = lookupFactory.lookupReadOnlyDatabases();
         assertFalse( lookup.databaseIsReadOnly( baz ) );
         assertTrue( lookup.databaseIsReadOnly( foo ) );
@@ -79,7 +92,7 @@ public class ConfigBasedLookupTest
     {
         var config = Config.defaults( Map.of( GraphDatabaseSettings.read_only_database_default, true ,
                                               GraphDatabaseSettings.writable_databases, Set.of( "foo" ) ) );
-        var lookupFactory = new ConfigBasedLookupFactory( config );
+        var lookupFactory = new ConfigBasedLookupFactory( config, databaseIdRepository );
         var lookup = lookupFactory.lookupReadOnlyDatabases();
         assertFalse( lookup.databaseIsReadOnly( foo ) );
         assertTrue( lookup.databaseIsReadOnly( bar ) );

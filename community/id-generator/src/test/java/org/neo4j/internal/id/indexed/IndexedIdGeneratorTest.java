@@ -70,6 +70,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
@@ -167,7 +168,7 @@ class IndexedIdGeneratorTest
         open();
         int generatedIds = 10;
         var config = Config.defaults();
-        var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config ) );
+        var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, mock( DatabaseIdRepository.class ) ) );
         var configLister = new ConfigReadOnlyDatabaseListener( readOnlyDatabases, config );
         lifeSupport.add( configLister );
         var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup

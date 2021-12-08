@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -62,6 +64,7 @@ import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -119,11 +122,13 @@ public class LuceneIndexAccessorIT
     void setUp()
     {
         Path path = directory.directory( "db" );
+        var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
         config = Config.defaults();
-        var readOnlyLookup =  new ConfigBasedLookupFactory( config );
+        DatabaseIdRepository databaseIdRepository = mock( DatabaseIdRepository.class );
+        Mockito.when( databaseIdRepository.getByName( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( defaultDatabaseId ) );
+        var readOnlyLookup =  new ConfigBasedLookupFactory( config, databaseIdRepository );
         var globalChecker = new ReadOnlyDatabases( readOnlyLookup );
         var listener = new ConfigReadOnlyDatabaseListener( globalChecker, config );
-        var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
         readOnlyChecker = globalChecker.forDatabase( defaultDatabaseId );
         indexProvider = new LuceneIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ),
                                                  new Monitors(), config, readOnlyChecker );
