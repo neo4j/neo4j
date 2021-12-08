@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,6 +42,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -82,6 +84,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
@@ -1892,9 +1895,12 @@ class GBPTreeTest
     void readOnlyTreeStillFlushesStateWhenReadOnly() throws IOException
     {
         var config = Config.defaults();
-        var readOnlyLookup =  new ConfigBasedLookupFactory( config );
-        var globalChecker = new ReadOnlyDatabases( readOnlyLookup );
         var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
+        DatabaseIdRepository databaseIdRepository = Mockito.mock( DatabaseIdRepository.class );
+        Mockito.when( databaseIdRepository.getByName( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( defaultDatabaseId ) );
+        var readOnlyLookup =  new ConfigBasedLookupFactory( config, databaseIdRepository );
+        var globalChecker = new ReadOnlyDatabases( readOnlyLookup );
+
         var checker = globalChecker.forDatabase( defaultDatabaseId );
         var listener = new ConfigReadOnlyDatabaseListener( globalChecker, config );
         lifeSupport.add( listener );

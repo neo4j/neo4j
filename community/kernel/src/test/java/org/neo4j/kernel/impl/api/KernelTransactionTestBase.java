@@ -28,7 +28,7 @@ import org.mockito.Mockito;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,8 +37,8 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -50,6 +50,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -178,7 +179,10 @@ class KernelTransactionTestBase
         Locks.Client locksClient = mock( Locks.Client.class );
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
         var memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, ByteUnit.mebiBytes( 4 ), null );
-        var readOnlyLookup = new ConfigBasedLookupFactory( config );
+
+        DatabaseIdRepository databaseIdRepository = mock( DatabaseIdRepository.class );
+        Mockito.when( databaseIdRepository.getByName( databaseId.name() ) ).thenReturn( Optional.of( databaseId ) );
+        var readOnlyLookup = new ConfigBasedLookupFactory( config, databaseIdRepository );
         var readOnlyChecker = new ReadOnlyDatabases( readOnlyLookup );
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                                                     null, null,

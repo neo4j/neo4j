@@ -26,11 +26,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -62,6 +64,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
@@ -89,6 +92,7 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @EphemeralPageCacheExtension
@@ -129,9 +133,11 @@ class FulltextIndexEntryUpdateTest
     @BeforeEach
     final void setup()
     {
-        var configBasedLookup = new ConfigBasedLookupFactory( CONFIG );
-        var readOnlyDatabases = new ReadOnlyDatabases( configBasedLookup );
         var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
+        DatabaseIdRepository databaseIdRepository = mock( DatabaseIdRepository.class );
+        Mockito.when( databaseIdRepository.getByName( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( defaultDatabaseId ) );
+        var configBasedLookup = new ConfigBasedLookupFactory( CONFIG, databaseIdRepository );
+        var readOnlyDatabases = new ReadOnlyDatabases( configBasedLookup );
         final var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         provider = new FulltextIndexProviderFactory().create( pageCache, fs, NullLogService.getInstance(), new Monitors(), CONFIG, readOnlyChecker,
