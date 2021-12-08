@@ -38,7 +38,7 @@ import static org.neo4j.memory.HeapEstimator.sizeOf;
 public final class VirtualValues
 {
     public static final MapValue EMPTY_MAP = MapValue.EMPTY;
-    public static final ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0], 0, ValueRepresentation.UNKNOWN );
+    public static final ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0], 0, ValueRepresentation.ANYTHING );
 
     private VirtualValues()
     {
@@ -49,28 +49,28 @@ public final class VirtualValues
     public static ListValue list( AnyValue... values )
     {
         long payloadSize = 0;
-        ValueRepresentation representation = null;
+        ValueRepresentation representation = ValueRepresentation.ANYTHING;
         for ( AnyValue value : values )
         {
             payloadSize += value.estimatedHeapUsage();
             if ( value.valueRepresentation() != representation )
             {
-                representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
+                representation = representation.coerce( value.valueRepresentation() );
             }
         }
-        return new ListValue.ArrayListValue( values, payloadSize, representation == null ? ValueRepresentation.UNKNOWN : representation );
+        return new ListValue.ArrayListValue( values, payloadSize, representation );
     }
 
     public static ListValue fromList( List<AnyValue> values )
     {
         long payloadSize = 0;
-        ValueRepresentation representation = null;
+        ValueRepresentation representation = ValueRepresentation.ANYTHING;
         for ( AnyValue value : values )
         {
             payloadSize += value.estimatedHeapUsage();
-            representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
+            representation = representation.coerce( value.valueRepresentation() );
         }
-        return new ListValue.JavaListListValue( values, payloadSize, representation == null ? ValueRepresentation.UNKNOWN : representation );
+        return new ListValue.JavaListListValue( values, payloadSize, representation );
     }
 
     public static ListValue range( long start, long end, long step )

@@ -32,5 +32,6 @@ public enum ValueCategory
     BOOLEAN,
     BOOLEAN_ARRAY,
     UNKNOWN,
-    NO_CATEGORY
+    NO_CATEGORY,
+    ANYTHING
 }

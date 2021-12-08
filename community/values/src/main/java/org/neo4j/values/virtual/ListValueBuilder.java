@@ -63,24 +63,24 @@ public abstract class ListValueBuilder
         return new UnknownSizeListValueBuilder();
     }
 
+    protected ListValueBuilder()
+    {
+        valueRepresentation = ValueRepresentation.ANYTHING;
+    }
+
     protected long estimatedHeapSize;
     protected ValueRepresentation valueRepresentation;
 
     public final void add( AnyValue value )
     {
         estimatedHeapSize += value.estimatedHeapUsage();
-        valueRepresentation = valueRepresentation == null ? value.valueRepresentation() : valueRepresentation.coerce( value.valueRepresentation() );
+        valueRepresentation = valueRepresentation.coerce( value.valueRepresentation() );
         internalAdd( value );
     }
 
     public abstract ListValue build();
 
     protected abstract void internalAdd( AnyValue value );
-
-    protected ValueRepresentation valueRepresentation()
-    {
-        return valueRepresentation == null ? ValueRepresentation.UNKNOWN : valueRepresentation;
-    }
 
     private static class FixedSizeListValueBuilder extends ListValueBuilder
     {
@@ -89,13 +89,14 @@ public abstract class ListValueBuilder
 
         private FixedSizeListValueBuilder( int size )
         {
+            super();
             this.values = new AnyValue[size];
         }
 
         @Override
         public ListValue build()
         {
-            return new ListValue.ArrayListValue( values, estimatedHeapSize, valueRepresentation() );
+            return new ListValue.ArrayListValue( values, estimatedHeapSize, valueRepresentation );
         }
 
         @Override
@@ -126,7 +127,7 @@ public abstract class ListValueBuilder
         @Override
         public ListValue build()
         {
-            return new ListValue.JavaListListValue( values, estimatedHeapSize, valueRepresentation() );
+            return new ListValue.JavaListListValue( values, estimatedHeapSize, valueRepresentation );
         }
 
         @Override

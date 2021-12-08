@@ -43,6 +43,14 @@ public enum ValueRepresentation
                     return UNKNOWN;
                 }
             },
+    ANYTHING( ValueGroup.ANYTHING, false )
+            {
+                @Override
+                public ValueRepresentation coerce( ValueRepresentation other )
+                {
+                    return other;
+                }
+            },
     GEOMETRY_ARRAY( ValueGroup.GEOMETRY_ARRAY, false ),
     ZONED_DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY, false ),
     LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, false ),
@@ -195,6 +203,7 @@ public enum ValueRepresentation
                     {
                     case UTF8_TEXT:
                     case UTF16_TEXT:
+                    case ANYTHING:
                         return UTF16_TEXT;
                     default:
                         return UNKNOWN;
@@ -221,6 +230,7 @@ public enum ValueRepresentation
                     switch ( other )
                     {
                     case UTF8_TEXT:
+                    case ANYTHING:
                         return UTF8_TEXT;
                     case UTF16_TEXT:
                         return UTF16_TEXT;
@@ -266,6 +276,7 @@ public enum ValueRepresentation
                     case INT16:
                     case INT32:
                     case INT64:
+                    case ANYTHING:
                         return this;
                     case FLOAT32:
                     case FLOAT64:
@@ -297,6 +308,7 @@ public enum ValueRepresentation
                     case INT8:
                     case INT16:
                     case INT32:
+                    case ANYTHING:
                         return this;
                     case INT64:
                         return INT64;
@@ -329,6 +341,7 @@ public enum ValueRepresentation
                     {
                     case INT8:
                     case INT16:
+                    case ANYTHING:
                         return this;
                     case INT32:
                         return INT32;
@@ -364,6 +377,7 @@ public enum ValueRepresentation
                     switch ( other )
                     {
                     case INT8:
+                    case ANYTHING:
                         return this;
                     case INT16:
                         return INT16;
@@ -405,6 +419,7 @@ public enum ValueRepresentation
                     case INT64:
                     case FLOAT32:
                     case FLOAT64:
+                    case ANYTHING:
                         return this;
                     default:
                         return ValueRepresentation.UNKNOWN;
@@ -442,6 +457,7 @@ public enum ValueRepresentation
                     case INT8:
                     case INT16:
                     case FLOAT32:
+                    case ANYTHING:
                         return this;
                     case INT32:
                     case INT64:
@@ -520,7 +536,18 @@ public enum ValueRepresentation
      */
     public ValueRepresentation coerce( ValueRepresentation other )
     {
-        return valueGroup() == other.valueGroup() ? this : ValueRepresentation.UNKNOWN;
+        if ( valueGroup() == other.valueGroup() || other.valueGroup() == ValueGroup.ANYTHING )
+        {
+            return this;
+        }
+        else if ( valueGroup() == ValueGroup.ANYTHING )
+        {
+            return other;
+        }
+        else
+        {
+            return ValueRepresentation.UNKNOWN;
+        }
     }
 
     private static <T> T getOrFail( AnyValue value, Class<T> type )

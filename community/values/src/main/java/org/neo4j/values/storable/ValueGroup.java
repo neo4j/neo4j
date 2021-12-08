@@ -32,6 +32,7 @@ package org.neo4j.values.storable;
 public enum ValueGroup
 {
     UNKNOWN(                ValueCategory.UNKNOWN ),
+    ANYTHING(               ValueCategory.ANYTHING ),
     GEOMETRY_ARRAY(         ValueCategory.GEOMETRY_ARRAY ),
     ZONED_DATE_TIME_ARRAY(  ValueCategory.TEMPORAL_ARRAY ),
     LOCAL_DATE_TIME_ARRAY(  ValueCategory.TEMPORAL_ARRAY ),

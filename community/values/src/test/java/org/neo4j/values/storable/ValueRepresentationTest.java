@@ -21,6 +21,9 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.values.virtual.ListValue;
 
@@ -29,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.ValueRepresentation.ANYTHING;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT32;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT64;
 import static org.neo4j.values.storable.ValueRepresentation.GEOMETRY;
@@ -110,6 +114,15 @@ class ValueRepresentationTest
         assertEquals( UTF16_TEXT, UTF8_TEXT.coerce( UTF16_TEXT ) );
         assertEquals( UTF16_TEXT, UTF16_TEXT.coerce( UTF8_TEXT ) );
         assertEquals( UTF16_TEXT, UTF16_TEXT.coerce( UTF16_TEXT ) );
+    }
+
+    @Test
+    void shouldCoerceWithAnything()
+    {
+        Arrays.stream( ValueRepresentation.values() ).forEach( representation -> {
+            assertEquals( representation, ANYTHING.coerce( representation ) );
+            assertEquals( representation, representation.coerce( ANYTHING ) );
+        } );
     }
 
     @Test

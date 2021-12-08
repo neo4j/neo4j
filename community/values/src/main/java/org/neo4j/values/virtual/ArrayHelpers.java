@@ -62,11 +62,11 @@ final class ArrayHelpers
 
     static boolean assertValueRepresentation( AnyValue[] values, ValueRepresentation representation )
     {
-        ValueRepresentation actual = null;
+        ValueRepresentation actual = ValueRepresentation.ANYTHING;
         for ( AnyValue value : values )
         {
-            actual = actual == null ? value.valueRepresentation() : actual.coerce( value.valueRepresentation() );
+            actual = actual.coerce( value.valueRepresentation() );
         }
-        return Objects.requireNonNullElse( actual, ValueRepresentation.UNKNOWN ) == representation;
+        return actual == representation; // TODO reviewer: should we require anything here?
     }
 }
