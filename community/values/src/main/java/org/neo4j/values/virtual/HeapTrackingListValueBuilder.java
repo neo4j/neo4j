@@ -78,6 +78,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
         scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap( SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
         values = HeapTrackingArrayList.newArrayList( 16, scopedMemoryTracker );
+        representation = ValueRepresentation.ANYTHING;
     }
 
     public void add( AnyValue value )
@@ -89,7 +90,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
             unAllocatedHeapSize = 0;
         }
 
-        representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
+        representation = representation.coerce( value.valueRepresentation() );
         values.add( value );
     }
 
@@ -97,7 +98,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
     {
         scopedMemoryTracker.allocateHeap( unAllocatedHeapSize );
         unAllocatedHeapSize = 0;
-        return new ListValue.JavaListListValue( values, payloadSize(), valueRepresentation() );
+        return new ListValue.JavaListListValue( values, payloadSize(), representation );
     }
 
     public ListValue buildAndClose()
@@ -123,11 +124,6 @@ public class HeapTrackingListValueBuilder implements AutoCloseable
     public void close()
     {
         scopedMemoryTracker.close();
-    }
-
-    private ValueRepresentation valueRepresentation()
-    {
-        return representation == null ? ValueRepresentation.UNKNOWN : representation;
     }
 }
 

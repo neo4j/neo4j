@@ -98,7 +98,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public ValueRepresentation itemValueRepresentation()
         {
-            return isEmpty() ? ValueRepresentation.UNKNOWN : head().valueRepresentation();
+            return isEmpty() ? ValueRepresentation.ANYTHING : head().valueRepresentation();
         }
 
         @Override
@@ -990,7 +990,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         long keptValuesHeapSize = 0;
         Set<AnyValue> seen = new HashSet<>();
         List<AnyValue> kept = new ArrayList<>();
-        ValueRepresentation representation = null;
+        ValueRepresentation representation = ValueRepresentation.ANYTHING;
         for ( AnyValue value : this )
         {
             if ( seen.add( value ) )
@@ -998,9 +998,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 kept.add( value );
                 keptValuesHeapSize += value.estimatedHeapUsage();
             }
-            representation = representation == null ? value.valueRepresentation() : representation.coerce( value.valueRepresentation() );
+            representation = representation.coerce( value.valueRepresentation() );
         }
-        return new JavaListListValue( kept, keptValuesHeapSize, representation == null ? ValueRepresentation.UNKNOWN : representation );
+        return new JavaListListValue( kept, keptValuesHeapSize, representation );
     }
 
     public ArrayValue toStorableArray()
