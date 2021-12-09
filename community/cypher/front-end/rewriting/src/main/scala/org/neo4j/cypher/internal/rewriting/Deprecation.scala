@@ -71,7 +71,6 @@ import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSy
 import org.neo4j.cypher.internal.util.DeprecatedPeriodicCommit
 import org.neo4j.cypher.internal.util.DeprecatedPointsComparison
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
-import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -482,13 +481,6 @@ object Deprecations {
         Deprecation(
           Some(Ref(f) -> Length3_5(argumentExpr)(f.position)),
           None
-        )
-
-      // legacy type separator
-      case p@RelationshipPattern(variable, _, length, properties, _, _, true) if variable.isDefined || length.isDefined || properties.isDefined =>
-        Deprecation(
-          Some(Ref(p) -> p.copy(legacyTypeSeparator = false)(p.position)),
-          Some(DeprecatedRelTypeSeparatorNotification(p.position))
         )
     }
   }

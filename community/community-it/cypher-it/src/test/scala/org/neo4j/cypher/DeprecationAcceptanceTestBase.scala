@@ -37,7 +37,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_POINTS_CO
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION
 import org.neo4j.graphdb.impl.notification.NotificationCode.LENGTH_ON_NON_PATH
@@ -459,28 +458,5 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("deprecated length of pattern expression") {
     assertNotificationInLastMajorVersion("MATCH (a) WHERE a.name='Alice' RETURN length((a)-->()-->())", LENGTH_ON_NON_PATH)
-  }
-
-  test("deprecated future ambiguous reltype separator") {
-    val queries = Seq(
-      "MATCH (a)-[:A|:B|:C {foo:'bar'}]-(b) RETURN a,b",
-      "MATCH (a)-[x:A|:B|:C]-() RETURN a",
-      "MATCH (a)-[:A|:B|:C*]-() RETURN a"
-    )
-
-    assertNotificationInLastMajorVersion(queries, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR)
-
-    // clear caches of the rewritten queries to not keep notifications around
-    dbms.clearQueryCaches()
-  }
-
-  test("not deprecated reltype separator cases") {
-    val queries = Seq(
-      "MATCH (a)-[:A|B|C {foo:'bar'}]-(b) RETURN a,b",
-      "MATCH (a)-[:A|:B|:C]-(b) RETURN a,b",
-      "MATCH (a)-[:A|B|C]-(b) RETURN a,b"
-    )
-
-    assertNoNotificationInLastMajorVersion(queries, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR)
   }
 }

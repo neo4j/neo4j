@@ -33,8 +33,6 @@ case class DeprecatedFunctionNotification(position: InputPosition, oldName: Stri
 
 case class DeprecatedVarLengthBindingNotification(position: InputPosition, variable: String) extends InternalNotification
 
-case class DeprecatedRelTypeSeparatorNotification(position: InputPosition) extends InternalNotification
-
 case class DeprecatedCreateIndexSyntax(position: InputPosition) extends InternalNotification
 
 case class DeprecatedBtreeIndexSyntax(position: InputPosition) extends InternalNotification

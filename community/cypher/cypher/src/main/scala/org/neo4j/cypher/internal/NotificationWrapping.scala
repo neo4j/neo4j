@@ -59,7 +59,6 @@ import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSy
 import org.neo4j.cypher.internal.util.DeprecatedPeriodicCommit
 import org.neo4j.cypher.internal.util.DeprecatedPointsComparison
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
-import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
@@ -125,8 +124,6 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedField(procedure, field))
     case DeprecatedVarLengthBindingNotification(pos, variable) =>
       NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
-    case DeprecatedRelTypeSeparatorNotification(pos) =>
-      NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCreateIndexSyntax(pos) =>
       NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedBtreeIndexSyntax(pos) =>
