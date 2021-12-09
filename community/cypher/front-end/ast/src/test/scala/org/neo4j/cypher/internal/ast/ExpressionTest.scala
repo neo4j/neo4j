@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.ExtractExpression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -44,7 +43,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should compute dependencies for filtering expressions") {
-    // extract(x IN (n)-->(k) | head(nodes(x)) )
+    // [x IN (n)-->(k) | head(nodes(x)) ]
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None, None)_,
@@ -52,18 +51,18 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
         NodePattern(Some(varFor("k")), Seq.empty, None, None)_
       )_
     )_
-    val expr: Expression = ExtractExpression(
+    val expr: Expression = listComprehension(
       varFor("x"),
       PatternExpression(pat)(Set(varFor("n"), varFor("k")), "", ""),
       None,
       Some(function("head", function("nodes", varFor("x"))))
-    )_
+    )
 
     expr.dependencies should equal(Set(varFor("n"), varFor("k")))
   }
 
   test("should compute dependencies for nested filtering expressions") {
-    // extract(x IN (n)-->(k) | extract(y IN [1,2,3] | y) )
+    // [x IN (n)-->(k) | [y IN [1,2,3] | y] ]
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
         NodePattern(Some(varFor("n")), Seq.empty, None, None)_,
@@ -71,18 +70,18 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
         NodePattern(Some(varFor("k")), Seq.empty, None, None)_
       )_
     )_
-    val innerExpr: Expression = ExtractExpression(
+    val innerExpr: Expression = listComprehension(
       varFor("y"),
       listOfInt(1, 2, 3),
       None,
       Some(varFor("y"))
-    )_
-    val expr: Expression = ExtractExpression(
+    )
+    val expr: Expression = listComprehension(
       varFor("x"),
       PatternExpression(pat)(Set(varFor("n"), varFor("k")), "", ""),
       None,
       Some(innerExpr)
-    )_
+    )
 
     expr.dependencies should equal(Set(varFor("n"), varFor("k")))
   }
@@ -171,13 +170,13 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val callNodes: Expression = function("nodes", varFor("x"))
     val callHead: Expression = function("head", callNodes)
 
-    // extract(x IN (n)-->(k) | head(nodes(x)) )
-    val expr: Expression = ExtractExpression(
+    // [x IN (n)-->(k) | head(nodes(x)) ]
+    val expr: Expression = listComprehension(
       varFor("x"),
       pat,
       None,
       Some(callHead)
-    )_
+    )
 
     // when
     val inputs = IdentityMap(expr.inputs: _*)

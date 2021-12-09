@@ -113,7 +113,6 @@ object CompilationPhases {
       config.compatibilityMode match {
         case Compatibility3_5 =>
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
-            SyntaxDeprecationWarningsAndReplacements(Deprecations.removedFeaturesIn4_0) andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_4)
         case Compatibility4_3 =>
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_4)

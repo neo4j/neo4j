@@ -29,7 +29,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_IN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_DROP_CONSTRAINT_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_DROP_INDEX_SYNTAX
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_FUNCTION
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PERIODIC_COMMIT
@@ -407,19 +406,5 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotificationInSupportedVersions(deprecated, DEPRECATED_BTREE_INDEX_SYNTAX)
 
     assertNoNotificationInSupportedVersions(notDeprecated, DEPRECATED_BTREE_INDEX_SYNTAX)
-  }
-
-  // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
-
-  test("deprecated filter") {
-    val query = "WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds"
-    val detail = NotificationDetail.Factory.deprecatedName("filter(...)", "[...]")
-    assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
-  }
-
-  test("deprecated extract") {
-    val query = "WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens"
-    val detail = NotificationDetail.Factory.deprecatedName("extract(...)", "[...]")
-    assertNotificationInLastMajorVersion(query, DEPRECATED_FUNCTION, detail)
   }
 }

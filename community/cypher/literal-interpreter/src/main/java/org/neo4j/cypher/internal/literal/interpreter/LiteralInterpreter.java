@@ -1306,18 +1306,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public Object filterExpression( NULL p, Object v, Object list, Object where )
-    {
-        throw new UnsupportedOperationException( "filterExpression is not a literal" );
-    }
-
-    @Override
-    public Object extractExpression( NULL p, Object v, Object list, Object where, Object projection )
-    {
-        throw new UnsupportedOperationException( "extractExpression is not a literal" );
-    }
-
-    @Override
     public Object reduceExpression( NULL p, Object acc, Object accExpr, Object v, Object list, Object innerExpr )
     {
         throw new UnsupportedOperationException( "reduceExpression is not a literal" );

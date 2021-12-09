@@ -173,8 +173,6 @@ trait Expressions extends Parser
     | ListComprehension
     | PatternComprehension
     | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~~>> (expressions.ListLiteral(_))
-    | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (expressions.FilterExpression(_, _, _))
-    | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ ")") ~~>> (expressions.ExtractExpression(_, _, _, _))
     | group(keyword("REDUCE") ~~ "(" ~~ Variable ~~ "=" ~~ Expression ~~ "," ~~ IdInColl ~~ "|" ~~ Expression ~~ ")") ~~>> (expressions.ReduceExpression(_, _, _, _, _))
     | group(keyword("ALL") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (expressions.AllIterablePredicate(_, _, _))
     | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (expressions.AnyIterablePredicate(_, _, _))

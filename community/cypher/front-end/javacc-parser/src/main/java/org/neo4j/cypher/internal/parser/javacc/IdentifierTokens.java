@@ -79,10 +79,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXECUTABLE
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXIST;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTENCE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTS;
-import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXTRACT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FALSE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FIELDTERMINATOR;
-import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FILTER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOREACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FROM;
@@ -259,10 +257,8 @@ public class IdentifierTokens
             EXIST,
             EXISTENCE,
             EXISTS,
-            EXTRACT,
             FALSE,
             FIELDTERMINATOR,
-            FILTER,
             FOR,
             FOREACH,
             FROM,

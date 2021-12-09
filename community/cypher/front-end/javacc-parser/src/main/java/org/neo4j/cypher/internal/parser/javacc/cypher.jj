@@ -367,10 +367,8 @@ TOKEN [IGNORE_CASE] :
     | < EXIST: "EXIST" >
     | < EXISTENCE: "EXISTENCE" >
     | < EXISTS: "EXISTS" >
-    | < EXTRACT: "EXTRACT" >
     | < FALSE: "false" >
     | < FIELDTERMINATOR: "FIELDTERMINATOR" >
-    | < FILTER: "FILTER" >
     | < FOR: "FOR" >
     | < FOREACH: "FOREACH" >
     | < FROM: "FROM" >
@@ -2568,8 +2566,6 @@ EXPRESSION Expression1() :
         | LOOKAHEAD( 3 ) e=ListComprehension() // before literal because it takes precedence
         | LOOKAHEAD( PatternComprehensionPrefix() ) e=PatternComprehension() // Only after matching up to "WHERE" or "|" can we be sure it is a PatternComprehension and not a ListLiteral.
         | LOOKAHEAD( 3 ) e=ListLiteral()
-        | LOOKAHEAD( 3 ) e=FilterExpression()
-        | LOOKAHEAD( 3 ) e=ExtractExpression()
         | LOOKAHEAD( 3 ) e=ReduceExpression()
         | LOOKAHEAD( 3 ) e=AllExpression()
         | LOOKAHEAD( 3 ) e=AnyExpression()
@@ -2648,35 +2644,6 @@ void PatternComprehensionPrefix() :
 {}
 {
     <LBRACKET> ( Variable() <EQ> )? EveryPathPattern() ( <WHERE> | <BAR> )
-}
-
-EXPRESSION FilterExpression() :
-{
-    Token t;
-    VARIABLE v;
-    EXPRESSION e;
-    EXPRESSION where = null;
-}
-{
-    t=<FILTER> <LPAREN> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? <RPAREN>
-    {
-        return astFactory.filterExpression( pos( t ), v, e, where );
-    }
-}
-
-EXPRESSION ExtractExpression() :
-{
-    Token t;
-    VARIABLE v;
-    EXPRESSION e;
-    EXPRESSION where = null;
-    EXPRESSION projection = null;
-}
-{
-    t=<EXTRACT> <LPAREN> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? ( <BAR> projection=Expression() )? <RPAREN>
-    {
-        return astFactory.extractExpression( pos( t ), v, e, where, projection );
-    }
 }
 
 EXPRESSION ReduceExpression() :
@@ -5320,10 +5287,8 @@ Token SymbolicNameString() :
         | t=<EXIST>
         | t=<EXISTENCE>
         | t=<EXISTS>
-        | t=<EXTRACT>
         | t=<FALSE>
         | t=<FIELDTERMINATOR>
-        | t=<FILTER>
         | t=<FOREACH>
         | t=<FOR>
         | t=<FROM>

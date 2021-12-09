@@ -311,9 +311,7 @@ import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.ExtractExpression
 import org.neo4j.cypher.internal.expressions.False
-import org.neo4j.cypher.internal.expressions.FilterExpression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThan
@@ -968,19 +966,6 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
       RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(relationshipPatternPosition),
       Option(where),
       projection)(p, Set.empty, anonymousVariableNameGenerator.nextName, anonymousVariableNameGenerator.nextName)
-
-  override def filterExpression(p: InputPosition,
-                                v: Variable,
-                                list: Expression,
-                                where: Expression): Expression =
-    FilterExpression(v, list, Option(where))(p)
-
-  override def extractExpression(p: InputPosition,
-                                 v: Variable,
-                                 list: Expression,
-                                 where: Expression,
-                                 projection: Expression): Expression =
-    ExtractExpression(v, list, Option(where), Option(projection))(p)
 
   override def reduceExpression(p: InputPosition,
                                 acc: Variable,

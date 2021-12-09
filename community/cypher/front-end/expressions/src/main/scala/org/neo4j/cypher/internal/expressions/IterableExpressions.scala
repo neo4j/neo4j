@@ -32,34 +32,6 @@ trait FilteringExpression extends Expression {
   override def arguments = Seq(expression)
 }
 
-case class FilterExpression(scope: FilterScope, expression: Expression)(val position: InputPosition) extends FilteringExpression {
-  val name = "filter"
-
-  def variable: LogicalVariable = scope.variable
-  def innerPredicate: Option[Expression] = scope.innerPredicate
-}
-
-object FilterExpression {
-  def apply(variable: LogicalVariable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): FilterExpression =
-    FilterExpression(FilterScope(variable, innerPredicate)(position), expression)(position)
-}
-
-case class ExtractExpression(scope: ExtractScope, expression: Expression)(val position: InputPosition) extends FilteringExpression
-{
-  val name = "extract"
-
-  def variable: LogicalVariable = scope.variable
-  def innerPredicate: Option[Expression] = scope.innerPredicate
-}
-
-object ExtractExpression {
-  def apply(variable: LogicalVariable,
-            expression: Expression,
-            innerPredicate: Option[Expression],
-            extractExpression: Option[Expression])(position: InputPosition): ExtractExpression =
-    ExtractExpression(ExtractScope(variable, innerPredicate, extractExpression)(position), expression)(position)
-}
-
 case class ListComprehension(scope: ExtractScope, expression: Expression)(val position: InputPosition)
   extends FilteringExpression {
 

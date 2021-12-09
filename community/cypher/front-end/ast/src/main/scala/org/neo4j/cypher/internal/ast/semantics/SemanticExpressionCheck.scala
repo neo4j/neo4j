@@ -38,9 +38,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.expressions.ExtractExpression
 import org.neo4j.cypher.internal.expressions.ExtractScope
-import org.neo4j.cypher.internal.expressions.FilterExpression
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FilteringExpression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -348,13 +346,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           expectType(CTRelationship.covariant, x.expression) chain
           specifyType(CTBoolean, x)
 
-        // ITERABLES
-
-      case x:FilterExpression =>
-        SemanticError("Filter is no longer supported. Please use list comprehension instead", x.position)
-
-      case x:ExtractExpression =>
-        SemanticError("Extract is no longer supported. Please use list comprehension instead", x.position)
+      // ITERABLES
 
       case x:ListComprehension =>
         FilteringExpressions.semanticCheck(ctx, x, parents) chain

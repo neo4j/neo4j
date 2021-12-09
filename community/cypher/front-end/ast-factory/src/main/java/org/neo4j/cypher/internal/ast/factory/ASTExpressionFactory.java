@@ -149,10 +149,6 @@ public interface ASTExpressionFactory<
 
     EXPRESSION patternComprehension( POS p, POS relationshipPatternPosition, VARIABLE v, PATTERN pattern, EXPRESSION where, EXPRESSION projection );
 
-    EXPRESSION filterExpression( POS p, VARIABLE v, EXPRESSION list, EXPRESSION where );
-
-    EXPRESSION extractExpression( POS p, VARIABLE v, EXPRESSION list, EXPRESSION where, EXPRESSION projection );
-
     EXPRESSION reduceExpression( POS p, VARIABLE acc, EXPRESSION accExpr, VARIABLE v, EXPRESSION list, EXPRESSION innerExpr );
 
     EXPRESSION allExpression( POS p, VARIABLE v, EXPRESSION list, EXPRESSION where );
