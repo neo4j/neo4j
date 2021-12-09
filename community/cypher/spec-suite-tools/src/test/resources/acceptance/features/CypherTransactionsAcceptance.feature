@@ -858,3 +858,34 @@ Feature: CypherTransactionsAcceptance
     And the side effects should be:
       | +nodes  | 10 |
       | +labels | 1  |
+
+  Scenario: Using values read from a CSV
+    Given an empty graph
+    And there exists a CSV file with URL as $param, with rows:
+      | name       | age |
+      | 'David'    | 55  |
+      | 'Tim'      | 32  |
+      | 'Gareth'   | 39  |
+      | 'Dawn'     | 35  |
+      | 'Jennifer' | 45  |
+
+    When executing query:
+      """
+      LOAD CSV WITH HEADERS from $param AS row
+      CALL {
+        WITH row
+        CREATE (n {name: row.name, age: toInteger(row.age)})
+        RETURN n
+      } IN TRANSACTIONS
+      RETURN n.name, n.age ORDER BY n.age ASC
+      """
+    Then the result should be, in order:
+      | n.name     | n.age |
+      | 'Tim'      | 32    |
+      | 'Dawn'     | 35    |
+      | 'Gareth'   | 39    |
+      | 'Jennifer' | 45    |
+      | 'David'    | 55    |
+    And the side effects should be:
+      | +nodes       | 5  |
+      | +properties  | 10 |

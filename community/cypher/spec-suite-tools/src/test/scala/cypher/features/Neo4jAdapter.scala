@@ -80,7 +80,7 @@ object Neo4jAdapter {
 }
 
 class Neo4jAdapter(var dbms: FeatureDatabaseManagementService,
-                   executionPrefix: String) extends Graph with Neo4jProcedureAdapter {
+                   executionPrefix: String) extends Graph with Neo4jProcedureAdapter with Neo4jCsvFileCreationAdapter {
   private val explainPrefix = "EXPLAIN\n"
 
   override def cypher(query: String, params: Map[String, CypherValue], meta: QueryType): Result = {
@@ -113,7 +113,7 @@ class Neo4jAdapter(var dbms: FeatureDatabaseManagementService,
   }
 
   override def close(): Unit = {
+    deleteTemporaryFiles()
     dbms.shutdown()
   }
-
 }
