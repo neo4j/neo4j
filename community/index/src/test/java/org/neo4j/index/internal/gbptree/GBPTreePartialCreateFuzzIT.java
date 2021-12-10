@@ -34,11 +34,11 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.proc.ProcessUtil;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.ProcessBuilder.Redirect.INHERIT;
-import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
@@ -66,8 +66,8 @@ class GBPTreePartialCreateFuzzIT
     {
         // given a crashed-on-open index
         Path file = testDirectory.file( "index" );
-        Process process = new ProcessBuilder( asList( "java", "-cp", System.getProperty( "java.class.path" ), getClass().getName(),
-                file.toAbsolutePath().toString() ) ).redirectError( INHERIT ).redirectOutput( INHERIT ).start();
+        Process process = ProcessUtil.start( pb -> pb.redirectError( INHERIT ).redirectOutput( INHERIT ),
+                getClass().getName(), file.toAbsolutePath().toString() );
         Thread.sleep( ThreadLocalRandom.current().nextInt( 1_000 ) );
         int exitCode = process.destroyForcibly().waitFor();
 
@@ -97,7 +97,7 @@ class GBPTreePartialCreateFuzzIT
         }
     }
 
-    static void main( String[] args ) throws Exception
+    public static void main( String[] args ) throws Exception
     {
         // Just start and immediately close. The process spawning this subprocess will kill it in the middle of all this
         Path file = Path.of( args[0] );
