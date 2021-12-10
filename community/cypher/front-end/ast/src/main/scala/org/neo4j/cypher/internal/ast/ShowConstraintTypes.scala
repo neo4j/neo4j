@@ -36,19 +36,19 @@ case object UniqueConstraints extends ShowConstraintType {
 
 case class ExistsConstraints(syntax: ExistenceConstraintSyntax) extends ShowConstraintType {
   override val output: String = "PROPERTY_EXISTENCE"
-  override val prettyPrint: String = syntax.keyword
+  override val prettyPrint: String = "PROPERTY EXISTENCE"
   override val description: String = "existenceConstraints"
 }
 
-case class NodeExistsConstraints(syntax: ExistenceConstraintSyntax = NewSyntax) extends ShowConstraintType {
+case class NodeExistsConstraints(syntax: ExistenceConstraintSyntax = ValidSyntax) extends ShowConstraintType {
   override val output: String = "NODE_PROPERTY_EXISTENCE"
-  override val prettyPrint: String = s"NODE ${syntax.keyword}"
+  override val prettyPrint: String = s"NODE PROPERTY EXISTENCE"
   override val description: String = "nodeExistenceConstraints"
 }
 
-case class RelExistsConstraints(syntax: ExistenceConstraintSyntax = NewSyntax) extends ShowConstraintType {
+case class RelExistsConstraints(syntax: ExistenceConstraintSyntax = ValidSyntax) extends ShowConstraintType {
   override val output: String = "RELATIONSHIP_PROPERTY_EXISTENCE"
-  override val prettyPrint: String = s"RELATIONSHIP ${syntax.keyword}"
+  override val prettyPrint: String = s"RELATIONSHIP PROPERTY EXISTENCE"
   override val description: String = "relationshipExistenceConstraints"
 }
 
@@ -58,18 +58,6 @@ case object NodeKeyConstraints extends ShowConstraintType {
   override val description: String = "nodeKeyConstraints"
 }
 
-sealed trait ExistenceConstraintSyntax {
-  val keyword: String
-}
-
-case object DeprecatedSyntax extends ExistenceConstraintSyntax {
-  override val keyword: String = "EXISTS"
-}
-
-case object OldValidSyntax extends ExistenceConstraintSyntax {
-  override val keyword: String = "EXIST"
-}
-
-case object NewSyntax extends ExistenceConstraintSyntax {
-  override val keyword: String = "PROPERTY EXISTENCE"
-}
+sealed trait ExistenceConstraintSyntax
+case object RemovedSyntax extends ExistenceConstraintSyntax
+case object ValidSyntax extends ExistenceConstraintSyntax

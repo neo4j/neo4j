@@ -934,20 +934,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show all inDEXES" ->
       "SHOW ALL INDEXES",
 
-    "show indexes brief" ->
-      "SHOW ALL INDEXES BRIEF",
-
-    "show index verbose" ->
-      "SHOW ALL INDEXES VERBOSE",
-
     "show BTREE index" ->
       "SHOW BTREE INDEXES",
-
-    "show BTREE index BRIEF" ->
-      "SHOW BTREE INDEXES BRIEF",
-
-    "show BTREE index VERBOSE output" ->
-      "SHOW BTREE INDEXES VERBOSE",
 
     "show RAnGE index" ->
       "SHOW RANGE INDEXES",
@@ -964,8 +952,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show loOKup index" ->
       "SHOW LOOKUP INDEXES",
 
-    "show \nindex\n verbose" ->
-      "SHOW ALL INDEXES VERBOSE",
+    "show \nindex\n" ->
+      "SHOW ALL INDEXES",
 
     "show index WHERE uniqueness = 'UNIQUE'" ->
       """SHOW ALL INDEXES
@@ -1012,29 +1000,20 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show constraints" ->
       "SHOW ALL CONSTRAINTS",
 
-    "show exists constraint brief" ->
-      "SHOW EXISTS CONSTRAINTS BRIEF",
-
     "show exist constraint" ->
-      "SHOW EXIST CONSTRAINTS",
+      "SHOW PROPERTY EXISTENCE CONSTRAINTS",
 
     "show property existence constraint" ->
       "SHOW PROPERTY EXISTENCE CONSTRAINTS",
 
-    "SHOW NODE EXISTS constraint BRIEF output" ->
-      "SHOW NODE EXISTS CONSTRAINTS BRIEF",
-
     "SHOW NODE EXIST constraint" ->
-      "SHOW NODE EXIST CONSTRAINTS",
+      "SHOW NODE PROPERTY EXISTENCE CONSTRAINTS",
 
     "SHOW NODE property EXIST constraint" ->
       "SHOW NODE PROPERTY EXISTENCE CONSTRAINTS",
 
-    "show relationship EXISTS cOnStRaInTs VERBOSE" ->
-      "SHOW RELATIONSHIP EXISTS CONSTRAINTS VERBOSE",
-
     "show relationship EXIST cOnStRaInTs" ->
-      "SHOW RELATIONSHIP EXIST CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
 
     "show relationship EXISTENCE cOnStRaInTs" ->
       "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
@@ -1045,8 +1024,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show rel property EXISTence cOnStRaInTs" ->
       "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
 
-    "show unique constraint VERBOSE output" ->
-      "SHOW UNIQUE CONSTRAINTS VERBOSE",
+    "show unique constraint" ->
+      "SHOW UNIQUE CONSTRAINTS",
 
     "show node key CONSTRAINTS" ->
       "SHOW NODE KEY CONSTRAINTS",

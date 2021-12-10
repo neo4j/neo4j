@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
-import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
@@ -75,6 +74,7 @@ import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserQualifier
+import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
@@ -1068,7 +1068,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(ShowConstraints(constraintType = NodeKeyConstraints, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("nodeKeyConstraints, defaultColumns")), Set.empty))
 
-    assertGood(attach(ShowConstraints(constraintType = ExistsConstraints(NewSyntax), verbose = true, List.empty), 1.0),
+    assertGood(attach(ShowConstraints(constraintType = ExistsConstraints(ValidSyntax), verbose = true, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("existenceConstraints, allColumns")), Set.empty))
 
     assertGood(attach(ShowConstraints(constraintType = NodeExistsConstraints(), verbose = false, List.empty), 1.0),

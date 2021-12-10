@@ -77,8 +77,6 @@ import org.neo4j.cypher.internal.util.DeprecatedPointsComparison
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
-import org.neo4j.cypher.internal.util.DeprecatedShowExistenceConstraintSyntax
-import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -261,12 +259,6 @@ object Deprecations {
           Some(DeprecatedPropertyExistenceSyntax(e.position))
         )
 
-      case s: ast.ShowIndexesClause if s.verbose || s.brief =>
-        Deprecation(
-          None,
-          Some(DeprecatedShowSchemaSyntax(s.position))
-        )
-
       case i: ast.ShowIndexesClause if i.indexType == ast.BtreeIndexes =>
         Deprecation(
           None,
@@ -307,30 +299,6 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedDefaultGraphSyntax(c.position))
-        )
-
-      case c@ast.ShowConstraintsClause(_, ast.ExistsConstraints(ast.DeprecatedSyntax), _, _, _, _) =>
-        Deprecation(
-          None,
-          Some(DeprecatedShowExistenceConstraintSyntax(c.position))
-        )
-
-      case c@ast.ShowConstraintsClause(_, ast.NodeExistsConstraints(ast.DeprecatedSyntax), _, _, _, _) =>
-        Deprecation(
-          None,
-          Some(DeprecatedShowExistenceConstraintSyntax(c.position))
-        )
-
-      case c@ast.ShowConstraintsClause(_, ast.RelExistsConstraints(ast.DeprecatedSyntax), _, _, _, _) =>
-        Deprecation(
-          None,
-          Some(DeprecatedShowExistenceConstraintSyntax(c.position))
-        )
-
-      case s: ast.ShowConstraintsClause if s.verbose || s.brief =>
-        Deprecation(
-          None,
-          Some(DeprecatedShowSchemaSyntax(s.position))
         )
 
       case c: ast.HasCatalog =>

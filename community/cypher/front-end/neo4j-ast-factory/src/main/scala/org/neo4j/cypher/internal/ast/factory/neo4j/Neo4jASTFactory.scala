@@ -98,7 +98,6 @@ import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DeleteElementAction
 import org.neo4j.cypher.internal.ast.DenyPrivilege
-import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintAction
@@ -151,13 +150,11 @@ import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
-import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
-import org.neo4j.cypher.internal.ast.OldValidSyntax
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OptionsMap
@@ -186,6 +183,7 @@ import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
+import org.neo4j.cypher.internal.ast.RemovedSyntax
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameUser
@@ -265,6 +263,7 @@ import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
+import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
@@ -1130,15 +1129,15 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
       case ShowCommandFilterTypes.ALL => AllConstraints
       case ShowCommandFilterTypes.UNIQUE => UniqueConstraints
       case ShowCommandFilterTypes.NODE_KEY => NodeKeyConstraints
-      case ShowCommandFilterTypes.EXIST  => ExistsConstraints(NewSyntax)
-      case ShowCommandFilterTypes.OLD_EXISTS => ExistsConstraints(DeprecatedSyntax)
-      case ShowCommandFilterTypes.OLD_EXIST => ExistsConstraints(OldValidSyntax)
-      case ShowCommandFilterTypes.NODE_EXIST => NodeExistsConstraints(NewSyntax)
-      case ShowCommandFilterTypes.NODE_OLD_EXISTS => NodeExistsConstraints(DeprecatedSyntax)
-      case ShowCommandFilterTypes.NODE_OLD_EXIST => NodeExistsConstraints(OldValidSyntax)
-      case ShowCommandFilterTypes.RELATIONSHIP_EXIST => RelExistsConstraints(NewSyntax)
-      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS => RelExistsConstraints(DeprecatedSyntax)
-      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST => RelExistsConstraints(OldValidSyntax)
+      case ShowCommandFilterTypes.EXIST  => ExistsConstraints(ValidSyntax)
+      case ShowCommandFilterTypes.OLD_EXISTS => ExistsConstraints(RemovedSyntax)
+      case ShowCommandFilterTypes.OLD_EXIST => ExistsConstraints(ValidSyntax)
+      case ShowCommandFilterTypes.NODE_EXIST => NodeExistsConstraints(ValidSyntax)
+      case ShowCommandFilterTypes.NODE_OLD_EXISTS => NodeExistsConstraints(RemovedSyntax)
+      case ShowCommandFilterTypes.NODE_OLD_EXIST => NodeExistsConstraints(ValidSyntax)
+      case ShowCommandFilterTypes.RELATIONSHIP_EXIST => RelExistsConstraints(ValidSyntax)
+      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS => RelExistsConstraints(RemovedSyntax)
+      case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST => RelExistsConstraints(ValidSyntax)
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("constraints", t))
     }
     ShowConstraintsClause(constraintType, brief, verbose, Option(where), hasYield)(p)

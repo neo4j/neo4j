@@ -110,7 +110,7 @@ trait ShowCommand extends Parser
     keyword("NODE KEY") ~~~> (_ => ast.NodeKeyConstraints) |
     keyword("NODE") ~~ MixedExistencePart ~~> (ecs => ast.NodeExistsConstraints(ecs)) |
     keyword("RELATIONSHIP") ~~ MixedExistencePart ~~> (ecs => ast.RelExistsConstraints(ecs)) |
-    keyword("REL") ~~ NewExistencePart ~~> (_ => ast.RelExistsConstraints(ast.NewSyntax)) |
+    keyword("REL") ~~ NewExistencePart ~~> (_ => ast.RelExistsConstraints(ast.ValidSyntax)) |
     MixedExistencePart ~~> (ecs => ast.ExistsConstraints(ecs)) |
     optional(keyword("ALL")) ~~~> (_ => ast.AllConstraints)
   }
@@ -120,29 +120,29 @@ trait ShowCommand extends Parser
     keyword("NODE KEY") ~~~> (_ => ast.NodeKeyConstraints) |
     keyword("NODE") ~~ NewExistencePart ~~> (ecs => ast.NodeExistsConstraints(ecs)) |
     keyword("RELATIONSHIP") ~~ NewExistencePart ~~> (ecs => ast.RelExistsConstraints(ecs)) |
-    keyword("REL") ~~ NewExistencePart ~~> (_ => ast.RelExistsConstraints(ast.NewSyntax)) |
+    keyword("REL") ~~ NewExistencePart ~~> (_ => ast.RelExistsConstraints(ast.ValidSyntax)) |
     NewExistencePart ~~> (ecs => ast.ExistsConstraints(ecs)) |
     optional(keyword("ALL")) ~~~> (_ => ast.AllConstraints)
   }
 
   private def OldExistencePart: Rule1[ast.ExistenceConstraintSyntax] = rule {
-    keyword("EXISTS") ~~~> (_ => ast.DeprecatedSyntax) |
-    keyword("EXIST") ~~~> (_ => ast.OldValidSyntax)
+    keyword("EXISTS") ~~~> (_ => ast.RemovedSyntax) |
+    keyword("EXIST") ~~~> (_ => ast.ValidSyntax)
   }
 
   private def MixedExistencePart: Rule1[ast.ExistenceConstraintSyntax] = rule {
-    keyword("PROPERTY EXISTENCE") ~~~> (_ => ast.NewSyntax) |
-    keyword("PROPERTY EXIST") ~~~> (_ => ast.NewSyntax) |
-    keyword("EXISTENCE") ~~~> (_ => ast.NewSyntax) |
-    keyword("EXISTS") ~~~> (_ => ast.DeprecatedSyntax) |
-    keyword("EXIST") ~~~> (_ => ast.OldValidSyntax)
+    keyword("PROPERTY EXISTENCE") ~~~> (_ => ast.ValidSyntax) |
+    keyword("PROPERTY EXIST") ~~~> (_ => ast.ValidSyntax) |
+    keyword("EXISTENCE") ~~~> (_ => ast.ValidSyntax) |
+    keyword("EXISTS") ~~~> (_ => ast.RemovedSyntax) |
+    keyword("EXIST") ~~~> (_ => ast.ValidSyntax)
   }
 
   private def NewExistencePart: Rule1[ast.ExistenceConstraintSyntax] = rule {
-    keyword("PROPERTY EXISTENCE") ~~~> (_ => ast.NewSyntax) |
-    keyword("PROPERTY EXIST") ~~~> (_ => ast.NewSyntax) |
-    keyword("EXISTENCE") ~~~> (_ => ast.NewSyntax) |
-    keyword("EXIST") ~~~> (_ => ast.OldValidSyntax)
+    keyword("PROPERTY EXISTENCE") ~~~> (_ => ast.ValidSyntax) |
+    keyword("PROPERTY EXIST") ~~~> (_ => ast.ValidSyntax) |
+    keyword("EXISTENCE") ~~~> (_ => ast.ValidSyntax) |
+    keyword("EXIST") ~~~> (_ => ast.ValidSyntax)
   }
 
   // SHOW PROCEDURES

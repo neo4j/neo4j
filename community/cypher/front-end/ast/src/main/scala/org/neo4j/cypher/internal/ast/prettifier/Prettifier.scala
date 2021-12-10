@@ -817,25 +817,15 @@ case class Prettifier(
 
     def asString(s: ShowIndexesClause): String = {
       val indexType = s.indexType.prettyPrint
-      val indexOutput = s match {
-        case ShowIndexesClause(_, _, true, _, _, false) => " BRIEF"
-        case ShowIndexesClause(_, _, _, true, _, false) => " VERBOSE"
-        case _ => ""
-      }
       val ind = indented()
       val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
-      s"SHOW $indexType INDEXES$indexOutput$where"
+      s"SHOW $indexType INDEXES$where"
     }
 
     def asString(s: ShowConstraintsClause): String = {
-      val constraintOutput = s match {
-        case ShowConstraintsClause(_, _, true, _, _, false) => " BRIEF"
-        case ShowConstraintsClause(_, _, _, true, _, false) => " VERBOSE"
-        case _ => ""
-      }
       val ind = indented()
       val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
-      s"SHOW ${s.constraintType.prettyPrint} CONSTRAINTS$constraintOutput$where"
+      s"SHOW ${s.constraintType.prettyPrint} CONSTRAINTS$where"
     }
 
     def asString(s: ShowProceduresClause): String = {

@@ -49,10 +49,6 @@ case class DeprecatedCreatePropertyExistenceConstraintSyntax(position: InputPosi
 
 case class DeprecatedCreateConstraintOnAssertSyntax(position: InputPosition) extends InternalNotification
 
-case class DeprecatedShowSchemaSyntax(position: InputPosition) extends InternalNotification
-
-case class DeprecatedShowExistenceConstraintSyntax(position: InputPosition) extends InternalNotification
-
 case class DeprecatedPropertyExistenceSyntax(position: InputPosition) extends InternalNotification
 
 case class DeprecatedRepeatedRelVarInPatternExpression(position: InputPosition, relName: String) extends InternalNotification

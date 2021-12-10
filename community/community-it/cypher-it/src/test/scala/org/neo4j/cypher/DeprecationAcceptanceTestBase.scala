@@ -40,8 +40,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHOW_EXISTENCE_CONSTRAINT_SYNTAX
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHOW_SCHEMA_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION
 import org.neo4j.graphdb.impl.notification.NotificationCode.LENGTH_ON_NON_PATH
 import org.neo4j.graphdb.impl.notification.NotificationDetail
@@ -203,44 +201,9 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     )
   }
 
-  test("deprecated show index syntax") {
-    val queries = Seq(
-      "SHOW INDEXES BRIEF",
-      "SHOW INDEXES BRIEF OUTPUT",
-      "SHOW INDEXES VERBOSE",
-      "SHOW INDEXES VERBOSE OUTPUT",
-    )
-
-    // Note: Show indexes was introduced in Neo4j 4.2
-    assertNotificationInSupportedVersions_4_X(queries, DEPRECATED_SHOW_SCHEMA_SYNTAX)
-  }
-
   test("deprecated show btree index syntax") {
     // Note: Show indexes was introduced in Neo4j 4.2
     assertNotificationInSupportedVersions_4_X("SHOW BTREE INDEXES", DEPRECATED_BTREE_INDEX_SYNTAX)
-  }
-
-  test("deprecated show constraint syntax") {
-    val queries = Seq(
-      "SHOW CONSTRAINTS BRIEF",
-      "SHOW CONSTRAINTS BRIEF OUTPUT",
-      "SHOW CONSTRAINTS VERBOSE",
-      "SHOW CONSTRAINTS VERBOSE OUTPUT",
-    )
-
-    // Note: Show constraints was introduced in Neo4j 4.2
-    assertNotificationInSupportedVersions_4_X(queries, DEPRECATED_SHOW_SCHEMA_SYNTAX)
-  }
-
-  test("deprecated show existence constraint syntax") {
-    val queries = Seq(
-      "SHOW EXISTS CONSTRAINT",
-      "SHOW NODE EXISTS CONSTRAINT",
-      "SHOW RELATIONSHIP EXISTS CONSTRAINT",
-    )
-
-    // Note: Show constraints was introduced in Neo4j 4.2
-    assertNotificationInSupportedVersions_4_X(queries, DEPRECATED_SHOW_EXISTENCE_CONSTRAINT_SYNTAX)
   }
 
   // OTHER DEPRECATIONS IN 4.X
