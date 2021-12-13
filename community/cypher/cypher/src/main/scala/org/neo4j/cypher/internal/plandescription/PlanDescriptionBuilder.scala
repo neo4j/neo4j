@@ -52,17 +52,17 @@ object PlanDescriptionBuilder {
     val internalPlanDescriptionRewriter = executionPlan.internalPlanDescriptionRewriter
 
     new PlanDescriptionBuilder(logicalPlan: LogicalPlan,
-      plannerName: PlannerName,
-      cypherVersion: CypherVersion,
-      readOnly: Boolean,
-      effectiveCardinalities: EffectiveCardinalities,
-      withRawCardinalities: Boolean,
-      providedOrders: ProvidedOrders,
-      runtimeName,
-      runtimeMetadata,
-      runtimeOperatorMetadata,
-      internalPlanDescriptionRewriter,
-      batchSize)
+                               plannerName: PlannerName,
+                               cypherVersion: CypherVersion,
+                               readOnly: Boolean,
+                               effectiveCardinalities: EffectiveCardinalities,
+                               withRawCardinalities: Boolean,
+                               providedOrders: ProvidedOrders,
+                               runtimeName,
+                               runtimeMetadata,
+                               runtimeOperatorMetadata,
+                               internalPlanDescriptionRewriter,
+                               batchSize)
   }
 }
 
