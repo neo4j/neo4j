@@ -151,7 +151,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     }
   }
 
-  // rewrite this test once range indexes can be used for answering partial IS NOT NULL-predicates
   test("should not plan range index seek if predicate is for points") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
