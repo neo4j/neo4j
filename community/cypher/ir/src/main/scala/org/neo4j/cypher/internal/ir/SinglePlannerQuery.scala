@@ -324,35 +324,35 @@ case class RegularSinglePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     theHashCode
   }
 
-  def pointOutDifference(other: RegularSinglePlannerQuery): String = {
+  def pointOutDifference(other: RegularSinglePlannerQuery, thisTag: String, otherTag: String): String = {
     // Make sure it corresponds with equals
     val builder = StringBuilder.newBuilder
     builder.append("Differences:\n")
     if (queryInput != other.queryInput) {
       builder.append(" - QueryInput\n")
-      builder.append(s"    A: $queryInput\n")
-      builder.append(s"    B: ${other.queryInput}\n")
+      builder.append(s"    $thisTag: $queryInput\n")
+      builder.append(s"    $otherTag: ${other.queryInput}\n")
     }
     if (queryGraph != other.queryGraph) {
       builder.append(" - QueryGraph\n")
-      builder.append(s"    A: $queryGraph\n")
-      builder.append(s"    B: ${other.queryGraph}\n")
+      builder.append(s"    $thisTag: $queryGraph\n")
+      builder.append(s"    $otherTag: ${other.queryGraph}\n")
 
     }
     if (horizon != other.horizon) {
       builder.append(" - Horizon\n")
-      builder.append(s"    A: $horizon\n")
-      builder.append(s"    B: ${other.horizon}\n")
+      builder.append(s"    $thisTag: $horizon\n")
+      builder.append(s"    $otherTag: ${other.horizon}\n")
     }
     if (tail != other.tail) {
       builder.append(" - Tail\n")
-      builder.append(s"    A: $tail\n")
-      builder.append(s"    B: ${other.tail}\n")
+      builder.append(s"    $thisTag: $tail\n")
+      builder.append(s"    $otherTag: ${other.tail}\n")
     }
     if (interestingOrder.requiredOrderCandidate.order != other.interestingOrder.requiredOrderCandidate.order) {
       builder.append(" - interestingOrder.requiredOrderCandidate.order\n")
-      builder.append(s"    A: ${interestingOrder.requiredOrderCandidate.order}\n")
-      builder.append(s"    B: ${other.interestingOrder.requiredOrderCandidate.order}\n")
+      builder.append(s"    $thisTag: ${interestingOrder.requiredOrderCandidate.order}\n")
+      builder.append(s"    $otherTag: ${other.interestingOrder.requiredOrderCandidate.order}\n")
     }
     builder.toString()
   }

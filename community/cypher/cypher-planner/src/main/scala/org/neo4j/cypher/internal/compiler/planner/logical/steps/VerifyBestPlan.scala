@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.exceptions.HintException
 import org.neo4j.exceptions.IndexHintException
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType
@@ -63,11 +64,11 @@ object VerifyBestPlan {
           val moreDetails =
             (a, b) match {
               case (aSingle: RegularSinglePlannerQuery, bSingle: RegularSinglePlannerQuery) =>
-                aSingle.pointOutDifference(bSingle)
+                aSingle.pointOutDifference(bSingle, "Expected", "Actual")
               case _ => ""
             }
 
-          throw new InternalException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed\nPlan: $plan \n\n\n$moreDetails")
+          throw new InternalException(s"Expected: \n$expected \n\nActual: \n$constructed\n\nPlan: \n${LogicalPlanToPlanBuilderString(plan)} \n\n$moreDetails")
         } else {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
           val expectedHints = expected.allHints
