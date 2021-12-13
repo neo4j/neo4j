@@ -593,6 +593,9 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing start node") {
+    //TODO: flaky due to pruningVarExpand
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val n = closestMultipleOf(10, 4)
     val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }

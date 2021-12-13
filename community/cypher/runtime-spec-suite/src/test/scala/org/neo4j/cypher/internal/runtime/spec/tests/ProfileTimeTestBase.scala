@@ -45,6 +45,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
   // We always get OperatorProfile.NO_DATA for page cache hits and misses in Pipelined
   val NO_PROFILE = new OperatorProfile.ConstOperatorProfile(0, 0, 0, 0, 0, OperatorProfile.NO_DATA)
+  val NO_PROFILE_NO_TIME = new OperatorProfile.ConstOperatorProfile(OperatorProfile.NO_DATA, 0, 0, OperatorProfile.NO_DATA, OperatorProfile.NO_DATA, OperatorProfile.NO_DATA)
 
   // time is profiled in nano-seconds, but we can only assert > 0, because the operators take
   // different time on different tested systems.
@@ -66,7 +67,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
     queryProfile.operatorProfile(1).time() should be > 0L // all nodes scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with apply") {
@@ -98,7 +99,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(4).time() should be > 0L // all node scan
     queryProfile.operatorProfile(5).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with conditional apply") {
@@ -130,7 +131,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(4).time() should be > 0L // all node scan
     queryProfile.operatorProfile(5).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with rollup apply") {
@@ -160,7 +161,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).time() should be > 0L // optional expand
     queryProfile.operatorProfile(4).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with hash join") {
@@ -184,7 +185,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     queryProfile.operatorProfile(3).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with value hash join") {
@@ -210,7 +211,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     queryProfile.operatorProfile(3).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with expand all") {
@@ -232,7 +233,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(1).time() should be > 0L // expand all
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with var expand") {
@@ -254,10 +255,13 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(1).time() should be > 0L // var expand
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with pruning var expand") {
+    //TODO: flaky because of unsafe kernel access
+    assume(!(isParallel && runOnlySafeScenarios))
+
     val size = sizeHint / 10
     given { circleGraph(size) }
 
@@ -276,10 +280,13 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(1).time() should be(OperatorProfile.NO_DATA) // pruning var expand (OperatorProfile.NO_DATA as long as we use slotted fallback)
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with shortest path") {
+    //TODO: flaky because of fallback and ambient cursors
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val nodesPerLabel = 10
     given {
@@ -306,7 +313,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).time() should be > 0L // nodeByLabelScan
     queryProfile.operatorProfile(4).time() should be > 0L // nodeByLabelScan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with expand into") {
@@ -330,7 +337,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(2).time() should be > 0L // expand
     queryProfile.operatorProfile(3).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with optional expand all") {
@@ -353,7 +360,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(1).time() should be > 0L // optional expand all
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with optional expand into") {
@@ -380,7 +387,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(3).time() should be > 0L // all node scan
     queryProfile.operatorProfile(4).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with optional") {
@@ -402,7 +409,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(1).time() should be > 0L // optional
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time of sort") {
@@ -423,7 +430,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(1).time() should be > 0L // sort
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time of cartesian product") {
@@ -447,7 +454,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan b
     queryProfile.operatorProfile(3).time() should be > 0L // all node scan a
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time of union") {
@@ -471,7 +478,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     queryProfile.operatorProfile(3).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time with project endpoints") {
@@ -528,7 +535,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(2).time() should be > 0L // unwind
     queryProfile.operatorProfile(3).time() should be > 0L // argument
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time of ordered distinct") {
@@ -554,7 +561,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(1).time() should be > 0L // orderedDistinct
     queryProfile.operatorProfile(2).time() should be > 0L // input
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time of ordered aggregation") {
@@ -580,7 +587,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(1).time() should be > 0L // orderedAggregation
     queryProfile.operatorProfile(2).time() should be > 0L // input
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time of partial sort") {
@@ -602,7 +609,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(1).time() should be > 0L // partial sort
     queryProfile.operatorProfile(2).time() should be > 0L // input
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 
   test("should profile time of triadic selection") {
@@ -639,6 +646,6 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     }
 
     // Should not attribute anything to the invalid id
-    queryProfile.operatorProfile(Id.INVALID_ID.x) should be(NO_PROFILE)
+    queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))
   }
 }
