@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,7 +38,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -113,8 +111,6 @@ class ForsetiLockManagerTest
     @Test
     void testSameThreadMultipleClientCommitDirectDeadlock()
     {
-        config = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, Duration.ofMinutes( 1 ) );
-
         //Given
         try ( Locks.Client client1 = manager.newClient();
               Locks.Client client2 = manager.newClient(); )
@@ -136,8 +132,6 @@ class ForsetiLockManagerTest
     @Test
     void testSameThreadMultipleClientCommitIndirectDeadlock() throws TimeoutException
     {
-        config = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, Duration.ofMinutes( 1 ) );
-
         //Given
         try ( OtherThreadExecutor executor1 = new OtherThreadExecutor( "test1" );
               OtherThreadExecutor executor2 = new OtherThreadExecutor( "test2" );

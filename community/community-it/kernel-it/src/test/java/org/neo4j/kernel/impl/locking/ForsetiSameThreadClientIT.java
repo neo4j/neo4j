@@ -21,9 +21,6 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -31,26 +28,18 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@DbmsExtension( configurationCallback = "configure" )
+@DbmsExtension()
 class ForsetiSameThreadClientIT
 {
     @Inject
     GraphDatabaseAPI database;
     @Inject
     DatabaseManagementService managementService;
-
-    @ExtensionCallback
-    protected void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseSettings.lock_acquisition_timeout, Duration.ofMinutes( 3 ) );
-    }
 
     @Test
     void shouldDetectDeadlockForCommitListeners()
@@ -82,7 +71,7 @@ class ForsetiSameThreadClientIT
             tx.acquireWriteLock( tx.getNodeById( nodeId ) );
 
             //Then
-            assertThatThrownBy( tx::commit ).isInstanceOf( DeadlockDetectedException.class );
+            assertThatThrownBy( tx::commit ).isInstanceOf( DeadlockDetectedException.class ).hasMessageContaining( "committing on the same thread" );
         }
     }
 }

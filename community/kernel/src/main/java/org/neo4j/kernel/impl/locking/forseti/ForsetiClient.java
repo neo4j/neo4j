@@ -155,6 +155,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config )
     {
+        prepareThreadId = -1;
         stateHolder.reset();
         this.transactionId = transactionId;
         this.memoryTracker = requireNonNull( memoryTracker );
@@ -951,7 +952,7 @@ public class ForsetiClient implements Locks.Client
             }
             Thread.yield();
         }
-        else if ( tries % 10000 == 9999 ) //Each try sleeps for up to 1ms, so 10000 tries will be every ~10s
+        else if ( (tries & 8191) == 8191 ) //Each try sleeps for up to 1ms, so 8k tries will be every ~8s
         {
             for ( ForsetiClient client : waitList )
             {
@@ -1028,7 +1029,7 @@ public class ForsetiClient implements Locks.Client
 
     private boolean clientCommittingByCurrentThread( ForsetiClient otherClient )
     {
-        return otherClient.transactionId != transactionId() &&
+        return otherClient != this &&
                 otherClient.stateHolder.isPrepared() && Thread.currentThread().getId() == otherClient.prepareThreadId;
     }
 
