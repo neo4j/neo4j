@@ -74,6 +74,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setConcurrencyLevel( 8 );
             harness.setFilePageCount( filePageCount );
             harness.setInitialMappedFiles( 1 );
+            harness.setFileSystem( fs );
             harness.setVerification( filesAreCorrectlyWrittenVerification( new StandardRecordFormat(), filePageCount ) );
             harness.setBasePath( directory.directory( "readsAndWritesMustBeMutuallyConsistent" ) );
             harness.run( SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
