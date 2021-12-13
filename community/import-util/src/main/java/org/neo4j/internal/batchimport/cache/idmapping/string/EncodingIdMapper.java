@@ -799,7 +799,7 @@ public class EncodingIdMapper implements IdMapper
         {
             fromIndex--;
         }
-        while ( toIndex < highestSetIndex && Utils.unsignedCompare( val, dataValue( toIndex + 1 ), Utils.CompareType.EQ ) )
+        while ( toIndex < highestSetTrackerIndex && Utils.unsignedCompare( val, dataValue( toIndex + 1 ), Utils.CompareType.EQ ) )
         {
             toIndex++;
         }

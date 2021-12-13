@@ -51,6 +51,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 import static java.lang.Math.toIntExact;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -629,6 +630,33 @@ public class EncodingIdMapperTest
         }, Collector.EMPTY, ProgressListener.NONE );
 
         // then before making the fix where the IdMapper would skip "null" values this test would have taken multiple weeks
+    }
+
+    @Test
+    void shouldHandleEqualIdsInMultipleGroups()
+    {
+        // given
+        var idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR, 1 );
+        var groups = new Groups();
+        var movie = groups.getOrCreate( "Movie" );
+        var actor = groups.getOrCreate( "Actor" );
+
+        // when
+        idMapper.put( "1", 546, actor );
+        idMapper.put( "1", 0, movie );
+        idMapper.put( "2", 547, actor );
+        idMapper.put( "2", 1, movie );
+        idMapper.put( "3", 548, actor );
+        idMapper.put( "3", 2, movie );
+        idMapper.prepare( null, Collector.EMPTY, NONE );
+
+        // then
+        assertThat( idMapper.get( "1", actor ) ).isEqualTo( 546 );
+        assertThat( idMapper.get( "1", movie ) ).isEqualTo( 0 );
+        assertThat( idMapper.get( "2", actor ) ).isEqualTo( 547 );
+        assertThat( idMapper.get( "2", movie ) ).isEqualTo( 1 );
+        assertThat( idMapper.get( "3", actor ) ).isEqualTo( 548 );
+        assertThat( idMapper.get( "3", movie ) ).isEqualTo( 2 );
     }
 
     private static PropertyValueLookup values( Object... values )
