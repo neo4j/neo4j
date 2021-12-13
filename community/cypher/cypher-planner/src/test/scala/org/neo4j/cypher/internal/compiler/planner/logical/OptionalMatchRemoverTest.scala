@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -465,6 +466,38 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     assert_that(testName).is_not_rewritten()
   }
 
+  test(
+    """OPTIONAL MATCH (a)
+      |MATCH (a)
+      |OPTIONAL MATCH (a)
+      |RETURN a AS res
+      |""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a)
+        |MATCH (a)
+        |RETURN a AS res
+        |""".stripMargin
+    )
+  }
+
+  test(
+    """OPTIONAL MATCH (a)
+      |MATCH (a)
+      |OPTIONAL MATCH (b)
+      |OPTIONAL MATCH (a)
+      |OPTIONAL MATCH (c)
+      |RETURN a AS res
+      |""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a)
+        |MATCH (a)
+        |OPTIONAL MATCH (b)
+        |OPTIONAL MATCH (c)
+        |RETURN a AS res
+        |""".stripMargin
+    )
+  }
+
   val x = "x"
   val n = "n"
   val m = "m"
@@ -604,6 +637,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       normalizeHasLabelsAndHasType(orgAstState),
       AddUniquenessPredicates(anonymousVariableNameGenerator),
       flattenBooleanOperators,
+      insertWithBetweenOptionalMatchAndMatch,
       recordScopes(orgAstState)
     ))
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
