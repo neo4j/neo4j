@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -122,12 +123,25 @@ public class DatabaseTransactionEventListeners extends LifecycleAdapter
         }
 
         TransactionData txData = listeners.getTxData();
+        Throwable error = null;
         try
         {
             for ( ListenerState listenerState : listeners.getStates() )
             {
                 TransactionEventListener listener = listenerState.getListener();
-                listener.afterCommit( txData, listenerState.getState(), databaseFacade );
+                try
+                {
+                    listener.afterCommit( txData, listenerState.getState(), databaseFacade );
+                }
+                catch ( Throwable t )
+                {
+                    error = Exceptions.chain( error, t );
+                }
+            }
+            if ( error != null )
+            {
+                Exceptions.throwIfUnchecked( error );
+                throw new RuntimeException( error );
             }
         }
         finally
@@ -145,12 +159,25 @@ public class DatabaseTransactionEventListeners extends LifecycleAdapter
         }
 
         TransactionData txData = listenersState.getTxData();
+        Throwable error = null;
         try
         {
             for ( ListenerState listenerState : listenersState.getStates() )
             {
                 TransactionEventListener listener = listenerState.getListener();
-                listener.afterRollback( txData, listenerState.getState(), databaseFacade );
+                try
+                {
+                    listener.afterRollback( txData, listenerState.getState(), databaseFacade );
+                }
+                catch ( Throwable t )
+                {
+                    error = Exceptions.chain( error, t );
+                }
+            }
+            if ( error != null )
+            {
+                Exceptions.throwIfUnchecked( error );
+                throw new RuntimeException( error );
             }
         }
         finally
