@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.junit.runner.RunWith
-import org.neo4j.cypher.internal.ast.HasCatalog
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.ReadAdministrationCommand
@@ -177,7 +176,6 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
                _: SingleQuery |
                _: PeriodicCommitHint |
                _: ReadAdministrationCommand |
-               _: HasCatalog |
                _: SetIncludingPropertiesFromMapItem |
                _: SetExactPropertiesFromMapItem => acc => TraverseChildren(acc)
           case returnItems: ReturnItems if returnItems.items.isEmpty => acc => SkipChildren(acc)

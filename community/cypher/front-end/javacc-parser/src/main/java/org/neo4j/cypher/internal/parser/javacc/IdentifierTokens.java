@@ -41,7 +41,6 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BUILT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CALL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CASE;
-import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CATALOG;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CHANGE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMIT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINT;
@@ -221,7 +220,6 @@ public class IdentifierTokens
             BY,
             CALL,
             CASE,
-            CATALOG,
             CHANGE,
             COMMIT,
             CONSTRAINT,

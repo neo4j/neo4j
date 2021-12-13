@@ -128,7 +128,6 @@ import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphScope
-import org.neo4j.cypher.internal.ast.HasCatalog
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
@@ -1067,13 +1066,6 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def useGraph(command: StatementWithGraph, graph: UseGraph): StatementWithGraph = {
     command.withGraph(Option(graph))
-  }
-
-  override def hasCatalog(statement: Statement): AdministrationCommand = {
-    statement match {
-      case command: AdministrationCommand => HasCatalog(command)
-      case _ => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidCatalogStatement)
-    }
   }
 
   // Show Commands

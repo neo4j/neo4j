@@ -125,13 +125,6 @@ sealed trait WriteAdministrationCommand extends AdministrationCommand {
   override def returnColumns: List[LogicalVariable] = List.empty
 }
 
-final case class HasCatalog(source: AdministrationCommand) extends AdministrationCommand {
-  override def name: String = s"CATALOG ${source.name}"
-  override def isReadOnly: Boolean = source.isReadOnly
-  override def returnColumns: List[LogicalVariable] = source.returnColumns
-  override def position: InputPosition = source.position
-}
-
 trait EitherAsString {
   def eitherAsString(either: Either[String, Parameter]): String = either match {
     case Left(u)  => u

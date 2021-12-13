@@ -1744,7 +1744,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """SHOW USER PRIVILEGES AS COMMANDS
         |  WHERE command CONTAINS "MATCH" AND command CONTAINS "NODE"""".stripMargin,
 
-    "catalog show databases" ->
+    "show databases" ->
       "SHOW DATABASES",
 
     "Show Databases YIELD * where name = 'neo4j' Return *" ->
@@ -1758,10 +1758,10 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         |  YIELD *
         |  RETURN DISTINCT default, name""".stripMargin,
 
-    "catalog show default database" ->
+    "show default database" ->
       "SHOW DEFAULT DATABASE",
 
-    "catalog show database foO_Bar_42" ->
+    "show database foO_Bar_42" ->
       "SHOW DATABASE foO_Bar_42",
 
     "show database $foo" ->
@@ -1778,52 +1778,52 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show home database" ->
       "SHOW HOME DATABASE",
 
-    "catalog create database foO_Bar_42" ->
+    "create database foO_Bar_42" ->
       "CREATE DATABASE foO_Bar_42",
 
     "create database $foo" ->
       "CREATE DATABASE $foo",
 
-    "catalog create database `foO_Bar_42`" ->
+    "create database `foO_Bar_42`" ->
       "CREATE DATABASE foO_Bar_42",
 
-    "catalog create database `foO_Bar_42` if not exists" ->
+    "create database `foO_Bar_42` if not exists" ->
       "CREATE DATABASE foO_Bar_42 IF NOT EXISTS",
 
-    "catalog create or replace database `foO_Bar_42`" ->
+    "create or replace database `foO_Bar_42`" ->
       "CREATE OR REPLACE DATABASE foO_Bar_42",
 
-    "catalog create database `graph.db`" ->
+    "create database `graph.db`" ->
       "CREATE DATABASE `graph.db`",
 
-    "catalog create database graph.db" ->
+    "create database graph.db" ->
       "CREATE DATABASE `graph.db`",
 
-    "catalog create database graph.db wait" ->
+    "create database graph.db wait" ->
       "CREATE DATABASE `graph.db` WAIT",
 
-    "catalog create database graph.db nowait" ->
+    "create database graph.db nowait" ->
       "CREATE DATABASE `graph.db`",
 
-    "catalog create database graph.db if not exists wait" ->
+    "create database graph.db if not exists wait" ->
       "CREATE DATABASE `graph.db` IF NOT EXISTS WAIT",
 
-    "catalog create database graph.db options {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} wait" ->
+    "create database graph.db options {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} wait" ->
       "CREATE DATABASE `graph.db` OPTIONS {existingData: \"use\", existingDataSeedInstance: \"84c3ee6f-260e-47db-a4b6-589c807f2c2e\"} WAIT",
 
-    "catalog create database graph.db options $ops wait" ->
+    "create database graph.db options $ops wait" ->
       "CREATE DATABASE `graph.db` OPTIONS $ops WAIT",
 
-    "catalog DROP database foO_Bar_42" ->
+    "DROP database foO_Bar_42" ->
       "DROP DATABASE foO_Bar_42 DESTROY DATA",
 
     "DROP database $foo" ->
       "DROP DATABASE $foo DESTROY DATA",
 
-    "catalog DROP database foO_Bar_42 if EXISTS" ->
+    "DROP database foO_Bar_42 if EXISTS" ->
       "DROP DATABASE foO_Bar_42 IF EXISTS DESTROY DATA",
 
-    "catalog DROP database blah if EXISTS WAIT" ->
+    "DROP database blah if EXISTS WAIT" ->
       "DROP DATABASE blah IF EXISTS DESTROY DATA WAIT",
 
     "DROP database foO_Bar_42 dump Data" ->
@@ -1832,20 +1832,14 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "DROP database foO_Bar_42 Destroy DATA" ->
       "DROP DATABASE foO_Bar_42 DESTROY DATA",
 
-    "catalog start database foO_Bar_42" ->
-      "START DATABASE foO_Bar_42",
-
     "start database $foo" ->
       "START DATABASE $foo",
 
     "start database foO_Bar_42" ->
       "START DATABASE foO_Bar_42",
 
-    "catalog start database graph.db" ->
+    "start database graph.db" ->
       "START DATABASE `graph.db`",
-
-    "catalog stop database foO_Bar_42" ->
-      "STOP DATABASE foO_Bar_42",
 
     "stop database $foo" ->
       "STOP DATABASE $foo",

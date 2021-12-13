@@ -29,7 +29,6 @@ public interface ASTExceptionFactory
 
     //Exception messages
     String invalidDropCommand = "Unsupported drop constraint command: Please delete the constraint by name instead";
-    String invalidCatalogStatement = "CATALOG is not allowed for this statement";
 
     static String relationshipPattternNotAllowed( ConstraintType type )
     {

@@ -226,8 +226,6 @@ public interface ASTFactory<STATEMENT,
     // Commands
     STATEMENT_WITH_GRAPH useGraph( STATEMENT_WITH_GRAPH statement, USE_GRAPH useGraph );
 
-    ADMINISTRATION_COMMAND hasCatalog( STATEMENT statement );
-
     // Show Command Clauses
 
     YIELD yieldClause( POS p,

@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotific
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
-import org.neo4j.cypher.internal.util.DeprecatedCatalogKeywordForAdminCommandSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedCreateConstraintOnAssertSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
@@ -149,8 +148,6 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_DEFAULT_DATABASE_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedDefaultGraphSyntax(pos) =>
       NotificationCode.DEPRECATED_DEFAULT_GRAPH_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedCatalogKeywordForAdminCommandSyntax(pos) =>
-      NotificationCode.DEPRECATED_CATALOG_KEYWORD_FOR_ADMIN_COMMAND_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPeriodicCommit(pos) =>
       NotificationCode.DEPRECATED_PERIODIC_COMMIT.notification(pos.withOffset(offset).asInputPosition)
     case ProcedureWarningNotification(pos, name, warning) =>

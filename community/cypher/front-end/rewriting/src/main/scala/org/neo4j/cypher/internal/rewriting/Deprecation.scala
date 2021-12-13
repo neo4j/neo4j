@@ -58,7 +58,6 @@ import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
-import org.neo4j.cypher.internal.util.DeprecatedCatalogKeywordForAdminCommandSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedCreateConstraintOnAssertSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
@@ -299,12 +298,6 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedDefaultGraphSyntax(c.position))
-        )
-
-      case c: ast.HasCatalog =>
-        Deprecation(
-          Some(Ref(c) -> c.source),
-          Some(DeprecatedCatalogKeywordForAdminCommandSyntax(c.position))
         )
 
       case p: ast.PeriodicCommitHint =>

@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.HasCatalog
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
@@ -44,7 +43,6 @@ trait AdministrationCommand extends Parser
                             with Base {
 
   def AdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Administration command") {
-    optional(UseGraph) ~~ keyword("CATALOG") ~~ AllAdministrationCommands ~~> ((use, command) => HasCatalog(command.withGraph(use))) |
     optional(UseGraph) ~~ AllAdministrationCommands ~~> ((use, command) => command.withGraph(use))
   }
 

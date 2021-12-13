@@ -32,11 +32,11 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
-  test("CATALOG SHOW ALL ROLES") {
+  test("SHOW ALL ROLES") {
     assertSameAST(testName)
   }
 
-  test("CATALOG SHOW POPULATED ROLES") {
+  test("SHOW POPULATED ROLES") {
     assertSameAST(testName)
   }
 
@@ -44,7 +44,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
-  test("CATALOG SHOW ALL ROLES WITH USERS") {
+  test("SHOW ALL ROLES WITH USERS") {
     assertSameAST(testName)
   }
 
@@ -52,11 +52,11 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
-  test("CATALOG SHOW ALL ROLES YIELD role") {
+  test("SHOW ALL ROLES YIELD role") {
     assertSameAST(testName)
   }
 
-  test("CATALOG SHOW ALL ROLES WHERE role='PUBLIC'") {
+  test("SHOW ALL ROLES WHERE role='PUBLIC'") {
     assertSameAST(testName)
   }
 
@@ -84,24 +84,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
-  test("CATALOG CATALOG SHOW ROLES") {
-    val exceptionMessage =
-      s"""Invalid input 'CATALOG': expected
-         |  "ALTER"
-         |  "DENY"
-         |  "DROP"
-         |  "GRANT"
-         |  "RENAME"
-         |  "REVOKE"
-         |  "SHOW"
-         |  "START"
-         |  "STOP"
-         |  "TERMINATE" (line 1, column 9 (offset: 8))""".stripMargin
-
-    assertJavaCCException(testName, exceptionMessage)
-  }
-
-  test("CATALOG SHOW ROLE") {
+  test("SHOW ROLE") {
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
          |  "ALL"
@@ -138,7 +121,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "TRANSACTIONS"
          |  "UNIQUE"
          |  "USER"
-         |  "USERS" (line 1, column 14 (offset: 13))""".stripMargin
+         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
   }
@@ -243,8 +226,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertJavaCCException(testName, exceptionMessage)
   }
 
-  test("CATALOG SHOW ROLES WITH USER") {
-    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 25 (offset: 24))")
+  test("SHOW ROLES WITH USER") {
+    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 17 (offset: 16))")
   }
 
   test("SHOW ROLE WITH USER") {
@@ -333,20 +316,20 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
-  test("CATALOG SHOW POPULATED ROLE WITH USERS") {
-    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 24 (offset: 23))")
+  test("SHOW POPULATED ROLE WITH USERS") {
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 16 (offset: 15))")
   }
 
-  test("CATALOG SHOW POPULATED ROLES WITH USER") {
-    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 35 (offset: 34))")
+  test("SHOW POPULATED ROLES WITH USER") {
+    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 27 (offset: 26))")
   }
 
-  test("CATALOG SHOW POPULATED ROLE WITH USER") {
-    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 24 (offset: 23))")
+  test("SHOW POPULATED ROLE WITH USER") {
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 16 (offset: 15))")
   }
 
-  test("CATALOG SHOW ROLES WITH USER user") {
-    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 25 (offset: 24))")
+  test("SHOW ROLES WITH USER user") {
+    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 17 (offset: 16))")
   }
 
   test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {
@@ -379,7 +362,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
-  test("CATALOG CREATE ROLE `fo!$o`") {
+  test("CREATE ROLE `fo!$o`") {
     assertSameAST(testName)
   }
 
@@ -427,7 +410,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
-  test("CATALOG CREATE ROLE \"foo\"") {
+  test("CREATE ROLE \"foo\"") {
     assertSameAST(testName)
   }
 
@@ -598,12 +581,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
             assertSameAST(testName)
           }
 
-          test(s"CATALOG $verb $roleKeyword foo $preposition abc") {
-            assertSameAST(testName)
-          }
-
           test(s"$verb $roleKeyword " +
-            s"catalog, show, populated, roles, role, users, replace, grant, revoke, if, copy, of, to " +
+            s"show, populated, roles, role, users, replace, grant, revoke, if, copy, of, to " +
             s"$preposition abc") {
             assertSameAST(testName)
           }

@@ -1117,10 +1117,6 @@ class IndexCommandsJavaCcParserTest extends ParserComparisonTestBase with FunSui
     assertSameAST(testName, comparePosition = false)
   }
 
-  test("CATALOG DROP INDEX name") {
-    assertJavaCCException(testName, new Neo4jASTConstructionException(ASTExceptionFactory.invalidCatalogStatement))
-  }
-
   // help methods
 
   type CreateIndexFunction = (List[expressions.Property], Option[String], InputPosition, ast.IfExistsDo, Options) => InputPosition => ast.CreateIndex

@@ -325,7 +325,6 @@ TOKEN [IGNORE_CASE] :
     | < BY: "BY" >
     | < CALL: "CALL" >
     | < CASE: "CASE" >
-    | < CATALOG: "CATALOG">
     | < CHANGE: "CHANGE">
     | < COMMIT: "COMMIT" >
     | < CONSTRAINT: "CONSTRAINT" >
@@ -1430,12 +1429,11 @@ STATEMENT SingleQueryOrCommand() throws Exception:
 {
     STATEMENT statement = null;
     QUERY query = null;
-    boolean hasCatalog = false;
 }
 {
     (
-        LOOKAHEAD(2) (<CATALOG> { hasCatalog = true; })? statement=CreateCommand( null ) // CREATE admin thing vs CREATE graph thing
-        | (<CATALOG> { hasCatalog = true; })? statement=Command( null )
+        LOOKAHEAD(2) statement=CreateCommand( null ) // CREATE admin thing vs CREATE graph thing
+        | statement=Command( null )
         | query=SingleQuery() ( query=Union(query) )*
     )
     {
@@ -1443,7 +1441,7 @@ STATEMENT SingleQueryOrCommand() throws Exception:
         {
             return query;
         }
-        return hasCatalog ? astFactory.hasCatalog( statement ) : statement;
+        return statement;
     }
 }
 
@@ -1451,12 +1449,11 @@ STATEMENT SingleQueryOrCommandWithUseClause( USE_CLAUSE useClause ) throws Excep
 {
     STATEMENT statement = null;
     QUERY query = null;
-    boolean hasCatalog = false;
 }
 {
     (
-        LOOKAHEAD(2) (<CATALOG> { hasCatalog = true; })? statement=CreateCommand( useClause ) // CREATE admin thing vs CREATE graph thing
-        | (<CATALOG> { hasCatalog = true; })? statement=Command( useClause )
+        LOOKAHEAD(2) statement=CreateCommand( useClause ) // CREATE admin thing vs CREATE graph thing
+        | statement=Command( useClause )
         | query=SingleQueryWithUseClause( useClause ) ( query=Union(query) )*
     )
     {
@@ -1464,7 +1461,7 @@ STATEMENT SingleQueryOrCommandWithUseClause( USE_CLAUSE useClause ) throws Excep
         {
             return query;
         }
-        return hasCatalog ? astFactory.hasCatalog( statement ) : statement;
+        return statement;
     }
 }
 
@@ -5196,7 +5193,6 @@ Token SymbolicNameString() :
         | t=<BY>
         | t=<CALL>
         | t=<CASE>
-        | t=<CATALOG>
         | t=<CHANGE>
         | t=<COMMIT>
         | t=<CONSTRAINT>

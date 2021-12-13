@@ -493,12 +493,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         throw new UnsupportedOperationException( "useGraph is not a literal" );
     }
 
-    @Override
-    public NULL hasCatalog( NULL aNull )
-    {
-        throw new UnsupportedOperationException( "hasCatalog is not a literal" );
-    }
-
     // Role commands
 
     @Override

@@ -31,10 +31,6 @@ class Neo4jASTFactoryTest extends CypherFunSuite {
     ASTExceptionFactory.invalidDropCommand shouldBe "Unsupported drop constraint command: Please delete the constraint by name instead"
   }
 
-  test("invalidCatalogStatement") {
-    ASTExceptionFactory.invalidCatalogStatement shouldBe "CATALOG is not allowed for this statement"
-  }
-
   test("relationShipPatternNotAllowed") {
     ASTExceptionFactory.relationshipPattternNotAllowed(ConstraintType.UNIQUE) shouldBe "'IS UNIQUE' does not allow relationship patterns"
   }

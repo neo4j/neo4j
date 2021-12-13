@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.YieldOrWhere
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
 class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
@@ -165,32 +166,24 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, NoOptions, NoWait))
   }
 
-  test("CATALOG CREATE DATABASE `foo.bar`") {
-    yields(_ => ast.HasCatalog(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoOptions, NoWait)(pos)))
-  }
-
   test("CREATE DATABASE foo.bar") {
     yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoOptions, NoWait))
   }
 
-  test("CATALOG CREATE DATABASE foo.bar") {
-    yields(_ => ast.HasCatalog(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoOptions, NoWait)(pos)))
+  test("CREATE DATABASE `graph.db`.`db.db`") {
+    yields(_ => ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError, NoOptions, NoWait)(pos))
   }
 
-  test("CATALOG CREATE DATABASE `graph.db`.`db.db`") {
-    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError, NoOptions, NoWait)(pos)))
+  test("CREATE DATABASE `foo-bar42`") {
+    yields(_ => ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError, NoOptions, NoWait)(pos))
   }
 
-  test("CATALOG CREATE DATABASE `foo-bar42`") {
-    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError, NoOptions, NoWait)(pos)))
+  test("CREATE DATABASE `_foo-bar42`") {
+    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError, NoOptions, NoWait)(pos))
   }
 
-  test("CATALOG CREATE DATABASE `_foo-bar42`") {
-    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError, NoOptions, NoWait)(pos)))
-  }
-
-  test("CATALOG CREATE DATABASE ``") {
-    yields(_ => ast.HasCatalog(ast.CreateDatabase(literalEmpty, ast.IfExistsThrowError, NoOptions, NoWait)(pos)))
+  test("CREATE DATABASE ``") {
+    yields(_ => ast.CreateDatabase(literalEmpty, ast.IfExistsThrowError, NoOptions, NoWait)(pos))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS") {
@@ -209,8 +202,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, NoOptions, NoWait))
   }
 
-  test("CATALOG CREATE DATABASE `_foo-bar42` IF NOT EXISTS") {
-    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing, NoOptions, NoWait)(pos)))
+  test("CREATE DATABASE `_foo-bar42` IF NOT EXISTS") {
+    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing, NoOptions, NoWait)(pos))
   }
 
   test("CREATE OR REPLACE DATABASE foo") {
@@ -229,8 +222,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase(literalFoo, ast.IfExistsReplace, NoOptions, NoWait))
   }
 
-  test("CATALOG CREATE OR REPLACE DATABASE `_foo-bar42`") {
-    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace, NoOptions, NoWait)(pos)))
+  test("CREATE OR REPLACE DATABASE `_foo-bar42`") {
+    yields(_ => ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace, NoOptions, NoWait)(pos))
   }
 
   test("CREATE OR REPLACE DATABASE foo IF NOT EXISTS") {
@@ -251,27 +244,28 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase(Left("foo"), IfExistsThrowError, OptionsParam(parameter("param", CTMap)), NoWait))
   }
 
+  test("CREATE DATABASE") {
+    // missing db name but parses as 'normal' cypher CREATE...
+    yields(_ => query(create(expressions.InvalidNodePattern(varFor("DATABASE"), Seq(), None)(pos))))
+  }
+
   test("CREATE DATABASE \"foo.bar\"") {
     failsToParse
   }
 
-  test("CATALOG CREATE DATABASE foo-bar42") {
+  test("CREATE DATABASE foo-bar42") {
     failsToParse
   }
 
-  test("CATALOG CREATE DATABASE _foo-bar42") {
+  test("CREATE DATABASE _foo-bar42") {
     failsToParse
   }
 
-  test("CATALOG CREATE DATABASE 42foo-bar") {
+  test("CREATE DATABASE 42foo-bar") {
     failsToParse
   }
 
-  test("CATALOG CREATE DATABASE") {
-    failsToParse
-  }
-
-  test("CATALOG CREATE DATABASE _foo-bar42 IF NOT EXISTS") {
+  test("CREATE DATABASE _foo-bar42 IF NOT EXISTS") {
     failsToParse
   }
 
@@ -295,7 +289,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     failsToParse
   }
 
-  test("CATALOG CREATE OR REPLACE DATABASE _foo-bar42") {
+  test("CREATE OR REPLACE DATABASE _foo-bar42") {
     failsToParse
   }
 
@@ -337,12 +331,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.DropDatabase(literalFoo, ifExists = false, DestroyData, NoWait))
   }
 
-  test("CATALOG DROP DATABASE `foo.bar`") {
-    yields(_ => ast.HasCatalog(ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait)(pos)))
+  test("DROP DATABASE `foo.bar`") {
+    yields(_ => ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait)(pos))
   }
 
-  test("CATALOG DROP DATABASE foo.bar") {
-    yields(_ => ast.HasCatalog(ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait)(pos)))
+  test("DROP DATABASE foo.bar") {
+    yields(_ => ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait)(pos))
   }
 
   test("DROP DATABASE foo IF EXISTS") {
@@ -427,12 +421,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.StartDatabase(literalFoo, NoWait))
   }
 
-  test("CATALOG START DATABASE `foo.bar`") {
-    yields(_ => ast.HasCatalog(ast.StartDatabase(literalFooBar, NoWait)(pos)))
+  test("START DATABASE `foo.bar`") {
+    yields(_ => ast.StartDatabase(literalFooBar, NoWait)(pos))
   }
 
-  test("CATALOG START DATABASE foo.bar") {
-    yields(_ => ast.HasCatalog(ast.StartDatabase(literalFooBar, NoWait)(pos)))
+  test("START DATABASE foo.bar") {
+    yields(_ => ast.StartDatabase(literalFooBar, NoWait)(pos))
   }
 
   test("START DATABASE") {
@@ -473,12 +467,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.StopDatabase(literalFoo, NoWait))
   }
 
-  test("CATALOG STOP DATABASE `foo.bar`") {
-    yields(_ => ast.HasCatalog(ast.StopDatabase(literalFooBar, NoWait)(pos)))
+  test("STOP DATABASE `foo.bar`") {
+    yields(_ => ast.StopDatabase(literalFooBar, NoWait)(pos))
   }
 
-  test("CATALOG STOP DATABASE foo.bar") {
-    yields(_ => ast.HasCatalog(ast.StopDatabase(literalFooBar, NoWait)(pos)))
+  test("STOP DATABASE foo.bar") {
+    yields(_ => ast.StopDatabase(literalFooBar, NoWait)(pos))
   }
 
   test("STOP DATABASE") {
