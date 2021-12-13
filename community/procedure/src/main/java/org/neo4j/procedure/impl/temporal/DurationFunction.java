@@ -54,11 +54,9 @@ class DurationFunction implements CallableUserFunction
             new UserFunctionSignature(
                     new QualifiedName( new String[0], "duration" ),
                     Collections.singletonList( inputField( "input", Neo4jTypes.NTAny ) ),
-                    Neo4jTypes.NTDuration, null, new String[0],
+                    Neo4jTypes.NTDuration, null,
                     DurationFunction.class.getAnnotation( Description.class ).value(),
-                    CATEGORY,
-                    true,
-                    true );
+                    CATEGORY, true, true );
 
     static void register( GlobalProcedures globalProcedures ) throws ProcedureException
     {
@@ -144,9 +142,8 @@ class DurationFunction implements CallableUserFunction
             }
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {"duration"}, unit ),
-                    SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
-                    String.format(
-                            DESCRIPTION, unitString ), CATEGORY, true, true );
+                    SIGNATURE, Neo4jTypes.NTDuration, null,
+                    String.format( DESCRIPTION, unitString ), CATEGORY, true, true );
         }
 
         @Override

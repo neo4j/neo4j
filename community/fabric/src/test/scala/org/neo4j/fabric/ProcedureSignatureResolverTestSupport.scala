@@ -88,7 +88,7 @@ trait ProcedureSignatureResolverTestSupport {
         new procs.QualifiedName(name.init.toArray, name.last),
         ListBuffer(args: _*).map(inputField(_, procs.Neo4jTypes.NTAny)).asJava,
         procs.Neo4jTypes.NTAny,
-        null, Array[String](), name.last, category, true
+        null, name.last, category, true
       )
     ) {
       override def apply(ctx: procedure.Context, input: Array[AnyValue]): AnyValue = body
@@ -105,7 +105,7 @@ trait ProcedureSignatureResolverTestSupport {
       new procs.QualifiedName(name.init.toArray, name.last),
       ListBuffer(args: _*).map(inputField(_, procs.Neo4jTypes.NTAny)).asJava,
       outputSignature,
-      mode, false, null, Array[String](), name.last, null, false, false, false, false, false
+      mode, false, null, name.last, null, false, false, false, false, false
     )) {
       override def apply(ctx: procedure.Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] =
         RawIterator.of(values: _*)

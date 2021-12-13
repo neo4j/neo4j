@@ -43,7 +43,6 @@ public class ProcedureSignature
     private final Mode mode;
     private final boolean admin;
     private final String deprecated;
-    private final String[] allowed;
     private final String description;
     private final String warning;
     private final boolean eager;
@@ -59,7 +58,6 @@ public class ProcedureSignature
             Mode mode,
             boolean admin,
             String deprecated,
-            String[] allowed,
             String description,
             String warning,
             boolean eager,
@@ -74,7 +72,6 @@ public class ProcedureSignature
         this.mode = mode;
         this.admin = admin;
         this.deprecated = deprecated;
-        this.allowed = allowed;
         this.description = description;
         this.warning = warning;
         this.eager = eager;
@@ -102,11 +99,6 @@ public class ProcedureSignature
     public Optional<String> deprecated()
     {
         return Optional.ofNullable( deprecated );
-    }
-
-    public String[] allowed()
-    {
-        return allowed;
     }
 
     public boolean caseInsensitive()
@@ -204,7 +196,6 @@ public class ProcedureSignature
         private List<FieldSignature> outputSignature = new ArrayList<>();
         private Mode mode = Mode.READ;
         private String deprecated;
-        private String[] allowed = new String[0];
         private String description;
         private String warning;
         private boolean eager;
@@ -262,12 +253,6 @@ public class ProcedureSignature
             return this;
         }
 
-        public Builder allowed( String[] allowed )
-        {
-            this.allowed = allowed;
-            return this;
-        }
-
         public Builder admin( boolean admin )
         {
             this.admin = admin;
@@ -306,7 +291,7 @@ public class ProcedureSignature
 
         public ProcedureSignature build()
         {
-            return new ProcedureSignature( name, inputSignature, outputSignature, mode, admin, deprecated, allowed,
+            return new ProcedureSignature( name, inputSignature, outputSignature, mode, admin, deprecated,
                                            description, warning, eager, false, systemProcedure, internal, allowExpiredCredentials );
         }
     }

@@ -90,7 +90,6 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     protected abstract T truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone );
 
     private static final List<FieldSignature> INPUT_SIGNATURE = singletonList( inputField( "input", Neo4jTypes.NTAny, DEFAULT_PARAMETER_VALUE ) );
-    private static final String[] ALLOWED = {};
 
     private final UserFunctionSignature signature;
     private final Supplier<ZoneId> defaultZone;
@@ -102,7 +101,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         Description description = getClass().getAnnotation( Description.class );
         this.signature = new UserFunctionSignature(
                 new QualifiedName( new String[0], basename.toLowerCase() ),
-                INPUT_SIGNATURE, result, null, ALLOWED,
+                INPUT_SIGNATURE, result, null,
                 description == null ? null : description.value(),
                 TEMPORAL_CATEGORY, true, true );
         this.defaultZone = defaultZone;
@@ -203,7 +202,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             this.function = base;
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {base.signature.name().name()}, name ),
-                    input, base.signature.outputType(), null, ALLOWED,  description, TEMPORAL_CATEGORY, true, true );
+                    input, base.signature.outputType(), null, description, TEMPORAL_CATEGORY, true, true );
         }
 
         @Override

@@ -37,7 +37,6 @@ public final class UserFunctionSignature
     private final QualifiedName name;
     private final List<FieldSignature> inputSignature;
     private final Neo4jTypes.AnyType type;
-    private final String[] allowed;
     private final String deprecated;
     private final String description;
     private final String category;
@@ -48,7 +47,6 @@ public final class UserFunctionSignature
             List<FieldSignature> inputSignature,
             Neo4jTypes.AnyType type,
             String deprecated,
-            String[] allowed,
             String description,
             String category,
             boolean caseInsensitive )
@@ -59,7 +57,6 @@ public final class UserFunctionSignature
         this.deprecated = deprecated;
         this.description = description;
         this.category = category;
-        this.allowed = allowed;
         this.caseInsensitive = caseInsensitive;
         this.isBuiltIn = false;
     }
@@ -68,7 +65,6 @@ public final class UserFunctionSignature
             List<FieldSignature> inputSignature,
             Neo4jTypes.AnyType type,
             String deprecated,
-            String[] allowed,
             String description,
             String category,
             boolean caseInsensitive,
@@ -80,7 +76,6 @@ public final class UserFunctionSignature
         this.deprecated = deprecated;
         this.description = description;
         this.category = category;
-        this.allowed = allowed;
         this.caseInsensitive = caseInsensitive;
         this.isBuiltIn = isBuiltIn;
     }
@@ -113,11 +108,6 @@ public final class UserFunctionSignature
     public Optional<String> category()
     {
         return Optional.ofNullable( category );
-    }
-
-    public String[] allowed()
-    {
-        return allowed;
     }
 
     public boolean caseInsensitive()
@@ -165,7 +155,6 @@ public final class UserFunctionSignature
         private final QualifiedName name;
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private Neo4jTypes.AnyType outputType;
-        private String[] allowed = new String[0];
         private String deprecated;
         private String description;
         private String category;
@@ -213,19 +202,13 @@ public final class UserFunctionSignature
             return this;
         }
 
-        public Builder allowed( String[] allowed )
-        {
-            this.allowed = allowed;
-            return this;
-        }
-
         public UserFunctionSignature build()
         {
             if ( outputType == null )
             {
                 throw new IllegalStateException( "output type must be set" );
             }
-            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description, category, false );
+            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, description, category, false );
         }
     }
 

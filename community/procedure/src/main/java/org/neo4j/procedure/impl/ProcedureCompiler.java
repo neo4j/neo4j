@@ -273,17 +273,15 @@ class ProcedureCompiler
             {
                 description = describeAndLogLoadFailure( procName );
                 ProcedureSignature signature =
-                        new ProcedureSignature( procName, inputSignature, outputSignature, Mode.DEFAULT,
-                                                admin, null, new String[0], description, warning, procedure.eager(), false, systemProcedure, internal,
-                                                allowExpiredCredentials );
+                        new ProcedureSignature( procName, inputSignature, outputSignature, Mode.DEFAULT, admin, null, description,
+                                                warning, procedure.eager(), false, systemProcedure, internal, allowExpiredCredentials );
                 return new FailedLoadProcedure( signature );
             }
         }
 
         ProcedureSignature signature =
-                new ProcedureSignature( procName, inputSignature, outputSignature, mode, admin, deprecated,
-                                        config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false, systemProcedure, internal,
-                                        allowExpiredCredentials );
+                new ProcedureSignature( procName, inputSignature, outputSignature, mode, admin, deprecated, description,
+                                        warning, procedure.eager(), false, systemProcedure, internal, allowExpiredCredentials );
 
         return ProcedureCompilation.compileProcedure( signature, setters, method );
     }
@@ -323,15 +321,13 @@ class ProcedureCompiler
             {
                 description = describeAndLogLoadFailure( procName );
                 UserFunctionSignature signature =
-                        new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
-                                                   config.rolesFor( procName.toString() ), description, null, false );
+                        new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated, description, null, false );
                 return new FailedLoadFunction( signature );
             }
         }
 
         UserFunctionSignature signature =
-                new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
-                                           config.rolesFor( procName.toString() ), description, null, false );
+                new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated, description, null, false );
 
         return ProcedureCompilation.compileFunction( signature, setters, method );
     }
@@ -426,16 +422,14 @@ class ProcedureCompiler
             {
                 description = describeAndLogLoadFailure( funcName );
                 UserFunctionSignature signature =
-                        new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
-                                                   config.rolesFor( funcName.toString() ), description, null, false );
+                        new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated, description, null, false );
 
                 return new FailedLoadAggregatedFunction( signature );
             }
         }
 
         UserFunctionSignature signature =
-                new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
-                                           config.rolesFor( funcName.toString() ), description, null, false );
+                new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated, description, null, false );
 
         return ProcedureCompilation.compileAggregation( signature, setters, create, update, result );
     }
