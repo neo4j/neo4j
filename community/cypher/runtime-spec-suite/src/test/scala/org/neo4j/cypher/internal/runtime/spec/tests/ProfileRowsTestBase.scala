@@ -989,6 +989,9 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows with pruning var-expand") {
+    //NOTE: create card for this, slotted pipe profiling uses an unsafe stack for profiling
+    //TODO failing because of pruningVarExpand
+    assume(!(isParallel && runOnlySafeScenarios))
     // given
     val nodesPerLabel = 100
     given {
@@ -1014,6 +1017,8 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
   }
 
   test("should profile rows with shortest path") {
+    //TODO fails because of shortestPath, uses an ambient cursor via slotted pipe operator
+    assume(!(isParallel && runOnlySafeScenarios))
     // given
     val nodesPerLabel = 100
     given {

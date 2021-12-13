@@ -220,7 +220,12 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
       (b, c) <- rhs.take(limit)
     } yield Array[Any](a, b, c)
 
-    runtimeResult should beColumns("a", "b", "c").withRows(expected)
+    if (isParallel) {
+      //In parallel we can't be sure what item that is produced on the RHS
+      runtimeResult should beColumns("a", "b", "c").withRows(rowCount(limit * input.length))
+    } else {
+      runtimeResult should beColumns("a", "b", "c").withRows(expected)
+    }
     System.out.flush()
   }
 
