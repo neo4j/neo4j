@@ -78,6 +78,14 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     case RegularSinglePlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _), tail, queryInput) =>
       val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
       rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
+
+    // Remove OPTIONAL MATCH if preceding MATCH solves the exact same query graph e.g.:
+    // OPTIONAL MATCH (n)
+    // MATCH (n)           -> QueryGraph {Nodes: ['n'], Arguments: ['n']}
+    // OPTIONAL MATCH (n)  -> QueryGraph {Nodes: ['n'], Arguments: ['n']}
+    case RegularSinglePlannerQuery(qg: QueryGraph, io, h, t, qi) if qg.optionalMatches.exists(om => qg.connectedComponents.contains(om)) =>
+      val newQg = qg.copy(optionalMatches = qg.optionalMatches.filterNot(om => qg.connectedComponents.contains(om)))
+      RegularSinglePlannerQuery(queryGraph = newQg, io, h, t, qi)
   })
 
   private def rewrite(projectionDeps: Iterable[LogicalVariable],
