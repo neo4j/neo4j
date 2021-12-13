@@ -131,6 +131,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   test("should not plan range index if feature flag is not set") {
     val cfg =
       plannerBaseConfigForIndexOnLabelPropTests()
+        .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
         .build()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
@@ -143,7 +144,8 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     }
   }
 
-  test("should not use range index if predicate is for points") {
+  // rewrite this test once range indexes can be used for answering partial IS NOT NULL-predicates
+  test("should not plan range index seek if predicate is for points") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
     for (predicate <- List("point.withinBBox(a.prop, point({x:1, y:1}), point({x:2, y:2}))", "point.distance(a.prop, point({x:1, y:1})) < 10")) {
@@ -193,7 +195,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .nodeIndexOperator("b:Label(prop)", indexType = IndexType.RANGE)
         .build()
 
-      plan should (be(planWithIndexScan) or be(planWithLabelScan))
+      plan should be(planWithIndexScan)
     }
   }
 

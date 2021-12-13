@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
@@ -74,9 +75,8 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   debugOptions: CypherDebugOptions,
                                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
                                   planningTextIndexesEnabled: Boolean = true,
-                                 // TODO: Is it the right thing to do to have a default value of true?
-                                  planningRangeIndexesEnabled: Boolean = true,
-                                  planningPointIndexesEnabled: Boolean = true,
+                                  planningRangeIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
+                                  planningPointIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue(),
                                  ) {
 
   def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =
