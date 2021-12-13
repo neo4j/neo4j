@@ -167,7 +167,7 @@ class RecoveryCorruptedTransactionLogIT
                 lastClosedTransactionBeforeStart;
         managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
-        addRandomBytesToLastLogFile( this::randomBytes );
+        addRandomBytesToLastLogFile( this::randomNonZeroBytes );
 
         startStopDbRecoveryOfCorruptedLogs();
 
@@ -218,7 +218,7 @@ class RecoveryCorruptedTransactionLogIT
         managementService.shutdown();
 
         removeLastCheckpointRecordFromLastLogFile();
-        Supplier<Byte> randomBytesSupplier = this::randomBytes;
+        Supplier<Byte> randomBytesSupplier = this::randomNonZeroBytes;
         BytesCaptureSupplier capturingSupplier = new BytesCaptureSupplier( randomBytesSupplier );
         addRandomBytesToLastLogFile( capturingSupplier );
         assertFalse( recoveryMonitor.wasRecoveryRequired() );
@@ -231,7 +231,7 @@ class RecoveryCorruptedTransactionLogIT
             assertTrue( recoveryMonitor.wasRecoveryRequired() );
             assertThat( logProvider ).containsMessages( "Fail to read transaction log version 0.",
                     "Fail to read transaction log version 0. Last valid transaction start offset is: " +
-                            (5548 + txOffsetAfterStart) + "." );
+                    (5548 + txOffsetAfterStart) + "." );
         }
         catch ( Throwable t )
         {
@@ -901,9 +901,18 @@ class RecoveryCorruptedTransactionLogIT
         return (byte) random.nextInt( highestVersionByte + 1, Byte.MAX_VALUE );
     }
 
-    private byte randomBytes()
+    /**
+     * Used when appending extra randomness at the end of tx log.
+     * Use non-zero bytes, randomly generated zero can be treated as "0" kernel version, marking end-of-records in pre-allocated tx log file.
+     */
+    private byte randomNonZeroBytes()
     {
-        return (byte) random.nextInt( Byte.MIN_VALUE, Byte.MAX_VALUE );
+        var b = (byte) random.nextInt( Byte.MIN_VALUE, Byte.MAX_VALUE - 1 );
+        if ( b != 0 )
+        {
+            return b;
+        }
+        return Byte.MAX_VALUE;
     }
 
     private void addCorruptedCommandsToLastLogFile( LogEntryWriterWrapper logEntryWriterWrapper ) throws IOException
