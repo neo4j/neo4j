@@ -492,13 +492,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         ConcatList( ListValue[] lists )
         {
-            ValueRepresentation representation = null;
+            ValueRepresentation representation = ValueRepresentation.ANYTHING;
             for ( ListValue list : lists )
             {
-                if ( list.nonEmpty() )
-                {
-                    representation = representation == null ? list.itemValueRepresentation() : representation.coerce( list.itemValueRepresentation() );
-                }
+                representation = representation.coerce( list.itemValueRepresentation() );
             }
             this.itemValueRepresentation = representation;
             this.lists = lists;
