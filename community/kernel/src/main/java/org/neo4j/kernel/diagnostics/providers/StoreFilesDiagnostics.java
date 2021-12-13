@@ -202,8 +202,8 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
          */
         boolean canBeManagedByPageCache( Path storeFile )
         {
-            boolean isLabelScanStore = databaseLayout.labelScanStore().equals( storeFile );
-            return isLabelScanStore || mappedCandidates.contains( storeFile );
+            boolean isScanStore = databaseLayout.labelScanStore().equals( storeFile ) || databaseLayout.relationshipTypeScanStore().equals( storeFile );
+            return isScanStore || mappedCandidates.contains( storeFile );
         }
     }
 }

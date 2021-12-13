@@ -361,6 +361,7 @@ public class MemoryRecommendationsCommand extends AbstractCommand
 
             // Include label index
             total += sizeOfFileIfExists( databaseLayout.labelScanStore() );
+            total += sizeOfFileIfExists( databaseLayout.relationshipTypeScanStore() );
             return total;
         }
         catch ( IOException e )
