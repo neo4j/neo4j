@@ -84,7 +84,7 @@ public class TestKernelReadTracer implements KernelReadTracer
     @Override
     public void onHasLabel( int label )
     {
-        traceEvents.add( OnHasLabel( label ) );
+        traceEvents.add( hasLabelEvent( label ) );
     }
 
     @Override
@@ -196,7 +196,7 @@ public class TestKernelReadTracer implements KernelReadTracer
         return new TraceEvent( TraceEventKind.Property, propertyKey );
     }
 
-    static TraceEvent OnHasLabel( int label )
+    static TraceEvent hasLabelEvent( int label )
     {
         return new TraceEvent( TraceEventKind.HasLabel, label );
     }

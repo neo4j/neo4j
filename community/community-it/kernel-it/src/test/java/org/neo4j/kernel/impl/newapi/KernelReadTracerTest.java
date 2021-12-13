@@ -64,7 +64,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnHasLabel;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.hasLabelEvent;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.indexSeekEvent;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.labelScanEvent;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.nodeEvent;
@@ -435,7 +435,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             assertTrue( nodeCursor.next() );
             nodeCursor.hasLabel( label );
 
-            tracer.assertEvents( OnNode( foo ), OnHasLabel( 42 ) );
+            tracer.assertEvents( nodeEvent( foo ), hasLabelEvent( 42 ) );
 
             nodeCursor.removeTracer();
 
@@ -444,7 +444,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
 
             nodeCursor.setTracer( tracer );
             nodeCursor.hasLabel( label );
-            tracer.assertEvents( OnHasLabel( 42 ) );
+            tracer.assertEvents( hasLabelEvent( 42 ) );
         }
     }
 
