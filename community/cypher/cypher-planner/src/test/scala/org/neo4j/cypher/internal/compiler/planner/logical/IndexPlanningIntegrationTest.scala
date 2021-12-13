@@ -59,6 +59,13 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .enablePlanningRangeIndexes()
       .build()
 
+  private def plannerConfigForRangeIndexOnRelationshipTypePropTests(): StatisticsBackedLogicalPlanningConfiguration =
+    plannerBaseConfigForIndexOnLabelPropTests()
+      .setRelationshipCardinality("()-[:Type]->()", 20)
+      .addRelationshipIndex("Type", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
+      .enablePlanningRangeIndexes()
+      .build()
+
   test("should not plan btree index seek if predicate depends on variable from same QueryGraph") {
     val cfg = plannerConfigForBtreeIndexOnLabelPropTests()
 
@@ -155,6 +162,107 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .filter(predicate)
         .nodeByLabelScan("a", "Label", IndexOrderNone)
         .build()
+    }
+  }
+
+  test("should plan range index node scan for existence predicate") {
+    val cfg = plannerConfigForRangeIndexOnLabelPropTests()
+
+    val plan = cfg.plan(s"MATCH (a:Label) WHERE a.prop IS NOT NULL RETURN a").stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .nodeIndexOperator("a:Label(prop)", indexType = IndexType.RANGE)
+      .build()
+  }
+
+  test("should plan range index relationship scan for existence predicate") {
+    val cfg = plannerConfigForRangeIndexOnRelationshipTypePropTests()
+
+    val plan = cfg.plan(s"MATCH (a)-[r:Type]->(b) WHERE r.prop IS NOT NULL RETURN r").stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .relationshipIndexOperator("(a)-[r:Type(prop)]->(b)", indexType = IndexType.RANGE)
+      .build()
+  }
+
+  test("should plan composite range node index") {
+    val cfg = plannerBaseConfigForIndexOnLabelPropTests()
+      .addNodeIndex("Label", Seq("prop1", "prop2"), 0.1, 0.01, indexType = IndexType.RANGE)
+      .enablePlanningRangeIndexes()
+      .build()
+
+    // seekable first predicate
+    for (op1 <- List("=")) {
+      for (op2 <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
+        val query = s"MATCH (a:Label) WHERE a.prop1 $op1 1 AND a.prop2 $op2 2 RETURN a"
+
+        withClue(s"Failed planning range index for: '$query'") {
+          val plan = cfg.plan(query)
+
+          plan shouldEqual cfg.planBuilder()
+            .produceResults("a")
+            .nodeIndexOperator(s"a:Label(prop1 $op1 1, prop2 $op2 2)", indexType = IndexType.RANGE)
+            .build()
+        }
+      }
+    }
+
+    // scannable first predicate
+    for (op1 <- List("<", "<=", ">", ">=", "STARTS WITH")) {
+      for (op2 <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
+        val query = s"MATCH (a:Label) WHERE a.prop1 $op1 1 AND a.prop2 $op2 2 RETURN a"
+
+        withClue(s"Failed planning range index for: '$query'") {
+          val plan = cfg.plan(query)
+
+          plan shouldEqual cfg.planBuilder()
+            .produceResults("a")
+            .filter(s"a.prop2 $op2 2")
+            .nodeIndexOperator(s"a:Label(prop1 $op1 1, prop2)", indexType = IndexType.RANGE)
+            .build()
+        }
+      }
+    }
+  }
+
+  test("should plan composite range relationship index") {
+    val cfg = plannerBaseConfigForIndexOnLabelPropTests()
+      .addRelationshipIndex("Type", Seq("prop1", "prop2"), 0.1, 0.01, indexType = IndexType.RANGE)
+      .setRelationshipCardinality("()-[:Type]->()", 20)
+      .enablePlanningRangeIndexes()
+      .build()
+
+    // seekable first predicate
+    for (op1 <- List("=")) {
+      for (op2 <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
+        val query = s"MATCH (a)-[r:Type]->(b) WHERE r.prop1 $op1 1 AND r.prop2 $op2 2 RETURN r"
+
+        withClue(s"Failed planning range index for: '$query'") {
+          val plan = cfg.plan(query)
+
+          plan shouldEqual cfg.planBuilder()
+            .produceResults("r")
+            .relationshipIndexOperator(s"(a)-[r:Type(prop1 $op1 1, prop2 $op2 2)]->(b)", indexType = IndexType.RANGE)
+            .build()
+        }
+      }
+    }
+
+    // scannable first predicate
+    for (op1 <- List("<", "<=", ">", ">=", "STARTS WITH")) {
+      for (op2 <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
+        val query = s"MATCH (a)-[r:Type]->(b) WHERE r.prop1 $op1 1 AND r.prop2 $op2 2 RETURN r"
+
+        withClue(s"Failed planning range index for: '$query'") {
+          val plan = cfg.plan(query)
+
+          plan shouldEqual cfg.planBuilder()
+            .produceResults("r")
+            .filter(s"r.prop2 $op2 2")
+            .relationshipIndexOperator(s"(a)-[r:Type(prop1 $op1 1, prop2)]->(b)", indexType = IndexType.RANGE)
+            .build()
+        }
+      }
     }
   }
 
