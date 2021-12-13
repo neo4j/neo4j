@@ -71,7 +71,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("HasLabel on top of AllNodesScan") {
     val cost = if (canReuseAllNodesScanLookup) costOfLabelCheck - 1 else costOfLabelCheck
-    hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "n:Label", Math.min(cost,1))
+    hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "n:Label", cost)
   }
 
   test("HasLabel on top of LabelScan") {
@@ -79,15 +79,15 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("PropertyExists on top of AllNodesScan") {
-    val cost = if (canReuseAllNodesScanLookup) 1 else costOfPropertyExists
-    hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "exists(n.prop)", Math.min(cost,1))
+    val cost = if (canReuseAllNodesScanLookup) costOfPropertyExists - 1 else costOfPropertyExists
+    hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "exists(n.prop)", cost)
   }
 
   test("PropertyExists on top of LabelScan") {
     hasLabelOnTopOfLeaf(_.nodeByLabelScan("n", "Label"), expression = "exists(n.prop)", costOfPropertyExists)
   }
 
-  private def hasLabelOnTopOfLeaf(leaf: LogicalQueryBuilder => LogicalQueryBuilder, expression: String, expressionPerRowCost: Long): Unit = {
+  private def hasLabelOnTopOfLeaf(leaf: LogicalQueryBuilder => LogicalQueryBuilder, expression: String, expressionPerRowCost: Long) = {
     val nodes = given {
       nodeIndex("Label", "prop")
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "Label")
@@ -118,7 +118,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     hasTypeOnTopOfLeaf(_.relationshipTypeScan("()-[r:R]->()"), hasTypePerRowCost = 1)
   }
 
-  private def hasTypeOnTopOfLeaf(leaf: LogicalQueryBuilder => LogicalQueryBuilder, hasTypePerRowCost: Int): Unit = {
+  private def hasTypeOnTopOfLeaf(leaf: LogicalQueryBuilder => LogicalQueryBuilder, hasTypePerRowCost: Int) = {
     val (_, rels) = given {
       circleGraph(sizeHint, "R", 1)
     }

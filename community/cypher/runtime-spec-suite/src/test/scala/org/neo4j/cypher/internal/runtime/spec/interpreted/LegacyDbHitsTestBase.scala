@@ -49,6 +49,6 @@ abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                 costOfRelationshipTypeLookup = 1,
                                 costOfCompositeUniqueIndexCursorRow = 1,
                                 cartesianProductChunkSize = 1,
-                                canReuseAllNodesScanLookup = true,
+                                canReuseAllNodesScanLookup = false,
                                 canFuseOverPipelines = false,
                                 useWritesWithProfiling = false)
