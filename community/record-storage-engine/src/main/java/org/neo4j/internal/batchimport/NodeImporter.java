@@ -42,8 +42,8 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Long.max;
 import static java.util.Arrays.copyOf;
-import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
 /**
  * Imports nodes using data from {@link InputChunk}.
@@ -111,7 +111,7 @@ public class NodeImporter extends EntityImporter
             idPropertyRecord.addPropertyBlock( idPropertyBlock );
             idPropertyRecord.setId( nodeId ); // yes nodeId
             idPropertyRecord.setInUse( true );
-            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, idPropertyUpdateCursor, cursorContext, storeCursors );
+            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, idPropertyUpdateCursor, cursorContext, tempStoreCursors );
             idPropertyRecord.clear();
         }
         return true;

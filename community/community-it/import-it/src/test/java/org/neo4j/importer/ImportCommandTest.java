@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.common.Validator;
@@ -1955,6 +1956,44 @@ class ImportCommandTest
         String message = e.getMessage();
         assertThat( message ).contains( "1000000" );
         assertThat( message ).contains( "too big" );
+    }
+
+    @Test
+    void shouldHandleDuplicatesWithLargeIDs() throws Exception
+    {
+        // GIVEN
+        Path dbConfig = prepareDefaultConfigFile();
+        String id1 = "SKJDSKDJKSJKD-SDJKSJDKJKJ-IUISUDISUIJDKJSKDJKSD-SLKDJSKDJKSDJKSJDK-<DJJ<LJELJIL#$JILJSLRJKS";
+        String id2 = "DSURKSJKCSJKJ-SDKJDJRKJKS-KJSKRJKXFJKSJKJCKJSRK-SJKSURUKSUKSSKJDKSK-JSKSSSKJDKJ#K$JKSJDK";
+        Path nodeData = createAndWriteFile( "nodes.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( "id:ID,prop1" );
+            writer.println( id1 + ",abc" );
+            writer.println( id2 + ",def" );
+            writer.println( id1 + ",ghi" );
+        } );
+        Path relationshipData = createAndWriteFile( "relationships.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( ":START_ID,:END_ID,:TYPE,prop1:int,prop2:byte" );
+            writer.println( id1 + "," + id2 + ",DC,9999999999,123456789" );
+        } );
+
+        // WHEN
+        runImport(
+                "--nodes", nodeData.toAbsolutePath().toString(),
+                "--relationships", relationshipData.toAbsolutePath().toString(),
+                "--skip-duplicate-nodes" );
+
+        // THEN
+        GraphDatabaseService db = getDatabaseApi();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Set<String> nodes = tx.getAllNodes().stream().map( n -> (String) n.getProperty( "prop1" ) ).collect( Collectors.toSet() );
+            assertThat( nodes.size() ).isEqualTo( 2 );
+            assertThat( nodes.contains( "def" ) ).isTrue();
+            assertThat( nodes.contains( "abc" ) || nodes.contains( "ghi" ) ).isTrue();
+            assertThat( count( tx.getAllRelationships().iterator() ) ).isEqualTo( 1 );
+        }
     }
 
     private static void assertContains( List<String> errorLines, String string )
