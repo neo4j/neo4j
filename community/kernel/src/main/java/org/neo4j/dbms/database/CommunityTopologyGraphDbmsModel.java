@@ -19,23 +19,30 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.HashMap;
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.helpers.RemoteUri;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 {
@@ -73,19 +80,6 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     }
 
     @Override
-    public Map<String,NamedDatabaseId> getAllDatabaseAliases()
-    {
-        var allDbNames = getAllDatabaseIds().stream()
-                                            .collect( Collectors.toMap( NamedDatabaseId::name, Function.identity() ) );
-        var allDbAliases = getAllDatabaseAliases0();
-
-        var all = new HashMap<String,NamedDatabaseId>();
-        all.putAll( allDbNames );
-        all.putAll( allDbAliases );
-        return Map.copyOf( all );
-    }
-
-    @Override
     public Set<NamedDatabaseId> getAllDatabaseIds()
     {
         return tx.findNodes( DATABASE_LABEL ).stream()
@@ -93,21 +87,76 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
                      .collect( Collectors.toUnmodifiableSet() );
     }
 
-    private Map<String,NamedDatabaseId> getAllDatabaseAliases0()
+    @Override
+    public Set<DatabaseReference> getAllDatabaseReferences()
     {
-        return tx.findNodes( DATABASE_NAME_LABEL ).stream()
-                 .flatMap( alias -> getTargetedDatabase( alias )
-                         .flatMap( db -> aliasDatabaseIdPair( alias, db ) ).stream() )
-                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+        var primaryRefs = getAllDatabaseIds().stream().map( this::primaryRefFromDatabaseId );
+        var internalAliasRefs = getAllInternalDatabaseReferences0();
+        var internalRefs = Stream.concat( primaryRefs, internalAliasRefs );
+        var externalRefs = getAllExternalDatabaseReferences0();
+
+        return Stream.concat( internalRefs, externalRefs ).collect( Collectors.toUnmodifiableSet() );
     }
 
-    private Optional<Map.Entry<String,NamedDatabaseId>> aliasDatabaseIdPair( Node alias, NamedDatabaseId targetedDatabase )
+    @Override
+    public Set<DatabaseReference.Internal> getAllInternalDatabaseReferences()
+    {
+        var primaryRefs = getAllDatabaseIds().stream().map( this::primaryRefFromDatabaseId );
+        var localAliasRefs = getAllInternalDatabaseReferences0();
+
+        return Stream.concat( primaryRefs, localAliasRefs ).collect( Collectors.toUnmodifiableSet() );
+    }
+
+    private DatabaseReference.Internal primaryRefFromDatabaseId( NamedDatabaseId databaseId )
+    {
+        var alias = new NormalizedDatabaseName( databaseId.name() );
+        return new DatabaseReference.Internal( alias, databaseId );
+    }
+
+    private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferences0()
+    {
+        return tx.findNodes( LOCAL_DATABASE_LABEL ).stream()
+                 .flatMap( alias -> getTargetedDatabase( alias )
+                         .flatMap( db -> createInternalReference( alias, db ) ).stream() );
+    }
+
+    private Optional<DatabaseReference.Internal> createInternalReference( Node alias, NamedDatabaseId targetedDatabase )
     {
         return ignoreConcurrentDeletes( () ->
-        {
-            var aliasName = getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY );
-            return Optional.of( Map.entry( aliasName, targetedDatabase ) );
-        } );
+                                        {
+                                            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY ) );
+                                            return Optional.of( new DatabaseReference.Internal( aliasName, targetedDatabase ) );
+                                        } );
+    }
+
+    @Override
+    public Set<DatabaseReference.External> getAllExternalDatabaseReferences()
+    {
+        return getAllExternalDatabaseReferences0().collect( Collectors.toUnmodifiableSet() );
+    }
+
+    private Stream<DatabaseReference.External> getAllExternalDatabaseReferences0()
+    {
+        return tx.findNodes( REMOTE_DATABASE_LABEL ).stream().map( this::createExternalReference );
+    }
+
+    private DatabaseReference.External createExternalReference( Node alias )
+    {
+        var uriString = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, URL_PROPERTY );
+        var targetName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, TARGET_NAME_PROPERTY ) );
+        var aliasName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, NAME_PROPERTY ) );
+
+        var uri = URI.create( uriString );
+        var host = SocketAddressParser.socketAddress( uri, BoltConnector.DEFAULT_PORT, SocketAddress::new );
+        //TODO: Ask Cypher Ops to update RemoteDb data model to provide a scheme and a query as well as a hostname
+        var remoteUri = new RemoteUri( uri.getScheme(), List.of( host ), uri.getQuery() );
+        return new DatabaseReference.External( targetName, aliasName, remoteUri );
+    }
+
+    @Override
+    public Optional<DatabaseReference> getDatabaseRefByName( String databaseName )
+    {
+        return Optional.empty();
     }
 
     private Optional<NamedDatabaseId> getDatabaseIdByAlias0( String databaseName )

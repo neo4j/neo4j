@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -27,6 +26,7 @@ import java.util.UUID;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface TopologyGraphDbmsModel
@@ -124,6 +124,7 @@ public interface TopologyGraphDbmsModel
     String PRIMARY_PROPERTY = "primary";
     Label REMOTE_DATABASE_LABEL = Label.label( "Remote" );
     String REMOTE_DATABASE = REMOTE_DATABASE_LABEL.name();
+    String REMOTE_DATABASE_LABEL_DESCRIPTION = "Remote Database alias";
     String URL_PROPERTY = "url";
     String USERNAME_PROPERTY = "username";
     String PASSWORD_PROPERTY = "password";
@@ -181,9 +182,25 @@ public interface TopologyGraphDbmsModel
     Optional<NamedDatabaseId> getDatabaseIdByUUID( UUID uuid );
 
     /**
-     * Fetches all known database aliases in the DBMS, along with their associated {@link NamedDatabaseId}s.
-     *
-     * @return the aliases and associated ids
+     * Fetches all known database references
      */
-    Map<String,NamedDatabaseId> getAllDatabaseAliases();
+    Set<DatabaseReference> getAllDatabaseReferences();
+
+    /**
+     * Fetches all known internal database references
+     */
+    Set<DatabaseReference.Internal> getAllInternalDatabaseReferences();
+
+    /**
+     * Fetches all known external database references
+     */
+    Set<DatabaseReference.External> getAllExternalDatabaseReferences();
+
+    /**
+     * Fetches the {@link DatabaseReference} corresponding to the provided name.
+     *
+     * @param databaseName the database name to resolve a reference for
+     * @return the corresponding {@link DatabaseReference}
+     */
+    Optional<DatabaseReference> getDatabaseRefByName( String databaseName );
 }

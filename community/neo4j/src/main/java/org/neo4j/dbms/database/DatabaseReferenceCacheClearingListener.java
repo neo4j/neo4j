@@ -24,18 +24,21 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 
-public final class DatabaseIdCacheClearingListener extends TransactionEventListenerAdapter<Object>
+public final class DatabaseReferenceCacheClearingListener extends TransactionEventListenerAdapter<Object>
 {
-    private final DatabaseIdRepository.Caching repository;
+    private final DatabaseIdRepository.Caching idRepository;
+//    private final DatabaseAliasRepository.Caching aliasRepository;
 
-    public DatabaseIdCacheClearingListener( DatabaseIdRepository.Caching repository )
+    //TODO: Add alias Repo parameter
+    public DatabaseReferenceCacheClearingListener( DatabaseIdRepository.Caching idRepository )
     {
-        this.repository = repository;
+        this.idRepository = idRepository;
     }
 
     @Override
     public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
     {
-        repository.invalidateAll();
+        idRepository.invalidateAll();
+//        aliasRepository.invalidateAll();
     }
 }

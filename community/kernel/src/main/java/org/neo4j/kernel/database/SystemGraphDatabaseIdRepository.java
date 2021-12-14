@@ -56,9 +56,9 @@ public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository
     @Override
     public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
     {
-        var aliases = execute( TopologyGraphDbmsModel::getAllDatabaseAliases );
-        return aliases.entrySet().stream()
-                      .map( e -> Map.entry( new NormalizedDatabaseName( e.getKey() ), e.getValue() ) )
+        var databaseReferences = execute( TopologyGraphDbmsModel::getAllInternalDatabaseReferences );
+        return databaseReferences.stream()
+                      .map( ref -> Map.entry( ref.alias(), ref.databaseId() ) )
                       .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
     }
 

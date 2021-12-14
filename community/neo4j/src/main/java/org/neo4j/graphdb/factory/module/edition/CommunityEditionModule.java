@@ -37,7 +37,7 @@ import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseIdCacheClearingListener;
+import org.neo4j.dbms.database.DatabaseReferenceCacheClearingListener;
 import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
@@ -174,7 +174,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
                                                              globalModule.getTransactionEventListeners(), globalModule.getGlobalLife(),
                                                              globalModule.getLogService().getInternalLogProvider() );
 
-        var databaseIdCacheCleaner = new DatabaseIdCacheClearingListener( databaseManager.databaseIdRepository() );
+        var databaseIdCacheCleaner = new DatabaseReferenceCacheClearingListener( databaseManager.databaseIdRepository() );
         globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, databaseIdCacheCleaner );
 
         return databaseManager;

@@ -64,11 +64,16 @@ public interface DatabaseIdRepository
      *
      * Note: given {@link NamedDatabaseId} objects may appear multiple times in the returned map's value set. This is
      * due to the fact that databases may have multiple aliases.
+     *
+     * TODO: Remove. Anything which needs this can definitely use the DatabaseAliasRepository
      */
     Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases();
 
     /**
      * Fetch all known {@link NamedDatabaseId}s.
+     *
+     * TODO: Remove. This is only really used by DatabaseLookup and CommunityCatalogManager
+     *  so can be replaced by getLocalAliases in DatabaseAliasRepository
      */
     Set<NamedDatabaseId> getAllDatabaseIds();
 
