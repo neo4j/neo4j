@@ -103,7 +103,7 @@ class InternalPlanDescriptionTest extends CypherFunSuite {
       .addArgument(BatchSize(128))
 
 
-    planDescription.toString should equal(
+    normalizeNewLines(planDescription.toString) should equal(
       normalizeNewLines(s"""Compiler $version
        |
        |Planner COST
