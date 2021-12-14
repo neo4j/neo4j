@@ -90,7 +90,6 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
-
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 /**
@@ -493,7 +492,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         securityAuthorizationHandler,
         queryString,
         MapValue.EMPTY,
-        modeConverter = s => s // Keep the users permissions
+        // If we have a non admin command executing in the system database, forbid it to make reads / writes
+        // from the system graph. This is to prevent queries such as SHOW PROCEDURES YIELD * RETURN ()--()
+        // from leaking nodes from the system graph: the ()--() would return empty results
+        modeConverter = s => s.withMode(AccessMode.Static.ACCESS)
       )
 
     // Ignore the log command in community

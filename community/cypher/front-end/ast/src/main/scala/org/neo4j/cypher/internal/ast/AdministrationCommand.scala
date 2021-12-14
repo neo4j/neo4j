@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ProcedureName
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
@@ -84,13 +86,28 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
 
   override def semanticCheck: SemanticCheck = initialState => {
 
-    def checkForDML(where: Where): SemanticCheck = {
+    def checkForExistsSubquery(where: Where): SemanticCheck = state => {
       val invalid: Option[Expression] = where.expression.treeFind[Expression] { case _: ExistsSubClause => true }
-      invalid.map(exp => SemanticError("The EXISTS clause is not valid on SHOW commands.", exp.position))
+      invalid.map(exp => error("The EXISTS clause is not valid on SHOW commands.", exp.position)(state))
+        .getOrElse(SemanticCheckResult.success(state))
+    }
+
+    def checkForReturnPattern: SemanticCheck = state => {
+      val maybePatternExpression = state.typeTable.collectFirst { case (expression, _) if expression.isInstanceOf[PatternExpression] => expression }
+      val maybePatternComprehension = state.typeTable.collectFirst { case (expression, _) if expression.isInstanceOf[PatternComprehension] => expression }
+
+      (maybePatternExpression, maybePatternComprehension) match {
+        case (Some(patternExpression), _) =>
+          error("You cannot include a pattern expression in the RETURN of administration SHOW commands", patternExpression.position)(state)
+        case (_, Some(patternComprehension)) =>
+          error("You cannot include a pattern comprehension in the RETURN of administration SHOW commands", patternComprehension.position)(state)
+        case _ =>
+          SemanticCheckResult.success(state)
+      }
     }
 
     def checkProjection(r: ProjectionClause, prevErrors: Seq[SemanticErrorDef]): SemanticCheck = state => {
-      val closingResult = (r.semanticCheck chain r.where.map(checkForDML).getOrElse(None))(state)
+      val closingResult = (r.semanticCheck chain r.where.map(checkForExistsSubquery).getOrElse(None) chain checkForReturnPattern)(state)
       val continuationResult = r.semanticCheckContinuation(closingResult.state.currentScope.scope)(closingResult.state)
       semantics.SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
     }
