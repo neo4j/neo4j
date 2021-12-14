@@ -85,6 +85,7 @@ import static scala.collection.JavaConverters.seqAsJavaList;
 
 public class FabricExecutor
 {
+    public static final String WRITING_IN_READ_NOT_ALLOWED_MSG = "Writing in read access mode not allowed";
     private final FabricConfig.DataStream dataStreamConfig;
     private final FabricPlanner planner;
     private final UseEvaluation useEvaluation;
@@ -578,7 +579,7 @@ public class FabricExecutor
             {
                 if ( queryMode == AccessMode.WRITE )
                 {
-                    throw new FabricException( Status.Statement.AccessMode, "Writing in read access mode not allowed. Attempted write to %s", graph );
+                    throw new FabricException( Status.Statement.AccessMode, WRITING_IN_READ_NOT_ALLOWED_MSG + ". Attempted write to %s", graph );
                 }
                 else
                 {
