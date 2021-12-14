@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseExists
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseNotExists
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.internal.kernel.api.security.AccessMode
 
 import scala.annotation.tailrec
 
@@ -282,7 +283,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         securityAuthorizationHandler,
         QueryRenderer.render(updatedStatement),
         MapValue.EMPTY,
-        modeConverter = s => s // Keep the users permissions
+        // If we have a non admin command executing in the system database, forbid it to make reads / writes
+        // from the system graph. This is to prevent queries such as SHOW PROCEDURES YIELD * RETURN ()--()
+        // from leaking nodes from the system graph: the ()--() would return empty results
+        modeConverter = s => s.withMode(AccessMode.Static.ACCESS)
       )
 
     // Ignore the log command in community
