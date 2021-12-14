@@ -466,7 +466,7 @@ object LogicalPlanToPlanBuilderString {
       case LoadCSV(_, url, variableName, format, fieldTerminator, _, _) =>
         val fieldTerminatorStr = fieldTerminator.fold("None")(ft => s"Some(${wrapInQuotations(ft)})")
         Seq(wrapInQuotations(expressionStringifier(url)), wrapInQuotations(variableName), format, fieldTerminatorStr).mkString(", ")
-      case Apply(_, _, fromSubquery) => "fromSubquery = " + fromSubquery.toString
+      case Apply(_, _, fromSubquery) => s"fromSubquery = $fromSubquery"
       case Eager(_, reasons)  => reasons.map(eagernessReasonStr).mkString("Seq(", ", ", ")")
       case TransactionForeach(_, _, batchSize) => expressionStringifier(batchSize)
       case TransactionApply(_, _, batchSize) => expressionStringifier(batchSize)
