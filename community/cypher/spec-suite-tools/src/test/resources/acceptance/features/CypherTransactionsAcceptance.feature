@@ -889,3 +889,17 @@ Feature: CypherTransactionsAcceptance
     And the side effects should be:
       | +nodes       | 5  |
       | +properties  | 10 |
+
+  Scenario: Handle an empty map and list before CALL IN TRANSACTIONS
+    When executing query:
+      """
+      WITH {} AS emptyMap, [] AS emptyList
+      CALL {
+        WITH 42 AS theValue
+        RETURN theValue
+      } IN TRANSACTIONS
+      RETURN theValue
+      """
+    Then the result should be, in any order:
+      | theValue |
+      | 42       |
