@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
+import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.StatementCondition
 import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
@@ -58,10 +59,10 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Additions
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
-import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -80,6 +81,7 @@ object CompilationPhases {
       Set(
         SemanticAnalysis,
         Namespacer,
+        ProjectNamedPathsRewriter,
         isolateAggregation,
         transitiveClosure,
         rewriteEqualityToInPredicate,
@@ -94,7 +96,7 @@ object CompilationPhases {
         CompressPlanIDs,
         CheckForUnresolvedTokens,
       ) ++ CNFNormalizer.steps,
-      initialConditions = Set(StatementCondition(containsNoReturnAll), StatementCondition(containsNamedPathOnlyForShortestPath))
+      initialConditions = Set(StatementCondition(containsNoReturnAll), NoNamedPathsInPatternComprehensions)
     )
 
   case class ParsingConfig(compatibilityMode: CypherCompatibilityVersion = Compatibility4_4,

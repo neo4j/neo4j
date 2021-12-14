@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePatternComprehensionPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
-import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteOrderById
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -73,7 +72,6 @@ object ASTRewriter {
     replaceLiteralDynamicPropertyLookups,
     inlineNamedPathsInPatternComprehensions,
     parameterValueTypeReplacement,
-    projectNamedPaths,
     rewriteOrderById,
   ), initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo))
 
