@@ -77,7 +77,7 @@ case class Invoke(target: IntermediateRepresentation, method: Method, params: Se
  * @param method the method to invoke
  * @param params the parameter to the method
  */
-case class InvokeLocal(method: LocalMethod, params: Seq[IntermediateRepresentation])
+case class InvokeLocal(method: PrivateMethod, params: Seq[IntermediateRepresentation])
   extends IntermediateRepresentation {
   override def typeReference: TypeReference = method.returnType
 }
@@ -100,7 +100,7 @@ case class InvokeSideEffect(target: IntermediateRepresentation, method: Method, 
  * @param method the method to invoke
  * @param params the parameter to the method
  */
-case class InvokeLocalSideEffect(method: LocalMethod, params: Seq[IntermediateRepresentation])
+case class InvokeLocalSideEffect(method: PrivateMethod, params: Seq[IntermediateRepresentation])
   extends IntermediateRepresentation {
   override def typeReference: TypeReference = TypeReference.VOID
 }
@@ -594,12 +594,12 @@ case class Method(owner: codegen.TypeReference, returnType: codegen.TypeReferenc
 }
 
 /**
- * Defines a method that is local to the current class
+ * Defines a private method that is local to the current class
  * @param returnType output type to the method
  * @param name   the name of the method
  * @param params the parameter types of the method
  */
-case class LocalMethod(returnType: codegen.TypeReference, name: String, params: Seq[codegen.TypeReference])
+case class PrivateMethod(returnType: codegen.TypeReference, name: String, params: Seq[codegen.TypeReference])
 
 case class Parameter(typ: codegen.TypeReference, name: String) {
   def asCodeGen: codegen.Parameter = codegen.Parameter.param(typ, name)
@@ -742,48 +742,48 @@ object IntermediateRepresentation {
                              parameters: Parameter*)(implicit out: Manifest[OUT]): MethodDeclaration =
     MethodDeclaration(name, typeRef(out), parameters, body, locals)
 
-  def localMethod[OUT](name: String)(implicit out: Manifest[OUT]): LocalMethod =
-    LocalMethod(typeRef(out), name, Seq.empty)
+  def privateMethod[OUT](name: String)(implicit out: Manifest[OUT]): PrivateMethod =
+    PrivateMethod(typeRef(out), name, Seq.empty)
 
-  def localMethod[OUT, IN](name: String)(implicit out: Manifest[OUT], in: Manifest[IN]): LocalMethod =
-    LocalMethod(typeRef(out), name, Seq(typeRef(in)))
+  def privateMethod[OUT, IN](name: String)(implicit out: Manifest[OUT], in: Manifest[IN]): PrivateMethod =
+    PrivateMethod(typeRef(out), name, Seq(typeRef(in)))
 
-  def localMethod[OUT, IN1, IN2](name: String)
+  def privateMethod[OUT, IN1, IN2](name: String)
                                   (implicit out: Manifest[OUT], in1: Manifest[IN1],
-                                   in2: Manifest[IN2]): LocalMethod =
-    LocalMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2)))
+                                   in2: Manifest[IN2]): PrivateMethod =
+    PrivateMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2)))
 
-  def localMethod[OUT, IN1, IN2, IN3](name: String)
+  def privateMethod[OUT, IN1, IN2, IN3](name: String)
                                        (implicit out: Manifest[OUT], in1: Manifest[IN1],
-                                        in2: Manifest[IN2], in3: Manifest[IN3]): LocalMethod =
-    LocalMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3)))
+                                        in2: Manifest[IN2], in3: Manifest[IN3]): PrivateMethod =
+    PrivateMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3)))
 
-  def localMethod[OUT, IN1, IN2, IN3, IN4](name: String)
-                                     (implicit out: Manifest[OUT], in1: Manifest[IN1],
-                                      in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4]): LocalMethod =
-    LocalMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4)))
+  def privateMethod[OUT, IN1, IN2, IN3, IN4](name: String)
+                                            (implicit out: Manifest[OUT], in1: Manifest[IN1],
+                                      in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4]): PrivateMethod =
+    PrivateMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4)))
 
-  def localMethod[OUT, IN1, IN2, IN3, IN4, IN5](name: String)
-                                          (implicit out: Manifest[OUT], in1: Manifest[IN1],
-                                           in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5]): LocalMethod =
-    LocalMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5)))
+  def privateMethod[OUT, IN1, IN2, IN3, IN4, IN5](name: String)
+                                                 (implicit out: Manifest[OUT], in1: Manifest[IN1],
+                                           in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5]): PrivateMethod =
+    PrivateMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5)))
 
-  def localMethod[OUT, IN1, IN2, IN3, IN4, IN5, IN6](name: String)
-                                               (implicit out: Manifest[OUT], in1: Manifest[IN1],
-                                                in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6]): LocalMethod =
-    LocalMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6)))
+  def privateMethod[OUT, IN1, IN2, IN3, IN4, IN5, IN6](name: String)
+                                                      (implicit out: Manifest[OUT], in1: Manifest[IN1],
+                                                in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6]): PrivateMethod =
+    PrivateMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6)))
 
-  def localMethod[OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7](name: String)
-                                                    (implicit out: Manifest[OUT], in1: Manifest[IN1],
+  def privateMethod[OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7](name: String)
+                                                           (implicit out: Manifest[OUT], in1: Manifest[IN1],
                                                      in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],
-                                                     in7: Manifest[IN7]): LocalMethod =
-    LocalMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7)))
+                                                     in7: Manifest[IN7]): PrivateMethod =
+    PrivateMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7)))
 
-  def localMethod[OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8](name: String)
-                                                         (implicit out: Manifest[OUT], in1: Manifest[IN1],
+  def privateMethod[OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8](name: String)
+                                                                (implicit out: Manifest[OUT], in1: Manifest[IN1],
                                                           in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5], in6: Manifest[IN6],
-                                                          in7: Manifest[IN7],  in8: Manifest[IN8]): LocalMethod =
-    LocalMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8)))
+                                                          in7: Manifest[IN7],  in8: Manifest[IN8]): PrivateMethod =
+    PrivateMethod(typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8)))
 
   def param[TYPE](name: String)(implicit typ: Manifest[TYPE]): Parameter = Parameter(typeRef(typ), name)
 
@@ -854,7 +854,7 @@ object IntermediateRepresentation {
              params: IntermediateRepresentation*): IntermediateRepresentation =
     invoke(Load(ownerVar, method.owner), method, params:_*)
 
-  def invokeLocal(method: LocalMethod, params: IntermediateRepresentation*): IntermediateRepresentation =
+  def invokeLocal(method: PrivateMethod, params: IntermediateRepresentation*): IntermediateRepresentation =
     if (method.returnType == org.neo4j.codegen.TypeReference.VOID)
       InvokeLocalSideEffect(method, params)
     else
@@ -864,7 +864,7 @@ object IntermediateRepresentation {
                        params: IntermediateRepresentation*): IntermediateRepresentation =
     InvokeSideEffect(owner, method, params)
 
-  def invokeLocalSideEffect(method: LocalMethod, params: IntermediateRepresentation*): IntermediateRepresentation =
+  def invokeLocalSideEffect(method: PrivateMethod, params: IntermediateRepresentation*): IntermediateRepresentation =
     InvokeLocalSideEffect(method, params)
 
   def invokeSideEffect(ownerVar: String, method: Method,
