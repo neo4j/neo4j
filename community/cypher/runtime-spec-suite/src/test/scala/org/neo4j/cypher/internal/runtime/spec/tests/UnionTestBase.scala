@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RowCount
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.RelationshipType
 
 abstract class UnionTestBase[CONTEXT <: RuntimeContext](
                                                          edition: Edition[CONTEXT],
@@ -886,6 +887,34 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n", "m").withRows(RowCount(2 * nodes))
+  }
+
+  test("union works between long and ref slots") {
+    val nodeA = given {
+      val nodeA = nodeGraph(1, "A").head
+      val nodeB = nodeGraph(2, "B")
+      nodeB.foreach(node => nodeA.createRelationshipTo(node, RelationshipType.withName("REL")))
+
+      nodeA
+    }
+
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .optional()
+      .expandAll("(n)-[rel]->(m)")
+      .union()
+      .|.nodeByLabelScan("n", "A")
+      .projection("head(c) AS n")
+      .aggregation(Seq(), Seq("collect(nB) AS c"))
+      .nodeByLabelScan("nB", "B")
+      .build()
+
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("n").withRows(singleColumn(Seq(nodeA, nodeA)))
   }
 
   private def sizeHintAlignedToMorselSize: Int = {
