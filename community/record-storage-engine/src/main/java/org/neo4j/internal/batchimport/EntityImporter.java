@@ -57,6 +57,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private final PropertyRecord propertyRecord;
     private final PageCursor propertyUpdateCursor;
     protected final StoreCursors storeCursors;
+    protected final StoreCursors tempStoreCursors;
     private PropertyBlock[] propertyBlocks = new PropertyBlock[100];
     private int propertyBlocksCursor;
     private final BatchingIdGetter propertyIds;
@@ -76,6 +77,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     {
         this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( ENTITY_IMPORTER_TAG ) );
         this.storeCursors = new CachedStoreCursors( stores.getNeoStores(), cursorContext );
+        this.tempStoreCursors = new CachedStoreCursors( stores.getTemporaryNeoStores(), cursorContext );
         this.propertyStore = stores.getPropertyStore();
         this.propertyKeyTokenRepository = stores.getPropertyKeyRepository();
         this.monitor = monitor;
@@ -204,6 +206,8 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     {
         monitor.propertiesImported( propertyCount );
         propertyUpdateCursor.close();
+        storeCursors.close();
+        tempStoreCursors.close();
     }
 
     void freeUnusedIds()
