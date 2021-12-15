@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
@@ -71,10 +72,10 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
+    when(factory.newCostModel(ExecutionModel.default)).thenReturn(((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
-    })
+    }): CostModel)
 
     val innerPlan = newMockedLogicalPlan(bNode)
 
@@ -103,10 +104,10 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
+    when(factory.newCostModel(ExecutionModel.default)).thenReturn(((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
-    })
+    }): CostModel)
 
     val innerPlan = newMockedLogicalPlan(bNode)
 
@@ -138,10 +139,10 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
+    when(factory.newCostModel(ExecutionModel.default)).thenReturn(((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
       case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
-    })
+    }): CostModel)
 
     val unorderedPlan = newMockedLogicalPlan(bNode, "iAmUnordered")
     val orderedPlan = newMockedLogicalPlan(bNode, "iAmOrdered")
