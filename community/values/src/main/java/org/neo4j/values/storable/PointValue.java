@@ -47,19 +47,44 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
     static final long SIZE_2D = SHALLOW_SIZE + sizeOf( new double[2] );
     static final long SIZE_3D = SHALLOW_SIZE + sizeOf( new double[3] );
 
-    // WGS84 is the CRS w/ lowest table/code at the time of writing this. Update as more CRSs gets added.
-    public static final PointValue MIN_VALUE = new PointValue( CoordinateReferenceSystem.WGS_84, -180D, -90 );
-    // Cartesian_3D is the CRS w/ highest table/code at the time of writing this. Update as more CRSs gets added.
-    public static final PointValue MAX_VALUE = new PointValue( CoordinateReferenceSystem.CARTESIAN_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
+    static final PointValue MIN_VALUE_WGS_84 = new PointValue( CoordinateReferenceSystem.WGS_84, -180, -90 );
+    static final PointValue MAX_VALUE_WGS_84 = new PointValue( CoordinateReferenceSystem.WGS_84, 180, 90 );
+    static final PointValue MIN_VALUE_WGS_84_3D = new PointValue( CoordinateReferenceSystem.WGS_84_3D, -180, -90, -Double.MAX_VALUE );
+    static final PointValue MAX_VALUE_WGS_84_3D = new PointValue( CoordinateReferenceSystem.WGS_84_3D, 180, 90, Double.MAX_VALUE );
+    static final PointValue MIN_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.CARTESIAN, -Double.MAX_VALUE, -Double.MAX_VALUE );
+    static final PointValue MAX_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.CARTESIAN, Double.MAX_VALUE, Double.MAX_VALUE );
+    static final PointValue MIN_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.CARTESIAN_3D,
+                                                                     -Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE );
+    static final PointValue MAX_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.CARTESIAN_3D,
+                                                                     Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE );
 
-    static final PointValue MIN_VALUE_WGS84 = new PointValue( CoordinateReferenceSystem.WGS_84, -180D, -90 );
-    static final PointValue MAX_VALUE_WGS84 = new PointValue( CoordinateReferenceSystem.WGS_84, 180D, 90 );
-    static final PointValue MIN_VALUE_WGS84_3D = new PointValue( CoordinateReferenceSystem.WGS_84_3D, -180D, -90, Long.MIN_VALUE );
-    static final PointValue MAX_VALUE_WGS84_3D = new PointValue( CoordinateReferenceSystem.WGS_84_3D, 180D, 90, Long.MAX_VALUE );
-    static final PointValue MIN_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.CARTESIAN, Long.MIN_VALUE, Long.MIN_VALUE );
-    static final PointValue MAX_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.CARTESIAN, Long.MAX_VALUE, Long.MAX_VALUE );
-    static final PointValue MIN_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.CARTESIAN_3D, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE );
-    static final PointValue MAX_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.CARTESIAN_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
+    public static PointValue minPointValueOf( CoordinateReferenceSystem crs )
+    {
+        return switch ( crs )
+        {
+            case WGS_84 -> MIN_VALUE_WGS_84;
+            case WGS_84_3D -> MIN_VALUE_WGS_84_3D;
+            case CARTESIAN -> MIN_VALUE_CARTESIAN;
+            case CARTESIAN_3D -> MIN_VALUE_CARTESIAN_3D;
+        };
+    }
+
+    public static PointValue maxPointValueOf( CoordinateReferenceSystem crs )
+    {
+        return switch ( crs )
+        {
+            case WGS_84 -> MAX_VALUE_WGS_84;
+            case WGS_84_3D -> MAX_VALUE_WGS_84_3D;
+            case CARTESIAN -> MAX_VALUE_CARTESIAN;
+            case CARTESIAN_3D -> MAX_VALUE_CARTESIAN_3D;
+        };
+    }
+
+    public static final PointValue MIN_VALUE =
+            Arrays.stream( CoordinateReferenceSystem.values() ).map( PointValue::minPointValueOf ).min( Values.COMPARATOR ).orElseThrow();
+
+    public static final PointValue MAX_VALUE =
+            Arrays.stream( CoordinateReferenceSystem.values() ).map( PointValue::maxPointValueOf ).max( Values.COMPARATOR ).orElseThrow();
 
     private final CoordinateReferenceSystem crs;
     private final double[] coordinate;
@@ -72,7 +97,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
         {
             if ( !Double.isFinite( c ) )
             {
-                throw new InvalidArgumentException( "Cannot create a point with non-finite coordinate values: " + Arrays.toString( coordinate) );
+                throw new InvalidArgumentException( "Cannot create a point with non-finite coordinate values: " + Arrays.toString( coordinate ) );
             }
         }
         if ( coordinate.length != crs.getDimension() )

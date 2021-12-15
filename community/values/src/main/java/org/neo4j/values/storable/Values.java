@@ -352,44 +352,12 @@ public final class Values
 
     public static PointValue minPointValue( PointValue reference )
     {
-        int length = reference.coordinate().length;
-        double[] coordinates = new double[length];
-        if ( reference.getCoordinateReferenceSystem().isGeographic() )
-        {
-            // WGS-84 boundaries
-            coordinates[0] = -180;
-            coordinates[1] = -90;
-            if ( length > 2 )
-            {
-                coordinates[2] = -Double.MAX_VALUE;
-            }
-        }
-        else
-        {
-            Arrays.fill( coordinates, -Double.MAX_VALUE );
-        }
-        return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
+        return PointValue.minPointValueOf( reference.getCoordinateReferenceSystem() );
     }
 
     public static PointValue maxPointValue( PointValue reference )
     {
-        int length = reference.coordinate().length;
-        double[] coordinates = new double[length];
-        if ( reference.getCoordinateReferenceSystem().isGeographic() )
-        {
-            // WGS-84 boundaries
-            coordinates[0] = 180;
-            coordinates[1] = 90;
-            if ( length > 2 )
-            {
-                coordinates[2] = Double.MAX_VALUE;
-            }
-        }
-        else
-        {
-            Arrays.fill( coordinates, Double.MAX_VALUE );
-        }
-        return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
+        return PointValue.maxPointValueOf( reference.getCoordinateReferenceSystem() );
     }
 
     public static PointArray pointArray( Point[] points )
@@ -756,35 +724,33 @@ public final class Values
 
     public static Value minValue( ValueGroup valueGroup, Value value )
     {
-        switch ( valueGroup )
+        return switch ( valueGroup )
         {
-        case TEXT: return MIN_STRING;
-        case NUMBER: return MIN_NUMBER;
-        case GEOMETRY: return minPointValue( (PointValue)value );
-        case DATE: return DateValue.MIN_VALUE;
-        case LOCAL_DATE_TIME: return LocalDateTimeValue.MIN_VALUE;
-        case ZONED_DATE_TIME: return DateTimeValue.MIN_VALUE;
-        case LOCAL_TIME: return LocalTimeValue.MIN_VALUE;
-        case ZONED_TIME: return TimeValue.MIN_VALUE;
-        default: throw new IllegalStateException(
-                format( "The minValue for valueGroup %s is not defined yet", valueGroup ) );
-        }
+            case TEXT -> MIN_STRING;
+            case NUMBER -> MIN_NUMBER;
+            case GEOMETRY -> minPointValue( (PointValue) value );
+            case DATE -> DateValue.MIN_VALUE;
+            case LOCAL_DATE_TIME -> LocalDateTimeValue.MIN_VALUE;
+            case ZONED_DATE_TIME -> DateTimeValue.MIN_VALUE;
+            case LOCAL_TIME -> LocalTimeValue.MIN_VALUE;
+            case ZONED_TIME -> TimeValue.MIN_VALUE;
+            default -> throw new IllegalStateException( format( "The minValue for valueGroup %s is not defined yet", valueGroup ) );
+        };
     }
 
     public static Value maxValue( ValueGroup valueGroup, Value value )
     {
-        switch ( valueGroup )
+        return switch ( valueGroup )
         {
-        case TEXT: return MAX_STRING;
-        case NUMBER: return MAX_NUMBER;
-        case GEOMETRY: return maxPointValue( (PointValue)value );
-        case DATE: return DateValue.MAX_VALUE;
-        case LOCAL_DATE_TIME: return LocalDateTimeValue.MAX_VALUE;
-        case ZONED_DATE_TIME: return DateTimeValue.MAX_VALUE;
-        case LOCAL_TIME: return LocalTimeValue.MAX_VALUE;
-        case ZONED_TIME: return TimeValue.MAX_VALUE;
-        default: throw new IllegalStateException(
-                format( "The maxValue for valueGroup %s is not defined yet", valueGroup ) );
-        }
+            case TEXT -> MAX_STRING;
+            case NUMBER -> MAX_NUMBER;
+            case GEOMETRY -> maxPointValue( (PointValue) value );
+            case DATE -> DateValue.MAX_VALUE;
+            case LOCAL_DATE_TIME -> LocalDateTimeValue.MAX_VALUE;
+            case ZONED_DATE_TIME -> DateTimeValue.MAX_VALUE;
+            case LOCAL_TIME -> LocalTimeValue.MAX_VALUE;
+            case ZONED_TIME -> TimeValue.MAX_VALUE;
+            default -> throw new IllegalStateException( format( "The maxValue for valueGroup %s is not defined yet", valueGroup ) );
+        };
     }
 }
