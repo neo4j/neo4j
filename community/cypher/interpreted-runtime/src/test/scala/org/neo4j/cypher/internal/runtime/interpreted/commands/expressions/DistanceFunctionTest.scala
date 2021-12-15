@@ -50,22 +50,22 @@ class DistanceFunctionTest extends CypherFunSuite {
     p1.getCoordinateReferenceSystem.getCalculator.distance(p1, p2)
 
   test("should calculate correct bounding box for WGS84") {
-    testBoundingBox((x, y) => Values.pointValue(CoordinateReferenceSystem.WGS84, x, y))
+    testBoundingBox((x, y) => Values.pointValue(CoordinateReferenceSystem.WGS_84, x, y))
   }
 
   test("should calculate correct bounding box for WGS84-3D") {
-    testBoundingBox((x, y) => Values.pointValue(CoordinateReferenceSystem.WGS84_3D, x, y, 100))
+    testBoundingBox((x, y) => Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, x, y, 100))
   }
 
   test("distance zero bounding box returns same point in WGS84") {
-    val point = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 0)
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS_84, 0, 0)
     val (bottomLeft, topRight) = boundingBoxLengthOne(point, 0.0)
     bottomLeft should equal(point)
     topRight should equal(point)
   }
 
   test("bounding box touching the date line from west") {
-    val point = Values.pointValue(CoordinateReferenceSystem.WGS84, -180, 0)
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS_84, -180, 0)
     val boxes = boundingBox(point, 1000.0)
     boxes should have length 2
     val ((bottomLeft1, topRight1), (bottomLeft2, topRight2)) = (boxes.head, boxes(1))
@@ -79,7 +79,7 @@ class DistanceFunctionTest extends CypherFunSuite {
   }
 
   test("bounding box touching the date line from east") {
-    val point = Values.pointValue(CoordinateReferenceSystem.WGS84, 180, 0)
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS_84, 180, 0)
     val boxes = boundingBox(point, 1000.0)
     boxes should have length 2
     val ((bottomLeft1, topRight1), (bottomLeft2, topRight2)) = (boxes.head, boxes(1))
@@ -93,14 +93,14 @@ class DistanceFunctionTest extends CypherFunSuite {
   }
 
   test("distance should account for wraparound in longitude in WGS84") {
-    val farWest = Values.pointValue(CoordinateReferenceSystem.WGS84, -179.99, 0)
-    val farEast = Values.pointValue(CoordinateReferenceSystem.WGS84, 179.99, 0)
+    val farWest = Values.pointValue(CoordinateReferenceSystem.WGS_84, -179.99, 0)
+    val farEast = Values.pointValue(CoordinateReferenceSystem.WGS_84, 179.99, 0)
 
     distance(farEast, farWest) should be < EARTH_RADIUS_METERS / 100.0
   }
 
   test("bounding box including the north pole should be extended to all longitudes in WGS84") {
-    val farNorth = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 90.0)
+    val farNorth = Values.pointValue(CoordinateReferenceSystem.WGS_84, 0, 90.0)
     val (bottomLeft, topRight) = boundingBoxLengthOne(farNorth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     topRight.coordinate()(0) should be(180)
@@ -108,7 +108,7 @@ class DistanceFunctionTest extends CypherFunSuite {
   }
 
   test("bounding box including the south pole should be extended to all longitudes in WGS84") {
-    val farSouth = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, -90.0)
+    val farSouth = Values.pointValue(CoordinateReferenceSystem.WGS_84, 0, -90.0)
     val (bottomLeft, topRight) = boundingBoxLengthOne(farSouth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     bottomLeft.coordinate()(1) should be(-90)
@@ -117,21 +117,21 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("distance should account for poles in WGS84") {
     implicit val doubleEquality = TolerantNumerics.tolerantDoubleEquality(0.0001)
-    val np = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, -90)
-    val alsoNP = Values.pointValue(CoordinateReferenceSystem.WGS84, -180, -90)
+    val np = Values.pointValue(CoordinateReferenceSystem.WGS_84, 0, -90)
+    val alsoNP = Values.pointValue(CoordinateReferenceSystem.WGS_84, -180, -90)
 
     distance(np, alsoNP) should equal(0.0)
   }
 
   test("distance zero bounding box returns same point in WGS84-3D") {
-    val point = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 0)
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 0, 0, 0)
     val (bottomLeft, topRight) = boundingBoxLengthOne(point, 0.0)
     bottomLeft should equal(point)
     topRight should equal(point)
   }
 
   test("bounding box touching the date line from west in WGS84-3D") {
-    val point = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, -180, 0, 0)
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, -180, 0, 0)
     val boxes = boundingBox(point, 1000.0)
     boxes should have length 2
     val ((bottomLeft1, topRight1), (bottomLeft2, topRight2)) = (boxes.head, boxes(1))
@@ -150,7 +150,7 @@ class DistanceFunctionTest extends CypherFunSuite {
   }
 
   test("bounding box touching the date line from east in WGS84-3D") {
-    val point = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 180, 0, 0)
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 180, 0, 0)
     val boxes = boundingBox(point, 1000.0)
     boxes should have length 2
     val ((bottomLeft1, topRight1), (bottomLeft2, topRight2)) = (boxes.head, boxes(1))
@@ -169,14 +169,14 @@ class DistanceFunctionTest extends CypherFunSuite {
   }
 
   test("distance should account for wraparound in longitude in WGS84-3D") {
-    val farWest = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, -179.99, 0, 0)
-    val farEast = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 179.99, 0, 0)
+    val farWest = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, -179.99, 0, 0)
+    val farEast = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 179.99, 0, 0)
 
     distance(farEast, farWest) should be < EARTH_RADIUS_METERS / 100.0
   }
 
   test("bounding box including the north pole should be extended to all longitudes in WGS84-3D") {
-    val farNorth = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 90.0, 0)
+    val farNorth = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 0, 90.0, 0)
     val (bottomLeft, topRight) = boundingBoxLengthOne(farNorth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     topRight.coordinate()(0) should be(180)
@@ -184,7 +184,7 @@ class DistanceFunctionTest extends CypherFunSuite {
   }
 
   test("bounding box including the south pole should be extended to all longitudes in WGS84-3D") {
-    val farSouth = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, -90.0, 0)
+    val farSouth = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 0, -90.0, 0)
     val (bottomLeft, topRight) = boundingBoxLengthOne(farSouth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     bottomLeft.coordinate()(1) should be(-90)
@@ -193,15 +193,15 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("distance should account for poles in WGS84-3D") {
     implicit val doubleEquality = TolerantNumerics.tolerantDoubleEquality(0.0001)
-    val np = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, -90, 0)
-    val alsoNP = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, -180, -90, 0)
+    val np = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 0, -90, 0)
+    val alsoNP = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, -180, -90, 0)
 
     distance(np, alsoNP) should equal(0.0)
   }
 
   test("bounding box should gives reasonable results in WGS84") {
     implicit val doubleEquality = TolerantNumerics.tolerantDoubleEquality(0.0001)
-    val malmo = Values.pointValue(CoordinateReferenceSystem.WGS84, 13.0, 56.0)
+    val malmo = Values.pointValue(CoordinateReferenceSystem.WGS_84, 13.0, 56.0)
     val (bottomLeft, topRight) = boundingBoxLengthOne(malmo, 1000.0)
     bottomLeft.coordinate()(0) should equal(12.984)
     bottomLeft.coordinate()(1) should equal(55.991)
@@ -211,7 +211,7 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("bounding box should consider height in WGS84-3D") {
     implicit val doubleEquality = TolerantNumerics.tolerantDoubleEquality(0.0001)
-    val malmo = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 13.0, 56.0, 1000)
+    val malmo = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 13.0, 56.0, 1000)
     val (bottomLeft, topRight) = boundingBoxLengthOne(malmo, 1000.0)
     bottomLeft.coordinate()(0) should equal(12.984)
     bottomLeft.coordinate()(1) should equal(55.991)
@@ -222,16 +222,16 @@ class DistanceFunctionTest extends CypherFunSuite {
   }
 
   test("distance with WGS-84-3D should work with opposite points on the earth surface") {
-    val high = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, -90, 0, 0)
-    val low = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 90, 0, 0)
+    val high = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, -90, 0, 0)
+    val low = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 90, 0, 0)
 
     distance(high, low) should equal(Math.PI * EARTH_RADIUS_METERS)
   }
 
   test("distance with WGS-84-3D should work with opposite points and high heights") {
     val height = 35786000 // geostationary orbit height
-    val high = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, -90, 0, height)
-    val low = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 90, 0, height)
+    val high = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, -90, 0, height)
+    val low = Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 90, 0, height)
 
     distance(high, low) should equal(Math.PI * (EARTH_RADIUS_METERS + height))
   }
@@ -348,7 +348,7 @@ class DistanceFunctionTest extends CypherFunSuite {
     val long2 = long1 + Math.atan2(Math.sin(brng) * Math.sin(d / R) * Math.cos(lat1), Math.cos(d / R) - Math.sin(lat1) * Math.sin(lat2))
     val normLong2 = (long2 + 3 * Math.PI) % (2 * Math.PI) - Math.PI
 
-    Values.pointValue(CoordinateReferenceSystem.WGS84, Math.toDegrees(normLong2), Math.toDegrees(lat2))
+    Values.pointValue(CoordinateReferenceSystem.WGS_84, Math.toDegrees(normLong2), Math.toDegrees(lat2))
   }
 
 }

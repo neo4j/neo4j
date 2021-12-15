@@ -133,12 +133,12 @@ class ExtremeValuesLibrary
             PointValue.MAX_VALUE_CARTESIAN_3D
     };
     static final Value[] EXTREME_GEOGRAPHIC_POINT = new Value[]{
-            PointValue.MIN_VALUE_WGS84,
-            PointValue.MAX_VALUE_WGS84
+            PointValue.MIN_VALUE_WGS_84,
+            PointValue.MAX_VALUE_WGS_84
     };
     static final Value[] EXTREME_GEOGRAPHIC_POINT_3D = new Value[]{
-            PointValue.MIN_VALUE_WGS84_3D,
-            PointValue.MAX_VALUE_WGS84_3D
+            PointValue.MIN_VALUE_WGS_84_3D,
+            PointValue.MAX_VALUE_WGS_84_3D
     };
     static final Value[] EXTREME_BOOLEAN_ARRAY = new Value[]{
             Values.of( new boolean[0] ),
@@ -226,10 +226,10 @@ class ExtremeValuesLibrary
     };
     static final Value[] EXTREME_GEOGRAPHIC_POINT_ARRAY = new Value[]{
             Values.of( new PointValue[0] ),
-            Values.of( new PointValue[]{PointValue.MAX_VALUE_WGS84} )
+            Values.of( new PointValue[]{PointValue.MAX_VALUE_WGS_84} )
     };
     static final Value[] EXTREME_GEOGRAPHIC_POINT_3D_ARRAY = new Value[]{
             Values.of( new PointValue[0] ),
-            Values.of( new PointValue[]{PointValue.MAX_VALUE_WGS84_3D} )
+            Values.of( new PointValue[]{PointValue.MAX_VALUE_WGS_84_3D} )
     };
 }

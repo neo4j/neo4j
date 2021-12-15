@@ -39,8 +39,8 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.Values.pointValue;
 
 public class PointTypeIT extends AbstractRestFunctionalTestBase
@@ -80,9 +80,9 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
                 {
                     Point[] points = (Point[]) node.getProperty( "points" );
 
-                    verifyPoint( points[0], Cartesian, 1.0, 1.0 );
-                    verifyPoint( points[1], Cartesian, 2.0, 2.0 );
-                    verifyPoint( points[2], Cartesian, 3.0, 3.0 );
+                    verifyPoint( points[0], CARTESIAN, 1.0, 1.0 );
+                    verifyPoint( points[1], CARTESIAN, 2.0, 2.0 );
+                    verifyPoint( points[2], CARTESIAN, 3.0, 3.0 );
                 }
             }
             tx.commit();
@@ -92,13 +92,13 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldReturnPoint2DWithXAndY() throws Exception
     {
-        testPoint( "RETURN point({x: 42.05, y: 90.99})", new double[]{42.05, 90.99}, Cartesian, "point" );
+        testPoint( "RETURN point({x: 42.05, y: 90.99})", new double[]{42.05, 90.99}, CARTESIAN, "point" );
     }
 
     @Test
     public void shouldReturnPoint2DWithLatitudeAndLongitude() throws Exception
     {
-        testPoint( "RETURN point({longitude: 56.7, latitude: 12.78})", new double[]{56.7, 12.78}, WGS84, "point" );
+        testPoint( "RETURN point({longitude: 56.7, latitude: 12.78})", new double[]{56.7, 12.78}, WGS_84, "point" );
     }
 
     @Test
@@ -109,7 +109,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 74.081602 )} );
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS_84, 30.655691, 74.081602 )} );
             node.setProperty( "location", "Shanghai" );
             node.setProperty( "type", "gps" );
             tx.commit();
@@ -126,7 +126,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
                 .get( "coordinates" ).get( 0 );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
         assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
-        assertCrsEqual( WGS84, row );
+        assertCrsEqual( WGS_84, row );
     }
 
     @Test
@@ -137,7 +137,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 74.081602 ) );
+            node.setProperty( "coordinates", pointValue( WGS_84, 30.655691, 74.081602 ) );
             node.setProperty( "location", "Shanghai" );
             node.setProperty( "type", "gps" );
             tx.commit();
@@ -154,7 +154,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
                 .get( 0 ).get( "data" ).get( "coordinates" );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
         assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
-        assertCrsEqual( WGS84, row );
+        assertCrsEqual( WGS_84, row );
     }
 
     @Test
@@ -165,7 +165,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 74.081602 ) );
+            node.setProperty( "coordinates", pointValue( WGS_84, 30.655691, 74.081602 ) );
             tx.commit();
         }
 
@@ -180,7 +180,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
                 .get("nodes").get( 0 ).get( "properties" ).get( "coordinates" );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
         assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
-        assertCrsEqual( WGS84, row );
+        assertCrsEqual( WGS_84, row );
     }
 
     @Test
@@ -191,7 +191,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 74.081602 )});
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS_84, 30.655691, 74.081602 )});
             tx.commit();
         }
 
@@ -206,7 +206,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
                 .get( 0 ).get( "data" ).get( "coordinates" ).get( 0 );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
         assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
-        assertCrsEqual( WGS84, row );
+        assertCrsEqual( WGS_84, row );
     }
 
     @Test
@@ -217,7 +217,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 74.081602 )});
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS_84, 30.655691, 74.081602 )});
             tx.commit();
         }
 
@@ -232,7 +232,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
                 .get("nodes").get( 0 ).get( "properties" ).get( "coordinates" ).get( 0 );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
         assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
-        assertCrsEqual( WGS84, row );
+        assertCrsEqual( WGS_84, row );
     }
 
     private static void testPoint( String query, double[] expectedCoordinate, CoordinateReferenceSystem expectedCrs, String expectedType ) throws Exception

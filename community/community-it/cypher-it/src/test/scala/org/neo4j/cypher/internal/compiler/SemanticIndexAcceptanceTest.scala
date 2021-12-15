@@ -133,13 +133,13 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
       x <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -180 <= d && d <= 180)
       y <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -90 <= d && d <= 90)
       z <- arbitrary[Double].retryUntil(java.lang.Double.isFinite(_))
-    } yield Values.pointValue(CoordinateReferenceSystem.WGS84_3D, x, y, z)
+    } yield Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, x, y, z)
 
   def wgs84_2D_pointGen: Gen[PointValue] =
     for {
       x <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -180 <= d && d <= 180)
       y <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -90 <= d && d <= 90)
-    } yield Values.pointValue(CoordinateReferenceSystem.WGS84, x, y)
+    } yield Values.pointValue(CoordinateReferenceSystem.WGS_84, x, y)
 
   def timeGen: Gen[TimeValue] =
     for { // stay one second off min and max time, to allow getting a bigger and smaller value

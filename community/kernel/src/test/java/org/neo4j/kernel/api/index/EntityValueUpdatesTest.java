@@ -98,7 +98,7 @@ class EntityValueUpdatesTest
     private static final StorageProperty PROPERTY_1 = new PropertyKeyValue( PROPERTY_KEY_ID_1, Values.of( "Neo" ) );
     private static final StorageProperty PROPERTY_2 = new PropertyKeyValue( PROPERTY_KEY_ID_2, Values.of( 100L ) );
     private static final StorageProperty PROPERTY_3 =
-            new PropertyKeyValue( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) );
+            new PropertyKeyValue( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.3, 45.6 ) );
     private static final Value[] VALUES_123 = new Value[]{PROPERTY_1.value(), PROPERTY_2.value(), PROPERTY_3.value()};
 
     @ParameterizedTest
@@ -156,7 +156,7 @@ class EntityValueUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( TOKEN )
                                              .existing( PROPERTY_KEY_ID_1, Values.of( "Neo" ) )
                                              .existing( PROPERTY_KEY_ID_2, Values.of( 100L ) )
-                                             .existing( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
+                                             .existing( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.3, 45.6 ) )
                                              .build();
 
         // Then
@@ -194,7 +194,7 @@ class EntityValueUpdatesTest
                 EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( EMPTY ).withTokensAfter( TOKEN )
                              .existing( PROPERTY_KEY_ID_1, Values.of( "Neo" ) )
                              .existing( PROPERTY_KEY_ID_2, Values.of( 100L ) )
-                             .existing( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
+                             .existing( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.3, 45.6 ) )
                              .build();
 
         // Then
@@ -217,7 +217,7 @@ class EntityValueUpdatesTest
         EntityUpdates updates =
                 EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( TOKEN ).withTokensAfter( TOKEN )
                              .added( PROPERTY_KEY_ID_1, Values.of( "Neo" ) )
-                             .added( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
+                             .added( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.3, 45.6 ) )
                              .build();
 
         // Then
@@ -233,7 +233,7 @@ class EntityValueUpdatesTest
         EntityUpdates updates =
                 EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( TOKEN ).withTokensAfter( TOKEN )
                              .added( PROPERTY_KEY_ID_1, Values.of( "Neo" ) )
-                             .added( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
+                             .added( PROPERTY_KEY_ID_3, Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.3, 45.6 ) )
                              .build();
 
         // Then
@@ -442,7 +442,7 @@ class EntityValueUpdatesTest
         // When
         Value newValue1 = Values.of( "Nio" );
         Value newValue2 = Values.of( 10L );
-        Value newValue3 = Values.pointValue( CoordinateReferenceSystem.WGS84, 32.3, 15.6 );
+        Value newValue3 = Values.pointValue( CoordinateReferenceSystem.WGS_84, 32.3, 15.6 );
         EntityUpdates updates =
                 EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( TOKEN ).withTokensAfter( TOKEN )
                              .changed( PROPERTY_1.propertyKeyId(), PROPERTY_1.value(), newValue1 )

@@ -57,8 +57,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -168,12 +168,12 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
     {
         Config config = Config.defaults();
         IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
-        SpaceFillingCurve curve = indexSettings.forCrs( WGS84 );
+        SpaceFillingCurve curve = indexSettings.forCrs( WGS_84 );
 
         // given
         // Many random points that all are close enough to each other to belong to the same tile on the space filling curve.
         int nbrOfValues = 10000;
-        PointValue origin = pointValue( WGS84, 0.0, 0.0 );
+        PointValue origin = pointValue( WGS_84, 0.0, 0.0 );
         Long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
         double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint );
         double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2;
@@ -192,10 +192,10 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                 double x2 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
                 double y1 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
                 double y2 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
-                expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
-                expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
-                expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
-                expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
+                expected.add( entityWithProp( tx, pointValue( WGS_84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
+                expected.add( entityWithProp( tx, pointValue( WGS_84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
+                expected.add( entityWithProp( tx, pointValue( WGS_84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
+                expected.add( entityWithProp( tx, pointValue( WGS_84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
             }
 
             tx.commit();
@@ -216,10 +216,10 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                     double x2 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
                     double y1 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
                     double y2 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
-                    expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
-                    expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
-                    expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
-                    expected.add( entityWithProp( tx, pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
+                    expected.add( entityWithProp( tx, pointValue( WGS_84, centerPoint[0] + x1, centerPoint[1] + y1 ) ) );
+                    expected.add( entityWithProp( tx, pointValue( WGS_84, centerPoint[0] + x1, centerPoint[1] + y2 ) ) );
+                    expected.add( entityWithProp( tx, pointValue( WGS_84, centerPoint[0] + x2, centerPoint[1] + y1 ) ) );
+                    expected.add( entityWithProp( tx, pointValue( WGS_84, centerPoint[0] + x2, centerPoint[1] + y2 ) ) );
                 }
                 expected.add( entityWithProp( tx, "c" ) );
                 expected.add( entityWithProp( tx, "d" ) );
@@ -1205,7 +1205,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                           IntStream.of( -1, +1 ),
                           IntStream.of( +1, +1 ) )
                      .map( rs -> rs.mapToDouble( r -> r * scale ) )
-                     .map( rs -> pointValue( Cartesian, rs.toArray() ) );
+                     .map( rs -> pointValue( CARTESIAN, rs.toArray() ) );
     }
 
     // Values.of cannot take an instance of Value; have to pass as Object[]

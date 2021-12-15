@@ -147,17 +147,17 @@ class AppendOnlyValuesContainerTest
                 testInput( "StringArray", Values::stringArray, new String[] {"", "x", "foobar"}, EMPTY_STRING_ARRAY ),
 
                 testInput( "Point", input -> pointValue( input.getOne(), input.getTwo() ),
-                        Tuples.pair( CoordinateReferenceSystem.WGS84, new double[] {1.0, 2.0} ),
-                        Tuples.pair( CoordinateReferenceSystem.WGS84_3D, new double[] {1.0, 2.0, 3.0} ),
-                        Tuples.pair( CoordinateReferenceSystem.Cartesian, new double[] {1.0, 2.0} ),
-                        Tuples.pair( CoordinateReferenceSystem.Cartesian_3D, new double[] {1.0, 2.0, 3.0} )
+                        Tuples.pair( CoordinateReferenceSystem.WGS_84, new double[] {1.0, 2.0} ),
+                        Tuples.pair( CoordinateReferenceSystem.WGS_84_3D, new double[] {1.0, 2.0, 3.0} ),
+                        Tuples.pair( CoordinateReferenceSystem.CARTESIAN, new double[] {1.0, 2.0} ),
+                        Tuples.pair( CoordinateReferenceSystem.CARTESIAN_3D, new double[] {1.0, 2.0, 3.0} )
                 ),
                 testInput( "PointArray", Values::pointArray,
                         new Point[] {
-                                pointValue( CoordinateReferenceSystem.WGS84, 1.0, 2.0 ),
-                                pointValue( CoordinateReferenceSystem.WGS84_3D, 1.0, 2.0, 3.0 ),
-                                pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 2.0 ),
-                                pointValue( CoordinateReferenceSystem.Cartesian_3D, 1.0, 2.0, 3.0 )
+                                pointValue( CoordinateReferenceSystem.WGS_84, 1.0, 2.0 ),
+                                pointValue( CoordinateReferenceSystem.WGS_84_3D, 1.0, 2.0, 3.0 ),
+                                pointValue( CoordinateReferenceSystem.CARTESIAN, 1.0, 2.0 ),
+                                pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 1.0, 2.0, 3.0 )
                         }, new Point[0]
                 ),
 

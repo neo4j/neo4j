@@ -170,7 +170,7 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
 
     private Value point( int x, int y )
     {
-        return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
+        return Values.pointValue( CoordinateReferenceSystem.CARTESIAN, x, y );
     }
 
     @Override

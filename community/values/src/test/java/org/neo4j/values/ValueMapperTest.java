@@ -40,8 +40,8 @@ import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DurationValue.duration;
@@ -119,8 +119,8 @@ class ValueMapperTest
                 time( 10, 36, 43, 123456788, ZoneOffset.ofHours( 1 ) ),
                 localTime( 10, 36, 43, 123456788 ),
                 duration( 399, 4, 48424, 133701337 ),
-                pointValue( Cartesian, 11, 32 ),
-                pointArray( new Point[] {pointValue( Cartesian, 11, 32 ), pointValue( WGS84, 13, 56 )} ) );
+                pointValue( CARTESIAN, 11, 32 ),
+                pointArray( new Point[] {pointValue( CARTESIAN, 11, 32 ), pointValue( WGS_84, 13, 56 )} ) );
     }
 
     @ParameterizedTest

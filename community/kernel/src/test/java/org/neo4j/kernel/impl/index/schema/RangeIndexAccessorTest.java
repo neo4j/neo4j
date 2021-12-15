@@ -39,7 +39,6 @@ import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
@@ -106,7 +105,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
     @Test
     void readerShouldThrowOnGeometryRangeQueries()
     {
-        PropertyIndexQuery.RangePredicate<?> geometryRangePredicate = PropertyIndexQuery.range( 0, CoordinateReferenceSystem.Cartesian );
+        PropertyIndexQuery.RangePredicate<?> geometryRangePredicate = PropertyIndexQuery.range( 0, CoordinateReferenceSystem.CARTESIAN );
 
         try ( var reader = accessor.newValueReader() )
         {

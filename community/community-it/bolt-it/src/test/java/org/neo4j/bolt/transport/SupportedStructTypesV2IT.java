@@ -49,8 +49,8 @@ import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.StreamConditions.eqRecord;
 import static org.neo4j.bolt.testing.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.bolt.transport.Neo4jWithSocket.withOptionalBoltEncryption;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DurationValue.duration;
@@ -134,7 +134,7 @@ public class SupportedStructTypesV2IT
     {
         initConnection( connectionClass );
 
-        testSendingOfBoltV2Value( pointValue( WGS84, 39.111748, -76.775635 ) );
+        testSendingOfBoltV2Value( pointValue( WGS_84, 39.111748, -76.775635 ) );
     }
 
     @ParameterizedTest( name = "{displayName} {0}" )
@@ -143,7 +143,7 @@ public class SupportedStructTypesV2IT
     {
         initConnection( connectionClass );
 
-        testReceivingOfBoltV2Value( "RETURN point({x: 40.7624, y: 73.9738})", pointValue( Cartesian, 40.7624, 73.9738 ) );
+        testReceivingOfBoltV2Value( "RETURN point({x: 40.7624, y: 73.9738})", pointValue( CARTESIAN, 40.7624, 73.9738 ) );
     }
 
     @ParameterizedTest( name = "{displayName} {0}" )
@@ -152,7 +152,7 @@ public class SupportedStructTypesV2IT
     {
         initConnection( connectionClass );
 
-        testSendingAndReceivingOfBoltV2Value( pointValue( WGS84, 38.8719, 77.0563 ) );
+        testSendingAndReceivingOfBoltV2Value( pointValue( WGS_84, 38.8719, 77.0563 ) );
     }
 
     @ParameterizedTest( name = "{displayName} {0}" )

@@ -50,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.Values.pointValue;
 
 class TestPropertyTypes extends AbstractNeo4jTestCase
@@ -422,7 +422,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     void testPointType()
     {
-        Point point = pointValue( Cartesian, 1, 1 );
+        Point point = pointValue( CARTESIAN, 1, 1 );
         String key = "location";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
@@ -441,7 +441,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     void testPointTypeWithOneOtherProperty()
     {
-        Point point = pointValue( Cartesian, 1, 1 );
+        Point point = pointValue( CARTESIAN, 1, 1 );
         String key = "location";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
@@ -463,7 +463,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     void testPointTypeWithTwoOtherProperties()
     {
-        Point point = pointValue( Cartesian, 1, 1 );
+        Point point = pointValue( CARTESIAN, 1, 1 );
         String key = "location";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
@@ -486,7 +486,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     void test3DPointType()
     {
-        Point point = pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 1, 1 );
+        Point point = pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 1, 1, 1 );
         String key = "location";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
@@ -510,15 +510,15 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
             assertThrows( IllegalArgumentException.class, () -> transaction.getNodeById( node1.getId() ).setProperty( "location",
-                    pointValue( Cartesian, 1, 1, 1, 1 ) ) );
+                    pointValue( CARTESIAN, 1, 1, 1, 1 ) ) );
         }
     }
 
     @Test
     void testPointArray()
     {
-        Point[] array = {pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 1, 1 ),
-                                    pointValue( CoordinateReferenceSystem.Cartesian_3D, 2, 1, 3 )};
+        Point[] array = {pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 1, 1, 1 ),
+                                    pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 2, 1, 3 )};
         String key = "testpointarray";
         try ( Transaction transaction = getGraphDb().beginTx() )
         {

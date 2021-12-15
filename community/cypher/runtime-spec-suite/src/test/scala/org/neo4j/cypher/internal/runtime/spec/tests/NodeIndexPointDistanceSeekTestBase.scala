@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
-import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D
-import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84
-import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
+import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN
+import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D
+import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84
+import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D
 import org.neo4j.values.storable.Values.pointValue
 
 abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
@@ -41,7 +41,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(Cartesian, i, 0))
+        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
     }
 
@@ -62,7 +62,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(Cartesian, i, 0))
+        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
     }
 
@@ -83,7 +83,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(Cartesian_3D, i, 0, 0))
+        case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
       }, "Place")
     }
 
@@ -104,7 +104,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(Cartesian_3D, i, 0, 0))
+        case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
       }, "Place")
     }
 
@@ -125,13 +125,13 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(180, {
-        case i => Map("location" -> pointValue(WGS84, i % 180, 0))
+        case i => Map("location" -> pointValue(WGS_84, i % 180, 0))
       }, "Place")
     }
 
     // when
-    val d = WGS84.getCalculator.distance( pointValue(WGS84, 0, 0),
-                                          pointValue(WGS84, 10, 0))
+    val d = WGS_84.getCalculator.distance( pointValue(WGS_84, 0, 0),
+                                          pointValue(WGS_84, 10, 0))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
@@ -148,13 +148,13 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(180, {
-        case i => Map("location" -> pointValue(WGS84_3D, i % 180, 0, 0))
+        case i => Map("location" -> pointValue(WGS_84_3D, i % 180, 0, 0))
       }, "Place")
     }
 
     // when
-    val d = WGS84_3D.getCalculator.distance( pointValue(WGS84_3D, 0, 0, 0),
-                                             pointValue(WGS84_3D, 10, 0, 0))
+    val d = WGS_84_3D.getCalculator.distance( pointValue(WGS_84_3D, 0, 0, 0),
+                                             pointValue(WGS_84_3D, 10, 0, 0))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
@@ -172,7 +172,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(Cartesian, i, 0))
+        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
     }
 
@@ -190,8 +190,8 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     //then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location")
-      .withRows(singleColumn(List(pointValue(Cartesian, 0, 0),
-                                  pointValue(Cartesian, 1, 0),
-                                  pointValue(Cartesian, 2, 0))))
+      .withRows(singleColumn(List(pointValue(CARTESIAN, 0, 0),
+                                  pointValue(CARTESIAN, 1, 0),
+                                  pointValue(CARTESIAN, 2, 0))))
   }
 }

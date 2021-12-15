@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.spatial.Point
-import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
-import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D
-import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84
-import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
+import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN
+import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D
+import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84
+import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D
 import org.neo4j.values.storable.Values.pointValue
 
 import scala.util.Random
@@ -44,7 +44,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(Cartesian, i, 0))
+        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
     }
 
@@ -65,7 +65,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(Cartesian_3D, i, 0, 0))
+        case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
       }, "Place")
     }
 
@@ -86,7 +86,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(180, {
-        case i => Map("location" -> pointValue(WGS84, i % 180, 0))
+        case i => Map("location" -> pointValue(WGS_84, i % 180, 0))
       }, "Place")
     }
 
@@ -107,7 +107,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(180, {
-        case i => Map("location" -> pointValue(WGS84_3D, i % 180, 0, 0))
+        case i => Map("location" -> pointValue(WGS_84_3D, i % 180, 0, 0))
       }, "Place")
     }
 
@@ -130,7 +130,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     given {
       nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(Cartesian, i, 0))
+        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
     }
 
@@ -147,9 +147,9 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
     //then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location")
-      .withRows(singleColumn(List(pointValue(Cartesian, 0, 0),
-                                  pointValue(Cartesian, 1, 0),
-                                  pointValue(Cartesian, 2, 0))))
+      .withRows(singleColumn(List(pointValue(CARTESIAN, 0, 0),
+                                  pointValue(CARTESIAN, 1, 0),
+                                  pointValue(CARTESIAN, 2, 0))))
   }
 
   test("should handle bbox on the north-western hemisphere") {
@@ -159,7 +159,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -188,7 +188,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -217,7 +217,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -246,7 +246,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -275,7 +275,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -303,7 +303,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -331,7 +331,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -359,7 +359,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -387,7 +387,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -415,7 +415,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -443,7 +443,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -471,7 +471,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -499,7 +499,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case _ =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          Map("location" -> pointValue(WGS84, longitude, latitude ))
+          Map("location" -> pointValue(WGS_84, longitude, latitude ))
       }, "Place")
     }
 
@@ -523,7 +523,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
           val height = Random.nextInt(1000)
-          Map("location" -> pointValue(WGS84_3D, longitude, latitude, height ))
+          Map("location" -> pointValue(WGS_84_3D, longitude, latitude, height ))
       }, "Place")
     }
 
@@ -555,16 +555,16 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
         case i => Map("location" -> i)
       }, "Place")
       nodePropertyGraph(100, {
-        case i => Map("location" -> pointValue(WGS84, i, 0))
+        case i => Map("location" -> pointValue(WGS_84, i, 0))
       }, "Place")
       nodePropertyGraph(100, {
-        case i => Map("location" -> pointValue(WGS84_3D, i, 0, 0))
+        case i => Map("location" -> pointValue(WGS_84_3D, i, 0, 0))
       }, "Place")
       nodePropertyGraph(100, {
-        case i => Map("location" -> pointValue(Cartesian_3D, i, 0, 0))
+        case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
       }, "Place")
       nodePropertyGraph(sizeHint, {
-        case i => Map("location" -> pointValue(Cartesian, i, 0))
+        case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
     }
 

@@ -159,25 +159,25 @@ class IndexKeyStateCompareTest
         if ( includeGeometry )
         {
             values = new ArrayList<>( values );
-            values.add( Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 ) );
+            values.add( Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.78, 56.7 ) );
             values.add( Values.pointArray( new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.7566548, 56.7163465 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.13413478, 56.1343457 )
+                    Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.7566548, 56.7163465 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.13413478, 56.1343457 )
             } ) );
-            values.add( Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.78, 56.7, 666 ) );
+            values.add( Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.78, 56.7, 666 ) );
             values.add( Values.pointArray( new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.7566548, 56.7163465, 666 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.13413478, 56.1343457, 555 )
+                    Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.7566548, 56.7163465, 666 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.13413478, 56.1343457, 555 )
             } ) );
-            values.add( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0.0000043, -0.0000000012341025786543 ) );
+            values.add( Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0.0000043, -0.0000000012341025786543 ) );
             values.add( Values.pointArray( new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 0.0000043, -0.0000000012341025786543 ),
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 0.2000043, -0.0300000012341025786543 )
+                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0.0000043, -0.0000000012341025786543 ),
+                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0.2000043, -0.0300000012341025786543 )
             } ) );
-            values.add( Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 0.0000043, -0.0000000012341025786543, 666 ) );
+            values.add( Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 0.0000043, -0.0000000012341025786543, 666 ) );
             values.add( Values.pointArray( new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 0.0000043, -0.0000000012341025786543, 666 ),
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 0.2000043, -0.0300000012341025786543, 555 )
+                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 0.0000043, -0.0000000012341025786543, 666 ),
+                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 0.2000043, -0.0300000012341025786543, 555 )
             } ) );
         }
 

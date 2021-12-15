@@ -469,7 +469,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             {
                 Node node = tx.createNode( label );
                 Object value = i % 2 == 0 ?
-                               Values.pointValue( CoordinateReferenceSystem.Cartesian, i, i ) :
+                               Values.pointValue( CoordinateReferenceSystem.CARTESIAN, i, i ) :
                                DurationValue.duration( 0, 0, i, 0 );
                 node.setProperty( KEY1, value );
                 if ( i % 3 ==  0 )

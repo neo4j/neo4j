@@ -134,10 +134,10 @@ abstract class SupportPartitionedScanTestSuite
         EXACT_NUMBER_ARRAY( id -> PropertyIndexQuery.exact( id, new int[]{-999, 999} ) ),
         EXACT_TEXT( id -> PropertyIndexQuery.exact( id, "foo" ) ),
         EXACT_TEXT_ARRAY( id -> PropertyIndexQuery.exact( id, new String[]{"foo", "bar"} ) ),
-        EXACT_GEOMETRY( id -> PropertyIndexQuery.exact( id, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.994807, 55.612088 ) ) ),
+        EXACT_GEOMETRY( id -> PropertyIndexQuery.exact( id, Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.994807, 55.612088 ) ) ),
         EXACT_GEOMETRY_ARRAY( id ->
-            PropertyIndexQuery.exact( id, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 12.994807, 55.612088 ),
-                                                           Values.pointValue( CoordinateReferenceSystem.WGS84, -0.101008, 51.503773 )} ) ),
+            PropertyIndexQuery.exact( id, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.994807, 55.612088 ),
+                                                           Values.pointValue( CoordinateReferenceSystem.WGS_84, -0.101008, 51.503773 )} ) ),
         EXACT_TEMPORAL( id -> PropertyIndexQuery.exact( id, ZonedDateTime.now() ) ),
         EXACT_TEMPORAL_ARRAY( id -> PropertyIndexQuery.exact( id, new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().plusWeeks( 2 )} ) ),
         EXACT_BOOLEAN( id -> PropertyIndexQuery.exact( id, true ) ),
@@ -151,13 +151,13 @@ abstract class SupportPartitionedScanTestSuite
         RANGE_TEXT_ARRAY( id ->
             PropertyIndexQuery.range( id, Values.of( new String[]{"abc", "def"} ), true, Values.of( new String[]{"xyz", "uvw"} ), false ) ),
         RANGE_GEOMETRY( id ->
-            PropertyIndexQuery.range( id, Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 ), true,
-                                          Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 90 ), true ) ),
+            PropertyIndexQuery.range( id, Values.pointValue( CoordinateReferenceSystem.WGS_84, 0, 0 ), true,
+                                          Values.pointValue( CoordinateReferenceSystem.WGS_84, 0, 90 ), true ) ),
         RANGE_GEOMETRY_ARRAY( id ->
-            PropertyIndexQuery.range( id, Values.of( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 ),
-                                                                      Values.pointValue( CoordinateReferenceSystem.WGS84, 180, 0 )} ), true,
-                                          Values.of( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 90 ),
-                                                                      Values.pointValue( CoordinateReferenceSystem.WGS84, 180, -90 )} ), true ) ),
+            PropertyIndexQuery.range( id, Values.of( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS_84, 0, 0 ),
+                                                                      Values.pointValue( CoordinateReferenceSystem.WGS_84, 180, 0 )} ), true,
+                                          Values.of( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS_84, 0, 90 ),
+                                                                      Values.pointValue( CoordinateReferenceSystem.WGS_84, 180, -90 )} ), true ) ),
         RANGE_TEMPORAL( id ->
             PropertyIndexQuery.range( id, Values.of( ZonedDateTime.ofInstant( Instant.EPOCH, ZoneOffset.UTC ) ), false,
                                           Values.of( ZonedDateTime.now() ), true ) ),

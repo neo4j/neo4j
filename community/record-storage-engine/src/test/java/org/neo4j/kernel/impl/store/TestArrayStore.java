@@ -156,8 +156,8 @@ class TestArrayStore
     void pointArraysOfWgs84()
     {
         PointValue[] array = new PointValue[]{
-                Values.pointValue( CoordinateReferenceSystem.WGS84, -45.0, -45.0 ),
-                Values.pointValue( CoordinateReferenceSystem.WGS84, 12.8, 56.3 )};
+                Values.pointValue( CoordinateReferenceSystem.WGS_84, -45.0, -45.0 ),
+                Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.8, 56.3 )};
         int numberOfBitsUsedForDoubles = 64;
 
         assertPointArrayHasCorrectFormat( array, numberOfBitsUsedForDoubles );
@@ -167,8 +167,8 @@ class TestArrayStore
     void pointArraysOfCartesian()
     {
         PointValue[] array = new PointValue[]{
-                Values.pointValue( CoordinateReferenceSystem.Cartesian, -100.0, -100.0 ),
-                Values.pointValue( CoordinateReferenceSystem.Cartesian, 25.0, 50.5 )};
+                Values.pointValue( CoordinateReferenceSystem.CARTESIAN, -100.0, -100.0 ),
+                Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 25.0, 50.5 )};
         int numberOfBitsUsedForDoubles = 64;
 
         assertPointArrayHasCorrectFormat( array, numberOfBitsUsedForDoubles );
@@ -180,8 +180,8 @@ class TestArrayStore
         assertThrows( IllegalArgumentException.class, () ->
         {
             PointValue[] array =
-                    new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, longBitsToDouble( 0x1L ), longBitsToDouble( 0x7L ) ),
-                            Values.pointValue( CoordinateReferenceSystem.WGS84, longBitsToDouble( 0x1L ), longBitsToDouble( 0x1L ) )};
+                    new PointValue[]{Values.pointValue( CoordinateReferenceSystem.CARTESIAN, longBitsToDouble( 0x1L ), longBitsToDouble( 0x7L ) ),
+                            Values.pointValue( CoordinateReferenceSystem.WGS_84, longBitsToDouble( 0x1L ), longBitsToDouble( 0x1L ) )};
 
             Collection<DynamicRecord> records = new ArrayList<>();
             arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );
@@ -194,9 +194,9 @@ class TestArrayStore
         assertThrows( IllegalArgumentException.class, () ->
         {
             PointValue[] array =
-                    new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, longBitsToDouble( 0x1L ), longBitsToDouble( 0x7L ) ),
-                            Values.pointValue( CoordinateReferenceSystem.Cartesian, longBitsToDouble( 0x1L ), longBitsToDouble( 0x1L ),
-                                    longBitsToDouble( 0x4L ) )};
+                    new PointValue[]{Values.pointValue( CoordinateReferenceSystem.CARTESIAN, longBitsToDouble( 0x1L ), longBitsToDouble( 0x7L ) ),
+                            Values.pointValue( CoordinateReferenceSystem.CARTESIAN, longBitsToDouble( 0x1L ), longBitsToDouble( 0x1L ),
+                                               longBitsToDouble( 0x4L ) )};
 
             Collection<DynamicRecord> records = new ArrayList<>();
             arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );

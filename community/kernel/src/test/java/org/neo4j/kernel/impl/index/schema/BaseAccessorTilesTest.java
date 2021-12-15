@@ -58,13 +58,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
 @PageCacheExtension
 @ExtendWith( RandomExtension.class )
 abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
 {
-    private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
+    private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS_84;
     private static final Config config = Config.defaults();
     static final IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
     static final SpaceFillingCurve curve = indexSettings.forCrs( crs );
@@ -109,7 +109,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
         // given
         // Many random points that all are close enough to each other to belong to the same tile on the space filling curve.
         int nbrOfValues = 10000;
-        PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
+        PointValue origin = Values.pointValue( WGS_84, 0.0, 0.0 );
         Long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
         double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint );
         double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2;
@@ -124,10 +124,10 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
             double x2 = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
             double y1 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
             double y2 = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
-            PointValue value11 = Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y1 );
-            PointValue value12 = Values.pointValue( WGS84, centerPoint[0] + x1, centerPoint[1] + y2 );
-            PointValue value21 = Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y1 );
-            PointValue value22 = Values.pointValue( WGS84, centerPoint[0] + x2, centerPoint[1] + y2 );
+            PointValue value11 = Values.pointValue( WGS_84, centerPoint[0] + x1, centerPoint[1] + y1 );
+            PointValue value12 = Values.pointValue( WGS_84, centerPoint[0] + x1, centerPoint[1] + y2 );
+            PointValue value21 = Values.pointValue( WGS_84, centerPoint[0] + x2, centerPoint[1] + y1 );
+            PointValue value22 = Values.pointValue( WGS_84, centerPoint[0] + x2, centerPoint[1] + y2 );
             assertDerivedValue( derivedValueForCenterPoint, value11, value12, value21, value22 );
 
             nodeId = addPointsToLists( pointValues, updates, nodeId, value11, value12, value21, value22 );
@@ -147,7 +147,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
     @Test
     void shouldNotGetRoundingErrorsWithPointsJustWithinTheTileUpperBound()
     {
-        PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
+        PointValue origin = Values.pointValue( WGS_84, 0.0, 0.0 );
         long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
         double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint ); // [1.6763806343078613E-7, 8.381903171539307E-8]
 
@@ -177,14 +177,14 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
     @Test
     void shouldNotGetFalsePositivesForRangesSpanningMultipleTiles() throws IndexNotApplicableKernelException, IndexEntryConflictException
     {
-        PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
+        PointValue origin = Values.pointValue( WGS_84, 0.0, 0.0 );
         long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
         double[] searchStart = curve.centerPointFor( derivedValueForCenterPoint );
 
         double xTileWidth = curve.getTileWidth( 0, curve.getMaxLevel() );
 
         // to make it easier to imagine this, the search start is a center point of one tile and the limit is a center point of the next tile on the x-axis
-        PointValue limitPoint = Values.pointValue( WGS84, searchStart[0] + xTileWidth, searchStart[1] );
+        PointValue limitPoint = Values.pointValue( WGS_84, searchStart[0] + xTileWidth, searchStart[1] );
 
         int nbrOfValues = 10_000;
 
@@ -194,7 +194,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
         for ( int i = 0; i < nbrOfValues; i++ )
         {
             double distanceMultiplier = random.nextDouble() * 2;
-            PointValue point = Values.pointValue( WGS84, searchStart[0] + distanceMultiplier * xTileWidth, searchStart[1] );
+            PointValue point = Values.pointValue( WGS_84, searchStart[0] + distanceMultiplier * xTileWidth, searchStart[1] );
 
             updates.add( IndexEntryUpdate.add( 0, descriptor, point ) );
 
@@ -211,7 +211,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
             SimpleEntityValueClient client = new SimpleEntityValueClient();
 
             var range = PropertyIndexQuery.range( descriptor.schema().getPropertyId(),
-                    Values.pointValue( WGS84, searchStart ),
+                    Values.pointValue( WGS_84, searchStart ),
                     true,
                     limitPoint,
                     true );

@@ -36,10 +36,10 @@ import java.util.stream.Collectors;
 import static java.lang.Integer.signum;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DurationValue.duration;
@@ -55,9 +55,9 @@ public class ValueComparisonTest
     private final Object[] objs = new Object[]{
             // ARRAYS
             new PointValue[] {},
-            new PointValue[] { pointValue( WGS84, -1.0, -1.0 ) },
-            new PointValue[] { pointValue( WGS84, -1.0, -1.0 ), pointValue( WGS84, -1.0, -1.0 ) },
-            new PointValue[] { pointValue( WGS84, -1.0, -1.0 ), pointValue( Cartesian, 1.0, 2.0 ) },
+            new PointValue[] { pointValue( WGS_84, -1.0, -1.0 ) },
+            new PointValue[] {pointValue( WGS_84, -1.0, -1.0 ), pointValue( WGS_84, -1.0, -1.0 ) },
+            new PointValue[] {pointValue( WGS_84, -1.0, -1.0 ), pointValue( CARTESIAN, 1.0, 2.0 ) },
             new ZonedDateTime[] { datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00").asObjectCopy(), datetime(1991, 2, 2, 1, 30, 0, 0, "+00:00").asObjectCopy() },
             new ZonedDateTime[] { datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00").asObjectCopy(), datetime(1992, 2, 2, 1, 30, 0, 0, "+00:00").asObjectCopy() },
             new ZonedDateTime[] { datetime(2019, 2, 2, 0, 0, 0, 0, "+00:00").asObjectCopy(), datetime(1991, 2, 2, 1, 30, 0, 0, "+00:00").asObjectCopy() },
@@ -91,28 +91,28 @@ public class ValueComparisonTest
             new byte[]{3, -99, -99},
 
             // POINTS
-            pointValue( WGS84, -10.0, -10.0 ),
-            pointValue( WGS84, -1.0, -1.0 ),
-            pointValue( WGS84, 0.0, 0.0 ),
-            pointValue( WGS84, 0.0, 1.0 ),
-            pointValue( WGS84, 1.0, 0.0 ),
-            pointValue( WGS84, 1.0, 1.0 ),
-            pointValue( WGS84, 1.0, 2.0 ),
-            pointValue( WGS84, 2.0, 1.0 ),
-            pointValue( WGS84, 10.0, 10.0 ),
-            pointValue( WGS84_3D, -10.0, -10.0, -1000.0 ),
-            pointValue( WGS84_3D, 0.0, 0.0, 0.0 ),
-            pointValue( WGS84_3D, 10.0, 10.0, 1000.0 ),
-            pointValue( Cartesian, -1000.0, -1000.0 ),
-            pointValue( Cartesian, -1.0, -1.0 ),
-            pointValue( Cartesian, 0.0, 0.0 ),
-            pointValue( Cartesian, 1.0, 1.0 ),
-            pointValue( Cartesian, 1.0, 2.0 ),
-            pointValue( Cartesian, 2.0, 1.0 ),
-            pointValue( Cartesian, 1000.0, 1000.0 ),
-            pointValue( Cartesian_3D, -1000.0, -1000.0, -1000.0 ),
-            pointValue( Cartesian_3D, 0.0, 0.0, 0.0 ),
-            pointValue( Cartesian_3D, 1000.0, 1000.0, 1000.0 ),
+            pointValue( WGS_84, -10.0, -10.0 ),
+            pointValue( WGS_84, -1.0, -1.0 ),
+            pointValue( WGS_84, 0.0, 0.0 ),
+            pointValue( WGS_84, 0.0, 1.0 ),
+            pointValue( WGS_84, 1.0, 0.0 ),
+            pointValue( WGS_84, 1.0, 1.0 ),
+            pointValue( WGS_84, 1.0, 2.0 ),
+            pointValue( WGS_84, 2.0, 1.0 ),
+            pointValue( WGS_84, 10.0, 10.0 ),
+            pointValue( WGS_84_3D, -10.0, -10.0, -1000.0 ),
+            pointValue( WGS_84_3D, 0.0, 0.0, 0.0 ),
+            pointValue( WGS_84_3D, 10.0, 10.0, 1000.0 ),
+            pointValue( CARTESIAN, -1000.0, -1000.0 ),
+            pointValue( CARTESIAN, -1.0, -1.0 ),
+            pointValue( CARTESIAN, 0.0, 0.0 ),
+            pointValue( CARTESIAN, 1.0, 1.0 ),
+            pointValue( CARTESIAN, 1.0, 2.0 ),
+            pointValue( CARTESIAN, 2.0, 1.0 ),
+            pointValue( CARTESIAN, 1000.0, 1000.0 ),
+            pointValue( CARTESIAN_3D, -1000.0, -1000.0, -1000.0 ),
+            pointValue( CARTESIAN_3D, 0.0, 0.0, 0.0 ),
+            pointValue( CARTESIAN_3D, 1000.0, 1000.0, 1000.0 ),
 
             // DateTime and the likes
             datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00"),

@@ -152,7 +152,7 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
     {
         entityType.crateIndexes( graphDb );
 
-        Value value = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 2 );
+        Value value = Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 1, 2 );
         long entityId;
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -177,7 +177,7 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
     {
         entityType.crateIndexes( graphDb );
 
-        Value value = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 2 );
+        Value value = Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 1, 2 );
         try ( KernelTransaction tx = beginTransaction() )
         {
             long entityId = entityType.createEntity( tx, value );

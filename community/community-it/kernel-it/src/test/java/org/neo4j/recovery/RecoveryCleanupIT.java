@@ -61,7 +61,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.logging.LogAssertions.assertThat;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 
 @TestDirectoryExtension
 class RecoveryCleanupIT
@@ -245,7 +245,7 @@ class RecoveryCleanupIT
         {
             tx.createNode( label ).setProperty( propKey, 1 );
             tx.createNode( label ).setProperty( propKey, "string" );
-            tx.createNode( label ).setProperty( propKey, Values.pointValue( Cartesian, 0.5, 0.5 ) );
+            tx.createNode( label ).setProperty( propKey, Values.pointValue( CARTESIAN, 0.5, 0.5 ) );
             tx.createNode( label ).setProperty( propKey, LocalTime.of( 0, 0 ) );
             tx.commit();
         }

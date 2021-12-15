@@ -67,9 +67,9 @@ final class FusionIndexTestHelp
                     Values.longValue( 4 ),
                     Values.floatValue( 5.6f ),
                     Values.doubleValue( 7.8 ),
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0 ),
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123.0, 456.0, 789.0 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.8 ),
+                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 123.0, 456.0 ),
+                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 123.0, 456.0, 789.0 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS_84, 13.2, 56.8 ),
                     DateValue.epochDate( 1 ),
                     DateValue.epochDate( 10000 ),
                     Values.booleanValue( true ),
@@ -83,9 +83,9 @@ final class FusionIndexTestHelp
                     Values.charArray( new char[2] ),
                     Values.stringArray( "a", "b" ),
                     Values.pointArray( new Value[]{
-                            Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0 ),
-                            Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123.0, 456.0, 789.0 ),
-                            Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.8 )
+                            Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 123.0, 456.0 ),
+                            Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 123.0, 456.0, 789.0 ),
+                            Values.pointValue( CoordinateReferenceSystem.WGS_84, 13.2, 56.8 )
                     } ),
                     Values.NO_VALUE
             };

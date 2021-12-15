@@ -502,7 +502,7 @@ class RecoveryIT
             {
                 Node node = tx.createNode( label );
 
-                node.setProperty( property, Values.pointValue( CoordinateReferenceSystem.Cartesian, i, -i ) );
+                node.setProperty( property, Values.pointValue( CoordinateReferenceSystem.CARTESIAN, i, -i ) );
                 tx.commit();
             }
         }
@@ -599,7 +599,7 @@ class RecoveryIT
             for ( int i = 0; i < numberOfRelationships; i++ )
             {
                 Relationship relationship = start.createRelationshipTo( stop, type );
-                relationship.setProperty( property, Values.pointValue( CoordinateReferenceSystem.Cartesian, i, -i ) );
+                relationship.setProperty( property, Values.pointValue( CoordinateReferenceSystem.CARTESIAN, i, -i ) );
             }
             transaction.commit();
         }

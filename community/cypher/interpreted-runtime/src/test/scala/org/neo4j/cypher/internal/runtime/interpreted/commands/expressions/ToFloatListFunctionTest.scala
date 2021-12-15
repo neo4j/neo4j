@@ -84,7 +84,7 @@ class ToFloatListFunctionTest extends CypherFunSuite with GeneratorDrivenPropert
   }
 
   test("should not throw an exception if the list argument contains an object which cannot be converted to float") {
-    assert(toFloatList(Seq("1234", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0))) === VirtualValues.list(doubleValue(1234), NO_VALUE))
+    assert(toFloatList(Seq("1234", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))) === VirtualValues.list(doubleValue(1234), NO_VALUE))
   }
 
   test("should throw an exception if the list argument contains a non-list") {

@@ -99,7 +99,7 @@ class PrimitiveOnlyValueWriterTest
         return Stream.of(
                 nodeValue( 42, stringArray( "Person" ), EMPTY_MAP ),
                 newRelationshipValue(),
-                pointValue( CoordinateReferenceSystem.WGS84, new double[2] ),
+                pointValue( CoordinateReferenceSystem.WGS_84, new double[2] ),
                 byteArray( new byte[]{1, 2, 3} ),
                 Values.of( Duration.ofHours( 1 ) ),
                 Values.of( LocalDate.now() ),

@@ -154,7 +154,7 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
             @Override
             protected PointValue createUnderlyingValue( int value )
             {
-                return Values.pointValue( CoordinateReferenceSystem.Cartesian,
+                return Values.pointValue( CoordinateReferenceSystem.CARTESIAN,
                                           splitNumber( value ).asDoubleStream().toArray() );
             }
         },

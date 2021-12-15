@@ -61,10 +61,10 @@ class CrsConfigTest
 
         final double DELTA = 0.00000001;
 
-        List<Double> cartesian3Dmin = config.get( CrsConfig.group( CoordinateReferenceSystem.Cartesian_3D ).min );
+        List<Double> cartesian3Dmin = config.get( CrsConfig.group( CoordinateReferenceSystem.CARTESIAN_3D ).min );
         assertArrayEquals( new double[] { 1.0, 2.0, 3.0 }, ArrayUtils.toPrimitive( cartesian3Dmin.toArray( new Double[0] ) ), DELTA );
-        assertEquals( 3.0, config.get( CrsConfig.group( CoordinateReferenceSystem.Cartesian ).min ).get( 0 ), DELTA );
-        assertEquals( 4.0, config.get( CrsConfig.group( CoordinateReferenceSystem.Cartesian ).max ).get( 0 ), DELTA );
+        assertEquals( 3.0, config.get( CrsConfig.group( CoordinateReferenceSystem.CARTESIAN ).min ).get( 0 ), DELTA );
+        assertEquals( 4.0, config.get( CrsConfig.group( CoordinateReferenceSystem.CARTESIAN ).max ).get( 0 ), DELTA );
     }
 
 }

@@ -573,7 +573,7 @@ class CsvInputBatchImportIT
                 String message = actualValue + " does not have y=" + expectedY;
                 assertEquals( expectedY, actualY, 0.1, message );
                 message = actualValue + " does not have crs=wgs-84";
-                assertEquals( CoordinateReferenceSystem.WGS84.getName(), v.getCoordinateReferenceSystem().getName(), message );
+                assertEquals( CoordinateReferenceSystem.WGS_84.getName(), v.getCoordinateReferenceSystem().getName(), message );
             };
             propertyVerifiers.put( "pointA", verifyPointA );
 
@@ -587,7 +587,7 @@ class CsvInputBatchImportIT
                 String message = actualValue + " does not have y=" + expectedY;
                 assertEquals( expectedY, actualY, 0.1, message );
                 message = actualValue + " does not have crs=cartesian";
-                assertEquals( CoordinateReferenceSystem.Cartesian.getName(), v.getCoordinateReferenceSystem().getName(), message );
+                assertEquals( CoordinateReferenceSystem.CARTESIAN.getName(), v.getCoordinateReferenceSystem().getName(), message );
             };
             propertyVerifiers.put( "pointB", verifyPointB );
 

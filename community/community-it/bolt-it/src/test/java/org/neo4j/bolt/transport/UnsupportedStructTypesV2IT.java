@@ -134,7 +134,7 @@ public class UnsupportedStructTypesV2IT
         testDisconnectWithUnpackableValue( packer ->
         {
             packer.packStructHeader( 3, StructType.POINT_3D.signature() );
-            packer.pack( Values.of( CoordinateReferenceSystem.Cartesian_3D.getCode() ) );
+            packer.pack( Values.of( CoordinateReferenceSystem.CARTESIAN_3D.getCode() ) );
             packer.pack( Values.of( 3.15 ) );
             packer.pack( Values.of( 4.012 ) );
         }, "Unable to construct Point value: `Cannot create point, CRS cartesian-3d expects 3 dimensions, but got coordinates [3.15, 4.012]`" );
@@ -149,7 +149,7 @@ public class UnsupportedStructTypesV2IT
         testFailureWithUnpackableValue( packer ->
         {
             packer.packStructHeader( 4, StructType.POINT_3D.signature() );
-            packer.pack( Values.of( CoordinateReferenceSystem.Cartesian.getCode() ) );
+            packer.pack( Values.of( CoordinateReferenceSystem.CARTESIAN.getCode() ) );
             packer.pack( Values.of( 3.15 ) );
             packer.pack( Values.of( 4.012 ) );
             packer.pack( Values.of( 5.905 ) );

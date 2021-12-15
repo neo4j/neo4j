@@ -103,10 +103,10 @@ class ValuesTest
     @Test
     void pointValueShouldRequireConsistentInput()
     {
-        assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 2, 3 ) );
-        assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2 ) );
-        assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2, 3 ) );
-        assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 1, 2 ) );
+        assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 1, 2, 3 ) );
+        assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 1, 2 ) );
+        assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS_84, 1, 2, 3 ) );
+        assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 1, 2 ) );
     }
 
     @Test

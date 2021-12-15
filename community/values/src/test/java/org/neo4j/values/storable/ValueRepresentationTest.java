@@ -22,16 +22,15 @@ package org.neo4j.values.storable;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.values.virtual.ListValue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.ValueRepresentation.ANYTHING;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT32;
 import static org.neo4j.values.storable.ValueRepresentation.FLOAT64;
@@ -119,7 +118,8 @@ class ValueRepresentationTest
     @Test
     void shouldCoerceWithAnything()
     {
-        Arrays.stream( ValueRepresentation.values() ).forEach( representation -> {
+        Arrays.stream( ValueRepresentation.values() ).forEach( representation ->
+        {
             assertEquals( representation, ANYTHING.coerce( representation ) );
             assertEquals( representation, representation.coerce( ANYTHING ) );
         } );
@@ -129,7 +129,7 @@ class ValueRepresentationTest
     void shouldFailToCreateArrayOfPointsWithDifferentCRS()
     {
         // given
-        ListValue points = list( pointValue( Cartesian, 1.0, 1.0 ), pointValue( WGS84, 1.0, 1.0 ) );
+        ListValue points = list( pointValue( CARTESIAN, 1.0, 1.0 ), pointValue( WGS_84, 1.0, 1.0 ) );
         assertThrows( CypherTypeException.class, () -> GEOMETRY.arrayOf( points ) );
     }
 
@@ -137,7 +137,7 @@ class ValueRepresentationTest
     void shouldFailToCreateArrayOfPointsWithDifferentDimension()
     {
         // given
-        ListValue points = list( pointValue( Cartesian, 1.0, 1.0 ), pointValue( Cartesian_3D, 1.0, 1.0, 1.0 ) );
+        ListValue points = list( pointValue( CARTESIAN, 1.0, 1.0 ), pointValue( CARTESIAN_3D, 1.0, 1.0, 1.0 ) );
         assertThrows( CypherTypeException.class, () -> GEOMETRY.arrayOf( points ) );
     }
 }

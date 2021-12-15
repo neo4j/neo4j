@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.Values.pointValue;
 
 @TestDirectoryExtension
@@ -55,7 +55,7 @@ class PointPropertiesRecordFormatIT
         Path storeDir = testDirectory.homePath();
         Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
-        PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
+        PointValue pointValue = pointValue( CARTESIAN, 1.0, 2.0 );
 
         DatabaseManagementService managementService = startDatabaseService( storeDir );
         GraphDatabaseService database = getDefaultDatabase( managementService );
@@ -82,7 +82,7 @@ class PointPropertiesRecordFormatIT
         Path storeDir = testDirectory.homePath();
         Label pointNode = Label.label( "PointNode" );
         String propertyKey = "a";
-        PointValue pointValue = pointValue( Cartesian, 1.0, 2.0 );
+        PointValue pointValue = pointValue( CARTESIAN, 1.0, 2.0 );
 
         DatabaseManagementService managementService = startDatabaseService( storeDir );
         GraphDatabaseService database = getDefaultDatabase( managementService );

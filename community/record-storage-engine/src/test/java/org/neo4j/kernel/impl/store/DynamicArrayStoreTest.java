@@ -55,7 +55,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
 @EphemeralPageCacheExtension
 class DynamicArrayStoreTest
@@ -70,7 +70,7 @@ class DynamicArrayStoreTest
     private static Stream<Supplier<Object>> data()
     {
         return Stream.of( () -> new String[]{"a"},
-                () -> new PointValue[]{Values.pointValue( WGS84, 0, 1 )},
+                () -> new PointValue[]{Values.pointValue( WGS_84, 0, 1 )},
                 () -> new LocalDate[]{LocalDate.MIN},
                 () -> new LocalTime[]{LocalTime.MIDNIGHT},
                 () -> new LocalDateTime[]{LocalDateTime.MIN},

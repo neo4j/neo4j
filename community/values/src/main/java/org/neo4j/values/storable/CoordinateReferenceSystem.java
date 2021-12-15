@@ -25,28 +25,26 @@ import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-public class CoordinateReferenceSystem implements CRS
+public enum CoordinateReferenceSystem implements CRS
 {
-    public static final CoordinateReferenceSystem Cartesian = new CoordinateReferenceSystem( "cartesian", CRSTable.SR_ORG, 7203, 2, false );
-    public static final CoordinateReferenceSystem Cartesian_3D = new CoordinateReferenceSystem( "cartesian-3d", CRSTable.SR_ORG, 9157, 3, false );
-    public static final CoordinateReferenceSystem WGS84 = new CoordinateReferenceSystem( "wgs-84", CRSTable.EPSG, 4326, 2, true );
-    public static final CoordinateReferenceSystem WGS84_3D = new CoordinateReferenceSystem( "wgs-84-3d", CRSTable.EPSG, 4979, 3, true );
-
-    private static final CoordinateReferenceSystem[] TYPES = new CoordinateReferenceSystem[]{Cartesian, Cartesian_3D, WGS84, WGS84_3D};
+    CARTESIAN( CRSTable.SR_ORG, 7203, 2, false ),
+    CARTESIAN_3D( CRSTable.SR_ORG, 9157, 3, false ),
+    WGS_84( CRSTable.EPSG, 4326, 2, true ),
+    WGS_84_3D( CRSTable.EPSG, 4979, 3, true );
 
     public static Iterable<CoordinateReferenceSystem> all()
     {
-        return Iterables.asIterable( TYPES );
+        return Iterables.asIterable( values() );
     }
 
     public static CoordinateReferenceSystem get( int tableId, int code )
     {
-        CRSTable table = CRSTable.find( tableId );
-        for ( CoordinateReferenceSystem type : TYPES )
+        final var table = CRSTable.find( tableId );
+        for ( final var crs : values() )
         {
-            if ( type.table == table && type.code == code )
+            if ( crs.table == table && crs.code == code )
             {
-                return type;
+                return crs;
             }
         }
         throw new InvalidArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
@@ -60,11 +58,11 @@ public class CoordinateReferenceSystem implements CRS
 
     public static CoordinateReferenceSystem byName( String name )
     {
-        for ( CoordinateReferenceSystem type : TYPES )
+        for ( final var crs : values() )
         {
-            if ( type.name.equals( name.toLowerCase() ) )
+            if ( crs.name.equals( name.toLowerCase() ) )
             {
-                return type;
+                return crs;
             }
         }
 
@@ -73,11 +71,11 @@ public class CoordinateReferenceSystem implements CRS
 
     public static CoordinateReferenceSystem get( String href )
     {
-        for ( CoordinateReferenceSystem type : TYPES )
+        for ( final var crs : values() )
         {
-            if ( type.href.equals( href ) )
+            if ( crs.href.equals( href ) )
             {
-                return type;
+                return crs;
             }
         }
         throw new InvalidArgumentException( "Unknown coordinate reference system: " + href );
@@ -85,14 +83,14 @@ public class CoordinateReferenceSystem implements CRS
 
     public static CoordinateReferenceSystem get( int code )
     {
-        for ( CRSTable table : CRSTable.values() )
+        for ( final var table : CRSTable.values() )
         {
-            String href = table.href( code );
-            for ( CoordinateReferenceSystem type : TYPES )
+            final var href = table.href( code );
+            for ( final var crs : values() )
             {
-                if ( type.href.equals( href ) )
+                if ( crs.href.equals( href ) )
                 {
-                    return type;
+                    return crs;
                 }
             }
         }
@@ -107,10 +105,9 @@ public class CoordinateReferenceSystem implements CRS
     private final boolean geographic;
     private final CRSCalculator calculator;
 
-    private CoordinateReferenceSystem( String name, CRSTable table, int code, int dimension, boolean geographic )
+    CoordinateReferenceSystem( CRSTable table, int code, int dimension, boolean geographic )
     {
-        assert name.toLowerCase().equals( name );
-        this.name = name;
+        this.name = name().toLowerCase().replace( '_', '-' );
         this.table = table;
         this.code = code;
         this.href = table.href( code );
@@ -174,28 +171,4 @@ public class CoordinateReferenceSystem implements CRS
     {
         return calculator;
     }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        CoordinateReferenceSystem that = (CoordinateReferenceSystem) o;
-
-        return href.equals( that.href );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return href.hashCode();
-    }
-
 }

@@ -32,10 +32,10 @@ import org.neo4j.values.storable.DoubleArray;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D;
 
 /**
  * Utility class with static method for extracting relevant spatial index configurations from {@link CoordinateReferenceSystem} and
@@ -100,10 +100,10 @@ public final class SpatialIndexConfig
     {
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> result = new HashMap<>();
 
-        result.put( Cartesian, settingFromIndexConfig( indexConfig, Cartesian ) );
-        result.put( Cartesian_3D, settingFromIndexConfig( indexConfig, Cartesian_3D ) );
-        result.put( WGS84, settingFromIndexConfig( indexConfig, WGS84 ) );
-        result.put( WGS84_3D, settingFromIndexConfig( indexConfig, WGS84_3D ) );
+        result.put( CARTESIAN, settingFromIndexConfig( indexConfig, CARTESIAN ) );
+        result.put( CARTESIAN_3D, settingFromIndexConfig( indexConfig, CARTESIAN_3D ) );
+        result.put( WGS_84, settingFromIndexConfig( indexConfig, WGS_84 ) );
+        result.put( WGS_84_3D, settingFromIndexConfig( indexConfig, WGS_84_3D ) );
 
         return result;
     }

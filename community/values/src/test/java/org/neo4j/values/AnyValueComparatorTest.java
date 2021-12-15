@@ -142,7 +142,7 @@ class AnyValueComparatorTest
             path( nodes( 5L, 4L ), relationships( 2L ) ),
 
             // SCALARS
-            pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 ),
+            pointValue( CoordinateReferenceSystem.CARTESIAN, 1.0, 1.0 ),
             datetime( 2018, 2, 2, 0, 0, 0, 0, "+00:00" ),
             localDateTime( 2018, 2, 2, 0, 0, 0, 0 ),
             date( 2018, 2, 1 ),
@@ -312,13 +312,13 @@ class AnyValueComparatorTest
     @Test
     void shouldTernaryComparePoints()
     {
-        PointValue pointValue1 = pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 );
-        PointValue pointValue2 = pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 2.0 );
+        PointValue pointValue1 = pointValue( CoordinateReferenceSystem.CARTESIAN, 1.0, 1.0 );
+        PointValue pointValue2 = pointValue( CoordinateReferenceSystem.CARTESIAN, 1.0, 2.0 );
 
         assertTernaryCompare( pointValue1, pointValue1, EQUAL );
         assertTernaryCompare( pointValue1, pointValue2, SMALLER_THAN_AND_EQUAL );
         assertTernaryCompare( pointValue1, Values.doubleArray( new double[]{1.0, 1.0} ), UNDEFINED );
-        assertTernaryCompare( pointValue1, pointValue( CoordinateReferenceSystem.WGS84, 1.0, 1.0 ), UNDEFINED );
+        assertTernaryCompare( pointValue1, pointValue( CoordinateReferenceSystem.WGS_84, 1.0, 1.0 ), UNDEFINED );
     }
 
     @Test

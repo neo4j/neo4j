@@ -199,7 +199,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         long nodeId;
         try ( AutoCloseable ignored = tx() )
         {
-            PointValue value = pointValue( CoordinateReferenceSystem.WGS84, 2, 4 );
+            PointValue value = pointValue( CoordinateReferenceSystem.WGS_84, 2, 4 );
 
             // (N1) w/ property
             {

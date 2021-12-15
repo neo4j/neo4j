@@ -54,10 +54,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.bolt.packstream.PackStream.INT_16;
 import static org.neo4j.bolt.packstream.PackStream.INT_32;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intValue;
@@ -96,7 +96,7 @@ public class Neo4jPackV2Test
         Neo4jPack.Packer packer = neo4jPack.newPacker( output );
 
         packer.packStructHeader( 3, Neo4jPackV2.POINT_2D );
-        packer.pack( intValue( WGS84.getCode() ) );
+        packer.pack( intValue( WGS_84.getCode() ) );
         packer.pack( doubleValue( 42.42 ) );
 
         assertThrows(UncheckedIOException.class, () -> unpack( output ) );
@@ -110,7 +110,7 @@ public class Neo4jPackV2Test
         Neo4jPack.Packer packer = neo4jPack.newPacker( output );
 
         packer.packStructHeader( 4, Neo4jPackV2.POINT_3D );
-        packer.pack( intValue( Cartesian.getCode() ) );
+        packer.pack( intValue( CARTESIAN.getCode() ) );
         packer.pack( doubleValue( 1.0 ) );
         packer.pack( doubleValue( 100.1 ) );
 
@@ -361,10 +361,10 @@ public class Neo4jPackV2Test
             double[] coordinates;
             double x = random.doubles( 1, -180, 180 ).sum();
             double y = random.doubles( 1, -90, 90 ).sum();
-            crs = WGS84_3D;
+            crs = WGS_84_3D;
             if ( dimension == 2 )
             {
-                crs = WGS84;
+                crs = WGS_84;
                 coordinates = new double[]{x, y};
                 return pointValue( crs, coordinates );
             }
@@ -377,7 +377,7 @@ public class Neo4jPackV2Test
         }
         else
         {
-            crs = dimension == 2 ? Cartesian : Cartesian_3D;
+            crs = dimension == 2 ? CARTESIAN : CARTESIAN_3D;
         }
 
         return pointValue( crs, random.doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );

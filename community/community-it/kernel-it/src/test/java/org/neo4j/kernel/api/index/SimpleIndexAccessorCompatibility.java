@@ -164,9 +164,9 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
         assumeTrue( testSuite.supportsSpatial() );
         assumeTrue( testSuite.supportsSpatialRangeQueries() );
 
-        PointValue p1 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, -1 );
-        PointValue p2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, 1 );
-        PointValue p3 = Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 );
+        PointValue p1 = Values.pointValue( CoordinateReferenceSystem.WGS_84, -180, -1 );
+        PointValue p2 = Values.pointValue( CoordinateReferenceSystem.WGS_84, -180, 1 );
+        PointValue p3 = Values.pointValue( CoordinateReferenceSystem.WGS_84, 0, 0 );
 
         updateAndCommit( asList(
                 add( 1L, descriptor, p1 ),

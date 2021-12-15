@@ -83,7 +83,7 @@ class ToIntegerListFunctionTest extends CypherFunSuite with GeneratorDrivenPrope
   }
 
   test("should not throw an exception if the list argument contains an object which cannot be converted to integer") {
-    assert(toIntegerList(Seq("1234", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0))) === VirtualValues.list(longValue(1234), NO_VALUE))
+    assert(toIntegerList(Seq("1234", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))) === VirtualValues.list(longValue(1234), NO_VALUE))
   }
 
   test("should throw an exception if the list argument contains a non-list") {

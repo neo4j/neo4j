@@ -94,7 +94,7 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
     @Override
     protected Value supportedValue( int i )
     {
-        return Values.pointValue( CoordinateReferenceSystem.Cartesian, i, i );
+        return Values.pointValue( CoordinateReferenceSystem.CARTESIAN, i, i );
     }
 
     @Test

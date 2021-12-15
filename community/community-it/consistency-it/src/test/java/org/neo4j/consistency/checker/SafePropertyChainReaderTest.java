@@ -279,7 +279,7 @@ class SafePropertyChainReaderTest extends CheckerTestBase
     @Test
     void shouldReportInvalidPropertyValue() throws Exception
     {
-        testPropertyValueInconsistency( pointValue( CoordinateReferenceSystem.WGS84, 12.34, 56.78 ),
+        testPropertyValueInconsistency( pointValue( CoordinateReferenceSystem.WGS_84, 12.34, 56.78 ),
                 // This is very internal knowledge, but setting the 56th (floating point precision) bit in the first block of a point value
                 // Makes the decoding of that property value throw exception
                 block -> block.getValueBlocks()[0] |= 0x0100000000000000L,

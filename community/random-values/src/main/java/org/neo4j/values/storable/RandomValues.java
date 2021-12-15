@@ -932,7 +932,7 @@ public class RandomValues
     {
         double x = randomCartesianCoordinate();
         double y = randomCartesianCoordinate();
-        return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
+        return Values.pointValue( CoordinateReferenceSystem.CARTESIAN, x, y );
     }
 
     /**
@@ -944,7 +944,7 @@ public class RandomValues
         double x = randomCartesianCoordinate();
         double y = randomCartesianCoordinate();
         double z = randomCartesianCoordinate();
-        return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, x, y, z );
+        return Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, x, y, z );
     }
 
     /**
@@ -955,7 +955,7 @@ public class RandomValues
     {
         double longitude = randomLongitude();
         double latitude = randomLatitude();
-        return Values.pointValue( CoordinateReferenceSystem.WGS84, longitude, latitude );
+        return Values.pointValue( CoordinateReferenceSystem.WGS_84, longitude, latitude );
     }
 
     /**
@@ -967,7 +967,7 @@ public class RandomValues
         double longitude = randomLongitude();
         double latitude = randomLatitude();
         double z = randomCartesianCoordinate();
-        return Values.pointValue( CoordinateReferenceSystem.WGS84_3D, longitude, latitude, z );
+        return Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, longitude, latitude, z );
     }
 
     private double randomLatitude()

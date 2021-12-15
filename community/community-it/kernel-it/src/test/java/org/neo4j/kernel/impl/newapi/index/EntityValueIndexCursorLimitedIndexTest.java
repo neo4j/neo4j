@@ -63,10 +63,10 @@ class EntityValueIndexCursorLimitedIndexTest
         @Override
         protected Stream<Value> validValues()
         {
-            return Stream.of( Values.pointValue( CoordinateReferenceSystem.WGS84, -122.322312, 37.563437 ),
-                              Values.pointValue( CoordinateReferenceSystem.WGS84, 12.994807, 55.612088 ),
-                              Values.pointValue( CoordinateReferenceSystem.WGS84, -0.101008, 51.503773 ),
-                              Values.pointValue( CoordinateReferenceSystem.WGS84, 11.572188, 48.135813 ) );
+            return Stream.of( Values.pointValue( CoordinateReferenceSystem.WGS_84, -122.322312, 37.563437 ),
+                              Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.994807, 55.612088 ),
+                              Values.pointValue( CoordinateReferenceSystem.WGS_84, -0.101008, 51.503773 ),
+                              Values.pointValue( CoordinateReferenceSystem.WGS_84, 11.572188, 48.135813 ) );
         }
 
         @Override

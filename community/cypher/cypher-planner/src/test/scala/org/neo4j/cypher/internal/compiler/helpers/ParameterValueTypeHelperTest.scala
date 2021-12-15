@@ -102,8 +102,8 @@ class ParameterValueTypeHelperTest extends CypherFunSuite {
     deriveCypherType(Values.EMPTY_STRING) should be(CTString)
     deriveCypherType(Values.EMPTY_TEXT_ARRAY) should be(CTAny)
 
-    deriveCypherType(Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.7 )) should be(CTPoint)
-    deriveCypherType(Values.pointArray(Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 13.2, 56.7 )))) should be(CTAny)
+    deriveCypherType(Values.pointValue( CoordinateReferenceSystem.WGS_84, 13.2, 56.7 )) should be(CTPoint)
+    deriveCypherType(Values.pointArray(Array(Values.pointValue(CoordinateReferenceSystem.WGS_84, 13.2, 56.7 )))) should be(CTAny)
 
     deriveCypherType(DateTimeValue.MAX_VALUE) should be(CTDateTime)
     deriveCypherType(Values.dateTimeArray( Array(
@@ -140,7 +140,7 @@ class ParameterValueTypeHelperTest extends CypherFunSuite {
     deriveCypherType(VirtualValues.list(Values.byteValue(1))) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(Values.charValue('a'))) should be(CTList(CTString))
     deriveCypherType(VirtualValues.list(Values.stringValue("a"))) should be(CTList(CTString))
-    deriveCypherType(VirtualValues.list(Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.7 ))) should be(CTList(CTAny))
+    deriveCypherType(VirtualValues.list(Values.pointValue( CoordinateReferenceSystem.WGS_84, 13.2, 56.7 ))) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(DateTimeValue.MAX_VALUE)) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(LocalDateTimeValue.MAX_VALUE)) should be(CTList(CTAny))
     deriveCypherType(VirtualValues.list(TimeValue.MAX_VALUE)) should be(CTList(CTAny))

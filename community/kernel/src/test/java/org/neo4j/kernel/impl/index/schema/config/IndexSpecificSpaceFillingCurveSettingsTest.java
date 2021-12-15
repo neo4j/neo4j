@@ -30,9 +30,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
 class IndexSpecificSpaceFillingCurveSettingsTest
 {
@@ -44,8 +44,8 @@ class IndexSpecificSpaceFillingCurveSettingsTest
     {
         // given
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();
-        initialSettings.put( WGS84, globalSettings.forCRS( WGS84 ) );
-        initialSettings.put( Cartesian, globalSettings.forCRS( Cartesian ) );
+        initialSettings.put( WGS_84, globalSettings.forCRS( WGS_84 ) );
+        initialSettings.put( CARTESIAN, globalSettings.forCRS( CARTESIAN ) );
         IndexSpecificSpaceFillingCurveSettings indexSettings = new IndexSpecificSpaceFillingCurveSettings( initialSettings );
 
         // when
@@ -61,12 +61,12 @@ class IndexSpecificSpaceFillingCurveSettingsTest
     {
         // given
         Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> initialSettings = new HashMap<>();
-        initialSettings.put( WGS84, globalSettings.forCRS( WGS84 ) );
-        initialSettings.put( Cartesian, globalSettings.forCRS( Cartesian ) );
+        initialSettings.put( WGS_84, globalSettings.forCRS( WGS_84 ) );
+        initialSettings.put( CARTESIAN, globalSettings.forCRS( CARTESIAN ) );
         IndexSpecificSpaceFillingCurveSettings indexSettings = new IndexSpecificSpaceFillingCurveSettings( initialSettings );
 
         // when
-        IllegalStateException exception = assertThrows( IllegalStateException.class, () -> indexSettings.forCrs( Cartesian_3D ) );
+        IllegalStateException exception = assertThrows( IllegalStateException.class, () -> indexSettings.forCrs( CARTESIAN_3D ) );
         Assertions.assertTrue( exception.getMessage().contains( "Index does not have any settings for coordinate reference system cartesian-3d" ) );
     }
 }

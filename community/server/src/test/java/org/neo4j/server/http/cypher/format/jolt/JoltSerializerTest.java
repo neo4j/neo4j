@@ -174,7 +174,7 @@ class JoltSerializerTest
         @Test
         void shouldSerializePoint() throws JsonProcessingException
         {
-            var point = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.994823, 55.612191 );
+            var point = Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.994823, 55.612191 );
             var result = objectMapper.writeValueAsString( point );
             assertValidJSON( result );
             assertThat( result ).isEqualTo( "{\"@\":\"SRID=4326;POINT(12.994823 55.612191)\"}" );

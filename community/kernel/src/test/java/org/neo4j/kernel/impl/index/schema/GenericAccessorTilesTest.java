@@ -40,7 +40,7 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.DESCRIPTOR;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
 class GenericAccessorTilesTest extends BaseAccessorTilesTest<BtreeKey>
 {
@@ -54,7 +54,7 @@ class GenericAccessorTilesTest extends BaseAccessorTilesTest<BtreeKey>
         // given
         // Many random points that all are close enough to each other to belong to the same tile on the space filling curve.
         int nbrOfValues = 10000;
-        PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
+        PointValue origin = Values.pointValue( WGS_84, 0.0, 0.0 );
         Long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
         double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint );
         double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2;
@@ -70,7 +70,7 @@ class GenericAccessorTilesTest extends BaseAccessorTilesTest<BtreeKey>
             {
                 double x = (random.nextDouble() * 2 - 1) * xWidthMultiplier;
                 double y = (random.nextDouble() * 2 - 1) * yWidthMultiplier;
-                PointValue value = Values.pointValue( WGS84, centerPoint[0] + x, centerPoint[1] + y );
+                PointValue value = Values.pointValue( WGS_84, centerPoint[0] + x, centerPoint[1] + y );
 
                 assertDerivedValue( derivedValueForCenterPoint, value );
                 pointValues[j] = value;

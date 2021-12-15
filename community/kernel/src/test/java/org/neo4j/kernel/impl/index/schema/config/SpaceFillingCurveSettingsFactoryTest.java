@@ -35,33 +35,33 @@ class SpaceFillingCurveSettingsFactoryTest
     @Test
     void shouldGetDefaultSpaceFillingCurveSettingsForWGS84()
     {
-        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS84, 2, new Envelope( -180, 180, -90, 90 ) );
+        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS_84, 2, new Envelope( -180, 180, -90, 90 ) );
     }
 
     @Test
     void shouldGetDefaultSpaceFillingCurveSettingsForWGS84_3D()
     {
-        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS84_3D, 3,
-                new Envelope( new double[]{-180, -90, -1000000}, new double[]{180, 90, 1000000} ) );
+        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS_84_3D, 3,
+                              new Envelope( new double[]{-180, -90, -1000000}, new double[]{180, 90, 1000000} ) );
     }
 
     @Test
     void shouldGetDefaultSpaceFillingCurveSettingsForCartesian()
     {
-        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.Cartesian, 2, new Envelope( -1000000, 1000000, -1000000, 1000000 ) );
+        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.CARTESIAN, 2, new Envelope( -1000000, 1000000, -1000000, 1000000 ) );
     }
 
     @Test
     void shouldGetDefaultSpaceFillingCurveSettingsForCartesian_3D()
     {
-        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.Cartesian_3D, 3,
-                new Envelope( new double[]{-1000000, -1000000, -1000000}, new double[]{1000000, 1000000, 1000000} ) );
+        shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.CARTESIAN_3D, 3,
+                              new Envelope( new double[]{-1000000, -1000000, -1000000}, new double[]{1000000, 1000000, 1000000} ) );
     }
 
     @Test
     void shouldGetModifiedSpaceFillingCurveSettingsForWGS84()
     {
-        CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
+        CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS_84;
         for ( int minx = -180; minx < 0; minx += 45 )
         {
             for ( int miny = -180; miny < 0; miny += 45 )
@@ -80,7 +80,7 @@ class SpaceFillingCurveSettingsFactoryTest
     @Test
     void shouldGetModifiedSpaceFillingCurveSettingsForWGS84_3D()
     {
-        CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84_3D;
+        CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS_84_3D;
         shouldGetCustomSettingsFor( crs, new double[]{-180, -90, -1000000}, new double[]{180, 90, 1000000} );
         shouldGetCustomSettingsFor( crs, new double[]{0, -90, -1000000}, new double[]{180, 0, 1000000} );
         shouldGetCustomSettingsFor( crs, new double[]{-90, -45, -1000}, new double[]{90, 45, 1000} );
@@ -92,7 +92,7 @@ class SpaceFillingCurveSettingsFactoryTest
     @Test
     void shouldGetModifiedSpaceFillingCurveSettingsForCartesian()
     {
-        CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian;
+        CoordinateReferenceSystem crs = CoordinateReferenceSystem.CARTESIAN;
         for ( int maxBits = 30; maxBits <= 60; maxBits += 10 )
         {
             for ( int minx = -1000000; minx < 0; minx += 200000 )
@@ -114,7 +114,7 @@ class SpaceFillingCurveSettingsFactoryTest
     @Test
     void shouldGetModifiedSpaceFillingCurveSettingsForCartesian_3D()
     {
-        CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian_3D;
+        CoordinateReferenceSystem crs = CoordinateReferenceSystem.CARTESIAN_3D;
         shouldGetCustomSettingsFor( crs, new double[]{-1000000, -1000000, -1000000}, new double[]{1000000, 1000000, 1000000} );
         shouldGetCustomSettingsFor( crs, new double[]{0, -1000000, -1000000}, new double[]{1000000, 0, 1000000} );
         shouldGetCustomSettingsFor( crs, new double[]{-1000, -1000, -1000}, new double[]{1000, 1000, 1000} );

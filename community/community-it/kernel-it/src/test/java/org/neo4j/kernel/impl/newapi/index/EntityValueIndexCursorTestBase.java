@@ -63,10 +63,10 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -185,14 +185,14 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             williamDalton = person( tx, "William", "Dalton" );
             jackDalton = person( tx, "Jack", "Dalton" );
             averellDalton = person( tx, "Averell", "Dalton" );
-            entityWithProp( tx, Values.pointValue( Cartesian, 1, 0 ) ); // Purposely mix order
-            entityWithProp( tx, Values.pointValue( Cartesian, 0, 0 ) );
-            entityWithProp( tx, Values.pointValue( Cartesian, 0, 0 ) );
-            entityWithProp( tx, Values.pointValue( Cartesian, 0, 0 ) );
-            entityWithProp( tx, Values.pointValue( Cartesian, 0, 1 ) );
-            entityWithProp( tx, Values.pointValue( Cartesian_3D, 0, 0, 0 ) );
-            entityWithProp( tx, Values.pointValue( WGS84, 0, 0 ) );
-            entityWithProp( tx, Values.pointValue( WGS84_3D, 0, 0, 0 ) );
+            entityWithProp( tx, Values.pointValue( CARTESIAN, 1, 0 ) ); // Purposely mix order
+            entityWithProp( tx, Values.pointValue( CARTESIAN, 0, 0 ) );
+            entityWithProp( tx, Values.pointValue( CARTESIAN, 0, 0 ) );
+            entityWithProp( tx, Values.pointValue( CARTESIAN, 0, 0 ) );
+            entityWithProp( tx, Values.pointValue( CARTESIAN, 0, 1 ) );
+            entityWithProp( tx, Values.pointValue( CARTESIAN_3D, 0, 0, 0 ) );
+            entityWithProp( tx, Values.pointValue( WGS_84, 0, 0 ) );
+            entityWithProp( tx, Values.pointValue( WGS_84_3D, 0, 0, 0 ) );
             date891 = entityWithProp( tx, DateValue.date( 1989, 3, 24 ) ); // Purposely mix order
             date86 = entityWithProp( tx, DateValue.date( 1986, 11, 18 ) );
             date892 = entityWithProp( tx, DateValue.date( 1989, 3, 24 ) );
@@ -204,7 +204,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             listOfIds.add( entityWithWhatever( tx, false ) );
             listOfIds.add( entityWithWhatever( tx, 3 ) );
             listOfIds.add( entityWithWhatever( tx, 13.0 ) );
-            whateverPointValue = Values.pointValue( Cartesian, 1, 0 );
+            whateverPointValue = Values.pointValue( CARTESIAN, 1, 0 );
             whateverPoint = entityWithWhatever( tx, whateverPointValue );
             listOfIds.add( whateverPoint );
             listOfIds.add( entityWithWhatever( tx, DateValue.date( 1989, 3, 24 ) ) );
@@ -226,7 +226,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     protected static void assertSameDerivedValue( PointValue p1, PointValue p2 )
     {
         ConfiguredSpaceFillingCurveSettingsCache settingsFactory = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
-        SpaceFillingCurveSettings spaceFillingCurveSettings = settingsFactory.forCRS( CoordinateReferenceSystem.WGS84 );
+        SpaceFillingCurveSettings spaceFillingCurveSettings = settingsFactory.forCRS( CoordinateReferenceSystem.WGS_84 );
         SpaceFillingCurve curve = spaceFillingCurveSettings.curve();
         assertEquals( curve.derivedValueFor( p1.coordinate() ), curve.derivedValueFor( p2.coordinate() ) );
     }
@@ -302,25 +302,25 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             assertFoundEntitiesAndNoValue( cursor, uniqueIds, boolTrue );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( Cartesian, 0, 0 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( CARTESIAN, 0, 0 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 3, uniqueIds );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( Cartesian_3D, 0, 0, 0 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( CARTESIAN_3D, 0, 0, 0 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 1, uniqueIds );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( WGS84, 0, 0 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( WGS_84, 0, 0 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 1, uniqueIds );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( WGS84_3D, 0, 0, 0 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( WGS_84_3D, 0, 0, 0 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 1, uniqueIds );
@@ -573,25 +573,25 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, Cartesian ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, CARTESIAN ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 5, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, Cartesian_3D ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, CARTESIAN_3D ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, WGS84 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, WGS_84 ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, WGS84_3D ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, WGS_84_3D ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
@@ -781,7 +781,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ),
-                                              PropertyIndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
+                                              PropertyIndexQuery.range( prop, CoordinateReferenceSystem.CARTESIAN ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.ASCENDING );
@@ -790,7 +790,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
-                                              PropertyIndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
+                                              PropertyIndexQuery.range( prop, CoordinateReferenceSystem.CARTESIAN ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );

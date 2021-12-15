@@ -126,7 +126,7 @@ class ToIntegerFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyC
     "toInteger should throw an exception if the argument is an object which cannot be converted to integer"
   ) {
     val caughtException = the[CypherTypeException] thrownBy toInteger(
-      Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0)
+      Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0)
     )
     caughtException.getMessage should startWith("Invalid input for function 'toInteger()': Expected a String, Number or Boolean, got: point({x: 1.0, y: 0.0, crs: 'cartesian'})")
   }

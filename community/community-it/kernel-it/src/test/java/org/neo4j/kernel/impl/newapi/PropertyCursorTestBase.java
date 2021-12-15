@@ -115,7 +115,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             datePropRelId, allPropsRelId;
 
     private static final String CHINESE = "造Unicode之";
-    private static final Value POINT_VALUE = Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 20 );
+    private static final Value POINT_VALUE = Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 10, 20 );
     private static final Value DATE_VALUE = Values.temporalValue( LocalDate.of( 2018, 7, 26 ) );
 
     private static boolean supportsBigProperties()

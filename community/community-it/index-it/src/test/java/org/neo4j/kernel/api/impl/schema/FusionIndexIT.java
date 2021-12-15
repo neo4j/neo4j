@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -71,7 +70,7 @@ public class FusionIndexIT
 
     private final int numberValue = 1;
     private final String stringValue = "string";
-    private final PointValue spatialValue = pointValue( CoordinateReferenceSystem.WGS84, 0.5, 0.5 );
+    private final PointValue spatialValue = pointValue( CoordinateReferenceSystem.WGS_84, 0.5, 0.5 );
     private final DateValue temporalValue = DateValue.date( 2018, 3, 19 );
     private final String indexName = "some_index_name";
 

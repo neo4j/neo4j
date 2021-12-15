@@ -77,10 +77,10 @@ public abstract class SchemaConstraintProviderApprovalTest
         SHORT_42( (short) 45 ),
         FLOAT_42( (float) 46 ),
         FLOAT_42andAHalf( 41.5f ),
-        POINT_123456_GPS( Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) ),
-        POINT_123456_CAR( Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 ) ),
-        POINT_123456_GPS_3D( Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.3, 45.6, 78.9 ) ),
-        POINT_123456_CAR_3D( Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123, 456, 789 ) ),
+        POINT_123456_GPS( Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.3, 45.6 ) ),
+        POINT_123456_CAR( Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 123, 456 ) ),
+        POINT_123456_GPS_3D( Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.3, 45.6, 78.9 ) ),
+        POINT_123456_CAR_3D( Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 123, 456, 789 ) ),
         ARRAY_OF_INTS( new int[]{1, 2, 3} ),
         ARRAY_OF_LONGS( new long[]{4, 5, 6} ),
         ARRAY_OF_LARGE_LONGS_1( new long[] { 4611686018427387905L } ),
@@ -96,10 +96,10 @@ public abstract class SchemaConstraintProviderApprovalTest
         OTHER( new String[]{"||", ""} ),
         ANOTHER_ARRAY_OF_STRING( new String[]{"1|2|3"} ),
         ARRAY_OF_CHAR( new char[]{'d', 'e', 'f'} ),
-        ARRAY_OF_POINTS_GPS( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 )} ),
-        ARRAY_OF_POINTS_CAR( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 )} ),
-        ARRAY_OF_POINTS_GPS_3D( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.3, 45.6, 78.9 )} ),
-        ARRAY_OF_POINTS_CAR_3D( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123, 456, 789 )} );
+        ARRAY_OF_POINTS_GPS( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.3, 45.6 )} ),
+        ARRAY_OF_POINTS_CAR( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 123, 456 )} ),
+        ARRAY_OF_POINTS_GPS_3D( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.3, 45.6, 78.9 )} ),
+        ARRAY_OF_POINTS_CAR_3D( new PointValue[]{Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 123, 456, 789 )} );
 
         private final Object value;
 

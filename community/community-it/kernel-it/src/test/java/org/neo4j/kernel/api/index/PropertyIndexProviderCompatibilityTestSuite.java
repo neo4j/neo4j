@@ -300,8 +300,8 @@ abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProvider
                                     DurationValue.duration( 12, 10, 10, 10 )
                             })
                     ),
-                    Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 ),
-                            Values.pointValue( CoordinateReferenceSystem.WGS84, 12.78, 56.7 )
+                    Arrays.asList( Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0, 0 ),
+                            Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.78, 56.7 )
                     ) );
 
             this.valueSet2 = allValues(
@@ -347,8 +347,8 @@ abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexProvider
                                     DurationValue.duration( 99, 10, 10, 10 )
                             })
                     ),
-                    Arrays.asList( Values.pointValue( CoordinateReferenceSystem.Cartesian, 90, 90 ),
-                            Values.pointValue( CoordinateReferenceSystem.WGS84, 9.21, 9.65 )
+                    Arrays.asList( Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 90, 90 ),
+                            Values.pointValue( CoordinateReferenceSystem.WGS_84, 9.21, 9.65 )
                     ) );
         }
 

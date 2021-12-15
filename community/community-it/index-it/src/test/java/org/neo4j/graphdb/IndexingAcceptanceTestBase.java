@@ -267,10 +267,10 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         assertCanCreateAndFind( db, TOKEN1, property, SpatialMocks.mockPoint( 123, 456, mockCartesian() ) );
         assertCanCreateAndFind( db, TOKEN1, property, SpatialMocks.mockPoint( 12.3, 45.6, 100.0, mockWGS84_3D() ) );
         assertCanCreateAndFind( db, TOKEN1, property, SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() ) );
-        assertCanCreateAndFind( db, TOKEN1, property, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) );
-        assertCanCreateAndFind( db, TOKEN1, property, Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 ) );
-        assertCanCreateAndFind( db, TOKEN1, property, Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.3, 45.6, 100.0 ) );
-        assertCanCreateAndFind( db, TOKEN1, property, Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123, 456, 789 ) );
+        assertCanCreateAndFind( db, TOKEN1, property, Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.3, 45.6 ) );
+        assertCanCreateAndFind( db, TOKEN1, property, Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 123, 456 ) );
+        assertCanCreateAndFind( db, TOKEN1, property, Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.3, 45.6, 100.0 ) );
+        assertCanCreateAndFind( db, TOKEN1, property, Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 123, 456, 789 ) );
 
         assertCanCreateAndFind( db, TOKEN1, property, new String[]{"A String"} );
         assertCanCreateAndFind( db, TOKEN1, property, new boolean[]{true} );
@@ -293,10 +293,10 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         assertCanCreateAndFind( db, TOKEN1, property, new Point[]{SpatialMocks.mockPoint( 123, 456, mockCartesian() )} );
         assertCanCreateAndFind( db, TOKEN1, property, new Point[]{SpatialMocks.mockPoint( 12.3, 45.6, 100.0, mockWGS84_3D() )} );
         assertCanCreateAndFind( db, TOKEN1, property, new Point[]{SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() )} );
-        assertCanCreateAndFind( db, TOKEN1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 )} );
-        assertCanCreateAndFind( db, TOKEN1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 )} );
-        assertCanCreateAndFind( db, TOKEN1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.3, 45.6, 100.0 )} );
-        assertCanCreateAndFind( db, TOKEN1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123, 456, 789 )} );
+        assertCanCreateAndFind( db, TOKEN1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.3, 45.6 )} );
+        assertCanCreateAndFind( db, TOKEN1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 123, 456 )} );
+        assertCanCreateAndFind( db, TOKEN1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.3, 45.6, 100.0 )} );
+        assertCanCreateAndFind( db, TOKEN1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 123, 456, 789 )} );
     }
 
     @Test

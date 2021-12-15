@@ -97,7 +97,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     @Override
     Value supportedValue( int identifier )
     {
-        return Values.pointValue( CoordinateReferenceSystem.Cartesian, identifier, identifier );
+        return Values.pointValue( CoordinateReferenceSystem.CARTESIAN, identifier, identifier );
     }
 
     @Test

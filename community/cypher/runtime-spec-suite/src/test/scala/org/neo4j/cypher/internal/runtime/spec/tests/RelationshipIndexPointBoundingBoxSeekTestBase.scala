@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.spatial.Point
-import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian
-import org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D
-import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84
-import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
+import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN
+import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D
+import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84
+import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D
 import org.neo4j.values.storable.Values.pointValue
 
 import scala.util.Random
@@ -45,7 +45,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       relationshipIndex("R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
-        case (rel, i) => rel.setProperty("location",  pointValue(Cartesian, i, 0))
+        case (rel, i) => rel.setProperty("location",  pointValue(CARTESIAN, i, 0))
       }
     }
 
@@ -67,7 +67,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       relationshipIndex("R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
-        case (rel, i) => rel.setProperty("location", pointValue(Cartesian_3D, i, 0, 0))
+        case (rel, i) => rel.setProperty("location", pointValue(CARTESIAN_3D, i, 0, 0))
       }
     }
 
@@ -89,7 +89,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       relationshipIndex("R", "location")
       val (_, rels) = circleGraph(180)
       rels.zipWithIndex.foreach {
-        case (rel, i) => rel.setProperty("location", pointValue(WGS84, i % 180, 0))
+        case (rel, i) => rel.setProperty("location", pointValue(WGS_84, i % 180, 0))
       }
     }
 
@@ -111,7 +111,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       relationshipIndex("R", "location")
       val (_, rels) = circleGraph(180)
       rels.zipWithIndex.foreach {
-        case (rel, i) => rel.setProperty("location", pointValue(WGS84_3D, i % 180, 0, 0))
+        case (rel, i) => rel.setProperty("location", pointValue(WGS_84_3D, i % 180, 0, 0))
       }
     }
 
@@ -135,7 +135,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       relationshipIndex("R", "location")
       val (_, rels) = circleGraph(180)
       rels.zipWithIndex.foreach {
-        case (rel, i) => rel.setProperty("location", pointValue(Cartesian, i, 0))
+        case (rel, i) => rel.setProperty("location", pointValue(CARTESIAN, i, 0))
       }
     }
 
@@ -152,9 +152,9 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     //then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("location")
-      .withRows(singleColumn(List(pointValue(Cartesian, 0, 0),
-                                  pointValue(Cartesian, 1, 0),
-                                  pointValue(Cartesian, 2, 0))))
+      .withRows(singleColumn(List(pointValue(CARTESIAN, 0, 0),
+                                  pointValue(CARTESIAN, 1, 0),
+                                  pointValue(CARTESIAN, 2, 0))))
   }
 
   test("should handle bbox on the north-western hemisphere") {
@@ -165,7 +165,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 360 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -196,7 +196,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -227,7 +227,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -258,7 +258,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -289,7 +289,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -319,7 +319,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -349,7 +349,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 360 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -379,7 +379,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -409,7 +409,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -439,7 +439,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -469,7 +469,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -499,7 +499,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -529,7 +529,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         rel =>
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
-          rel.setProperty("location", pointValue(WGS84, longitude, latitude))
+          rel.setProperty("location", pointValue(WGS_84, longitude, latitude))
       }
       rels
     }
@@ -555,7 +555,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
           val longitude = 180 - Random.nextInt(361)
           val latitude = 90 - Random.nextInt(181)
           val height = Random.nextInt(1000)
-          rel.setProperty("location", pointValue(WGS84_3D, longitude, latitude, height ))
+          rel.setProperty("location", pointValue(WGS_84_3D, longitude, latitude, height ))
       }
       rels
     }
@@ -588,16 +588,16 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         case(rel, i) => rel.setProperty("location", i)
       }
       circleGraph(100)._2.zipWithIndex.foreach {
-        case(rel, i) => rel.setProperty("location", pointValue(WGS84, i, 0))
+        case(rel, i) => rel.setProperty("location", pointValue(WGS_84, i, 0))
       }
       circleGraph(100)._2.zipWithIndex.foreach {
-        case(rel, i) => rel.setProperty("location",  pointValue(WGS84_3D, i, 0, 0))
+        case(rel, i) => rel.setProperty("location",  pointValue(WGS_84_3D, i, 0, 0))
       }
       circleGraph(100)._2.zipWithIndex.foreach {
-        case(rel, i) => rel.setProperty("location", pointValue(Cartesian_3D, i, 0, 0))
+        case(rel, i) => rel.setProperty("location", pointValue(CARTESIAN_3D, i, 0, 0))
       }
       circleGraph(sizeHint)._2.zipWithIndex.foreach {
-        case(rel, i) => rel.setProperty("location", pointValue(Cartesian, i, 0))
+        case(rel, i) => rel.setProperty("location", pointValue(CARTESIAN, i, 0))
       }
     }
 

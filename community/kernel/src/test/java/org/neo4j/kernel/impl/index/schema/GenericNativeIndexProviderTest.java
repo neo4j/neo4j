@@ -76,7 +76,7 @@ class GenericNativeIndexProviderTest
         DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, DEFAULT_DATABASE_NAME ).build();
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
         Map<String,Value> existingSettings = new HashMap<>();
-        CoordinateReferenceSystem existingCrs = CoordinateReferenceSystem.Cartesian;
+        CoordinateReferenceSystem existingCrs = CoordinateReferenceSystem.CARTESIAN;
         DoubleArray min = Values.doubleArray( new double[]{0, 0} );
         DoubleArray max = Values.doubleArray( new double[]{1, 1} );
         existingSettings.put( spatialMinSettingForCrs( existingCrs ).getSettingName(), min );

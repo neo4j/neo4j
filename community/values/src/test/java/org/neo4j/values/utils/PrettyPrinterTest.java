@@ -406,7 +406,7 @@ class PrettyPrinterTest
     void shouldHandlePoints()
     {
         // Given
-        PointValue pointValue = Values.pointValue( CoordinateReferenceSystem.Cartesian, 11d, 12d );
+        PointValue pointValue = Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 11d, 12d );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When

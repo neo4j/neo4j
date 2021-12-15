@@ -361,13 +361,13 @@ class SpecialisedIndexFullCheckTest
         @Override
         Object indexedValue()
         {
-            return Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 2 );
+            return Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 1, 2 );
         }
 
         @Override
         Object anotherIndexedValue()
         {
-            return Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 1, 2, 3 );
+            return Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 1, 2, 3 );
         }
 
         @Override

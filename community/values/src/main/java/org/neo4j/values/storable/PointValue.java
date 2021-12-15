@@ -48,18 +48,18 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
     static final long SIZE_3D = SHALLOW_SIZE + sizeOf( new double[3] );
 
     // WGS84 is the CRS w/ lowest table/code at the time of writing this. Update as more CRSs gets added.
-    public static final PointValue MIN_VALUE = new PointValue( CoordinateReferenceSystem.WGS84, -180D, -90 );
+    public static final PointValue MIN_VALUE = new PointValue( CoordinateReferenceSystem.WGS_84, -180D, -90 );
     // Cartesian_3D is the CRS w/ highest table/code at the time of writing this. Update as more CRSs gets added.
-    public static final PointValue MAX_VALUE = new PointValue( CoordinateReferenceSystem.Cartesian_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
+    public static final PointValue MAX_VALUE = new PointValue( CoordinateReferenceSystem.CARTESIAN_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
 
-    static final PointValue MIN_VALUE_WGS84 = new PointValue( CoordinateReferenceSystem.WGS84, -180D, -90 );
-    static final PointValue MAX_VALUE_WGS84 = new PointValue( CoordinateReferenceSystem.WGS84, 180D, 90 );
-    static final PointValue MIN_VALUE_WGS84_3D = new PointValue( CoordinateReferenceSystem.WGS84_3D, -180D, -90, Long.MIN_VALUE );
-    static final PointValue MAX_VALUE_WGS84_3D = new PointValue( CoordinateReferenceSystem.WGS84_3D, 180D, 90, Long.MAX_VALUE );
-    static final PointValue MIN_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.Cartesian, Long.MIN_VALUE, Long.MIN_VALUE );
-    static final PointValue MAX_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.Cartesian, Long.MAX_VALUE, Long.MAX_VALUE );
-    static final PointValue MIN_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.Cartesian_3D, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE );
-    static final PointValue MAX_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.Cartesian_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
+    static final PointValue MIN_VALUE_WGS84 = new PointValue( CoordinateReferenceSystem.WGS_84, -180D, -90 );
+    static final PointValue MAX_VALUE_WGS84 = new PointValue( CoordinateReferenceSystem.WGS_84, 180D, 90 );
+    static final PointValue MIN_VALUE_WGS84_3D = new PointValue( CoordinateReferenceSystem.WGS_84_3D, -180D, -90, Long.MIN_VALUE );
+    static final PointValue MAX_VALUE_WGS84_3D = new PointValue( CoordinateReferenceSystem.WGS_84_3D, 180D, 90, Long.MAX_VALUE );
+    static final PointValue MIN_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.CARTESIAN, Long.MIN_VALUE, Long.MIN_VALUE );
+    static final PointValue MAX_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.CARTESIAN, Long.MAX_VALUE, Long.MAX_VALUE );
+    static final PointValue MIN_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.CARTESIAN_3D, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE );
+    static final PointValue MAX_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.CARTESIAN_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
 
     private final CoordinateReferenceSystem crs;
     private final double[] coordinate;
@@ -135,9 +135,8 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
     @Override
     public boolean equals( Value other )
     {
-        if ( other instanceof PointValue )
+        if ( other instanceof PointValue pv )
         {
-            PointValue pv = (PointValue) other;
             return Arrays.equals( this.coordinate, pv.coordinate ) && this.getCoordinateReferenceSystem().equals( pv.getCoordinateReferenceSystem() );
         }
         return false;
@@ -490,7 +489,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
             coordinates = fields.z != null ? new double[]{fields.x, fields.y, fields.z} : new double[]{fields.x, fields.y};
             if ( crs == null )
             {
-                crs = coordinates.length == 3 ? CoordinateReferenceSystem.Cartesian_3D : CoordinateReferenceSystem.Cartesian;
+                crs = coordinates.length == 3 ? CoordinateReferenceSystem.CARTESIAN_3D : CoordinateReferenceSystem.CARTESIAN;
             }
         }
         else if ( fields.latitude != null && fields.longitude != null )
@@ -509,40 +508,35 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
             }
             if ( crs == null )
             {
-                crs = coordinates.length == 3 ? CoordinateReferenceSystem.WGS84_3D : CoordinateReferenceSystem.WGS84;
+                crs = coordinates.length == 3 ? CoordinateReferenceSystem.WGS_84_3D : CoordinateReferenceSystem.WGS_84;
             }
             if ( !crs.isGeographic() )
             {
-                throw new InvalidArgumentException( "Geographic points does not support coordinate reference system: " + crs +
-                        ". This is set either in the csv header or the actual data column" );
+                throw new InvalidArgumentException( String.format( "Geographic points does not support coordinate reference system: %s."
+                                                                   + "This is set either in the csv header or the actual data column", crs ) );
             }
         }
         else
         {
-            if ( crs == CoordinateReferenceSystem.Cartesian )
+            if ( crs == null )
             {
-                throw new InvalidArgumentException( "A " + CoordinateReferenceSystem.Cartesian.getName() + " point must contain 'x' and 'y'" );
+                throw new InvalidArgumentException( "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
             }
-            else if ( crs == CoordinateReferenceSystem.Cartesian_3D )
+
+            throw new InvalidArgumentException( String.format( "A %s point must contain %s", crs, switch ( crs )
             {
-                throw new InvalidArgumentException( "A " + CoordinateReferenceSystem.Cartesian_3D.getName() + " point must contain 'x', 'y' and 'z'" );
-            }
-            else if ( crs == CoordinateReferenceSystem.WGS84 )
-            {
-                throw new InvalidArgumentException( "A " + CoordinateReferenceSystem.WGS84.getName() + " point must contain 'latitude' and 'longitude'" );
-            }
-            else if ( crs == CoordinateReferenceSystem.WGS84_3D )
-            {
-                throw new InvalidArgumentException(
-                        "A " + CoordinateReferenceSystem.WGS84_3D.getName() + " point must contain 'latitude', 'longitude' and 'height'" );
-            }
-            throw new InvalidArgumentException( "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
+                case CARTESIAN -> "'x' and 'y'";
+                case CARTESIAN_3D -> "'x', 'y' and 'z'";
+                case WGS_84 -> "'latitude' and 'longitude'";
+                case WGS_84_3D -> "'latitude', 'longitude' and 'height'";
+            } ) );
         }
 
         if ( crs.getDimension() != coordinates.length )
         {
-            throw new InvalidArgumentException( "Cannot create point with " + crs.getDimension() + "D coordinate reference system and "
-                    + coordinates.length + " coordinates. Please consider using equivalent " + coordinates.length + "D coordinate reference system" );
+            throw new InvalidArgumentException( String.format( "Cannot create point with %dD coordinate reference system and %d coordinates. "
+                                                               + "Please consider using equivalent %dD coordinate reference system",
+                                                               crs.getDimension(), coordinates.length, coordinates.length ) );
         }
         return Values.pointValue( crs, coordinates );
     }
@@ -587,42 +581,58 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
         {
             switch ( key.toLowerCase() )
             {
-            case "crs":
-                checkUnassigned( crs, key );
-                assignTextValue( key, value, str -> crs = QUOTES_PATTERN.matcher( str ).replaceAll( "" ) );
-                break;
-            case "x":
-                checkUnassigned( x, key );
-                assignFloatingPoint( key, value, i -> x = i );
-                break;
-            case "y":
-                checkUnassigned( y, key );
-                assignFloatingPoint( key, value, i -> y = i );
-                break;
-            case "z":
-                checkUnassigned( z, key );
-                assignFloatingPoint( key, value, i -> z = i );
-                break;
-            case "longitude":
-                checkUnassigned( longitude, key );
-                assignFloatingPoint( key, value, i -> longitude = i );
-                break;
-            case "latitude":
-                checkUnassigned( latitude, key );
-                assignFloatingPoint( key, value, i -> latitude = i );
-                break;
-            case "height":
-                checkUnassigned( height, key );
-                assignFloatingPoint( key, value, i -> height = i );
-                break;
-            case "srid":
-                if ( srid != -1 )
+                case "crs" ->
                 {
-                    throw new InvalidArgumentException( String.format( "Duplicate field '%s' is not allowed.", key ) );
+                    checkUnassigned( crs, key );
+                    assignTextValue( key, value, str -> crs = QUOTES_PATTERN.matcher( str ).replaceAll( "" ) );
                 }
-                assignIntegral( key, value, i -> srid = i );
-                break;
-            default:
+
+                case "x" ->
+                {
+                    checkUnassigned( x, key );
+                    assignFloatingPoint( key, value, i -> x = i );
+                }
+
+                case "y" ->
+                {
+                    checkUnassigned( y, key );
+                    assignFloatingPoint( key, value, i -> y = i );
+                }
+
+                case "z" ->
+                {
+                    checkUnassigned( z, key );
+                    assignFloatingPoint( key, value, i -> z = i );
+                }
+
+                case "longitude" ->
+                {
+                    checkUnassigned( longitude, key );
+                    assignFloatingPoint( key, value, i -> longitude = i );
+                }
+
+                case "latitude" ->
+                {
+                    checkUnassigned( latitude, key );
+                    assignFloatingPoint( key, value, i -> latitude = i );
+                }
+
+                case "height" ->
+                {
+                    checkUnassigned( height, key );
+                    assignFloatingPoint( key, value, i -> height = i );
+                }
+
+                case "srid" ->
+                {
+                    if ( srid != -1 )
+                    {
+                        throw new InvalidArgumentException( String.format( "Duplicate field '%s' is not allowed.", key ) );
+                    }
+                    assignIntegral( key, value, i -> srid = i );
+                }
+
+                default -> { }
             }
         }
 

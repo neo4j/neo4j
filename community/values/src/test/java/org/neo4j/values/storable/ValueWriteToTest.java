@@ -32,8 +32,8 @@ import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.values.storable.BufferValueWriter.Specials.beginArray;
 import static org.neo4j.values.storable.BufferValueWriter.Specials.byteArray;
 import static org.neo4j.values.storable.BufferValueWriter.Specials.endArray;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.ValueWriter.ArrayType.BOOLEAN;
 import static org.neo4j.values.storable.ValueWriter.ArrayType.CHAR;
 import static org.neo4j.values.storable.ValueWriter.ArrayType.DOUBLE;
@@ -61,8 +61,8 @@ class ValueWriteToTest
             of( shouldWrite( 'x', 'x' ) ),
             of( shouldWrite( "Hi", "Hi" ) ),
             of( shouldWrite( Values.NO_VALUE, (Object) null ) ),
-            of( shouldWrite( Values.pointValue( Cartesian, 1, 2 ), Values.pointValue( Cartesian, 1, 2 ) ) ),
-            of( shouldWrite( Values.pointValue( WGS84, 1, 2 ), Values.pointValue( WGS84, 1, 2 ) ) ),
+            of( shouldWrite( Values.pointValue( CARTESIAN, 1, 2 ), Values.pointValue( CARTESIAN, 1, 2 ) ) ),
+            of( shouldWrite( Values.pointValue( WGS_84, 1, 2 ), Values.pointValue( WGS_84, 1, 2 ) ) ),
             of( shouldWrite( LocalDate.of( 1991, 10, 18 ), DateValue.date( 1991, 10, 18 ) ) ),
 
             of( shouldWrite( new byte[]{1, 2, 3}, byteArray( new byte[]{1, 2, 3} ) ) ),

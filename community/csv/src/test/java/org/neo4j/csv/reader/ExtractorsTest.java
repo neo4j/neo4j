@@ -138,7 +138,7 @@ class ExtractorsTest
     {
         // GIVEN
         Extractors extractors = new Extractors( ',' );
-        PointValue value = Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.7 );
+        PointValue value = Values.pointValue( CoordinateReferenceSystem.WGS_84, 13.2, 56.7 );
 
         // WHEN
         char[] asChars = "Point{latitude: 56.7, longitude: 13.2}".toCharArray();
@@ -316,8 +316,8 @@ class ExtractorsTest
         // WHEN
         extractor.extract( asChars, 0, asChars.length, false, PointValue.parseHeaderInformation( headerInfo ) );
 
-        var value = Values.pointArray( array( Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.7 ),
-                                              Values.pointValue( CoordinateReferenceSystem.WGS84, 0.25, 0.7 ) ) );
+        var value = Values.pointArray( array( Values.pointValue( CoordinateReferenceSystem.WGS_84, 13.2, 56.7 ),
+                                              Values.pointValue( CoordinateReferenceSystem.WGS_84, 0.25, 0.7 ) ) );
         // THEN
         assertEquals( value, extractor.value() );
     }

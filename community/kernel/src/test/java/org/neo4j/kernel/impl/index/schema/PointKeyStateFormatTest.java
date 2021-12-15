@@ -34,10 +34,10 @@ public class PointKeyStateFormatTest extends IndexKeyStateFormatTest<PointKey>
     void populateValues( List<Value> values )
     {
         // Some points selected randomly. One for each crs.
-        values.add( Values.pointValue( CoordinateReferenceSystem.Cartesian, 764544.2109309451, 181214.06418126775 ) );
-        values.add( Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, -19020.757072408567, 292885.859461074, -599001.3101378167 ) );
-        values.add( Values.pointValue( CoordinateReferenceSystem.WGS84, -117.4416383571589, 66.28879082642959 ) );
-        values.add( Values.pointValue( CoordinateReferenceSystem.WGS84_3D, -62.00488758672253, 19.002727191347063, 600447.8589570583 ) );
+        values.add( Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 764544.2109309451, 181214.06418126775 ) );
+        values.add( Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, -19020.757072408567, 292885.859461074, -599001.3101378167 ) );
+        values.add( Values.pointValue( CoordinateReferenceSystem.WGS_84, -117.4416383571589, 66.28879082642959 ) );
+        values.add( Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, -62.00488758672253, 19.002727191347063, 600447.8589570583 ) );
     }
 
     @Override

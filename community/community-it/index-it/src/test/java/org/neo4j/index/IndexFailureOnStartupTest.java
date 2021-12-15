@@ -134,7 +134,7 @@ public class IndexFailureOnStartupTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = tx.createNode( PERSON );
-                node.setProperty( "name", Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2 ) );
+                node.setProperty( "name", Values.pointValue( CoordinateReferenceSystem.WGS_84, 1, 2 ) );
                 tx.commit();
             }
 

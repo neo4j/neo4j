@@ -520,9 +520,9 @@ class CsvInputTest
         {
             // THEN
             assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "point",
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 2.7, 3.2) }, labels() );
+                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 2.7, 3.2) }, labels() );
             assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "point",
-                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 5, -4.2, 0.01)}, labels() );
+                    Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 5, -4.2, 0.01)}, labels() );
             assertFalse( readNext( nodes ) );
         }
     }
@@ -567,7 +567,7 @@ class CsvInputTest
         {
             // THEN
             assertNextNode( nodes, 0L, new Object[]{"name", "Johan", "point",
-                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 5, -4.2, 0.01)}, labels() );
+                    Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 5, -4.2, 0.01)}, labels() );
             assertFalse( readNext( nodes ) );
         }
     }
@@ -589,7 +589,7 @@ class CsvInputTest
         {
             // THEN
             assertNextNode( nodes, 0L, new Object[]{"name", "Johan", "point",
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2)}, labels() );
+                    Values.pointValue( CoordinateReferenceSystem.WGS_84, 1, 2)}, labels() );
             assertFalse( readNext( nodes ) );
         }
     }

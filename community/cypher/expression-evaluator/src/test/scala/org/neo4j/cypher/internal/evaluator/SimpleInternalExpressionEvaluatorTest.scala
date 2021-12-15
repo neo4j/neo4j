@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.evaluator
 import org.junit.runner.RunWith
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.values.storable.CoordinateReferenceSystem
-import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
+import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.storable.Values.pointValue
@@ -61,7 +61,7 @@ class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
     val evaluator = new SimpleInternalExpressionEvaluator
 
     evaluator.evaluate("point({ latitude: 12, longitude: 56, height: 1000 })") should
-      equal(pointValue(WGS84_3D, 56, 12, 1000))
+      equal(pointValue(WGS_84_3D, 56, 12, 1000))
     evaluator.evaluate("sin(pi())") should equal(Values.doubleValue(sin(PI)))
   }
 
@@ -104,8 +104,8 @@ class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
     evaluator
       .evaluate(
         expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("point({ latitude: p.y, longitude: p.x, height: 1000 })"),
-        context = CypherRow.from("p" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 56, 12))
+        context = CypherRow.from("p" -> Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 56, 12))
       )
-      .shouldEqual(pointValue(WGS84_3D, 56, 12, 1000))
+      .shouldEqual(pointValue(WGS_84_3D, 56, 12, 1000))
   }
 }

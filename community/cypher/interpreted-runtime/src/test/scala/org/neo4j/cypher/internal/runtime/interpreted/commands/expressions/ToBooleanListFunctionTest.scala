@@ -78,7 +78,7 @@ class ToBooleanListFunctionTest extends CypherFunSuite with GeneratorDrivenPrope
   }
 
   test("should not throw an exception if the list argument contains an object which cannot be converted to booleans") {
-    assert(toBooleanList(Seq("true", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0))) === VirtualValues.list(Values.TRUE, NO_VALUE))
+    assert(toBooleanList(Seq("true", Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 0))) === VirtualValues.list(Values.TRUE, NO_VALUE))
   }
 
   test("should throw an exception if the list argument contains a non-list") {
