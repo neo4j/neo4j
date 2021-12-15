@@ -416,7 +416,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle types missing on compile") {
-    //flaky, https://trello.com/c/z5lIfZqW
+    //flaky
     assume(!(isParallel && runOnlySafeScenarios))
     val (n1, n2) = given {
       val n1 = tx.createNode(Label.label("X"))
