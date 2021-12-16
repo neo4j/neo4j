@@ -112,12 +112,16 @@ public class TransactionLogQueue extends LifecycleAdapter
     {
         stopped = true;
         TransactionWriter writer = this.transactionWriter;
-
         if ( writer != null )
         {
             writer.stop();
         }
-        logAppender.join();
+
+        Thread appender = this.logAppender;
+        if ( appender != null )
+        {
+            appender.join();
+        }
     }
 
     static class TxQueueElement
@@ -244,7 +248,6 @@ public class TransactionLogQueue extends LifecycleAdapter
 
         private static class TxConsumer implements MessagePassingQueue.Consumer<TxQueueElement>
         {
-            private static final int NOTIFY_GROUP_SIZE = 8;
             private final Health databaseHealth;
             private final TransactionIdStore transactionIdStore;
             private final TransactionLogWriter transactionLogWriter;
@@ -342,22 +345,13 @@ public class TransactionLogQueue extends LifecycleAdapter
             public void complete()
             {
                 int lastIndex = index - 1;
-                var threadGroup = new Thread[Math.min( NOTIFY_GROUP_SIZE, lastIndex )];
-                int groupIndex = 0;
+                var threadGroup = new Thread[lastIndex];
                 for ( int i = 0; i < lastIndex; i++ )
                 {
                     TxQueueElement txElement = txElements[i];
-                    if ( groupIndex == NOTIFY_GROUP_SIZE )
-                    {
-                        txElement.threadsToNotify = threadGroup;
-                        threadGroup = new Thread[Math.min( NOTIFY_GROUP_SIZE, lastIndex - i )];
-                        groupIndex = 0;
-
-                    }
-                    threadGroup[groupIndex++] = txElement.executor;
+                    threadGroup[i] = txElement.executor;
                     txElement.txId = txIds[i];
                 }
-
                 TxQueueElement lastElement = txElements[lastIndex];
                 lastElement.threadsToNotify = threadGroup;
                 lastElement.txId = txIds[lastIndex];
