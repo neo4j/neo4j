@@ -68,6 +68,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
+import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
@@ -355,6 +356,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       RewriteProcedureCalls andThen
       SemanticAnalysis(warn = true) andThen
       Namespacer andThen
+      ProjectNamedPathsRewriter andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizerTest.getTransformer andThen
       collapseMultipleInPredicates andThen
