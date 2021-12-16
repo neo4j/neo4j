@@ -129,14 +129,14 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
     void initValueAsLowest( ValueGroup valueGroup )
     {
         clear();
-        type = valueGroup == ValueGroup.UNKNOWN ? getLowestByValueGroup() : getTypesByGroup()[valueGroup.ordinal()];
+        type = valueGroup == ValueGroup.UNKNOWN || valueGroup == ValueGroup.ANYTHING ? getLowestByValueGroup() : getTypesByGroup()[valueGroup.ordinal()];
         type.initializeAsLowest( this );
     }
 
     void initValueAsHighest( ValueGroup valueGroup )
     {
         clear();
-        type = valueGroup == ValueGroup.UNKNOWN ? getHighestByValueGroup() : getTypesByGroup()[valueGroup.ordinal()];
+        type = valueGroup == ValueGroup.UNKNOWN || valueGroup == ValueGroup.ANYTHING ? getHighestByValueGroup() : getTypesByGroup()[valueGroup.ordinal()];
         type.initializeAsHighest( this );
     }
 
