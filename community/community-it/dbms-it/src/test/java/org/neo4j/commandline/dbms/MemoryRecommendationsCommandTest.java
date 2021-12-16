@@ -429,7 +429,6 @@ class MemoryRecommendationsCommandTest
                 }
             } );
         }
-        pageCacheTotal.add( Files.size( databaseLayout.labelScanStore() ) );
         return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }
 

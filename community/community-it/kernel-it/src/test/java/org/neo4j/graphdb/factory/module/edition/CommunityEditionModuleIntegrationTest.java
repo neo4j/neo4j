@@ -78,8 +78,6 @@ class CommunityEditionModuleIntegrationTest
         assertFalse( filter.test( databaseLayout.nodeStore().getFileName().toString() ) );
         assertTrue( filter.test( TransactionLogFilesHelper.DEFAULT_NAME + ".1" ) );
         assertTrue( filter.test( TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".1" ) );
-        assertTrue( filter.test( databaseLayout.labelScanStore().getFileName().toString() ) );
-        assertTrue( filter.test( databaseLayout.relationshipTypeScanStore().getFileName().toString() ) );
     }
 
 }

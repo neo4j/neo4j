@@ -359,20 +359,12 @@ public class MemoryRecommendationsCommand extends AbstractCommand
                 total += fileSystem.getFileSize( path );
             }
 
-            // Include label index
-            total += sizeOfFileIfExists( databaseLayout.labelScanStore() );
             return total;
         }
         catch ( IOException e )
         {
             return 0;
         }
-    }
-
-    private long sizeOfFileIfExists( Path file ) throws IOException
-    {
-        FileSystemAbstraction fileSystem = ctx.fs();
-        return fileSystem.fileExists( file ) ? fileSystem.getFileSize( file ) : 0;
     }
 
     private long sumIndexFiles( Path file, DirectoryStream.Filter<Path> filter ) throws IOException

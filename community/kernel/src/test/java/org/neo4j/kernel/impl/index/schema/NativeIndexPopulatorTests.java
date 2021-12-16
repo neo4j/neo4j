@@ -65,14 +65,6 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         valueUtil = new NativeValueIndexUtility<>( valueCreatorUtil, layout );
     }
 
-    @Override
-    IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor )
-    {
-        IndexDirectoryStructure indexDirectoryStructure =
-                directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
-        return new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
-    }
-
     byte failureByte()
     {
         return BYTE_FAILED;

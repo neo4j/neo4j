@@ -40,11 +40,13 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
@@ -63,6 +65,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 @ExtendWith( RandomExtension.class )
@@ -198,17 +201,10 @@ class ReadEntityIdsStepUsingTokenIndexTest
 
     private TokenIndexAccessor indexAccessor()
     {
+        IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() )
+                .forProvider( TokenIndexProvider.DESCRIPTOR );
+        IndexFiles indexFiles = new IndexFiles.Directory( testDir.getFileSystem(), indexDirectoryStructure, INDEX_DESCRIPTOR.getId() );
         return new TokenIndexAccessor( DatabaseIndexContext.builder( pageCache, testDir.getFileSystem(), DEFAULT_DATABASE_NAME ).build(),
-                                       databaseLayout,
-                                       new IndexFiles.SingleFile( testDir.getFileSystem(), databaseLayout.labelScanStore() ),
-                                       config(), INDEX_DESCRIPTOR, immediate() );
-    }
-
-    private Config config()
-    {
-        return Config.newBuilder()
-                     .set( neo4j_home, testDir.absolutePath() )
-                     .set( preallocate_logical_logs, false )
-                     .build();
+                indexFiles, INDEX_DESCRIPTOR, immediate() );
     }
 }

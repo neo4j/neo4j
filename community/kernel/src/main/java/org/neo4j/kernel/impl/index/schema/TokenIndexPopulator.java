@@ -24,11 +24,8 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
-import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -42,28 +39,13 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
 {
-    /**
-     * The type of entity this token index is backing.
-     */
-    private final EntityType entityType;
-
-    /**
-     * Layout of the database.
-     */
-    private final DatabaseLayout directoryStructure;
-    private final Config config;
-
     private byte[] failureBytes;
     private boolean dropped;
     private boolean closed;
 
-    TokenIndexPopulator( DatabaseIndexContext databaseIndexContext, DatabaseLayout directoryStructure, IndexFiles indexFiles, Config config,
-            IndexDescriptor descriptor )
+    TokenIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor )
     {
         super( databaseIndexContext, indexFiles, descriptor );
-        this.directoryStructure = directoryStructure;
-        this.config = config;
-        this.entityType = descriptor.schema().entityType();
     }
 
     @Override
@@ -74,7 +56,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
 
         indexFiles.clear();
         instantiateTree( RecoveryCleanupWorkCollector.immediate(), new NativeIndexHeaderWriter( POPULATING ) );
-        instantiateUpdater( config, directoryStructure, entityType );
+        instantiateUpdater();
     }
 
     @Override

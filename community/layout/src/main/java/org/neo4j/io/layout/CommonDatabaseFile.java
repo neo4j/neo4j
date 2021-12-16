@@ -21,8 +21,6 @@ package org.neo4j.io.layout;
 
 public enum CommonDatabaseFile implements DatabaseFile
 {
-    LABEL_SCAN_STORE( "neostore.labelscanstore.db" ),
-    RELATIONSHIP_TYPE_SCAN_STORE( "neostore.relationshiptypescanstore.db" ),
     INDEX_STATISTICS_STORE( "neostore.indexstats.db" ),
     METADATA_STORE( "neostore" );
 

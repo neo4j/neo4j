@@ -62,7 +62,7 @@ public class TokenIndexProviderTest extends IndexProviderTests
     @Override
     IndexDescriptor otherDescriptor()
     {
-        return completeConfiguration( forSchema( forAnyEntityTokens( EntityType.RELATIONSHIP ) ).withName( "relTypeIndex" ).materialise( indexId ) );
+        return completeConfiguration( forSchema( forAnyEntityTokens( EntityType.RELATIONSHIP ) ).withName( "relTypeIndex" ).materialise( indexId + 1 ) );
     }
 
     @Override

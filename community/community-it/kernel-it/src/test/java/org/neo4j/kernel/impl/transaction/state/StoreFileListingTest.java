@@ -53,6 +53,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.utils.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -80,7 +81,6 @@ class StoreFileListingTest
             "neostore",
             "neostore.id",
             "neostore.counts.db",
-            "neostore.labelscanstore.db",
             "neostore.labeltokenstore.db",
             "neostore.labeltokenstore.db.id",
             "neostore.labeltokenstore.db.names",
@@ -209,12 +209,16 @@ class StoreFileListingTest
     {
         DatabaseLayout layout = database.getDatabaseLayout();
         Set<Path> expectedFiles = layout.storeFiles();
+        expectedFiles.remove( layout.indexStatisticsStore() );
         // there was no rotation
-        ResourceIterator<StoreFileMetadata> storeFiles = database.listStoreFiles( false );
-        Set<Path> listedStoreFiles = storeFiles.stream()
-                .map( StoreFileMetadata::path )
-                .collect( Collectors.toSet() );
-        assertEquals( expectedFiles, listedStoreFiles );
+        StoreFileListing.Builder fileListingBuilder = database.getStoreFileListing().builder();
+        fileListingBuilder.excludeIdFiles();
+        fileListingBuilder.excludeLogFiles();
+        fileListingBuilder.excludeSchemaIndexStoreFiles();
+        Set<Path> listedStoreFiles = fileListingBuilder.build().stream()
+                                                       .map( StoreFileMetadata::path )
+                                                       .collect( Collectors.toSet() );
+        assertThat( listedStoreFiles ).containsExactlyInAnyOrderElementsOf( expectedFiles );
     }
 
     @Test

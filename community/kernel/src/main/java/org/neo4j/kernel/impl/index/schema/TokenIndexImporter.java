@@ -29,11 +29,11 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
@@ -75,7 +75,9 @@ public class TokenIndexImporter implements IndexImporter
     private TokenIndexAccessor tokenIndexAccessor( DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache, Config config )
     {
         var context = DatabaseIndexContext.builder( pageCache, fs, layout.getDatabaseName() ).build();
-        var path = index.schema().entityType() == NODE ? layout.labelScanStore() : layout.relationshipTypeScanStore();
-        return new TokenIndexAccessor( context, layout, new IndexFiles.SingleFile( fs, path ), config, index, immediate() );
+        IndexDirectoryStructure indexDirectoryStructure = IndexDirectoryStructure.directoriesByProvider( layout.databaseDirectory() )
+                                                                                 .forProvider( TokenIndexProvider.DESCRIPTOR );
+        IndexFiles indexFiles = TokenIndexProvider.indexFiles( index, config, fs, indexDirectoryStructure, layout );
+        return new TokenIndexAccessor( context, indexFiles, index, immediate() );
     }
 }

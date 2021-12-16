@@ -22,9 +22,9 @@ package org.neo4j.batchinsert.internal;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
@@ -34,13 +34,18 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
@@ -55,12 +60,12 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -76,6 +81,8 @@ public class BatchInsertTokenIndexesTest
     private DatabaseLayout databaseLayout;
 
     private DatabaseManagementService managementService;
+    private IndexDescriptor labelTokenIdx;
+    private IndexDescriptor relationshipTypeTokenIdx;
 
     @Test
     void shouldPopulateTokenIndexesOnShutdown() throws Exception
@@ -88,6 +95,7 @@ public class BatchInsertTokenIndexesTest
             try ( var tx = db.beginTx() )
             {
                 var indexes = tx.schema().getIndexes();
+                setDescriptors( indexes );
                 assertThat( indexes ).hasSize( 2 );
                 tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             }
@@ -132,6 +140,24 @@ public class BatchInsertTokenIndexesTest
         }
     }
 
+    private void setDescriptors( Iterable<IndexDefinition> indexes )
+    {
+        StreamSupport.stream( indexes.spliterator(), false )
+                     .filter( idx -> idx.getIndexType() == IndexType.LOOKUP )
+                     .forEach( idx ->
+                     {
+                         IndexDescriptor descriptor = ((IndexDefinitionImpl) idx).getIndexReference();
+                         if ( idx.isNodeIndex() )
+                         {
+                             labelTokenIdx = descriptor;
+                         }
+                         else
+                         {
+                             relationshipTypeTokenIdx = descriptor;
+                         }
+                     } );
+    }
+
     private static void assertTokenIndexContains( TokenIndexReader reader, int tokenId, Long... intityIds )
     {
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
@@ -159,6 +185,7 @@ public class BatchInsertTokenIndexesTest
         return Config.newBuilder()
                      .set( neo4j_home, testDirectory.absolutePath() )
                      .set( preallocate_logical_logs, false )
+                     .set( use_old_token_index_location, false )
                      .build();
     }
 
@@ -166,11 +193,11 @@ public class BatchInsertTokenIndexesTest
     {
         var context = DatabaseIndexContext.builder( pageCache, fs, databaseLayout.getDatabaseName() ).build();
 
-        var id = forSchema( forAnyEntityTokens( entityType ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
-        Path path = entityType == EntityType.NODE ? databaseLayout.labelScanStore() : databaseLayout.relationshipTypeScanStore();
-        return new TokenIndexAccessor( context, databaseLayout, new IndexFiles.SingleFile( fs, path ), configuration(), id,
-                RecoveryCleanupWorkCollector
-                        .immediate() );
+        IndexDescriptor descriptor = entityType == EntityType.NODE ? labelTokenIdx : relationshipTypeTokenIdx;
+        IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() )
+                .forProvider( TokenIndexProvider.DESCRIPTOR );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, indexDirectoryStructure, descriptor.getId() );
+        return new TokenIndexAccessor( context, indexFiles, descriptor, RecoveryCleanupWorkCollector.immediate() );
     }
 
     private enum Labels implements Label

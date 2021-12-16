@@ -166,8 +166,6 @@ class RecordStorageEngineTest
 
         // then
         Set<Path> allPossibleFiles = databaseLayout.storeFiles();
-        allPossibleFiles.remove( databaseLayout.labelScanStore() );
-        allPossibleFiles.remove( databaseLayout.relationshipTypeScanStore() );
         allPossibleFiles.remove( databaseLayout.indexStatisticsStore() );
 
         assertEquals( allPossibleFiles, currentFiles );

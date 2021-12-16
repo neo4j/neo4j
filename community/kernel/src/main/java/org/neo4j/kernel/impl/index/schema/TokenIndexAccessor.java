@@ -48,14 +48,14 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
 {
     private final EntityType entityType;
 
-    public TokenIndexAccessor( DatabaseIndexContext databaseIndexContext, DatabaseLayout directoryStructure, IndexFiles indexFiles, Config config,
-            IndexDescriptor descriptor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    public TokenIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         super( databaseIndexContext, indexFiles, descriptor );
 
         entityType = descriptor.schema().entityType();
         instantiateTree( recoveryCleanupWorkCollector, new NativeIndexHeaderWriter( ONLINE ) );
-        instantiateUpdater( config, directoryStructure, entityType );
+        instantiateUpdater();
     }
 
     @Override
@@ -66,7 +66,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
         {
             if ( parallel )
             {
-                TokenIndexUpdater parallelUpdater = new TokenIndexUpdater( 1_000, writeMonitor );
+                TokenIndexUpdater parallelUpdater = new TokenIndexUpdater( 1_000 );
                 return parallelUpdater.initialize( index.parallelWriter( cursorContext ) );
             }
             else
@@ -84,7 +84,6 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     public void force( CursorContext cursorContext )
     {
         index.checkpoint( cursorContext );
-        writeMonitor.force();
     }
 
     @Override

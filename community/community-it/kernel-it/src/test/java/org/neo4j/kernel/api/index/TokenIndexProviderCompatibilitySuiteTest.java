@@ -43,10 +43,18 @@ import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.monitoring.Monitors;
 
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderCompatibilityTestSuite
 {
+    @Override
+    void additionalConfig( Config.Builder configBuilder )
+    {
+        super.additionalConfig( configBuilder );
+        configBuilder.set( use_old_token_index_location, false );
+    }
+
     @Override
     IndexPrototype indexPrototype()
     {

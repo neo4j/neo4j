@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.IndexValueCapability;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -58,6 +59,9 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
+import static org.neo4j.storageengine.migration.TokenIndexMigrator.LEGACY_LABEL_INDEX_STORE;
+import static org.neo4j.storageengine.migration.TokenIndexMigrator.LEGACY_RELATIONSHIP_TYPE_INDEX_STORE;
 
 public class TokenIndexProvider extends IndexProvider
 {
@@ -97,13 +101,13 @@ public class TokenIndexProvider extends IndexProvider
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        return new WorkSyncedIndexPopulator( new TokenIndexPopulator( databaseIndexContext, databaseLayout, indexFiles( descriptor ), config, descriptor ) );
+        return new WorkSyncedIndexPopulator( new TokenIndexPopulator( databaseIndexContext, indexFiles( descriptor ), descriptor ) );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
     {
-        return new TokenIndexAccessor( databaseIndexContext, databaseLayout, indexFiles( descriptor ), config, descriptor, recoveryCleanupWorkCollector );
+        return new TokenIndexAccessor( databaseIndexContext, indexFiles( descriptor ), descriptor, recoveryCleanupWorkCollector );
     }
 
     @Override
@@ -138,7 +142,8 @@ public class TokenIndexProvider extends IndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return new TokenIndexMigrator( "Token indexes", fs, storageEngineFactory, databaseLayout );
+        boolean migrateLegacyFiles = !config.get( use_old_token_index_location );
+        return new TokenIndexMigrator( "Token indexes", fs, pageCache, storageEngineFactory, databaseLayout, this::storeFile, migrateLegacyFiles );
     }
 
     @Override
@@ -184,18 +189,29 @@ public class TokenIndexProvider extends IndexProvider
         return IndexType.LOOKUP;
     }
 
-    private Path storeFile( IndexDescriptor descriptor )
+    private Path storeFile( SchemaRule schemaRule )
     {
-        IndexFiles indexFiles = indexFiles( descriptor );
+        IndexFiles indexFiles = indexFiles( schemaRule );
         return indexFiles.getStoreFile();
     }
 
-    private IndexFiles indexFiles( IndexDescriptor descriptor )
+    private IndexFiles indexFiles( SchemaRule schemaRule )
     {
-        EntityType entityType = descriptor.schema().entityType();
+        return indexFiles( schemaRule, config, databaseIndexContext.fileSystem, directoryStructure(), databaseLayout );
+    }
+
+    public static IndexFiles indexFiles( SchemaRule schemaRule, Config config, FileSystemAbstraction fileSystem,
+            IndexDirectoryStructure indexDirectoryStructure, DatabaseLayout databaseLayout )
+    {
+        EntityType entityType = schemaRule.schema().entityType();
         boolean labelIndex = entityType == EntityType.NODE;
-        Path filePath = labelIndex ? databaseLayout.labelScanStore() : databaseLayout.relationshipTypeScanStore();
-        return new IndexFiles.SingleFile( databaseIndexContext.fileSystem, filePath );
+        if ( config.get( use_old_token_index_location ) )
+        {
+            Path filePath = labelIndex ? databaseLayout.file( LEGACY_LABEL_INDEX_STORE ) : databaseLayout.file( LEGACY_RELATIONSHIP_TYPE_INDEX_STORE );
+            return new IndexFiles.SingleFile( fileSystem, filePath );
+        }
+
+        return new IndexFiles.Directory( fileSystem, indexDirectoryStructure, schemaRule.getId() );
     }
 
     private static class TokenIndexCapability implements IndexCapability

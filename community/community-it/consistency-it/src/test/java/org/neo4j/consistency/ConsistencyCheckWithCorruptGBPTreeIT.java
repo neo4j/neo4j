@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -47,6 +48,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBootstrapper;
 import org.neo4j.index.internal.gbptree.GBPTreeCorruption;
@@ -64,7 +66,10 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -78,6 +83,7 @@ import static org.apache.commons.io.IOUtils.readLines;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
@@ -104,6 +110,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     // Re-instantiated in @BeforeEach using sourceSnapshot
     private EphemeralFileSystemAbstraction fs;
 
+    private Path labelTokenIndexFile;
+    private Path relationshipTypeIndexFile;
+
     @BeforeAll
     void createIndex() throws Exception
     {
@@ -115,6 +124,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     {
                         indexWithStringData( db, label );
                         databaseLayout = RecordDatabaseLayout.cast( ((GraphDatabaseAPI) db).databaseLayout() );
+                        setTokenIndexFiles( db );
                     },
                     // Config
                     builder -> {} );
@@ -568,12 +578,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     void corruptionInNodeLabelIndex() throws Exception
     {
         MutableObject<Long> rootNode = new MutableObject<>();
-        Path labelScanStoreFile = labelScanStoreFile();
         corruptIndexes( readOnly(), ( tree, inspection ) -> {
             rootNode.setValue( inspection.rootNode() );
             tree.unsafe( pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
                     CursorContext.NULL );
-        }, labelScanStoreFile );
+        }, labelTokenIndexFile );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
         assertFalse( result.isSuccessful() );
@@ -585,12 +594,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     void corruptionInRelationshipTypeIndex() throws Exception
     {
         MutableObject<Long> rootNode = new MutableObject<>();
-        Path relationshipTypeScanStoreFile = relationshipTypeScanStoreFile();
         corruptIndexes( readOnly(), ( tree, inspection ) -> {
             rootNode.setValue( inspection.rootNode() );
             tree.unsafe( pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
                     CursorContext.NULL );
-        }, relationshipTypeScanStoreFile );
+        }, relationshipTypeIndexFile );
 
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
         assertFalse( result.isSuccessful() );
@@ -765,7 +773,10 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             LogProvider logProvider, OutputStream progressOutput, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig )
             throws ConsistencyCheckIncompleteException
     {
-        Config config = Config.defaults( neo4j_home, neo4jHome );
+        Config config = Config.newBuilder()
+                              .set( neo4j_home, neo4jHome )
+                              .set( use_old_token_index_location, false )
+                              .build();
         adaptConfig.accept( config );
         return new ConsistencyCheckService( databaseLayout )
                 .with( config )
@@ -787,6 +798,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         dbConfiguration.accept( builder );
         final DatabaseManagementService dbms = builder
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
+                .setConfig( use_old_token_index_location, false )
                 .build();
         try
         {
@@ -797,16 +809,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         {
             dbms.shutdown();
         }
-    }
-
-    private Path labelScanStoreFile()
-    {
-        return databaseLayout.labelScanStore();
-    }
-
-    private Path relationshipTypeScanStoreFile()
-    {
-        return databaseLayout.relationshipTypeScanStore();
     }
 
     private Path indexStatisticsStoreFile()
@@ -926,6 +928,32 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         char[] chars = new char[1000];
         Arrays.fill( chars, 'a' );
         return new String( chars );
+    }
+
+    private void setTokenIndexFiles( GraphDatabaseService db )
+    {
+        try ( var tx = db.beginTx() )
+        {
+            StreamSupport.stream( tx.schema().getIndexes().spliterator(), false )
+                         .filter( idx -> idx.getIndexType() == IndexType.LOOKUP )
+                         .forEach( idx ->
+                         {
+                             IndexDirectoryStructure indexDirectoryStructure =
+                                     IndexDirectoryStructure.directoriesByProvider( databaseLayout.databaseDirectory() )
+                                                            .forProvider( TokenIndexProvider.DESCRIPTOR );
+                             long id = ((IndexDefinitionImpl) idx).getIndexReference().getId();
+                             IndexFiles indexFiles =
+                                     new IndexFiles.Directory( fs, indexDirectoryStructure, id );
+                             if ( idx.isNodeIndex() )
+                             {
+                                 labelTokenIndexFile = indexFiles.getStoreFile();
+                             }
+                             else
+                             {
+                                 relationshipTypeIndexFile = indexFiles.getStoreFile();
+                             }
+                         } );
+        }
     }
 
     @FunctionalInterface

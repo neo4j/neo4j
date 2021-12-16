@@ -56,6 +56,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -216,16 +217,19 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         assertDatabaseIsNonExistent();
 
-        // There may have been a previous import which was killed before it even started, where the label scan store could
-        // be in a semi-initialized state. Better to be on the safe side and deleted it. We get her after determining that
-        // the db is either completely empty or non-existent anyway, so deleting this file is OK.
-        if ( fileSystem.fileExists( databaseLayout.labelScanStore() ) )
-        {
-            fileSystem.deleteFile( databaseLayout.labelScanStore() );
-        }
+        deleteIndexes();
         deleteCountsStore();
 
         instantiateStores();
+    }
+
+    private void deleteIndexes() throws IOException
+    {
+        // There might have been a previous import which was killed before it even started, where the token indexes could
+        // be in a semi-initialized state. Better to be on the safe side and deleted them. We get here after determining that
+        // the db is either completely empty or non-existent anyway, so deleting this file is OK.
+        Path indexDirectory = IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() );
+        fileSystem.deleteRecursively( indexDirectory );
     }
 
     private void deleteCountsStore() throws IOException

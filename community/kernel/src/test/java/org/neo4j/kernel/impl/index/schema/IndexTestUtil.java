@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -50,6 +51,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -101,11 +103,16 @@ public abstract class IndexTestUtil<KEY,VALUE, LAYOUT extends Layout<KEY,VALUE>>
         jobScheduler.shutdown();
     }
 
-    abstract IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor );
-
     abstract IndexDescriptor indexDescriptor();
 
     abstract LAYOUT layout();
+
+    private IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor )
+    {
+        IndexDirectoryStructure indexDirectoryStructure =
+                directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
+        return new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
+    }
 
     GBPTree<KEY,VALUE> getTree()
     {

@@ -159,14 +159,6 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
     }
 
     @Override
-    IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor )
-    {
-        IndexDirectoryStructure indexDirectoryStructure =
-                directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
-        return new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
-    }
-
-    @Override
     IndexDescriptor indexDescriptor()
     {
         return index;

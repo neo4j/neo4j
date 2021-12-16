@@ -36,6 +36,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+
 public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<TokenIndexProvider>
 {
     @Override
@@ -66,10 +68,7 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
             String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
     {
-        // Token indexes are directly in the store directory (because that's where the scan stores resided, and switching the scan stores
-        // to be indexes shouldn't require any rebuilding/moving).
-        IndexDirectoryStructure.Factory directoryStructure = IndexDirectoryStructure.noSubDirectory( storeDir );
-
+        IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         DatabaseIndexContext databaseIndexContext =
                 DatabaseIndexContext.builder( pageCache, fs, databaseLayout.getDatabaseName() ).withMonitors( monitors ).withTag( monitorTag )
                         .withReadOnlyChecker( readOnlyChecker ).withPageCacheTracer( pageCacheTracer ).build();

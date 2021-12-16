@@ -38,7 +38,6 @@ import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
@@ -79,8 +78,6 @@ import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.io.layout.CommonDatabaseFile.LABEL_SCAN_STORE;
-import static org.neo4j.io.layout.CommonDatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE;
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
 /**
@@ -242,7 +239,6 @@ public abstract class AbstractEditionModule
 
     protected static Predicate<String> defaultFileWatcherFilter()
     {
-        return Predicates.any( TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE, filename ->
-                filename.contains( LABEL_SCAN_STORE.getName() ) || filename.contains( RELATIONSHIP_TYPE_SCAN_STORE.getName() ) );
+        return TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE;
     }
 }

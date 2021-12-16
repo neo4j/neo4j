@@ -20,49 +20,82 @@
 package org.neo4j.storageengine.migration;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.function.Function;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 /**
  * Migrates token indexes between different neo4j versions. Participates in store upgrade as one of the migration participants.
+ * Also takes care of migration from versions before 5.0.
  */
 public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
 {
+    public static String LEGACY_LABEL_INDEX_STORE = "neostore.labelscanstore.db";
+    public static String LEGACY_RELATIONSHIP_TYPE_INDEX_STORE = "neostore.relationshiptypescanstore.db";
+
     private final FileSystemAbstraction fileSystem;
+    private final PageCache pageCache;
     private final StorageEngineFactory storageEngineFactory;
     private final DatabaseLayout layout;
+    private final Function<SchemaRule,Path> storeFileProvider;
     private boolean deleteRelationshipTokenIndex;
+    private boolean moveFiles;
+    private final boolean migrateLegacyFiles;
 
-    public TokenIndexMigrator( String name, FileSystemAbstraction fileSystem, StorageEngineFactory storageEngineFactory, DatabaseLayout layout )
+    public TokenIndexMigrator( String name, FileSystemAbstraction fileSystem, PageCache pageCache, StorageEngineFactory storageEngineFactory,
+            DatabaseLayout layout, Function<SchemaRule,Path> storeFileProvider, boolean migrateLegacyFiles )
     {
         super( name );
         this.fileSystem = fileSystem;
+        this.pageCache = pageCache;
         this.storageEngineFactory = storageEngineFactory;
         this.layout = layout;
+        this.storeFileProvider = storeFileProvider;
+        this.migrateLegacyFiles = migrateLegacyFiles;
     }
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
-                         String versionToMigrateFrom, String versionToMigrateTo, IndexImporterFactory indexImporterFactory )
+            String versionToMigrateFrom, String versionToMigrateTo, IndexImporterFactory indexImporterFactory )
     {
         StoreVersion fromVersion = storageEngineFactory.versionInformation( versionToMigrateFrom );
         StoreVersion toVersion = storageEngineFactory.versionInformation( versionToMigrateTo );
         deleteRelationshipTokenIndex = !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.FORMAT );
+        // Token indexes were stored at a different location before 5.0
+        // This migrator will take them to the 5.0+ location
+        moveFiles = migrateLegacyFiles
+                && (scanStoreExists( directoryLayout, LEGACY_LABEL_INDEX_STORE ) || scanStoreExists( directoryLayout, LEGACY_RELATIONSHIP_TYPE_INDEX_STORE ) );
+    }
+
+    private boolean scanStoreExists( DatabaseLayout directoryLayout, String fileName )
+    {
+        return fileSystem.fileExists( directoryLayout.file( fileName ) );
     }
 
     @Override
     public void moveMigratedFiles(
             DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom, String versionToMigrateTo ) throws IOException
     {
+        if ( moveFiles )
+        {
+            moveTokenIndexes( directoryLayout );
+        }
+
         if ( deleteRelationshipTokenIndex )
         {
-            fileSystem.deleteFile( layout.relationshipTypeScanStore() );
+            deleteRelationshipTypeTokenIndex( directoryLayout );
         }
     }
 
@@ -70,5 +103,63 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
     public void cleanup( DatabaseLayout migrationLayout )
     {
         // nop
+    }
+
+    private void moveTokenIndexes( DatabaseLayout databaseLayout ) throws IOException
+    {
+        for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r,
+                PageCacheTracer.NULL ) )
+        {
+            if ( !schemaRule.schema().isAnyTokenSchemaDescriptor() )
+            {
+                continue;
+            }
+
+            if ( schemaRule.schema().entityType() == EntityType.NODE )
+            {
+                moveFile( schemaRule, LEGACY_LABEL_INDEX_STORE );
+            }
+            else
+            {
+                moveFile( schemaRule, LEGACY_RELATIONSHIP_TYPE_INDEX_STORE );
+            }
+        }
+    }
+
+    private void moveFile( SchemaRule schemaRule, String legacyFileName ) throws IOException
+    {
+        if ( scanStoreExists( layout, legacyFileName ) )
+        {
+            Path destination = storeFileProvider.apply( schemaRule );
+            try
+            {
+                fileSystem.mkdirs( destination.getParent() );
+                fileSystem.renameFile( layout.file( legacyFileName ), destination );
+            }
+            catch ( IOException e )
+            {
+                throw new IOException( "Failed to move LOOKUP index files to index directory during migration", e );
+            }
+        }
+    }
+
+    private void deleteRelationshipTypeTokenIndex( DatabaseLayout databaseLayout ) throws IOException
+    {
+        for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r,
+                PageCacheTracer.NULL ) )
+        {
+            if ( schemaRule.schema().isAnyTokenSchemaDescriptor() && schemaRule.schema().entityType() == EntityType.RELATIONSHIP )
+            {
+                Path indexFile = storeFileProvider.apply( schemaRule );
+                try
+                {
+                    fileSystem.deleteFile( indexFile );
+                }
+                catch ( IOException e )
+                {
+                    throw new IOException( "Failed to remove a relationship LOOKUP index file during migration", e );
+                }
+            }
+        }
     }
 }

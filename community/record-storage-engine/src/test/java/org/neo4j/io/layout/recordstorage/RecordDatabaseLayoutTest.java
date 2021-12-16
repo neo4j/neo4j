@@ -58,7 +58,6 @@ class RecordDatabaseLayoutTest
     {
         assertEquals( "neostore", layout.metadataStore().getFileName().toString() );
         assertEquals( "neostore.counts.db", layout.countStore().getFileName().toString() );
-        assertEquals( "neostore.labelscanstore.db", layout.labelScanStore().getFileName().toString() );
         assertEquals( "neostore.labeltokenstore.db", layout.labelTokenStore().getFileName().toString() );
         assertEquals( "neostore.labeltokenstore.db.names", layout.labelTokenNamesStore().getFileName().toString() );
         assertEquals( "neostore.nodestore.db", layout.nodeStore().getFileName().toString() );
@@ -100,7 +99,6 @@ class RecordDatabaseLayoutTest
         Set<String> files = layout.storeFiles().stream().map( Path::getFileName ).map( Path::toString ).collect( toSet() );
         assertThat( files ).contains( "neostore" );
         assertThat( files ).contains( "neostore.counts.db" );
-        assertThat( files ).contains( "neostore.labelscanstore.db" );
         assertThat( files ).contains( "neostore.labeltokenstore.db" );
         assertThat( files ).contains( "neostore.labeltokenstore.db.names" );
         assertThat( files ).contains( "neostore.nodestore.db" );

@@ -83,7 +83,7 @@ class TokenIndexReaderTest
         // GIVEN an index with entries
         int expectedNodes = 5;
         int labelId = 1;
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( expectedNodes, TokenIndex.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( expectedNodes ) )
         {
             writer.initialize( tree.writer( NULL ) );
             for ( int i = 0; i < expectedNodes; i++ )
@@ -137,7 +137,7 @@ class TokenIndexReaderTest
         int labelId = 1;
         int highNodeId = 100_000;
         BitSet expected = new BitSet( highNodeId );
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( highNodeId, TokenIndex.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( highNodeId ) )
         {
             writer.initialize( tree.writer( NULL ) );
             int updates = highNodeId / sparsity;

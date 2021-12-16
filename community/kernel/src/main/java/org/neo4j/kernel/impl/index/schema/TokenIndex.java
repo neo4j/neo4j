@@ -21,16 +21,12 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
@@ -38,7 +34,6 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -52,9 +47,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 public class TokenIndex implements ConsistencyCheckable
 {
-    static final WriteMonitor EMPTY = new WriteMonitor()
-    {
-    };
+
     /**
      * Written in header to indicate native token index is clean
      *
@@ -129,11 +122,6 @@ public class TokenIndex implements ConsistencyCheckable
     TokenIndexUpdater singleUpdater;
 
     /**
-     * Monitor for all writes going into this token index.
-     */
-    WriteMonitor writeMonitor;
-
-    /**
      * Name of the store that will be used when describing work related to this store.
      */
     private final String tokenStoreName;
@@ -164,17 +152,15 @@ public class TokenIndex implements ConsistencyCheckable
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
     {
+        ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
         index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER,
                 headerWriter, recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer, immutable.empty(), databaseName, tokenStoreName );
     }
 
-    void instantiateUpdater( Config config, DatabaseLayout directoryStructure, EntityType entityType )
+    void instantiateUpdater()
     {
-        writeMonitor = config.get( GraphDatabaseInternalSettings.token_scan_write_log_enabled )
-                       ? new TokenScanWriteMonitor( fs, directoryStructure, entityType, config )
-                       : EMPTY;
-        singleUpdater = new TokenIndexUpdater( 1_000, writeMonitor );
+        singleUpdater = new TokenIndexUpdater( 1_000 );
     }
 
     private GBPTree.Monitor treeMonitor()
@@ -184,11 +170,15 @@ public class TokenIndex implements ConsistencyCheckable
         return new IndexMonitorAdaptor( treeMonitor, indexMonitor, indexFiles, monitoringDescriptor );
     }
 
+    private void ensureDirectoryExist()
+    {
+        indexFiles.ensureDirectoryExist();
+    }
+
     void closeResources()
     {
-        IOUtils.closeAllUnchecked( index, writeMonitor );
+        IOUtils.closeAllUnchecked( index );
         index = null;
-        writeMonitor = null;
     }
 
     void assertTreeOpen()
@@ -212,46 +202,6 @@ public class TokenIndex implements ConsistencyCheckable
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
-        }
-    }
-
-    interface WriteMonitor extends Closeable
-    {
-        default void range( long range, int tokenId )
-        {
-        }
-
-        default void prepareAdd( long txId, int offset )
-        {
-        }
-
-        default void prepareRemove( long txId, int offset )
-        {
-        }
-
-        default void mergeAdd( TokenScanValue existingValue, TokenScanValue newValue )
-        {
-        }
-
-        default void mergeRemove( TokenScanValue existingValue, TokenScanValue newValue )
-        {
-        }
-
-        default void flushPendingUpdates()
-        {
-        }
-
-        default void writeSessionEnded()
-        {
-        }
-
-        default void force()
-        {
-        }
-
-        @Override
-        default void close()
-        {
         }
     }
 }

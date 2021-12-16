@@ -30,12 +30,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.CommonDatabaseFile;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -43,7 +39,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
-import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,11 +54,6 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScanValue,TokenScanLayout>
 {
-    @Override
-    IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor )
-    {
-        return new IndexFiles.SingleFile( fs, directory.homePath().resolve( CommonDatabaseFile.LABEL_SCAN_STORE.getName() ) );
-    }
 
     @Override
     IndexDescriptor indexDescriptor()
@@ -106,7 +96,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
         DatabaseIndexContext context =
                 DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withMonitors( monitors ).withTag( monitorTag ).withReadOnlyChecker(
                         writable() ).build();
-        return new TokenIndexPopulator( context, DatabaseLayout.ofFlat( directory.homePath() ), indexFiles, Config.defaults(), indexDescriptor );
+        return new TokenIndexPopulator( context, indexFiles, indexDescriptor );
     }
 
     @Test

@@ -421,12 +421,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         RecordDatabaseLayout recordLayout = convert( databaseLayout );
         Set<Path> storeFiles = recordLayout.storeFiles();
-        // count store, index statistics and label scan store are not mandatory stores to have since they can be automatically rebuilt
+        // count store, relationship group degrees store and index statistics are not mandatory stores to have since they can be automatically rebuilt
         storeFiles.remove( recordLayout.countStore() );
         storeFiles.remove( recordLayout.relationshipGroupDegreesStore() );
         storeFiles.remove( recordLayout.indexStatisticsStore() );
-        storeFiles.remove( recordLayout.labelScanStore() );
-        storeFiles.remove( recordLayout.relationshipTypeScanStore() );
         boolean allStoreFilesExist = storeFiles.stream().allMatch( fs::fileExists );
         if ( !allStoreFilesExist )
         {

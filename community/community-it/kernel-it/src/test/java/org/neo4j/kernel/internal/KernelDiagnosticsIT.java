@@ -140,8 +140,7 @@ class KernelDiagnosticsIT
                 {
                     manuallyCountTotalMappedFileSize( path, result, nativeIndexFilter );
                 }
-                else if ( storeFiles.contains( path.getFileName().toString() ) ||
-                        path.getFileName().toString().equals( CommonDatabaseFile.LABEL_SCAN_STORE.getName() ) || nativeIndexFilter.test( path ) )
+                else if ( storeFiles.contains( path.getFileName().toString() ) || nativeIndexFilter.test( path ) )
                 {
                     try
                     {

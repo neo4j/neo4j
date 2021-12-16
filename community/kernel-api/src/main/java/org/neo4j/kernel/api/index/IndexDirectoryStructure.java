@@ -115,15 +115,6 @@ public abstract class IndexDirectoryStructure
     }
 
     /**
-     * @param databaseStoreDir store directory of database.
-     * @return {@link Factory} for creating {@link IndexDirectoryStructure} used for indexes that should reside directly in the store dir.
-     */
-    public static Factory noSubDirectory( Path databaseStoreDir )
-    {
-        return descriptor -> new NoSubDirectory( databaseStoreDir );
-    }
-
-    /**
      * @param directoryStructure existing {@link IndexDirectoryStructure}.
      * @return a {@link Factory} returning an already existing {@link IndexDirectoryStructure}.
      */

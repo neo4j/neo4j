@@ -128,18 +128,14 @@ class RecoveryCleanupIT
 
         // then
         assertThat( logProvider )
-                .containsMessageWithAll( "Schema index cleanup job registered", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=",
-                        "neostore.labelscanstore.db" )
-                .containsMessageWithAll( "Schema index cleanup job started", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=",
-                        "neostore.labelscanstore.db" )
-                .containsMessageWithAll( "Schema index cleanup job closed", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=",
-                        "neostore.labelscanstore.db" )
+                .containsMessageWithAll( "Schema index cleanup job registered", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=" )
+                .containsMessageWithAll( "Schema index cleanup job started", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=" )
+                .containsMessageWithAll( "Schema index cleanup job closed", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=" )
                 .containsMessageWithAll( "Schema index cleanup job finished",
                         "descriptor",
                         "type='TOKEN LOOKUP'",
                         "schema=(:<any-labels>)",
                         "indexFile=",
-                        "neostore.labelscanstore.db",
                         "Number of pages visited",
                         "Number of cleaned crashed pointers",
                         "Time spent" );

@@ -29,11 +29,19 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.StreamSupport;
 
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.IndexFiles;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.RandomSupport;
@@ -42,15 +50,17 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
 import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.fs.FileUtils.writeAll;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 /**
  * Tests functionality around missing or corrupted token indexes, and that
  * the database should repair (i.e. rebuild) that automatically and just work.
  */
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configuration" )
 @ExtendWith( RandomExtension.class )
 public class TokenIndexChaosIT
 {
@@ -62,6 +72,12 @@ public class TokenIndexChaosIT
     private FileSystemAbstraction fs;
     @Inject
     private DbmsController controller;
+
+    @ExtensionCallback
+    void configuration( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( use_old_token_index_location, false );
+    }
 
     @Test
     void shouldRebuildDeletedTokenIndexesOnStartup()
@@ -83,12 +99,15 @@ public class TokenIndexChaosIT
         deleteRelation( rel2 );
         deleteNode( node3 );
 
+        Path labelTokenIndexFile = getLabelTokenIndexFile();
+        Path relationshipTypeTokenIndexFile = getRelationshipTypeTokenIndexFile();
+
         controller.restartDbms( builder ->
         {
             try
             {
-                fs.deleteFile( db.databaseLayout().labelScanStore() );
-                fs.deleteFile( db.databaseLayout().relationshipTypeScanStore() );
+                fs.deleteFile( labelTokenIndexFile );
+                fs.deleteFile( relationshipTypeTokenIndexFile );
             }
             catch ( IOException e )
             {
@@ -118,10 +137,13 @@ public class TokenIndexChaosIT
             tx.commit();
         }
 
+        Path labelTokenIndexFile = getLabelTokenIndexFile();
+        Path relationshipTypeTokenIndexFile = getRelationshipTypeTokenIndexFile();
+
         controller.restartDbms( builder ->
         {
-            scrambleFile( db.databaseLayout().labelScanStore() );
-            scrambleFile( db.databaseLayout().relationshipTypeScanStore() );
+            scrambleFile( labelTokenIndexFile );
+            scrambleFile( relationshipTypeTokenIndexFile );
             return builder;
         } );
 
@@ -206,6 +228,34 @@ public class TokenIndexChaosIT
         {
             transaction.schema().awaitIndexesOnline( 2, MINUTES );
             transaction.commit();
+        }
+    }
+
+    private Path getLabelTokenIndexFile()
+    {
+        return getTokenIndexFile( true );
+    }
+
+    private Path getRelationshipTypeTokenIndexFile()
+    {
+        return getTokenIndexFile( false );
+    }
+
+    private Path getTokenIndexFile( boolean nodeIndex )
+    {
+        try ( var tx = db.beginTx() )
+        {
+            return StreamSupport.stream( tx.schema().getIndexes().spliterator(), false )
+                                .filter( idx -> idx.getIndexType() == IndexType.LOOKUP )
+                                .filter( idx -> idx.isNodeIndex() == nodeIndex )
+                                .map( idx ->
+                                {
+                                    IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider( db.databaseLayout().databaseDirectory() )
+                                            .forProvider( TokenIndexProvider.DESCRIPTOR );
+                                    long id = ((IndexDefinitionImpl) idx).getIndexReference().getId();
+                                    IndexFiles indexFiles = new IndexFiles.Directory( fs, indexDirectoryStructure, id );
+                                    return indexFiles.getStoreFile();
+                                } ).findAny().get();
         }
     }
 }

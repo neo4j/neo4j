@@ -59,14 +59,16 @@ class TokenIndexUpdater implements IndexUpdater
     /**
      * {@link ValueMerger} used for adding token->entity mappings, see {@link TokenScanValue#add(TokenScanValue)}.
      */
-    private final ValueMerger<TokenScanKey,TokenScanValue> addMerger;
+    private final ValueMerger<TokenScanKey,TokenScanValue> addMerger = ( existingKey, newKey, existingValue, newValue ) ->
+    {
+        existingValue.add( newValue );
+        return ValueMerger.MergeResult.MERGED;
+    };
 
     /**
      * {@link ValueMerger} used for removing token->entity mappings, see {@link TokenScanValue#remove(TokenScanValue)}.
      */
     private final ValueMerger<TokenScanKey,TokenScanValue> removeMerger;
-
-    private final TokenIndex.WriteMonitor monitor;
 
     /**
      * {@link Writer} acquired when acquiring this {@link TokenIndexUpdater},
@@ -117,19 +119,16 @@ class TokenIndexUpdater implements IndexUpdater
 
     private boolean closed = true;
 
-    TokenIndexUpdater( int batchSize, TokenIndex.WriteMonitor monitor )
+    TokenIndexUpdater( int batchSize )
     {
         this.pendingUpdates = new LogicalTokenUpdates[batchSize];
-        this.addMerger = new AddMerger( monitor );
         this.removeMerger = ( existingKey, newKey, existingValue, newValue ) ->
         {
-            monitor.mergeRemove( existingValue, newValue );
             existingValue.remove( newValue );
             return existingValue.isEmpty()
                    ? ValueMerger.MergeResult.REMOVED
                    : ValueMerger.MergeResult.MERGED;
         };
-        this.monitor = monitor;
     }
 
     TokenIndexUpdater initialize( Writer<TokenScanKey,TokenScanValue> writer )
@@ -180,7 +179,6 @@ class TokenIndexUpdater implements IndexUpdater
     private void flushPendingChanges()
     {
         Arrays.sort( pendingUpdates, 0, pendingUpdatesCursor );
-        monitor.flushPendingUpdates();
         long currentTokenId = lowestTokenId;
         value.clear();
         key.clear();
@@ -254,19 +252,10 @@ class TokenIndexUpdater implements IndexUpdater
             key.tokenId = tokenId;
             key.idRange = idRange;
             addition = add;
-            monitor.range( idRange, tokenId );
         }
 
         int offset = toIntExact( entityId % RANGE_SIZE );
         value.set( offset );
-        if ( addition )
-        {
-            monitor.prepareAdd( txId, offset );
-        }
-        else
-        {
-            monitor.prepareRemove( txId, offset );
-        }
     }
 
     private void flushPendingRange()
@@ -301,7 +290,6 @@ class TokenIndexUpdater implements IndexUpdater
         try
         {
             flushPendingChanges();
-            monitor.writeSessionEnded();
         }
         finally
         {

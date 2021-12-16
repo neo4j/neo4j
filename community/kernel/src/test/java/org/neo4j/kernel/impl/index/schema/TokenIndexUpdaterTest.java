@@ -87,7 +87,7 @@ class TokenIndexUpdaterTest
     {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), TokenIndex.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ) ) )
         {
             writer.initialize( tree.writer( NULL ) );
 
@@ -118,7 +118,7 @@ class TokenIndexUpdaterTest
         var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnWrite" ) );
 
         //When
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( nodeCount, TokenIndex.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( nodeCount ) )
         {
             writer.initialize( tree.writer( cursorContext ) );
             for ( int i = 0; i < nodeCount; i++ )
@@ -141,7 +141,7 @@ class TokenIndexUpdaterTest
         // GIVEN
         assertThatThrownBy( () ->
                             {
-                                try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1, TokenIndex.EMPTY ) )
+                                try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1 ) )
                                 {
                                     writer.initialize( tree.writer( NULL ) );
 
@@ -158,7 +158,7 @@ class TokenIndexUpdaterTest
         // GIVEN
         assertThatThrownBy( () ->
                             {
-                                try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1, TokenIndex.EMPTY ) )
+                                try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1 ) )
                                 {
                                     writer.initialize( tree.writer( NULL ) );
 
@@ -177,7 +177,7 @@ class TokenIndexUpdaterTest
         int numberOfNodesInEach = 5;
         int labelId = 1;
         long[] labels = {labelId};
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), TokenIndex.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ) ) )
         {
             writer.initialize( tree.writer( NULL ) );
 
@@ -196,7 +196,7 @@ class TokenIndexUpdaterTest
 
         // when removing all the nodes from one of the tree nodes
         int treeEntryToRemoveFrom = 1;
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), TokenIndex.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ) ) )
         {
             writer.initialize( tree.writer( NULL ) );
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;

@@ -73,6 +73,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_single_automatic_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -92,9 +93,11 @@ public class FullCheckTokenIndexIT
     void setUp()
     {
         config = Config.newBuilder()
-                .set( allow_single_automatic_upgrade, false )
-                .set( allow_upgrade, true )
-                .set( neo4j_home, testDirectory.homePath() ).build();
+                       .set( allow_single_automatic_upgrade, false )
+                       .set( allow_upgrade, true )
+                       .set( neo4j_home, testDirectory.homePath() )
+                       .set( use_old_token_index_location, true )
+                       .build();
     }
 
     @AfterEach

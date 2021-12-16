@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -40,26 +41,34 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.IndexFiles;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.io.fs.FileUtils.copyFile;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configuration" )
 @ExtendWith( RandomExtension.class )
 class AllNodesInStoreExistInLabelIndexTest
 {
@@ -83,8 +92,14 @@ class AllNodesInStoreExistInLabelIndexTest
     private static final double UPDATE_RATIO = 0.2;
     private static final int NODE_COUNT_BASELINE = 10;
 
+    @ExtensionCallback
+    void configuration( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( use_old_token_index_location, false );
+    }
+
     @Test
-    void mustReportSuccessfulForConsistentLabelScanStore() throws Exception
+    void mustReportSuccessfulForConsistentLabelTokenIndex() throws Exception
     {
         // given
         someData();
@@ -104,7 +119,8 @@ class AllNodesInStoreExistInLabelIndexTest
         someData();
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         Path labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
-        copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
+        Path labelTokenIndexFile = labelTokenIndexFile();
+        copyFile( labelTokenIndexFile, labelIndexFileCopy );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -114,7 +130,7 @@ class AllNodesInStoreExistInLabelIndexTest
 
         managementService.shutdown();
 
-        copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
+        copyFile( labelIndexFileCopy, labelTokenIndexFile );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
@@ -129,11 +145,12 @@ class AllNodesInStoreExistInLabelIndexTest
         someData();
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         Path labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
-        copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
+        Path labelTokenIndexFile = labelTokenIndexFile();
+        copyFile( labelTokenIndexFile, labelIndexFileCopy );
 
         managementService.shutdown();
 
-        copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
+        copyFile( labelIndexFileCopy, labelTokenIndexFile );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertTrue( result.isSuccessful(), "Expected consistency check to fail" );
@@ -299,19 +316,20 @@ class AllNodesInStoreExistInLabelIndexTest
 
     private void replaceLabelIndexWithCopy( Path labelIndexFileCopy ) throws IOException
     {
+        Path labelTokenIndexFile = labelTokenIndexFile();
         managementService.shutdown();
 
-        DatabaseLayout databaseLayout = db.databaseLayout();
-        fs.deleteFile( databaseLayout.labelScanStore() );
-        fs.copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
+        fs.deleteFile( labelTokenIndexFile );
+        fs.copyFile( labelIndexFileCopy, labelTokenIndexFile );
     }
 
     private Path copyLabelIndexFile() throws IOException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         Path labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
+        Path labelTokenIndexFile = labelTokenIndexFile();
         database.stop();
-        fs.copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
+        fs.copyFile( labelTokenIndexFile, labelIndexFileCopy );
         database.start();
         return labelIndexFileCopy;
     }
@@ -406,10 +424,31 @@ class AllNodesInStoreExistInLabelIndexTest
     ConsistencyCheckService.Result fullConsistencyCheck() throws ConsistencyCheckIncompleteException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory() );
+        Config config = Config.newBuilder()
+                              .set( logs_directory, databaseLayout.databaseDirectory() )
+                              .set( use_old_token_index_location, false )
+                              .build();
         return new ConsistencyCheckService( databaseLayout )
                 .with( addAdditionalConfigToCC( config ) )
                 .with( log )
                 .runFullConsistencyCheck();
+    }
+
+    private Path labelTokenIndexFile()
+    {
+        try ( var tx = db.beginTx() )
+        {
+            return StreamSupport.stream( tx.schema().getIndexes().spliterator(), false )
+                                .filter( idx -> idx.getIndexType() == IndexType.LOOKUP )
+                                .filter( IndexDefinition::isNodeIndex )
+                                .map( idx ->
+                                {
+                                    IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider( db.databaseLayout().databaseDirectory() )
+                                            .forProvider( TokenIndexProvider.DESCRIPTOR );
+                                    long idxId = ((IndexDefinitionImpl) idx).getIndexReference().getId();
+                                    IndexFiles indexFiles = new IndexFiles.Directory( fs, indexDirectoryStructure, idxId );
+                                    return indexFiles.getStoreFile();
+                                } ).findAny().get();
+        }
     }
 }

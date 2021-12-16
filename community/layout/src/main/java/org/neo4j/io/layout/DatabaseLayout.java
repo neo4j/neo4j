@@ -120,17 +120,6 @@ public class DatabaseLayout
         return databaseDirectory().resolve( BACKUP_TOOLS_FOLDER );
     }
 
-    //Index files
-    public Path labelScanStore()
-    {
-        return file( CommonDatabaseFile.LABEL_SCAN_STORE.getName() );
-    }
-
-    public Path relationshipTypeScanStore()
-    {
-        return file( CommonDatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() );
-    }
-
     public Path indexStatisticsStore()
     {
         return file( CommonDatabaseFile.INDEX_STATISTICS_STORE.getName() );

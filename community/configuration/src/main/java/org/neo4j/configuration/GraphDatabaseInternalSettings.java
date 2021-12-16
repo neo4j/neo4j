@@ -668,20 +668,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.idgenerator.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
 
     @Internal
-    @Description( "Enable/disable write log for token lookup indexes" )
-    public static final Setting<Boolean> token_scan_write_log_enabled = newBuilder( "unsupported.dbms.tokenscan.log.enabled", BOOL, false ).build();
-
-    @Internal
-    @Description( "Log file rotation threshold for token lookup index write logging" )
-    public static final Setting<Long> token_scan_write_log_rotation_threshold =
-            newBuilder( "unsupported.dbms.tokenscan.log.rotation_threshold", BYTES, mebiBytes( 200 ) ).build();
-
-    @Internal
-    @Description( "Log file prune threshold for token lookup index write logging" )
-    public static final Setting<Duration> token_scan_write_log_prune_threshold =
-            newBuilder( "unsupported.dbms.tokenscan.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
-
-    @Internal
     @Description( "Print stack trace on failed native io buffer allocation" )
     public static final Setting<Boolean> print_page_buffer_allocation_trace =
             newBuilder( "unsupported.dbms.debug.print_page_buffer_allocation_trace", BOOL, false ).build();
@@ -801,6 +787,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                   "This setting is only useful for tests of the incomplete record format versions during their development." )
     public static final Setting<Boolean> include_versions_under_development =
             newBuilder( "unsupported.dbms.include_dev_record_format_versions", BOOL, false ).build();
+
+    @Internal
+    @Description( "If set, the database will locate token index files in the old location and under the old name." +
+            "This is just a temporary setting to be used when the relocation of these indexes is under development" )
+    public static final Setting<Boolean> use_old_token_index_location =
+            newBuilder( "unsupported.dbms.use_old_token_index_location", BOOL, true ).build();
 
     @Description( "Whether or not to do parallel index writes during online transaction application" )
     public static Setting<Boolean> parallel_index_updates_apply = newBuilder( "unsupported.dbms.parallel_index_updates_apply", BOOL, false ).build();
