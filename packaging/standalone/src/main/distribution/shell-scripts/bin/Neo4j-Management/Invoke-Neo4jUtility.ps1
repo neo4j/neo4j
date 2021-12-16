@@ -309,7 +309,7 @@ function Get-JavaVersion
     $isJava17 = $javaVersion -lt '18'
 
     # Check for Java Edition
-    $regex = '(Java HotSpot\(TM\)|OpenJDK|IBM) (64-Bit Server|Server) VM'
+    $regex = '(Java HotSpot\(TM\)|OpenJDK) (64-Bit Server|Server) VM'
     if (-not ($content -match $regex)) {
       Write-Warning "WARNING! You are using an unsupported Java runtime"
       Write-Warning $javaHelpText
