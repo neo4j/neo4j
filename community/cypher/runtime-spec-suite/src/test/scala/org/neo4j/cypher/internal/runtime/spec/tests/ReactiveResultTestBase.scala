@@ -39,6 +39,7 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.io.IOException
+import scala.collection.mutable
 
 abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT])
@@ -56,19 +57,32 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     //request 1
     result.request(1)
     result.await() shouldBe true
-    subscriber.lastSeen should equal(Seq[AnyValue](stringValue("1"), longValue(1)))
+    val allSeen = mutable.Set(Seq[AnyValue](stringValue("1"), longValue(1)),
+      Seq[AnyValue](stringValue("2"), longValue(2)),
+      Seq[AnyValue](stringValue("3"), longValue(3)))
+    if (!isParallel) {
+      subscriber.lastSeen should equal(Seq[AnyValue](stringValue("1"), longValue(1)))
+    }
+    allSeen.remove(subscriber.lastSeen) shouldBe true
     subscriber.isCompleted shouldBe false
 
     //request 2
     result.request(1)
     result.await() shouldBe true
-    subscriber.lastSeen should equal(Seq[AnyValue](stringValue("2"), longValue(2)))
+    if (!isParallel) {
+      subscriber.lastSeen should equal(Seq[AnyValue](stringValue("2"), longValue(2)))
+    }
+    allSeen.remove(subscriber.lastSeen) shouldBe true
     subscriber.isCompleted shouldBe false
 
     //request 3
     result.request(1)
     val lastAwait = result.await()
-    subscriber.lastSeen should equal(Seq[AnyValue](stringValue("3"), longValue(3)))
+    if (!isParallel) {
+      subscriber.lastSeen should equal(Seq[AnyValue](stringValue("3"), longValue(3)))
+    }
+    allSeen.remove(subscriber.lastSeen) shouldBe true
+    allSeen shouldBe empty
 
     //There is no more data so lastAwait should in that regard be false, however
     //we cannot guarantee that since we are also out of demand. In the next request-await cycle
@@ -160,7 +174,12 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     //When
     result.request(1)
     result.await() shouldBe true
-    subscriber.lastSeen should equal(Array(longValue(1)))
+    if (isParallel) {
+      //no guarantee of order
+      Set(longValue(1), longValue(2), longValue(3)) should contain (subscriber.lastSeen.head)
+    } else {
+      subscriber.lastSeen should equal(Array(longValue(1)))
+    }
     subscriber.isCompleted shouldBe false
     result.cancel()
     result.request(1)
@@ -185,7 +204,13 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     //When
     result.request(1)
     result.await() shouldBe true
-    subscriber.lastSeen should equal(Array(VirtualValues.node(nodes.head.getId)))
+
+    if (isParallel) {
+      //No guarantees about order
+      nodes.map(n => VirtualValues.node(n.getId)) should contain(subscriber.lastSeen.head)
+    } else {
+      subscriber.lastSeen should equal(Array(VirtualValues.node(nodes.head.getId)))
+    }
     subscriber.isCompleted shouldBe false
     result.cancel()
     result.request(1)
@@ -210,7 +235,12 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     //When
     result.request(1)
     result.await() shouldBe true
-    subscriber.lastSeen should equal(Array(VirtualValues.node(nodes.head.getId)))
+    if (isParallel) {
+      //No guarantees about order
+      nodes.map(n => VirtualValues.node(n.getId)) should contain(subscriber.lastSeen.head)
+    } else {
+      subscriber.lastSeen should equal(Array(VirtualValues.node(nodes.head.getId)))
+    }
     subscriber.isCompleted shouldBe false
     result.cancel()
     val now = System.currentTimeMillis()
