@@ -392,7 +392,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set("n"))
   }
 
-  test("match (p) = (a) return p") {
+  test("match p = (a) return p") {
     val query = buildSinglePlannerQuery("match p = (a) return p")
     query.queryGraph.patternRelationships should equal(Set())
     query.queryGraph.patternNodes should equal(Set[String]("a"))
