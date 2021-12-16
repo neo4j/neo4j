@@ -238,7 +238,7 @@ public class ParallelBatchImporterTest
                     inputIdGenerator.reset();
                     out.println();
                     out.println( "Processor assignments" );
-                    out.println( processorAssigner.toString() );
+                    out.println( processorAssigner );
                 }
                 System.err.println( "Additional debug information stored in " + failureFile );
             }

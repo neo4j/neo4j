@@ -48,6 +48,11 @@ public interface PageCache extends AutoCloseable
     int PAGE_SIZE = 8192;
 
     /**
+     * Page reserved bytes
+     */
+    int RESERVED_BYTES = 0;
+
+    /**
      * Ask for a handle to a paged file, backed by an empty set of file open options.
      * <p>
      * Note that this currently asks for the pageSize to use, which is an artifact or records being
@@ -171,7 +176,12 @@ public interface PageCache extends AutoCloseable
     int pageSize();
 
     /**
-     * Number of bytes reserved per page for internal purpose
+     * The size in bytes of page area that can be used to store user data
+     */
+    int payloadSize();
+
+    /**
+     * Number of reserved bytes in pages that are managed by this cache.
      */
     int pageReservedBytes();
 

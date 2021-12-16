@@ -134,9 +134,9 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     }
 
     @Override
-    public RecordFormat<MetaDataRecord> metaData( int reserverdBytes )
+    public RecordFormat<MetaDataRecord> metaData()
     {
-        return withForcedSecondaryUnit( actual.metaData( reserverdBytes ) );
+        return withForcedSecondaryUnit( actual.metaData() );
     }
 
     @Override

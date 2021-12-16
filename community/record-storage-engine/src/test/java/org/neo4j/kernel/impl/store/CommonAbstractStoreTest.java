@@ -113,9 +113,10 @@ class CommonAbstractStoreTest
     @BeforeEach
     void setUpMocks() throws IOException
     {
-        when( recordFormat.getPageSize( anyInt(), anyInt(), anyInt() ) ).thenReturn( Long.SIZE );
+        when( recordFormat.getFilePageSize( anyInt(), anyInt() ) ).thenReturn( Long.SIZE );
         when( idGeneratorFactory.open( any(), any( Path.class ), eq( idType ), any( LongSupplier.class ), anyLong(), any(), any(), any(), any(),
                 any() ) ).thenReturn( idGenerator );
+        when( mockedPageCache.pageSize() ).thenReturn( PAGE_SIZE );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
         when( pageFile.io( anyLong(), anyInt(), any() ) ).thenReturn( pageCursor );
         when( mockedPageCache.map( eq( storeFile ), anyInt(), any(), any() ) ).thenReturn( pageFile );

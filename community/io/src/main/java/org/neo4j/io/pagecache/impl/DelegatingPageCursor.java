@@ -112,6 +112,12 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
+    public int getCurrentPayloadSize()
+    {
+        return delegate.getCurrentPayloadSize();
+    }
+
+    @Override
     public int getCurrentPageSize()
     {
         return delegate.getCurrentPageSize();

@@ -67,6 +67,8 @@ class CompositeStringLengthValidationIT
     @Inject
     private GraphDatabaseAPI db;
     @Inject
+    private PageCache pageCache;
+    @Inject
     private RandomSupport random;
 
     private int firstSlotLength;
@@ -81,7 +83,7 @@ class CompositeStringLengthValidationIT
     @BeforeEach
     void calculateSlotSizes()
     {
-        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) - BtreeKey.ENTITY_ID_SIZE;
+        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( pageCache.payloadSize() ) - BtreeKey.ENTITY_ID_SIZE;
         int perSlotOverhead = GenericKey.TYPE_ID_SIZE + Types.SIZE_STRING_LENGTH;
         int firstSlotSpace = totalSpace / 2;
         int secondSlotSpace = totalSpace - firstSlotSpace;

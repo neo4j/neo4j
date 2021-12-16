@@ -28,15 +28,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RecordFormat
 {
     private final int numberOfThreads;
-    private final int cachePageSize;
+    private final int payloadSize;
     private final int fieldSize;
     private final int checksumFieldOffset;
     private final int recordSize;
+    private final int reservedBytes;
 
-    public RecordFormat( int numberOfThreads, int cachePageSize )
+    public RecordFormat( int numberOfThreads, int cachePageSize, int payloadSize )
     {
         this.numberOfThreads = numberOfThreads;
-        this.cachePageSize = cachePageSize;
+        this.payloadSize = payloadSize;
+        this.reservedBytes = cachePageSize - payloadSize;
         this.fieldSize = Long.BYTES;
         this.checksumFieldOffset = numberOfThreads * fieldSize;
         this.recordSize = checksumFieldOffset + fieldSize; // extra field for keeping the checksum.
@@ -49,12 +51,12 @@ public class RecordFormat
 
     public int getRecordsPerPage()
     {
-        return cachePageSize / getRecordSize();
+        return payloadSize / getRecordSize();
     }
 
     public int getFilePageSize()
     {
-        return getRecordsPerPage() * getRecordSize();
+        return reservedBytes + getRecordsPerPage() * getRecordSize();
     }
 
     /**

@@ -245,9 +245,7 @@ class GBPTreeTest
         {
             assertThatThrownBy( () -> index( pageCache ).build() )
                     .isInstanceOf( MetadataMismatchException.class )
-                    .hasMessageContaining(
-                            "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
-                            smallerPageSize, pageSize );
+                    .hasMessageContaining( "Tried to open the tree using page" );
         }
     }
 
@@ -267,9 +265,7 @@ class GBPTreeTest
         {
             assertThatThrownBy( () -> index( pageCache ).build() )
                     .isInstanceOf( MetadataMismatchException.class )
-                    .hasMessageContaining(
-                            "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
-                            largerPageSize, pageSize );
+                    .hasMessageContaining( "Tried to open the tree using page" );
         }
     }
 
@@ -297,8 +293,8 @@ class GBPTreeTest
             assertThatThrownBy( () -> index( pageCache ).build() )
                     .isInstanceOf( MetadataMismatchException.class )
                     .hasMessageContaining(
-                            "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.", pageSize,
-                            unreasonablePageSize );
+                            "Tried to open the tree using page payload size %d, but the tree was original created with " +
+                                    "page payload size %d so cannot be opened.", pageCache.payloadSize(), unreasonablePageSize );
         }
     }
 
@@ -1935,6 +1931,7 @@ class GBPTreeTest
     void trackPageCacheAccessOnTreeSeek() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
+        int additionalAffectedPages = PageCache.RESERVED_BYTES > 0 ? 1 : 0;
         try ( PageCache pageCache = createPageCache( (int) ByteUnit.kibiBytes( 4 ) );
                 var tree = index( pageCache ).with( pageCacheTracer ).build() )
         {
@@ -1954,9 +1951,9 @@ class GBPTreeTest
             }
             var cursorTracer = cursorContext.getCursorTracer();
 
-            assertThat( cursorTracer.hits() ).isEqualTo( 8 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 8 );
-            assertThat( cursorTracer.pins() ).isEqualTo( 8 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 8 + additionalAffectedPages );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 8 + additionalAffectedPages );
+            assertThat( cursorTracer.pins() ).isEqualTo( 8 + additionalAffectedPages );
             assertThat( cursorTracer.faults() ).isEqualTo( 0 );
         }
     }

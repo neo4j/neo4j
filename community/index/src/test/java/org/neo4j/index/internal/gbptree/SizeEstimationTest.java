@@ -25,10 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Math.abs;
@@ -59,7 +59,7 @@ class SizeEstimationTest
     @Test
     void shouldEstimateSizeOnDynamicSizeKeys() throws IOException
     {
-        int largeEntriesSize = keyValueSizeCapFromPageSize( pageCache.pageSize() ) / 2;
+        int largeEntriesSize = keyValueSizeCapFromPageSize( pageCache.payloadSize() ) / 2;
         int largeEntryModulo = random.nextInt( 0, 10 ); // 0 = no large keys
         SimpleByteArrayLayout layout = new SimpleByteArrayLayout( largeEntriesSize, largeEntryModulo );
         assertEstimateSizeCorrectly( layout );

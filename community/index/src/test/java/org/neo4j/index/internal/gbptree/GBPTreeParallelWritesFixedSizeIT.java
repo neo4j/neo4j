@@ -28,7 +28,7 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 class GBPTreeParallelWritesFixedSizeIT extends GBPTreeParallelWritesIT<MutableLong,MutableLong>
 {
     @Override
-    TestLayout<MutableLong,MutableLong> getLayout( RandomSupport random, int pageSize )
+    TestLayout<MutableLong,MutableLong> getLayout( RandomSupport random, int payloadSize )
     {
         return longLayout().withKeyPadding( random.intBetween( 0, 10 ) ).build();
     }

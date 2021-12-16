@@ -70,6 +70,7 @@ import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 public abstract class PageCursor implements AutoCloseable
 {
     public static final long UNBOUND_PAGE_ID = -1;
+    public static final int UNBOUND_PAYLOAD_SIZE = -1;
     public static final int UNBOUND_PAGE_SIZE = -1;
 
     /**
@@ -218,6 +219,13 @@ public abstract class PageCursor implements AutoCloseable
      * next() is called.
      */
     public abstract long getCurrentPageId();
+
+    /**
+     * Get the payload size of the page that the cursor is currently positioned at,
+     * or UNBOUND_PAYLOAD_SIZE if next() has not yet been called on this cursor, or returned false.
+     * A call to rewind() will make the current page unbound as well, until next() is called.
+     */
+    public abstract int getCurrentPayloadSize();
 
     /**
      * Get the file page size of the page that the cursor is currently positioned at,

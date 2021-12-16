@@ -32,6 +32,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
@@ -58,6 +59,7 @@ public class PageCacheStressTest
     private final int numberOfThreads;
 
     private final int numberOfCachePages;
+    private final int reservedPageBytes;
 
     private final PageCacheTracer tracer;
     private final Condition condition;
@@ -70,6 +72,7 @@ public class PageCacheStressTest
         this.numberOfThreads = builder.numberOfThreads;
 
         this.numberOfCachePages = builder.numberOfCachePages;
+        this.reservedPageBytes = builder.reservedPageBytes;
 
         this.tracer = builder.tracer;
         this.condition = builder.condition;
@@ -83,7 +86,8 @@ public class PageCacheStressTest
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer );
-            try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, jobScheduler, config( numberOfCachePages ).pageCacheTracer( tracer ) ) )
+            try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, jobScheduler, config( numberOfCachePages )
+                    .pageCacheTracer( tracer ).reservedPageBytes( reservedPageBytes ) ) )
             {
                 PageCacheStresser pageCacheStresser = new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );
                 pageCacheStresser.stress( pageCacheUnderTest, tracer, condition );
@@ -97,6 +101,7 @@ public class PageCacheStressTest
         int numberOfThreads = 7;
 
         int numberOfCachePages = 1000;
+        int reservedPageBytes = RESERVED_BYTES;
 
         PageCacheTracer tracer = NULL;
         Condition condition;
@@ -132,6 +137,12 @@ public class PageCacheStressTest
         public Builder withNumberOfThreads( int numberOfThreads )
         {
             this.numberOfThreads = numberOfThreads;
+            return this;
+        }
+
+        public Builder withReservedPageBytes( int reservedPageBytes )
+        {
+            this.reservedPageBytes = reservedPageBytes;
             return this;
         }
 

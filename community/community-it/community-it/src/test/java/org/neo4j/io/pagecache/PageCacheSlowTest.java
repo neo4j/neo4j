@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -140,7 +141,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             final int cachePages = 20;
             final int filePages = cachePages * 2;
             final int threadCount = 4;
-            final int pageSize = threadCount * 4;
+            final int pageSize = reserved_page_header_bytes.defaultValue() + threadCount * 4;
 
             // For debugging via the linear tracers:
 //        LinearTracers linearTracers = LinearHistoryTracerFactory.pageCacheTracer();
@@ -285,7 +286,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             final int cachePages = 40;
             final int filePages = cachePages * 2;
             final int threadCount = 8;
-            final int pageSize = threadCount * 4;
+            final int pageSize = reserved_page_header_bytes.defaultValue() + threadCount * 4;
 
             // It's very important that even if all threads grab their maximum number of pages at the same time, there will
             // still be free pages left in the cache. If we don't keep this invariant, then there's a chance that our test
@@ -384,7 +385,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             // pages, because those are never changed. Not by us, anyway.
 
             Path file = file( "a" );
-            generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reserved_page_header_bytes.defaultValue() );
 
             getPageCache( fs, maxPages, PageCacheTracer.NULL );
 
@@ -514,17 +515,17 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                     boolean performingRead = rng.nextBoolean() && maxPageId != -1;
                     long startingPage = maxPageId < 0 ? 0 : rng.nextLong( maxPageId + 1 );
                     int pfFlags = performingRead ? PF_SHARED_READ_LOCK : PF_SHARED_WRITE_LOCK;
-                    int pageSize = pagedFile.pageSize();
+                    int payload = pagedFile.payloadSize();
 
                     try ( PageCursor cursor = pagedFile.io( startingPage, pfFlags, NULL ) )
                     {
                         if ( performingRead )
                         {
-                            performConsistentAdversarialRead( cursor, maxPageId, startingPage, pageSize );
+                            performConsistentAdversarialRead( cursor, maxPageId, startingPage, payload );
                         }
                         else
                         {
-                            performConsistentAdversarialWrite( cursor, rng, pageSize );
+                            performConsistentAdversarialWrite( cursor, rng, payload );
                         }
                     }
                     catch ( AssertionError error )
@@ -574,27 +575,27 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         } );
     }
 
-    private static void performConsistentAdversarialRead( PageCursor cursor, long maxPageId, long startingPage, int pageSize ) throws IOException
+    private static void performConsistentAdversarialRead( PageCursor cursor, long maxPageId, long startingPage, int payloadSize ) throws IOException
     {
         long pagesToLookAt = Math.min( maxPageId, startingPage + 3 ) - startingPage + 1;
         for ( int j = 0; j < pagesToLookAt; j++ )
         {
             assertTrue( cursor.next() );
-            readAndVerifyAdversarialPage( cursor, pageSize );
+            readAndVerifyAdversarialPage( cursor, payloadSize );
         }
     }
 
-    private static void readAndVerifyAdversarialPage( PageCursor cursor, int pageSize ) throws IOException
+    private static void readAndVerifyAdversarialPage( PageCursor cursor, int payloadSize ) throws IOException
     {
-        byte[] actualPage = new byte[pageSize];
-        byte[] expectedPage = new byte[pageSize];
+        byte[] actualPage = new byte[payloadSize];
+        byte[] expectedPage = new byte[payloadSize];
         do
         {
             cursor.getBytes( actualPage );
         }
         while ( cursor.shouldRetry() );
         Arrays.fill( expectedPage, actualPage[0] );
-        String msg = String.format( "filePageId = %s, pageSize = %s", cursor.getCurrentPageId(), pageSize );
+        String msg = String.format( "filePageId = %s, payloadSize = %s", cursor.getCurrentPageId(), payloadSize );
         assertThat( actualPage ).as( msg ).containsExactly( expectedPage );
     }
 
@@ -620,7 +621,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         {
             while ( cursor.next() )
             {
-                readAndVerifyAdversarialPage( cursor, pagedFile.pageSize() );
+                readAndVerifyAdversarialPage( cursor, pagedFile.payloadSize() );
             }
         }
     }

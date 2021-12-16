@@ -1600,7 +1600,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         VALUE readValue = layout.newValue();
         StringJoiner keys = new StringJoiner( " " );
         cursor.setOffset( allocOffset );
-        while ( cursor.getOffset() < cursor.getCurrentPageSize() )
+        while ( cursor.getOffset() < cursor.getCurrentPayloadSize() )
         {
             StringJoiner singleKey = new StringJoiner( "|" );
             singleKey.add( Integer.toString( cursor.getOffset() ) );

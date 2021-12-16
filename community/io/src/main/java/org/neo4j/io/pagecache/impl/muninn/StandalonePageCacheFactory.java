@@ -70,6 +70,19 @@ public final class StandalonePageCacheFactory
     {
         long expectedMemory = Math.max( MebiByte.toBytes( 8 ), 10L * pageSize );
         MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE );
-        return new MuninnPageCache( factory, jobScheduler, config( memoryAllocator ).pageCacheTracer( cacheTracer ).pageSize( pageSize ) );
+        MuninnPageCache.Configuration configuration = config( memoryAllocator ).pageCacheTracer( cacheTracer ).pageSize( pageSize );
+        return createPageCache( factory, configuration, jobScheduler );
+    }
+
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer cacheTracer,
+            MuninnPageCache.Configuration configuration )
+    {
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer );
+        return createPageCache( factory, configuration, jobScheduler );
+    }
+
+    private static MuninnPageCache createPageCache( PageSwapperFactory factory, MuninnPageCache.Configuration configuration, JobScheduler jobScheduler )
+    {
+        return new MuninnPageCache( factory, jobScheduler, configuration );
     }
 }

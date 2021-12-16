@@ -165,7 +165,7 @@ class RecordFormatPropertyConfiguratorTest
         }
 
         @Override
-        public RecordFormat<MetaDataRecord> metaData( int reservedBytes )
+        public RecordFormat<MetaDataRecord> metaData()
         {
             return null;
         }
@@ -201,9 +201,9 @@ class RecordFormatPropertyConfiguratorTest
         }
     }
 
-    private class ResizableRecordFormat extends NoRecordFormat<DynamicRecord>
+    private static class ResizableRecordFormat extends NoRecordFormat<DynamicRecord>
     {
-        private int headerSize;
+        private final int headerSize;
 
         ResizableRecordFormat( int headerSize )
         {

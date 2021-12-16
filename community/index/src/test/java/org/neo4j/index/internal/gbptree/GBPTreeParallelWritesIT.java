@@ -77,13 +77,13 @@ abstract class GBPTreeParallelWritesIT<KEY,VALUE>
         pageCache.close();
     }
 
-    abstract TestLayout<KEY,VALUE> getLayout( RandomSupport random, int pageSize );
+    abstract TestLayout<KEY,VALUE> getLayout( RandomSupport random, int payloadSize );
 
     @Test
     void shouldDoRandomWritesInParallel() throws IOException
     {
         // given
-        var layout = getLayout( random, pageCache.pageSize() );
+        var layout = getLayout( random, pageCache.payloadSize() );
         try ( var index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build() )
         {
             var threads = Runtime.getRuntime().availableProcessors();
@@ -158,7 +158,7 @@ abstract class GBPTreeParallelWritesIT<KEY,VALUE>
     void shouldWriteInParallelThroughCheckpoints() throws Exception
     {
         // given
-        var layout = getLayout( random, pageCache.pageSize() );
+        var layout = getLayout( random, pageCache.payloadSize() );
         try ( var tree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build() )
         {
             var numTasks = 10_000;

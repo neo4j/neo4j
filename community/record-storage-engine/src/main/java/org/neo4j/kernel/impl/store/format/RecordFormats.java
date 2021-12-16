@@ -92,7 +92,7 @@ public interface RecordFormats
 
     RecordFormat<DynamicRecord> dynamic();
 
-    RecordFormat<MetaDataRecord> metaData( int reservedBytes );
+    RecordFormat<MetaDataRecord> metaData();
 
     /**
      * Use when comparing one format to another, for example for migration purposes.

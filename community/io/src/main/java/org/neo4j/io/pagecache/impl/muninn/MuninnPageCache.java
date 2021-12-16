@@ -67,6 +67,7 @@ import static org.neo4j.scheduler.Group.FILE_IO_HELPER;
 import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
+import static org.neo4j.util.Preconditions.requireNonNegative;
 
 /**
  * The Muninn {@link org.neo4j.io.pagecache.PageCache page cache} implementation.
@@ -163,6 +164,7 @@ public class MuninnPageCache implements PageCache
     private final int pageCacheId;
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
+    private final int payloadSize;
     private final int reservedPageBytes;
     private final int keepFree;
     private final PageCacheTracer pageCacheTracer;
@@ -368,7 +370,7 @@ public class MuninnPageCache implements PageCache
     public static Configuration config( MemoryAllocator memoryAllocator )
     {
         return new Configuration( memoryAllocator, Clocks.nanoClock(), EmptyMemoryTracker.INSTANCE, PageCacheTracer.NULL,
-                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true, true, 0 );
+                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true, true, RESERVED_BYTES );
     }
 
     /**
@@ -387,7 +389,8 @@ public class MuninnPageCache implements PageCache
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
         this.cachePageSize = configuration.pageSize;
-        this.reservedPageBytes = configuration.reservedPageSize;
+        this.reservedPageBytes = requireNonNegative( configuration.reservedPageSize );
+        this.payloadSize = cachePageSize - reservedPageBytes;
         this.keepFree = calculatePagesToKeepFree( maxPages );
         this.pageCacheTracer = configuration.pageCacheTracer;
         this.printExceptionsOnClose = true;
@@ -822,6 +825,12 @@ public class MuninnPageCache implements PageCache
     public int pageSize()
     {
         return cachePageSize;
+    }
+
+    @Override
+    public int payloadSize()
+    {
+        return payloadSize;
     }
 
     @Override

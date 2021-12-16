@@ -146,6 +146,11 @@ public interface PagedFile extends AutoCloseable
     int pageSize();
 
     /**
+     * Get the size page that is available for user data
+     */
+    int payloadSize();
+
+    /**
      * Size of file, in bytes.
      */
     long fileSize() throws IOException;

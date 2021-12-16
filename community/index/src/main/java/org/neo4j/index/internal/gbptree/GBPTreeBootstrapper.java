@@ -38,18 +38,18 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
-import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 
 public class GBPTreeBootstrapper implements Closeable
 {
-    private static final int MAX_PAGE_SIZE = (int) ByteUnit.mebiBytes( 4 );
+    private static final int MAX_PAGE_PAYLOAD = (int) ByteUnit.mebiBytes( 4 );
     private final FileSystemAbstraction fs;
     private final JobScheduler jobScheduler;
     private final LayoutBootstrapper layoutBootstrapper;
@@ -75,14 +75,14 @@ public class GBPTreeBootstrapper implements Closeable
             // Get meta information about the tree
             MetaVisitor<?,?> metaVisitor = visitMeta( file );
             Meta meta = metaVisitor.meta;
-            if ( !isReasonablePageSize( meta.getPageSize() ) )
+            if ( !isReasonablePageSize( meta.getPayloadSize() ) )
             {
-                throw new MetadataMismatchException( "Unexpected page size " + meta.getPageSize() );
+                throw new MetadataMismatchException( "Unexpected page size " + meta.getPayloadSize() );
             }
-            if ( meta.getPageSize() != pageCache.pageSize() )
+            if ( meta.getPayloadSize() != pageCache.payloadSize() )
             {
                 // GBPTree was created with a different page size, re-instantiate page cache and re-read meta.
-                instantiatePageCache( fs, jobScheduler, meta.getPageSize() );
+                instantiatePageCache( fs, jobScheduler, meta.getPayloadSize() );
                 metaVisitor = visitMeta( file );
                 meta = metaVisitor.meta;
             }
@@ -137,7 +137,8 @@ public class GBPTreeBootstrapper implements Closeable
         closePageCache();
         var swapper = new SingleFilePageSwapperFactory( fs, pageCacheTracer );
         long expectedMemory = Math.max( MuninnPageCache.memoryRequiredForPages( 100 ), 3L * pageSize );
-        pageCache = new MuninnPageCache( swapper, jobScheduler, config( createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE ) ).pageSize( pageSize ) );
+        pageCache = new MuninnPageCache( swapper, jobScheduler, config( createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE ) ).pageSize( pageSize )
+                .reservedPageBytes( reserved_page_header_bytes.defaultValue() ) );
     }
 
     private void closePageCache()
@@ -151,12 +152,12 @@ public class GBPTreeBootstrapper implements Closeable
 
     private static boolean isReasonablePageSize( int number )
     {
-        return isPowerOfTwo( number ) && isReasonableSize( number );
+        return isReasonableSize( number );
     }
 
-    private static boolean isReasonableSize( int pageSize )
+    private static boolean isReasonableSize( int payloadSize )
     {
-        return pageSize <= MAX_PAGE_SIZE;
+        return payloadSize <= MAX_PAGE_PAYLOAD;
     }
 
     public interface Bootstrap

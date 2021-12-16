@@ -26,7 +26,7 @@ import org.neo4j.test.RandomSupport;
 public class Native30StringLengthIndexValidationIT extends StringLengthIndexValidationIT
 {
     @Override
-    protected int getSingleKeySizeLimit()
+    protected int getSingleKeySizeLimit( int payloadSize )
     {
         return LuceneIndexValueValidator.MAX_TERM_LENGTH;
     }

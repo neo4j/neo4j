@@ -35,18 +35,20 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 
 class CompositePageCursorTest
 {
-    private static final int PAGE_SIZE = 16;
+    private static final int PAYLOAD_SIZE = 16;
+    private static final int PAGE_SIZE = PAYLOAD_SIZE + RESERVED_BYTES;
     private StubPageCursor first;
     private StubPageCursor second;
-    private byte[] bytes = new byte[4];
+    private final byte[] bytes = new byte[4];
 
     private static StubPageCursor generatePage( int initialPageId, int pageSize, int initialValue )
     {
         StubPageCursor cursor = new StubPageCursor( initialPageId, pageSize );
-        for ( int i = 0; i < pageSize; i++ )
+        for ( int i = 0; i < pageSize - RESERVED_BYTES; i++ )
         {
             cursor.putByte( i, (byte) (initialValue + i) );
         }
@@ -454,7 +456,7 @@ class CompositePageCursorTest
     void putLongMustRespectOffsetIntoSecondCursor()
     {
         second.setOffset( 1 );
-        PageCursor c = CompositePageCursor.compose( first, 8, second, PAGE_SIZE );
+        PageCursor c = CompositePageCursor.compose( first, 8, second, PAYLOAD_SIZE );
         c.putLong( 1 );
         c.putLong( 2 );
         assertThat( second.getLong( 1 ) ).isEqualTo( 2 );
@@ -589,14 +591,14 @@ class CompositePageCursorTest
     @Test
     void overlappingGetAccess()
     {
-        PageCursor c = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        c.setOffset( PAGE_SIZE - 2 );
+        PageCursor c = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        c.setOffset( PAYLOAD_SIZE - 2 );
         assertThat( c.getInt() ).isEqualTo( 0xAEAFB0B1 );
-        c.setOffset( PAGE_SIZE - 1 );
+        c.setOffset( PAYLOAD_SIZE - 1 );
         assertThat( c.getShort() ).isEqualTo( (short) 0xAFB0 );
-        c.setOffset( PAGE_SIZE - 4 );
+        c.setOffset( PAYLOAD_SIZE - 4 );
         assertThat( c.getLong() ).isEqualTo( 0xACADAEAFB0B1B2B3L );
-        c.setOffset( PAGE_SIZE - 2 );
+        c.setOffset( PAYLOAD_SIZE - 2 );
         c.getBytes( bytes );
         assertThat( bytes ).containsExactly( 0xAE, 0xAF, 0xB0, 0xB1 );
     }
@@ -604,38 +606,38 @@ class CompositePageCursorTest
     @Test
     void overlappingOffsetGetAccess()
     {
-        PageCursor c = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        assertThat( c.getInt( PAGE_SIZE - 2 ) ).isEqualTo( 0xAEAFB0B1 );
-        assertThat( c.getShort( PAGE_SIZE - 1 ) ).isEqualTo( (short) 0xAFB0 );
-        assertThat( c.getLong( PAGE_SIZE - 4 ) ).isEqualTo( 0xACADAEAFB0B1B2B3L );
+        PageCursor c = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        assertThat( c.getInt( PAYLOAD_SIZE - 2 ) ).isEqualTo( 0xAEAFB0B1 );
+        assertThat( c.getShort( PAYLOAD_SIZE - 1 ) ).isEqualTo( (short) 0xAFB0 );
+        assertThat( c.getLong( PAYLOAD_SIZE - 4 ) ).isEqualTo( 0xACADAEAFB0B1B2B3L );
     }
 
     @Test
     void overlappingPutAccess()
     {
-        PageCursor c = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        c.setOffset( PAGE_SIZE - 2 );
+        PageCursor c = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        c.setOffset( PAYLOAD_SIZE - 2 );
         c.putInt( 0x01020304 );
-        c.setOffset( PAGE_SIZE - 2 );
+        c.setOffset( PAYLOAD_SIZE - 2 );
         assertThat( c.getInt() ).isEqualTo( 0x01020304 );
 
-        c.setOffset( PAGE_SIZE - 1 );
+        c.setOffset( PAYLOAD_SIZE - 1 );
         c.putShort( (short) 0x0102 );
-        c.setOffset( PAGE_SIZE - 1 );
+        c.setOffset( PAYLOAD_SIZE - 1 );
         assertThat( c.getShort() ).isEqualTo( (short) 0x0102 );
 
-        c.setOffset( PAGE_SIZE - 4 );
+        c.setOffset( PAYLOAD_SIZE - 4 );
         c.putLong( 0x0102030405060708L );
-        c.setOffset( PAGE_SIZE - 4 );
+        c.setOffset( PAYLOAD_SIZE - 4 );
         assertThat( c.getLong() ).isEqualTo( 0x0102030405060708L );
 
-        c.setOffset( PAGE_SIZE - 2 );
+        c.setOffset( PAYLOAD_SIZE - 2 );
         for ( int i = 0; i < bytes.length; i++ )
         {
             bytes[i] = (byte) (i + 1);
         }
         c.putBytes( bytes );
-        c.setOffset( PAGE_SIZE - 2 );
+        c.setOffset( PAYLOAD_SIZE - 2 );
         c.getBytes( bytes );
         assertThat( bytes ).containsExactly( 0x01, 0x02, 0x03, 0x04 );
     }
@@ -643,21 +645,21 @@ class CompositePageCursorTest
     @Test
     void overlappingOffsetPutAccess()
     {
-        PageCursor c = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        c.putInt( PAGE_SIZE - 2, 0x01020304 );
-        assertThat( c.getInt( PAGE_SIZE - 2 ) ).isEqualTo( 0x01020304 );
+        PageCursor c = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        c.putInt( PAYLOAD_SIZE - 2, 0x01020304 );
+        assertThat( c.getInt( PAYLOAD_SIZE - 2 ) ).isEqualTo( 0x01020304 );
 
-        c.putShort( PAGE_SIZE - 1, (short) 0x0102 );
-        assertThat( c.getShort( PAGE_SIZE - 1 ) ).isEqualTo( (short) 0x0102 );
+        c.putShort( PAYLOAD_SIZE - 1, (short) 0x0102 );
+        assertThat( c.getShort( PAYLOAD_SIZE - 1 ) ).isEqualTo( (short) 0x0102 );
 
-        c.putLong( PAGE_SIZE - 4, 0x0102030405060708L );
-        assertThat( c.getLong( PAGE_SIZE - 4 ) ).isEqualTo( 0x0102030405060708L );
+        c.putLong( PAYLOAD_SIZE - 4, 0x0102030405060708L );
+        assertThat( c.getLong( PAYLOAD_SIZE - 4 ) ).isEqualTo( 0x0102030405060708L );
     }
 
     @Test
     void closeBothCursorsOnClose()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.close();
 
         assertTrue( first.isClosed() );
@@ -669,7 +671,7 @@ class CompositePageCursorTest
     {
         assertThrows( UnsupportedOperationException.class, () ->
         {
-            PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+            PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
             pageCursor.next();
         } );
     }
@@ -679,7 +681,7 @@ class CompositePageCursorTest
     {
         assertThrows( UnsupportedOperationException.class, () ->
         {
-            PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+            PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
             pageCursor.next( 12 );
         } );
     }
@@ -689,7 +691,7 @@ class CompositePageCursorTest
     {
         first.setOffset( 1 );
         second.setOffset( 2 );
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
 
         pageCursor.getLong();
         pageCursor.getLong();
@@ -708,7 +710,7 @@ class CompositePageCursorTest
         // GIVEN
         first.setOffset( 1 );
         second.setOffset( 2 );
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
 
         first.getByte();
         second.getLong();
@@ -734,7 +736,7 @@ class CompositePageCursorTest
     @Test
     void getOffsetMustReturnOffsetIntoView()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.getLong();
         assertThat( pageCursor.getOffset() ).isEqualTo( 8 );
         pageCursor.getLong();
@@ -745,19 +747,19 @@ class CompositePageCursorTest
     @Test
     void setOffsetMustSetOffsetIntoView()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.setOffset( 13 );
         assertThat( first.getOffset() ).isEqualTo( 13 );
         assertThat( second.getOffset() ).isEqualTo( 0 );
         pageCursor.setOffset( 18 ); // beyond first page cursor
-        assertThat( first.getOffset() ).isEqualTo( PAGE_SIZE );
-        assertThat( second.getOffset() ).isEqualTo( 18 - PAGE_SIZE );
+        assertThat( first.getOffset() ).isEqualTo( PAYLOAD_SIZE );
+        assertThat( second.getOffset() ).isEqualTo( 18 - PAYLOAD_SIZE );
     }
 
     @Test
     void raisingOutOfBoundsFlagMustRaiseOutOfBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.raiseOutOfBounds();
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -768,15 +770,15 @@ class CompositePageCursorTest
     {
         assertThrows( UnsupportedOperationException.class, () ->
         {
-            PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-            pageCursor.getCurrentPageSize();
+            PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+            pageCursor.getCurrentPayloadSize();
         } );
     }
 
     @Test
     void pageIdEqualFirstCursorPageIdBeforeFlip()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         assertEquals( first.getCurrentPageId(), pageCursor.getCurrentPageId() );
 
         pageCursor.getLong();
@@ -789,7 +791,7 @@ class CompositePageCursorTest
     @Test
     void pageIdEqualSecondCursorPageIdAfterFlip()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         assertNotEquals( second.getCurrentPageId(), pageCursor.getCurrentPageId() );
 
         pageCursor.getLong();
@@ -802,7 +804,7 @@ class CompositePageCursorTest
     @Test
     void retryShouldCheckAndResetBothCursors() throws Exception
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
 
         assertFalse( pageCursor.shouldRetry() );
 
@@ -846,7 +848,7 @@ class CompositePageCursorTest
     @Test
     void retryMustClearTheOutOfBoundsFlags() throws Exception
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         first.raiseOutOfBounds();
         second.raiseOutOfBounds();
         pageCursor.raiseOutOfBounds();
@@ -860,7 +862,7 @@ class CompositePageCursorTest
     @Test
     void checkAndClearCompositeBoundsFlagMustClearFirstBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         first.raiseOutOfBounds();
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -870,7 +872,7 @@ class CompositePageCursorTest
     @Test
     void checkAndClearCompositeBoundsFlagMustClearSecondBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         second.raiseOutOfBounds();
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -880,13 +882,13 @@ class CompositePageCursorTest
     @Test
     void composeMustNotThrowIfFirstLengthExpandsBeyondFirstPage()
     {
-        CompositePageCursor.compose( first, Integer.MAX_VALUE, second, PAGE_SIZE );
+        CompositePageCursor.compose( first, Integer.MAX_VALUE, second, PAYLOAD_SIZE );
     }
 
     @Test
     void composeMustNotThrowIfSecondLengthExpandsBeyondSecondPage()
     {
-        CompositePageCursor.compose( first, PAGE_SIZE, second, Integer.MAX_VALUE );
+        CompositePageCursor.compose( first, PAYLOAD_SIZE, second, Integer.MAX_VALUE );
     }
 
     @Test
@@ -894,7 +896,7 @@ class CompositePageCursorTest
     {
         assertThrows( UnsupportedOperationException.class, () ->
         {
-            PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+            PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
             pageCursor.copyTo( 0, new StubPageCursor( 0, 7 ), 89, 6 );
         } );
     }
@@ -902,7 +904,7 @@ class CompositePageCursorTest
     @Test
     void getByteBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
         {
             pageCursor.getByte();
@@ -914,8 +916,8 @@ class CompositePageCursorTest
     @Test
     void getByteOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.getByte( i );
         }
@@ -926,8 +928,8 @@ class CompositePageCursorTest
     @Test
     void putByteBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.putByte( (byte) 1 );
         }
@@ -938,8 +940,8 @@ class CompositePageCursorTest
     @Test
     void putByteOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.putByte( i, (byte) 1 );
         }
@@ -950,7 +952,7 @@ class CompositePageCursorTest
     @Test
     void getByteOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.getByte( -1 );
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -959,7 +961,7 @@ class CompositePageCursorTest
     @Test
     void putByteOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.putByte( -1, (byte) 1 );
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -968,8 +970,8 @@ class CompositePageCursorTest
     @Test
     void getShortBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.getShort();
         }
@@ -980,8 +982,8 @@ class CompositePageCursorTest
     @Test
     void getShortOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.getShort( i );
         }
@@ -992,8 +994,8 @@ class CompositePageCursorTest
     @Test
     void putShortBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.putShort( (short) 1 );
         }
@@ -1004,8 +1006,8 @@ class CompositePageCursorTest
     @Test
     void putShortOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.putShort( i, (short) 1 );
         }
@@ -1016,7 +1018,7 @@ class CompositePageCursorTest
     @Test
     void getShortOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.getShort( -1 );
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -1025,7 +1027,7 @@ class CompositePageCursorTest
     @Test
     void putShortOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.putShort( -1, (short) 1 );
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -1034,8 +1036,8 @@ class CompositePageCursorTest
     @Test
     void getIntBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.getInt();
         }
@@ -1046,8 +1048,8 @@ class CompositePageCursorTest
     @Test
     void getIntOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.getInt( i );
         }
@@ -1058,8 +1060,8 @@ class CompositePageCursorTest
     @Test
     void putIntBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.putInt( 1 );
         }
@@ -1070,8 +1072,8 @@ class CompositePageCursorTest
     @Test
     void putIntOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.putInt( i, 1 );
         }
@@ -1082,7 +1084,7 @@ class CompositePageCursorTest
     @Test
     void getIntOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.getInt( -1 );
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -1091,7 +1093,7 @@ class CompositePageCursorTest
     @Test
     void putIntOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.putInt( -1, 1 );
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -1100,8 +1102,8 @@ class CompositePageCursorTest
     @Test
     void getLongBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.getLong();
         }
@@ -1112,8 +1114,8 @@ class CompositePageCursorTest
     @Test
     void getLongOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.getLong( i );
         }
@@ -1124,8 +1126,8 @@ class CompositePageCursorTest
     @Test
     void putLongBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.putLong( 1 );
         }
@@ -1136,8 +1138,8 @@ class CompositePageCursorTest
     @Test
     void putLongOffsetBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.putLong( i, 1 );
         }
@@ -1148,7 +1150,7 @@ class CompositePageCursorTest
     @Test
     void getLongOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.getLong( -1 );
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -1157,7 +1159,7 @@ class CompositePageCursorTest
     @Test
     void putLongOffsetBeforeFirstPageMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         pageCursor.putLong( -1, 1 );
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
@@ -1166,8 +1168,8 @@ class CompositePageCursorTest
     @Test
     void getByteArrayBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.getBytes( bytes );
         }
@@ -1178,8 +1180,8 @@ class CompositePageCursorTest
     @Test
     void putByteArrayBeyondEndOfViewMustRaiseBoundsFlag()
     {
-        PageCursor pageCursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        for ( int i = 0; i < 3 * PAGE_SIZE; i++ )
+        PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
+        for ( int i = 0; i < 3 * PAYLOAD_SIZE; i++ )
         {
             pageCursor.putBytes( bytes );
         }
@@ -1190,7 +1192,7 @@ class CompositePageCursorTest
     @Test
     void setCursorErrorMustApplyToCursorAtCurrentOffset()
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         String firstMsg = "first boo";
         String secondMsg = "second boo";
 
@@ -1206,7 +1208,7 @@ class CompositePageCursorTest
             assertThat( e.getMessage() ).isEqualTo( firstMsg );
         }
 
-        cursor.setOffset( PAGE_SIZE );
+        cursor.setOffset( PAYLOAD_SIZE );
         cursor.setCursorException( secondMsg );
         assertFalse( cursor.checkAndClearBoundsFlag() );
         try
@@ -1223,14 +1225,14 @@ class CompositePageCursorTest
     @Test
     void checkAndClearCursorErrorMustNotThrowIfNoErrorsAreSet() throws Exception
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         cursor.checkAndClearCursorException();
     }
 
     @Test
     void checkAndClearCursorErrorMustThrowIfFirstCursorHasError()
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         first.setCursorException( "boo" );
         try
         {
@@ -1246,7 +1248,7 @@ class CompositePageCursorTest
     @Test
     void checkAndClearCursorErrorMustThrowIfSecondCursorHasError()
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         second.setCursorException( "boo" );
         try
         {
@@ -1262,7 +1264,7 @@ class CompositePageCursorTest
     @Test
     void checkAndClearCursorErrorWillOnlyCheckFirstCursorIfBothHaveErrorsSet()
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         first.setCursorException( "first boo" );
         second.setCursorException( "second boo" );
         try
@@ -1288,7 +1290,7 @@ class CompositePageCursorTest
     @Test
     void clearCursorErrorMustClearBothCursors() throws Exception
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         first.setCursorException( "first boo" );
         second.setCursorException( "second boo" );
         cursor.clearCursorException();
@@ -1302,7 +1304,7 @@ class CompositePageCursorTest
     @Test
     void isWriteLockedMustBeTrueIfBothCursorsAreWriteLocked()
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         first.setWriteLocked( true );
         second.setWriteLocked( true );
         assertTrue( cursor.isWriteLocked() );
@@ -1311,7 +1313,7 @@ class CompositePageCursorTest
     @Test
     void isWriteLockedMustBeFalseIfBothCursorsAreNotWriteLocked()
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         first.setWriteLocked( false );
         second.setWriteLocked( false );
         assertFalse( cursor.isWriteLocked() );
@@ -1320,7 +1322,7 @@ class CompositePageCursorTest
     @Test
     void isWriteLockedMustBeFalseIfFirstCursorIsNotWriteLocked()
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         first.setWriteLocked( false );
         second.setWriteLocked( true );
         assertFalse( cursor.isWriteLocked() );
@@ -1329,7 +1331,7 @@ class CompositePageCursorTest
     @Test
     void isWriteLockedMustBeFalseIfSecondCursorIsNotWriteLocked()
     {
-        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        PageCursor cursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
         first.setWriteLocked( true );
         second.setWriteLocked( false );
         assertFalse( cursor.isWriteLocked() );

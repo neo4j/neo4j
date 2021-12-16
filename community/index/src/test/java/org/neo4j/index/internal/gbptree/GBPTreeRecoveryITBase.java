@@ -48,6 +48,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -82,7 +83,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
     @BeforeEach
     void setUp()
     {
-        this.layout = getLayout( random, PAGE_SIZE );
+        this.layout = getLayout( random, PAGE_SIZE - RESERVED_BYTES );
         loadCountTransactions = random.intBetween( 300, 1_000 );
         minInsertCountPerBatch = 30;
         maxInsertCountPerBatch = 200;

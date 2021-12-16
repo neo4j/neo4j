@@ -45,7 +45,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 class MunninPageCacheCloseIT
 {
-    private abstract class TestBase
+    private abstract static class TestBase
     {
         @Inject
         private PageCache pageCache;

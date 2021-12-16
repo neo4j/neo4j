@@ -73,7 +73,7 @@ public class PageCacheStresser
         Path file = Files.createTempFile( workingDirectory, prefix, ".bin" );
 
         int cachePageSize = pageCache.pageSize();
-        RecordFormat format = new RecordFormat( numberOfThreads, cachePageSize );
+        RecordFormat format = new RecordFormat( numberOfThreads, cachePageSize, pageCache.payloadSize() );
         int filePageSize = format.getFilePageSize();
 
         try ( PagedFile pagedFile = pageCache.map( file, filePageSize, prefix, Sets.immutable.of( StandardOpenOption.DELETE_ON_CLOSE ) ) )

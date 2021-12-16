@@ -246,6 +246,12 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public int getCurrentPayloadSize()
+    {
+        return buffer.capacity();
+    }
+
+    @Override
     public int getCurrentPageSize()
     {
         return buffer.capacity();
@@ -291,7 +297,7 @@ public class ByteArrayPageCursor extends PageCursor
         }
         else
         {
-            buffer = ByteBuffer.allocate( getCurrentPageSize() );
+            buffer = ByteBuffer.allocate( getCurrentPayloadSize() );
             buffers.put( pageId, buffer );
         }
         return true;
@@ -376,7 +382,7 @@ public class ByteArrayPageCursor extends PageCursor
     {
         if ( !buffers.containsKey( pageId ) )
         {
-            buffers.put( pageId, ByteBuffer.allocate( getCurrentPageSize() ) );
+            buffers.put( pageId, ByteBuffer.allocate( getCurrentPayloadSize() ) );
         }
         return new ByteArrayPageCursor( buffers, pageId );
     }

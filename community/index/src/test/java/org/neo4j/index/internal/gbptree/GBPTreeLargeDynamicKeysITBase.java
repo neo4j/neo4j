@@ -34,10 +34,10 @@ import java.util.function.BiConsumer;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.string.UTF8;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -181,7 +181,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
     @Test
     void shouldWriteAndReadSmallToSemiLargeEntries() throws IOException
     {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize( getPageCache().pageSize() );
+        int keyValueSizeCap = keyValueSizeCapFromPageSize( getPageCache().payloadSize() );
         int minValueSize = 0;
         int maxValueSize = random.nextInt( 200 );
         int minKeySize = 4;
@@ -192,7 +192,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
     @Test
     void shouldWriteAndReadSmallToLargeEntries() throws IOException
     {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize( getPageCache().pageSize() );
+        int keyValueSizeCap = keyValueSizeCapFromPageSize( getPageCache().payloadSize() );
         int minValueSize = 0;
         int maxValueSize = random.nextInt( 200 );
         int minKeySize = 4;
@@ -203,7 +203,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
     @Test
     void shouldWriteAndReadSemiLargeToLargeEntries() throws IOException
     {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize( getPageCache().pageSize() );
+        int keyValueSizeCap = keyValueSizeCapFromPageSize( getPageCache().payloadSize() );
         int minValueSize = 0;
         int maxValueSize = random.nextInt( 200 );
         int minKeySize = keyValueSizeCap / 5;

@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -55,8 +56,8 @@ public abstract class RecordFormat
 
     public final void fillWithRecords( PageCursor cursor )
     {
-        cursor.setOffset( 0 );
-        int recordsPerPage = cursor.getCurrentPageSize() / getRecordSize();
+        cursor.setOffset( reserved_page_header_bytes.defaultValue() );
+        int recordsPerPage = cursor.getCurrentPayloadSize() / getRecordSize();
         for ( int i = 0; i < recordsPerPage; i++ )
         {
             writeRecordToPage( cursor, cursor.getCurrentPageId(), recordsPerPage );
@@ -73,9 +74,9 @@ public abstract class RecordFormat
 
     public final void assertRecordsWrittenCorrectly( PageCursor cursor ) throws IOException
     {
-        int currentPageSize = cursor.getCurrentPageSize();
+        int currentPayloadSize = cursor.getCurrentPayloadSize();
         int recordSize = getRecordSize();
-        int recordsPerPage = currentPageSize / recordSize;
+        int recordsPerPage = currentPayloadSize / recordSize;
         for ( int pageRecordId = 0; pageRecordId < recordsPerPage; pageRecordId++ )
         {
             long currentPageId = cursor.getCurrentPageId();
@@ -97,25 +98,34 @@ public abstract class RecordFormat
     protected static String dumpPageContent( PageCursor cursor )
     {
         int initialOffset = cursor.getOffset();
-        byte[] bytes = new byte[cursor.getCurrentPageSize()];
+        byte[] bytes = new byte[cursor.getCurrentPayloadSize()];
         cursor.setOffset( 0 );
         cursor.getBytes( bytes );
         cursor.setOffset( initialOffset );
-        return "Current page: " + cursor.getCurrentPageId() + ", pageSize: " + cursor.getCurrentPageSize() + " Offset: " + initialOffset + ", data: " +
+        return "Current page: " + cursor.getCurrentPageId() + ", payloadSize: " + cursor.getCurrentPayloadSize() + " Offset: " + initialOffset + ", data: " +
                 Arrays.toString( bytes );
     }
 
     public final void assertRecordsWrittenCorrectly( Path file, StoreChannel channel ) throws IOException
     {
         int recordSize = getRecordSize();
-        long recordsInFile = channel.size() / recordSize;
+        int reservedBytes = reserved_page_header_bytes.defaultValue();
+        long pagesInFile = channel.size() / PAGE_SIZE;
+        int recordsInPage = (PAGE_SIZE - reservedBytes) / recordSize;
+        long recordsInFile = pagesInFile * recordsInPage;
         ByteBuffer buffer = ByteBuffers.allocate( recordSize, INSTANCE );
-        StubPageCursor cursor = new StubPageCursor( 0, buffer );
+        StubPageCursor cursor = new StubPageCursor( 0, buffer, 0 );
+        int page = 0;
         for ( int i = 0; i < recordsInFile; i++ )
         {
+            if ( i % recordsInPage == 0 )
+            {
+                channel.position( page * PAGE_SIZE + reservedBytes );
+                page++;
+            }
             assertThat( channel.read( buffer ) ).as( "reading record id " + i ).isEqualTo( recordSize );
             buffer.flip();
-            Record expectedRecord = createRecord( file, i, (int) (channel.position() / PAGE_SIZE), 0 );
+            Record expectedRecord = createRecord( file, i, i / recordsInPage, 0 );
             cursor.setOffset( 0 );
             Record actualRecord = readRecord( cursor );
             buffer.clear();

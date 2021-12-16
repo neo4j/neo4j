@@ -27,8 +27,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.utils.TestDirectory;
+
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
+import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 
 public class NumberArrayPageCacheTestSupport
 {
@@ -38,7 +41,8 @@ public class NumberArrayPageCacheTestSupport
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fileSystem );
         Path dir = testDirectory.prepareDirectoryForTest( "test" );
         ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, scheduler, PageCacheTracer.NULL );
+        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, scheduler, PageCacheTracer.NULL,
+                config( 1024 ).reservedPageBytes( reserved_page_header_bytes.defaultValue() ) );
         return new Fixture( pageCache, fileSystem, dir, scheduler );
     }
 

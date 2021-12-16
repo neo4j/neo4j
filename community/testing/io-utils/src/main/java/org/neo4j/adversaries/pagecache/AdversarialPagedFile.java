@@ -68,6 +68,12 @@ public class AdversarialPagedFile implements PagedFile
     }
 
     @Override
+    public int payloadSize()
+    {
+        return delegate.payloadSize();
+    }
+
+    @Override
     public long fileSize() throws IOException
     {
         adversary.injectFailure( IllegalStateException.class );

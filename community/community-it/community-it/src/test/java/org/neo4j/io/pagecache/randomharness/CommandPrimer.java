@@ -72,7 +72,7 @@ class CommandPrimer
         filesTouched = new HashSet<>();
         filesTouched.addAll( mappedFiles );
         recordsWrittenTo = new HashMap<>();
-        recordsPerPage = cache.pageSize() / recordFormat.getRecordSize();
+        recordsPerPage = cache.payloadSize() / recordFormat.getRecordSize();
         maxRecordCount = filePageCount * recordsPerPage;
         recordLocks = new TinyLockManager();
 
@@ -94,18 +94,17 @@ class CommandPrimer
 
     public Action prime( Command command )
     {
-        switch ( command )
-        {
-        case FlushCache: return flushCache();
-        case FlushFile: return flushFile();
-        case MapFile: return mapFile();
-        case UnmapFile: return unmapFile();
-        case ReadRecord: return readRecord();
-        case WriteRecord: return writeRecord();
-        case ReadMulti: return readMulti();
-        case WriteMulti: return writeMulti();
-        default: throw new IllegalArgumentException( "Unknown command: " + command );
-        }
+        return switch ( command )
+                {
+                    case FlushCache -> flushCache();
+                    case FlushFile -> flushFile();
+                    case MapFile -> mapFile();
+                    case UnmapFile -> unmapFile();
+                    case ReadRecord -> readRecord();
+                    case WriteRecord -> writeRecord();
+                    case ReadMulti -> readMulti();
+                    case WriteMulti -> writeMulti();
+                };
     }
 
     private Action flushCache()

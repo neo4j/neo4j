@@ -401,6 +401,12 @@ public final class CompositePageCursor extends PageCursor
     }
 
     @Override
+    public int getCurrentPayloadSize()
+    {
+        throw new UnsupportedOperationException( "Getting current payload size is not supported on compose PageCursor" );
+    }
+
+    @Override
     public int getCurrentPageSize()
     {
         throw new UnsupportedOperationException( "Getting current page size is not supported on compose PageCursor" );

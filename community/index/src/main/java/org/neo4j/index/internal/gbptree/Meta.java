@@ -65,37 +65,37 @@ public class Meta
     private final byte formatVersion;
     private final byte unusedVersionSlot3;
     private final byte unusedVersionSlot4;
-    private final int pageSize;
+    private final int payloadSize;
     private final long layoutIdentifier;
     private final int layoutMajorVersion;
     private final int layoutMinorVersion;
 
     private Meta( byte formatIdentifier, byte formatVersion, byte unusedVersionSlot3, byte unusedVersionSlot4,
-            int pageSize, long layoutIdentifier, int layoutMajorVersion, int layoutMinorVersion )
+            int payloadSize, long layoutIdentifier, int layoutMajorVersion, int layoutMinorVersion )
     {
         this.formatIdentifier = formatIdentifier;
         this.formatVersion = formatVersion;
         this.unusedVersionSlot3 = unusedVersionSlot3;
         this.unusedVersionSlot4 = unusedVersionSlot4;
-        this.pageSize = pageSize;
+        this.payloadSize = payloadSize;
         this.layoutIdentifier = layoutIdentifier;
         this.layoutMajorVersion = layoutMajorVersion;
         this.layoutMinorVersion = layoutMinorVersion;
     }
 
-    Meta( byte formatIdentifier, byte formatVersion, int pageSize, Layout<?,?> layout )
+    Meta( byte formatIdentifier, byte formatVersion, int payloadSize, Layout<?,?> layout )
     {
         this( formatIdentifier, formatVersion, UNUSED_VERSION, UNUSED_VERSION,
-                pageSize, layout.identifier(), layout.majorVersion(), layout.minorVersion() );
+                payloadSize, layout.identifier(), layout.majorVersion(), layout.minorVersion() );
     }
 
-    private static Meta parseMeta( int format, int pageSize, long layoutIdentifier, int majorVersion, int minorVersion )
+    private static Meta parseMeta( int format, int payloadSize, long layoutIdentifier, int majorVersion, int minorVersion )
     {
         return new Meta( extractIndividualVersion( format, SHIFT_FORMAT_IDENTIFIER ),
                 extractIndividualVersion( format, SHIFT_FORMAT_VERSION ),
                 extractIndividualVersion( format, SHIFT_UNUSED_VERSION_SLOT_3 ),
                 extractIndividualVersion( format, SHIFT_UNUSED_VERSION_SLOT_4 ),
-                pageSize, layoutIdentifier, majorVersion, minorVersion );
+                payloadSize, layoutIdentifier, majorVersion, minorVersion );
     }
 
     /**
@@ -109,7 +109,7 @@ public class Meta
     static Meta read( PageCursor cursor ) throws IOException
     {
         int format;
-        int pageSize;
+        int payloadSize;
         long layoutIdentifier;
         int layoutMajorVersion;
         int layoutMinorVersion;
@@ -118,7 +118,7 @@ public class Meta
             do
             {
                 format = cursor.getInt();
-                pageSize = cursor.getInt();
+                payloadSize = cursor.getInt();
                 layoutIdentifier = cursor.getLong();
                 layoutMajorVersion = cursor.getInt();
                 layoutMinorVersion = cursor.getInt();
@@ -133,7 +133,7 @@ public class Meta
                     "to be corrupt, try to rebuild.", e );
         }
 
-        return parseMeta( format, pageSize, layoutIdentifier, layoutMajorVersion, layoutMinorVersion );
+        return parseMeta( format, payloadSize, layoutIdentifier, layoutMajorVersion, layoutMinorVersion );
     }
 
     public void verify( Layout<?,?> layout )
@@ -175,7 +175,7 @@ public class Meta
     void write( PageCursor cursor )
     {
         cursor.putInt( allVersionsCombined() );
-        cursor.putInt( getPageSize() );
+        cursor.putInt( getPayloadSize() );
         cursor.putLong( getLayoutIdentifier() );
         cursor.putInt( getLayoutMajorVersion() );
         cursor.putInt( getLayoutMinorVersion() );
@@ -192,9 +192,9 @@ public class Meta
         return formatIdentifier << SHIFT_FORMAT_IDENTIFIER | formatVersion << SHIFT_FORMAT_VERSION;
     }
 
-    int getPageSize()
+    int getPayloadSize()
     {
-        return pageSize;
+        return payloadSize;
     }
 
     byte getFormatIdentifier()

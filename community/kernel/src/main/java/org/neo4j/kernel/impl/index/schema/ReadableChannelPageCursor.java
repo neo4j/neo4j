@@ -235,6 +235,12 @@ class ReadableChannelPageCursor extends PageCursor
     }
 
     @Override
+    public int getCurrentPayloadSize()
+    {
+        return 0;
+    }
+
+    @Override
     public int getCurrentPageSize()
     {
         return 0;

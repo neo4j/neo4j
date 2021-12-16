@@ -17,17 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.internal.gbptree;
+package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.test.RandomSupport;
-
-import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
-
-class GBPTreeParallelWritesDynamicSizeIT extends GBPTreeParallelWritesIT<RawBytes,RawBytes>
+public class MuninnPageCacheWithReserveBytesTest extends MuninnPageCacheTest
 {
     @Override
-    TestLayout<RawBytes,RawBytes> getLayout( RandomSupport random, int payloadSize )
+    protected Fixture<MuninnPageCache> createFixture()
     {
-        return new SimpleByteArrayLayout( keyValueSizeCapFromPageSize( payloadSize ) / 2, random.intBetween( 0, 10 ) );
+        return super.createFixture().withReservedBytes( Long.BYTES * 3 );
     }
 }

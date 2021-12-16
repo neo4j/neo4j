@@ -343,10 +343,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         long previousValue = FIELD_NOT_INITIALIZED;
         int pageSize = pageCache.pageSize();
-        int pageReservedBytes = pageCache.pageReservedBytes();
         try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, immutable.empty() ) )
         {
-            int offset = offset( position, pageReservedBytes );
+            int offset = offset( position );
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
             {
                 if ( cursor.next() )
@@ -378,9 +377,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return previousValue;
     }
 
-    private static int offset( Position position, int reservedBytes )
+    private static int offset( Position position )
     {
-        return reservedBytes + RECORD_SIZE * position.id;
+        return RECORD_SIZE * position.id;
     }
 
     /**
@@ -394,11 +393,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      */
     public static long getRecord( PageCache pageCache, Path neoStore, Position position, String databaseName, CursorContext cursorContext ) throws IOException
     {
-        int reservedBytes = pageCache.pageReservedBytes();
-        var recordFormat = new MetaDataRecordFormat( reservedBytes );
-        int pageSize = pageCache.pageSize();
+        var recordFormat = new MetaDataRecordFormat();
+        int payloadSize = pageCache.payloadSize();
         long value = FIELD_NOT_PRESENT;
-        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, immutable.empty(), DISABLED ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, pageCache.pageSize(), databaseName, immutable.empty(), DISABLED ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {
@@ -410,7 +408,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         record.setId( position.id );
                         do
                         {
-                            recordFormat.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE, pageSize / RECORD_SIZE );
+                            recordFormat.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE, payloadSize / RECORD_SIZE );
                             if ( record.inUse() )
                             {
                                 value = record.getValue();
@@ -423,9 +421,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         while ( cursor.shouldRetry() );
                         if ( cursor.checkAndClearBoundsFlag() )
                         {
-                            int offset = offset( position, reservedBytes );
+                            int offset = offset( position );
                             throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
-                                    record, 0, offset, RECORD_SIZE, pageSize, neoStore.toAbsolutePath().toString() ) );
+                                    record, 0, offset, RECORD_SIZE, payloadSize, neoStore.toAbsolutePath().toString() ) );
                         }
                     }
                 }
@@ -756,8 +754,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             throw new UnderlyingStorageException(
                     "Out of page bounds when reading all meta-data fields. The page in question is page " +
-                    cursor.getCurrentPageId() + " of file " + storageFile.toAbsolutePath() + ", which is " +
-                    cursor.getCurrentPageSize() + " bytes in size" );
+                    cursor.getCurrentPageId() + " of file " + storageFile.toAbsolutePath() + ", with payload size: " +
+                    cursor.getCurrentPayloadSize() + ", and total page size:" + cursor.getCurrentPageSize() );
         }
     }
 

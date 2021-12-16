@@ -62,12 +62,12 @@ class RelationshipGroupRecordFormatTest
             group.setHasExternalDegreesIn( random.nextBoolean() );
             group.setHasExternalDegreesLoop( random.nextBoolean() );
             cursor.setOffset( offset );
-            format.write( group, cursor, recordSize, cursor.getCurrentPageSize() / recordSize );
+            format.write( group, cursor, recordSize, cursor.getCurrentPayloadSize() / recordSize );
 
             // WHEN
             RelationshipGroupRecord read = new RelationshipGroupRecord( group.getId() );
             cursor.setOffset( offset );
-            format.read( read, cursor, NORMAL, recordSize, cursor.getCurrentPageSize() / recordSize );
+            format.read( read, cursor, NORMAL, recordSize, cursor.getCurrentPayloadSize() / recordSize );
 
             // THEN
             assertEquals( group, read );

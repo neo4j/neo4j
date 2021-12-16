@@ -143,7 +143,7 @@ class FreeListIdProvider implements IdProvider
     {
         this.pagedFile = pagedFile;
         this.monitor = monitor;
-        this.freelistNode = new FreelistNode( pagedFile.pageSize() );
+        this.freelistNode = new FreelistNode( pagedFile.payloadSize() );
         this.lastId.set( lastId );
     }
 

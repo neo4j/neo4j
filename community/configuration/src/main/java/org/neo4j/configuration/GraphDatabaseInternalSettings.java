@@ -48,6 +48,7 @@ import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration
@@ -766,7 +767,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                     .build();
 
     @Description( "Number of reserved header bytes in each page in page cache. Please note changing it for already existing store is not supported." )
-    public static final Setting<Integer> reserved_page_header_bytes = newBuilder( "unsupported.dbms.reserved.page.header.bytes", INT, 0 ).build();
+    public static final Setting<Integer> reserved_page_header_bytes =
+            newBuilder( "unsupported.dbms.reserved.page.header.bytes", INT, RESERVED_BYTES ).addConstraint( min( 0 ) ).build();
 
     @Description( "Allow database to use dedicated transaction appender writer thread." )
     public static final Setting<Boolean> dedicated_transaction_appender =

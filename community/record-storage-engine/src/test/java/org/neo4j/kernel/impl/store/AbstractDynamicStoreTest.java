@@ -78,8 +78,11 @@ class AbstractDynamicStoreTest
     {
         try ( StoreChannel channel = fs.write( storeFile ) )
         {
-            ByteBuffer buffer = ByteBuffers.allocate( 4, INSTANCE );
-            buffer.putInt( BLOCK_SIZE );
+            ByteBuffer buffer = ByteBuffers.allocate( pageCache.payloadSize(), INSTANCE );
+            while ( buffer.hasRemaining() )
+            {
+                buffer.putInt( BLOCK_SIZE );
+            }
             buffer.flip();
             channel.writeAll( buffer );
         }

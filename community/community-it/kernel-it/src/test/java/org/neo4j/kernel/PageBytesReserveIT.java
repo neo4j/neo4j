@@ -50,13 +50,13 @@ class PageBytesReserveIT
     @Inject
     private TestDirectory testDirectory;
 
-    public static IntStream pageSizes()
+    public static IntStream reservedBytes()
     {
-        return IntStream.of( 8, 16, 24, 32, 40, 48, 64, 1024, 2048, (int) (ByteUnit.kibiBytes( 8 ) - 256) );
+        return IntStream.of( 8, 16, 24, 32, 40, 48, 64 );
     }
 
     @ParameterizedTest
-    @MethodSource( "pageSizes" )
+    @MethodSource( "reservedBytes" )
     void reserveBytesInPageHeader( int reservedBytes )
     {
         var managementService =
@@ -96,7 +96,7 @@ class PageBytesReserveIT
     }
 
     @ParameterizedTest
-    @MethodSource( "pageSizes" )
+    @MethodSource( "reservedBytes" )
     void reserveBytesInPageHeaderWithAdditionalIndexes( int reservedBytes )
     {
         var managementService =

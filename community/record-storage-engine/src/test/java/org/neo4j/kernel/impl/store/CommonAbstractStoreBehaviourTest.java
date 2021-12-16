@@ -402,7 +402,7 @@ class CommonAbstractStoreBehaviourTest
         {
             int offset = cursor.getOffset();
             long pageId = cursor.getCurrentPageId();
-            long recordId = (offset + pageId * cursor.getCurrentPageSize()) / 4;
+            long recordId = (offset + pageId * cursor.getCurrentPayloadSize()) / 4;
             boolean inUse = false;
             for ( int i = 0; i < intsPerRecord; i++ )
             {

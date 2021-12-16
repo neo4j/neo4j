@@ -59,7 +59,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         this.pagedFile = pagedFile;
         this.pageCacheTracer = pageCacheTracer;
         this.entrySize = entrySize;
-        this.entriesPerPage = pagedFile.pageSize() / entrySize;
+        this.entriesPerPage = pagedFile.payloadSize() / entrySize;
         this.length = length;
         this.defaultValue = defaultValue;
         this.base = base;
@@ -106,15 +106,15 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
               PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorContext ) )
         {
             writeCursor.next();
-            int pageSize = pagedFile.pageSize();
-            fillPageWithDefaultValue( writeCursor, defaultValue, pageSize );
+            int payloadSize = pagedFile.payloadSize();
+            fillPageWithDefaultValue( writeCursor, defaultValue, payloadSize );
             if ( pageId( length - 1 ) > 0 )
             {
                 try ( PageCursor cursor = pagedFile.io( 1, PF_NO_GROW | PF_SHARED_WRITE_LOCK, cursorContext ) )
                 {
                     while ( cursor.next() )
                     {
-                        writeCursor.copyTo( 0, cursor, 0, pageSize );
+                        writeCursor.copyTo( 0, cursor, 0, payloadSize );
                         checkBounds( writeCursor );
                     }
                 }
@@ -122,9 +122,9 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         }
     }
 
-    protected void fillPageWithDefaultValue( PageCursor writeCursor, long defaultValue, int pageSize )
+    protected void fillPageWithDefaultValue( PageCursor writeCursor, long defaultValue, int payloadSize )
     {
-        int longsInPage = pageSize / Long.BYTES;
+        int longsInPage = payloadSize / Long.BYTES;
         for ( int i = 0; i < longsInPage; i++ )
         {
             writeCursor.putLong( defaultValue );

@@ -64,20 +64,19 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public RecordFormat<MetaDataRecord> metaData( int reservedBytes )
+    public RecordFormat<MetaDataRecord> metaData()
     {
-        return new MetaDataRecordFormat( reservedBytes );
+        return new MetaDataRecordFormat();
     }
 
     @Override
     public boolean equals( Object obj )
     {
-        if ( !(obj instanceof RecordFormats) )
+        if ( !(obj instanceof RecordFormats other) )
         {
             return false;
         }
 
-        RecordFormats other = (RecordFormats) obj;
         return  generation == other.generation() &&
                 node().equals( other.node() ) &&
                 relationship().equals( other.relationship() ) &&

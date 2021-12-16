@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -36,6 +37,7 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -63,16 +65,17 @@ public abstract class StringLengthIndexValidationIT
 
     private final AtomicBoolean trapPopulation = new AtomicBoolean();
     private final Barrier.Control populationScanFinished = new Barrier.Control();
-    private final int singleKeySizeLimit = getSingleKeySizeLimit();
+    private int singleKeySizeLimit;
     private final GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
 
     @Inject
     private GraphDatabaseAPI db;
-
+    @Inject
+    private PageCache pageCache;
     @Inject
     private RandomSupport random;
 
-    protected abstract int getSingleKeySizeLimit();
+    protected abstract int getSingleKeySizeLimit( int payloadSize );
 
     // Each char in string need to fit in one byte
     protected abstract String getString( RandomSupport random, int keySize );
@@ -80,6 +83,12 @@ public abstract class StringLengthIndexValidationIT
     protected abstract GraphDatabaseSettings.SchemaIndex getSchemaIndex();
 
     protected abstract String expectedPopulationFailureCauseMessage( long indexId, long entityId );
+
+    @BeforeEach
+    void setUp()
+    {
+        singleKeySizeLimit = getSingleKeySizeLimit( pageCache.payloadSize() );
+    }
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )

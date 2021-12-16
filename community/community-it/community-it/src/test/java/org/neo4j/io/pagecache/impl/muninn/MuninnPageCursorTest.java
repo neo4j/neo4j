@@ -50,6 +50,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
@@ -127,7 +128,8 @@ class MuninnPageCursorTest
 
     private PageCache startPageCache( PageSwapperFactory pageSwapperFactory )
     {
-        return new MuninnPageCache( pageSwapperFactory, jobScheduler, MuninnPageCache.config( 1_000 ) );
+        return new MuninnPageCache( pageSwapperFactory, jobScheduler, MuninnPageCache.config( 1_000 )
+                .reservedPageBytes( reserved_page_header_bytes.defaultValue() ) );
     }
 
     private void createSomeData( Path file ) throws IOException

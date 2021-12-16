@@ -539,7 +539,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createMetadataStore( CursorContext cursorContext )
     {
         return initialize( new MetaDataStore( layout.metadataStore(), config, pageCache, logProvider,
-                        recordFormats.metaData( config.get( GraphDatabaseInternalSettings.reserved_page_header_bytes ) ),
+                        recordFormats.metaData(),
                         recordFormats.storeVersion(), pageCacheTracer, readOnlyChecker, layout.getDatabaseName(), openOptions ),
                 cursorContext );
     }

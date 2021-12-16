@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -32,7 +31,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singleton;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
@@ -83,10 +82,13 @@ abstract class GenericBlockBasedIndexPopulatorUpdatesTest<KEY extends GenericKey
                 populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
             } );
             // then
-            assertThat( e.getMessage(), Matchers.containsString(
+            assertThat( e )
+                    .hasMessageContaining(
                     "Property value is too large to index, please see index documentation for limitations. Index: Index( id=1, name='index', " +
-                            "type='GENERAL " + indexType() + "', schema=(:Label1 {property1}), indexProvider='Undecided-0' ), entity id: 1, property size: " +
-                            "8176, value: [String(\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA...." ) );
+                            "type='GENERAL " + indexType() +
+                            "', schema=(:Label1 {property1}), indexProvider='Undecided-0' ), entity id: 1, property size: " )
+                    .hasMessageContaining(
+                            ", value: [String(\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA...." );
 
         }
         finally

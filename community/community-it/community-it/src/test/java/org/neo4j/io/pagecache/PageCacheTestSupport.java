@@ -27,7 +27,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -73,9 +73,12 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     protected int maxPages = 40;
 
     protected int pageCachePageSize;
+    protected int pageCachePayloadSize;
+    protected int reservedBytes;
     protected int recordsPerFilePage;
     protected int recordCount;
     protected int filePageSize;
+    protected int filePayloadSize;
     protected ByteBuffer bufA;
     protected FileSystemAbstraction fs;
     protected JobScheduler jobScheduler;
@@ -89,6 +92,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     public void setUp() throws IOException
     {
         fixture = createFixture();
+        reservedBytes = fixture.getReservedBytes();
         //noinspection ResultOfMethodCallIgnored
         Thread.interrupted(); // Clear stray interrupts
         fs = createFileSystemAbstraction();
@@ -114,9 +118,11 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     {
         T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, jobScheduler, fixture.getBufferFactory() );
         pageCachePageSize = pageCache.pageSize();
-        recordsPerFilePage = pageCachePageSize / recordSize;
+        pageCachePayloadSize = pageCache.payloadSize();
+        recordsPerFilePage = pageCachePayloadSize / recordSize;
         recordCount = 5 * maxPages * recordsPerFilePage;
-        filePageSize = recordsPerFilePage * recordSize;
+        filePayloadSize = recordsPerFilePage * recordSize;
+        filePageSize = filePayloadSize + reservedBytes;
         bufA = ByteBuffers.allocate( recordSize, INSTANCE );
         return pageCache;
     }
@@ -207,7 +213,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
      */
     protected void verifyRecordsMatchExpected( long pageId, int offset, ByteBuffer actualPageContents )
     {
-        ByteBuffer expectedPageContents = ByteBuffers.allocate( filePageSize, INSTANCE );
+        ByteBuffer expectedPageContents = ByteBuffers.allocate( filePayloadSize, INSTANCE );
         for ( int i = 0; i < recordsPerFilePage; i++ )
         {
             long recordId = (pageId * recordsPerFilePage) + i;
@@ -259,31 +265,37 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected void generateFileWithRecords(
-            Path file,
-            int recordCount,
-            int recordSize ) throws IOException
+    protected void generateFileWithRecords( Path file, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes ) throws IOException
     {
         try ( StoreChannel channel = fs.write( file ) )
         {
-            generateFileWithRecords( channel, recordCount, recordSize );
+            generateFileWithRecords( channel, recordCount, recordSize, recordsPerFilePage, reservedBytes );
         }
     }
 
-    protected static void generateFileWithRecords( WritableByteChannel channel, int recordCount, int recordSize )
+    protected static void generateFileWithRecords( WritableByteChannel channel, int recordCount, int recordSize, int recordsPerFilePage, int reservedBytes )
             throws IOException
     {
         ByteBuffer buf = ByteBuffers.allocate( recordSize, INSTANCE );
         for ( int i = 0; i < recordCount; i++ )
         {
-            generateRecordForId( i, buf );
-            int rem = buf.remaining();
-            do
+            if ( i % recordsPerFilePage == 0 )
             {
-                rem -= channel.write( buf );
+                writeBuffer( channel, ByteBuffer.allocate( reservedBytes ) );
             }
-            while ( rem > 0 );
+            generateRecordForId( i, buf );
+            writeBuffer( channel, buf );
         }
+    }
+
+    private static void writeBuffer( WritableByteChannel channel, ByteBuffer buf ) throws IOException
+    {
+        int rem = buf.remaining();
+        do
+        {
+            rem -= channel.write( buf );
+        }
+        while ( rem > 0 );
     }
 
     protected static void generateRecordForId( long id, ByteBuffer buf )
@@ -307,12 +319,16 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected void verifyRecordsInFile( ReadableByteChannel channel, int recordCount ) throws IOException
+    protected void verifyRecordsInFile( StoreChannel channel, int recordCount ) throws IOException
     {
         ByteBuffer buf = ByteBuffers.allocate( recordSize, INSTANCE );
         ByteBuffer observation = ByteBuffers.allocate( recordSize, INSTANCE );
         for ( int i = 0; i < recordCount; i++ )
         {
+            if ( i % recordsPerFilePage == 0 )
+            {
+                channel.position( channel.position() + reservedBytes );
+            }
             generateRecordForId( i, buf );
             observation.position( 0 );
             channel.read( observation );
@@ -330,6 +346,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         private Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier = EphemeralFileSystemAbstraction::new;
         private Function<String,Path> fileConstructor = Path::of;
         private IOBufferFactory bufferFactory;
+        private int reservedBytes = GraphDatabaseInternalSettings.reserved_page_header_bytes.defaultValue();
 
         public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
                 JobScheduler jobScheduler, IOBufferFactory bufferFactory );
@@ -344,6 +361,11 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         public IOBufferFactory getBufferFactory()
         {
             return bufferFactory;
+        }
+
+        public int getReservedBytes()
+        {
+            return reservedBytes;
         }
 
         public final Fixture<T> withFileSystemAbstraction(
@@ -361,6 +383,12 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         public final Fixture<T> withBufferFactory( IOBufferFactory bufferFactory )
         {
             this.bufferFactory = bufferFactory;
+            return this;
+        }
+
+        public final Fixture<T> withReservedBytes( int reservedBytes )
+        {
+            this.reservedBytes = reservedBytes;
             return this;
         }
 

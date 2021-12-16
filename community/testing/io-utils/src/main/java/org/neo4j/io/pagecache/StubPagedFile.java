@@ -57,6 +57,12 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
+    public int payloadSize()
+    {
+        return pageSize - PageCache.RESERVED_BYTES;
+    }
+
+    @Override
     public long fileSize()
     {
         if ( lastPageId < 0 )

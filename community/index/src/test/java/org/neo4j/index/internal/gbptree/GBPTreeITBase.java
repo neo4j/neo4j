@@ -75,8 +75,8 @@ abstract class GBPTreeITBase<KEY,VALUE>
     {
         ratioToKeepInLeftOnSplit = random.nextBoolean() ? InternalTreeLogic.DEFAULT_SPLIT_RATIO : random.nextDouble();
         int pageSize = 512;
-        layout = getLayout( random, pageSize );
         pageCache = PageCacheSupportExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
+        layout = getLayout( random, pageCache.payloadSize() );
         index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 

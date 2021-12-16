@@ -33,7 +33,7 @@ import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
 
 class PageAwareByteArrayCursor extends PageCursor
 {
-    private final int pageSize;
+    private final int payloadSize;
     private final List<byte[]> pages;
 
     private PageCursor current;
@@ -43,20 +43,20 @@ class PageAwareByteArrayCursor extends PageCursor
     private boolean shouldRetry;
     private int closeCount;
 
-    PageAwareByteArrayCursor( int pageSize )
+    PageAwareByteArrayCursor( int payloadSize )
     {
-        this( pageSize, 0 );
+        this( payloadSize, 0 );
     }
 
-    private PageAwareByteArrayCursor( int pageSize, long nextPageId )
+    private PageAwareByteArrayCursor( int payloadSize, long nextPageId )
     {
-        this( new ArrayList<>(), pageSize, nextPageId );
+        this( new ArrayList<>(), payloadSize, nextPageId );
     }
 
-    private PageAwareByteArrayCursor( List<byte[]> pages, int pageSize, long nextPageId )
+    private PageAwareByteArrayCursor( List<byte[]> pages, int payloadSize, long nextPageId )
     {
         this.pages = pages;
-        this.pageSize = pageSize;
+        this.payloadSize = payloadSize;
         this.nextPageId = nextPageId;
         initialize();
     }
@@ -69,12 +69,12 @@ class PageAwareByteArrayCursor extends PageCursor
 
     PageAwareByteArrayCursor duplicate()
     {
-        return new PageAwareByteArrayCursor( pages, pageSize, currentPageId );
+        return new PageAwareByteArrayCursor( pages, payloadSize, currentPageId );
     }
 
     PageAwareByteArrayCursor duplicate( long nextPageId )
     {
-        return new PageAwareByteArrayCursor( pages, pageSize, nextPageId );
+        return new PageAwareByteArrayCursor( pages, payloadSize, nextPageId );
     }
 
     void forceRetry()
@@ -86,6 +86,19 @@ class PageAwareByteArrayCursor extends PageCursor
     public long getCurrentPageId()
     {
         return currentPageId;
+    }
+
+    @Override
+    public int getCurrentPayloadSize()
+    {
+        if ( currentPageId == UNBOUND_PAGE_ID )
+        {
+            return UNBOUND_PAYLOAD_SIZE;
+        }
+        else
+        {
+            return page( currentPageId ).length;
+        }
     }
 
     @Override
@@ -133,8 +146,8 @@ class PageAwareByteArrayCursor extends PageCursor
                     sourceOffset, targetOffset, lengthInBytes, currentPageId ) );
         }
         int bytesToCopy = Math.min( lengthInBytes,
-                Math.min( current.getCurrentPageSize() - sourceOffset,
-                        targetCursor.getCurrentPageSize() - targetOffset ) );
+                Math.min( current.getCurrentPayloadSize() - sourceOffset,
+                        targetCursor.getCurrentPayloadSize() - targetOffset ) );
 
         for ( int i = 0; i < bytesToCopy; i++ )
         {
@@ -146,7 +159,7 @@ class PageAwareByteArrayCursor extends PageCursor
     @Override
     public int copyTo( int sourceOffset, ByteBuffer buf )
     {
-        int bytesToCopy = Math.min( buf.limit() - buf.position(), pageSize - sourceOffset );
+        int bytesToCopy = Math.min( buf.limit() - buf.position(), payloadSize - sourceOffset );
         for ( int i = 0; i < bytesToCopy; i++ )
         {
             byte b = getByte( sourceOffset + i );
@@ -169,7 +182,7 @@ class PageAwareByteArrayCursor extends PageCursor
             {
                 for ( int i = pages.size(); i <= currentPageId; i++ )
                 {
-                    pages.add( new byte[pageSize] );
+                    pages.add( new byte[payloadSize] );
                 }
             }
         }
@@ -421,7 +434,7 @@ class PageAwareByteArrayCursor extends PageCursor
     @Override
     public PageCursor openLinkedCursor( long pageId )
     {
-        PageCursor toReturn = new PageAwareByteArrayCursor( pages, pageSize, pageId );
+        PageCursor toReturn = new PageAwareByteArrayCursor( pages, payloadSize, pageId );
         if ( linkedCursor != null )
         {
             linkedCursor.close();

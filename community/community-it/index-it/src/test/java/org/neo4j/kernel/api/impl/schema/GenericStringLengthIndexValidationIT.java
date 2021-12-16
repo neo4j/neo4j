@@ -30,9 +30,9 @@ import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStri
 public class GenericStringLengthIndexValidationIT extends StringLengthIndexValidationIT
 {
     @Override
-    protected int getSingleKeySizeLimit()
+    protected int getSingleKeySizeLimit( int payloadSize )
     {
-        return TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
+        return TreeNodeDynamicSize.keyValueSizeCapFromPageSize( payloadSize );
     }
 
     @Override

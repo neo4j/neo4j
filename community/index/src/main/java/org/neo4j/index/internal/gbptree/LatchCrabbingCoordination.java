@@ -131,7 +131,7 @@ class LatchCrabbingCoordination implements TreeWriterCoordination
 
         // Remember information about the latch
         depth++;
-        if ( depth > dataByDepth.length )
+        if ( depth >= dataByDepth.length )
         {
             growDepthDataArray();
         }

@@ -33,8 +33,7 @@ public class RecordPageLocationCalculator
      *
      * @param id record id
      * @param recordsPerPage number of records per page
-     * @return which page the record with the given {@code id} should go into, given the
-     * {@code pageSize} and {@code recordSize}.
+     * @return which page the record with the given {@code id} should go into.
      */
     public static long pageIdForRecord( long id, int recordsPerPage )
     {
@@ -48,11 +47,10 @@ public class RecordPageLocationCalculator
      * @param id record id
      * @param recordSize size of each record
      * @param recordsPerPage number of records per page
-     * @return which offset into the right page the given {@code id} lives at, given the
-     * {@code pageSize} and {@code recordSize}.
+     * @return which offset into the right page the given {@code id} lives at.
      */
-    public static int offsetForId( long id, int recordSize, int recordsPerPage, int reservedBytes )
+    public static int offsetForId( long id, int recordSize, int recordsPerPage )
     {
-        return reservedBytes + (int) (id % recordsPerPage) * recordSize;
+        return (int) (id % recordsPerPage) * recordSize;
     }
 }

@@ -187,17 +187,12 @@ public class ImportLogic implements Closeable
 
     private IdMapper instantiateIdMapper( Input input )
     {
-        switch ( input.idType() )
-        {
-        case STRING:
-            return IdMappers.strings( numberArrayFactory, input.groups(), memoryTracker );
-        case INTEGER:
-            return IdMappers.longs( numberArrayFactory, input.groups(), memoryTracker );
-        case ACTUAL:
-            return IdMappers.actual();
-        default:
-            throw new IllegalArgumentException( "Unsupported id type " + input.idType() );
-        }
+        return switch ( input.idType() )
+                {
+                    case STRING -> IdMappers.strings( numberArrayFactory, input.groups(), memoryTracker );
+                    case INTEGER -> IdMappers.longs( numberArrayFactory, input.groups(), memoryTracker );
+                    case ACTUAL -> IdMappers.actual();
+                };
     }
 
     /**

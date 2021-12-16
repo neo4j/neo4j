@@ -47,13 +47,14 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     private final OffloadIdValidator offloadIdValidator;
     private final int maxEntrySize;
 
-    OffloadStoreImpl( Layout<KEY,VALUE> layout, IdProvider idProvider, OffloadPageCursorFactory pcFactory, OffloadIdValidator offloadIdValidator, int pageSize )
+    OffloadStoreImpl( Layout<KEY,VALUE> layout, IdProvider idProvider, OffloadPageCursorFactory pcFactory, OffloadIdValidator offloadIdValidator,
+            int payloadSize )
     {
         this.layout = layout;
         this.idProvider = idProvider;
         this.pcFactory = pcFactory;
         this.offloadIdValidator = offloadIdValidator;
-        this.maxEntrySize = keyValueSizeCapFromPageSize( pageSize );
+        this.maxEntrySize = keyValueSizeCapFromPageSize( payloadSize );
     }
 
     @Override
@@ -200,9 +201,9 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
     }
 
     @VisibleForTesting
-    static int keyValueSizeCapFromPageSize( int pageSize )
+    static int keyValueSizeCapFromPageSize( int payloadSize )
     {
-        return pageSize - SIZE_HEADER - SIZE_KEY_SIZE - SIZE_VALUE_SIZE;
+        return payloadSize - SIZE_HEADER - SIZE_KEY_SIZE - SIZE_VALUE_SIZE;
     }
 
     static void writeHeader( PageCursor cursor )

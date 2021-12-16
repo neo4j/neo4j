@@ -55,6 +55,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
@@ -82,6 +83,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private int filePageSize;
     private PageCacheTracer tracer;
     private int commandCount;
+    private final int reservedPageBytes;
     private final double[] commandProbabilityFactors;
     private long randomSeed;
     private boolean fixedRandomSeed;
@@ -104,6 +106,7 @@ public class RandomPageCacheTestHarness implements Closeable
         filePageCount = cachePageCount * 10;
         tracer = PageCacheTracer.NULL;
         commandCount = 1000;
+        reservedPageBytes = reserved_page_header_bytes.defaultValue();
 
         Command[] commands = Command.values();
         commandProbabilityFactors = new double[commands.length];
@@ -383,7 +386,8 @@ public class RandomPageCacheTestHarness implements Closeable
 
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer );
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
-        MuninnPageCache cache = new MuninnPageCache( swapperFactory, jobScheduler, MuninnPageCache.config( cachePageCount ).pageCacheTracer( tracer ) );
+        MuninnPageCache cache = new MuninnPageCache( swapperFactory, jobScheduler, MuninnPageCache.config( cachePageCount )
+                .pageCacheTracer( tracer ).reservedPageBytes( reservedPageBytes ) );
         if ( filePageSize == 0 )
         {
             filePageSize = cache.pageSize();

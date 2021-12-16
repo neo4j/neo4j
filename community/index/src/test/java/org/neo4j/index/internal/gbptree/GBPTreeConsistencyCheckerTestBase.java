@@ -939,19 +939,14 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     private GBPTreePointerType randomPointerType( int keyCount, boolean isLeaf )
     {
         int bound = isLeaf ? 3 : 4;
-        switch ( randomValues.nextInt( bound ) )
-        {
-        case 0:
-            return GBPTreePointerType.leftSibling();
-        case 1:
-            return GBPTreePointerType.rightSibling();
-        case 2:
-            return GBPTreePointerType.successor();
-        case 3:
-            return GBPTreePointerType.child( randomValues.nextInt( keyCount + 1 ) );
-        default:
-            throw new IllegalStateException( "Unrecognized option" );
-        }
+        return switch ( randomValues.nextInt( bound ) )
+                {
+                    case 0 -> GBPTreePointerType.leftSibling();
+                    case 1 -> GBPTreePointerType.rightSibling();
+                    case 2 -> GBPTreePointerType.successor();
+                    case 3 -> GBPTreePointerType.child( randomValues.nextInt( keyCount + 1 ) );
+                    default -> throw new IllegalStateException( "Unrecognized option" );
+                };
     }
 
     private void treeWithHeight( GBPTree<KEY,VALUE> index, int height ) throws IOException

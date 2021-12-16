@@ -47,9 +47,9 @@ class FreelistNode
 
     private final int maxEntries;
 
-    FreelistNode( int pageSize )
+    FreelistNode( int payloadSize )
     {
-        this.maxEntries = (pageSize - HEADER_LENGTH) / ENTRY_SIZE;
+        this.maxEntries = (payloadSize - HEADER_LENGTH) / ENTRY_SIZE;
     }
 
     static void initialize( PageCursor cursor )

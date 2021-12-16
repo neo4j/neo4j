@@ -85,12 +85,15 @@ public abstract class MuninnPageCursor extends PageCursor
     private long pointer;
     private int pageSize;
     private int filePageSize;
+    private int filePayloadSize;
     protected final VersionContext versionContext;
     private final CursorContext cursorContext;
     private int offset;
     private int mark;
     private boolean markOutOfBounds;
     private boolean outOfBounds;
+    private int pageReservedBytes;
+    private int payloadSize;
     // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
     // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
     // offending code.
@@ -123,6 +126,7 @@ public abstract class MuninnPageCursor extends PageCursor
         this.swapper = pagedFile.swapper;
         this.swapperId = pagedFile.swapperId;
         this.filePageSize = pagedFile.filePageSize;
+        this.pageReservedBytes = pagedFile.pageCache.pageReservedBytes();
         this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
@@ -130,6 +134,8 @@ public abstract class MuninnPageCursor extends PageCursor
         this.updateUsage = !isFlagRaised( pf_flags, PF_TRANSIENT );
         this.noFault = isFlagRaised( pf_flags, PF_NO_FAULT );
         this.noGrow = noFault || isFlagRaised( pf_flags, PagedFile.PF_NO_GROW );
+        this.offset = pageReservedBytes;
+        this.filePayloadSize = filePageSize - pageReservedBytes;
         this.tracer.openCursor();
     }
 
@@ -163,9 +169,10 @@ public abstract class MuninnPageCursor extends PageCursor
     public final void reset( PinEvent pinEvent, long pageRef )
     {
         this.pinnedPageRef = pageRef;
-        this.offset = 0;
+        this.offset = pageReservedBytes;
         this.pointer = PageList.getAddress( pageRef );
         this.pageSize = filePageSize;
+        this.payloadSize =  filePayloadSize;
         pinEvent.setCachePageId( pagedFile.toId( pageRef ) );
     }
 
@@ -200,7 +207,7 @@ public abstract class MuninnPageCursor extends PageCursor
      * than requested lastClosedTransactionId. In this case we can't be sure that the data of the current page is satisfying
      * the visibility requirements, and we pessimistically will assume that we are reading dirty data.
      * @param lastClosedTransactionId last closed transaction id
-     * @return true in case if we reading potentially dirty data for requested lastClosedTransactionId.
+     * @return true in case if we are reading potentially dirty data for requested lastClosedTransactionId.
      */
     private boolean isPotentiallyReadingDirtyData( long lastClosedTransactionId )
     {
@@ -285,6 +292,7 @@ public abstract class MuninnPageCursor extends PageCursor
     {
         // Make all future bounds checks fail, and send future accesses to the victim page.
         pageSize = 0;
+        payloadSize = 0;
         // Decouple us from the memory page, so we avoid messing with the page meta-data.
         pinnedPageRef = 0;
     }
@@ -296,9 +304,15 @@ public abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public final int getCurrentPageSize()
+    public final int getCurrentPayloadSize()
     {
-        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? UNBOUND_PAGE_SIZE : pagedFile.pageSize();
+        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? UNBOUND_PAYLOAD_SIZE : payloadSize;
+    }
+
+    @Override
+    public int getCurrentPageSize()
+    {
+        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? UNBOUND_PAGE_SIZE : pageSize;
     }
 
     @Override
@@ -506,10 +520,10 @@ public abstract class MuninnPageCursor extends PageCursor
     private long getBoundedPointer( int offset, int size )
     {
         long p = pointer;
-        long can = p + offset;
+        long can = p + offset + pageReservedBytes;
         if ( boundsCheck )
         {
-            if ( can + size > p + pageSize || can < p )
+            if ( can + size > p + pageSize || can < p || can < p + pageReservedBytes )
             {
                 outOfBounds = true;
                 // Return the victim page when we are out of bounds, since at this point we can't tell if the pointer
@@ -874,23 +888,25 @@ public abstract class MuninnPageCursor extends PageCursor
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
+        int source = sourceOffset + pageReservedBytes;
+        int target = targetOffset + pageReservedBytes;
         int sourcePageSize = getCurrentPageSize();
         int targetPageSize = targetCursor.getCurrentPageSize();
         if ( targetCursor.getClass() != MuninnWritePageCursor.class )
         {
             throw new IllegalArgumentException( "Target cursor must be writable" );
         }
-        if ( sourceOffset >= 0
-             && targetOffset >= 0
-             && sourceOffset < sourcePageSize
-             && targetOffset < targetPageSize
+        if ( source >= pageReservedBytes
+             && target >= pageReservedBytes
+             && source < sourcePageSize
+             && target < targetPageSize
              && lengthInBytes >= 0 )
         {
             MuninnPageCursor cursor = (MuninnPageCursor) targetCursor;
-            int remainingSource = sourcePageSize - sourceOffset;
-            int remainingTarget = targetPageSize - targetOffset;
+            int remainingSource = sourcePageSize - source;
+            int remainingTarget = targetPageSize - target;
             int bytes = Math.min( lengthInBytes, Math.min( remainingSource, remainingTarget ) );
-            UnsafeUtil.copyMemory( pointer + sourceOffset, cursor.pointer + targetOffset, bytes );
+            UnsafeUtil.copyMemory( pointer + source, cursor.pointer + target, bytes );
             return bytes;
         }
         outOfBounds = true;
@@ -916,9 +932,9 @@ public abstract class MuninnPageCursor extends PageCursor
     private int copyToDirectByteBuffer( int sourceOffset, ByteBuffer buf )
     {
         int pos = buf.position();
-        int bytesToCopy = Math.min( buf.limit() - pos, pageSize - sourceOffset );
-        long source = pointer + sourceOffset;
-        if ( sourceOffset < getCurrentPageSize() && sourceOffset >= 0 )
+        int bytesToCopy = Math.min( buf.limit() - pos, payloadSize - sourceOffset );
+        long source = pointer + sourceOffset + pageReservedBytes;
+        if ( sourceOffset < getCurrentPayloadSize() && sourceOffset >= 0 )
         {
             long target = UnsafeUtil.getDirectByteBufferAddress( buf );
             UnsafeUtil.copyMemory( source, target + pos, bytesToCopy );
@@ -933,7 +949,7 @@ public abstract class MuninnPageCursor extends PageCursor
 
     private int copyToByteBufferByteWise( int sourceOffset, ByteBuffer buf )
     {
-        int bytesToCopy = Math.min( buf.limit() - buf.position(), pageSize - sourceOffset );
+        int bytesToCopy = Math.min( buf.limit() - buf.position(), payloadSize - sourceOffset );
         for ( int i = 0; i < bytesToCopy; i++ )
         {
             byte b = getByte( sourceOffset + i );
@@ -943,14 +959,15 @@ public abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public void shiftBytes( int sourceStart, int length, int shift )
+    public void shiftBytes( int sourceOffset, int length, int shift )
     {
-        int sourceEnd = sourceStart + length;
-        int targetStart = sourceStart + shift;
-        int targetEnd = sourceStart + length + shift;
-        if ( sourceStart < 0
+        int offset = sourceOffset + pageReservedBytes;
+        int sourceEnd = offset + length;
+        int targetStart = offset + shift;
+        int targetEnd = offset + length + shift;
+        if ( offset < pageReservedBytes
                 || sourceEnd > filePageSize
-                || targetStart < 0
+                || targetStart < pageReservedBytes
                 || targetEnd > filePageSize
                 || length < 0 )
         {
@@ -960,11 +977,11 @@ public abstract class MuninnPageCursor extends PageCursor
 
         if ( shift < 0 )
         {
-            unsafeShiftLeft( sourceStart, sourceEnd, length, shift );
+            unsafeShiftLeft( offset, sourceEnd, length, shift );
         }
         else
         {
-            unsafeShiftRight( sourceEnd, sourceStart, length, shift );
+            unsafeShiftRight( sourceEnd, offset, length, shift );
         }
     }
 
@@ -1011,12 +1028,12 @@ public abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public void setOffset( int offset )
+    public void setOffset( int logicalOffset )
     {
-        this.offset = offset;
-        if ( offset < 0 || offset > filePageSize )
+        this.offset = logicalOffset + pageReservedBytes;
+        if ( offset < pageReservedBytes || offset > filePageSize )
         {
-            this.offset = 0;
+            this.offset = pageReservedBytes;
             outOfBounds = true;
         }
     }
@@ -1024,7 +1041,7 @@ public abstract class MuninnPageCursor extends PageCursor
     @Override
     public final int getOffset()
     {
-        return offset;
+        return offset - pageReservedBytes;
     }
 
     @Override

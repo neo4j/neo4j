@@ -409,10 +409,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private final ReadWriteLock writerLock = new ReentrantReadWriteLock();
 
     /**
-     * Page size, i.e. tree node size, of the tree nodes in this tree. The page size is determined on
+     * Page paylaod size, i.e. tree node size, of the tree nodes in this tree. The page payload size is determined on
      * tree creation, stored in meta page and read when opening tree later.
      */
-    private final int pageSize;
+    private final int payloadSize;
 
     /**
      * Whether or not the tree was created this time it was instantiated.
@@ -599,7 +599,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) ) )
         {
             this.pagedFile = openOrCreate( pageCache, indexFile, cursorContext, databaseName, openOptions );
-            this.pageSize = pagedFile.pageSize();
+            this.payloadSize = pagedFile.payloadSize();
             closed = false;
             TreeNodeSelector.Factory format;
             if ( created )
@@ -615,8 +615,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             }
             this.bTreeNodeFormat = format;
             this.freeList = new FreeListIdProvider( pagedFile, rootId );
-            this.offloadStore = buildOffload( layout, freeList, pagedFile, pageSize );
-            this.bTreeNode = format.create( pageSize, layout, offloadStore );
+            this.offloadStore = buildOffload( layout, freeList, pagedFile, payloadSize );
+            this.bTreeNode = format.create( payloadSize, layout, offloadStore );
             this.latchService = new TreeNodeLatchService();
             this.writer =
                     new GBPTreeWriter( NO_COORDINATION, new InternalTreeLogic<>( freeList, bTreeNode, layout, monitor, NO_COORDINATION ), bTreeNode, false );
@@ -725,11 +725,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             // We're only interested in the page size really
             Meta meta = readMeta( pagedFile, cursorContext );
-            if ( meta.getPageSize() != pageCache.pageSize() )
+            if ( meta.getPayloadSize() != pageCache.payloadSize() )
             {
                 throw new MetadataMismatchException( format(
-                        "Tried to open the tree using page size %d, but the tree was original created with page size %d so cannot be opened.",
-                        pageCache.pageSize(), meta.getPageSize() ) );
+                        "Tried to open the tree using page payload size %d, but the tree was original created with page payload size %d so cannot be opened.",
+                        pageCache.payloadSize(), meta.getPayloadSize() ) );
             }
             success = true;
             return pagedFile;
@@ -991,7 +991,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     private void writeMeta( Layout<KEY,VALUE> layout, TreeNodeSelector.Factory format, PagedFile pagedFile, CursorContext cursorContext ) throws IOException
     {
-        Meta meta = new Meta( format.formatIdentifier(), format.formatVersion(), pageSize, layout );
+        Meta meta = new Meta( format.formatIdentifier(), format.formatVersion(), payloadSize, layout );
         try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
             meta.write( metaCursor );
@@ -1468,7 +1468,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     {
         assertRecoveryCleanSuccessful();
         TreeWriterCoordination traversalMonitor = new LatchCrabbingCoordination( latchService, bTreeNode.leafUnderflowThreshold() );
-        TreeNode<KEY,VALUE> treeNode = bTreeNodeFormat.create( pageSize, layout, offloadStore );
+        TreeNode<KEY,VALUE> treeNode = bTreeNodeFormat.create( payloadSize, layout, offloadStore );
         GBPTreeWriter writer =
                 new GBPTreeWriter( traversalMonitor, new InternalTreeLogic<>( freeList, treeNode, layout, monitor, traversalMonitor ), treeNode, true );
         writer.initialize( ratioToKeepInLeftOnSplit, cursorContext );
@@ -2008,24 +2008,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return bTreeNode.inlineKeyValueSizeCap();
     }
 
-    /**
-     * @return size of the file backing this {@link GBPTree}, in bytes.
-     */
-    public long sizeInBytes()
-    {
-        try
-        {
-            return pagedFile.fileSize();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-    }
-
-    private static <KEY, VALUE> OffloadStoreImpl<KEY,VALUE> buildOffload( Layout<KEY,VALUE> layout, IdProvider idProvider, PagedFile pagedFile, int pageSize )
+    private static <KEY, VALUE> OffloadStoreImpl<KEY,VALUE> buildOffload( Layout<KEY,VALUE> layout, IdProvider idProvider, PagedFile pagedFile,
+            int payloadSize )
     {
         OffloadIdValidator idValidator = id -> id >= IdSpace.MIN_TREE_NODE_ID && id <= pagedFile.getLastPageId();
-        return new OffloadStoreImpl<>( layout, idProvider, pagedFile::io, idValidator, pageSize );
+        return new OffloadStoreImpl<>( layout, idProvider, pagedFile::io, idValidator, payloadSize );
     }
 }

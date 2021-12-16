@@ -59,6 +59,6 @@ class GBPTreeMetaTest
         assertEquals( written.getLayoutIdentifier(), read.getLayoutIdentifier() );
         assertEquals( written.getLayoutMajorVersion(), read.getLayoutMajorVersion() );
         assertEquals( written.getLayoutMinorVersion(), read.getLayoutMinorVersion() );
-        assertEquals( written.getPageSize(), read.getPageSize() );
+        assertEquals( written.getPayloadSize(), read.getPayloadSize() );
     }
 }

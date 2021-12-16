@@ -62,7 +62,7 @@ import static org.neo4j.test.Race.throwing;
 @ExtendWith( RandomExtension.class )
 class FreeListIdProviderTest
 {
-    private static final int PAGE_SIZE = 128;
+    private static final int PAYLOAD_SIZE = 128;
     private static final long GENERATION_ONE = GenerationSafePointer.MIN_GENERATION;
     private static final long GENERATION_TWO = GENERATION_ONE + 1;
     private static final long GENERATION_THREE = GENERATION_TWO + 1;
@@ -80,11 +80,11 @@ class FreeListIdProviderTest
     @BeforeEach
     void setUpPagedFile() throws IOException
     {
-        cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+        cursor = new PageAwareByteArrayCursor( PAYLOAD_SIZE );
 
         when( pagedFile.io( anyLong(), anyInt(), any() ) ).thenAnswer(
                 invocation -> cursor.duplicate( invocation.getArgument( 0 ) ) );
-        when( pagedFile.pageSize() ).thenReturn( PAGE_SIZE );
+        when( pagedFile.payloadSize() ).thenReturn( PAYLOAD_SIZE );
 
         freelist = new FreeListIdProvider( pagedFile, BASE_ID, monitor );
         freelist.initialize( BASE_ID + 1, BASE_ID + 1, BASE_ID + 1, 0, 0 );
@@ -487,14 +487,14 @@ class FreeListIdProviderTest
     private void fillPageWithRandomBytes( long releasedId )
     {
         cursor.next( releasedId );
-        byte[] crapData = new byte[PAGE_SIZE];
+        byte[] crapData = new byte[PAYLOAD_SIZE];
         ThreadLocalRandom.current().nextBytes( crapData );
         cursor.putBytes( crapData );
     }
 
     private static void assertEmpty( PageCursor cursor )
     {
-        byte[] data = new byte[PAGE_SIZE];
+        byte[] data = new byte[PAYLOAD_SIZE];
         cursor.getBytes( data );
         for ( byte b : data )
         {

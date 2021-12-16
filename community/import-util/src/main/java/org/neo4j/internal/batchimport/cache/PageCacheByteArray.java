@@ -46,7 +46,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     }
 
     @Override
-    protected void fillPageWithDefaultValue( PageCursor writeCursor, long ignoredDefaultValue, int pageSize )
+    protected void fillPageWithDefaultValue( PageCursor writeCursor, long ignoredDefaultValue, int payloadSize )
     {
         for ( int i = 0; i < entriesPerPage; i++ )
         {

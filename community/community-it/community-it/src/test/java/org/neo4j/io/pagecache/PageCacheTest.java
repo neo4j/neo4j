@@ -153,6 +153,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    void mustReportConfiguredCachePayloadSize()
+    {
+        configureStandardPageCache();
+        assertThat( pageCache.payloadSize() ).isEqualTo( pageCachePayloadSize );
+    }
+
+    @Test
     void mustHaveAtLeastTwoPages()
     {
         assertThrows( IllegalArgumentException.class, () -> getPageCache( fs, 1, PageCacheTracer.NULL ) );
@@ -182,7 +189,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordCount, recordSize );
+            generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
             int recordId = 0;
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -208,7 +215,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             long startPage = 10;
             long endPage = (recordCount / recordsPerFilePage) - 10;
-            generateFileWithRecords( file( "a" ), recordCount, recordSize );
+            generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
             int recordId = (int) (startPage * recordsPerFilePage);
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -338,7 +345,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             long startPageId = 0;
             long endPageId = 21;
             int iterations = 500;
-            int shortsPerPage = pageCachePageSize / 2;
+            int shortsPerPage = pageCachePayloadSize / 2;
 
             try ( PagedFile pagedFile = map( file( "a" ), pageCachePageSize ) )
             {
@@ -366,6 +373,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     // so we should be able to verify the contents of the file.
                     try ( DataInputStream stream = new DataInputStream( fs.openAsInputStream( file( "a" ) ) ) )
                     {
+                        stream.readNBytes(reservedBytes);
                         for ( int j = 0; j < shortsPerPage; j++ )
                         {
                             int value = stream.readShort();
@@ -521,7 +529,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 for ( int i = 1; i <= 100; i++ )
                 {
                     assertTrue( cursor.next() );
-                    for ( int j = 0; j < filePageSize; j++ )
+                    for ( int j = 0; j < filePayloadSize; j++ )
                     {
                         cursor.putByte( (byte) i );
                     }
@@ -532,7 +540,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             InputStream inputStream = fs.openAsInputStream( file( "a" ) );
             for ( int i = 1; i <= 100; i++ )
             {
-                for ( int j = 0; j < filePageSize; j++ )
+                inputStream.readNBytes( reservedBytes );
+                for ( int j = 0; j < filePayloadSize; j++ )
                 {
                     assertThat( inputStream.read() ).isEqualTo( i );
                 }
@@ -718,7 +727,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             configureStandardPageCache();
 
             int numberOfRecordsToGenerate = recordsPerFilePage; // one page worth
-            generateFileWithRecords( file( "a" ), numberOfRecordsToGenerate, recordSize );
+            generateFileWithRecords( file( "a" ), numberOfRecordsToGenerate, recordSize, recordsPerFilePage, reservedBytes );
 
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
                     PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, NULL ) )
@@ -738,7 +747,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             configureStandardPageCache();
 
             int numberOfRecordsToGenerate = recordsPerFilePage; // one page worth
-            generateFileWithRecords( file( "a" ), numberOfRecordsToGenerate, recordSize );
+            generateFileWithRecords( file( "a" ), numberOfRecordsToGenerate, recordSize, recordsPerFilePage, reservedBytes );
 
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
             {
@@ -764,7 +773,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordCount, recordSize );
+        generateFileWithRecords( file, recordCount, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize ) )
         {
             try ( PageCursor cursor = pf.io( -1, PF_SHARED_WRITE_LOCK, NULL ) )
@@ -782,7 +791,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void nextWithNegativePageIdMustReturnFalse() throws Exception
     {
         Path file = file( "a" );
-        generateFileWithRecords( file, recordCount, recordSize );
+        generateFileWithRecords( file, recordCount, recordSize, recordsPerFilePage, reservedBytes );
         configureStandardPageCache();
         try ( PagedFile pf = map( file, filePageSize ) )
         {
@@ -810,7 +819,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             configureStandardPageCache();
 
             int numberOfRewindsToTest = 10;
-            generateFileWithRecords( file( "a" ), recordCount, recordSize );
+            generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
             int actualPageCounter = 0;
             int filePageCount = recordCount / recordsPerFilePage;
             int expectedPageCounterResult = numberOfRewindsToTest * filePageCount;
@@ -1120,7 +1129,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             final CountDownLatch unpinLatch = new CountDownLatch( 1 );
             final AtomicReference<Exception> exceptionRef = new AtomicReference<>();
             configureStandardPageCache();
-            generateFileWithRecords( file( "a" ), recordsPerFilePage, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes );
             final PagedFile pagedFile = map( file( "a" ), filePageSize );
 
             Runnable runnable = () ->
@@ -1565,7 +1574,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
 
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
             {
@@ -1625,7 +1634,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), (recordsPerFilePage * 2) - 1, recordSize );
+            generateFileWithRecords( file( "a" ), (recordsPerFilePage * 2) - 1, recordSize, recordsPerFilePage, reservedBytes );
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
             {
                 try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_WRITE_LOCK | PF_NO_GROW, NULL ) )
@@ -1684,7 +1693,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordsPerFilePage, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes );
 
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
             {
@@ -1718,9 +1727,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
-            generateFileWithRecords( file( "a" ), 1, recordSize );
-
             configureStandardPageCache();
+            generateFileWithRecords( file( "a" ), 1, recordSize, recordsPerFilePage, reservedBytes );
 
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
             {
@@ -1792,7 +1800,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             int initialPages = 1;
             int pagesToAdd = 3;
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * initialPages, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * initialPages, recordSize, recordsPerFilePage, reservedBytes );
 
             PagedFile pagedFile = map( file( "a" ), filePageSize );
 
@@ -1838,7 +1846,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             configureStandardPageCache();
 
             int initialPages = 3;
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * initialPages, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * initialPages, recordSize, recordsPerFilePage, reservedBytes );
 
             int pagesChecked = 0;
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -1933,7 +1941,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
-            generateFileWithRecords( file( "a" ), recordCount, recordSize );
+            generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
             long lastFilePageId = (recordCount / recordsPerFilePage) - 1;
 
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -1956,7 +1964,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
 
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
             {
@@ -2018,7 +2026,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
-            try ( PagedFile pagedFile = map( file( "a" ), 23 ) )
+            try ( PagedFile pagedFile = map( file( "a" ), 23 + reservedBytes ) )
             {
                 try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
@@ -2067,6 +2075,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             ByteBuffer buf = ByteBuffers.allocate( 23, INSTANCE );
             try ( StoreChannel channel = fs.read( file( "a" ) ) )
             {
+                channel.position( reservedBytes );
                 channel.readAll( buf );
             }
             buf.flip();
@@ -2122,8 +2131,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             Path fileA = existingFile( "a" );
             Path fileB = existingFile( "b" );
 
-            generateFileWithRecords( fileA, 1, 16 );
-            generateFileWithRecords( fileB, 1, 16 );
+            generateFileWithRecords( fileA, 1, 16, recordsPerFilePage, reservedBytes );
+            generateFileWithRecords( fileB, 1, 16, recordsPerFilePage, reservedBytes );
 
             try ( PagedFile pfA = map( fileA, filePageSize );
                     PagedFile pfB = map( fileB, filePageSize );
@@ -2356,7 +2365,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             };
             getPageCache( fs, maxPages, PageCacheTracer.NULL );
-            generateFileWithRecords( file( "a" ), recordCount, recordSize );
+            generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
                     PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
@@ -2377,24 +2386,32 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordCount, recordSize );
+            generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
-            int filePageSize2 = filePageSize - 3; // diff. page size just to be difficult
+            int file2PageSize = filePageSize - 3; // diff. page size just to be difficult
+            int file2Payload = file2PageSize - reservedBytes;
             long maxPageIdCursor1 = recordCount / recordsPerFilePage;
+
             Path file2 = file( "b" );
-            long file2sizeBytes = (maxPageIdCursor1 + 17) * filePageSize2;
+            long file2sizeBytes = (maxPageIdCursor1 + 17) * file2PageSize;
+            long file2PayloadBytes = (maxPageIdCursor1 + 17) * file2Payload;
+
             try ( OutputStream outputStream = fs.openAsOutputStream( file2, false ) )
             {
-                for ( int i = 0; i < file2sizeBytes; i++ )
+                for ( int i = 0; i < file2PayloadBytes; i++ )
                 {
-                    // We will ues the page cache to change these 'a's into 'b's.
+                    if ( i % file2Payload == 0 )
+                    {
+                        outputStream.write( new byte[reservedBytes] );
+                    }
+                    // We will use the page cache to change these 'a's into 'b's.
                     outputStream.write( 'a' );
                 }
                 outputStream.flush();
             }
 
             try ( PagedFile pagedFile1 = map( file( "a" ), filePageSize );
-                    PagedFile pagedFile2 = map( file2, filePageSize2 ) )
+                    PagedFile pagedFile2 = map( file2, file2PageSize ) )
             {
                 long pageId1 = 0;
                 long pageId2 = 0;
@@ -2419,7 +2436,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         cursorReady2 = cursor.next();
                         if ( cursorReady2 )
                         {
-                            for ( int i = 0; i < filePageSize2; i++ )
+                            for ( int i = 0; i < file2Payload; i++ )
                             {
                                 cursor.putByte( (byte) 'b' );
                             }
@@ -2437,8 +2454,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertThat( fs.getFileSize( file2 ) ).isEqualTo( file2sizeBytes );
             try ( InputStream inputStream = fs.openAsInputStream( file2 ) )
             {
-                for ( int i = 0; i < file2sizeBytes; i++ )
+                for ( int i = 0; i < file2PayloadBytes; i++ )
                 {
+                    if ( i % file2Payload == 0 )
+                    {
+                        inputStream.readNBytes( reservedBytes );
+                    }
                     int b = inputStream.read();
                     assertThat( b ).isEqualTo( 'b' );
                 }
@@ -2450,6 +2471,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 ByteBuffer bufB = ByteBuffers.allocate( recordSize, INSTANCE );
                 for ( int i = 0; i < recordCount; i++ )
                 {
+                    if ( i % recordsPerFilePage == 0 )
+                    {
+                        channel.position( channel.position() + reservedBytes );
+                    }
                     bufA.clear();
                     channel.readAll( bufA );
                     bufA.flip();
@@ -2469,7 +2494,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             DefaultPageCacheTracer tracer = new DefaultPageCacheTracer( true );
             getPageCache( fs, maxPages, tracer );
 
-            generateFileWithRecords( file( "a" ), recordCount, recordSize );
+            generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
             long initialPins = tracer.pins();
             long initialUnpins = tracer.unpins();
@@ -2611,7 +2636,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         };
         getPageCache( fs, maxPages, tracer );
 
-        generateFileWithRecords( file( "a" ), recordCount, recordSize );
+        generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
         int pinsForRead = 13;
         int pinsForWrite = 42;
@@ -2638,7 +2663,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
         getPageCache( fs, maxPages, tracer );
-        generateFileWithRecords( file( "a" ), recordCount, recordSize );
+        generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
               CursorContext cursorContext = new CursorContext( tracer.createPageCursorTracer( "test" ) ) )
@@ -2673,7 +2698,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         adversary.setProbabilityFactor( 0.0 );
         AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction( adversary, fs );
         getPageCache( afs, maxPages, tracer );
-        generateFileWithRecords( file( "a" ), recordCount, recordSize );
+        generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
               CursorContext cursorContext = new CursorContext( tracer.createPageCursorTracer( "test" ) ) )
@@ -2748,7 +2773,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
 
         int twoPagesWorthOfRecords = recordsPerFilePage * 2;
-        generateFileWithRecords( file( "a" ), twoPagesWorthOfRecords, recordSize );
+        generateFileWithRecords( file( "a" ), twoPagesWorthOfRecords, recordSize, recordsPerFilePage, reservedBytes );
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
         {
@@ -2762,7 +2787,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
 
         int twoPagesWorthOfRecords = recordsPerFilePage * 2;
-        generateFileWithRecords( file( "a" ), twoPagesWorthOfRecords, recordSize );
+        generateFileWithRecords( file( "a" ), twoPagesWorthOfRecords, recordSize, recordsPerFilePage, reservedBytes );
         OutputStream outputStream = fs.openAsOutputStream( file( "a" ), true );
         outputStream.write( 'a' );
         outputStream.close();
@@ -2777,7 +2802,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void lastPageIdMustNotIncreaseWhenReadingToEndWithReadLock() throws IOException
     {
         configureStandardPageCache();
-        generateFileWithRecords( file( "a" ), recordCount, recordSize );
+        generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
         PagedFile pagedFile = map( file( "a" ), filePageSize );
 
         long initialLastPageId = pagedFile.getLastPageId();
@@ -2798,7 +2823,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void lastPageIdMustNotIncreaseWhenReadingToEndWithNoGrowAndWriteLock() throws IOException
     {
         configureStandardPageCache();
-        generateFileWithRecords( file( "a" ), recordCount, recordSize );
+        generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
         PagedFile pagedFile = map( file( "a" ), filePageSize );
 
         long initialLastPageId = pagedFile.getLastPageId();
@@ -2826,7 +2851,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void lastPageIdMustIncreaseWhenScanningPastEndWithWriteLock() throws IOException
     {
         configureStandardPageCache();
-        generateFileWithRecords( file( "a" ), recordsPerFilePage * 10, recordSize );
+        generateFileWithRecords( file( "a" ), recordsPerFilePage * 10, recordSize, recordsPerFilePage, reservedBytes );
         PagedFile pagedFile = map( file( "a" ), filePageSize );
 
         assertThat( pagedFile.getLastPageId() ).isEqualTo( 9L );
@@ -2845,7 +2870,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void lastPageIdMustIncreaseWhenJumpingPastEndWithWriteLock() throws IOException
     {
         configureStandardPageCache();
-        generateFileWithRecords( file( "a" ), recordsPerFilePage * 10, recordSize );
+        generateFileWithRecords( file( "a" ), recordsPerFilePage * 10, recordSize, recordsPerFilePage, reservedBytes );
         PagedFile pagedFile = map( file( "a" ), filePageSize );
 
         assertThat( pagedFile.getLastPageId() ).isEqualTo( 9L );
@@ -3172,7 +3197,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), 1, recordSize );
+            generateFileWithRecords( file( "a" ), 1, recordSize, recordsPerFilePage, reservedBytes );
 
             PagedFile pagedFile = map( file( "a" ), filePageSize );
             PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL );
@@ -3189,7 +3214,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
 
             PagedFile pagedFile = map( file( "a" ), filePageSize );
             PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL );
@@ -3223,9 +3248,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
-            generateFileWithRecords( file( "a" ), 1, recordSize );
-
             configureStandardPageCache();
+            generateFileWithRecords( file( "a" ), 1, recordSize, recordsPerFilePage, reservedBytes );
 
             PagedFile pagedFile = map( file( "a" ), filePageSize );
             PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL );
@@ -3244,7 +3268,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
 
             PagedFile pagedFile = map( file( "a" ), filePageSize );
             PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL );
@@ -3263,7 +3287,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
 
             PagedFile pagedFile = map( file( "a" ), filePageSize );
             PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL );
@@ -3284,7 +3308,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
 
             PagedFile pagedFile = map( file( "a" ), filePageSize );
             PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL );
@@ -3306,7 +3330,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void shouldRetryFromUnboundReadCursorMustNotThrow() throws Exception
     {
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes );
         configureStandardPageCache();
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
@@ -3320,7 +3344,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
@@ -3333,7 +3357,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
         {
@@ -3351,7 +3375,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
@@ -3369,7 +3393,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
@@ -3387,7 +3411,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
         {
@@ -3405,7 +3429,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
         {
@@ -3427,7 +3451,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         getPageCache( fs, maxPages, PageCacheTracer.NULL );
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL );
@@ -3446,7 +3470,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         getPageCache( fs, maxPages, PageCacheTracer.NULL );
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL );
@@ -3464,7 +3488,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void pageCursorCloseWithClosedLinkedCursorShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
     {
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         getPageCache( fs, maxPages, PageCacheTracer.NULL );
         try ( PagedFile pf = map( file, filePageSize ) )
         {
@@ -3490,7 +3514,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void pageCursorCloseMustNotClosePreviouslyLinkedCursorThatGotReused() throws Exception
     {
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         getPageCache( fs, maxPages, PageCacheTracer.NULL );
         try ( PagedFile pf = map( file, filePageSize ) )
         {
@@ -3607,7 +3631,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
 
-        generateFileWithRecords( file( "a" ), 1, recordSize );
+        generateFileWithRecords( file( "a" ), 1, recordSize, recordsPerFilePage, reservedBytes );
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
                 PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
@@ -3749,7 +3773,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
             Path file = file( "a" );
-            generateFileWithRecords( file, recordsPerFilePage, recordSize );
+            generateFileWithRecords( file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes );
 
             try ( PagedFile pf = map( file, filePageSize );
                     PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, NULL ) )
@@ -3813,7 +3837,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), 1, recordSize );
+            generateFileWithRecords( file( "a" ), 1, recordSize, recordsPerFilePage, reservedBytes );
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
                     PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
             {
@@ -3955,7 +3979,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 };
 
                 getPageCache( fs, maxPages, PageCacheTracer.NULL );
-                generateFileWithRecords( file( "a" ), recordCount, recordSize );
+                generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
                 PagedFile pagedFile = map( file( "a" ), filePageSize );
 
                 // Create 1 dirty page
@@ -4126,7 +4150,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             configureStandardPageCache();
             Path fileB = existingFile( "b" );
             int filePageSizeA = pageCachePageSize - 2;
+            int filePayloadA = filePageSizeA - reservedBytes;
             int filePageSizeB = pageCachePageSize - 6;
+            int filePayloadB = filePageSizeB - reservedBytes;
             int pagesToWriteA = 100;
             int pagesToWriteB = 3;
 
@@ -4137,7 +4163,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 for ( int i = 0; i < pagesToWriteA; i++ )
                 {
                     assertTrue( cursor.next() );
-                    for ( int j = 0; j < filePageSizeA; j++ )
+                    for ( int j = 0; j < filePayloadA; j++ )
                     {
                         cursor.putByte( (byte) 42 );
                     }
@@ -4158,24 +4184,25 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             pagedFileA.close();
             pagedFileB.close();
 
-            InputStream inputStream = fs.openAsInputStream( fileB );
-            assertThat( inputStream.read() ).as( "first page first byte" ).isEqualTo( 63 );
-            for ( int i = 0; i < filePageSizeB - 1; i++ )
+            try ( InputStream inputStream = fs.openAsInputStream( fileB ) )
             {
-                assertThat( inputStream.read() ).as( "page 0 byte pos " + i ).isEqualTo( 0 );
+                readPage( inputStream, "first page first byte", filePayloadB, "page 0 byte pos " );
+                readPage( inputStream, "second page first byte", filePayloadB, "page 1 byte pos " );
+                readPage( inputStream, "third page first byte", filePayloadB, "page 2 byte pos " );
+
+                assertThat( inputStream.read() ).as( "expect EOF" ).isEqualTo( -1 );
             }
-            assertThat( inputStream.read() ).as( "second page first byte" ).isEqualTo( 63 );
-            for ( int i = 0; i < filePageSizeB - 1; i++ )
-            {
-                assertThat( inputStream.read() ).as( "page 1 byte pos " + i ).isEqualTo( 0 );
-            }
-            assertThat( inputStream.read() ).as( "third page first byte" ).isEqualTo( 63 );
-            for ( int i = 0; i < filePageSizeB - 1; i++ )
-            {
-                assertThat( inputStream.read() ).as( "page 2 byte pos " + i ).isEqualTo( 0 );
-            }
-            assertThat( inputStream.read() ).as( "expect EOF" ).isEqualTo( -1 );
         } );
+    }
+
+    private void readPage( InputStream inputStream, String pageDescription, int payload, String pageByteDescription ) throws IOException
+    {
+        inputStream.readNBytes( reservedBytes );
+        assertThat( inputStream.read() ).as( pageDescription ).isEqualTo( 63 );
+        for ( int i = 0; i < payload - 1; i++ )
+        {
+            assertThat( inputStream.read() ).as( pageByteDescription + i ).isEqualTo( 0 );
+        }
     }
 
     @Test
@@ -4193,7 +4220,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 for ( int i = 0; i < 100; i++ )
                 {
                     assertTrue( cursor.next() );
-                    for ( int j = 0; j < filePageSize; j++ )
+                    for ( int j = 0; j < filePayloadSize; j++ )
                     {
                         cursor.putByte( (byte) rng.nextInt() );
                     }
@@ -4210,7 +4237,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 for ( int i = 0; i < 100; i++ )
                 {
                     assertTrue( cursor.next() );
-                    for ( int j = 0; j < filePageSize; j++ )
+                    for ( int j = 0; j < filePayloadSize; j++ )
                     {
                         assertThat( cursor.getByte() ).isEqualTo( (byte) 0 );
                     }
@@ -4240,7 +4267,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 for ( int i = 0; i < maxPages; i++ )
                 {
                     assertTrue( cursor.next() );
-                    for ( int j = 0; j < filePageSize; j++ )
+                    for ( int j = 0; j < filePayloadSize; j++ )
                     {
                         cursor.putByte( a );
                     }
@@ -4254,7 +4281,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     for ( int i = 0; i < maxPages * 30; i++ )
                     {
                         assertTrue( cursor.next() );
-                        for ( int j = 0; j < filePageSize; j++ )
+                        for ( int j = 0; j < filePayloadSize; j++ )
                         {
                             cursor.putByte( b );
                         }
@@ -4278,7 +4305,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue( cursor.next( 0 ) );
 
                 // Verify the page is all 'a's:
-                for ( int i = 0; i < filePageSize; i++ )
+                for ( int i = 0; i < filePayloadSize; i++ )
                 {
                     assertThat( cursor.getByte() ).isEqualTo( a );
                 }
@@ -4290,12 +4317,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 {
                     // When we do reads after the shouldRetry() call, we should fault our page back
                     // and get consistent reads (assuming we don't race any further with eviction)
-                    int expected = a * filePageSize;
+                    int expected = a * filePayloadSize;
                     int actual;
                     do
                     {
                         actual = 0;
-                        for ( int i = 0; i < filePageSize; i++ )
+                        for ( int i = 0; i < filePayloadSize; i++ )
                         {
                             actual += cursor.getByte();
                         }
@@ -4317,7 +4344,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             configureStandardPageCache();
 
-            generateFileWithRecords( file( "a" ), recordCount, recordSize );
+            generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
             PagedFile pagedFile = map( file( "a" ), filePageSize );
 
             int iterations = maxPages * 2;
@@ -4376,7 +4403,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue( cursor.next() );
 
             long x = rng.nextLong();
-            int limit = pageSize - Long.BYTES;
+            int limit = filePayloadSize - Long.BYTES;
             for ( int i = 0; i < limit; i++ )
             {
                 x += i;
@@ -4433,6 +4460,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 Path file = files[fileId];
                 StoreChannel channel = fs.write( file );
+                channel.position( reservedBytes );
                 for ( int recordId = 0; recordId < fileId + 1; recordId++ )
                 {
                     Record record = recordFormat.createRecord( file, recordId, (int) (channel.position() / PAGE_SIZE),
@@ -4721,13 +4749,16 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         int bytes = 200;
 
+        int pagePayload = 16;
+        int pageSize = pagePayload + reservedBytes;
+
         // Put some data into the file
-        try ( PagedFile pf = map( file( "a" ), 32 );
+        try ( PagedFile pf = map( file( "a" ), pageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             for ( int i = 0; i < bytes; i++ )
             {
-                if ( (i & 31) == 0 )
+                if ( (i % pagePayload) == 0 )
                 {
                     assertTrue( cursor.next() );
                 }
@@ -4736,7 +4767,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         // Then copy all the pages into another file, with a larger file page size
-        int pageSize = 16;
         try ( PagedFile pfA = map( file( "a" ), pageSize );
                 PagedFile pfB = map( existingFile( "b" ), pageSize );
                 PageCursor cursorA = pfA.io( 0, PF_SHARED_READ_LOCK, NULL );
@@ -4748,20 +4778,20 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 int bytesCopied;
                 do
                 {
-                    bytesCopied = cursorA.copyTo( 0, cursorB, 0, cursorA.getCurrentPageSize() );
+                    bytesCopied = cursorA.copyTo( 0, cursorB, 0, cursorA.getCurrentPayloadSize() );
                 }
                 while ( cursorA.shouldRetry() );
-                assertThat( bytesCopied ).isEqualTo( pageSize );
+                assertThat( bytesCopied ).isEqualTo( pagePayload );
             }
         }
 
         // Finally, verify the contents of file 'b'
-        try ( PagedFile pf = map( file( "b" ), 32 );
+        try ( PagedFile pf = map( file( "b" ), pageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
         {
             for ( int i = 0; i < bytes; i++ )
             {
-                if ( (i & 31) == 0 )
+                if ( (i % pagePayload) == 0 )
                 {
                     assertTrue( cursor.next() );
                 }
@@ -4782,8 +4812,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void mustCopyIntoLargerPageCursor() throws Exception
     {
         configureStandardPageCache();
-        int smallPageSize = 16;
-        int largePageSize = 17;
+        int smallPageSize = 16 + reservedBytes;
+        int largePageSize = 17 + reservedBytes;
         try ( PagedFile pfA = map( file( "a" ), smallPageSize );
                 PagedFile pfB = map( existingFile( "b" ), largePageSize );
                 PageCursor cursorA = pfA.io( 0, PF_SHARED_WRITE_LOCK, NULL );
@@ -4795,8 +4825,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 cursorA.putByte( (byte) (i + 1) );
             }
             assertTrue( cursorB.next() );
-            assertThat( cursorA.copyTo( 0, cursorB, 0, smallPageSize ) ).isEqualTo( smallPageSize );
-            for ( int i = 0; i < smallPageSize; i++ )
+            assertThat( cursorA.copyTo( 0, cursorB, 0, smallPageSize ) ).isEqualTo( smallPageSize - reservedBytes );
+            for ( int i = 0; i < smallPageSize - reservedBytes; i++ )
             {
                 assertThat( cursorB.getByte() ).isEqualTo( (byte) (i + 1) );
             }
@@ -4808,21 +4838,23 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void mustCopyIntoSmallerPageCursor() throws Exception
     {
         configureStandardPageCache();
-        int smallPageSize = 16;
-        int largePageSize = 17;
+        int smallPagePayload = 16;
+        int largePagePayload = 17;
+        int smallPageSize = smallPagePayload + reservedBytes;
+        int largePageSize = largePagePayload + reservedBytes;
         try ( PagedFile pfA = map( file( "a" ), largePageSize );
                 PagedFile pfB = map( existingFile( "b" ), smallPageSize );
                 PageCursor cursorA = pfA.io( 0, PF_SHARED_WRITE_LOCK, NULL );
                 PageCursor cursorB = pfB.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             assertTrue( cursorA.next() );
-            for ( int i = 0; i < largePageSize; i++ )
+            for ( int i = 0; i < largePagePayload; i++ )
             {
                 cursorA.putByte( (byte) (i + 1) );
             }
             assertTrue( cursorB.next() );
-            assertThat( cursorA.copyTo( 0, cursorB, 0, largePageSize ) ).isEqualTo( smallPageSize );
-            for ( int i = 0; i < smallPageSize; i++ )
+            assertThat( cursorA.copyTo( 0, cursorB, 0, largePagePayload ) ).isEqualTo( smallPagePayload );
+            for ( int i = 0; i < smallPagePayload; i++ )
             {
                 assertThat( cursorB.getByte() ).isEqualTo( (byte) (i + 1) );
             }
@@ -4860,7 +4892,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToPageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        int pageSize = 16;
+        int payloadSize = 16;
+        int pageSize = payloadSize + reservedBytes;
         try ( PagedFile pf = map( file( "a" ), pageSize );
                 PageCursor cursorA = pf.io( 0, PF_SHARED_READ_LOCK, NULL );
                 PageCursor cursorB = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
@@ -4880,22 +4913,22 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
             // source buffer offset overflow
-            cursorA.copyTo( pageSize, cursorB, 0, 1 );
+            cursorA.copyTo( payloadSize, cursorB, 0, 1 );
             assertTrue( cursorA.checkAndClearBoundsFlag() );
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
             // target buffer offset overflow
-            cursorA.copyTo( 0, cursorB, pageSize, 1 );
+            cursorA.copyTo( 0, cursorB, payloadSize, 1 );
             assertTrue( cursorA.checkAndClearBoundsFlag() );
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
             // source buffer length overflow
-            assertThat( cursorA.copyTo( 1, cursorB, 0, pageSize ) ).isEqualTo( pageSize - 1 );
+            assertThat( cursorA.copyTo( 1, cursorB, 0, payloadSize ) ).isEqualTo( payloadSize - 1 );
             assertFalse( cursorA.checkAndClearBoundsFlag() );
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
             // target buffer length overflow
-            assertThat( cursorA.copyTo( 0, cursorB, 1, pageSize ) ).isEqualTo( pageSize - 1 );
+            assertThat( cursorA.copyTo( 0, cursorB, 1, payloadSize ) ).isEqualTo( payloadSize - 1 );
             assertFalse( cursorA.checkAndClearBoundsFlag() );
             assertFalse( cursorB.checkAndClearBoundsFlag() );
 
@@ -4915,9 +4948,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToHeapByteBufferFromReadPageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = ByteBuffers.allocate( filePageSize, INSTANCE );
+        ByteBuffer buffer = ByteBuffers.allocate( filePayloadSize, INSTANCE );
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
         {
@@ -4930,11 +4963,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToDirectByteBufferFromReadPageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = allocateDirect( filePageSize, INSTANCE );
+        ByteBuffer buffer = allocateDirect( filePayloadSize, INSTANCE );
         try
         {
             Path file = file( "a" );
-            generateFileWithRecords( file, recordsPerFilePage, recordSize );
+            generateFileWithRecords( file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes );
             try ( PagedFile pf = map( file, filePageSize );
                   PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
             {
@@ -4952,9 +4985,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToHeapByteBufferFromWritePageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = ByteBuffers.allocate( filePageSize, INSTANCE );
+        ByteBuffer buffer = ByteBuffers.allocate( filePayloadSize, INSTANCE );
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
@@ -4967,11 +5000,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void copyToDirectByteBufferFromWritePageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = allocateDirect( filePageSize, INSTANCE );
+        ByteBuffer buffer = allocateDirect( filePayloadSize, INSTANCE );
         try
         {
             Path file = file( "a" );
-            generateFileWithRecords( file, recordsPerFilePage, recordSize );
+            generateFileWithRecords( file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes );
             try ( PagedFile pf = map( file, filePageSize );
                   PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
@@ -4995,7 +5028,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             copied = cursor.copyTo( 0, buffer );
         }
         while ( cursor.shouldRetry() );
-        assertThat( copied ).isEqualTo( filePageSize );
+        assertThat( copied ).isEqualTo( filePayloadSize );
         buffer.clear();
         verifyRecordsMatchExpected( 0, 0, buffer );
 
@@ -5008,8 +5041,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         buffer.clear();
         copied = cursor.copyTo( 1, buffer );
         assertFalse( cursor.checkAndClearBoundsFlag() );
-        assertThat( copied ).isEqualTo( filePageSize - 1 );
-        assertThat( buffer.position() ).isEqualTo( filePageSize - 1 );
+        assertThat( copied ).isEqualTo( filePayloadSize - 1 );
+        assertThat( buffer.position() ).isEqualTo( filePayloadSize - 1 );
         assertThat( buffer.remaining() ).isEqualTo( 1 );
         buffer.clear();
 
@@ -5018,15 +5051,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         do
         {
             buffer.clear();
-            buffer.limit( filePageSize - recordSize );
+            buffer.limit( filePayloadSize - recordSize );
             copied = cursor.copyTo( 0, buffer );
         }
         while ( cursor.shouldRetry() );
-        assertThat( copied ).isEqualTo( filePageSize - recordSize );
-        assertThat( buffer.position() ).isEqualTo( filePageSize - recordSize );
+        assertThat( copied ).isEqualTo( filePayloadSize - recordSize );
+        assertThat( buffer.position() ).isEqualTo( filePayloadSize - recordSize );
         assertThat( buffer.remaining() ).isEqualTo( 0 );
         buffer.clear();
-        buffer.limit( filePageSize - recordSize );
+        buffer.limit( filePayloadSize - recordSize );
         verifyRecordsMatchExpected( 0, 0, buffer );
 
         // Smaller buffer at non-zero offset.
@@ -5034,15 +5067,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         do
         {
             buffer.clear();
-            buffer.limit( filePageSize - recordSize );
+            buffer.limit( filePayloadSize - recordSize );
             copied = cursor.copyTo( recordSize, buffer );
         }
         while ( cursor.shouldRetry() );
-        assertThat( copied ).isEqualTo( filePageSize - recordSize );
-        assertThat( buffer.position() ).isEqualTo( filePageSize - recordSize );
+        assertThat( copied ).isEqualTo( filePayloadSize - recordSize );
+        assertThat( buffer.position() ).isEqualTo( filePayloadSize - recordSize );
         assertThat( buffer.remaining() ).isEqualTo( 0 );
         buffer.clear();
-        buffer.limit( filePageSize - recordSize );
+        buffer.limit( filePayloadSize - recordSize );
         verifyRecordsMatchExpected( 0, recordSize, buffer );
     }
 
@@ -5106,11 +5139,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             assertTrue( cursor.next() );
-            cursor.shiftBytes( 0, filePageSize, 0 );
+            cursor.shiftBytes( 0, filePayloadSize, 0 );
             assertFalse( cursor.checkAndClearBoundsFlag() );
-            cursor.shiftBytes( 0, filePageSize - 1, 1 );
+            cursor.shiftBytes( 0, filePayloadSize - 1, 1 );
             assertFalse( cursor.checkAndClearBoundsFlag() );
-            cursor.shiftBytes( 1, filePageSize - 1, -1 );
+            cursor.shiftBytes( 1, filePayloadSize - 1, -1 );
             assertFalse( cursor.checkAndClearBoundsFlag() );
         }
     }
@@ -5231,12 +5264,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             int shift = 5;
             assertZeroes( cursor, 0, srcOffset );
-            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+            assertZeroes( cursor, srcOffset + bytes.length, filePayloadSize - srcOffset - bytes.length );
 
             cursor.shiftBytes( srcOffset, bytes.length, shift );
 
             assertZeroes( cursor, 0, srcOffset );
-            assertZeroes( cursor, srcOffset + bytes.length + shift, filePageSize - srcOffset - bytes.length - shift );
+            assertZeroes( cursor, srcOffset + bytes.length + shift, filePayloadSize - srcOffset - bytes.length - shift );
 
             cursor.setOffset( srcOffset );
             for ( int i = 0; i < shift; i++ )
@@ -5274,12 +5307,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             int gap = 5;
             int shift = bytes.length + gap;
             assertZeroes( cursor, 0, srcOffset );
-            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+            assertZeroes( cursor, srcOffset + bytes.length, filePayloadSize - srcOffset - bytes.length );
 
             cursor.shiftBytes( srcOffset, bytes.length, shift );
 
             assertZeroes( cursor, 0, srcOffset );
-            assertZeroes( cursor, srcOffset + bytes.length + shift, filePageSize - srcOffset - bytes.length - shift );
+            assertZeroes( cursor, srcOffset + bytes.length + shift, filePayloadSize - srcOffset - bytes.length - shift );
 
             cursor.setOffset( srcOffset );
             for ( int i = 0; i < bytes.length; i++ )
@@ -5318,12 +5351,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
             int shift = -5;
             assertZeroes( cursor, 0, srcOffset );
-            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+            assertZeroes( cursor, srcOffset + bytes.length, filePayloadSize - srcOffset - bytes.length );
 
             cursor.shiftBytes( srcOffset, bytes.length, shift );
 
             assertZeroes( cursor, 0, srcOffset + shift );
-            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+            assertZeroes( cursor, srcOffset + bytes.length, filePayloadSize - srcOffset - bytes.length );
 
             cursor.setOffset( srcOffset + shift );
             for ( int i = 0; i < bytes.length; i++ )
@@ -5354,19 +5387,19 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 bytes[i] = (byte) (i + 1);
             }
 
-            int srcOffset = filePageSize - bytes.length - 10;
+            int srcOffset = filePayloadSize - bytes.length - 10;
             cursor.setOffset( srcOffset );
             cursor.putBytes( bytes );
 
             int gap = 5;
             int shift = -bytes.length - gap;
             assertZeroes( cursor, 0, srcOffset );
-            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+            assertZeroes( cursor, srcOffset + bytes.length, filePayloadSize - srcOffset - bytes.length );
 
             cursor.shiftBytes( srcOffset, bytes.length, shift );
 
             assertZeroes( cursor, 0, srcOffset + shift );
-            assertZeroes( cursor, srcOffset + bytes.length, filePageSize - srcOffset - bytes.length );
+            assertZeroes( cursor, srcOffset + bytes.length, filePayloadSize - srcOffset - bytes.length );
 
             cursor.setOffset( srcOffset + shift );
             for ( int i = 0; i < bytes.length; i++ )
@@ -5398,7 +5431,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
             try ( PagedFile pf = map( file( "a" ), filePageSize );
                     PageCursor parent = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
             {
@@ -5463,7 +5496,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
             try ( PagedFile pf = map( file( "a" ), filePageSize );
                     PageCursor parent = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, NULL ) )
             {
@@ -5523,7 +5556,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
-            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize );
+            generateFileWithRecords( file( "a" ), recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
             try ( PagedFile pf = map( file( "a" ), filePageSize );
                     PageCursor parentReader = pf.io( 0, PF_SHARED_READ_LOCK, NULL );
                     PageCursor writer = pf.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
@@ -5754,7 +5787,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordCount, recordSize );
+        generateFileWithRecords( file, recordCount, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
         {
@@ -5846,7 +5879,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordCount, recordSize );
+        generateFileWithRecords( file, recordCount, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK, NULL );
                 PageCursor linkedReader = reader.openLinkedCursor( 1 ) )
@@ -5867,7 +5900,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordCount, recordSize );
+        generateFileWithRecords( file, recordCount, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK, NULL );
                 PageCursor linkedReader = reader.openLinkedCursor( 1 ) )
@@ -6061,20 +6094,20 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 ThreadLocalRandom rng = ThreadLocalRandom.current();
-                byte[] bytes = new byte[filePageSize];
+                byte[] bytes = new byte[filePayloadSize];
                 rng.nextBytes( bytes );
 
                 assertTrue( cursor.next() );
                 cursor.putBytes( bytes );
             }
             // WHEN
-            byte[] allZeros = new byte[filePageSize];
+            byte[] allZeros = new byte[filePayloadSize];
             try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 assertTrue( cursor.next() );
                 cursor.zapPage();
 
-                byte[] read = new byte[filePageSize];
+                byte[] read = new byte[filePayloadSize];
                 cursor.getBytes( read );
                 assertFalse( cursor.checkAndClearBoundsFlag() );
                 assertArrayEquals( allZeros, read );
@@ -6084,7 +6117,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 assertTrue( cursor.next() );
 
-                byte[] read = new byte[filePageSize];
+                byte[] read = new byte[filePayloadSize];
                 do
                 {
                     cursor.getBytes( read );
@@ -6227,7 +6260,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, cacheTracer );
 
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
                 CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "noFaultReadOfPagesNotInMemory" ) );
@@ -6244,7 +6277,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, cacheTracer );
 
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
                 CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "noFaultWriteOnPagesNotInMemory" ) );
@@ -6262,7 +6295,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, cacheTracer );
 
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
                 CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "noFaultLinkedReadOfPagesNotInMemory" ) );
@@ -6280,7 +6313,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, cacheTracer );
 
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
                 CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "noFaultLinkedWriteOnPagesNotInMemory" ) );
@@ -6334,7 +6367,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
         Path file = file( "a" );
-        generateFileWithRecords( file, recordsPerFilePage * 6, recordSize );
+        generateFileWithRecords( file, recordsPerFilePage * 6, recordSize, recordsPerFilePage, reservedBytes );
         try ( PagedFile pf = map( file, filePageSize );
                 PageCursor faulter = pf.io( 0, PF_SHARED_READ_LOCK, NULL );
                 PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, NULL ) )

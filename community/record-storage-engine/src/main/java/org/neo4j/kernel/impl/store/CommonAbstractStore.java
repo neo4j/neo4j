@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.function.LongPredicate;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
@@ -95,7 +94,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     private int filePageSize;
     private int recordsPerPage;
     private int recordsEndOffset;
-    private int reservedBytes;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
     private RuntimeException causeOfStoreNotOk;
@@ -271,7 +269,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             {
                 if ( pageCursor.next() )
                 {
-                    pageCursor.setOffset( 0 );
                     storeHeaderFormat.writeHeader( pageCursor );
                     if ( pageCursor.checkAndClearBoundsFlag() )
                     {
@@ -323,7 +320,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     protected int offsetForId( long id )
     {
-        return RecordPageLocationCalculator.offsetForId( id, recordSize, recordsPerPage, reservedBytes );
+        return RecordPageLocationCalculator.offsetForId( id, recordSize, recordsPerPage );
     }
 
     @Override
@@ -380,10 +377,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         storeHeader = header;
         recordSize = determineRecordSize();
-        reservedBytes = configuration.get( GraphDatabaseInternalSettings.reserved_page_header_bytes );
-        filePageSize = recordFormat.getPageSize( pageCache.pageSize(), recordSize, reservedBytes );
-        recordsPerPage = (filePageSize - reservedBytes) / recordSize;
-        recordsEndOffset = reservedBytes + recordsPerPage * recordSize; // Truncated file page size to whole multiples of record size.
+        filePageSize = recordFormat.getFilePageSize( pageCache.pageSize(), recordSize );
+        recordsPerPage = (filePageSize - pageCache.pageReservedBytes()) / recordSize;
+        recordsEndOffset = recordsPerPage * recordSize; // Truncated file page size to whole multiples of record size.
     }
 
     public boolean isInUse( long id, PageCursor cursor )
@@ -1059,11 +1055,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     static String buildOutOfBoundsExceptionMessage( AbstractBaseRecord record, long pageId, int offset, int recordSize,
-            int pageSize, String filename )
+            int pagePayload, String filename )
     {
         return "Access to record " + record + " went out of bounds of the page. The record size is " +
                recordSize + " bytes, and the access was at offset " + offset + " bytes into page " +
-               pageId + ", and the pages have a capacity of " + pageSize + " bytes. " +
+               pageId + ", and the pages have a capacity of " + pagePayload + " bytes. " +
                "The mapped store file in question is " + filename;
     }
 
@@ -1089,11 +1085,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     public IdGenerator getIdGenerator()
     {
         return idGenerator;
-    }
-
-    public int getReservedBytes()
-    {
-        return reservedBytes;
     }
 
     @Override

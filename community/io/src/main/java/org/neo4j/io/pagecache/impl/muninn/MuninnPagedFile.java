@@ -65,6 +65,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 
     final MuninnPageCache pageCache;
     final int filePageSize;
+    final int fileReservedPageBytes;
     private final PageCacheTracer pageCacheTracer;
     private final IOBufferFactory bufferFactory;
     final LatchMap pageFaultLatches;
@@ -146,6 +147,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         super( pageCache.pages );
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
+        this.fileReservedPageBytes = pageCache.pageReservedBytes();
         this.cursorFactory = new CursorFactory( this );
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap( faultLockStriping );
@@ -240,6 +242,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     public int pageSize()
     {
         return filePageSize;
+    }
+
+    @Override
+    public int payloadSize()
+    {
+        return filePageSize - fileReservedPageBytes;
     }
 
     @Override

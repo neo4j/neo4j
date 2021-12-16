@@ -40,17 +40,13 @@ public final class NativeIndexes
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
         GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext );
-        switch ( headerReader.state )
-        {
-        case BYTE_FAILED:
-            return InternalIndexState.FAILED;
-        case BYTE_ONLINE:
-            return InternalIndexState.ONLINE;
-        case BYTE_POPULATING:
-            return InternalIndexState.POPULATING;
-        default:
-            throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
-        }
+        return switch ( headerReader.state )
+                {
+                    case BYTE_FAILED -> InternalIndexState.FAILED;
+                    case BYTE_ONLINE -> InternalIndexState.ONLINE;
+                    case BYTE_POPULATING -> InternalIndexState.POPULATING;
+                    default -> throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
+                };
     }
 
     static String readFailureMessage( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext )

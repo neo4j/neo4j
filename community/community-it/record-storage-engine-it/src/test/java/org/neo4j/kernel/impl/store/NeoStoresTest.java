@@ -119,6 +119,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_rotation_timeout;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -450,7 +451,7 @@ public class NeoStoresTest
         Path file = databaseLayout.metadataStore();
         try ( StoreChannel channel = fs.write( file ) )
         {
-            channel.position( 0 );
+            channel.position( reserved_page_header_bytes.defaultValue() );
             channel.writeAll( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
         }
 

@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.memory.ByteBuffers;
 
+import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -38,6 +39,7 @@ public class StubPageCursor extends PageCursor
     private final long pageId;
     private final int pageSize;
     protected ByteBuffer page;
+    private final int reservedBytes;
     private int currentOffset;
     private boolean observedOverflow;
     private String cursorErrorMessage;
@@ -49,21 +51,34 @@ public class StubPageCursor extends PageCursor
 
     public StubPageCursor( long initialPageId, int pageSize )
     {
-        this( initialPageId, ByteBuffers.allocate( pageSize, INSTANCE ) );
+        this( initialPageId, ByteBuffers.allocate( pageSize, INSTANCE ), RESERVED_BYTES );
     }
 
     public StubPageCursor( long initialPageId, ByteBuffer buffer )
     {
+        this( initialPageId, buffer, RESERVED_BYTES );
+    }
+
+    public StubPageCursor( long initialPageId, ByteBuffer buffer, int reservedBytes )
+    {
         this.pageId = initialPageId;
         this.pageSize = buffer.capacity();
         this.page = buffer;
+        this.reservedBytes = reservedBytes;
         this.writeLocked = true;
+        this.currentOffset = reservedBytes;
     }
 
     @Override
     public long getCurrentPageId()
     {
         return pageId;
+    }
+
+    @Override
+    public int getCurrentPayloadSize()
+    {
+        return pageSize - reservedBytes;
     }
 
     @Override
@@ -197,7 +212,7 @@ public class StubPageCursor extends PageCursor
     @Override
     public byte getByte()
     {
-        byte value = getByte( currentOffset );
+        byte value = getByteInternal( currentOffset );
         currentOffset += 1;
         return value;
     }
@@ -205,8 +220,17 @@ public class StubPageCursor extends PageCursor
     @Override
     public byte getByte( int offset )
     {
+        return getByteInternal( reservedBytes + offset );
+    }
+
+    private byte getByteInternal( int offset )
+    {
         try
         {
+            if ( offset < reservedBytes )
+            {
+                return handleOverflow();
+            }
             return page.get( offset );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -224,15 +248,24 @@ public class StubPageCursor extends PageCursor
     @Override
     public void putByte( byte value )
     {
-        putByte( currentOffset, value );
+        putByteInternal( currentOffset, value );
         currentOffset += 1;
     }
 
     @Override
     public void putByte( int offset, byte value )
     {
+        putByteInternal( offset + reservedBytes, value );
+    }
+
+    private void putByteInternal( int offset, byte value )
+    {
         try
         {
+            if ( offset < reservedBytes )
+            {
+                handleOverflow();
+            }
             page.put( offset, value );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -244,7 +277,7 @@ public class StubPageCursor extends PageCursor
     @Override
     public long getLong()
     {
-        long value = getLong( currentOffset );
+        long value = getLongInternal( currentOffset );
         currentOffset += 8;
         return value;
     }
@@ -252,8 +285,17 @@ public class StubPageCursor extends PageCursor
     @Override
     public long getLong( int offset )
     {
+        return getLongInternal( offset + reservedBytes );
+    }
+
+    private long getLongInternal( int offset )
+    {
         try
         {
+            if ( offset < reservedBytes )
+            {
+                return handleOverflow();
+            }
             return page.getLong( offset );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -265,15 +307,24 @@ public class StubPageCursor extends PageCursor
     @Override
     public void putLong( long value )
     {
-        putLong( currentOffset, value );
+        putLongInternal( currentOffset, value );
         currentOffset += 8;
     }
 
     @Override
     public void putLong( int offset, long value )
     {
+        putLongInternal( reservedBytes + offset, value );
+    }
+
+    private void putLongInternal( int offset, long value )
+    {
         try
         {
+            if ( offset < reservedBytes )
+            {
+                handleOverflow();
+            }
             page.putLong( offset, value );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -285,7 +336,7 @@ public class StubPageCursor extends PageCursor
     @Override
     public int getInt()
     {
-        int value = getInt( currentOffset );
+        int value = getIntInternal( currentOffset );
         currentOffset += 4;
         return value;
     }
@@ -293,8 +344,17 @@ public class StubPageCursor extends PageCursor
     @Override
     public int getInt( int offset )
     {
+        return getIntInternal( reservedBytes + offset );
+    }
+
+    private int getIntInternal( int offset )
+    {
         try
         {
+            if ( offset < reservedBytes )
+            {
+                return handleOverflow();
+            }
             return page.getInt( offset );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -306,15 +366,24 @@ public class StubPageCursor extends PageCursor
     @Override
     public void putInt( int value )
     {
-        putInt( currentOffset, value );
+        putIntInternal( currentOffset, value );
         currentOffset += 4;
     }
 
     @Override
     public void putInt( int offset, int value )
     {
+        putIntInternal( reservedBytes + offset, value );
+    }
+
+    private void putIntInternal( int offset, int value )
+    {
         try
         {
+            if ( offset < reservedBytes )
+            {
+                handleOverflow();
+            }
             page.putInt( offset, value );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -378,7 +447,7 @@ public class StubPageCursor extends PageCursor
     @Override
     public short getShort()
     {
-        short value = getShort( currentOffset );
+        short value = getShortInternal( currentOffset );
         currentOffset += 2;
         return value;
     }
@@ -386,8 +455,17 @@ public class StubPageCursor extends PageCursor
     @Override
     public short getShort( int offset )
     {
+        return getShortInternal( reservedBytes + offset );
+    }
+
+    private short getShortInternal( int offset )
+    {
         try
         {
+            if ( offset < reservedBytes )
+            {
+               return handleOverflow();
+            }
             return page.getShort( offset );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -399,15 +477,24 @@ public class StubPageCursor extends PageCursor
     @Override
     public void putShort( short value )
     {
-        putShort( currentOffset, value );
+        putShortInternal( currentOffset, value );
         currentOffset += 2;
     }
 
     @Override
     public void putShort( int offset, short value )
     {
+        putShortInternal( reservedBytes + offset, value );
+    }
+
+    private void putShortInternal( int offset, short value )
+    {
         try
         {
+            if ( offset < reservedBytes )
+            {
+                handleOverflow();
+            }
             page.putShort( offset, value );
         }
         catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
@@ -419,7 +506,7 @@ public class StubPageCursor extends PageCursor
     @Override
     public int getOffset()
     {
-        return currentOffset;
+        return currentOffset - reservedBytes;
     }
 
     @Override
@@ -429,7 +516,7 @@ public class StubPageCursor extends PageCursor
         {
             throw new IndexOutOfBoundsException();
         }
-        currentOffset = offset;
+        currentOffset = offset + reservedBytes;
     }
 
     @Override
