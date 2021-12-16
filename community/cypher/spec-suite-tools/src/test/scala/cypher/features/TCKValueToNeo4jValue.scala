@@ -29,8 +29,8 @@ import org.opencypher.tools.tck.values.CypherPropertyMap
 import org.opencypher.tools.tck.values.CypherString
 import org.opencypher.tools.tck.values.CypherValue
 
-import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object TCKValueToNeo4jValue extends (CypherValue => Object) {
 

@@ -46,7 +46,7 @@ import org.opencypher.tools.tck.api.Graph
 import org.opencypher.tools.tck.api.ProcedureSupport
 import org.opencypher.tools.tck.values.CypherValue
 
-import scala.collection.JavaConverters.asJavaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsJava
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -104,7 +104,7 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
           row.drop(input.length)
         }
 
-        val rawIterator = RawIterator.wrap[Array[AnyValue], ProcedureException](extractResultsFromRows.toIterator.asJava)
+        val rawIterator = RawIterator.wrap[Array[AnyValue], ProcedureException](extractResultsFromRows.iterator.asJava)
         rawIterator
       }
     }

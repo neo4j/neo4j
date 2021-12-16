@@ -33,7 +33,6 @@ import org.neo4j.cypher.testing.api.Outgoing
 import org.neo4j.cypher.testing.api.Path
 import org.neo4j.cypher.testing.api.Relationship
 import org.neo4j.values.storable.DurationValue
-import scala.Iterable
 
 object CypherTestValueToString extends (Any => String) {
 
@@ -81,7 +80,7 @@ object CypherTestValueToString extends (Any => String) {
         s"<$string>"
 
       //  TCK values parser expects escaped backslashes or single quotes so we have to mirror that here
-      case s: String         => s"'${s.replaceAllLiterally("\\", "\\\\").replaceAllLiterally("'", "\\'")}'"
+      case s: String         => s"'${s.replace("\\", "\\\\").replace("'", "\\'")}'"
       case l: Long           => l.toString
       case i: Integer        => i.toString
       case d: Double         => d.toString

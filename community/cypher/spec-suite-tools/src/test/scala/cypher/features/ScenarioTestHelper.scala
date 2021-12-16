@@ -43,9 +43,9 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -186,7 +186,7 @@ object ScenarioTestHelper {
       try {
         fs.foreach(_.close())
       } catch {
-        case _: UnsupportedOperationException => Unit
+        case _: UnsupportedOperationException => ()
       }
     }
   }

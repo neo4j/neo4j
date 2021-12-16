@@ -39,8 +39,8 @@ import org.opencypher.tools.tck.api.StringRecords
 import org.opencypher.tools.tck.values.CypherValue
 
 import java.lang.Boolean.TRUE
-import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.collection.JavaConverters.setAsJavaSetConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -84,7 +84,7 @@ class Neo4jAdapter(var dbms: FeatureDatabaseManagementService,
   private val explainPrefix = "EXPLAIN\n"
 
   override def cypher(query: String, params: Map[String, CypherValue], meta: QueryType): Result = {
-    val neo4jParams = params.mapValues(v => TCKValueToNeo4jValue(v))
+    val neo4jParams = params.view.mapValues(v => TCKValueToNeo4jValue(v)).toMap
 
     val queryToExecute = if (meta == ExecQuery) {
       s"$executionPrefix $query"
