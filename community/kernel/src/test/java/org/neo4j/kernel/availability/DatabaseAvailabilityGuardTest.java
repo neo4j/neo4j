@@ -73,7 +73,7 @@ class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    void shutdownAvailabilityGuardIsNotAvailable() throws Exception
+    void shutdownAvailabilityGuardIsNotAvailable()
     {
         DatabaseAvailabilityGuard availabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         assertTrue( availabilityGuard.isAvailable() );
@@ -87,7 +87,7 @@ class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    void restartedAvailabilityGuardIsAvailable() throws Exception
+    void restartedAvailabilityGuardIsAvailable()
     {
         DatabaseAvailabilityGuard availabilityGuard = getDatabaseAvailabilityGuard( clock, log );
         assertTrue( availabilityGuard.isAvailable() );
