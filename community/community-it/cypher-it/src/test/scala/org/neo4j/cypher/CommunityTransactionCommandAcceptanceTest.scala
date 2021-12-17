@@ -85,7 +85,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS").toList
+    val res = execute("SHOW TRANSACTIONS").toList
+    val result = res.filterNot(m => m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME)) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -106,7 +107,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     selectDatabase(DEFAULT_DATABASE_NAME)
-    val result = execute("SHOW TRANSACTIONS").toList
+    val res = execute("SHOW TRANSACTIONS").toList
+    val result = res.filter(m => !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals(username)) // remove possible random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -186,7 +188,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     selectDatabase(SYSTEM_DATABASE_NAME)
-    val result = execute("SHOW TRANSACTIONS").toList
+    val res = execute("SHOW TRANSACTIONS").toList
+    val result = res.filter(m => !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals("")) // remove possible random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -265,7 +268,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     selectDatabase(DEFAULT_DATABASE_NAME)
-    val result = executeAs(showUser, password, "SHOW TRANSACTIONS").toList
+    val res = executeAs(showUser, password, "SHOW TRANSACTIONS").toList
+    val result = res.filter(m => !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals(username2)) // remove possible random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -365,7 +369,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     selectDatabase(DEFAULT_DATABASE_NAME)
-    val result = execute("SHOW TRANSACTIONS YIELD *").toList
+    val res = execute("SHOW TRANSACTIONS YIELD *").toList
+    val result = res.filter(m => !m("database").asInstanceOf[String].equals(SYSTEM_DATABASE_NAME) || m("username").asInstanceOf[String].equals(username)) // remove possible random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -409,7 +414,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     val showQuery = "SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime"
-    val result = execute(showQuery).toList
+    val res = execute(showQuery).toList
+    val result = res.filterNot(m => m("runtime").asInstanceOf[String].equals("system")) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -454,7 +460,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val showId = s"neo4j-transaction-$showIdNumber"
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId ASC").toList
+    val res = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId ASC").toList
+    val result = res.filterNot(m => m("runtime").asInstanceOf[String].equals("system")) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -478,7 +485,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val showId = s"neo4j-transaction-$showIdNumber"
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId DESC").toList
+    val res = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId DESC").toList
+    val result = res.filterNot(m => m("runtime").asInstanceOf[String].equals("system")) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -589,9 +597,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val showIdNumber = unwindId.split("-")(2).toInt + 2
     val showId = s"neo4j-transaction-$showIdNumber"
 
-    // WHEN
+    // WHEN (WHERE to remove random system transactions from parallel tests/set-up)
     selectDatabase(DEFAULT_DATABASE_NAME)
-    val result = execute("SHOW TRANSACTIONS YIELD * ORDER BY transactionId DESC RETURN transactionId, database ORDER BY database ASC")
+    val result = execute(s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId DESC WHERE database <> '$SYSTEM_DATABASE_NAME' OR username = '$username2' RETURN transactionId, database ORDER BY database ASC")
     val resultList = result.toList
     val planDescr = result.executionPlanDescription()
     latch.finishAndWaitForAllToFinish()
@@ -618,8 +626,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val showIdNumber = unwindId.split("-")(2).toInt + 2
     val showId = s"neo4j-transaction-$showIdNumber"
 
-    // WHEN
-    val result = execute("SHOW TRANSACTIONS YIELD * ORDER BY transactionId RETURN collect(transactionId) AS txIds")
+    // WHEN (WHERE to remove random system transactions from parallel tests/set-up)
+    val result = execute(s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId WHERE database <> '$SYSTEM_DATABASE_NAME' RETURN collect(transactionId) AS txIds")
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -636,7 +644,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN: the query is rewritten to include WITH (splitting the aggregation)
-    val result = execute("SHOW TRANSACTIONS YIELD * ORDER BY transactionId RETURN size(collect(transactionId)) AS numTx")
+    // (WHERE to remove random system transactions from parallel tests/set-up)
+    val result = execute(s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId WHERE database <> '$SYSTEM_DATABASE_NAME' RETURN size(collect(transactionId)) AS numTx")
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -653,8 +662,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN: the query is rewritten to include WITH (splitting the aggregation)
+    // (WHERE to remove random system transactions from parallel tests/set-up)
     selectDatabase(SYSTEM_DATABASE_NAME)
-    val result = execute("SHOW TRANSACTIONS YIELD * ORDER BY transactionId RETURN size(collect(transactionId)) AS numTx")
+    val result = execute(s"SHOW TRANSACTIONS YIELD * ORDER BY transactionId WHERE database <> '$SYSTEM_DATABASE_NAME' OR username = '' RETURN size(collect(transactionId)) AS numTx")
     latch.finishAndWaitForAllToFinish()
 
     // THEN
