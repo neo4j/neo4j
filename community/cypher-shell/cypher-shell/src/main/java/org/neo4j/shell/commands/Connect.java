@@ -90,6 +90,11 @@ public class Connect implements Command
     @Override
     public void execute( final String argString ) throws ExitException, CommandException
     {
+        if ( shell.isConnected() )
+        {
+            throw new CommandException( "Already connected" );
+        }
+
         parseArgString( argString );
         shell.connect( config );
     }
@@ -101,26 +106,28 @@ public class Connect implements Command
             var args = argumentParser.parseArgs( simpleArgParse( argString, 0, 6, COMMAND_NAME, getUsage() ) );
             var user = args.getString( "username" );
             var password = args.getString( "password" );
-            config.setDatabase( args.getString( "database" ) );
 
-            if ( user == null && password == null )
+            if ( user == null && password != null )
+            {
+                throw new CommandException( "You cannot provide password only, please provide a username using '-u USERNAME'" );
+            }
+            else if ( user == null ) // We know password is null because of the previous if statement
             {
                 config.setUsername( promptForNonEmptyText( "username", null ) );
                 config.setPassword( promptForText( "password", '*' ) );
             }
             else if ( password == null )
             {
+                config.setUsername( user );
                 config.setPassword( promptForText( "password", '*' ) );
-            }
-            else if ( user == null )
-            {
-                throw new CommandException( "You cannot provide password only, please provide a username using '-u USERNAME'" );
             }
             else
             {
                 config.setUsername( user );
                 config.setPassword( password );
             }
+
+            config.setDatabase( args.getString( "database" ) );
         }
         catch ( ArgumentParserException e )
         {

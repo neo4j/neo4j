@@ -39,6 +39,8 @@ import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.test.AssertableMain;
+import org.neo4j.shell.util.Version;
+import org.neo4j.shell.util.Versions;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -65,7 +67,7 @@ class MainIntegrationTest
     private static final String newLine = System.lineSeparator();
     private static final String GOOD_BYE = format( ":exit%n%nBye!%n" );
 
-    private final int majorServerVersion = majorVersion( runInSystemDbAndReturn( CypherShell::getServerVersion ) );
+    private final Version serverVersion = Versions.version( runInDbAndReturn( "", CypherShell::getServerVersion ) );
     private final Matcher<String> endsWithInteractiveExit = endsWith( format( "> %s", GOOD_BYE ) );
 
     private Matcher<String> returned42AndExited()
@@ -87,7 +89,7 @@ class MainIntegrationTest
     @Test
     void promptsOnPasswordChangeRequiredSinceVersion4() throws Exception
     {
-        assumeTrue( majorServerVersion >= 4 );
+        assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "bob", "expired", true )
             .args( "--format verbose" )
@@ -103,7 +105,7 @@ class MainIntegrationTest
     @Test
     void promptsOnPasswordChangeRequiredBeforeVersion4() throws Exception
     {
-        assumeTrue( majorServerVersion < 4 );
+        assumeTrue( serverVersion.major() < 4 );
 
         testWithUser( "bob", "expired", true )
             .args( "--format verbose" )
@@ -117,7 +119,7 @@ class MainIntegrationTest
     @Test
     void allowUserToUpdateExpiredPasswordInteractivelyWithoutBeingPrompted() throws Exception
     {
-        assumeTrue( majorServerVersion >= 4 );
+        assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "bob", "expired", true )
             .args( "-u bob -p expired -d system --format verbose" )
@@ -132,7 +134,7 @@ class MainIntegrationTest
     @Test
     void shouldFailIfNonInteractivelySettingPasswordOnNonSystemDb() throws Exception
     {
-        assumeTrue( majorServerVersion >= 4 );
+        assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "kjell", "expired", true )
             .args( "-u kjell -p expired -d neo4j --non-interactive")
@@ -145,7 +147,7 @@ class MainIntegrationTest
     @Test
     void shouldBePromptedIfRunningNonInteractiveCypherThatDoesntUpdatePassword() throws Exception
     {
-        assumeTrue( majorServerVersion >= 4 );
+        assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "bruce", "expired", true )
             .args( "-u bruce -p expired -d neo4j" ).addArgs( "match (n) return n;" )
@@ -159,7 +161,7 @@ class MainIntegrationTest
     @Test
     void shouldNotBePromptedIfRunningWithExplicitNonInteractiveCypherThatDoesntUpdatePassword() throws Exception
     {
-        assumeTrue( majorServerVersion >= 4 );
+        assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "nick", "expired", true )
             .args( "-u nick -p expired -d neo4j --non-interactive" ).addArgs( "match (n) return n;" )
@@ -522,7 +524,7 @@ class MainIntegrationTest
     void doesNotStartWhenDefaultDatabaseUnavailableIfInteractive()
     {
         // Multiple databases are only available from 4.0
-        assumeTrue( majorServerVersion >= 4 );
+        assumeTrue( serverVersion.major() >= 4 );
 
         withDefaultDatabaseStopped( () ->
             buildTest().addArgs( "-u", USER, "-p", PASSWORD ).run()
@@ -536,7 +538,7 @@ class MainIntegrationTest
     void startsAgainstSystemDatabaseWhenDefaultDatabaseUnavailableIfInteractive()
     {
         // Multiple databases are only available from 4.0
-        assumeTrue( majorServerVersion >= 4 );
+        assumeTrue( serverVersion.major() >= 4 );
 
         withDefaultDatabaseStopped( () ->
             buildTest()
@@ -551,7 +553,7 @@ class MainIntegrationTest
     void switchingToUnavailableDatabaseIfInteractive()
     {
         // Multiple databases are only available from 4.0
-        assumeTrue( majorServerVersion >= 4 );
+        assumeTrue( serverVersion.major() >= 4 );
 
         withDefaultDatabaseStopped( () ->
             buildTest()
@@ -568,7 +570,7 @@ class MainIntegrationTest
     void switchingToUnavailableDefaultDatabaseIfInteractive()
     {
         // Multiple databases are only available from 4.0
-        assumeTrue( majorServerVersion >= 4 );
+        assumeTrue( serverVersion.major() >= 4 );
 
         withDefaultDatabaseStopped( () ->
             buildTest()
@@ -709,6 +711,99 @@ class MainIntegrationTest
         assertThat( readHistoryAfterClear.get( 1 ), endsWith( ":exit" ) );
     }
 
+    @Test
+    void shouldDisconnectAndReconnectAsOtherUser() throws Exception
+    {
+        assumeAtLeastVersion( "4.2.0" );
+
+        testWithUser( "new_user", "new_password", false )
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines(
+                        ":disconnect",
+                        ":connect -u new_user -p new_password -d neo4j",
+                        "show current user yield user;"
+                )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput( containsString(
+                        "show current user yield user;\n" +
+                        "user\n" +
+                        "\"new_user\"\n" +
+                        "new_user@neo4j>"
+                ) );
+    }
+
+    @Test
+    void shouldDisconnectAndFailToReconnect() throws Exception
+    {
+        testWithUser( "new_user", "new_password", false )
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines(
+                        ":disconnect",
+                        ":connect -u new_user -p " + PASSWORD + " -d neo4j", // Wrong password
+                        "show current user yield user;"
+                )
+                .run()
+                .assertThatOutput( containsString(
+                        "neo4j@neo4j> :disconnect\n" +
+                        "Disconnected> :connect -u new_user -p " + PASSWORD + " -d neo4j\n" +
+                        "Disconnected> show current user yield user;\n" +
+                        "Disconnected>"
+                ) )
+                .assertThatErrorOutput(
+                        containsString( "The client is unauthorized due to authentication failure" ),
+                        containsString( "Not connected" )
+                );
+    }
+
+    @Test
+    void shouldDisconnectAndFailToReconnectInteractively() throws Exception
+    {
+        testWithUser( "new_user", "new_password", false )
+                .outputInteractive( true )
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines(
+                        ":disconnect",
+                        ":connect -u new_user -d neo4j",
+                        PASSWORD, // Password prompt with WRONG password
+                        "show current user yield user;"
+                )
+                .run()
+                .assertThatOutput( containsString(
+                        "neo4j@neo4j> :disconnect\n" +
+                        "Disconnected> :connect -u new_user -d neo4j\n" +
+                        "password: ***\n" +
+                        "Disconnected> show current user yield user;\n" +
+                        "Disconnected>"
+                ) )
+                .assertThatErrorOutput(
+                        containsString( "The client is unauthorized due to authentication failure" ),
+                        containsString( "Not connected" )
+                );
+    }
+
+    @Test
+    void shouldNotConnectIfAlreadyConnected() throws Exception
+    {
+        assumeAtLeastVersion( "4.2.0" );
+
+        testWithUser( "new_user", "new_password", false )
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines(
+                        ":connect -u new_user -p new_password -d neo4j", // No disconnect
+                        "show current user yield user;"
+                )
+                .run()
+                .assertThatErrorOutput( containsString( "Already connected" ) )
+                .assertThatOutput( containsString(
+                        "neo4j@neo4j> :connect -u new_user -p new_password -d neo4j\n" +
+                        "neo4j@neo4j> show current user yield user;\n" +
+                        "user\n" +
+                        "\"neo4j\"\n" +
+                        "neo4j@neo4j> "
+                ) );
+    }
+
     private void assertUserCanConnectAndRunQuery( String user, String password ) throws Exception
     {
         buildTest().addArgs( "-u", user, "-p", password, "--format", "plain", "return 42 as x;" ).run().assertSuccess();
@@ -733,14 +828,13 @@ class MainIntegrationTest
         } );
     }
 
-    private <T> T runInSystemDbAndReturn( ThrowingFunction<CypherShell, T, Exception> systemDbConsumer )
+    private <T> T runInDbAndReturn( String database, ThrowingFunction<CypherShell, T, Exception> systemDbConsumer )
     {
         CypherShell shell = null;
         try
         {
             shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, false, 100 ), true, new ShellParameterMap() );
-            var systemDb = majorServerVersion >= 4 ? "system" : ""; // Before version 4 we don't support multi databases
-            shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, systemDb, new Environment() ) );
+            shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, database, new Environment() ) );
             return systemDbConsumer.apply( shell );
         }
         catch ( Exception e )
@@ -754,6 +848,12 @@ class MainIntegrationTest
                 shell.disconnect();
             }
         }
+    }
+
+    private <T> T runInSystemDbAndReturn( ThrowingFunction<CypherShell, T, Exception> systemDbConsumer )
+    {
+        var systemDb = serverVersion.major() >= 4 ? "system" : ""; // Before version 4 we don't support multi databases
+        return runInDbAndReturn( systemDb, systemDbConsumer );
     }
 
     private static void createOrReplaceUser( CypherShell shell, String name, String password, boolean requirePasswordChange ) throws CommandException
@@ -819,6 +919,11 @@ class MainIntegrationTest
         {
             runInSystemDb( shell -> shell.execute( "START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) );
         }
+    }
+
+    private void assumeAtLeastVersion( String version )
+    {
+        assumeTrue( serverVersion.compareTo( Versions.version( version ) ) > 0 );
     }
 
     private static class TestBuilder extends AssertableMain.AssertableMainBuilder
