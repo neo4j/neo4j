@@ -177,7 +177,9 @@ public class DynamicRecord extends AbstractBaseRecord
             buf.append( "]," );
         }
         buf.append( "start=" ).append( startRecord );
-        buf.append( ",next=" ).append( nextBlock ).append( ']' );
+        buf.append( ",next=" ).append( nextBlock )
+           .append( ",created=" ).append( isCreated() )
+           .append( ']' );
         return buf.toString();
     }
 

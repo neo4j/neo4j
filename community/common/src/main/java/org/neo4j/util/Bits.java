@@ -375,6 +375,20 @@ public final class Bits
         return (byte) result;
     }
 
+    public static byte bitFlags( int flag1, int flag2, int flag3 )
+    {
+        int result = flag1 | flag2 | flag3;
+        assert (result & ~0xFF) == 0;
+        return (byte) result;
+    }
+
+    public static byte bitFlags( int flag1, int flag2 )
+    {
+        int result = flag1 | flag2;
+        assert (result & ~0xFF) == 0;
+        return (byte) result;
+    }
+
     /**
      * Clear the position and data.
      */

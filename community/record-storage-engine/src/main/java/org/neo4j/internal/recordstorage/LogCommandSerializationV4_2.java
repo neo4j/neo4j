@@ -371,7 +371,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
         return schemaRecord;
     }
 
-    private static SchemaRule readSchemaRule( long id, ReadableChannel channel ) throws IOException
+    static SchemaRule readSchemaRule( long id, ReadableChannel channel ) throws IOException
     {
         Map<String,Value> ruleMap = readStringValueMap( channel );
         try
@@ -627,7 +627,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
         return record;
     }
 
-    private static DynamicRecord readDynamicRecord( ReadableChannel channel ) throws IOException
+    static DynamicRecord readDynamicRecord( ReadableChannel channel ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         long id = channel.getLong();
@@ -659,7 +659,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
         return record;
     }
 
-    private static <T> int readDynamicRecords( ReadableChannel channel, T target, CommandReading.DynamicRecordAdder<T> adder )
+    static <T> int readDynamicRecords( ReadableChannel channel, T target, CommandReading.DynamicRecordAdder<T> adder )
             throws IOException
     {
         int numberOfRecords = channel.getInt();
@@ -1202,7 +1202,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
         }
     }
 
-    private static void writeSchemaRule( WritableChannel channel, SchemaRule schemaRule ) throws IOException
+    static void writeSchemaRule( WritableChannel channel, SchemaRule schemaRule ) throws IOException
     {
         Map<String,Value> ruleMap = SchemaRuleMapifier.mapifySchemaRule( schemaRule );
         writeStringValueMap( channel, ruleMap );

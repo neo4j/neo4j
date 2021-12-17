@@ -19,11 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -44,7 +42,6 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.recordstorage.LogCommandSerializationV4_2.markAfterRecordAsCreatedIfCommandLooksCreated;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 class LogCommandSerializationV4_2Test
@@ -496,14 +493,16 @@ class LogCommandSerializationV4_2Test
         assertTrue( reader.read( channel ) instanceof Command.PropertyCommand );
     }
 
-    @RepeatedTest( 100 )
+    @Test
     void shouldReadSchemaCommand() throws Exception
     {
         // given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        SchemaRecord before = createRandomSchemaRecord();
-        SchemaRecord after = createRandomSchemaRecord();
-        markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
+        SchemaRecord before = new SchemaRecord( 42 );
+        SchemaRecord after = before.copy();
+        after.initialize( true, 353 );
+        after.setConstraint( true );
+        after.setCreated();
 
         long id = after.getId();
         SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "index_" + id ).materialise( id );
@@ -513,33 +512,6 @@ class LogCommandSerializationV4_2Test
         Command.SchemaRuleCommand command = (Command.SchemaRuleCommand) reader.read( channel );
 
         assertBeforeAndAfterEquals( command, before, after );
-    }
-
-    private static SchemaRecord createRandomSchemaRecord()
-    {
-        ThreadLocalRandom rng = ThreadLocalRandom.current();
-        SchemaRecord record = new SchemaRecord( 42 );
-        boolean inUse = rng.nextBoolean();
-        if ( inUse )
-        {
-            record.initialize( inUse, rng.nextLong() );
-            if ( rng.nextBoolean() )
-            {
-                record.setCreated();
-            }
-            record.setConstraint( rng.nextBoolean() );
-            record.setUseFixedReferences( rng.nextBoolean() );
-            boolean requiresSecondaryUnit = rng.nextBoolean();
-            if ( requiresSecondaryUnit )
-            {
-                record.setSecondaryUnitIdOnLoad( rng.nextLong() );
-            }
-        }
-        else
-        {
-            record.clear();
-        }
-        return record;
     }
 
     protected CommandReader createReader()
