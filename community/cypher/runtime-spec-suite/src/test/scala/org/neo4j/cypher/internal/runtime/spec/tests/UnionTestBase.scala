@@ -917,6 +917,27 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n").withRows(singleColumn(Seq(nodeA, nodeA)))
   }
 
+  test("should work with alias as argument") {
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("bar")
+      .apply()
+      .|.optional("bar", "n")
+      .|.union()
+      .|.|.unwind("[] AS n")
+      .|.|.argument()
+      .|.unwind("[] AS n")
+      .|.argument()
+      .projection("foo AS bar")
+      .projection("'foo' AS foo")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("bar").withRows(singleColumn(Seq("foo")))
+  }
+
   private def sizeHintAlignedToMorselSize: Int = {
     val morselSize = edition.cypherConfig().pipelinedBatchSizeSmall
     (1 + sizeHint / morselSize) * morselSize
