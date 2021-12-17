@@ -452,6 +452,26 @@ class GBPTreeTest
         }
     }
 
+    @Test
+    void shouldGetFileSizeInBytes() throws IOException
+    {
+        // GIVEN
+        try ( var controlledPageCache = createPageCache( defaultPageSize );
+              var index = index( controlledPageCache ).build() )
+        {
+            assertThat( index.sizeInBytes() ).isEqualTo( defaultPageSize * 5L );
+
+            // WHEN
+            try ( var writer = index.writer( NULL ) )
+            {
+                writer.put( new MutableLong( 4 ), new MutableLong( 8 ) );
+            }
+
+            // THEN
+            assertThat( index.sizeInBytes() ).isEqualTo( defaultPageSize * 6L );
+        }
+    }
+
     /* Header test */
 
     @Test

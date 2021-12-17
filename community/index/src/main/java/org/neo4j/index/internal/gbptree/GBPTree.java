@@ -2008,11 +2008,14 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return bTreeNode.inlineKeyValueSizeCap();
     }
 
+    /**
+     * @return size of the file backing this {@link GBPTree}, in bytes.
+     */
     public long sizeInBytes()
     {
         try
         {
-            return pagedFile.getLastPageId() * pagedFile.pageSize();
+            return pagedFile.fileSize();
         }
         catch ( IOException e )
         {
