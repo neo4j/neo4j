@@ -19,21 +19,17 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
-
 /**
  * This command marks a transaction as successful and closes it.
  */
 public class Commit implements Command
 {
-    public static final String COMMAND_NAME = ":commit";
     private final TransactionHandler transactionHandler;
 
     public Commit( final TransactionHandler transactionHandler )
@@ -42,40 +38,25 @@ public class Commit implements Command
     }
 
     @Override
-    public String getName()
+    public void execute( final List<String> args ) throws ExitException, CommandException
     {
-        return COMMAND_NAME;
-    }
-
-    @Override
-    public String getDescription()
-    {
-        return "Commit the currently open transaction";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return "Commit and close the currently open transaction";
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void execute( final String argString ) throws ExitException, CommandException
-    {
-        simpleArgParse( argString, 0, COMMAND_NAME, getUsage() );
-
+        requireArgumentCount( args, 0 );
         transactionHandler.commitTransaction();
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var help = "Commit and close the currently open transaction";
+            return new Metadata( ":commit", "Commit the currently open transaction", "", help, List.of() );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Commit( args.cypherShell() );
+        }
     }
 }

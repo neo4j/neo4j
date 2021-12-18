@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.IntStream;
 
 import org.neo4j.shell.Historian;
@@ -58,16 +59,16 @@ class HistoryTest
     @Test
     void shouldNotAcceptSomeArgs()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob" ) ) );
         assertThat( exception.getMessage(), containsString( "Unrecognised argument bob" ) );
     }
 
     @Test
     void shouldPrintHistoryCorrectlyNumberedFrom1() throws CommandException, IOException
     {
-        when( historian.getHistory() ).thenReturn( Arrays.asList( ":help", ":exit" ) );
+        when( historian.getHistory() ).thenReturn( List.of( ":help", ":exit" ) );
 
-        cmd.execute( "" );
+        cmd.execute( List.of() );
 
         verify( logger ).printOut( eq( format( " 1  :help%n 2  :exit%n" ) ) );
         verify( historian, times( 0 ) ).clear();
@@ -78,7 +79,7 @@ class HistoryTest
     {
         when( historian.getHistory() ).thenReturn( Arrays.asList( "match\n(n)\nreturn\nn\n;", ":exit" ) );
 
-        cmd.execute( "" );
+        cmd.execute( List.of() );
 
         var expected = format(
             " 1  match%n" +
@@ -96,7 +97,7 @@ class HistoryTest
     {
         when( historian.getHistory() ).thenReturn( Arrays.asList( "match\r\n(n)\r\nreturn\r\nn\r\n;", ":exit" ) );
 
-        cmd.execute( "" );
+        cmd.execute( List.of() );
 
         var expected = format(
                 " 1  match%n" +
@@ -113,7 +114,7 @@ class HistoryTest
     @Test
     void shouldClearHistory() throws CommandException, IOException
     {
-        cmd.execute( "clear" );
+        cmd.execute( List.of( "clear" ) );
 
         verify( historian, times( 1 ) ).clear();
         verify( logger ).printIfVerbose( eq( "Removing history..." ) );
@@ -124,7 +125,7 @@ class HistoryTest
     {
         when( historian.getHistory() ).thenReturn( IntStream.range( 1, 21 ).mapToObj( Integer::toString ).collect( toList() ) );
 
-        cmd.execute( "" );
+        cmd.execute( List.of() );
 
         var expected = format(
             " 5   5%n" +

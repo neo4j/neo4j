@@ -28,12 +28,12 @@ import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
 
 class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
 {
@@ -52,7 +52,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     {
         try
         {
-            shell.execute( "MATCH (n) DETACH DELETE (n)" );
+            shell.execute( new CypherStatement( "MATCH (n) DETACH DELETE (n)" ) );
         }
         finally
         {
@@ -64,7 +64,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     void cypherWithProfileStatements() throws CommandException
     {
         //when
-        shell.execute( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" );
+        shell.execute( new CypherStatement( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" ) );
 
         //then
         String actual = linePrinter.output();
@@ -87,7 +87,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
         assumeTrue( runningAtLeast( "4.1" ) );
 
         //when
-        shell.execute( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" );
+        shell.execute( new CypherStatement( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" ) );
 
         //then
         String actual = linePrinter.output();
@@ -99,7 +99,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     void cypherWithExplainStatements() throws CommandException
     {
         //when
-        shell.execute( "CYPHER RUNTIME=INTERPRETED EXPLAIN RETURN null" );
+        shell.execute( new CypherStatement( "CYPHER RUNTIME=INTERPRETED EXPLAIN RETURN null" ) );
 
         //then
         String actual = linePrinter.output();
@@ -120,7 +120,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
         connect( "neo" );
 
         //when
-        shell.execute( "CYPHER RETURN $foo" );
+        shell.execute( new CypherStatement( "CYPHER RETURN $foo" ) );
 
         //then
         String actual = linePrinter.output();

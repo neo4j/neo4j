@@ -19,49 +19,52 @@
  */
 package org.neo4j.shell.parser;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * An object capable of parsing a piece of text and returning a List statements contained within.
  */
 public interface StatementParser
 {
+    /**
+     * Consumes and parses all statements of the specified reader, including incomplete statements.
+     */
+    ParsedStatements parse( Reader reader ) throws IOException;
 
     /**
-     * Parse the next line of text
-     *
-     * @param line to parse
+     * Consumes and parses all statements of the specified reader, including incomplete statements.
      */
-    void parseMoreText( String line );
+    ParsedStatements parse( String line ) throws IOException;
 
-    /**
-     * @return true if any statements have been parsed yet, false otherwise
-     */
-    boolean hasStatements();
+    record ParsedStatements( List<ParsedStatement> statements )
+    {
+        public boolean isEmpty()
+        {
+            return statements.isEmpty();
+        }
 
-    /**
-     * Once this method has been called, the method will return the empty list (unless more text is parsed). If nothing has been parsed yet, then the empty list
-     * is returned.
-     *
-     * @return statements which have been parsed so far and remove them from internal state
-     */
-    List<String> consumeStatements();
+        public boolean hasIncompleteStatement()
+        {
+            return statements.stream().anyMatch( statement -> statement instanceof IncompleteStatement );
+        }
+    }
 
-    /**
-     * Returns any incomplete statement.
-     *
-     * @return the statement that is currently being parsed but has not completed, if any
-     */
-    Optional<String> incompleteStatement();
-
-    /**
-     * @return false if no text (except whitespace) has been seen since last parsed statement, true otherwise.
-     */
-    boolean containsText();
-
-    /**
-     * Reset the state of the Parser, removing any and all state it has.
-     */
-    void reset();
+    sealed interface ParsedStatement permits CommandStatement, CypherStatement, IncompleteStatement
+    {
+        String statement();
+    }
+    record CommandStatement( String name, List<String> args ) implements ParsedStatement
+    {
+        @Override
+        public String statement()
+        {
+            return name + " " + String.join( " ", args );
+        }
+    }
+    record CypherStatement( String statement ) implements ParsedStatement
+    { }
+    record IncompleteStatement( String statement ) implements ParsedStatement
+    { }
 }

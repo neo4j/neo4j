@@ -20,11 +20,11 @@
 package org.neo4j.shell.terminal;
 
 import java.io.File;
-import java.util.List;
 
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
+import org.neo4j.shell.parser.StatementParser.ParsedStatements;
 
 /**
  * Handles user input and output.
@@ -53,14 +53,14 @@ public interface CypherShellTerminal
     interface Reader
     {
         /**
-         * Reads a cypher shell statement from the terminal.
+         * Reads cypher shell statements from the terminal.
          *
          * @param prompt user prompt
          * @return the read statements, never null
          * @throws NoMoreInputException if there is no more input (user press ctrl+d for example)
          * @throws UserInterruptException if user interrupted input (user press ctrl+c for example)
          */
-        ParsedStatement readStatement( String prompt ) throws NoMoreInputException, UserInterruptException;
+        ParsedStatements readStatement( String prompt ) throws NoMoreInputException, UserInterruptException;
 
         /**
          * Reads any string from the terminal.
@@ -83,12 +83,6 @@ public interface CypherShellTerminal
         {
             println( "" );
         }
-    }
-
-    interface ParsedStatement
-    {
-        String unparsed();
-        List<String> parsed();
     }
 
     interface UserInterruptHandler

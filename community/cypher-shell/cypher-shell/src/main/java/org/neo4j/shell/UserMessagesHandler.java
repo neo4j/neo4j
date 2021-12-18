@@ -19,9 +19,6 @@
  */
 package org.neo4j.shell;
 
-
-import org.neo4j.shell.commands.Exit;
-import org.neo4j.shell.commands.Help;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.util.Version;
 import org.neo4j.shell.util.Versions;
@@ -53,9 +50,9 @@ public class UserMessagesHandler
         }
 
         return welcomeMessage
-                .append( ".\nType " ).bold( Help.COMMAND_NAME )
+                .append( ".\nType " ).bold( ":help" )
                 .append( " for a list of available commands or " )
-                .bold( Exit.COMMAND_NAME ).append( " to exit the shell." )
+                .bold( ":exit" ).append( " to exit the shell." )
                 .append( "\nNote that Cypher queries must end with a " ).bold( "semicolon." )
                 .formattedString();
     }

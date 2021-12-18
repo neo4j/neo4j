@@ -19,8 +19,9 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.exception.CommandException;
@@ -40,7 +41,7 @@ class UseTest
     @Test
     void setAbsentDatabaseOnNoArgument() throws CommandException
     {
-        cmd.execute( "" );
+        cmd.execute( List.of() );
 
         verify( mockShell ).setActiveDatabase( DatabaseManager.ABSENT_DB_NAME );
     }
@@ -48,14 +49,14 @@ class UseTest
     @Test
     void shouldFailIfMoreThanOneArg()
     {
-        var expection = assertThrows( CommandException.class, () -> cmd.execute( "db1 db2" ) );
+        var expection = assertThrows( CommandException.class, () -> cmd.execute( List.of( "db1", "db2" ) ) );
         assertThat( expection.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
     void setActiveDatabase() throws CommandException
     {
-        cmd.execute( "db1" );
+        cmd.execute( List.of( "db1" ) );
 
         verify( mockShell ).setActiveDatabase( "db1" );
     }
@@ -63,21 +64,21 @@ class UseTest
     @Test
     void printUsage()
     {
-        String usage = cmd.getUsage();
+        String usage = cmd.metadata().usage();
         assertEquals( usage, "database" );
     }
 
     @Test
     void setActiveDatabaseWithBackticks() throws CommandException
     {
-        cmd.execute( "`hello-world`" );
+        cmd.execute( List.of( "`hello-world`" ) );
         verify( mockShell ).setActiveDatabase( "hello-world" );
     }
 
     @Test
     void setActiveDatabaseWithoutBackticks() throws CommandException
     {
-        cmd.execute( "hello-world" );
+        cmd.execute( List.of( "hello-world" ) );
         verify( mockShell ).setActiveDatabase( "hello-world" );
     }
 }

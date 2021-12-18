@@ -19,9 +19,9 @@
  */
 package org.neo4j.shell.cli;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.List;
 
 import org.neo4j.shell.Historian;
@@ -63,26 +63,20 @@ public class NonInteractiveShellRunner implements ShellRunner
     @Override
     public int runUntilEnd()
     {
-        List<String> statements;
-        try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( inputStream ) ) )
+        List<StatementParser.ParsedStatement> statements;
+        try ( Reader reader = new InputStreamReader( inputStream ) )
         {
-            bufferedReader
-                    .lines()
-                    .forEach( line -> statementParser.parseMoreText( line + "\n" ) );
-            statements = statementParser.consumeStatements();
+            statements = statementParser.parse( reader ).statements();
         }
         catch ( Throwable e )
         {
             logger.printError( e );
-            return 1;
+            return EXIT_FAILURE;
         }
 
         int exitCode = EXIT_SUCCESS;
 
-        // Executing this could fail but we try anyway to avoid hiding errors
-        statementParser.incompleteStatement().ifPresent( statements::add );
-
-        for ( String statement : statements )
+        for ( var statement : statements )
         {
             try
             {

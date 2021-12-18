@@ -19,19 +19,18 @@
  */
 package org.neo4j.shell;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.shell.commands.Command;
-import org.neo4j.shell.commands.CommandExecutable;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.exception.ThrowingAction;
+import org.neo4j.shell.parser.StatementParser.CommandStatement;
+import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.prettyprint.LinePrinter;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
@@ -43,9 +42,6 @@ import org.neo4j.shell.state.BoltStateHandler;
  */
 public class CypherShell implements StatementExecuter, Connector, TransactionHandler, DatabaseManager
 {
-    // Final space to catch newline
-    private static final Pattern cmdNamePattern = Pattern.compile( "^\\s*(?<name>[^\\s]+)\\b(?<args>.*)\\s*$" );
-    private static final Pattern emptyStatementPattern = Pattern.compile( "^\\s*;$" );
     private final ParameterMap parameterMap;
     private final LinePrinter linePrinter;
     private final BoltStateHandler boltStateHandler;
@@ -73,48 +69,26 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         addRuntimeHookToResetShell();
     }
 
-    /**
-     * @param text to trim
-     * @return text without trailing semicolons
-     */
-    protected static String stripTrailingSemicolons( String text )
+    @Override
+    public void execute( final ParsedStatement statement ) throws ExitException, CommandException
     {
-        int end = text.length();
-        while ( end > 0 && text.substring( 0, end ).endsWith( ";" ) )
+        if ( statement instanceof CommandStatement commandStatement )
         {
-            end -= 1;
+            executeCommand( commandStatement );
         }
-        return text.substring( 0, end );
+        else if ( !statement.statement().isBlank() )
+        {
+            executeCypher( statement.statement() );
+        }
     }
 
     @Override
-    public void execute( final String cmdString ) throws ExitException, CommandException
+    public void execute( List<ParsedStatement> statements ) throws ExitException, CommandException
     {
-        if ( isEmptyStatement( cmdString ) )
+        for ( var statement : statements )
         {
-            return;
+            execute( statement );
         }
-
-        // See if it's a shell command
-        final Optional<CommandExecutable> cmd = getCommandExecutable( cmdString );
-        if ( cmd.isPresent() )
-        {
-            executeCmd( cmd.get() );
-            return;
-        }
-
-        // Else it will be parsed as Cypher, but for that we need to be connected
-        if ( !isConnected() )
-        {
-            throw new CommandException( "Not connected to Neo4j" );
-        }
-
-        executeCypher( cmdString );
-    }
-
-    private static boolean isEmptyStatement( final String statement )
-    {
-        return emptyStatementPattern.matcher( statement ).matches();
     }
 
     @Override
@@ -130,6 +104,11 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
      */
     private void executeCypher( final String cypher ) throws CommandException
     {
+        if ( !isConnected() )
+        {
+            throw new CommandException( "Not connected to Neo4j" );
+        }
+
         try
         {
             final Optional<BoltResult> result = boltStateHandler.runCypher( cypher, parameterMap.allParameterValues() );
@@ -153,30 +132,14 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         return boltStateHandler.isConnected();
     }
 
-    protected Optional<CommandExecutable> getCommandExecutable( final String line )
+    private void executeCommand( final CommandStatement statement ) throws CommandException
     {
-        Matcher m = cmdNamePattern.matcher( line );
-        if ( commandHelper == null || !m.matches() )
+        var command = commandHelper.getCommand( statement.name() );
+        if ( command == null )
         {
-            return Optional.empty();
+            throw new CommandException( "Could not find command " + statement.name() + ", use :help to see available commands" );
         }
-
-        String name = m.group( "name" );
-        String args = m.group( "args" );
-
-        Command cmd = commandHelper.getCommand( name );
-
-        if ( cmd == null )
-        {
-            return Optional.empty();
-        }
-
-        return Optional.of( () -> cmd.execute( stripTrailingSemicolons( args ) ) );
-    }
-
-    protected static void executeCmd( final CommandExecutable cmdExe ) throws ExitException, CommandException
-    {
-        cmdExe.execute();
+        command.execute( statement.args() );
     }
 
     /**

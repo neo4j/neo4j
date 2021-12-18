@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,7 +30,6 @@ import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.prettyprint.CypherVariablesFormatter;
 
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.escape;
 
 /**
@@ -39,7 +37,6 @@ import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.escape;
  */
 public class Params implements Command
 {
-    public static final String COMMAND_NAME = ":params";
     private static final Pattern backtickPattern = Pattern.compile( "^\\s*(?<key>(`([^`])*`)+?)\\s*" );
     private final Logger logger;
     private final ParameterMap parameterMap;
@@ -51,54 +48,33 @@ public class Params implements Command
     }
 
     @Override
-    public String getName()
+    public void execute( final List<String> args ) throws ExitException, CommandException
     {
-        return COMMAND_NAME;
-    }
+        requireArgumentCount( args, 0, 1 );
 
-    @Override
-    public String getDescription()
-    {
-        return "Print all currently set query parameters and their values";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "[parameter]";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return "Print a table of all currently set query parameters or the value for the given parameter";
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return Arrays.asList( ":parameters" );
-    }
-
-    @Override
-    public void execute( final String argString ) throws ExitException, CommandException
-    {
-        String trim = argString.trim();
-        Matcher matcher = backtickPattern.matcher( trim );
-        if ( trim.startsWith( "`" ) && matcher.matches() )
+        if ( args.size() == 0 )
         {
-            listParam( trim );
+            listAllParams();
         }
-        else
+        if ( args.size() == 1 )
         {
-            String[] args = simpleArgParse( argString, 0, 1, COMMAND_NAME, getUsage() );
-            if ( args.length > 0 )
+            String trim = args.get( 0 ).trim();
+            Matcher matcher = backtickPattern.matcher( trim );
+            if ( trim.startsWith( "`" ) && matcher.matches() )
             {
-                listParam( args[0] );
+                listParam( trim );
             }
             else
             {
-                listAllParams();
+                String[] slittedArgs = trim.split( "\\s+" );
+                if ( slittedArgs.length > 0 )
+                {
+                    listParam( slittedArgs[0] );
+                }
+                else
+                {
+                    listAllParams();
+                }
             }
         }
     }
@@ -125,5 +101,22 @@ public class Params implements Command
         int leftColWidth = keys.stream().map( s -> escape( s ).length() ).reduce( 0, Math::max );
 
         keys.forEach( key -> listParam( leftColWidth, escape( key ), parameterMap.getAllAsUserInput().get( key ).getValueAsString() ) );
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var help = "Print a table of all currently set query parameters or the value for the given parameter";
+            var description = "Print all query parameter values";
+            return new Metadata( ":params", description, "[parameter]", help, List.of( "parameters" ) );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Params( args.logger(), args.cypherShell().getParameterMap() );
+        }
     }
 }

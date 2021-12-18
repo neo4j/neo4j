@@ -37,6 +37,7 @@ import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.AnsiLogger;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.test.AssertableMain;
 import org.neo4j.shell.util.Version;
@@ -638,15 +639,17 @@ class MainIntegrationTest
     void shouldHandleMultiLineHistory() throws Exception
     {
         var expected =
-            "> :history\n" +
-            " 1  return\n" +
-            "    'hej' as greeting;\n" +
-            " 2  return\n" +
-            "    1\n" +
-            "    as\n" +
-            "    x\n" +
-            "    ;\n" +
-            " 3  :history\n";
+                """
+                > :history
+                 1  return
+                    'hej' as greeting;
+                 2  return
+                    1
+                    as
+                    x
+                    ;
+                 3  :history
+                """;
 
         buildTest()
             .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
@@ -686,15 +689,19 @@ class MainIntegrationTest
         assertThat( readHistory.get( 2 ), endsWith( ":exit" ) );
 
         var expected1 =
-                "> :history\n" +
-                " 1  return 1;\n" +
-                " 2  return 2;\n" +
-                " 3  :exit\n" +
-                " 4  return 3;\n" +
-                " 5  :history";
+                """
+                > :history
+                 1  return 1;
+                 2  return 2;
+                 3  :exit
+                 4  return 3;
+                 5  :history""";
         var expected2 =
-                "> :history\n" +
-                " 1  :history\n\n";
+                """
+                > :history
+                 1  :history
+
+                """;
 
         // Build up more history and clear
         buildTest()
@@ -709,6 +716,16 @@ class MainIntegrationTest
         assertEquals( 2, readHistoryAfterClear.size() );
         assertThat( readHistoryAfterClear.get( 0 ), endsWith( ":history" ) );
         assertThat( readHistoryAfterClear.get( 1 ), endsWith( ":exit" ) );
+    }
+
+    @Test
+    public void failGracefullyOnUnknownCommands() throws ArgumentParserException, IOException
+    {
+        buildTest()
+            .addArgs( "-u", USER, "-p", PASSWORD )
+            .userInputLines( ":non-existing-command" )
+            .run()
+            .assertThatErrorOutput( is( "Could not find command :non-existing-command, use :help to see available commands\n" ) );
     }
 
     @Test
@@ -861,21 +878,21 @@ class MainIntegrationTest
         if ( majorVersion( shell.getServerVersion() ) >= 4 )
         {
             var changeString = requirePasswordChange ? "" : " CHANGE NOT REQUIRED";
-            shell.execute( "CREATE OR REPLACE USER " + name + " SET PASSWORD '" + password + "'" + changeString + ";" );
-            shell.execute( "GRANT ROLE reader TO " + name + ";" );
+            shell.execute( new CypherStatement( "CREATE OR REPLACE USER " + name + " SET PASSWORD '" + password + "'" + changeString + ";" ) );
+            shell.execute( new CypherStatement( "GRANT ROLE reader TO " + name + ";" ) );
         }
         else
         {
             try
             {
-                shell.execute( "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")" );
+                shell.execute( new CypherStatement( "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")" ) );
             }
             catch ( ClientException e )
             {
                 if ( e.code().equalsIgnoreCase( "Neo.ClientError.General.InvalidArguments" ) && e.getMessage().contains( "already exists" ) )
                 {
-                    shell.execute( "CALL dbms.security.deleteUser('" + name + "')" );
-                    shell.execute( "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")" );
+                    shell.execute( new CypherStatement( "CALL dbms.security.deleteUser('" + name + "')" ) );
+                    shell.execute( new CypherStatement( "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")" ) );
                 }
             }
         }
@@ -908,7 +925,7 @@ class MainIntegrationTest
     {
         try
         {
-            runInSystemDb( shell -> shell.execute( "STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) );
+            runInSystemDb( shell -> shell.execute( new CypherStatement( "STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) ) );
             test.apply();
         }
         catch ( Exception e )
@@ -917,7 +934,7 @@ class MainIntegrationTest
         }
         finally
         {
-            runInSystemDb( shell -> shell.execute( "START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) );
+            runInSystemDb( shell -> shell.execute( new CypherStatement( "START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) ) );
         }
     }
 

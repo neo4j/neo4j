@@ -19,14 +19,16 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
+import java.util.List;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parser.ShellStatementParser;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
+import org.neo4j.shell.parser.StatementParser.IncompleteStatement;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -45,34 +47,34 @@ class SourceTest
     @Test
     void descriptionNotNull()
     {
-        assertNotNull( cmd.getDescription() );
+        assertNotNull( cmd.metadata().description() );
     }
 
     @Test
     void usageNotNull()
     {
-        assertNotNull( cmd.getUsage() );
+        assertNotNull( cmd.metadata().usage() );
     }
 
     @Test
     void helpNotNull()
     {
-        assertNotNull( cmd.getHelp() );
+        assertNotNull( cmd.metadata().help() );
     }
 
     @Test
     void runCommand() throws CommandException
     {
         // given
-        cmd.execute( fileFromResource( "test.cypher" ) );
-        verify( shell ).execute( "RETURN 42;" );
+        cmd.execute( List.of( fileFromResource( "test.cypher" ) ) );
+        verify( shell ).execute( List.of( new CypherStatement( "RETURN 42;" ) ) );
         verifyNoMoreInteractions( shell );
     }
 
     @Test
     void shouldFailIfFileNotThere()
     {
-        var exception = assertThrows( CommandException.class, () -> cmd.execute( "not.there" ) );
+        var exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "not.there" ) ) );
         assertThat( exception.getMessage(), containsString( "Cannot find file: 'not.there'" ) );
         assertThat( exception.getCause(), instanceOf( FileNotFoundException.class ));
     }
@@ -80,22 +82,22 @@ class SourceTest
     @Test
     void shouldNotAcceptMoreThanOneArgs()
     {
-        var exception = assertThrows( CommandException.class, () -> cmd.execute( "bob sob" ) );
+        var exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob", "sob" ) ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
     void shouldNotAcceptZeroArgs()
     {
-        var exception = assertThrows( CommandException.class, () -> cmd.execute( "" ) );
+        var exception = assertThrows( CommandException.class, () -> cmd.execute( List.of() ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
     void shouldTryToExecuteIncompleteStatements() throws CommandException
     {
-        cmd.execute( fileFromResource( "invalid.cypher" ) );
-        verify( shell ).execute( "INVALID CYPHER\nWITHOUT SEMICOLON" );
+        cmd.execute( List.of( fileFromResource( "invalid.cypher" ) ) );
+        verify( shell ).execute( List.of( new IncompleteStatement( "INVALID CYPHER\nWITHOUT SEMICOLON\n// Comment at end" ) ) );
         verifyNoMoreInteractions( shell );
     }
 

@@ -21,7 +21,6 @@ package org.neo4j.shell.terminal;
 
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.impl.completer.NullCompleter;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
@@ -32,6 +31,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
+import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.util.VisibleForTesting;
@@ -121,13 +121,12 @@ public class CypherShellTerminalBuilder
 
         var reader = LineReaderBuilder.builder()
             .terminal( jLineTerminal.build() )
-            .parser( new CypherJlineParser( new ShellStatementParser() ) )
-            .completer( NullCompleter.INSTANCE )
+            .parser( new StatementJlineParser( new ShellStatementParser() ) )
+            .completer( new JlineCompleter( new CommandFactoryHelper() ) )
             .history( new DefaultHistory() ) // The default history is in-memory until we set history file variable
             .expander( new JlineTerminal.EmptyExpander() )
             .option( LineReader.Option.DISABLE_EVENT_EXPANSION, true ) // Disable '!' history expansion
             .option( LineReader.Option.DISABLE_HIGHLIGHTER, true )
-            .variable( LineReader.DISABLE_COMPLETION, true )
             .build();
 
         return new JlineTerminal( reader, isInteractive, logger );

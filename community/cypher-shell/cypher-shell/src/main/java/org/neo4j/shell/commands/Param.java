@@ -19,11 +19,11 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.exception.ParameterException;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.util.ParameterSetter;
@@ -33,8 +33,6 @@ import org.neo4j.shell.util.ParameterSetter;
  */
 public class Param extends ParameterSetter<CommandException> implements Command
 {
-    private static final String COMMAND_NAME = ":param";
-
     /**
      * @param parameterMap the map to set parameters in
      */
@@ -44,52 +42,45 @@ public class Param extends ParameterSetter<CommandException> implements Command
     }
 
     @Override
-    public String getName()
+    public void execute( List<String> args ) throws ExitException, CommandException
     {
-        return COMMAND_NAME;
-    }
-
-    @Override
-    public String getDescription()
-    {
-        return "Set the value of a query parameter";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "name => value";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return "Set the specified query parameter to the value given";
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return Collections.emptyList();
+        requireArgumentCount( args, 1 );
+        super.execute( args.get( 0 ) );
     }
 
     @Override
     protected void onWrongUsage() throws CommandException
     {
         throw new CommandException( AnsiFormattedText.from( "Incorrect usage.\nusage: " )
-                                                     .bold( COMMAND_NAME ).append( " " ).append( getUsage() ) );
+                                                     .bold( metadata().name() ).append( " " ).append( metadata().usage() ) );
     }
 
     @Override
     protected void onWrongNumberOfArguments() throws CommandException
     {
         throw new CommandException( AnsiFormattedText.from( "Incorrect number of arguments.\nusage: " )
-                                                     .bold( COMMAND_NAME ).append( " " ).append( getUsage() ) );
+                                                     .bold( metadata().name() ).append( " " ).append( metadata().usage() ) );
     }
 
     @Override
     protected void onParameterException( ParameterException e ) throws CommandException
     {
         throw new CommandException( e.getMessage(), e );
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var help = "Set the specified query parameter to the value given";
+            return new Metadata( ":param", "Set the value of a query parameter", "name => value", help, List.of() );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Param( args.cypherShell().getParameterMap() );
+        }
     }
 }

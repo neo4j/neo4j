@@ -33,12 +33,12 @@ import org.neo4j.shell.ShellRunner;
 import org.neo4j.shell.StatementExecuter;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.UserMessagesHandler;
-import org.neo4j.shell.commands.Exit;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.shell.terminal.CypherShellTerminal.UserInterruptHandler;
 import org.neo4j.util.VisibleForTesting;
@@ -108,7 +108,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         {
             try
             {
-                for ( String statement : readUntilStatement() )
+                for ( ParsedStatement statement : readUntilStatement() )
                 {
                     currentlyExecuting.set( true );
                     executer.execute( statement );
@@ -152,13 +152,13 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
      * @throws NoMoreInputException if there is no more input
      */
     @VisibleForTesting
-    protected List<String> readUntilStatement() throws NoMoreInputException
+    protected List<ParsedStatement> readUntilStatement() throws NoMoreInputException
     {
         while ( true )
         {
             try
             {
-                return terminal.read().readStatement( updateAndGetPrompt().renderedString() ).parsed();
+                return terminal.read().readStatement( updateAndGetPrompt().renderedString() ).statements();
             }
             catch ( UserInterruptException e )
             {
@@ -283,7 +283,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
             logger.printError(
                 AnsiFormattedText.s().colorRed()
                     .append( "Interrupted (Note that Cypher queries must end with a " ).bold( "semicolon" )
-                    .append( ". Type " ).bold( Exit.COMMAND_NAME ).append( " to exit the shell.)" )
+                    .append( ". Type " ).bold( ":exit" ).append( " to exit the shell.)" )
                     .formattedString() );
         }
     }

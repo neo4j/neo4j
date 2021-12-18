@@ -28,7 +28,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -53,6 +52,10 @@ import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parser.StatementParser;
+import org.neo4j.shell.parser.StatementParser.CommandStatement;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
+import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
@@ -70,7 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.contains;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -117,7 +120,7 @@ class InteractiveShellRunnerTest
         when( userMessagesHandler.getWelcomeMessage() ).thenReturn( "Welcome to cypher-shell!" );
         when( connectionConfig.username() ).thenReturn( "myusername" );
 
-        doThrow( badLineError ).when( cmdExecuter ).execute( contains( "bad" ) );
+        doThrow( badLineError ).when( cmdExecuter ).execute( statementContains( "bad" ) );
         doReturn( System.out ).when( logger ).getOutputStream();
     }
 
@@ -127,8 +130,8 @@ class InteractiveShellRunnerTest
         var runner = runner( lines( "good1;", "good2;" ) );
         runner.runUntilEnd();
 
-        verify( cmdExecuter ).execute( "good1;" );
-        verify( cmdExecuter ).execute( "good2;" );
+        verify( cmdExecuter ).execute( new CypherStatement( "good1;" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "good2;" ) );
         verify( cmdExecuter, times( 3 ) ).lastNeo4jErrorCode();
         verifyNoMoreInteractions( cmdExecuter );
 
@@ -143,11 +146,11 @@ class InteractiveShellRunnerTest
 
         assertEquals( 0, code, "Wrong exit code" );
 
-        verify( cmdExecuter ).execute( "good1;" );
-        verify( cmdExecuter ).execute( "bad1;" );
-        verify( cmdExecuter ).execute( "good2;" );
-        verify( cmdExecuter ).execute( "bad2;" );
-        verify( cmdExecuter ).execute( "good3;" );
+        verify( cmdExecuter ).execute( new CypherStatement( "good1;" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "bad1;" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "good2;" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "bad2;" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "good3;" ) );
         verify( cmdExecuter, times( 6 ) ).lastNeo4jErrorCode();
         verifyNoMoreInteractions( cmdExecuter );
 
@@ -159,16 +162,16 @@ class InteractiveShellRunnerTest
     {
         var runner = runner( lines( "good1;", "bad1;", "good2;", "exit;", "bad2;", "good3;" ) );
 
-        doThrow( new ExitException( 1234 ) ).when( cmdExecuter ).execute( contains( "exit;" ) );
+        doThrow( new ExitException( 1234 ) ).when( cmdExecuter ).execute( statementContains( "exit;" ) );
 
         int code = runner.runUntilEnd();
 
         assertEquals( 1234, code, "Wrong exit code" );
 
-        verify( cmdExecuter ).execute( "good1;" );
-        verify( cmdExecuter ).execute( "bad1;" );
-        verify( cmdExecuter ).execute( "good2;" );
-        verify( cmdExecuter ).execute( "exit;" );
+        verify( cmdExecuter ).execute( new CypherStatement( "good1;" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "bad1;" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "good2;" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "exit;" ) );
         verify( cmdExecuter, times( 4 ) ).lastNeo4jErrorCode();
         verifyNoMoreInteractions( cmdExecuter );
 
@@ -214,9 +217,9 @@ class InteractiveShellRunnerTest
         var runner = runner( ":set var \"String with !bang\"\n" );
 
         // when
-        List<String> statements = runner.readUntilStatement();
+        var statements = runner.readUntilStatement();
         // then
-        assertThat( statements.get( 0 ), equalTo( ":set var \"String with !bang\"" ) );
+        assertThat( statements.get( 0 ), equalTo( new CommandStatement( ":set", List.of( "var", "\"String", "with", "!bang\"" ) ) ) );
     }
 
     @Test
@@ -230,10 +233,10 @@ class InteractiveShellRunnerTest
         var runner = runner( ":set var \"String with \\!bang\"\n" );
 
         // when
-        List<String> statements = runner.readUntilStatement();
+        var statements = runner.readUntilStatement();
 
         // then
-        assertEquals( ":set var \"String with \\!bang\"", statements.get( 0 ) );
+        assertEquals( new CommandStatement( ":set", List.of( "var",  "\"String", "with", "\\!bang\"" ) ), statements.get( 0 ) );
     }
 
     @Test
@@ -263,23 +266,24 @@ class InteractiveShellRunnerTest
         var runner = runner( "     \nCREATE (n:Person) RETURN n;\n" );
 
         // when
-        List<String> statements = runner.readUntilStatement();
+        var statements1 = runner.readUntilStatement();
+        var statements2 = runner.readUntilStatement();
 
         // then
-        assertEquals( 1, statements.size() );
-        assertThat( statements.get( 0 ), is( "CREATE (n:Person) RETURN n;" ) );
+        assertThat( statements1, is( List.of() ) );
+        assertThat( statements2, is( List.of( new CypherStatement( "CREATE (n:Person) RETURN n;" ) ) ) );
     }
 
     @Test
     void testPrompt()
     {
         // given
-        var runner = runner( lines( "  \t ", "   ", "bla bla;" ) );
+        var runner = runner( lines( "    ", "   ", "bla bla;" ) );
         when( txHandler.isTransactionOpen() ).thenReturn( false );
         runner.runUntilEnd();
 
         // when
-        assertThat( out.toString(), equalTo( "myusername@mydb>    \r\n                    \r\n                 bla bla;\r\nmyusername@mydb> \r\n" ) );
+        assertThat( out.toString(), equalTo( "myusername@mydb>     \r\nmyusername@mydb>    \r\nmyusername@mydb> bla bla;\r\nmyusername@mydb> \r\n" ) );
     }
 
     @Test
@@ -400,8 +404,8 @@ class InteractiveShellRunnerTest
 
         var expected =
                 "myusername@mydb#    \r\n" +
-                "                    \r\n" +
-                "                 bla bla;\r\n" +
+                "myusername@mydb#    \r\n" +
+                "myusername@mydb# bla bla;\r\n" +
                 "myusername@mydb# \r\n";
         assertThat( out.toString(), equalTo( expected ) );
     }
@@ -444,7 +448,7 @@ class InteractiveShellRunnerTest
         runner.runUntilEnd();
 
         // then
-        verify( cmdExecuter ).execute( "CREATE (n:Person) RETURN n\n;" );
+        verify( cmdExecuter ).execute( new CypherStatement( "CREATE (n:Person) RETURN n\n;" ) );
     }
 
     @Test
@@ -457,7 +461,7 @@ class InteractiveShellRunnerTest
         runner.runUntilEnd();
 
         // then
-        verify( cmdExecuter ).execute( "CREATE (n:Person) RETURN n;" );
+        verify( cmdExecuter ).execute( new CypherStatement( "CREATE (n:Person) RETURN n;" ) );
     }
 
     @Test
@@ -467,25 +471,12 @@ class InteractiveShellRunnerTest
         var reader = mock( CypherShellTerminal.Reader.class );
         when( reader.readStatement( any() ) )
             .thenThrow( new UserInterruptException( "" ) )
-            .thenReturn( new CypherShellTerminal.ParsedStatement()
-            {
-                @Override
-                public String unparsed()
-                {
-                    return ":exit";
-                }
-
-                @Override
-                public List<String> parsed()
-                {
-                    return Collections.singletonList( ":exit" );
-                }
-            } );
+            .thenReturn( new StatementParser.ParsedStatements( List.of( new CommandStatement( ":exit", List.of() ) ) ) );
         var historian = mock( Historian.class );
         var terminal = mock( CypherShellTerminal.class );
         when( terminal.read() ).thenReturn( reader );
         when( terminal.getHistory() ).thenReturn( historian );
-        doThrow( new ExitException( EXIT_SUCCESS ) ).when( cmdExecuter ).execute( any() );
+        doThrow( new ExitException( EXIT_SUCCESS ) ).when( cmdExecuter ).execute( any( ParsedStatement.class) );
 
         var runner = runner( terminal );
 
@@ -494,7 +485,7 @@ class InteractiveShellRunnerTest
 
         // then
         verify( cmdExecuter, times( 2 ) ).lastNeo4jErrorCode();
-        verify( cmdExecuter ).execute( ":exit" );
+        verify( cmdExecuter ).execute( new CommandStatement( ":exit", List.of() ) );
         verifyNoMoreInteractions( cmdExecuter );
         var expectedError = "@|RED Interrupted (Note that Cypher queries must end with a |@@|RED,BOLD semicolon|@@|RED . " +
                             "Type |@@|RED,BOLD :exit|@@|RED  to exit the shell.)|@";
@@ -528,8 +519,8 @@ class InteractiveShellRunnerTest
         t.join();
 
         // then
-        verify( fakeShell ).execute( "RETURN 1;" );
-        verify( fakeShell ).execute( ":exit" );
+        verify( fakeShell ).execute( new CypherStatement( "RETURN 1;" ) );
+        verify( fakeShell ).execute( new CommandStatement( ":exit", List.of() ) );
         verify( fakeShell ).reset();
         verify( boltStateHandler ).reset();
     }
@@ -667,9 +658,9 @@ class InteractiveShellRunnerTest
         }
 
         @Override
-        public void execute( String statement ) throws ExitException, CommandException
+        public void execute( ParsedStatement statement ) throws ExitException, CommandException
         {
-            if ( statement.equals( ":exit" ) )
+            if ( statement.statement().equals( ":exit" ) )
             {
                 throw new ExitException( EXIT_SUCCESS );
             }
@@ -723,5 +714,10 @@ class InteractiveShellRunnerTest
             this.error = error;
             this.mockedBoltStateHandler = mockedBoltStateHandler;
         }
+    }
+
+    private static ParsedStatement statementContains( String contains )
+    {
+        return argThat( a -> a.statement().contains( contains ) );
     }
 }

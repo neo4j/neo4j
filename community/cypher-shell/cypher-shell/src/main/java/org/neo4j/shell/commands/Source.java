@@ -19,27 +19,25 @@
  */
 package org.neo4j.shell.commands;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Collections;
+import java.io.Reader;
 import java.util.List;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
+import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser;
 
 import static java.lang.String.format;
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 
 /**
  * This command reads a cypher file frome the filesystem and executes the statements therein.
  */
 public class Source implements Command
 {
-    private static final String COMMAND_NAME = ":source";
     private final CypherShell cypherShell;
     private final StatementParser statementParser;
 
@@ -50,57 +48,35 @@ public class Source implements Command
     }
 
     @Override
-    public String getName()
+    public void execute( final List<String> args ) throws ExitException, CommandException
     {
-        return COMMAND_NAME;
-    }
+        requireArgumentCount( args, 1 );
+        String filename = args.get( 0 );
 
-    @Override
-    public String getDescription()
-    {
-        return "Interactively executes cypher statements from a file";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "[filename]";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return "Executes Cypher statements from a file";
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void execute( final String argString ) throws ExitException, CommandException
-    {
-        String filename = simpleArgParse( argString, 1, 1, COMMAND_NAME, getUsage() )[0];
-
-        try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( new FileInputStream( filename ) ) ) )
+        try ( Reader reader = new InputStreamReader( new FileInputStream( filename ) ) )
         {
-            bufferedReader.lines()
-                          .forEach( line -> statementParser.parseMoreText( line + "\n" ) );
-            List<String> statements = statementParser.consumeStatements();
-
-            // Executing this could fail but we try anyway to avoid hiding errors
-            statementParser.incompleteStatement().ifPresent( statements::add );
-
-            for ( String statement : statements )
-            {
-                cypherShell.execute( statement );
-            }
+            cypherShell.execute( statementParser.parse( reader ).statements() );
         }
         catch ( IOException e )
         {
             throw new CommandException( format( "Cannot find file: '%s'", filename ), e );
+        }
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var description = "Executes Cypher statements from a file";
+            var help = "Executes Cypher statements from a file";
+            return new Metadata( ":source", description, "[filename]", help, List.of() );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Source( args.cypherShell(), new ShellStatementParser() );
         }
     }
 }

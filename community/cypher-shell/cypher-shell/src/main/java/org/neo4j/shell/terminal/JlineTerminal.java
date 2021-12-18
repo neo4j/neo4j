@@ -22,6 +22,7 @@ package org.neo4j.shell.terminal;
 import org.jline.reader.Expander;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
+import org.jline.reader.ParsedLine;
 import org.jline.terminal.Terminal;
 
 import java.io.File;
@@ -32,6 +33,7 @@ import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parser.StatementParser.ParsedStatements;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
@@ -51,7 +53,7 @@ public class JlineTerminal implements CypherShellTerminal
 
     public JlineTerminal( LineReader jLineReader, boolean isInteractive, Logger logger )
     {
-        assert jLineReader.getParser() instanceof CypherJlineParser;
+        assert jLineReader.getParser() instanceof StatementJlineParser;
         this.jLineReader = jLineReader;
         this.logger = logger;
         this.isInteractive = isInteractive;
@@ -59,9 +61,9 @@ public class JlineTerminal implements CypherShellTerminal
         this.writer = new JLineWriter();
     }
 
-    private CypherJlineParser getParser()
+    private StatementJlineParser getParser()
     {
-        return (CypherJlineParser) jLineReader.getParser();
+        return (StatementJlineParser) jLineReader.getParser();
     }
 
     @Override
@@ -171,7 +173,7 @@ public class JlineTerminal implements CypherShellTerminal
         }
 
         @Override
-        public ParsedStatement readStatement( String prompt ) throws NoMoreInputException, UserInterruptException
+        public ParsedStatements readStatement( String prompt ) throws NoMoreInputException, UserInterruptException
         {
             getParser().setEnableStatementParsing( true );
             jLineReader.setVariable( LineReader.SECONDARY_PROMPT_PATTERN, continuationPromptPattern( prompt ) );
@@ -179,18 +181,18 @@ public class JlineTerminal implements CypherShellTerminal
             var line = readLine( prompt, null );
             var parsed = jLineReader.getParsedLine();
 
-            if ( !( parsed instanceof ParsedStatement ) )
+            if ( parsed instanceof ParsedLineStatements statements )
+            {
+                if ( !statements.line().equals( line ) )
+                {
+                    throw new IllegalStateException( "Unparsed lines do not match" );
+                }
+                return statements.statements();
+            }
+            else
             {
                 throw new IllegalStateException( "Unexpected type of parsed line " + parsed.getClass().getSimpleName() );
             }
-
-            var parsedStatement = (ParsedStatement) parsed;
-            if ( !parsedStatement.unparsed().equals( line ) )
-            {
-                throw new IllegalStateException( "Parsed and unparsed lines do not match: " + line + " does not equal " + parsedStatement.unparsed() );
-            }
-
-            return parsedStatement;
         }
 
         private String continuationPromptPattern( String prompt )
@@ -212,8 +214,9 @@ public class JlineTerminal implements CypherShellTerminal
         {
             try
             {
-                // Temporarily disable history and cypher parsing for simple prompts
+                // Temporarily disable history, completion and statement parsing for simple prompts
                 jLineReader.getVariables().put( LineReader.DISABLE_HISTORY, Boolean.TRUE );
+                jLineReader.getVariables().put( LineReader.DISABLE_COMPLETION, Boolean.TRUE );
                 getParser().setEnableStatementParsing( false );
 
                 return readLine( prompt, mask );
@@ -221,6 +224,7 @@ public class JlineTerminal implements CypherShellTerminal
             finally
             {
                 jLineReader.getVariables().remove( LineReader.DISABLE_HISTORY );
+                jLineReader.getVariables().remove( LineReader.DISABLE_COMPLETION );
                 getParser().setEnableStatementParsing( true );
             }
         }
@@ -248,5 +252,10 @@ public class JlineTerminal implements CypherShellTerminal
         {
             return word;
         }
+    }
+
+    interface ParsedLineStatements extends ParsedLine
+    {
+        ParsedStatements statements();
     }
 }

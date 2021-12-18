@@ -19,82 +19,51 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.Logger;
 
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
+import static java.util.Comparator.comparing;
 
 /**
  * Help command, which prints help documentation.
  */
 public class Help implements Command
 {
-    public static final String COMMAND_NAME = ":help";
     public static final String CYPHER_MANUAL_LINK = "https://neo4j.com/docs/cypher-manual/current/";
     private final Logger logger;
-    private final CommandHelper commandHelper;
+    private final CommandFactoryHelper commandHelper;
 
-    public Help( final Logger shell, final CommandHelper commandHelper )
+    public Help( final Logger shell, final CommandFactoryHelper commandHelper )
     {
         this.logger = shell;
         this.commandHelper = commandHelper;
     }
 
     @Override
-    public String getName()
+    public void execute( final List<String> args ) throws CommandException
     {
-        return COMMAND_NAME;
-    }
-
-    @Override
-    public String getDescription()
-    {
-        return "Show this help message";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "[command]";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return "Show the list of available commands or help for a specific command.";
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return Arrays.asList( ":man" );
-    }
-
-    @Override
-    public void execute( final String argString ) throws CommandException
-    {
-        String[] args = simpleArgParse( argString, 0, 1, COMMAND_NAME, getUsage() );
-        if ( args.length == 0 )
+        requireArgumentCount( args, 0, 1 );
+        if ( args.size() == 0 )
         {
             printGeneralHelp();
         }
         else
         {
-            printHelpFor( args[0] );
+            printHelpFor( args.get( 0 ) );
         }
     }
 
     private void printHelpFor( final String name ) throws CommandException
     {
-        Command cmd = commandHelper.getCommand( name );
+        var cmd = commandHelper.factoryByName( name );
         if ( cmd == null && !name.startsWith( ":" ) )
         {
             // Be friendly to users and don't force them to type colons for help if possible
-            cmd = commandHelper.getCommand( ":" + name );
+            cmd = commandHelper.factoryByName( ":" + name );
         }
 
         if ( cmd == null )
@@ -103,11 +72,11 @@ public class Help implements Command
         }
 
         logger.printOut( AnsiFormattedText.from( "\nusage: " )
-                                          .bold( cmd.getName() )
+                                          .bold( cmd.metadata().name() )
                                           .append( " " )
-                                          .append( cmd.getUsage() )
+                                          .append( cmd.metadata().usage() )
                                           .append( "\n\n" )
-                                          .append( cmd.getHelp() )
+                                          .append( cmd.metadata().help() )
                                           .append( "\n" )
                                           .formattedString() );
     }
@@ -116,24 +85,28 @@ public class Help implements Command
     {
         logger.printOut( "\nAvailable commands:" );
 
-        // Get longest command so we can align them nicely
-        List<Command> allCommands = commandHelper.getAllCommands();
+        var allCommands = commandHelper.factories().stream()
+                .map( Command.Factory::metadata )
+                .sorted( comparing( Metadata::name ) )
+                .toList();
 
         int leftColWidth = longestCmdLength( allCommands );
 
-        allCommands.stream().forEach( cmd -> logger.printOut(
+        allCommands.forEach( cmd -> logger.printOut(
                 AnsiFormattedText.from( "  " )
-                                 .bold( String.format( "%-" + leftColWidth + "s", cmd.getName() ) )
-                                 .append( " " + cmd.getDescription() )
+                                 .bold( String.format( "%-" + leftColWidth + "s", cmd.name() ) )
+                                 .append( " " + cmd.description() )
                                  .formattedString() ) );
 
         logger.printOut( "\nFor help on a specific command type:" );
         logger.printOut( AnsiFormattedText.from( "    " )
-                                          .append( COMMAND_NAME )
+                                          .append( metadata().name() )
                                           .bold( " command" )
                                           .append( "\n" ).formattedString() );
 
-        logger.printOut( "Use up and down arrows to access statement history." );
+        logger.printOut( "Keyboard shortcuts:" );
+        logger.printOut( "    Up and down arrows to access statement history." );
+        logger.printOut( "    Tab for autocompletion of commands." );
 
         logger.printOut( "\nFor help on cypher please visit:" );
         logger.printOut( AnsiFormattedText.from( "    " )
@@ -141,11 +114,24 @@ public class Help implements Command
                                           .append( "\n" ).formattedString() );
     }
 
-    private static int longestCmdLength( List<Command> allCommands )
+    private static int longestCmdLength( List<Command.Metadata> allCommands )
     {
-        String longestCommand = allCommands.stream()
-                                           .map( Command::getName )
-                                           .reduce( "", ( s1, s2 ) -> s1.length() > s2.length() ? s1 : s2 );
-        return longestCommand.length();
+        return allCommands.stream().mapToInt( m -> m.name().length() ).max().orElse( 0 );
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var help = "Show the list of available commands or help for a specific command.";
+            return new Metadata( ":help", "Show this help message", "[command]", help, List.of( ":man" ) );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Help( args.logger(), new CommandFactoryHelper() );
+        }
     }
 }

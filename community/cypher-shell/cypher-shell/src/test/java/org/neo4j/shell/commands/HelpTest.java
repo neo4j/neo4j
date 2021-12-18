@@ -19,41 +19,46 @@
  */
 package org.neo4j.shell.commands;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class HelpTest
 {
     private final Logger logger = mock( Logger.class );
-    private final CommandHelper cmdHelper = mock( CommandHelper.class );
-    private final Command cmd = new Help( logger, cmdHelper );
+    private CommandFactoryHelper cmdHelper;
+    private Command cmd;
+
+    @BeforeEach
+    public void setup()
+    {
+        cmdHelper = mock( CommandFactoryHelper.class );
+        cmd = new Help( logger, cmdHelper );
+    }
 
     @Test
     void shouldAcceptNoArgs()
     {
-        assertDoesNotThrow( () -> cmd.execute( "" ) );
+        assertDoesNotThrow( () -> cmd.execute( List.of() ) );
     }
 
     @Test
     void shouldNotAcceptTooManyArgs()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob alice" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob", "alice" ) ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
@@ -61,15 +66,11 @@ class HelpTest
     void helpListing() throws CommandException
     {
         // given
-        List<Command> commandList = new ArrayList<>();
-
-        commandList.add( new FakeCommand( "bob" ) );
-        commandList.add( new FakeCommand( "bobby" ) );
-
-        doReturn( commandList ).when( cmdHelper ).getAllCommands();
+        var commands = List.of( mockFactory( "bob" ), mockFactory( "bobby" ) );
+        when( cmdHelper.factories() ).thenReturn( commands );
 
         // when
-        cmd.execute( "" );
+        cmd.execute( List.of() );
 
         // then
         verify( logger ).printOut( "\nAvailable commands:" );
@@ -85,10 +86,11 @@ class HelpTest
     void helpForCommand() throws CommandException
     {
         // given
-        doReturn( new FakeCommand( "bob" ) ).when( cmdHelper ).getCommand( eq( "bob" ) );
+        var factory = mockFactory( "bob" );
+        when( cmdHelper.factoryByName( "bob" ) ).thenReturn( factory );
 
         // when
-        cmd.execute( "bob" );
+        cmd.execute( List.of( "bob" ) );
 
         // then
         verify( logger ).printOut( "\nusage: @|BOLD bob|@ usage for bob\n"
@@ -98,7 +100,7 @@ class HelpTest
     @Test
     void helpForNonExistingCommandThrows()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "notacommandname" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "notacommandname" ) ) );
         assertThat( exception.getMessage(), containsString( "No such command: notacommandname" ) );
     }
 
@@ -106,59 +108,22 @@ class HelpTest
     void helpForCommandHasOptionalColon() throws CommandException
     {
         // given
-        doReturn( new FakeCommand( ":bob" ) ).when( cmdHelper ).getCommand( eq( ":bob" ) );
+        var factory = mockFactory( ":bob" );
+        when( cmdHelper.factoryByName( ":bob" ) ).thenReturn( factory );
 
         // when
-        cmd.execute( "bob" );
+        cmd.execute( List.of( "bob" ) );
 
         // then
         verify( logger ).printOut( "\nusage: @|BOLD :bob|@ usage for :bob\n"
                                    + "\nhelp for :bob\n" );
     }
 
-    private static class FakeCommand implements Command
+    private static Command.Factory mockFactory( String name )
     {
-        private final String name;
-
-        FakeCommand( String name )
-        {
-            this.name = name;
-        }
-
-        @Override
-        public String getName()
-        {
-            return name;
-        }
-
-        @Override
-        public String getDescription()
-        {
-            return "description for " + name;
-        }
-
-        @Override
-        public String getUsage()
-        {
-            return "usage for " + name;
-        }
-
-        @Override
-        public String getHelp()
-        {
-            return "help for " + name;
-        }
-
-        @Override
-        public List<String> getAliases()
-        {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public void execute( String args ) throws ExitException, CommandException
-        {
-
-        }
+        var metadata = new Command.Metadata( name, "description for " + name, "usage for " + name, "help for " + name, List.of() );
+        var factory = mock( Command.Factory.class );
+        when( factory.metadata() ).thenReturn( metadata );
+        return factory;
     }
 }

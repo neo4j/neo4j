@@ -23,7 +23,6 @@ import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.shell.ConnectionConfig;
@@ -35,15 +34,12 @@ import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
 import static java.lang.String.format;
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 
 /**
  * Connects to a database
  */
 public class Connect implements Command
 {
-    private static final String COMMAND_NAME = ":connect";
-
     private final CypherShell shell;
     private final CypherShellTerminal terminal;
     private final ConnectionConfig config;
@@ -58,52 +54,23 @@ public class Connect implements Command
     }
 
     @Override
-    public String getName()
-    {
-        return COMMAND_NAME;
-    }
-
-    @Override
-    public String getDescription()
-    {
-        return "Connects to a database";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "[-u USERNAME, --username USERNAME], [-p PASSWORD, --password PASSWORD], [-d DATABASE, --database DATABASE]";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return format( ":connect %s, connects to a database", getUsage() );
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void execute( final String argString ) throws ExitException, CommandException
+    public void execute( final List<String> args ) throws ExitException, CommandException
     {
         if ( shell.isConnected() )
         {
             throw new CommandException( "Already connected" );
         }
 
-        parseArgString( argString );
+        parseArgString( args );
         shell.connect( config );
     }
 
-    private void parseArgString( String argString ) throws CommandException
+    private void parseArgString( List<String> stringArgs ) throws CommandException
     {
+        requireArgumentCount( stringArgs, 0, 6 );
         try
         {
-            var args = argumentParser.parseArgs( simpleArgParse( argString, 0, 6, COMMAND_NAME, getUsage() ) );
+            var args = argumentParser.parseArgs( stringArgs.toArray( new String[0] ) );
             var user = args.getString( "username" );
             var password = args.getString( "password" );
 
@@ -131,13 +98,13 @@ public class Connect implements Command
         }
         catch ( ArgumentParserException e )
         {
-            throw new CommandException( format( "Invalid input string: '%s', usage: ':connect %s'", argString, getUsage() ) );
+            throw new CommandException( format( "Invalid input string: '%s', usage: ':connect %s'", String.join( " ", stringArgs ), metadata().usage() ) );
         }
     }
 
     private ArgumentParser setupParser()
     {
-        var parser = ArgumentParsers.newFor( COMMAND_NAME ).build();
+        var parser = ArgumentParsers.newFor( metadata().name() ).build();
         parser.addArgument( "-d", "--database" ).setDefault( "" );
         parser.addArgument( "-u", "--username" );
         parser.addArgument( "-p", "--password" );
@@ -165,6 +132,23 @@ public class Connect implements Command
         catch ( NoMoreInputException | UserInterruptException e )
         {
             throw new CommandException( "No text could be read, exiting..." );
+        }
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var usage = "[-u USERNAME, --username USERNAME], [-p PASSWORD, --password PASSWORD], [-d DATABASE, --database DATABASE]";
+            var help = format( ":connect %s, connects to a database", usage );
+            return new Metadata( ":connect", "Connects to a database", usage, help, List.of() );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Connect( args.cypherShell(), args.terminal(), args.connectionConfig() );
         }
     }
 }

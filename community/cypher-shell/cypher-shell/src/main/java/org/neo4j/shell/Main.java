@@ -35,6 +35,7 @@ import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.util.VisibleForTesting;
@@ -146,7 +147,8 @@ public class Main
             if ( args.getCypher().isPresent() )
             {
                 // Can only prompt for password if input has not been redirected
-                connectMaybeInteractively( connectionConfig, () -> shell.execute( args.getCypher().get() ) );
+                var parsed = new ShellStatementParser().parse( args.getCypher().get() );
+                connectMaybeInteractively( connectionConfig, () -> shell.execute( parsed.statements() ) );
                 return EXIT_SUCCESS;
             }
             else

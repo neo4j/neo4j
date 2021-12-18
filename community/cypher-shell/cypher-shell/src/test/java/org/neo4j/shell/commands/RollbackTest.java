@@ -19,8 +19,9 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
@@ -39,14 +40,14 @@ class RollbackTest
     @Test
     void shouldNotAcceptArgs()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> rollbackCommand.execute( "bob" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> rollbackCommand.execute( List.of( "bob" ) ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
     void rollbackTransaction() throws CommandException
     {
-        rollbackCommand.execute( "" );
+        rollbackCommand.execute( List.of() );
 
         verify( mockShell ).rollbackTransaction();
     }

@@ -21,8 +21,11 @@ package org.neo4j.shell.cli;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatcher;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.Reader;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.Historian;
@@ -32,10 +35,14 @@ import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
+import org.neo4j.shell.parser.StatementParser.IncompleteStatement;
+import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -55,15 +62,18 @@ class NonInteractiveShellRunnerTest
     {
         statementParser = new ShellStatementParser();
         badLineError = new ClientException( "Found a bad line" );
-        doThrow( badLineError ).when( cmdExecuter ).execute( contains( "bad" ) );
+        doThrow( badLineError ).when( cmdExecuter )
+                .execute( argThat( (ArgumentMatcher<ParsedStatement>) statement -> statement.statement().contains( "bad" ) ) );
         doReturn( System.out ).when( logger ).getOutputStream();
     }
 
     @Test
     void testSimple()
     {
-        String input = "good1;\n" +
-                       "good2;\n";
+        String input = """
+                good1;
+                good2;
+                """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_FAST,
                 cmdExecuter,
@@ -78,11 +88,12 @@ class NonInteractiveShellRunnerTest
     @Test
     void testFailFast()
     {
-        String input =
-                "good1;\n" +
-                "bad;\n" +
-                "good2;\n" +
-                "bad;\n";
+        String input = """
+                good1;
+                bad;
+                good2;
+                bad;
+                """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_FAST, cmdExecuter,
                 logger, statementParser,
@@ -97,11 +108,12 @@ class NonInteractiveShellRunnerTest
     @Test
     void testFailAtEnd()
     {
-        String input =
-                "good1;\n" +
-                "bad;\n" +
-                "good2;\n" +
-                "bad;\n";
+        String input = """
+                good1;
+                bad;
+                good2;
+                bad;
+                """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_AT_END, cmdExecuter,
                 logger, statementParser,
@@ -114,18 +126,19 @@ class NonInteractiveShellRunnerTest
     }
 
     @Test
-    void runUntilEndExitsImmediatelyOnParseError()
+    void runUntilEndExitsImmediatelyOnParseError() throws IOException
     {
         // given
         StatementParser statementParser = mock( StatementParser.class );
         RuntimeException boom = new RuntimeException( "BOOM" );
-        doThrow( boom ).when( statementParser ).parseMoreText( anyString() );
+        doThrow( boom ).when( statementParser ).parse( any( Reader.class ) );
 
-        String input =
-                "good1;\n" +
-                "bad;\n" +
-                "good2;\n" +
-                "bad;\n";
+        String input = """
+                good1;
+                bad;
+                good2;
+                bad;
+                """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_AT_END, cmdExecuter,
                 logger, statementParser,
@@ -143,24 +156,25 @@ class NonInteractiveShellRunnerTest
     void runUntilEndExitsImmediatelyOnExitCommand() throws Exception
     {
         // given
-        String input =
-                "good1;\n" +
-                "bad;\n" +
-                "good2;\n" +
-                "bad;\n";
+        String input = """
+                good1;
+                bad;
+                good2;
+                bad;
+                """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_AT_END, cmdExecuter,
                 logger, statementParser,
                 new ByteArrayInputStream( input.getBytes() ) );
 
         // when
-        doThrow( new ExitException( 99 ) ).when( cmdExecuter ).execute( anyString() );
+        doThrow( new ExitException( 99 ) ).when( cmdExecuter ).execute( any( ParsedStatement.class ) );
 
         int code = runner.runUntilEnd();
 
         // then
         assertEquals( 99, code );
-        verify( cmdExecuter ).execute( "good1;" );
+        verify( cmdExecuter ).execute( new CypherStatement( "good1;" ) );
         verifyNoMoreInteractions( cmdExecuter );
     }
 
@@ -190,8 +204,8 @@ class NonInteractiveShellRunnerTest
 
         assertEquals( 0, code, "Exit code incorrect" );
         verify( logger, times( 0 ) ).printError( anyString() );
-        verify( cmdExecuter ).execute( "good1;" );
-        verify( cmdExecuter ).execute( "no semicolon here" );
+        verify( cmdExecuter ).execute( new CypherStatement( "good1;" ) );
+        verify( cmdExecuter ).execute( new IncompleteStatement( "no semicolon here\n// A comment at end" ) );
         verifyNoMoreInteractions( cmdExecuter );
     }
 }

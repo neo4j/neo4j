@@ -19,14 +19,12 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 import static org.neo4j.shell.commands.CommandHelper.stripEnclosingBackTicks;
 
 /**
@@ -34,7 +32,6 @@ import static org.neo4j.shell.commands.CommandHelper.stripEnclosingBackTicks;
  */
 public class Use implements Command
 {
-    private static final String COMMAND_NAME = ":use";
     private final DatabaseManager databaseManager;
 
     public Use( final DatabaseManager databaseManager )
@@ -43,40 +40,26 @@ public class Use implements Command
     }
 
     @Override
-    public String getName()
+    public void execute( final List<String> args ) throws ExitException, CommandException
     {
-        return COMMAND_NAME;
-    }
-
-    @Override
-    public String getDescription()
-    {
-        return "Set the active database";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "database";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return "Set the active database that transactions are executed on";
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void execute( final String argString ) throws ExitException, CommandException
-    {
-        String[] args = simpleArgParse( argString, 0, 1, COMMAND_NAME, getUsage() );
-        String databaseName = args.length == 0 ? DatabaseManager.ABSENT_DB_NAME : args[0];
+        requireArgumentCount( args, 0, 1 );
+        String databaseName = args.size() == 0 ? DatabaseManager.ABSENT_DB_NAME : args.get( 0 );
         databaseManager.setActiveDatabase( stripEnclosingBackTicks( databaseName ) );
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var help = "Set the active database that transactions are executed on";
+            return new Metadata( ":use", "Set the active database", "database", help, List.of() );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Use( args.cypherShell() );
+        }
     }
 }

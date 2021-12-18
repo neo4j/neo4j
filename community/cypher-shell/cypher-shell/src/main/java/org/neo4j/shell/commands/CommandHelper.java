@@ -19,19 +19,19 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
-import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.DuplicateCommandException;
-import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.Logger;
-import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.terminal.CypherShellTerminal;
+import org.neo4j.util.VisibleForTesting;
+
+import static java.util.Map.entry;
 
 /**
  * Utility methods for dealing with commands
@@ -42,82 +42,8 @@ public class CommandHelper
 
     public CommandHelper( Logger logger, Historian historian, CypherShell cypherShell, ConnectionConfig connectionConfig, CypherShellTerminal terminal )
     {
-        registerAllCommands( logger, historian, cypherShell, connectionConfig, terminal );
-    }
-
-    /**
-     * Split an argument string on whitespace
-     */
-    public static String[] simpleArgParse( final String argString, int expectedCount,
-                                           final String commandName, final String usage )
-            throws CommandException
-    {
-        return simpleArgParse( argString, expectedCount, expectedCount, commandName, usage );
-    }
-
-    /**
-     * Split an argument string on whitespace
-     */
-    public static String[] simpleArgParse( final String argString, int minCount, int maxCount,
-                                           final String commandName, final String usage )
-            throws CommandException
-    {
-        final String[] args;
-        if ( argString.trim().isEmpty() )
-        {
-            args = new String[] {};
-        }
-        else
-        {
-            args = argString.trim().split( "\\s+" );
-        }
-
-        if ( args.length < minCount || args.length > maxCount )
-        {
-            throw new CommandException( AnsiFormattedText.from( "Incorrect number of arguments.\nusage: " )
-                                                         .bold( commandName ).append( " " ).append( usage ) );
-        }
-
-        return args;
-    }
-
-    private void registerAllCommands( Logger logger,
-                                      Historian historian,
-                                      CypherShell cypherShell,
-                                      ConnectionConfig connectionConfig,
-                                      CypherShellTerminal terminal )
-    {
-        registerCommand( new Exit( logger ) );
-        registerCommand( new Help( logger, this ) );
-        registerCommand( new History( logger, historian ) );
-        registerCommand( new Use( cypherShell ) );
-        registerCommand( new Begin( cypherShell ) );
-        registerCommand( new Commit( cypherShell ) );
-        registerCommand( new Rollback( cypherShell ) );
-        registerCommand( new Param( cypherShell.getParameterMap() ) );
-        registerCommand( new Params( logger, cypherShell.getParameterMap() ) );
-        registerCommand( new Source( cypherShell, new ShellStatementParser() ) );
-        registerCommand( new Disconnect( cypherShell ) );
-        registerCommand( new Connect( cypherShell, terminal, connectionConfig ) );
-    }
-
-    private void registerCommand( final Command command ) throws DuplicateCommandException
-    {
-        if ( commands.containsKey( command.getName() ) )
-        {
-            throw new DuplicateCommandException( "This command name has already been registered: " + command.getName() );
-        }
-
-        commands.put( command.getName(), command );
-
-        for ( String alias : command.getAliases() )
-        {
-            if ( commands.containsKey( alias ) )
-            {
-                throw new DuplicateCommandException( "This command alias has already been registered: " + alias );
-            }
-            commands.put( alias, command );
-        }
+        var args = new Command.Factory.Arguments( logger, historian, cypherShell, connectionConfig, terminal );
+        new CommandFactoryHelper().factoryByName.forEach( ( key, value ) -> commands.put( key, value.executor( args ) ) );
     }
 
     /**
@@ -125,19 +51,7 @@ public class CommandHelper
      */
     public Command getCommand( final String name )
     {
-        if ( commands.containsKey( name ) )
-        {
-            return commands.get( name );
-        }
-        return null;
-    }
-
-    /**
-     * Get a list of all registered commands
-     */
-    public List<Command> getAllCommands()
-    {
-        return commands.values().stream().distinct().collect( Collectors.toList() );
+        return commands.get( name );
     }
 
     public static String stripEnclosingBackTicks( String input )
@@ -148,5 +62,60 @@ public class CommandHelper
         }
 
         return input;
+    }
+
+    public static class CommandFactoryHelper
+    {
+        private static final Map<Class<? extends Command>, Command.Factory> factoryMap = Map.ofEntries(
+            entry( Begin.class, new Begin.Factory() ),
+            entry( Commit.class, new Commit.Factory() ),
+            entry( Connect.class, new Connect.Factory() ),
+            entry( Disconnect.class, new Disconnect.Factory() ),
+            entry( Exit.class, new Exit.Factory() ),
+            entry( Help.class, new Help.Factory() ),
+            entry( History.class, new History.Factory() ),
+            entry( Param.class, new Param.Factory() ),
+            entry( Params.class, new Params.Factory() ),
+            entry( Rollback.class, new Rollback.Factory() ),
+            entry( Source.class, new Source.Factory() ),
+            entry( Use.class, new Use.Factory() )
+        );
+
+        private static final Map<String, Command.Factory> factoryByName = buildFactoryByName();
+
+        public Command.Factory factoryFor( Class<? extends Command> commandClass )
+        {
+            return factoryMap.get( commandClass );
+        }
+
+        public Command.Factory factoryByName( String name )
+        {
+            return factoryByName.get( name );
+        }
+
+        public Collection<Command.Factory> factories()
+        {
+            return factoryMap.values();
+        }
+
+        @VisibleForTesting
+        protected Map<Class<? extends Command>, Command.Factory> factoryByClass()
+        {
+            return factoryMap;
+        }
+
+        private static Map<String, Command.Factory> buildFactoryByName()
+        {
+            Map<String, Command.Factory> builder = new HashMap<>();
+
+            for ( Command.Factory factory : factoryMap.values() )
+            {
+                var metadata = factory.metadata();
+                builder.put( metadata.name(), factory );
+                metadata.aliases().forEach( alias -> builder.put( alias, factory ) );
+            }
+
+            return Map.copyOf( builder );
+        }
     }
 }

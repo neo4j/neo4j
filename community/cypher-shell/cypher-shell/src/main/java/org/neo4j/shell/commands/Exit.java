@@ -19,65 +19,39 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.AnsiFormattedText;
-import org.neo4j.shell.log.Logger;
 
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 
 /**
  * Command to exit the logger. Equivalent to hitting Ctrl-D.
  */
 public class Exit implements Command
 {
-    public static final String COMMAND_NAME = ":exit";
-    private final Logger logger;
-
-    public Exit( final Logger logger )
-    {
-        this.logger = logger;
-    }
-
     @Override
-    public String getName()
+    public void execute( final List<String> args ) throws ExitException, CommandException
     {
-        return COMMAND_NAME;
-    }
-
-    @Override
-    public String getDescription()
-    {
-        return "Exit the logger";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return AnsiFormattedText.from( "Exit the logger. Corresponds to entering " ).bold( "CTRL-D" ).append( "." ).formattedString();
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return Arrays.asList( ":quit" );
-    }
-
-    @Override
-    public void execute( final String argString ) throws ExitException, CommandException
-    {
-        simpleArgParse( argString, 0, COMMAND_NAME, getUsage() );
-
+        requireArgumentCount( args, 0 );
         throw new ExitException( EXIT_SUCCESS );
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var help = AnsiFormattedText.from( "Exit the logger. Corresponds to entering " ).bold( "CTRL-D" ).append( "." ).formattedString();
+            return new Metadata( ":exit", "Exit the logger", "", help, List.of( ":quit" ) );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Exit();
+        }
     }
 }

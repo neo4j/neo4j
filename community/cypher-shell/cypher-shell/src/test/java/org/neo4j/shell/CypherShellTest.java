@@ -22,6 +22,7 @@ package org.neo4j.shell;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.driver.Driver;
@@ -30,11 +31,12 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.shell.cli.Encryption;
-import org.neo4j.shell.commands.CommandExecutable;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ParameterException;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parser.StatementParser.CommandStatement;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.LinePrinter;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.state.BoltResult;
@@ -42,11 +44,9 @@ import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.state.ListBoltResult;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -60,7 +60,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
-@SuppressWarnings( "OptionalGetWithoutIsPresent" )
 class CypherShellTest
 {
     private final PrettyPrinter mockedPrettyPrinter = mock( PrettyPrinter.class );
@@ -154,7 +153,7 @@ class CypherShellTest
         OfflineTestShell shell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
         when( mockedBoltStateHandler.isConnected() ).thenReturn( false );
 
-        CommandException exception = assertThrows( CommandException.class, () -> shell.execute( "RETURN 999" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> shell.execute( new CypherStatement( "RETURN 999" ) ) );
         assertThat( exception.getMessage(), containsString( "Not connected to Neo4j" ) );
     }
 
@@ -163,7 +162,7 @@ class CypherShellTest
     {
         Value value = mock( Value.class );
         Record recordMock = mock( Record.class );
-        BoltResult boltResult = new ListBoltResult( asList( recordMock ), mock( ResultSummary.class ) );
+        BoltResult boltResult = new ListBoltResult( List.of( recordMock ), mock( ResultSummary.class ) );
 
         when( mockedBoltStateHandler.runCypher( anyString(), anyMap() ) ).thenReturn( Optional.of( boltResult ) );
         when( recordMock.get( "bo`b" ) ).thenReturn( value );
@@ -184,7 +183,7 @@ class CypherShellTest
         BoltResult boltResult = mock( ListBoltResult.class );
 
         when( mockedBoltStateHandler.runCypher( anyString(), anyMap() ) ).thenReturn( Optional.of( boltResult ) );
-        when( boltResult.getRecords() ).thenReturn( asList( recordMock ) );
+        when( boltResult.getRecords() ).thenReturn( List.of( recordMock ) );
         when( recordMock.get( "bob" ) ).thenReturn( value );
         when( value.asObject() ).thenReturn( "99" );
 
@@ -214,67 +213,16 @@ class CypherShellTest
         when( mockedDriver.session() ).thenReturn( session );
 
         OfflineTestShell shell = new OfflineTestShell( logger, boltStateHandler, mockedPrettyPrinter );
-        shell.execute( "RETURN 999" );
+        shell.execute( new CypherStatement( "RETURN 999" ) );
         verify( logger ).printOut( contains( "999" ) );
-    }
-
-    @Test
-    void shouldStripEndingSemicolonsFromCommand() throws Exception
-    {
-        // Should not throw
-        offlineTestShell.getCommandExecutable( ":help;;" ).get().execute();
-        verify( logger ).printOut( contains( "Available commands:" ) );
-    }
-
-    @Test
-    void shouldStripEndingSemicolonsFromCommandArgs() throws Exception
-    {
-        // Should not throw
-        offlineTestShell.getCommandExecutable( ":help param;;" ).get().execute();
-        verify( logger ).printOut( contains( "usage: " ) );
-    }
-
-    @Test
-    void testStripSemicolons()
-    {
-        assertEquals( "", CypherShell.stripTrailingSemicolons( "" ) );
-        assertEquals( "nothing", CypherShell.stripTrailingSemicolons( "nothing" ) );
-        assertEquals( "", CypherShell.stripTrailingSemicolons( ";;;;;" ) );
-        assertEquals( "hej", CypherShell.stripTrailingSemicolons( "hej;" ) );
-        assertEquals( ";bob", CypherShell.stripTrailingSemicolons( ";bob;;" ) );
-    }
-
-    @Test
-    void shouldParseCommandsAndArgs()
-    {
-        assertTrue( offlineTestShell.getCommandExecutable( ":help" ).isPresent() );
-        assertTrue( offlineTestShell.getCommandExecutable( ":help :param" ).isPresent() );
-        assertTrue( offlineTestShell.getCommandExecutable( ":param \"A piece of string\"" ).isPresent() );
-        assertTrue( offlineTestShell.getCommandExecutable( ":params" ).isPresent() );
-    }
-
-    @Test
-    void commandNameShouldBeParsed()
-    {
-        assertTrue( offlineTestShell.getCommandExecutable( "   :help    " ).isPresent() );
-        assertTrue( offlineTestShell.getCommandExecutable( "   :help    \n" ).isPresent() );
-        assertTrue( offlineTestShell.getCommandExecutable( "   :help   arg1 arg2 " ).isPresent() );
     }
 
     @Test
     void incorrectCommandsThrowException()
     {
-        Optional<CommandExecutable> exe = offlineTestShell.getCommandExecutable( "   :help   arg1 arg2 " );
-        CommandException exception = assertThrows( CommandException.class, () -> CypherShell.executeCmd( exe.get() ) );
+        var statement = new CommandStatement( ":help", List.of( "arg1", "arg2" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> offlineTestShell.execute( statement ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
-    }
-
-    @Test
-    void shouldReturnNothingOnStrangeCommand()
-    {
-        Optional<CommandExecutable> exe = offlineTestShell.getCommandExecutable( "   :aklxjde   arg1 arg2 " );
-
-        assertFalse( exe.isPresent() );
     }
 
     @Test
@@ -287,14 +235,5 @@ class CypherShellTest
         // when
         Object result = shell.getParameterMap().setParameter( "bob", "99" );
         assertEquals( 99L, result );
-    }
-
-    @Test
-    void ignoreEmptyStatement() throws CommandException
-    {
-        when( mockedBoltStateHandler.runCypher( anyString(), anyMap() ) ).thenThrow( new IllegalStateException( "Test failed" ) );
-        OfflineTestShell shell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
-
-        shell.execute( "  \t;" );
     }
 }

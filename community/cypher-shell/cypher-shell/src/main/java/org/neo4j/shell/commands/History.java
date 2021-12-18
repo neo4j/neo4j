@@ -20,7 +20,6 @@
 package org.neo4j.shell.commands;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.shell.Historian;
@@ -29,18 +28,14 @@ import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
 
 import static java.lang.String.format;
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 
 /**
  * Show command history
  */
 public class History implements Command
 {
-    private static final String COMMAND_NAME = ":history";
-
     private final Logger logger;
     private final Historian historian;
-    private final List<String> aliases = Collections.emptyList();
 
     public History( final Logger logger, final Historian historian )
     {
@@ -49,49 +44,19 @@ public class History implements Command
     }
 
     @Override
-    public String getName()
+    public void execute( List<String> args ) throws ExitException, CommandException
     {
-        return COMMAND_NAME;
-    }
+        requireArgumentCount( args, 0, 1 );
 
-    @Override
-    public String getDescription()
-    {
-        return "Print a list of the last commands executed";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return "':history' prints a list of the last statements executed\n':history clear' removes all entries from the history";
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return aliases;
-    }
-
-    @Override
-    public void execute( String argString ) throws ExitException, CommandException
-    {
-        var args = simpleArgParse( argString, 0, 1, COMMAND_NAME, getUsage() );
-
-        if ( args.length == 1 )
+        if ( args.size() == 1 )
         {
-            if ( "clear".equals( args[0] ) )
+            if ( "clear".equalsIgnoreCase( args.get( 0 ) ) )
             {
                 clearHistory();
             }
             else
             {
-                throw new CommandException( "Unrecognised argument " + args[0] );
+                throw new CommandException( "Unrecognised argument " + args.get( 0 ) );
             }
         }
         else
@@ -142,6 +107,22 @@ public class History implements Command
         catch ( IOException e )
         {
             throw new CommandException( "Failed to clear history: " + e.getMessage() );
+        }
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var help = "':history' prints a list of the last statements executed\n':history clear' removes all entries from the history";
+            return new Metadata( ":history", "Print a list of the last commands executed", "", help, List.of() );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new History( args.logger(), args.historian() );
         }
     }
 }

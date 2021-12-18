@@ -19,19 +19,20 @@
  */
 package org.neo4j.shell.parser;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 /**
  * A cypher aware parser which can detect shell commands (:prefixed) or cypher.
  */
 public class ShellStatementParser implements StatementParser
 {
-
-    private static final Pattern SHELL_CMD_PATTERN = Pattern.compile( "^\\s*:.+\\s*$" );
-    private static final char SEMICOLON = ';';
     private static final char BACKSLASH = '\\';
     private static final String LINE_COMMENT_START = "//";
     private static final String LINE_COMMENT_END = "\n";
@@ -40,278 +41,308 @@ public class ShellStatementParser implements StatementParser
     private static final char BACKTICK = '`';
     private static final char DOUBLE_QUOTE = '"';
     private static final char SINGLE_QUOTE = '\'';
-    private static final int NO_COMMENT = -1;
-    private Optional<String> awaitedRightDelimiter;
-    private StringBuilder statement;
-    private ArrayList<String> parsedStatements;
-    private int commentStart = NO_COMMENT;
+    private static final Set<String> SINGLE_ARGUMENT_COMMANDS = Set.of( ":param", ":params" );
 
-    public ShellStatementParser()
+    @Override
+    public ParsedStatements parse( Reader reader ) throws IOException
     {
-        parsedStatements = new ArrayList<>();
-        statement = new StringBuilder();
-        awaitedRightDelimiter = Optional.empty();
+        return parse( new PeekingReader( reader ) );
     }
 
-    /**
-     * Parses text and adds to the list of parsed statements if a statement is found to be completed. Note that it is expected that lines include newlines.
-     *
-     * @param line to parse (including ending newline)
-     */
     @Override
-    public void parseMoreText( String line )
+    public ParsedStatements parse( String line ) throws IOException
     {
-        if ( statementNotStarted() && line.isEmpty() )
-        {
-            // If input is empty line we want to get new prompt for input.
-            // This is a hack to not do query validation
-            parsedStatements.add( ";" );
-            return;
-        }
+        return parse( new StringReader( line ) );
+    }
 
-        // See if it could possibly be a shell command, only valid if not in a current statement
-        if ( statementNotStarted() && SHELL_CMD_PATTERN.matcher( line ).find() )
-        {
-            parsedStatements.add( line );
-            return;
-        }
+    private static ParsedStatements parse( PeekingReader reader ) throws IOException
+    {
+        var result = new ArrayList<ParsedStatement>();
+        int nextValue;
 
-        // We will guess it is cypher then
-        boolean skipNext = false;
-        char prev, current = (char) 0;
-        for ( char c : line.toCharArray() )
+        while ( ( nextValue = reader.peek() ) != -1 )
         {
-            // Trim white space
-            if ( statement.length() == 0 && isWhitespace( c ) )
+            if ( isWhitespace( nextValue ) )
             {
-                continue;
+                reader.read(); // Skip white space at beginning of statement.
             }
+            else if ( isAtStartOfComment( nextValue, reader ) )
+            {
+                skipComments( reader ); // Skip comments at beginning of statement.
+            }
+            else if ( nextValue == ':' )
+            {
+                result.add( parseCommand( reader ) );
+            }
+            else
+            {
+                result.add( parseCypher( reader ) );
+            }
+        }
 
-            // append current
-            statement.append( c );
-            // last char shuffling
-            prev = current;
-            current = c;
+        return new ParsedStatements( result );
+    }
+
+    private static boolean isAtStartOfComment( int nextValue, PeekingReader reader ) throws IOException
+    {
+        return nextValue == '/' && isStartOfComment( reader.peek( 2 ) );
+    }
+
+    private static boolean isStartOfComment( char[] chars )
+    {
+        return switch ( String.valueOf( chars ) )
+        {
+            case LINE_COMMENT_START, BLOCK_COMMENT_START -> true;
+            default -> false;
+        };
+    }
+
+    private static void skipComments( PeekingReader reader ) throws IOException
+    {
+        String awaitedRightDelimiter = getRightCommentDelimiter( reader.peek( 2 ) );
+
+        if ( awaitedRightDelimiter == null )
+        {
+            return;
+        }
+
+        // Discard left delimiter
+        reader.read();
+        reader.read();
+        // Discard comment and right delimiter
+        reader.skipUntilAndIncluding( awaitedRightDelimiter.toCharArray() );
+    }
+
+    /*
+     * Parses a single cypher shell command statement from the specified reader.
+     */
+    private static ParsedStatement parseCommand( PeekingReader reader ) throws IOException
+    {
+        var line = reader.readLine();
+        assert line.startsWith( ":" );
+
+        var parts = stripTrailingSemicolons( line ).split( "\\s+" );
+        var name = parts[0];
+
+        if ( SINGLE_ARGUMENT_COMMANDS.contains( name ) )
+        {
+            // We don't fully parse the commands (yet), but need some special handling for these cases
+            return new CommandStatement( name, List.of( line.substring( name.length() ).trim() ) );
+        }
+
+        return new CommandStatement( name, Arrays.stream( parts ).skip( 1 ).toList() );
+    }
+
+    private static String stripTrailingSemicolons( String input )
+    {
+
+        int i = input.length() - 1;
+        while ( i >= 0 && input.charAt( i ) == ';' )
+        {
+            --i;
+        }
+        return input.substring( 0, i + 1);
+    }
+
+    /*
+     * Parses a single cypher statement from the specified reader.
+     */
+    private static ParsedStatement parseCypher( PeekingReader reader ) throws IOException
+    {
+        String awaitedRightDelimiter = null;
+        StringBuilder statement = new StringBuilder();
+        int read;
+        boolean skipNext = false;
+        char current = 0, previous;
+
+        while ( ( read = reader.read() ) != -1 )
+        {
+            previous = current;
+            current = (char) read;
+
+            statement.append( current );
 
             if ( skipNext )
             {
                 // This char is escaped so gets no special treatment
                 skipNext = false;
-                continue;
             }
-
-            if ( handleComments( prev, current ) )
+            else if ( inComment( awaitedRightDelimiter ) )
             {
-                continue;
+                if ( isRightDelimiter( awaitedRightDelimiter, previous, current ) )
+                {
+                    // No longer in comment
+                    awaitedRightDelimiter = null;
+                }
             }
-
-            if ( current == BACKSLASH )
+            else if ( current == BACKSLASH )
             {
                 // backslash can escape stuff outside of comments (but inside quotes too!)
                 skipNext = true;
-                continue;
             }
-
-            if ( handleQuotes( prev, current ) )
+            else if ( inQuote( awaitedRightDelimiter ) )
             {
-                continue;
+                if ( isRightDelimiter( awaitedRightDelimiter, previous, current ) )
+                {
+                    // No longer in quote
+                    awaitedRightDelimiter = null;
+                }
             }
-
             // Not escaped, not in a quote, not in a comment
-            if ( handleSemicolon( current ) )
+            else if ( current == ';' )
             {
-                continue;
+                return new CypherStatement( statement.toString() );
             }
-
-            // If it's the start of a quote or comment
-            awaitedRightDelimiter = getRightDelimiter( prev, current );
+            else
+            {
+                // If it's the start of a quote or comment
+                awaitedRightDelimiter = getRightDelimiter( previous, current );
+            }
         }
+
+        // No more input
+        return new IncompleteStatement( statement.toString() );
     }
 
-    private static boolean isWhitespace( char c )
+    private static boolean isWhitespace( int c )
     {
         return c == ' ' || c == '\n' || c == '\t' || c == '\r';
     }
 
-    /**
-     * @param current character
-     * @return true if parsing should go immediately to the next character, false otherwise
+    /*
+     * Returns true if inside a quote, false otherwise
      */
-    private boolean handleSemicolon( char current )
+    private static boolean inQuote( String awaitedRightDelimiter )
     {
-        if ( current == SEMICOLON )
-        {
-            // end current statement
-            parsedStatements.add( statement.toString() );
-            // start a new statement
-            statement = new StringBuilder();
-            return true;
-        }
-        return false;
+        return awaitedRightDelimiter != null && !inComment( awaitedRightDelimiter );
     }
 
-    /**
-     * @param prev    character
-     * @param current character
-     * @return true if parsing should go immediately to the next character, false otherwise
+    /*
+     * Returns true if the last two chars ends the current awaited delimiter, false otherwise
      */
-    private boolean handleQuotes( char prev, char current )
+    private static boolean isRightDelimiter( String awaitedRightDelimiter, char first, char last )
     {
-        if ( inQuote() )
-        {
-            if ( isRightDelimiter( prev, current ) )
-            {
-                // Then end it
-                awaitedRightDelimiter = Optional.empty();
-                return true;
-            }
-            // Didn't end the quote, continue
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * @param prev    character
-     * @param current character
-     * @return true if parsing should go immediately to the next character, false otherwise
-     */
-    private boolean handleComments( char prev, char current )
-    {
-        if ( inComment() )
-        {
-            if ( commentStart == NO_COMMENT )
-            {
-                //find the position of //.. or /*...
-                //i.e. currentPos - 1 - 2
-                commentStart = statement.length() - 3;
-            }
-            if ( isRightDelimiter( prev, current ) )
-            {
-                // Then end it
-                awaitedRightDelimiter = Optional.empty();
-                statement.delete( commentStart, statement.length() );
-                commentStart = NO_COMMENT;
-                return true;
-            }
-            // Didn't end the comment, continue
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * @return true if inside a quote, false otherwise
-     */
-    private boolean inQuote()
-    {
-        return awaitedRightDelimiter.isPresent() && !inComment();
-    }
-
-    /**
-     * @param first character
-     * @param last  character
-     * @return true if the last two chars ends the current comment, false otherwise
-     */
-    private boolean isRightDelimiter( char first, char last )
-    {
-        if ( awaitedRightDelimiter.isEmpty() )
+        if ( awaitedRightDelimiter == null )
         {
             return false;
         }
-        final String expectedEnd = awaitedRightDelimiter.get();
-
-        if ( expectedEnd.length() == 1 )
+        else if ( awaitedRightDelimiter.length() == 1 )
         {
-            return expectedEnd.equals( String.valueOf( last ) );
+            return awaitedRightDelimiter.charAt( 0 ) == last;
+        }
+        else if ( awaitedRightDelimiter.length() == 2 )
+        {
+            return awaitedRightDelimiter.charAt( 0 ) == first && awaitedRightDelimiter.charAt( 1 ) == last;
         }
         else
         {
-            return expectedEnd.equals( String.valueOf( first ) + last );
+            return false;
         }
     }
 
-    /**
-     * @return true if we are currently inside a comment, false otherwise
-     */
-    private boolean inComment()
+    private static boolean inComment( String awaitedRightDelimiter )
     {
-        return awaitedRightDelimiter.isPresent() &&
-               (awaitedRightDelimiter.get().equals( LINE_COMMENT_END ) ||
-                awaitedRightDelimiter.get().equals( BLOCK_COMMENT_END ));
+        return LINE_COMMENT_END.equals( awaitedRightDelimiter ) || BLOCK_COMMENT_END.equals( awaitedRightDelimiter );
     }
 
-    /**
+    /*
      * If the last characters start a quote or a comment, this returns the piece of text which will end said quote or comment.
-     *
-     * @param first character
-     * @param last  character
-     * @return the matching right delimiter or something empty if not the start of a quote/comment
      */
-    private static Optional<String> getRightDelimiter( char first, char last )
+    private static String getRightDelimiter( char first, char last )
     {
-        // double characters
-        final String lastTwoChars = String.valueOf( first ) + last;
-        switch ( lastTwoChars )
-        {
-        case LINE_COMMENT_START:
-            return Optional.of( LINE_COMMENT_END );
-        case BLOCK_COMMENT_START:
-            return Optional.of( BLOCK_COMMENT_END );
-        default:
-            // Do nothing
-        }
-        // single characters
-        switch ( last )
-        {
-        case BACKTICK:
-        case DOUBLE_QUOTE:
-        case SINGLE_QUOTE:
-            return Optional.of( String.valueOf( last ) );
-        default:
-            return Optional.empty();
-        }
+        var commentRight = getRightCommentDelimiter( new char[] { first, last } );
+        return commentRight != null ? commentRight : getRightQuoteDelimiter( last );
     }
 
-    /**
-     * @return false if a statement has not begun (non whitespace has been seen) else true
+    private static String getRightCommentDelimiter( char[] chars )
+    {
+        return switch ( String.valueOf( chars ) )
+        {
+            case LINE_COMMENT_START -> LINE_COMMENT_END;
+            case BLOCK_COMMENT_START -> BLOCK_COMMENT_END;
+            default -> null;
+        };
+    }
+
+    private static String getRightQuoteDelimiter( char last )
+    {
+        return switch ( last )
+        {
+            case BACKTICK, DOUBLE_QUOTE, SINGLE_QUOTE -> String.valueOf( last );
+            default -> null;
+        };
+    }
+
+    /*
+     * Wraps a buffered reader and provides some convenience methods.
      */
-    private boolean statementNotStarted()
+    private static class PeekingReader
     {
-        return statement.length() == 0 || statement.toString().trim().isEmpty();
-    }
+        private final BufferedReader reader;
 
-    @Override
-    public boolean hasStatements()
-    {
-        return !parsedStatements.isEmpty();
-    }
+        PeekingReader( Reader reader )
+        {
+            this.reader = reader instanceof BufferedReader buffered ? buffered : new BufferedReader( reader );
+        }
 
-    @Override
-    public List<String> consumeStatements()
-    {
-        ArrayList<String> result = parsedStatements;
-        parsedStatements = new ArrayList<>();
-        return result;
-    }
+        public int read() throws IOException
+        {
+            return reader.read();
+        }
 
-    @Override
-    public Optional<String> incompleteStatement()
-    {
-        return Optional.of( statement.toString().trim() ).filter( s -> !s.isEmpty() );
-    }
+        public int peek() throws IOException
+        {
+            reader.mark( 1 );
+            int value = reader.read();
+            reader.reset();
+            return value;
+        }
 
-    @Override
-    public boolean containsText()
-    {
-        return !statement.toString().trim().isEmpty();
-    }
+        public char[] peek( int size ) throws IOException
+        {
+            reader.mark( size );
+            char[] values = new char[size];
+            for ( int i = 0; i < size; ++i )
+            {
+                int read = reader.read();
 
-    @Override
-    public void reset()
-    {
-        statement = new StringBuilder();
-        parsedStatements.clear();
-        awaitedRightDelimiter = Optional.empty();
+                if ( read == -1 )
+                {
+                    reader.reset();
+                    return Arrays.copyOf( values, i );
+                }
+
+                values[i] = (char) read;
+            }
+            reader.reset();
+            return values;
+        }
+
+        public void skipUntilAndIncluding( char[] chars  ) throws IOException
+        {
+            int matches = 0;
+            int read;
+            while ( ( read = reader.read() ) != -1 )
+            {
+                if ( read == chars[matches] )
+                {
+                    ++matches;
+                    if ( matches == chars.length )
+                    {
+                        return;
+                    }
+                }
+                else if ( matches != 0 )
+                {
+                    matches = 0;
+                }
+            }
+
+        }
+
+        public String readLine() throws IOException
+        {
+            return reader.readLine();
+        }
     }
 }

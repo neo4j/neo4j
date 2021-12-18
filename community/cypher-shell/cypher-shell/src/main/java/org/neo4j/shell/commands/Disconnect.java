@@ -19,14 +19,11 @@
  */
 package org.neo4j.shell.commands;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
-
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 
 /**
  * Disconnects from a database
@@ -42,39 +39,24 @@ public class Disconnect implements Command
     }
 
     @Override
-    public String getName()
+    public void execute( final List<String> args ) throws ExitException, CommandException
     {
-        return COMMAND_NAME;
-    }
-
-    @Override
-    public String getDescription()
-    {
-        return "Disconnects from database";
-    }
-
-    @Override
-    public String getUsage()
-    {
-        return "";
-    }
-
-    @Override
-    public String getHelp()
-    {
-        return  "Disconnects from database";
-    }
-
-    @Override
-    public List<String> getAliases()
-    {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void execute( final String argString ) throws ExitException, CommandException
-    {
-        simpleArgParse( argString, 0, COMMAND_NAME, getUsage() );
+        requireArgumentCount( args, 0 );
         cypherShell.disconnect();
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            return new Metadata( ":disconnect", "Disconnects from database", "", "Disconnects from database", List.of() );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Disconnect( args.cypherShell() );
+        }
     }
 }

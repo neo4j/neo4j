@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 
 import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.exception.CommandException;
@@ -45,7 +46,7 @@ class ParamsTest
     private Params cmd;
 
     @BeforeEach
-    void setup() throws CommandException
+    void setup()
     {
         vars = new HashMap<>();
         logger = mock( Logger.class );
@@ -57,19 +58,19 @@ class ParamsTest
     @Test
     void descriptionNotNull()
     {
-        assertNotNull( cmd.getDescription() );
+        assertNotNull( cmd.metadata().description() );
     }
 
     @Test
     void usageNotNull()
     {
-        assertNotNull( cmd.getUsage() );
+        assertNotNull( cmd.metadata().usage() );
     }
 
     @Test
     void helpNotNull()
     {
-        assertNotNull( cmd.getHelp() );
+        assertNotNull( cmd.metadata().help() );
     }
 
     @Test
@@ -80,7 +81,7 @@ class ParamsTest
         int value = 9;
         vars.put( var, new ParamValue( String.valueOf( value ), value ) );
         // when
-        cmd.execute( "" );
+        cmd.execute( List.of() );
         // then
         verify( logger ).printOut( ":param var => 9" );
         verifyNoMoreInteractions( logger );
@@ -93,7 +94,7 @@ class ParamsTest
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
         vars.put( "param", new ParamValue( String.valueOf( 99999 ), 99999 ) );
         // when
-        cmd.execute( "" );
+        cmd.execute( List.of() );
         // then
         verify( logger ).printOut( ":param param => 99999" );
         verify( logger ).printOut( ":param var   => 9" );
@@ -107,7 +108,7 @@ class ParamsTest
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
         vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
         // when
-        cmd.execute( "var" );
+        cmd.execute( List.of( "var" ) );
         // then
         verify( logger ).printOut( ":param var => 9" );
         verifyNoMoreInteractions( logger );
@@ -120,7 +121,7 @@ class ParamsTest
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
         vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
         // when
-        cmd.execute( " var" );
+        cmd.execute( List.of( " var" ) );
         // then
         verify( logger ).printOut( ":param var => 9" );
         verifyNoMoreInteractions( logger );
@@ -133,7 +134,7 @@ class ParamsTest
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
         vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
         // when
-        cmd.execute( "`var`" );
+        cmd.execute( List.of( "`var`" ) );
         // then
         verify( logger ).printOut( ":param `var` => 9" );
         verifyNoMoreInteractions( logger );
@@ -146,7 +147,7 @@ class ParamsTest
         vars.put( "var `", new ParamValue( String.valueOf( 9 ), 9 ) );
         vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
         // when
-        cmd.execute( "`var ```" );
+        cmd.execute( List.of( "`var ```" ) );
         // then
         verify( logger ).printOut( ":param `var ``` => 9" );
         verifyNoMoreInteractions( logger );
@@ -159,14 +160,14 @@ class ParamsTest
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
 
         // when
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob" ) ) );
         assertThat( exception.getMessage(), containsString( "Unknown parameter: bob" ) );
     }
 
     @Test
     void shouldNotAcceptMoreThanOneArgs()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob sob" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob", "sob" ) ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 }

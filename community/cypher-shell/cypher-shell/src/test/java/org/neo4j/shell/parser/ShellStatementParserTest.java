@@ -21,464 +21,242 @@ package org.neo4j.shell.parser;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.neo4j.shell.parser.StatementParser.CommandStatement;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
+import org.neo4j.shell.parser.StatementParser.IncompleteStatement;
+import org.neo4j.shell.parser.StatementParser.ParsedStatement;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 class ShellStatementParserTest
 {
     private final ShellStatementParser parser = new ShellStatementParser();
 
     @Test
-    void parseEmptyLineShouldStartNewRow()
+    void parseEmptyLineDoesNothing() throws IOException
     {
-        // when
-        parser.parseMoreText( "" );
-
-        // then
-        assertFalse( parser.containsText() );
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-        assertEquals( 1, statements.size() );
-        assertEquals( ";", statements.get( 0 ) );
+        assertStatements( "" );
     }
 
     @Test
-    void parseNewLineDoesNothing()
+    void parseNewLineDoesNothing() throws IOException
     {
-        // when
-        parser.parseMoreText( "\n" );
-
-        // then
-        assertFalse( parser.containsText() );
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
+        assertStatements( "\n" );
     }
 
     @Test
-    void parseAShellCommand()
+    void parseAShellCommand() throws IOException
     {
-        // when
-        parser.parseMoreText( "  :help exit bob snob  " );
-
-        // then
-        assertFalse( parser.containsText() );
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "  :help exit bob snob  ", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
+        var expected = new CommandStatement( ":help", List.of( "exit", "bob", "snob" ) );
+        assertStatements( "  :help exit bob snob  ", expected );
     }
 
     @Test
-    void parseAShellCommandWithNewLine()
+    void parseAShellCommandWithNewLine() throws IOException
     {
-        // when
-        parser.parseMoreText( ":help exit bob snob\n" );
-
-        // then
-        assertFalse( parser.containsText() );
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( ":help exit bob snob\n", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
+        var expected = new CommandStatement( ":help", List.of( "exit", "bob", "snob" ) );
+        assertStatements( "  :help exit bob snob  \n  ", expected );
     }
 
     @Test
-    void parseIncompleteCypher()
+    void parseIncompleteCypher() throws IOException
     {
-        // when
-        parser.parseMoreText( "CREATE ()\n" );
-
-        // then
-        assertTrue( parser.containsText() );
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
+        assertStatements( "CREATE ()\n", new IncompleteStatement( "CREATE ()\n" ) );
     }
 
     @Test
-    void parseCompleteCypher()
+    void parseCompleteCypher() throws IOException
     {
-        // when
-        parser.parseMoreText( "CREATE (n)\n" );
-        assertTrue( parser.containsText() );
-        parser.parseMoreText( "CREATE ();" );
-        assertFalse( parser.containsText() );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "CREATE (n)\nCREATE ();", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
+        assertStatements( "CREATE (n)\nCREATE ();", new CypherStatement( "CREATE (n)\nCREATE ();" ) );
     }
 
     @Test
-    void parseMultipleCypherSingleLine()
+    void parseMultipleCypherSingleLine() throws IOException
     {
-        // when
-        parser.parseMoreText( "RETURN 1;RETURN 2;" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 2, statements.size() );
-        assertEquals( "RETURN 1;", statements.get( 0 ) );
-        assertEquals( "RETURN 2;", statements.get( 1 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements(
+                "RETURN 1;RETURN 2;",
+                new CypherStatement( "RETURN 1;" ),
+                new CypherStatement( "RETURN 2;" )
+        );
     }
 
     @Test
-    void parseMultipleCypherMultipleLine()
+    void parseMultipleCypherMultipleLine() throws IOException
     {
-        // when
-        parser.parseMoreText( "RETURN 1;" );
-        parser.parseMoreText( "RETURN 2;" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 2, statements.size() );
-        assertEquals( "RETURN 1;", statements.get( 0 ) );
-        assertEquals( "RETURN 2;", statements.get( 1 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements(
+                "RETURN 1;\n RETURN 2;",
+                new CypherStatement( "RETURN 1;" ),
+                new CypherStatement( "RETURN 2;" )
+        );
     }
 
     @Test
-    void singleQuotedSemicolon()
+    void singleQuotedSemicolon() throws IOException
     {
-        // when
-        parser.parseMoreText( "hello '\n" );
-        parser.parseMoreText( ";\n" );
-        parser.parseMoreText( "'\n" );
-        parser.parseMoreText( ";\n" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "hello '\n;\n'\n;", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements( "hello '\n;\n'\n;\n", new CypherStatement( "hello '\n;\n'\n;" ) );
     }
 
     @Test
-    void backtickQuotedSemicolon()
+    void backtickQuotedSemicolon() throws IOException
     {
-        // when
-        parser.parseMoreText( "hello `\n" );
-        parser.parseMoreText( ";\n" );
-        parser.parseMoreText( "`\n" );
-        parser.parseMoreText( ";  \n" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "hello `\n;\n`\n;", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements( "hello `\n;\n`\n;  \n", new CypherStatement( "hello `\n;\n`\n;" ) );
     }
 
     @Test
-    void doubleQuotedSemicolon()
+    void doubleQuotedSemicolon() throws IOException
     {
-        // when
-        parser.parseMoreText( "hello \"\n" );
-        parser.parseMoreText( ";\n" );
-        parser.parseMoreText( "\"\n" );
-        parser.parseMoreText( ";   \n" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "hello \"\n;\n\"\n;", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements( "hello \"\n;\n\"\n;   \n", new CypherStatement( "hello \"\n;\n\"\n;" ) );
     }
 
     @Test
-    void escapedChars()
+    void escapedChars() throws IOException
     {
-        // when
-        parser.parseMoreText( "one \\;\n" );
-        parser.parseMoreText( "\"two \\\"\n" );
-        parser.parseMoreText( ";\n" );
-        parser.parseMoreText( "\";\n" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "one \\;\n\"two \\\"\n;\n\";", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements( "one \\;\n\"two \\\"\n;\n\";\n", new CypherStatement( "one \\;\n\"two \\\"\n;\n\";" ) );
     }
 
     @Test
-    void nestedQuoting()
+    void nestedQuoting() throws IOException
     {
-        // when
-        parser.parseMoreText( "go `tick;'single;\"double;\n" );
-        parser.parseMoreText( "end`;\n" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "go `tick;'single;\"double;\nend`;", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements( "go `tick;'single;\"double;\nend`;\n", new CypherStatement( "go `tick;'single;\"double;\nend`;" ) );
     }
 
     @Test
-    void mixCommandAndCypherWithSpacingsAdded()
+    void mixCommandAndCypherWithSpacingsAdded() throws IOException
     {
-        // when
-        parser.parseMoreText( " :help me \n" );
-        parser.parseMoreText( " cypher me up \n" );
-        parser.parseMoreText( " :scotty \n" );
-        parser.parseMoreText( " ; \n" );
-        parser.parseMoreText( " :do it now! \n" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 3, statements.size() );
-        assertEquals( " :help me \n", statements.get( 0 ) );
-        assertEquals( "cypher me up \n :scotty \n ;", statements.get( 1 ) );
-        assertEquals( " :do it now! \n", statements.get( 2 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements(
+                " :help me \n cypher me up \n :scotty \n ; \n :do it now! \n",
+                new CommandStatement( ":help", List.of( "me" ) ),
+                new CypherStatement( "cypher me up \n :scotty \n ;" ),
+                new CommandStatement( ":do", List.of( "it", "now!" ) )
+        );
     }
 
     @Test
-    void commentHandlingIfSemicolon()
+    void commentHandlingIfSemicolon() throws IOException
     {
-        // when
-        parser.parseMoreText( " first // ;\n" );
-        parser.parseMoreText( "// /* ;\n" );
-        parser.parseMoreText( " third ; // actually a semicolon here\n" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-        assertFalse( parser.containsText() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "first  third ;", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
+        assertStatements(
+            " first // ;\n// /* ;\n third ; // actually a semicolon here\n",
+            new CypherStatement( "first // ;\n// /* ;\n third ;" )
+        );
     }
 
     @Test
-    void backslashDeadInBlockQuote()
+    void backslashDeadInBlockQuote() throws IOException
     {
-        // when
-        parser.parseMoreText( "/* block \\*/\nCREATE ();" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "CREATE ();", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements(
+                "/* block \\*/\nCREATE ();",
+                new CypherStatement( "CREATE ();" )
+        );
     }
 
     @Test
-    void commentInQuote()
+    void commentInQuote() throws IOException
     {
-        // when
-        parser.parseMoreText( "` here // comment `;" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "` here // comment `;", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements( "` here // comment `;", new CypherStatement( "` here // comment `;" ) );
     }
 
     @Test
-    void blockCommentInQuote()
+    void blockCommentInQuote() throws IOException
     {
-        // when
-        parser.parseMoreText( "` here /* comment `;" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( "` here /* comment `;", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements( "` here /* comment `;", new CypherStatement( "` here /* comment `;" ) );
     }
 
     @Test
-    void quoteInComment()
+    void quoteInComment() throws IOException
     {
-        // when
-        parser.parseMoreText( "// `;\n;" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( ";", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements( "// `;\n;", new CypherStatement( ";" ) );
     }
 
     @Test
-    void quoteInBlockomment()
+    void quoteInBlockomment() throws IOException
     {
-        // when
-        parser.parseMoreText( "/* `;\n;*/\n;" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 1, statements.size() );
-        assertEquals( ";", statements.get( 0 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements( "/* `;\n;*/\n;", new CypherStatement( ";" ) );
     }
 
     @Test
-    void testReset()
+    void testReset() throws IOException
     {
-        // given
-        parser.parseMoreText( "/* `;\n;*/\n;" );
-        parser.parseMoreText( "bob" );
-        assertTrue( parser.hasStatements() );
-        assertTrue( parser.containsText() );
-
-        // when
-        parser.reset();
-
-        // then
-        assertFalse( parser.hasStatements() );
-        assertFalse( parser.containsText() );
+        assertStatements( "bob", new IncompleteStatement( "bob" ) );
     }
 
     @Test
-    void commentsBeforeBegin()
+    void commentsBeforeBegin() throws IOException
     {
-        // when
-        parser.parseMoreText( "//comment \n" );
-        parser.parseMoreText( ":begin\n" );
-        parser.parseMoreText( "RETURN 42;\n" );
-        parser.parseMoreText( ":end\n" );
-
-        // then
-        assertTrue( parser.hasStatements() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 3, statements.size() );
-        assertEquals( ":begin\n", statements.get( 0 ) );
-        assertEquals( "RETURN 42;", statements.get( 1 ) );
-        assertEquals( ":end\n", statements.get( 2 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements(
+                "//comment \n:begin\nRETURN 42;\n:end\n",
+                new CommandStatement( ":begin", List.of() ),
+                new CypherStatement( "RETURN 42;" ),
+                new CommandStatement( ":end", List.of() )
+        );
     }
 
     @Test
-    void trimWhiteSpace()
+    void trimWhiteSpace() throws IOException
     {
-        // when
-        parser.parseMoreText( "\t \r\n match (n) return n;\n\t    return 3;\t\r\n " );
-
-        // then
-        assertTrue( parser.hasStatements() );
-        assertTrue( parser.incompleteStatement().isEmpty() );
-
-        List<String> statements = parser.consumeStatements();
-
-        assertEquals( 2, statements.size() );
-        assertEquals( "match (n) return n;", statements.get( 0 ) );
-        assertEquals( "return 3;", statements.get( 1 ) );
-
-        assertFalse( parser.hasStatements() );
-        assertTrue( parser.incompleteStatement().isEmpty() );
-        assertEquals( 0, parser.consumeStatements().size() );
-        assertFalse( parser.containsText() );
+        assertStatements(
+                "\t \r\n match (n) return n;\n\t    return 3;\t\r\n ",
+                new CypherStatement( "match (n) return n;" ),
+                new CypherStatement( "return 3;" )
+        );
     }
+
+    @Test
+    void parseParamCommand() throws IOException
+    {
+        // We don't fully parse :param, but need to make sure we're not messing up the arguments that needs to be parsed later
+        assertStatements(
+                ":param key => 'value'",
+                new CommandStatement( ":param", List.of( "key => 'value'" ) )
+        );
+        assertStatements(
+                ":param `not valid but still` => `\"'strange thing ",
+                new CommandStatement( ":param", List.of( "`not valid but still` => `\"'strange thing" ) )
+        );
+        assertStatements(
+                ":param \t  whitespace all around        =>   and\t value  \t  ",
+                new CommandStatement( ":param", List.of( "whitespace all around        =>   and\t value" ) )
+        );
+    }
+
+    @Test
+    void parseParamsCommand() throws IOException
+    {
+        assertStatements(
+                ":params key  ",
+                new CommandStatement( ":params", List.of( "key" ) )
+        );
+        assertStatements(
+                ":params `key with whitespace`",
+                new CommandStatement( ":params", List.of( "`key with whitespace`" ) )
+        );
+    }
+
+    @Test
+    void stripTrailingSemicolonOnCommands() throws IOException
+    {
+        assertStatements( ":command param1 param2;", new CommandStatement( ":command", List.of( "param1", "param2" ) ));
+        assertStatements( ":command;", new CommandStatement( ":command", List.of() ));
+        assertStatements( ":command;;", new CommandStatement( ":command", List.of() ) );
+    }
+
+    @Test
+    void shouldParseCommandsAndArgs() throws IOException
+    {
+        assertStatements( ":help", new CommandStatement( ":help", List.of() ) );
+        assertStatements( ":help :param", new CommandStatement( ":help", List.of( ":param" ) ) );
+        assertStatements( "   :help    ", new CommandStatement( ":help", List.of() ) );
+        assertStatements( "   :help    \n", new CommandStatement( ":help", List.of() ) );
+        assertStatements( "   :help   arg1 arg2 ", new CommandStatement( ":help", List.of( "arg1", "arg2" ) ) );
+    }
+
+    private void assertStatements( String input, ParsedStatement... expected ) throws IOException
+    {
+        assertThat( parser.parse( input ).statements() , is( asList( expected ) ) );
+    }
+
 }

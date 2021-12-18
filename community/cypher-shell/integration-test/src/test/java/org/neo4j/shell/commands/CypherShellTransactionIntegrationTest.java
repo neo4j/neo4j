@@ -23,11 +23,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.state.ErrorWhileInTransactionException;
 
@@ -52,7 +55,7 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
         beginCommand = new Begin( shell );
 
         connect( "neo" );
-        shell.execute( "MATCH (n) DETACH DELETE (n)" );
+        shell.execute( new CypherStatement( "MATCH (n) DETACH DELETE (n)" ) );
     }
 
     @AfterEach
@@ -66,15 +69,15 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     void rollbackScenario() throws CommandException
     {
         //given
-        shell.execute( "CREATE (:TestPerson {name: \"Jane Smith\"})" );
+        shell.execute( new CypherStatement( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
 
         //when
-        beginCommand.execute( "" );
-        shell.execute( "CREATE (:NotCreated)" );
-        rollbackCommand.execute( "" );
+        beginCommand.execute( List.of() );
+        shell.execute( new CypherStatement( "CREATE (:NotCreated)" ) );
+        rollbackCommand.execute( List.of() );
 
         //then
-        shell.execute( "MATCH (n) RETURN n" );
+        shell.execute( new CypherStatement( "MATCH (n) RETURN n" ) );
 
         String output = linePrinter.output();
         assertThat( output, containsString( "| n " ) );
@@ -86,10 +89,13 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     void failureInTxScenario() throws CommandException
     {
         // given
-        beginCommand.execute( "" );
+        beginCommand.execute( List.of() );
 
         // then
-        ErrorWhileInTransactionException exception = assertThrows( ErrorWhileInTransactionException.class, () -> shell.execute( "RETURN 1/0" ) );
+        ErrorWhileInTransactionException exception = assertThrows(
+                ErrorWhileInTransactionException.class,
+                () -> shell.execute( new CypherStatement( "RETURN 1/0" ) )
+        );
         assertThat( exception.getMessage(), containsString( "/ by zero" ) );
         assertThat( exception.getMessage(),
                 containsString( "An error occurred while in an open transaction. The transaction will be rolled back and terminated." ) );
@@ -99,10 +105,10 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     void failureInTxScenarioWithCypherFollowing() throws CommandException
     {
         // given
-        beginCommand.execute( "" );
+        beginCommand.execute( List.of() );
         try
         {
-            shell.execute( "RETURN 1/0" );
+            shell.execute( new CypherStatement( "RETURN 1/0" ) );
         }
         catch ( ErrorWhileInTransactionException ignored )
         {
@@ -110,7 +116,7 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
         }
 
         // when
-        shell.execute( "RETURN 42" );
+        shell.execute( new CypherStatement( "RETURN 42" ) );
 
         // then
         assertThat( linePrinter.output(), containsString( "42" ) );
@@ -120,10 +126,10 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     void failureInTxScenarioWithCommitFollowing() throws CommandException
     {
         // given
-        beginCommand.execute( "" );
+        beginCommand.execute( List.of() );
         try
         {
-            shell.execute( "RETURN 1/0" );
+            shell.execute( new CypherStatement( "RETURN 1/0" ) );
         }
         catch ( ErrorWhileInTransactionException ignored )
         {
@@ -131,7 +137,7 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
         }
 
         // then / when
-        CommandException exception = assertThrows( CommandException.class, () -> commitCommand.execute( "" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> commitCommand.execute( List.of() ) );
         assertThat( exception.getMessage(), containsString( "There is no open transaction to commit" ) );
     }
 
@@ -139,10 +145,10 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     void failureInTxScenarioWithRollbackFollowing() throws CommandException
     {
         // given
-        beginCommand.execute( "" );
+        beginCommand.execute( List.of() );
         try
         {
-            shell.execute( "RETURN 1/0" );
+            shell.execute( new CypherStatement( "RETURN 1/0" ) );
         }
         catch ( ErrorWhileInTransactionException ignored )
         {
@@ -150,7 +156,7 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
         }
 
         //  then / when
-        CommandException exception = assertThrows( CommandException.class, () -> rollbackCommand.execute( "" ) );
+        CommandException exception = assertThrows( CommandException.class, () -> rollbackCommand.execute( List.of() ) );
         assertThat( exception.getMessage(), containsString( "There is no open transaction to rollback" ) );
     }
 
@@ -158,10 +164,10 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     void resetInFailedTxScenario() throws CommandException
     {
         //when
-        beginCommand.execute( "" );
+        beginCommand.execute( List.of() );
         try
         {
-            shell.execute( "RETURN 1/0" );
+            shell.execute( new CypherStatement( "RETURN 1/0" ) );
         }
         catch ( ErrorWhileInTransactionException ignored )
         {
@@ -170,8 +176,8 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
         shell.reset();
 
         //then
-        shell.execute( "CREATE (:TestPerson {name: \"Jane Smith\"})" );
-        shell.execute( "MATCH (n) RETURN n" );
+        shell.execute( new CypherStatement( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
+        shell.execute( new CypherStatement( "MATCH (n) RETURN n" ) );
 
         String result = linePrinter.output();
         assertThat( result, containsString( "| (:TestPerson {name: \"Jane Smith\"}) |" ) );
@@ -182,13 +188,13 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     void resetInTxScenario() throws CommandException
     {
         //when
-        beginCommand.execute( "" );
-        shell.execute( "CREATE (:NotCreated)" );
+        beginCommand.execute( List.of() );
+        shell.execute( new CypherStatement( "CREATE (:NotCreated)" ) );
         shell.reset();
 
         //then
-        shell.execute( "CREATE (:TestPerson {name: \"Jane Smith\"})" );
-        shell.execute( "MATCH (n) RETURN n" );
+        shell.execute( new CypherStatement( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
+        shell.execute( new CypherStatement( "MATCH (n) RETURN n" ) );
 
         String result = linePrinter.output();
         assertThat( result, containsString( "| (:TestPerson {name: \"Jane Smith\"}) |" ) );
@@ -198,18 +204,18 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     @Test
     void commitScenario() throws CommandException
     {
-        beginCommand.execute( "" );
-        shell.execute( "CREATE (:TestPerson {name: \"Joe Smith\"})" );
+        beginCommand.execute( List.of() );
+        shell.execute( new CypherStatement( "CREATE (:TestPerson {name: \"Joe Smith\"})" ) );
         assertThat( linePrinter.output(), containsString( "0 rows\n" ) );
 
         linePrinter.clear();
-        shell.execute( "CREATE (:TestPerson {name: \"Jane Smith\"})" );
+        shell.execute( new CypherStatement( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
         assertThat( linePrinter.output(), containsString( "0 rows\n" ) );
 
         linePrinter.clear();
-        shell.execute( "MATCH (n:TestPerson) RETURN n ORDER BY n.name" );
+        shell.execute( new CypherStatement( "MATCH (n:TestPerson) RETURN n ORDER BY n.name" ) );
         assertThat( linePrinter.output(), containsString( "\n| (:TestPerson {name: \"Jane Smith\"}) |\n| (:TestPerson {name: \"Joe Smith\"})  |\n" ) );
 
-        commitCommand.execute( "" );
+        commitCommand.execute( List.of() );
     }
 }

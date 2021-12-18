@@ -21,25 +21,59 @@ package org.neo4j.shell.commands;
 
 import java.util.List;
 
+import org.neo4j.shell.ConnectionConfig;
+import org.neo4j.shell.CypherShell;
+import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
+import org.neo4j.shell.log.AnsiFormattedText;
+import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.terminal.CypherShellTerminal;
+
+import static org.neo4j.shell.log.AnsiFormattedText.from;
 
 /**
  * A shell command
  */
 public interface Command
 {
-    String getName();
+    void execute( List<String> args ) throws ExitException, CommandException;
 
-    //Completer getCompleter();
+    default Metadata metadata()
+    {
+        // By default, load from factory, because we're lazy
+        return new CommandHelper.CommandFactoryHelper().factoryFor( this.getClass() ).metadata();
+    }
 
-    String getDescription();
+    default void requireArgumentCount( List<String> args, int count ) throws CommandException
+    {
+        if ( args.size() != count )
+        {
+            throw new CommandException( incorrectNumberOfArguments() );
+        }
+    }
 
-    String getUsage();
+    default void requireArgumentCount( List<String> args, int min, int max ) throws CommandException
+    {
+        if ( args.size() < min || args.size() > max )
+        {
+            throw new CommandException( incorrectNumberOfArguments() );
+        }
+    }
 
-    String getHelp();
+    default AnsiFormattedText incorrectNumberOfArguments()
+    {
+        return from( "Incorrect number of arguments.\nUsage: " ).bold( metadata().name() ).append( " " ).append( metadata().usage() );
+    }
 
-    List<String> getAliases();
+    record Metadata( String name, String description, String usage, String help, List<String> aliases ) {}
 
-    void execute( String args ) throws ExitException, CommandException;
+    interface Factory
+    {
+        record Arguments( Logger logger, Historian historian, CypherShell cypherShell, ConnectionConfig connectionConfig, CypherShellTerminal terminal )
+        { }
+
+        Metadata metadata();
+        Command executor( Arguments args );
+    }
 }

@@ -17,61 +17,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.cli;
+package org.neo4j.shell.commands;
 
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.ShellParameterMap;
-import org.neo4j.shell.commands.Begin;
-import org.neo4j.shell.commands.Command;
-import org.neo4j.shell.commands.CommandHelper;
-import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 
 class CommandHelperTest
 {
-
-    @Test
-    void emptyStringIsNoArgs() throws CommandException
-    {
-        assertEquals( 0, simpleArgParse( "", 0, "", "" ).length );
-    }
-
-    @Test
-    void whitespaceStringIsNoArgs() throws CommandException
-    {
-        assertEquals( 0, simpleArgParse( "    \t  ", 0, "", "" ).length );
-    }
-
-    @Test
-    void oneArg()
-    {
-        CommandException exception = assertThrows( CommandException.class, () -> simpleArgParse( "bob", 0, "", "" ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
-    }
+    private final AnsiLogger logger = new AnsiLogger( false );
+    private final CypherShell shell = new CypherShell( logger, PrettyConfig.DEFAULT, false, new ShellParameterMap() );
 
     @Test
     void shouldIgnoreCaseForCommands()
     {
         // Given
-        AnsiLogger logger = new AnsiLogger( false );
         CommandHelper commandHelper =
-                new CommandHelper( logger, Historian.empty, new CypherShell( logger, PrettyConfig.DEFAULT, false, new ShellParameterMap() ), null, null );
+                new CommandHelper( logger, Historian.empty, shell, null, null );
 
         // When
         Command begin = commandHelper.getCommand( ":BEGIN" );
 
         // Then
         assertTrue( begin instanceof Begin );
+    }
+
+    @Test
+    void internalStateSanityTest()
+    {
+        var args = new Command.Factory.Arguments( logger, Historian.empty, shell, null, null );
+        var factories = new CommandHelper.CommandFactoryHelper().factoryByClass();
+        factories.forEach( ( cls, factory ) -> assertEquals( cls, factory.executor( args ).getClass() ) );
     }
 }

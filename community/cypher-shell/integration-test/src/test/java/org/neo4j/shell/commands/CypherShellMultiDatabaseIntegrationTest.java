@@ -23,6 +23,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.CypherShell;
@@ -32,6 +34,7 @@ import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -77,7 +80,7 @@ class CypherShellMultiDatabaseIntegrationTest
     @Test
     void switchingToSystemDatabaseWorks() throws CommandException
     {
-        useCommand.execute( SYSTEM_DB_NAME );
+        useCommand.execute( List.of( SYSTEM_DB_NAME ) );
 
         assertThat( linePrinter.output(), is( "" ) );
         assertOnSystemDB();
@@ -86,7 +89,7 @@ class CypherShellMultiDatabaseIntegrationTest
     @Test
     void switchingToSystemDatabaseIsNotCaseSensitive() throws CommandException
     {
-        useCommand.execute( "SyStEm" );
+        useCommand.execute( List.of( "SyStEm" ) );
 
         assertThat( linePrinter.output(), is( "" ) );
         assertOnSystemDB();
@@ -95,8 +98,8 @@ class CypherShellMultiDatabaseIntegrationTest
     @Test
     void switchingToSystemDatabaseAndBackToNeo4jWorks() throws CommandException
     {
-        useCommand.execute( SYSTEM_DB_NAME );
-        useCommand.execute( DEFAULT_DEFAULT_DB_NAME );
+        useCommand.execute( List.of( SYSTEM_DB_NAME ) );
+        useCommand.execute( List.of( DEFAULT_DEFAULT_DB_NAME ) );
 
         assertThat( linePrinter.output(), is( "" ) );
         assertOnRegularDB();
@@ -105,8 +108,8 @@ class CypherShellMultiDatabaseIntegrationTest
     @Test
     void switchingToSystemDatabaseAndBackToDefaultWorks() throws CommandException
     {
-        useCommand.execute( SYSTEM_DB_NAME );
-        useCommand.execute( ABSENT_DB_NAME );
+        useCommand.execute( List.of( SYSTEM_DB_NAME ) );
+        useCommand.execute( List.of( ABSENT_DB_NAME ) );
 
         assertThat( linePrinter.output(), is( "" ) );
         assertOnRegularDB();
@@ -115,17 +118,17 @@ class CypherShellMultiDatabaseIntegrationTest
     @Test
     void switchingDatabaseInOpenTransactionShouldFail() throws CommandException
     {
-        beginCommand.execute( "" );
-        CommandException exception = assertThrows( CommandException.class, () -> useCommand.execute( "another_database" ) );
+        beginCommand.execute( List.of() );
+        CommandException exception = assertThrows( CommandException.class, () -> useCommand.execute( List.of( "another_database" ) ) );
         assertThat( exception.getMessage(), containsString( "There is an open transaction." ) );
     }
 
     @Test
     void switchingDatabaseAfterRollbackTransactionWorks() throws CommandException
     {
-        beginCommand.execute( "" );
-        rollbackCommand.execute( "" );
-        useCommand.execute( SYSTEM_DB_NAME );
+        beginCommand.execute( List.of() );
+        rollbackCommand.execute( List.of() );
+        useCommand.execute( List.of( SYSTEM_DB_NAME ) );
 
         assertThat( linePrinter.output(), is( "" ) );
         assertOnSystemDB();
@@ -134,11 +137,11 @@ class CypherShellMultiDatabaseIntegrationTest
     @Test
     void switchingToNonExistingDatabaseShouldGiveErrorResponseFromServer() throws CommandException
     {
-        useCommand.execute( SYSTEM_DB_NAME );
+        useCommand.execute( List.of( SYSTEM_DB_NAME ) );
 
         try
         {
-            useCommand.execute( "this_database_name_does_not_exist_in_test_container" );
+            useCommand.execute( List.of( "this_database_name_does_not_exist_in_test_container" ) );
             fail( "No ClientException thrown" );
         }
         catch ( ClientException e )
@@ -155,11 +158,11 @@ class CypherShellMultiDatabaseIntegrationTest
         useCommand = new Use( shell );
         shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
 
-        useCommand.execute( SYSTEM_DB_NAME );
+        useCommand.execute( List.of( SYSTEM_DB_NAME ) );
 
         try
         {
-            useCommand.execute( "this_database_name_does_not_exist_in_test_container" );
+            useCommand.execute( List.of( "this_database_name_does_not_exist_in_test_container" ) );
             fail( "No ClientException thrown" );
         }
         catch ( ClientException e )
@@ -173,19 +176,19 @@ class CypherShellMultiDatabaseIntegrationTest
 
     private void assertOnRegularDB() throws CommandException
     {
-        shell.execute( "RETURN 'toadstool'" );
+        shell.execute( new CypherStatement( "RETURN 'toadstool'" ) );
         assertThat( linePrinter.output(), containsString( "toadstool" ) );
     }
 
     private void assertOnSystemDB() throws CommandException
     {
-        shell.execute( "SHOW DATABASES" );
+        shell.execute( new CypherStatement( "SHOW DATABASES" ) );
         assertThat( linePrinter.output(), containsString( "neo4j" ) );
         assertThat( linePrinter.output(), containsString( "system" ) );
     }
 
     private void assertOnNoValidDB()
     {
-        assertThrows( ClientException.class, () -> shell.execute( "RETURN 1" ) );
+        assertThrows( ClientException.class, () -> shell.execute( new CypherStatement( "RETURN 1" ) ) );
     }
 }
