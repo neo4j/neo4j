@@ -27,14 +27,15 @@ import org.neo4j.driver.TransactionConfig
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
-case class DriverCypherExecutor(private val session: Session) extends CypherExecutor {
+case class DriverCypherExecutor(private val session: Session) extends CypherExecutor with DriverExceptionConverter {
 
   override def beginTransaction(): CypherExecutorTransaction = DriverTransaction(session.beginTransaction())
 
   override def execute[T](queryToExecute: String,
                           neo4jParams: Map[String, Object],
-                          converter: StatementResult => T): T =
+                          converter: StatementResult => T): T = convertExceptions {
     converter(DriverStatementResult(session.run(queryToExecute, neo4jParams.asJava, TransactionConfig.empty())))
+  }
 
   override def close(): Unit = session.close()
 }

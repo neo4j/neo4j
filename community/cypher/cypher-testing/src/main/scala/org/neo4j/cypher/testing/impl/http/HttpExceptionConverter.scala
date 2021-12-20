@@ -17,24 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.testing.impl.driver
+package org.neo4j.cypher.testing.impl.http
 
-import org.neo4j.cypher.testing.api.CypherExecutorTransaction
-import org.neo4j.cypher.testing.api.StatementResult
-import org.neo4j.driver.Transaction
+import org.neo4j.cypher.testing.api.CypherExecutorException
+import org.neo4j.cypher.testing.api.CypherExecutorException.ExceptionConverter
+import org.neo4j.kernel.api.exceptions.Status
 
-case class DriverTransaction(private val driverTransaction: Transaction) extends CypherExecutorTransaction with DriverExceptionConverter {
+trait HttpExceptionConverter extends ExceptionConverter {
 
-  override def execute(statement: String, parameters: Map[String, Any]): StatementResult = convertExceptions {
-    DriverStatementResult(driverTransaction.run(statement, DriverParameterConverter.convertParameters(parameters)))
-  }
-
-  override def commit(): Unit = convertExceptions {
-    driverTransaction.commit()
-  }
-
-  override def rollback(): Unit = convertExceptions {
-    driverTransaction.rollback()
-  }
-
+  override def asExecutorException(throwable: Throwable): Option[CypherExecutorException] =
+    Option(Status.statusCodeOf(throwable))
+      .map(status => CypherExecutorException(status, throwable.getMessage))
 }

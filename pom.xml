@@ -1279,9 +1279,21 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>com.lihaoyi</groupId>
-        <artifactId>sourcecode_${scala.binary.version}</artifactId>
-        <version>0.2.1</version>
+        <groupId>io.circe</groupId>
+        <artifactId>circe-core_2.12</artifactId>
+        <version>0.14.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.circe</groupId>
+        <artifactId>circe-generic_2.12</artifactId>
+        <version>0.14.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.circe</groupId>
+        <artifactId>circe-parser_2.12</artifactId>
+        <version>0.14.1</version>
         <scope>test</scope>
       </dependency>
 

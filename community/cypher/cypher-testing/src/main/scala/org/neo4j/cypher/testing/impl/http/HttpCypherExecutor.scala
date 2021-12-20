@@ -17,24 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.testing.impl.driver
+package org.neo4j.cypher.testing.impl.http
 
+import org.neo4j.cypher.testing.api.CypherExecutor
 import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.api.StatementResult
-import org.neo4j.driver.Transaction
+import org.neo4j.driver.Session
+import org.neo4j.driver.TransactionConfig
+import org.neo4j.test.server.HTTP
 
-case class DriverTransaction(private val driverTransaction: Transaction) extends CypherExecutorTransaction with DriverExceptionConverter {
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 
-  override def execute(statement: String, parameters: Map[String, Any]): StatementResult = convertExceptions {
-    DriverStatementResult(driverTransaction.run(statement, DriverParameterConverter.convertParameters(parameters)))
+case class HttpCypherExecutor(private val dbHttp: HTTP.Builder) extends CypherExecutor with HttpExceptionConverter {
+
+  override def beginTransaction(): CypherExecutorTransaction =
+    HttpTransaction.begin(dbHttp)
+
+  override def execute[T](queryToExecute: String,
+                          neo4jParams: Map[String, Object],
+                          converter: StatementResult => T): T = convertExceptions {
+    converter(HttpTransaction.execute(dbHttp, queryToExecute, neo4jParams))
   }
 
-  override def commit(): Unit = convertExceptions {
-    driverTransaction.commit()
-  }
-
-  override def rollback(): Unit = convertExceptions {
-    driverTransaction.rollback()
-  }
+  override def close(): Unit = ()
 
 }

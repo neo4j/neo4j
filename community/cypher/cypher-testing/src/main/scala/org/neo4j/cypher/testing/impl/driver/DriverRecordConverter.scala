@@ -19,19 +19,15 @@
  */
 package org.neo4j.cypher.testing.impl.driver
 
-import java.util
-
 import org.neo4j.cypher.testing.api
 import org.neo4j.driver.Value
-import org.neo4j.driver.exceptions.Neo4jException
 import org.neo4j.driver.types.MapAccessor
 import org.neo4j.driver.types.Node
 import org.neo4j.driver.types.Path
 import org.neo4j.driver.types.Point
 import org.neo4j.driver.types.Relationship
-import org.neo4j.kernel.api.exceptions.Status
-import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
+import java.util
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
@@ -43,14 +39,14 @@ object DriverRecordConverter {
   }
 
   private def convertValue(driverValue: Any): AnyRef = driverValue match {
-    case null                            => null
-    case value: Node                     => convertNode(value)
-    case value: Relationship             => convertRelationship(value)
-    case value: Path                     => convertPath(value)
-    case _: Point                        => throw new IllegalStateException("Point type is not supported yet")
-    case value: util.Map[_, _]           => convertMap(value.asInstanceOf[util.Map[String, AnyRef]])
-    case value: util.List[_]             => convertList(value.asInstanceOf[util.List[AnyRef]])
-    case value                           => value.asInstanceOf[AnyRef]
+    case null                  => null
+    case value: Node           => convertNode(value)
+    case value: Relationship   => convertRelationship(value)
+    case value: Path           => convertPath(value)
+    case _: Point              => throw new IllegalStateException("Point type is not supported yet")
+    case value: util.Map[_, _] => convertMap(value.asInstanceOf[util.Map[String, AnyRef]])
+    case value: util.List[_]   => convertList(value.asInstanceOf[util.List[AnyRef]])
+    case value                 => value.asInstanceOf[AnyRef]
   }
 
   private def convertNode(driverValue: Node): api.Node = {
@@ -92,19 +88,5 @@ object DriverRecordConverter {
 
   private def convertList(driverValue: util.List[AnyRef]): Seq[AnyRef] =
     driverValue.asScala.map(convertValue).toList
-
-  @scala.annotation.tailrec
-  def addStatus(throwable: Throwable, rootThrowable: Throwable): Throwable = {
-    throwable match {
-      case null                            => rootThrowable
-      case driverException: Neo4jException =>
-        val status = Status.Code.all.asScala.find(status => status.code.serialize == driverException.code)
-        val maybeAddedStatus = status.map(s => DriverException(driverException, s))
-        maybeAddedStatus.getOrElse(rootThrowable)
-      case _                               => addStatus(throwable.getCause, rootThrowable)
-    }
-  }
-
-  private case class DriverException(cause: Neo4jException, status: Status) extends RuntimeException(cause.getMessage, cause) with HasStatus
 
 }

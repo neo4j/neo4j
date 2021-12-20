@@ -20,6 +20,7 @@
 package org.neo4j.cypher.testing.impl.driver
 
 import org.neo4j.cypher.testing.api.StatementResult
+import org.neo4j.cypher.testing.impl.shared.NotificationImpl
 import org.neo4j.driver.Result
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
@@ -38,21 +39,5 @@ case class DriverStatementResult(private val driverResult: Result) extends State
   override def consume(): Unit = driverResult.consume()
 
   override def getNotifications(): List[Notification] = driverResult.consume().notifications().asScala.toList
-    .map(driverNotification => new NotificationWrapper(driverNotification))
-
-
-  private class NotificationWrapper(val notification: org.neo4j.driver.summary.Notification) extends Notification {
-    override def getCode: String = notification.code
-
-    override def getTitle: String = notification.title
-
-    override def getDescription: String = notification.description
-
-    override def getSeverity: SeverityLevel = SeverityLevel.valueOf(notification.severity)
-
-    override def getPosition: InputPosition = {
-      val pos = notification.position
-      new InputPosition(pos.offset, pos.line, pos.column)
-    }
-  }
+    .map(n => NotificationImpl.fromRaw(n.code, n.title, n.description, n.severity, n.position.offset, n.position.line, n.position.column))
 }

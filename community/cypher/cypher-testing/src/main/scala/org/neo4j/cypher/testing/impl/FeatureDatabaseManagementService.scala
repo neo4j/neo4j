@@ -19,16 +19,76 @@
  */
 package org.neo4j.cypher.testing.impl
 
+import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.configuration.connectors.BoltConnector
+import org.neo4j.configuration.connectors.HttpConnector
+import org.neo4j.configuration.helpers.SocketAddress
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.api.StatementResult
+import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
+import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
+import org.neo4j.cypher.testing.impl.http.HttpCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
+
+object FeatureDatabaseManagementService {
+
+  trait TestBase {
+    def dbms: FeatureDatabaseManagementService
+    def createBackingDbms(config: Config): DatabaseManagementService
+    def baseConfig: Config.Builder = Config.newBuilder()
+    def testApiKind: TestApiKind
+  }
+
+  sealed trait TestApiKind
+  object TestApiKind {
+    case object Bolt extends TestApiKind
+    case object Embedded extends TestApiKind
+    case object Http extends TestApiKind
+  }
+
+  trait TestUsingBolt extends TestBase {
+    override val testApiKind: TestApiKind = TestApiKind.Bolt
+    override def dbms: FeatureDatabaseManagementService = {
+      val config = baseConfig
+        .set(BoltConnector.enabled, java.lang.Boolean.TRUE)
+        .set(BoltConnector.listen_address, new SocketAddress("localhost", 0))
+        .build()
+      val managementService = createBackingDbms(config)
+      val executorFactory = DriverCypherExecutorFactory(managementService, config)
+      FeatureDatabaseManagementService(managementService, executorFactory)
+    }
+  }
+
+  trait TestUsingEmbedded extends TestBase {
+    override val testApiKind: TestApiKind = TestApiKind.Embedded
+    override def dbms: FeatureDatabaseManagementService = {
+      val config = baseConfig.build()
+      val managementService = createBackingDbms(config)
+      val executorFactory = EmbeddedCypherExecutorFactory(managementService, config)
+      FeatureDatabaseManagementService(managementService, executorFactory)
+    }
+  }
+
+  trait TestUsingHttp extends TestBase {
+    override val testApiKind: TestApiKind = TestApiKind.Http
+    override def dbms: FeatureDatabaseManagementService = {
+      val config = baseConfig
+        .set(HttpConnector.enabled, java.lang.Boolean.TRUE)
+        .set(HttpConnector.listen_address, new SocketAddress("localhost", 0))
+        .build()
+      val managementService = createBackingDbms(config)
+      val executorFactory = HttpCypherExecutorFactory(managementService, config)
+      FeatureDatabaseManagementService(managementService, executorFactory)
+    }
+  }
+}
 
 case class FeatureDatabaseManagementService(private val databaseManagementService: DatabaseManagementService,
                                             private val executorFactory: CypherExecutorFactory,
@@ -39,7 +99,7 @@ case class FeatureDatabaseManagementService(private val databaseManagementServic
 
   private val cypherExecutor = databaseName match {
     case Some(name) => executorFactory.executor(name)
-    case None => executorFactory.executor()
+    case None       => executorFactory.executor()
   }
 
   private lazy val kernel = database.getDependencyResolver.resolveDependency(classOf[Kernel])

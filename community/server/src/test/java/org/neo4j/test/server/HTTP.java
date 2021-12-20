@@ -162,6 +162,11 @@ public final class HTTP
             return new Builder( headers, baseUri );
         }
 
+        public Builder withAppendedUri( String suffix )
+        {
+            return new Builder( headers, baseUri + suffix );
+        }
+
         public Response POST( String uri )
         {
             return request( "POST", uri );
