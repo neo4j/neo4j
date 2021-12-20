@@ -19,15 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.util.Iterator;
-import java.util.function.Consumer;
-
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -181,55 +177,10 @@ public class PropertyCreator
         }
     }
 
-    public PropertyBlock encodePropertyValue( int propertyKey, Value value )
+    private PropertyBlock encodePropertyValue( int propertyKey, Value value )
     {
-        return encodeValue( new PropertyBlock(), propertyKey, value );
-    }
-
-    public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
-    {
+        PropertyBlock block = new PropertyBlock();
         PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, cursorContext, memoryTracker );
         return block;
-    }
-
-    public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,
-            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
-    {
-        return createPropertyChain( owner, properties, propertyRecords, p -> {} );
-    }
-
-    private long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties, RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords,
-            Consumer<PropertyRecord> createdPropertyRecords )
-    {
-        if ( properties == null || !properties.hasNext() )
-        {
-            return Record.NO_NEXT_PROPERTY.intValue();
-        }
-        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorContext ), owner, cursorContext ).forChangingData();
-        createdPropertyRecords.accept( currentRecord );
-        currentRecord.setInUse( true );
-        currentRecord.setCreated();
-        PropertyRecord firstRecord = currentRecord;
-        while ( properties.hasNext() )
-        {
-            PropertyBlock block = properties.next();
-            if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
-            {
-                // Here it means the current block is done for
-                PropertyRecord prevRecord = currentRecord;
-                // Create new record
-                long propertyId = propertyRecordIdGenerator.nextId( cursorContext );
-                currentRecord = propertyRecords.create( propertyId, owner, cursorContext ).forChangingData();
-                createdPropertyRecords.accept( currentRecord );
-                currentRecord.setInUse( true );
-                currentRecord.setCreated();
-                // Set up links
-                prevRecord.setNextProp( propertyId );
-                currentRecord.setPrevProp( prevRecord.getId() );
-                // Now current is ready to start picking up blocks
-            }
-            currentRecord.addPropertyBlock( block );
-        }
-        return firstRecord.getId();
     }
 }

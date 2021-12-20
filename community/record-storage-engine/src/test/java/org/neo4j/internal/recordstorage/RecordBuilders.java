@@ -28,8 +28,13 @@ import java.util.stream.Stream;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -261,5 +266,31 @@ public class RecordBuilders
         {
             return (T)record.copy();
         }
+    }
+
+    public static long createPropertyChain( PropertyStore propertyStore, PrimitiveRecord owner, List<PropertyBlock> properties,
+                                     RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
+    {
+        PropertyRecord currentRecord = propertyRecords.create( propertyStore.nextId( NULL ), owner, NULL ).forChangingData();
+        currentRecord.setInUse( true );
+        PropertyRecord firstRecord = currentRecord;
+        for ( var block : properties )
+        {
+            if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
+            {
+                // Here it means the current block is done for
+                PropertyRecord prevRecord = currentRecord;
+                // Create new record
+                long propertyId = propertyStore.nextId( NULL );
+                currentRecord = propertyRecords.create( propertyId, owner, NULL ).forChangingData();
+                currentRecord.setInUse( true );
+                // Set up links
+                prevRecord.setNextProp( propertyId );
+                currentRecord.setPrevProp( prevRecord.getId() );
+                // Now current is ready to start picking up blocks
+            }
+            currentRecord.addPropertyBlock( block );
+        }
+        return firstRecord.getId();
     }
 }

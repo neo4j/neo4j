@@ -41,13 +41,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
@@ -62,7 +60,6 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 @Neo4jLayoutExtension
@@ -121,7 +118,7 @@ class BatchInserterImplTest
         {
             for ( int i = 0; i < 10; i++ )
             {
-                inserter.createNode( Map.of( "name", randomAscii( 10 ) ), label( "marker" ) );
+                inserter.createNode();
             }
         }
 
@@ -146,7 +143,7 @@ class BatchInserterImplTest
             properties.put( "some_array", new String[]{"this", "is", "a", "string", "which", "really", "is", "an", "array"} );
             for ( int i = 0; i < nodeIds.length; i++ )
             {
-                nodeIds[i] = inserter.createNode( properties );
+                nodeIds[i] = inserter.createNode();
             }
         }
         MutableLongSet nodeIdsSet = LongSets.mutable.of( nodeIds );

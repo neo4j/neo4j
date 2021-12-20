@@ -77,8 +77,7 @@ public class PropertyDeleter
         this.storeCursors = storeCursors;
     }
 
-    public void deletePropertyChain( PrimitiveRecord primitive,
-            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
+    public void deletePropertyChain( PrimitiveRecord primitive, RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         long nextProp = primitive.getNextProp();
         MutableLongSet seenPropertyIds = null;
@@ -130,18 +129,16 @@ public class PropertyDeleter
         StringBuilder message = new StringBuilder( format( "Deleted inconsistent property chain with %s for %s", causeMessage, primitive ) );
         try ( RecordPropertyCursor propertyCursor = new RecordPropertyCursor( neoStores.getPropertyStore(), cursorContext, memoryTracker ) )
         {
-            if ( primitive instanceof NodeRecord )
+            if ( primitive instanceof NodeRecord node )
             {
-                NodeRecord node = (NodeRecord) primitive;
                 message.append( " with labels: " );
                 long[] labelIds = NodeLabelsField.parseLabelsField( node ).get( neoStores.getNodeStore(), storeCursors );
                 message.append(
                         LongStream.of( labelIds ).mapToObj( labelId -> tokenNameLookup.labelGetName( toIntExact( labelId ) ) ).collect( Collectors.toList() ) );
                 propertyCursor.initNodeProperties( longReference( node.getNextProp() ), ALL_PROPERTIES, node.getId() );
             }
-            else if ( primitive instanceof RelationshipRecord )
+            else if ( primitive instanceof RelationshipRecord relationship )
             {
-                RelationshipRecord relationship = (RelationshipRecord) primitive;
                 message.append( format( " with relationship type: %s", tokenNameLookup.relationshipTypeGetName( relationship.getType() ) ) );
                 propertyCursor.initRelationshipProperties( longReference( relationship.getNextProp() ), ALL_PROPERTIES, relationship.getId() );
             }
@@ -177,7 +174,7 @@ public class PropertyDeleter
         logProvider.getLog( InconsistentDataDeletion.class ).error( message.toString(), cause );
     }
 
-    public static void deletePropertyRecordIncludingValueRecords( PropertyRecord record )
+    private static void deletePropertyRecordIncludingValueRecords( PropertyRecord record )
     {
         for ( PropertyBlock block : record )
         {
@@ -194,29 +191,6 @@ public class PropertyDeleter
 
     /**
      * Removes property with given {@code propertyKey} from property chain owner by the primitive found in
-     * {@code primitiveProxy} if it exists.
-     *
-     * @param primitiveProxy access to the primitive record pointing to the start of the property chain.
-     * @param propertyKey the property key token id to look for and remove.
-     * @param propertyRecords access to records.
-     * @return {@code true} if the property was found and removed, otherwise {@code false}.
-     */
-    public <P extends PrimitiveRecord> boolean removePropertyIfExists( RecordProxy<P,Void> primitiveProxy,
-            int propertyKey, RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords )
-    {
-        PrimitiveRecord primitive = primitiveProxy.forReadingData();
-        long propertyId = // propertyData.getId();
-                traverser.findPropertyRecordContaining( primitive, propertyKey, propertyRecords, false );
-        if ( !Record.NO_NEXT_PROPERTY.is( propertyId ) )
-        {
-            removeProperty( primitiveProxy, propertyKey, propertyRecords, primitive, propertyId );
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Removes property with given {@code propertyKey} from property chain owner by the primitive found in
      * {@code primitiveProxy}.
      *
      * @param primitiveProxy access to the primitive record pointing to the start of the property chain.
@@ -228,8 +202,7 @@ public class PropertyDeleter
             RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords )
     {
         PrimitiveRecord primitive = primitiveProxy.forReadingData();
-        long propertyId = // propertyData.getId();
-                traverser.findPropertyRecordContaining( primitive, propertyKey, propertyRecords, true );
+        long propertyId = traverser.findPropertyRecordContaining( primitive, propertyKey, propertyRecords, true );
         removeProperty( primitiveProxy, propertyKey, propertyRecords, primitive, propertyId );
     }
 

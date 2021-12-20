@@ -334,12 +334,6 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         }
     }
 
-    public void setPropertyBlock( PropertyBlock block )
-    {
-        removePropertyBlock( block.getKeyIndexId() );
-        addPropertyBlock( block );
-    }
-
     public PropertyBlock getPropertyBlock( int keyIndex )
     {
         ensureBlocksLoaded();

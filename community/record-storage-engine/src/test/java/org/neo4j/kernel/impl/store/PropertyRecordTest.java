@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.values.storable.Values;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,28 +40,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class PropertyRecordTest
 {
-    @Test
-    void addingDuplicatePropertyBlockShouldOverwriteExisting()
-    {
-        // Given these things...
-        PropertyRecord record = new PropertyRecord( 1 );
-        PropertyBlock blockA = new PropertyBlock();
-        blockA.setValueBlocks( new long[1] );
-        blockA.setKeyIndexId( 2 );
-        PropertyBlock blockB = new PropertyBlock();
-        blockB.setValueBlocks( new long[1] );
-        blockB.setKeyIndexId( 2 ); // also 2, thus a duplicate
-
-        // When we set the property block twice that have the same key
-        record.setPropertyBlock( blockA );
-        record.setPropertyBlock( blockB );
-
-        // Then the record should only contain a single block, because blockB overwrote blockA
-        List<PropertyBlock> propertyBlocks = Iterables.asList( record );
-        assertThat( propertyBlocks ).contains( blockB );
-        assertThat( propertyBlocks ).hasSize( 1 );
-    }
-
     @Test
     void shouldIterateOverBlocks()
     {

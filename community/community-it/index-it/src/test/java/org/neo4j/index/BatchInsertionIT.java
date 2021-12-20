@@ -22,16 +22,11 @@ package org.neo4j.index;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.Collections;
-
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.id.IdValidator;
-import org.neo4j.internal.id.ReservedIdException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -65,7 +60,7 @@ public class BatchInsertionIT
     {
         final Object finalValue = 87;
         BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem );
-        long nodeId = inserter.createNode( Collections.emptyMap() );
+        long nodeId = inserter.createNode();
 
         inserter.setNodeProperty( nodeId, "a", "some property value" );
         inserter.setNodeProperty( nodeId, "a", 42 );
@@ -85,7 +80,7 @@ public class BatchInsertionIT
     void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem );
-        long nodeId = inserter.createNode( Collections.emptyMap() );
+        long nodeId = inserter.createNode();
 
         final Object finalValue1 = 87;
         final Object finalValue2 = 3.14;
@@ -102,15 +97,6 @@ public class BatchInsertionIT
         {
             assertThat( tx.getNodeById( nodeId ).getProperty( "a" ) ).isEqualTo( finalValue1 );
             assertThat( tx.getNodeById( nodeId ).getProperty( "b" ) ).isEqualTo( finalValue2 );
-        }
-    }
-
-    @Test
-    void makeSureCantCreateNodeWithMagicNumber() throws IOException
-    {
-        try ( BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem ) )
-        {
-            assertThrows( ReservedIdException.class, () -> inserter.createNode( IdValidator.INTEGER_MINUS_ONE, null ) );
         }
     }
 

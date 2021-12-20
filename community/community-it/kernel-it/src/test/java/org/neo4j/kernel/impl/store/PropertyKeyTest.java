@@ -24,44 +24,42 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import org.neo4j.batchinsert.BatchInserter;
-import org.neo4j.batchinsert.BatchInserters;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
+import org.neo4j.test.extension.DbmsController;
+import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@EphemeralNeo4jLayoutExtension
+@DbmsExtension
 class PropertyKeyTest
 {
     @Inject
-    private EphemeralFileSystemAbstraction fs;
+    private GraphDatabaseService db;
+
     @Inject
-    private DatabaseLayout databaseLayout;
+    DbmsController dbmsController;
 
     @Test
     void lazyLoadWithinWriteTransaction() throws IOException
     {
-        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs );
         int count = 3000;
-        long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
-        inserter.shutdown();
 
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setFileSystem( fs )
-                .impermanent()
-                .build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        long nodeId = -1;
+        try ( var tx = db.beginTx() )
+        {
+            var node = tx.createNode();
+            mapWithManyProperties( count ).forEach( node::setProperty );
+            nodeId = node.getId();
+            tx.commit();
+        }
+
+        dbmsController.restartDbms();
+        assertThat( db.isAvailable( TimeUnit.MINUTES.toMillis( 5 ) ) ).isTrue();
 
         // When
         try ( Transaction tx = db.beginTx() )
@@ -70,12 +68,8 @@ class PropertyKeyTest
             Node node = tx.getNodeById( nodeId );
 
             // Then
-            assertEquals( count, Iterables.count( node.getPropertyKeys() ) );
+            assertThat( node.getPropertyKeys( ) ).hasSize( count );
             tx.commit();
-        }
-        finally
-        {
-            managementService.shutdown();
         }
     }
 

@@ -58,7 +58,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -87,7 +86,6 @@ public class BatchInsertTokenIndexesTest
     @Test
     void shouldPopulateTokenIndexesOnShutdown() throws Exception
     {
-        // create empty database with SSTI enabled
         try
         {
             GraphDatabaseService db = instantiateGraphDatabaseService();
@@ -106,31 +104,23 @@ public class BatchInsertTokenIndexesTest
         }
 
         // insert some nodes and rels
-        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs, configuration() );
+        var inserter = BatchInserters.inserter( databaseLayout, fs, configuration() );
 
-        long node1 = inserter.createNode( null, Labels.FIRST );
-        long node2 = inserter.createNode( null, Labels.SECOND );
-        long node3 = inserter.createNode( null, Labels.THIRD );
-        long node4 = inserter.createNode( null, Labels.FIRST, Labels.SECOND );
-        long node5 = inserter.createNode( null, Labels.FIRST, Labels.THIRD );
+        long node1 = inserter.createNode();
+        long node2 = inserter.createNode();
+        long node3 = inserter.createNode();
+        long node4 = inserter.createNode();
+        long node5 = inserter.createNode();
 
-        long rel1 = inserter.createRelationship( node1, node2, RelTypes.REL_TYPE1, emptyMap() );
-        long rel2 = inserter.createRelationship( node2, node3, RelTypes.REL_TYPE2, emptyMap() );
-        long rel3 = inserter.createRelationship( node3, node4, RelTypes.REL_TYPE3, emptyMap() );
-        long rel4 = inserter.createRelationship( node3, node4, RelTypes.REL_TYPE1, emptyMap() );
-        long rel5 = inserter.createRelationship( node3, node4, RelTypes.REL_TYPE3, emptyMap() );
+        long rel1 = inserter.createRelationship( node1, node2, RelTypes.REL_TYPE1 );
+        long rel2 = inserter.createRelationship( node2, node3, RelTypes.REL_TYPE2 );
+        long rel3 = inserter.createRelationship( node3, node4, RelTypes.REL_TYPE3 );
+        long rel4 = inserter.createRelationship( node3, node4, RelTypes.REL_TYPE1 );
+        long rel5 = inserter.createRelationship( node3, node4, RelTypes.REL_TYPE3 );
 
         inserter.shutdown();
 
-        // verify token indexes contain inserted entities
-        try ( var accesor = tokenIndexAccessor( EntityType.NODE );
-              var reader = accesor.newTokenReader() )
-        {
-            assertTokenIndexContains( reader, 0, node1, node4, node5 );
-            assertTokenIndexContains( reader, 1, node2, node4 );
-            assertTokenIndexContains( reader, 2, node3, node5 );
-        }
-
+        // verify token index contain inserted entities
         try ( var accesor = tokenIndexAccessor( EntityType.RELATIONSHIP );
               var reader = accesor.newTokenReader() )
         {
@@ -198,13 +188,6 @@ public class BatchInsertTokenIndexesTest
                 .forProvider( TokenIndexProvider.DESCRIPTOR );
         IndexFiles indexFiles = new IndexFiles.Directory( fs, indexDirectoryStructure, descriptor.getId() );
         return new TokenIndexAccessor( context, indexFiles, descriptor, RecoveryCleanupWorkCollector.immediate() );
-    }
-
-    private enum Labels implements Label
-    {
-        FIRST,
-        SECOND,
-        THIRD
     }
 
     private enum RelTypes implements RelationshipType

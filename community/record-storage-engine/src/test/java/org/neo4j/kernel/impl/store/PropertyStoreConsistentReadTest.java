@@ -78,7 +78,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
         {
             block.getValueRecords().clear();
         }
-        record.setPropertyBlock( block );
+        record.addPropertyBlock( block );
         return record;
     }
 

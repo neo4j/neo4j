@@ -98,7 +98,7 @@ class PropertyStoreTest
 
                 DynamicRecord dynamicRecord = dynamicRecord();
                 PropertyBlock propertyBlock = propertyBlockWith( dynamicRecord );
-                record.setPropertyBlock( propertyBlock );
+                record.addPropertyBlock( propertyBlock );
 
                 doAnswer( invocation ->
                 {

@@ -27,12 +27,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -41,12 +41,14 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -68,7 +70,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -92,7 +93,6 @@ public class RecordPropertyCursorTest
     protected RecordDatabaseLayout databaseLayout;
 
     protected NeoStores neoStores;
-    protected PropertyCreator creator;
     protected NodeRecord owner;
     protected DefaultIdGeneratorFactory idGeneratorFactory;
     private CachedStoreCursors storeCursors;
@@ -103,7 +103,6 @@ public class RecordPropertyCursorTest
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, getRecordFormats(), NullLogProvider.getInstance(),
                 PageCacheTracer.NULL, writable(), Sets.immutable.empty() ).openAllNeoStores( true );
-        creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser(), NULL, INSTANCE );
         owner = neoStores.getNodeStore().newRecord();
         storeCursors = new CachedStoreCursors( neoStores, NULL );
     }
@@ -125,7 +124,7 @@ public class RecordPropertyCursorTest
     {
         // given
         Value[] values = createValues();
-        long firstPropertyId = storeValuesAsPropertyChain( creator, owner, values );
+        long firstPropertyId = storeValuesAsPropertyChain( owner, values );
 
         // when
         assertPropertyChain( values, firstPropertyId, createCursor() );
@@ -136,9 +135,9 @@ public class RecordPropertyCursorTest
     {
         // given
         Value[] valuesA = createValues();
-        long firstPropertyIdA = storeValuesAsPropertyChain( creator, owner, valuesA );
+        long firstPropertyIdA = storeValuesAsPropertyChain( owner, valuesA );
         Value[] valuesB = createValues();
-        long firstPropertyIdB = storeValuesAsPropertyChain( creator, owner, valuesB );
+        long firstPropertyIdB = storeValuesAsPropertyChain( owner, valuesB );
 
         // then
         RecordPropertyCursor cursor = createCursor();
@@ -164,7 +163,7 @@ public class RecordPropertyCursorTest
     {
         // given
         Value[] values = createValues( 20, 20 ); // many enough to create multiple records in the chain
-        long firstProp = storeValuesAsPropertyChain( creator, owner, values );
+        long firstProp = storeValuesAsPropertyChain( owner, values );
 
         // and a cycle on the second record
         PropertyStore store = neoStores.getPropertyStore();
@@ -199,7 +198,7 @@ public class RecordPropertyCursorTest
     {
         // given
         Value value = random.nextAlphaNumericTextValue( 1000, 1000 );
-        long firstProp = storeValuesAsPropertyChain( creator, owner, new Value[]{value} );
+        long firstProp = storeValuesAsPropertyChain( owner, new Value[]{value} );
 
         // and a cycle on the second record
         PropertyStore store = neoStores.getPropertyStore();
@@ -238,7 +237,7 @@ public class RecordPropertyCursorTest
     {
         // given
         Value[] values = createValues( 10, 10 );
-        long firstPropertyId = storeValuesAsPropertyChain( creator, owner, values );
+        long firstPropertyId = storeValuesAsPropertyChain( owner, values );
         int[] selectedKeys = new int[random.nextInt( 1, 3 )];
         MutableIntObjectMap<Value> valueMapping = IntObjectMaps.mutable.empty();
         for ( int i = 0; i < selectedKeys.length; i++ )
@@ -298,17 +297,23 @@ public class RecordPropertyCursorTest
         return values;
     }
 
-    protected long storeValuesAsPropertyChain( PropertyCreator creator, NodeRecord owner, Value[] values )
+    protected long storeValuesAsPropertyChain( NodeRecord owner, Value[] values )
     {
         DirectRecordAccessSet access = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
-        long firstPropertyId = creator.createPropertyChain( owner, blocksOf( creator, values ), access.getPropertyRecords() );
+        long firstPropertyId = createPropertyChain( owner, blocksOf( neoStores.getPropertyStore(), values ), access.getPropertyRecords() );
         access.commit();
         return firstPropertyId;
     }
 
-    protected static Map<Integer, Value> asMap( Value[] values )
+    public long createPropertyChain( PrimitiveRecord owner, List<PropertyBlock> properties,
+                                     RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords )
     {
-        Map<Integer, Value> map = new HashMap<>();
+        return RecordBuilders.createPropertyChain( neoStores.getPropertyStore(), owner, properties, propertyRecords );
+    }
+
+    protected static Map<Integer,Value> asMap( Value[] values )
+    {
+        Map<Integer,Value> map = new HashMap<>();
         for ( int key = 0; key < values.length; key++ )
         {
             map.put( key, values[key] );
@@ -316,18 +321,16 @@ public class RecordPropertyCursorTest
         return map;
     }
 
-    protected static Iterator<PropertyBlock> blocksOf( PropertyCreator creator, Value[] values )
+    protected static List<PropertyBlock> blocksOf( PropertyStore propertyStore, Value[] values )
     {
-        return new IteratorWrapper<>( iterator( values ) )
+        var list = new ArrayList<PropertyBlock>();
+        for ( int i = 0; i < values.length; i++ )
         {
-            int key;
-
-            @Override
-            protected PropertyBlock underlyingObjectToObject( Value value )
-            {
-                return creator.encodePropertyValue( key++, value );
-            }
-        };
+            PropertyBlock block = new PropertyBlock();
+            propertyStore.encodeValue( block, i, values[i], NULL, INSTANCE );
+            list.add( block );
+        }
+        return list;
     }
 
     private PropertyRecord getRecord( PropertyStore propertyStore, long id, RecordLoad load )

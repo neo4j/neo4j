@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -67,7 +68,6 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -108,7 +108,6 @@ class OnlineIndexUpdatesTest
     private PropertyPhysicalToLogicalConverter propertyPhysicalToLogicalConverter;
     private NeoStores neoStores;
     private LifeSupport life;
-    private PropertyCreator propertyCreator;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> recordAccess;
     private StoreCursors storeCursors;
 
@@ -135,7 +134,6 @@ class OnlineIndexUpdatesTest
         storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), storeCursors );
         life.start();
-        propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser(), CursorContext.NULL, INSTANCE );
         recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore, storeCursors ), CursorContext.NULL,
                 PROPERTY_CURSOR, storeCursors );
     }
@@ -156,7 +154,7 @@ class OnlineIndexUpdatesTest
         int nodeId = 0;
         NodeRecord inUse = getNode( nodeId, true );
         Value propertyValue = Values.of( "hej" );
-        long propertyId = createNodeProperty( inUse, propertyValue, 1 );
+        long propertyId = createProperty( inUse, propertyValue, 1 );
         NodeRecord notInUse = getNode( nodeId, false );
         try ( var nodeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
@@ -188,7 +186,7 @@ class OnlineIndexUpdatesTest
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
         Value propertyValue = Values.of( "hej" );
-        long propertyId = createRelationshipProperty( inUse, propertyValue, 1 );
+        long propertyId = createProperty( inUse, propertyValue, 1 );
         RelationshipRecord notInUse = getRelationship( relId, false, ENTITY_TOKEN );
         try ( PageCursor pageCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
@@ -220,7 +218,7 @@ class OnlineIndexUpdatesTest
         int nodeId = 0;
         NodeRecord inUseNode = getNode( nodeId, true );
         Value nodePropertyValue = Values.of( "hej" );
-        long nodePropertyId = createNodeProperty( inUseNode, nodePropertyValue, 1 );
+        long nodePropertyId = createProperty( inUseNode, nodePropertyValue, 1 );
         NodeRecord notInUseNode = getNode( nodeId, false );
         try ( PageCursor pageCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
@@ -240,7 +238,7 @@ class OnlineIndexUpdatesTest
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
         Value relationshipPropertyValue = Values.of( "da" );
-        long propertyId = createRelationshipProperty( inUse, relationshipPropertyValue, 1 );
+        long propertyId = createProperty( inUse, relationshipPropertyValue, 1 );
         RelationshipRecord notInUse = getRelationship( relId, false, ENTITY_TOKEN );
         try ( PageCursor pageCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
@@ -267,14 +265,14 @@ class OnlineIndexUpdatesTest
     void shouldUpdateCorrectIndexes()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, storeCursors );
+                                                                        new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, storeCursors );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
         Value propertyValue = Values.of( "hej" );
         Value propertyValue2 = Values.of( "da" );
-        long propertyId = createRelationshipProperty( inUse, propertyValue, 1 );
-        long propertyId2 = createRelationshipProperty( inUse, propertyValue2, 4 );
+        long propertyId = createProperty( inUse, propertyValue, 1 );
+        long propertyId2 = createProperty( inUse, propertyValue2, 4 );
         RelationshipRecord notInUse = getRelationship( relId, false, ENTITY_TOKEN );
         try ( PageCursor pageCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
@@ -340,16 +338,20 @@ class OnlineIndexUpdatesTest
         return grouper.sortAndAccessGroups();
     }
 
-    private long createRelationshipProperty( RelationshipRecord relRecord, Value propertyValue, int propertyKey )
+    private long createProperty( PrimitiveRecord nodeRecord, Value value, int propertyKey )
     {
-        return propertyCreator.createPropertyChain( relRecord, singletonList( propertyCreator.encodePropertyValue( propertyKey, propertyValue ) ).iterator(),
-                recordAccess );
-    }
+        var propertyStore = neoStores.getPropertyStore();
+        var propertyRecord = recordAccess.create( propertyStore.nextId( CursorContext.NULL ),
+                                                  nodeRecord, CursorContext.NULL ).forChangingData();
+        propertyRecord.setInUse( true );
+        propertyRecord.setCreated();
 
-    private long createNodeProperty( NodeRecord inUse, Value value, int propertyKey )
-    {
-        return propertyCreator.createPropertyChain( inUse, singletonList( propertyCreator.encodePropertyValue( propertyKey, value ) ).iterator(),
-                recordAccess );
+        PropertyBlock propertyBlock = new PropertyBlock();
+        PropertyStore.encodeValue( propertyBlock, propertyKey, value, propertyStore.getStringStore(),
+                                   propertyStore.getArrayStore(), CursorContext.NULL, INSTANCE );
+        propertyRecord.addPropertyBlock( propertyBlock );
+
+        return propertyRecord.getId();
     }
 
     private static NodeRecord getNode( int nodeId, boolean inUse )

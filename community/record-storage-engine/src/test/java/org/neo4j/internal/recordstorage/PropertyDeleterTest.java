@@ -53,10 +53,10 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -65,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordBuilders.createPropertyChain;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
@@ -86,7 +87,6 @@ class PropertyDeleterTest
 
     private final PropertyTraverser traverser = new PropertyTraverser();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private PropertyCreator propertyCreator;
     private NeoStores neoStores;
     private PropertyDeleter deleter;
     private PropertyStore propertyStore;
@@ -100,7 +100,6 @@ class PropertyDeleterTest
         neoStores = new StoreFactory( DatabaseLayout.ofFlat( directory.homePath() ), config, idGeneratorFactory, pageCache, directory.getFileSystem(),
                 NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openAllNeoStores( true );
         propertyStore = neoStores.getPropertyStore();
-        propertyCreator = new PropertyCreator( propertyStore, traverser, NULL, INSTANCE );
         storeCursors = new CachedStoreCursors( neoStores, NULL );
         deleter = new PropertyDeleter( traverser, this.neoStores, new TokenNameLookup()
         {
@@ -146,7 +145,7 @@ class PropertyDeleterTest
             properties.add( encodedValue( i, random.nextValue() ) );
         }
         DirectRecordAccessSet initialChanges = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
-        long firstPropId = propertyCreator.createPropertyChain( node, properties.iterator(), initialChanges.getPropertyRecords() );
+        long firstPropId = createPropertyChain( propertyStore, node, properties, initialChanges.getPropertyRecords() );
         node.setNextProp( firstPropId );
         initialChanges.commit(); // should update all the changed records directly into the store
 
@@ -198,7 +197,7 @@ class PropertyDeleterTest
             properties.add( encodedValue( i, random.nextValue() ) );
         }
         DirectRecordAccessSet initialChanges = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
-        long firstPropId = propertyCreator.createPropertyChain( node, properties.iterator(), initialChanges.getPropertyRecords() );
+        long firstPropId = createPropertyChain( propertyStore, node, properties, initialChanges.getPropertyRecords() );
         node.setNextProp( firstPropId );
         initialChanges.commit(); // should update all the changed records directly into the store
 
@@ -241,7 +240,7 @@ class PropertyDeleterTest
         node.setId( nodeStore.nextId( NULL ) );
         List<PropertyBlock> properties = Collections.singletonList( encodedValue( 0, random.randomValues().nextAsciiTextValue( 1000, 1000 ) ) );
         DirectRecordAccessSet initialChanges = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
-        long firstPropId = propertyCreator.createPropertyChain( node, properties.iterator(), initialChanges.getPropertyRecords() );
+        long firstPropId = createPropertyChain( propertyStore, node, properties, initialChanges.getPropertyRecords() );
         node.setNextProp( firstPropId );
         initialChanges.commit(); // should update all the changed records directly into the store
 
@@ -271,7 +270,7 @@ class PropertyDeleterTest
         node.setId( nodeStore.nextId( NULL ) );
         List<PropertyBlock> properties = Collections.singletonList( encodedValue( 0, random.randomValues().nextAsciiTextValue( 1000, 1000 ) ) );
         DirectRecordAccessSet initialChanges = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
-        long firstPropId = propertyCreator.createPropertyChain( node, properties.iterator(), initialChanges.getPropertyRecords() );
+        long firstPropId = createPropertyChain( propertyStore, node, properties, initialChanges.getPropertyRecords() );
         node.setNextProp( firstPropId );
         initialChanges.commit(); // should update all the changed records directly into the store
 
@@ -310,7 +309,7 @@ class PropertyDeleterTest
         properties.add( encodedValue( 3, bigValue2 ) );
         properties.add( encodedValue( 4, value3 ) );
         DirectRecordAccessSet initialChanges = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
-        long firstPropId = propertyCreator.createPropertyChain( node, properties.iterator(), initialChanges.getPropertyRecords() );
+        long firstPropId = createPropertyChain( propertyStore, node, properties, initialChanges.getPropertyRecords() );
         node.setNextProp( firstPropId );
         initialChanges.commit(); // should update all the changed records directly into the store
 
