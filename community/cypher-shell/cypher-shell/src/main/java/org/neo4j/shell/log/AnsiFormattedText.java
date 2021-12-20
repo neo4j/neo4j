@@ -224,6 +224,11 @@ public class AnsiFormattedText
         return this;
     }
 
+    public int textLength()
+    {
+        return pieces.stream().mapToInt( p -> p.string.length() ).sum();
+    }
+
     /**
      * A formatted string
      */

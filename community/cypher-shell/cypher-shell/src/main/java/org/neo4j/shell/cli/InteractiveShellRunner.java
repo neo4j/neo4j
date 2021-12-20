@@ -158,7 +158,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         {
             try
             {
-                return terminal.read().readStatement( updateAndGetPrompt().renderedString() ).statements();
+                return terminal.read().readStatement( updateAndGetPrompt() ).statements();
             }
             catch ( UserInterruptException e )
             {
