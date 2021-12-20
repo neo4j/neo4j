@@ -58,6 +58,7 @@ import java.lang.reflect.Modifier
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 
 class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
 
@@ -1243,10 +1244,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
 
     val settings = new Settings()
     settings.usejavacp.value = true
-    val interpreter = new IMain(settings)
+
+    val reporter = new ReplReporterImpl(new Settings())
+
+    val interpreter = new IMain(settings, reporter)
 
     try {
-      interpreter.beSilentDuring {
+      interpreter.beQuietDuring {
         // imports
         interpreter.interpret(
           """import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
