@@ -1294,16 +1294,12 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
         val relValues = p.path().relationships().asScala.map(rebindRelationship).toArray
         VirtualValues.pathReference(nodeValues, relValues)
 
-      case m: MapValue if m.isEmpty => m
-
-      case m: MapValue =>
+      case m: MapValue if !m.isEmpty =>
         val builder = new MapValueBuilder(m.size())
         m.foreach((k, v) => builder.add(k, rebindEntityWrappingValue(v)))
         builder.build()
 
-      case l: ListValue if l.isEmpty => l
-
-      case l: ListValue =>
+      case l: ListValue if !l.isEmpty =>
         val builder = ListValueBuilder.newListBuilder(l.size())
         l.forEach(v => builder.add(rebindEntityWrappingValue(v)))
         builder.build()
