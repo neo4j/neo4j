@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.util
 
 import scala.language.implicitConversions
+import scala.util.Try
 
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
@@ -66,6 +67,10 @@ object Cardinality {
     def times(x: Cardinality, y: Cardinality): Cardinality = x.amount * y.amount
     def minus(x: Cardinality, y: Cardinality): Cardinality = x.amount - y.amount
     def compare(x: Cardinality, y: Cardinality): Int = x.compare(y)
+
+    override def parseString(str: String): Option[Cardinality] = {
+      Try(Cardinality(str.toDouble)).toOption
+    }
   }
 }
 
@@ -145,6 +150,10 @@ object Multiplier {
     def times(x: Multiplier, y: Multiplier): Multiplier = x.coefficient * y.coefficient
     def minus(x: Multiplier, y: Multiplier): Multiplier = x.coefficient - y.coefficient
     def compare(x: Multiplier, y: Multiplier): Int = x.compare(y)
+
+    override def parseString(str: String): Option[Multiplier] = {
+      Try(Multiplier(str.toDouble)).toOption
+    }
   }
 }
 
