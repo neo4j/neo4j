@@ -68,14 +68,6 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     execute("CYPHER runtime=slotted RETURN 1 AS i")
     execute("CYPHER planner=dp RETURN 1 AS i")
 
-    val counts0 = Map(
-      "preparser" -> 6,
-      "ast" -> 6,
-      "logical_plan" -> 4,
-      "execution_plan" -> 4,
-      "executable_query" -> 6
-    )
-
     stats.preParserCacheEntries().shouldEqual(6)
     stats.astCacheEntries().shouldEqual(6)
     stats.logicalPlanCacheEntries().shouldEqual(4)
