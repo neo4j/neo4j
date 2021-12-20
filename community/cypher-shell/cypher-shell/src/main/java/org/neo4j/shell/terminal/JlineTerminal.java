@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.terminal;
 
+import org.fusesource.jansi.Ansi;
 import org.jline.reader.Expander;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
@@ -31,6 +32,7 @@ import java.util.List;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
+import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.Logger;
 
 import static java.util.stream.Collectors.toList;
@@ -171,12 +173,12 @@ public class JlineTerminal implements CypherShellTerminal
         }
 
         @Override
-        public ParsedStatement readStatement( String prompt ) throws NoMoreInputException, UserInterruptException
+        public ParsedStatement readStatement( AnsiFormattedText prompt ) throws NoMoreInputException, UserInterruptException
         {
             getParser().setEnableStatementParsing( true );
             jLineReader.setVariable( LineReader.SECONDARY_PROMPT_PATTERN, continuationPromptPattern( prompt ) );
 
-            var line = readLine( prompt, null );
+            var line = readLine( prompt.renderedString(), null );
             var parsed = jLineReader.getParsedLine();
 
             if ( !( parsed instanceof ParsedStatement ) )
@@ -193,9 +195,9 @@ public class JlineTerminal implements CypherShellTerminal
             return parsedStatement;
         }
 
-        private String continuationPromptPattern( String prompt )
+        private String continuationPromptPattern( AnsiFormattedText prompt )
         {
-            if ( prompt.length() > PROMPT_MAX_LENGTH )
+            if ( prompt.textLength() > PROMPT_MAX_LENGTH )
             {
                 return NO_CONTINUATION_PROMPT_PATTERN;
             }
@@ -203,7 +205,7 @@ public class JlineTerminal implements CypherShellTerminal
             {
                 // Note, jline has built in support for this using '%P', but that causes a bug in certain environments
                 // https://github.com/jline/jline3/issues/751
-                return " ".repeat( prompt.length() );
+                return " ".repeat( prompt.textLength() );
             }
         }
 

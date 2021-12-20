@@ -804,6 +804,24 @@ class MainIntegrationTest
                 ) );
     }
 
+    @Test
+    void shouldIndentLineContinuations() throws ArgumentParserException, IOException
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( "return", "1 as res", ";", ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput( containsString(
+                        "neo4j@neo4j> return\n" +
+                        "             1 as res\n" +
+                        "             ;\n" +
+                        "res\n" +
+                        "1\n" +
+                        "neo4j@neo4j> :exit"
+                ) );
+    }
+
     private void assertUserCanConnectAndRunQuery( String user, String password ) throws Exception
     {
         buildTest().addArgs( "-u", user, "-p", password, "--format", "plain", "return 42 as x;" ).run().assertSuccess();

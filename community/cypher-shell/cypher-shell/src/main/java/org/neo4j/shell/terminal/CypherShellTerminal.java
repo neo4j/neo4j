@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
+import org.neo4j.shell.log.AnsiFormattedText;
 
 /**
  * Handles user input and output.
@@ -60,7 +61,7 @@ public interface CypherShellTerminal
          * @throws NoMoreInputException if there is no more input (user press ctrl+d for example)
          * @throws UserInterruptException if user interrupted input (user press ctrl+c for example)
          */
-        ParsedStatement readStatement( String prompt ) throws NoMoreInputException, UserInterruptException;
+        ParsedStatement readStatement( AnsiFormattedText prompt ) throws NoMoreInputException, UserInterruptException;
 
         /**
          * Reads any string from the terminal.
