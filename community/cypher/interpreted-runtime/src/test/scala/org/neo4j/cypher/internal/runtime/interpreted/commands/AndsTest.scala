@@ -36,9 +36,11 @@ class AndsTest extends CypherFunSuite {
 
   private val nullPredicate = mock[Predicate]
   when(nullPredicate.isMatch(ctx, state)).thenReturn(None)
+  when(nullPredicate.children).thenReturn(Seq.empty)
 
   private val explodingPredicate = mock[Predicate]
   when(explodingPredicate.isMatch(any(), any())).thenThrow(new IllegalStateException("there is something wrong"))
+  when(explodingPredicate.children).thenReturn(Seq.empty)
 
   test("should return null if there are no false values and one or more nulls") {
     ands(T, nullPredicate).isMatch(ctx, state) should equal(None)

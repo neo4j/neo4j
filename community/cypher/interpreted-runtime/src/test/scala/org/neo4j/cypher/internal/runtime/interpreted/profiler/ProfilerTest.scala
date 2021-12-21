@@ -148,6 +148,7 @@ class ProfilerTest extends CypherFunSuite {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
     when(projectedPath.apply(any(), any())).thenReturn(NO_VALUE)
+    when(projectedPath.children).thenReturn(Seq.empty)
     val DB_HITS = 100
     val start1 = ArgumentPipe()(idGen.id())
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = DB_HITS)(idGen.id())
@@ -172,6 +173,7 @@ class ProfilerTest extends CypherFunSuite {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
     when(projectedPath.apply(any(), any())).thenReturn(NO_VALUE)
+    when(projectedPath.children).thenReturn(Seq.empty)
     val start1 = ArgumentPipe()(idGen.id())
     val statisticProvider = new ConfiguredKernelStatisticProvider()
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = 2, statisticProvider, hits = 3, misses = 4 )(idGen.id())
@@ -196,6 +198,7 @@ class ProfilerTest extends CypherFunSuite {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
     when(projectedPath.apply(any(), any())).thenReturn(NO_VALUE)
+    when(projectedPath.children).thenReturn(Seq.empty)
     val DB_HITS = 100
     val start1 = ArgumentPipe()(idGen.id())
     val start2 = ArgumentPipe()(idGen.id())
