@@ -61,7 +61,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(ClosingIterator(Iterator(row("b" -> null), row("b" -> null))))
 
     val right = mock[Pipe]
-    val rhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
+    val rhsIterator = new TestableIterator(ClosingIterator(row("b" -> newMockedNode(0))))
     when(left.createResults(queryState)).thenReturn(ClosingIterator.empty)
 
     // when
@@ -80,8 +80,8 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val node1 = newMockedNode(1)
     val node2 = newMockedNode(2)
 
-    val lhsIterator = new TestableIterator(Iterator(row("b" -> node1), row("b" -> node2)))
-    when(left.createResults(queryState)).thenReturn(ClosingIterator(lhsIterator))
+    val lhsIterator = new TestableIterator(ClosingIterator(row("b" -> node1), row("b" -> node2)))
+    when(left.createResults(queryState)).thenReturn(lhsIterator)
 
     val right = mock[Pipe]
     when(right.createResults(queryState)).thenReturn(ClosingIterator.empty)

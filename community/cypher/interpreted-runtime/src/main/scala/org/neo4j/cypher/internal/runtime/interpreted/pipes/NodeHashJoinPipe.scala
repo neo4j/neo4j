@@ -55,8 +55,8 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     val result =
       for {
         rhsRow <- rhsIterator
-        joinKey <- computeKey(rhsRow).toIterator
-        lhsRow <- table.get(joinKey).asScala
+        joinKey <- computeKey(rhsRow)
+        lhsRow <- ClosingIterator.asClosingIterator(table.get(joinKey).asScala)
       } yield {
         val output = lhsRow.createClone()
         output.mergeWith(rhsRow, state.query)
@@ -66,7 +66,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     result.closing(table)
   }
 
-  private def buildProbeTable(input: Iterator[CypherRow], queryState: QueryState): collection.ProbeTable[LongArray, CypherRow] = {
+  private def buildProbeTable(input: ClosingIterator[CypherRow], queryState: QueryState): collection.ProbeTable[LongArray, CypherRow] = {
     val table = collection.ProbeTable.createProbeTable[LongArray, CypherRow](queryState.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
 
     for {context <- input
@@ -79,16 +79,16 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
 
   private val cachedVariables = nodeVariables.toIndexedSeq
 
-  private def computeKey(context: CypherRow): Option[LongArray] = {
+  private def computeKey(context: CypherRow): ClosingIterator[LongArray] = {
     val key = new Array[Long](cachedVariables.length)
 
     for (idx <- cachedVariables.indices) {
       key(idx) = context.getByName(cachedVariables(idx)) match {
         case n: VirtualNodeValue => n.id()
-        case IsNoValue() => return None
+        case IsNoValue() => return ClosingIterator.empty
         case _ => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")
       }
     }
-    Some(Values.longArray(key))
+    ClosingIterator.single(Values.longArray(key))
   }
 }

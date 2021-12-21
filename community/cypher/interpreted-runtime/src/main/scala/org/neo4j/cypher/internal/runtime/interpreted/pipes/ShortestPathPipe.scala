@@ -52,7 +52,7 @@ case class ShortestPathPipe(source: Pipe,
         case path: VirtualPathValue => VirtualValues.list(path)
       }
 
-      shortestPathCommand.relIterator match {
+      val iterator = shortestPathCommand.relIterator match {
         case Some(relName) =>
           result.iterator().asScala.map {
             case path: VirtualPathValue =>
@@ -71,6 +71,7 @@ case class ShortestPathPipe(source: Pipe,
               throw new InternalException(s"Expected path, got '$value'")
           }
       }
+      ClosingIterator(iterator)
     })
   }
 }

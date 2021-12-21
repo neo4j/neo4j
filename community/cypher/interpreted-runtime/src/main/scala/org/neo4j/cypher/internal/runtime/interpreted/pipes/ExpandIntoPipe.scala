@@ -41,8 +41,6 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.Iterator
-
 /**
  * Expand when both end-points are known, find all relationships of the given
  * type in the given direction between the two end-points.
@@ -80,7 +78,7 @@ case class ExpandIntoPipe(source: Pipe,
           case fromNode: VirtualNodeValue =>
             val toNode = getRowNode(row, toName)
             toNode match {
-              case IsNoValue() => Iterator.empty
+              case IsNoValue() => ClosingIterator.empty
               case n: VirtualNodeValue =>
                 val traversalCursor = query.traversalCursor()
                 val nodeCursor = query.nodeCursor()
@@ -92,7 +90,7 @@ case class ExpandIntoPipe(source: Pipe,
                                                                            n.id())
                   traceRelationshipSelectionCursor(query.resources, selectionCursor, traversalCursor)
                   val relationships = relationshipSelectionCursorIterator(selectionCursor, traversalCursor)
-                  if (!relationships.hasNext) Iterator.empty
+                  if (!relationships.hasNext) ClosingIterator.empty
                   else PrimitiveLongHelper.map(relationships, r => rowFactory.copyWith(row, relName, VirtualValues.relationship(r, relationships.startNodeId(), relationships.endNodeId(), relationships.typeId())))
                 } finally {
                   nodeCursor.close()
@@ -102,7 +100,7 @@ case class ExpandIntoPipe(source: Pipe,
                   s"Expected to find a node at '$fromName' but found $value instead")
             }
 
-          case IsNoValue() => Iterator.empty
+          case IsNoValue() => ClosingIterator.empty
         }
     }.closing(expandInto)
   }

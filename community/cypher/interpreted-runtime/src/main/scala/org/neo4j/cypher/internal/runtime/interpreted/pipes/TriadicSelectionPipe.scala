@@ -28,7 +28,6 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualNodeValue
 
-import scala.collection.AbstractIterator
 import scala.collection.Iterator
 import scala.collection.mutable.ListBuffer
 
@@ -39,7 +38,7 @@ extends PipeWithSource(left) {
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     var triadicState: LongHashSet = null
     // 1. Build
-    ClosingIterator(new LazyGroupingIterator[CypherRow](input) {
+    new LazyGroupingIterator[CypherRow](input) {
       override def getKey(row: CypherRow): AnyValue = row.getByName(source)
 
       override def getValue(row: CypherRow): Option[Long] = row.getByName(seen) match {
@@ -51,7 +50,7 @@ extends PipeWithSource(left) {
       override def setState(triadicSet: LongHashSet): Unit = triadicState = triadicSet
 
     // 2. pass through 'right'
-    }).flatMap { outerContext =>
+    }.flatMap { outerContext =>
       val innerState = state.withInitialContext(outerContext)
       right.createResults(innerState)
 
@@ -65,7 +64,7 @@ extends PipeWithSource(left) {
   }
 }
 
-abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[ROW]) extends AbstractIterator[ROW] {
+abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: ClosingIterator[ROW]) extends ClosingIterator[ROW] {
   def setState(state: LongHashSet)
   def getKey(row: ROW): Any
   def getValue(row: ROW): Option[Long]
@@ -75,7 +74,7 @@ abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[R
 
   override def next(): ROW = if(hasNext) current.next() else Iterator.empty.next()
 
-  override def hasNext: Boolean = {
+  override protected[this] def innerHasNext: Boolean = {
     if (current != null && current.hasNext)
       true
     else {
@@ -98,21 +97,27 @@ abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[R
         buffer += firstRow
         update(valueSet, firstRow)
         val key = getKey(firstRow)
-        // N.B. should we rewrite takeWhile to a while-loop?
-        buffer ++= input.takeWhile{ row =>
+        var shouldContinue = input.hasNext
+        while (shouldContinue) {
+          val row = input.next()
           val s = getKey(row)
           if (s == key) {
             update(valueSet, row)
-            true
+            buffer += row
+            shouldContinue = input.hasNext
           } else {
             nextRow = row
-            false
+            shouldContinue = false
           }
         }
         current = buffer.iterator
         true
       }
     }
+  }
+
+  override protected[this] def closeMore(): Unit = {
+    input.close()
   }
 
   def update(triadicSet: LongHashSet, row: ROW): AnyVal = {

@@ -37,7 +37,7 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
           inner.createResults(innerState)
         } else {
           rhsOnlySymbols.foreach(v => outerContext.set(v, Values.NO_VALUE))
-          Iterator.single(outerContext)
+          ClosingIterator.single(outerContext)
         }
     }
 

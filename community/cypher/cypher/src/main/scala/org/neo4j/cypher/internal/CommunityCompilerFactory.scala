@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5

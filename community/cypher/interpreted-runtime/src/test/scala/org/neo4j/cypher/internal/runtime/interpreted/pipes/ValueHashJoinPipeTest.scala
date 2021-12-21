@@ -137,7 +137,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
     val right = mock[Pipe]
     val rhsIter = new TestableIterator(rows("b", 1, 2, 3))
-    when(right.createResults(queryState)).thenReturn(ClosingIterator(rhsIter))
+    when(right.createResults(queryState)).thenReturn(rhsIter)
 
     // when
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
@@ -155,7 +155,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val left = mock[Pipe]
 
     val lhsIterator = new TestableIterator(rows("a", 1, 2, 3))
-    when(left.createResults(queryState)).thenReturn(ClosingIterator(lhsIterator))
+    when(left.createResults(queryState)).thenReturn(lhsIterator)
 
     val right = mock[Pipe]
     when(right.createResults(queryState)).thenReturn(ClosingIterator.empty)

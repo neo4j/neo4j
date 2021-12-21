@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.api.LongIterable
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LazyGroupingIteratorTest extends CypherFunSuite {
@@ -88,7 +89,7 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
     def this(key: Any) = this(key, None)
   }
 
-  class LazyGroupingRowIterator(rows: Row*) extends LazyGroupingIterator[Row](rows.iterator) {
+  class LazyGroupingRowIterator(rows: Row*) extends LazyGroupingIterator[Row](ClosingIterator(rows.iterator)) {
     var state: LongHashSet = _
 
     override def setState(state: LongHashSet) = {

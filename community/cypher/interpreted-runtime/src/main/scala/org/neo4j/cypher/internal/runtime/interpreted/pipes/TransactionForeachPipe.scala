@@ -34,7 +34,7 @@ case class TransactionForeachPipe(source: Pipe,
 
     input.grouped(batchSizeLong).flatMap { batch =>
       runInnerInTransaction(state, batch)
-      batch
+      ClosingIterator.asClosingIterator(batch)
     }
   }
 }

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.runtime.ClosingIterator.asClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.TestClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.forever
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.values
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.collection.GenTraversableOnce
 import scala.language.reflectiveCalls
 
 class ClosingIteratorTest extends CypherFunSuite {
@@ -80,12 +80,6 @@ class ClosingIteratorTest extends CypherFunSuite {
     iter.closeCount shouldBe 1
   }
 
-  test("toIterator returns self") {
-    val iter = ClosingIterator.empty
-    //noinspection RedundantCollectionConversion
-    iter.toIterator shouldBe theSameInstanceAs(iter)
-  }
-
   test("flatMap explicit close closes current inner") {
     // given
     val outer = forever(0)
@@ -121,10 +115,10 @@ class ClosingIteratorTest extends CypherFunSuite {
     // given
     val outer = forever(0)
     val inner1: TestClosingIterator[Int] = values(1)
-    val inner2: Option[Int] = Option.empty
-    val inner3: Seq[Int] = Seq(3, 3)
+    val inner2 = asClosingIterator(Option.empty)
+    val inner3 = asClosingIterator(Seq(3, 3))
     val inner4: TestClosingIterator[Int] = forever(4)
-    val nextInner: Iterator[GenTraversableOnce[Int]] = Iterator(inner1, inner2, inner3, inner4)
+    val nextInner = ClosingIterator(inner1, inner2, inner3, inner4)
     val flatMapped = outer.flatMap(_ => nextInner.next())
     // when
     flatMapped.hasNext
@@ -403,6 +397,54 @@ class ClosingIteratorTest extends CypherFunSuite {
     grouped.close()
     // then
     input.closed shouldBe true
+  }
+
+  test("collect should close on explicit close") {
+    // given
+    val outer = values(1, "and", 2, "and", 3)
+    val collected = outer.collect {
+      case i: Int => i
+    }
+    // when
+    collected.hasNext shouldBe true
+    collected.close()
+    // then
+    outer.closed shouldBe true
+  }
+
+  test("collect should close on exhaustion") {
+    // given
+    val outer = values(1, "and", 2, "and", 3)
+    val collected = outer.collect {
+      case i: Int => i
+    }
+    // when
+    collected.hasNext shouldBe true
+    outer.closed shouldBe false
+    collected.next() shouldBe 1
+    collected.hasNext shouldBe true
+    outer.closed shouldBe false
+    collected.next() shouldBe 2
+    collected.hasNext shouldBe true
+    outer.closed shouldBe false
+    collected.next() shouldBe 3
+    collected.hasNext shouldBe false
+
+    // then
+    outer.closed shouldBe true
+  }
+
+  test("collect with empty outer should not call inner lambda") {
+    // given
+    val outer = ClosingIterator.empty
+
+    //when
+    val collected = outer.collect {
+      case _ => fail("should not call inner lambda")
+    }
+
+    // then
+    collected.hasNext shouldBe false
   }
 }
 

@@ -96,7 +96,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
                       expandMap: LongObjectHashMap[FullExpandDepths]
                      ) extends State with Expandable with CheckPath {
 
-    private var rels: Iterator[(VirtualRelationshipValue, VirtualNodeValue)] = _
+    private var rels: ClosingIterator[(VirtualRelationshipValue, VirtualNodeValue)] = _
 
     /*
     Loads the relationship iterator of the nodes before min length has been reached.
@@ -260,7 +260,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     }
   }
 
-  class LoadNext(private val input: Iterator[CypherRow], val state: QueryState) extends State with Expandable {
+  class LoadNext(private val input: ClosingIterator[CypherRow], val state: QueryState) extends State with Expandable {
 
     override def next(): (State, CypherRow) = {
       def nextState(row: CypherRow, node: VirtualNodeValue) = {
@@ -312,7 +312,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
     /**
      * List all relationships of a node, given the predicates of this pipe.
      */
-    def expand(row: CypherRow, node: VirtualNodeValue): Iterator[(VirtualRelationshipValue, VirtualNodeValue)] = {
+    def expand(row: CypherRow, node: VirtualNodeValue): ClosingIterator[(VirtualRelationshipValue, VirtualNodeValue)] = {
       val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
       PrimitiveLongHelper.map(relationships, r => (VirtualValues.relationship(r), VirtualValues.node(relationships.otherNodeId(node.id())))).filter{
         case (rel, other) =>  filteringStep.filterRelationship(row, state)(rel) &&

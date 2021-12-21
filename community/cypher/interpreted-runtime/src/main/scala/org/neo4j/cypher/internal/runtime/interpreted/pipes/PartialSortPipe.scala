@@ -20,15 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.util.Comparator
-
 import org.neo4j.collection.trackable.HeapTrackingArrayList
+import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialSortPipe.NO_MORE_ROWS_TO_SKIP_SORTING
 import org.neo4j.cypher.internal.util.attribution.Id
-
-import scala.collection.JavaConverters.asScalaIteratorConverter
 
 case class PartialSortPipe(source: Pipe,
                            prefixComparator: Comparator[ReadableRow],
@@ -64,12 +62,12 @@ case class PartialSortPipe(source: Pipe,
       remainingSkipSorting = math.max(NO_MORE_ROWS_TO_SKIP_SORTING, remainingSkipSorting - 1)
     }
 
-    override def result(): Iterator[CypherRow] = {
+    override def result(): ClosingIterator[CypherRow] = {
       if (buffer.size() > 1 && remainingSkipSorting == NO_MORE_ROWS_TO_SKIP_SORTING) {
         // Sort this chunk
         buffer.sort(suffixComparator)
       }
-      buffer.iterator().asScala
+      ClosingIterator(buffer.iterator())
     }
 
     override def processNextChunk: Boolean = true

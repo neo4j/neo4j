@@ -61,7 +61,7 @@ case class VarLengthExpandPipe(source: Pipe,
                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   private def varLengthExpand(node: VirtualNodeValue, state: QueryState, maxDepth: Option[Int],
-                              row: CypherRow): Iterator[(VirtualNodeValue, RelationshipContainer)] = {
+                              row: CypherRow): ClosingIterator[(VirtualNodeValue, RelationshipContainer)] = {
     val stack = HeapTrackingCollections.newStack[(VirtualNodeValue, RelationshipContainer)](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
     stack.push((node, RelationshipContainer.EMPTY))
 
@@ -98,15 +98,16 @@ case class VarLengthExpandPipe(source: Pipe,
   }
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    def expand(row: CypherRow, n: VirtualNodeValue): Iterator[CypherRow] = {
+    def expand(row: CypherRow, n: VirtualNodeValue): ClosingIterator[CypherRow] = {
       if (filteringStep.filterNode(row, state)(n)) {
         val paths = varLengthExpand(n, state, max, row)
-        paths.collect {
+        val foo = paths.collect {
           case (node, rels) if rels.size >= min && isToNodeValid(row, node) =>
             rowFactory.copyWith(row, relName, rels.asList, toName, node)
         }
+        foo
       } else {
-        Iterator.empty
+        ClosingIterator.empty
       }
     }
 
@@ -116,7 +117,7 @@ case class VarLengthExpandPipe(source: Pipe,
           case node: VirtualNodeValue =>
             expand(row, node)
 
-          case IsNoValue() => Iterator.empty
+          case IsNoValue() => ClosingIterator.empty
           case value => throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
         }
       }

@@ -38,15 +38,15 @@ trait TransactionPipe {
     internalCreateResultsForOneBatch(state, batch, keepResults = false)
   }
 
-  def runInnerInTransactionKeepResult(state: QueryState, batch: Seq[CypherRow]): Seq[CypherRow] = {
+  def runInnerInTransactionKeepResult(state: QueryState, batch: Seq[CypherRow]): ClosingIterator[CypherRow] = {
     internalCreateResultsForOneBatch(state, batch, keepResults = true)
   }
 
-  private def internalCreateResultsForOneBatch(state: QueryState, batch: Seq[CypherRow], keepResults: Boolean): Seq[CypherRow] = {
+  private def internalCreateResultsForOneBatch(state: QueryState, batch: Seq[CypherRow], keepResults: Boolean): ClosingIterator[CypherRow] = {
     inNewTransaction(state) { stateWithNewTransaction =>
       val entityTransformer = new CypherRowEntityTransformer(stateWithNewTransaction.query.entityTransformer)
 
-      val result: Seq[CypherRow] = batch.flatMap { outerRow =>
+      val result = batch.flatMap { outerRow =>
         // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).
         // Since we do not share the transaction state we must clear the cached properties.
         outerRow.invalidateCachedProperties()
@@ -59,20 +59,20 @@ trait TransactionPipe {
           while (result.hasNext) {
             result.next()
           }
-          ClosingIterator.empty
+          Stream.empty
         } else {
-          result
+          result.toStream
         }
       }
 
       val subqueryStatistics = stateWithNewTransaction.getStatistics
       state.query.addStatistics(subqueryStatistics)
 
-      result
+      ClosingIterator.asClosingIterator(result)
     }
   }
 
-  def inNewTransaction(state: QueryState)(f: QueryState => Seq[CypherRow]): Seq[CypherRow] = {
+  def inNewTransaction(state: QueryState)(f: QueryState => ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
 
     // Ensure that no write happens before a 'CALL { ... } IN TRANSACTIONS'
     if (state.query.transactionalContext.dataRead.transactionStateHasChanges) throw new InternalException("Expected transaction state to be empty when calling transactional subquery.")
@@ -82,7 +82,7 @@ trait TransactionPipe {
     val innerTxContext = stateWithNewTransaction.query.transactionalContext
 
     try {
-      val result = f(stateWithNewTransaction)
+      val result: ClosingIterator[CypherRow] = f(stateWithNewTransaction)
 
       // commitTx()
       innerTxContext.close()

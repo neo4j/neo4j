@@ -20,13 +20,19 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.asClosingIterator
 import org.neo4j.io.IOUtils
 import org.neo4j.storageengine.api.RelationshipVisitor
 
 import scala.collection.GenTraversableOnce
 import scala.collection.Iterator
 import scala.collection.Iterator.empty
+import scala.collection.Traversable
+import scala.collection.immutable
+import scala.collection.immutable.Stream
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 /**
  * Adds the method [[close]] over the normal [[Iterator]] interface.
@@ -36,7 +42,7 @@ import scala.collection.mutable
  * Overrides scala [[Iterator]] convenience functions to create new
  * [[ClosingIterator]]s that propagate [[close]] calls.
  */
-abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
+abstract class ClosingIterator[+T] extends AutoCloseable {
   self =>
 
   /**
@@ -48,12 +54,11 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
   private var closed = false
 
   // ABSTRACT METHODS
-
   /**
    * Perform additional actions on close
    */
   protected[this] def closeMore(): Unit
-
+  def next(): T
   /**
    * Implements the test of whether this iterator can provide another element.
    */
@@ -61,6 +66,37 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
   protected[this] def innerHasNext: Boolean
 
   // PUBLIC API
+  def isEmpty: Boolean = !hasNext
+  def nonEmpty: Boolean = hasNext
+  def toTraversable: Traversable[T] = toStream
+  def toSeq: Seq[T] = toStream
+  def toList: List[T] = toStream.toList
+  def toStream: Stream[T] = {
+    if (self.hasNext) Stream.cons(self.next(), self.toStream)
+    else Stream.empty[T]
+  }
+  def toArray[B >: T : ClassTag]: Array[B] = {
+      val buffer = ArrayBuffer.empty[B]
+      while (hasNext) {
+        buffer.append(next())
+      }
+    buffer.toArray
+  }
+  def toSet[B >: T]: immutable.Set[B] = toStream.toSet
+  def foreach[U](f: T => U): Unit = {
+    while (hasNext) {
+      f(next())
+    }
+  }
+
+  def size: Int = {
+    var count = 0
+    while (hasNext) {
+      count += 1
+      next()
+    }
+    count
+  }
 
   /**
    * Adds a resource to the list of resources that are closed by this iterator.
@@ -89,7 +125,7 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
     }
   }
 
-  override final def hasNext: Boolean = {
+  final def hasNext: Boolean = {
     val _hasNext = innerHasNext
     if (!_hasNext) {
       close()
@@ -100,11 +136,11 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
   // CONVENIENCE METHODS
 
   // except for closing a copy of [[Iterator.flatMap]]
-  override def flatMap[B](f: T => GenTraversableOnce[B]): ClosingIterator[B] = new ClosingIterator[B] {
-    private var cur: Iterator[B] = ClosingIterator.empty
+  def flatMap[B](f: T => ClosingIterator[B]): ClosingIterator[B] = new ClosingIterator[B] {
+    private var cur: ClosingIterator[B] = ClosingIterator.empty
 
     private def nextCur(): Unit = {
-      cur = f(self.next()).toIterator
+      cur = f(self.next())
     }
 
     def innerHasNext: Boolean = {
@@ -115,7 +151,10 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
       true
     }
 
-    def next(): B = (if (hasNext) cur else ClosingIterator.empty).next()
+    def next(): B = {
+      if (hasNext) cur.next()
+      else ClosingIterator.empty.next()
+    }
 
     override def closeMore(): Unit = {
       self.close()
@@ -126,10 +165,10 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
     }
   }
 
-  override def withFilter(p: T => Boolean): ClosingIterator[T] = filter(p)
+  def withFilter(p: T => Boolean): ClosingIterator[T] = filter(p)
 
   // except for closing a copy of [[Iterator.filter]]
-  override def filter(p: T => Boolean): ClosingIterator[T] = new ClosingIterator[T] {
+  def filter(p: T => Boolean): ClosingIterator[T] = new ClosingIterator[T] {
     private var hd: T = _
     private var hdDefined: Boolean = false
 
@@ -148,7 +187,7 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
   }
 
   // except for closing a copy of [[Iterator.map]]
-  override def map[B](f: T => B): ClosingIterator[B] = new ClosingIterator[B] {
+  def map[B](f: T => B): ClosingIterator[B] = new ClosingIterator[B] {
     override protected[this] def innerHasNext: Boolean = self.hasNext
 
     def next(): B = f(self.next())
@@ -179,26 +218,25 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
   }
 
   // this is our own implementation, [[Iterator.++]] is overly complex, we probably don't need to be so specialized.
-  override def ++[B >: T](that: => GenTraversableOnce[B]): ClosingIterator[B] = new ClosingIterator[B] {
-    // We cannot change the call-by-name signature if we want to override Iterator.++
+  def ++[B >: T](that: => ClosingIterator[B]): ClosingIterator[B] = new ClosingIterator[B] {
     // We read this into a lazy local variable here to avoid creating a new `that` iterator multiple times.
     // This is OK, since we expect to close both sides anyway.
     private lazy val eagerThat = that
 
-    private var cur: Iterator[B] = self
+    private var cur: ClosingIterator[B] = self
 
     override protected[this] def innerHasNext: Boolean = {
       if (cur.hasNext) {
         true
       } else if (cur eq self) {
-        cur = eagerThat.toIterator
+        cur = eagerThat
         cur.hasNext
       } else {
         false
       }
     }
 
-    override def next(): B = if (hasNext) cur.next() else ClosingIterator.empty.next()
+    def next(): B = if (hasNext) cur.next() else ClosingIterator.empty.next()
 
     override protected[this] def closeMore(): Unit = {
       self.close()
@@ -206,6 +244,34 @@ abstract class ClosingIterator[+T] extends Iterator[T] with AutoCloseable {
         case closingIterator: ClosingIterator[_] => closingIterator.close()
         case _ =>
       }
+    }
+  }
+
+  //NOTE: direct port of Iterator#collect except for closing the inner iterator
+  def collect[B](pf: PartialFunction[T, B]): ClosingIterator[B] = new ClosingIterator[B] {
+    // Manually buffer to avoid extra layer of wrapping with buffered
+    private[this] var hd: T = _
+
+    // Little state machine to keep track of where we are
+    // Seek = 0; Found = 1; Empty = -1
+    // Not in vals because scalac won't make them static (@inline def only works with -optimize)
+    // BE REALLY CAREFUL TO KEEP COMMENTS AND NUMBERS IN SYNC!
+    private[this] var status = 0/*Seek*/
+
+    protected override def innerHasNext: Boolean = {
+      while (status == 0/*Seek*/) {
+        if (self.hasNext) {
+          hd = self.next()
+          if (pf.isDefinedAt(hd)) status = 1/*Found*/
+        }
+        else status = -1/*Empty*/
+      }
+      status == 1/*Found*/
+    }
+    def next(): B = if (hasNext) { status = 0/*Seek*/; pf(hd) } else ClosingIterator.empty.next()
+
+    override protected[this] def closeMore(): Unit = {
+      self.close()
     }
   }
 }
@@ -244,12 +310,22 @@ object ClosingIterator {
   /**
    * Wrap a normal iterator in a closing iterator.
    */
-  def apply[T](iterator: Iterator[T]): ClosingIterator[T] = iterator match {
-    case c: ClosingIterator[T] => c
-    case _ => new DelegatingClosingIterator(iterator)
-  }
+  def apply[T](iterator: Iterator[T]): ClosingIterator[T] = new DelegatingClosingIterator(iterator)
+  def apply[T](iterator: java.util.Iterator[T]): ClosingIterator[T] = new DelegatingClosingJavaIterator(iterator)
+  def apply[T](elems: T*): ClosingIterator[T] = new DelegatingClosingIterator(elems.iterator)
+
+  def asClosingIterator[T](seq: GenTraversableOnce[T]): ClosingIterator[T] = new DelegatingClosingIterator(seq.toIterator)
+  def asClosingIterator[T](iterator: java.util.Iterator[T]): ClosingIterator[T] = new DelegatingClosingJavaIterator(iterator)
 
   class DelegatingClosingIterator[+T](iterator: Iterator[T]) extends ClosingIterator[T] {
+    override protected[this] def closeMore(): Unit = ()
+
+    override protected[this] def innerHasNext: Boolean = iterator.hasNext
+
+    override def next(): T = iterator.next()
+  }
+
+  class DelegatingClosingJavaIterator[+T](iterator: java.util.Iterator[T]) extends ClosingIterator[T] {
     override protected[this] def closeMore(): Unit = ()
 
     override protected[this] def innerHasNext: Boolean = iterator.hasNext

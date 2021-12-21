@@ -35,7 +35,7 @@ case class TransactionApplyPipe(source: Pipe,
     val entityTransformer = new CypherRowEntityTransformer(state.query.entityTransformer)
 
     input.grouped(batchSizeLong).flatMap { batch =>
-      val resultForBatch: Seq[CypherRow] = runInnerInTransactionKeepResult(state, batch)
+      val resultForBatch = runInnerInTransactionKeepResult(state, batch)
 
       resultForBatch.map { resultRow =>
         // Row based caching relies on the transaction state to avoid stale reads (see AbstractCachedProperty.apply).

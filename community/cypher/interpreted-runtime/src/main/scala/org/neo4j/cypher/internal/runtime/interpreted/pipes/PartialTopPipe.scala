@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialSortPipe.NO_MORE_ROWS_TO_SKIP_SORTING
 import org.neo4j.cypher.internal.util.attribution.Id
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
-
 case class PartialTopNPipe(source: Pipe,
                            countExpression: Expression,
                            skipExpression: Option[Expression],
@@ -73,12 +71,12 @@ case class PartialTopNPipe(source: Pipe,
       remainingSkipRows = math.max(NO_MORE_ROWS_TO_SKIP_SORTING, remainingSkipRows - 1)
     }
 
-    override def result(): Iterator[CypherRow] = {
+    override def result(): ClosingIterator[CypherRow] = {
       if (remainingSkipRows == NO_MORE_ROWS_TO_SKIP_SORTING) {
         topTable.sort()
-        topTable.iterator().asScala
+        ClosingIterator(topTable.iterator())
       } else {
-        topTable.unorderedIterator().asScala
+        ClosingIterator(topTable.unorderedIterator())
       }
     }
 

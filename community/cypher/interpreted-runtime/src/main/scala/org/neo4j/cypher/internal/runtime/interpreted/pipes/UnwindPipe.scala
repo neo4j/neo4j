@@ -34,17 +34,17 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
   extends PipeWithSource(source) with ListSupport {
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    if (input.hasNext) ClosingIterator(new UnwindIterator(input, state)) else ClosingIterator.empty
+    if (input.hasNext) new UnwindIterator(input, state) else ClosingIterator.empty
   }
 
-  private class UnwindIterator(input: Iterator[CypherRow], state: QueryState) extends Iterator[CypherRow] {
+  private class UnwindIterator(input: ClosingIterator[CypherRow], state: QueryState) extends ClosingIterator[CypherRow] {
     private var context: CypherRow = _
     private var unwindIterator: Iterator[AnyValue] = _
     private var nextItem: CypherRow = _
 
     prefetch()
 
-    override def hasNext: Boolean = nextItem != null
+    override def innerHasNext: Boolean = nextItem != null
 
     override def next(): CypherRow = {
       if (hasNext) {
@@ -67,5 +67,6 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
         }
       }
     }
+    override protected[this] def closeMore(): Unit = input.close()
   }
 }

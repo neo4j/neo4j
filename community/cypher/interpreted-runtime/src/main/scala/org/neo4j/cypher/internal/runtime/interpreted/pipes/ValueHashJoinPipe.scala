@@ -27,8 +27,6 @@ import org.neo4j.kernel.impl.util.collection
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
-
 case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expression, left: Pipe, right: Pipe)
                             (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(left) {
@@ -54,7 +52,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     val result: ClosingIterator[CypherRow] = for {
       rhsRow <- rhsIterator
       joinKey = rhsExpression(rhsRow, state) if !(joinKey eq Values.NO_VALUE)
-      lhsRow <- table.get(joinKey).asScala
+      lhsRow <- ClosingIterator.asClosingIterator(table.get(joinKey))
     } yield {
       val outputRow = lhsRow.createClone()
       outputRow.mergeWith(rhsRow, state.query)
@@ -64,7 +62,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     result.closing(table)
   }
 
-  private def buildProbeTable(input: Iterator[CypherRow], state: QueryState): collection.ProbeTable[AnyValue, CypherRow] = {
+  private def buildProbeTable(input: ClosingIterator[CypherRow], state: QueryState): collection.ProbeTable[AnyValue, CypherRow] = {
     val table = collection.ProbeTable.createProbeTable[AnyValue, CypherRow](state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
 
     for (context <- input;

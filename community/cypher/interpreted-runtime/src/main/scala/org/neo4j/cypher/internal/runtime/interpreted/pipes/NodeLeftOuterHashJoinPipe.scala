@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.asClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.LongArray
@@ -47,9 +48,9 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
     val lhsKeys: collection.Set[LongArray] = probeTable.keySet.asScala
     val joinedRows = for {
       rhsRow <- rhsIterator
-      joinKey <- computeKey(rhsRow).toIterator
+      joinKey <- asClosingIterator(computeKey(rhsRow))
       _ = rhsKeys.add(joinKey)
-      lhsRow <- probeTable(joinKey).asScala
+      lhsRow <- ClosingIterator(probeTable(joinKey))
     } yield {
       val outputRow = rowFactory.copyWith(lhsRow)
       // lhs and rhs might have different nullability - should use nullability on lhs
@@ -59,10 +60,10 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
 
     // This must not be eagerly consumed, it can only be iterated after joinedRows is exhausted,
     // otherwise the result is wrong.
-    def rowsWithoutRhsMatch: Iterator[CypherRow] = {
-      (lhsKeys -- rhsKeys).iterator.flatMap {
+    def rowsWithoutRhsMatch: ClosingIterator[CypherRow] = {
+      ClosingIterator((lhsKeys -- rhsKeys).iterator.flatMap {
         x => probeTable(x).asScala.map(addNulls)
-      }
+      })
     }
 
     val rowsWithNullAsJoinKey = probeTable.nullRows.map(addNulls)

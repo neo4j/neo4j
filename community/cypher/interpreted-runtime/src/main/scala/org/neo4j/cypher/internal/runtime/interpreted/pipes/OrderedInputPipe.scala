@@ -97,7 +97,7 @@ trait OrderedInputPipe {
 
   private class InputState() {
     var firstRowOfNextChunk: CypherRow = _
-    var resultRowsOfChunk: Iterator[CypherRow] = Iterator.empty
+    var resultRowsOfChunk: ClosingIterator[CypherRow] = ClosingIterator.empty
   }
 
 }
@@ -141,7 +141,7 @@ trait OrderedChunkReceiver {
    *
    * @return an iterator of rows.
    */
-  def result(): Iterator[CypherRow]
+  def result(): ClosingIterator[CypherRow]
 
   /**
    * @return whether the next chunk needs to be processed

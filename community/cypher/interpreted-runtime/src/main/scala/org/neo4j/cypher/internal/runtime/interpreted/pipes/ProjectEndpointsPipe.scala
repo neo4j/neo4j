@@ -38,7 +38,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 simpleLength: Boolean)
                                (val id: Id = Id.INVALID_ID) extends PipeWithSource(source)
   with ListSupport  {
-  type Projector = CypherRow => Iterator[CypherRow]
+  type Projector = CypherRow => ClosingIterator[CypherRow]
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
     input.flatMap(projector(state))
@@ -50,17 +50,17 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     findVarLengthRelEndpoints(context, state) match {
       case Some((InScopeReversed(startNode, endNode), rels)) if !directed =>
         context.set(start, endNode, end, startNode, relName, rels.reverse())
-        Iterator(context)
+        ClosingIterator.single(context)
       case Some((NotInScope(startNode, endNode), rels)) if !directed =>
-        Iterator(
+        ClosingIterator(
           rowFactory.copyWith(context, start, startNode, end, endNode),
           rowFactory.copyWith(context, start, endNode, end, startNode, relName, rels.reverse())
         )
       case Some((startAndEnd, rels)) =>
         context.set(start, startAndEnd.start, end, startAndEnd.end)
-        Iterator(context)
+        ClosingIterator.single(context)
       case None =>
-        Iterator.empty
+        ClosingIterator.empty
     }
   }
 
@@ -68,17 +68,17 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     findSimpleLengthRelEndpoints(context, state) match {
       case Some(InScopeReversed(startNode, endNode)) if !directed =>
         context.set(start, endNode, end, startNode)
-        Iterator(context)
+        ClosingIterator.single(context)
       case Some(NotInScope(startNode, endNode)) if !directed =>
-        Iterator(
+        ClosingIterator(
           rowFactory.copyWith(context, start, startNode, end, endNode),
           rowFactory.copyWith(context, start, endNode, end, startNode)
         )
       case Some(startAndEnd) =>
         context.set(start, startAndEnd.start, end, startAndEnd.end)
-        Iterator(context)
+        ClosingIterator.single(context)
       case None =>
-        Iterator.empty
+        ClosingIterator.empty
     }
   }
 
@@ -108,7 +108,6 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                         state: QueryState
                                        ): Option[(StartAndEnd, ListValue)] = {
     val rels = makeTraversable(context.getByName(relName))
-    val qtx = state.query
     if (rels.nonEmpty && allHasAllowedType(rels, state)) {
       val internalCursor = state.cursors.relationshipScanCursor
       val firstRel = rels.head match {

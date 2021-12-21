@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-class TestableIterator[A](inner: Iterator[A]) extends Iterator[A] {
+import org.neo4j.cypher.internal.runtime.ClosingIterator
+
+class TestableIterator[A](inner: ClosingIterator[A]) extends ClosingIterator[A] {
   var fetched = 0
 
-  def hasNext: Boolean = inner.hasNext
+  def innerHasNext: Boolean = inner.hasNext
 
   def next(): A = {
     fetched += 1
     inner.next()
   }
+  override protected[this] def closeMore(): Unit = inner.close()
 }

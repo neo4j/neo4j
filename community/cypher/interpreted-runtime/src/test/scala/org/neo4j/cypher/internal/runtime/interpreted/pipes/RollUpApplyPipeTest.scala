@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -34,12 +32,10 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     // given
     val lhs = createLhs(1)
     val rhs = mock[Pipe]
-    when(rhs.createResults(any())).thenAnswer(new Answer[Iterator[CypherRow]] {
-      override def answer(invocation: InvocationOnMock) = {
-        val state:QueryState = invocation.getArgument(0)
-        state.initialContext should not be empty
-        ClosingIterator.empty
-      }
+    when(rhs.createResults(any())).thenAnswer((invocation: InvocationOnMock) => {
+      val state: QueryState = invocation.getArgument(0)
+      state.initialContext should not be empty
+      ClosingIterator.empty
     })
     val pipe = RollUpApplyPipe(lhs, rhs, collectionName = "x", identifierToCollect = "y")()
 

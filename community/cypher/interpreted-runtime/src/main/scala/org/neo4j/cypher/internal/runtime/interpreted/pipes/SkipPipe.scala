@@ -31,13 +31,14 @@ case class SkipPipe(source: Pipe, exp: Expression)
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     val skip = evaluateStaticSkipOrLimitNumberOrThrow(exp, state, "SKIP")
-    SkipPipe.drop[CypherRow, ClosingIterator[CypherRow]](skip, input)
+    SkipPipe.drop[CypherRow](skip, input)
   }
 
 }
 
 object SkipPipe {
-  def drop[T, ITER <: Iterator[T]](n: Long, iterator: ITER): ITER = {
+  //todo move this to ClosingIterator?
+  def drop[T](n: Long, iterator: ClosingIterator[T]): ClosingIterator[T] = {
     var j = 0L
     while (j < n && iterator.hasNext) {
       iterator.next()

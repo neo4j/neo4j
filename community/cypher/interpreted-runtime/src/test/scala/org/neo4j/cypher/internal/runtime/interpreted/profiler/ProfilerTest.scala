@@ -286,8 +286,8 @@ class ProfilerTest extends CypherFunSuite {
     withClue("PageCacheMisses:")(data.pageCacheMisses() should equal(expectedPageCacheMisses))
   }
 
-  private def materialize(iterator: Iterator[_]): Unit = {
-    iterator.size
+  private def materialize(iterator: ClosingIterator[_]): Unit = {
+    iterator.toList
   }
 }
 
@@ -298,7 +298,7 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
   extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    input.size
+    input.toList
     if (statisticProvider != null) {
       statisticProvider.hits = hits
       statisticProvider.misses = misses

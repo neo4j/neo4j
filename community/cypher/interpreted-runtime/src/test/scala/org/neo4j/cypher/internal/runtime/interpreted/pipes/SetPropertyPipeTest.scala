@@ -101,7 +101,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe true
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(nodeWriteOps).acquireExclusiveLock(10)
     verify(nodeWriteOps).releaseExclusiveLock(10)
   }
@@ -123,7 +123,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe true
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(relWriteOps).acquireExclusiveLock(10)
     verify(relWriteOps).releaseExclusiveLock(10)
   }
@@ -145,7 +145,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe false
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(nodeWriteOps, never()).acquireExclusiveLock(10)
     verify(nodeWriteOps, never()).releaseExclusiveLock(10)
   }
@@ -168,7 +168,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe false
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(relWriteOps, never()).acquireExclusiveLock(10)
     verify(relWriteOps, never()).releaseExclusiveLock(10)
   }
@@ -190,7 +190,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe false
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(nodeWriteOps, never()).acquireExclusiveLock(10)
     verify(nodeWriteOps, never()).releaseExclusiveLock(10)
     verify(nodeWriteOps, never()).acquireExclusiveLock(20)
@@ -216,7 +216,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe false
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(relWriteOps, never()).acquireExclusiveLock(10)
     verify(relWriteOps, never()).releaseExclusiveLock(10)
     verify(relWriteOps, never()).acquireExclusiveLock(20)
@@ -243,7 +243,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe true
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(nodeWriteOps).acquireExclusiveLock(10)
     verify(nodeWriteOps).releaseExclusiveLock(10)
   }
@@ -269,7 +269,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe true
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(relWriteOps).acquireExclusiveLock(10)
     verify(relWriteOps).releaseExclusiveLock(10)
   }
@@ -296,7 +296,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe false
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(nodeWriteOps, never()).acquireExclusiveLock(10)
     verify(nodeWriteOps, never()).releaseExclusiveLock(10)
     verify(nodeWriteOps, never()).acquireExclusiveLock(20)
@@ -325,7 +325,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe false
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(relWriteOps, never()).acquireExclusiveLock(10)
     verify(relWriteOps, never()).releaseExclusiveLock(10)
     verify(relWriteOps, never()).acquireExclusiveLock(20)
@@ -354,7 +354,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe false
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(nodeWriteOps, never()).acquireExclusiveLock(10)
     verify(nodeWriteOps, never()).releaseExclusiveLock(10)
 
@@ -381,7 +381,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     needsExclusiveLock shouldBe false
 
-    pipe.createResults(state).toVector
+    pipe.createResults(state).toList
     verify(relWriteOps, never()).acquireExclusiveLock(10)
     verify(relWriteOps, never()).releaseExclusiveLock(10)
   }

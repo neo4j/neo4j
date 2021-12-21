@@ -46,17 +46,17 @@ case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
         case Some(joinKey) =>
           val lhsRows = probeTable(joinKey)
           if (lhsRows.hasNext) {
-            lhsRows.asScala.map { lhsRow =>
+            ClosingIterator.asClosingIterator(lhsRows.asScala.map { lhsRow =>
               val outputRow = rowFactory.copyWith(rhsRow)
               // lhs and rhs might have different nullability - should use nullability on rhs
               outputRow.mergeWith(lhsRow, state.query, false)
               outputRow
-            }
+            })
           } else {
-            Seq(addNulls(rhsRow))
+            ClosingIterator.single(addNulls(rhsRow))
           }
         case None =>
-          Seq(addNulls(rhsRow))
+          ClosingIterator.single(addNulls(rhsRow))
       }
     } yield outputRow
 

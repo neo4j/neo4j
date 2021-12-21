@@ -58,7 +58,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
     withNulls
   }
 
-  protected def buildProbeTableAndFindNullRows(input: Iterator[CypherRow], memoryTracker: MemoryTracker, withNulls: Boolean): ProbeTable = {
+  protected def buildProbeTableAndFindNullRows(input: ClosingIterator[CypherRow], memoryTracker: MemoryTracker, withNulls: Boolean): ProbeTable = {
     val probeTable = new ProbeTable(memoryTracker)
 
     for (context <- input) {

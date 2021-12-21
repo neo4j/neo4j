@@ -145,15 +145,4 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(node.toString).thenReturn("node - " + id.toString)
     node
   }
-
-  private def newMockedRelationshipValue(id: Int): RelationshipValue = {
-    val rel = mock[RelationshipValue]
-    when(rel.id()).thenReturn(id)
-    val nv = newMockedNodeValue(id)
-    when(rel.startNode()).thenReturn(nv)
-    when(rel.otherNode(any[VirtualNodeValue])).thenReturn(nv)
-    when(rel.endNode()).thenReturn(nv)
-    when(rel.toString).thenReturn("rel - " + id.toString)
-    rel
-  }
 }

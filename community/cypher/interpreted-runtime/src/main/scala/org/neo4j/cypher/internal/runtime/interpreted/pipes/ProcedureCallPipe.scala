@@ -71,7 +71,7 @@ case class ProcedureCallPipe(source: Pipe,
     builder.sizeHint(resultIndices.length)
     input.flatMap { input =>
       val argValues = argExprs.map(arg => arg(input, state)).toArray
-      val results: Iterator[Array[AnyValue]] = call(qtx, argValues, createProcedureCallContext(qtx)) // always returns all items from the procedure
+      val results: ClosingIterator[Array[AnyValue]] = ClosingIterator(call(qtx, argValues, createProcedureCallContext(qtx))) // always returns all items from the procedure
       results map { resultValues =>
         resultIndices foreach { case (k, (v, _)) =>
           builder += v -> resultValues(k) // get the output from correct position and add store variable -> value

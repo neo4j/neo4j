@@ -37,7 +37,7 @@ case class EagerPipe(src: Pipe)(val id: Id = Id.INVALID_ID)
                                                           )
     state.query.resources.trace(buffer)
     while (input.hasNext) {
-      buffer.add(input.next)
+      buffer.add(input.next())
     }
     ClosingIterator(buffer.autoClosingIterator().asScala).closing(buffer)
   }

@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTExceptionFactory
-import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
-import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration

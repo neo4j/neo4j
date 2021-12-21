@@ -91,7 +91,7 @@ case class OptionalExpandIntoPipe(source: Pipe,
                     row.set(relName, Values.NO_VALUE)
                     ClosingIterator.single(row)
                   }
-                  else filteredRows
+                  else ClosingIterator.asClosingIterator(filteredRows)
                 } finally {
                   nodeCursor.close()
                 }

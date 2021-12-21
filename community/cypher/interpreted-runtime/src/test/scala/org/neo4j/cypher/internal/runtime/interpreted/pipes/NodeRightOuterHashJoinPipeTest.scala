@@ -112,8 +112,8 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
     val right = newMockedPipe()
 
     val left = mock[Pipe]
-    val lhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
-    when(left.createResults(any())).thenReturn(ClosingIterator(lhsIterator))
+    val lhsIterator = new TestableIterator(ClosingIterator(row("b" -> newMockedNode(0))))
+    when(left.createResults(any())).thenReturn(lhsIterator)
 
     // when
     val result = NodeRightOuterHashJoinPipe(Set("b"), left, right, Set("c"))().createResults(queryState)
