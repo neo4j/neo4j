@@ -47,11 +47,6 @@ import static org.neo4j.util.Preconditions.checkArgument;
 
 public final class LogConfig
 {
-    static
-    {
-        Log4jPluginLoadingWorkaround.doLog4jPluginLoadingWorkaround();
-    }
-
     private static final String APPENDER_NAME = "neo4jLog";
 
     private LogConfig()
@@ -175,21 +170,14 @@ public final class LogConfig
 
     private static Level convertNeo4jLevelToLevel( org.neo4j.logging.Level level )
     {
-        switch ( level )
-        {
-        case ERROR:
-            return Level.ERROR;
-        case WARN:
-            return Level.WARN;
-        case INFO:
-            return Level.INFO;
-        case DEBUG:
-            return Level.DEBUG;
-        case NONE:
-            return Level.OFF;
-        default:
-            throw new IllegalArgumentException( "Unknown Log level: " + level );
-        }
+        return switch ( level )
+                {
+                    case ERROR -> Level.ERROR;
+                    case WARN -> Level.WARN;
+                    case INFO -> Level.INFO;
+                    case DEBUG -> Level.DEBUG;
+                    case NONE -> Level.OFF;
+                };
     }
 
     public static class Builder

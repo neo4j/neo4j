@@ -56,7 +56,7 @@ public class Log4jLogProvider implements LogProvider, Closeable
     @Override
     public Log getLog( Class<?> loggingClass )
     {
-        return new Log4jLog( ctx.getLogger( loggingClass.getName() ) );
+        return new Log4jLog( ctx.getLogger( loggingClass ) );
     }
 
     @Override

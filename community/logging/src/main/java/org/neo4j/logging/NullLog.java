@@ -22,7 +22,7 @@ package org.neo4j.logging;
 /**
  * A {@link Log} implementation that discards all messages
  */
-public final class NullLog extends AbstractLog
+public final class NullLog implements Log
 {
     private static final NullLog INSTANCE = new NullLog();
 
@@ -101,6 +101,51 @@ public final class NullLog extends AbstractLog
 
     @Override
     public void error( String format, Object... arguments )
+    {
+    }
+
+    @Override
+    public void debug( Neo4jLogMessage message )
+    {
+    }
+
+    @Override
+    public void debug( Neo4jMessageSupplier supplier )
+    {
+    }
+
+    @Override
+    public void info( Neo4jLogMessage message )
+    {
+    }
+
+    @Override
+    public void info( Neo4jMessageSupplier supplier )
+    {
+    }
+
+    @Override
+    public void warn( Neo4jLogMessage message )
+    {
+    }
+
+    @Override
+    public void warn( Neo4jMessageSupplier supplier )
+    {
+    }
+
+    @Override
+    public void error( Neo4jLogMessage message )
+    {
+    }
+
+    @Override
+    public void error( Neo4jMessageSupplier supplier )
+    {
+    }
+
+    @Override
+    public void error( Neo4jLogMessage message, Throwable throwable )
     {
     }
 }

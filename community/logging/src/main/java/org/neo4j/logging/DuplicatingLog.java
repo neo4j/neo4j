@@ -22,7 +22,7 @@ package org.neo4j.logging;
 /**
  * A {@link Log} implementation that duplicates all messages to other Log instances
  */
-public class DuplicatingLog extends AbstractLog
+public class DuplicatingLog implements Log
 {
     private final Log log1;
     private final Log log2;
@@ -121,5 +121,68 @@ public class DuplicatingLog extends AbstractLog
     {
         log1.error( format, arguments );
         log2.error( format, arguments );
+    }
+
+    @Override
+    public void debug( Neo4jLogMessage message )
+    {
+        log1.debug( message );
+        log2.debug( message );
+    }
+
+    @Override
+    public void debug( Neo4jMessageSupplier supplier )
+    {
+        log1.debug( supplier );
+        log2.debug( supplier );
+    }
+
+    @Override
+    public void info( Neo4jLogMessage message )
+    {
+        log1.info( message );
+        log2.info( message );
+    }
+
+    @Override
+    public void info( Neo4jMessageSupplier supplier )
+    {
+        log1.info( supplier );
+        log2.info( supplier );
+    }
+
+    @Override
+    public void warn( Neo4jLogMessage message )
+    {
+        log1.warn( message );
+        log2.warn( message );
+    }
+
+    @Override
+    public void warn( Neo4jMessageSupplier supplier )
+    {
+        log1.warn( supplier );
+        log2.warn( supplier );
+    }
+
+    @Override
+    public void error( Neo4jLogMessage message )
+    {
+        log1.error( message );
+        log2.error( message );
+    }
+
+    @Override
+    public void error( Neo4jMessageSupplier supplier )
+    {
+        log1.error( supplier );
+        log2.error( supplier );
+    }
+
+    @Override
+    public void error( Neo4jLogMessage message, Throwable throwable )
+    {
+        log1.error( message, throwable );
+        log2.error( message, throwable );
     }
 }

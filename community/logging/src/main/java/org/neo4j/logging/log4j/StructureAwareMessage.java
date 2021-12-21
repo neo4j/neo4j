@@ -21,6 +21,8 @@ package org.neo4j.logging.log4j;
 
 import org.apache.logging.log4j.util.StringBuilderFormattable;
 
+import org.neo4j.logging.Neo4jLogMessage;
+
 /**
  * Base class for supporting structured logging. This message type will be handled different by e.g. {@link Neo4jJsonLogLayout},
  * where {@link #asStructure(FieldConsumer)} will be used to generate the output. If this message is received by any other

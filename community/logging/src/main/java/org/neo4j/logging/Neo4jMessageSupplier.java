@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging.log4j;
+package org.neo4j.logging;
 
 import org.apache.logging.log4j.util.MessageSupplier;
 
+import org.neo4j.annotations.api.PublicApi;
+
+@PublicApi
 public interface Neo4jMessageSupplier extends MessageSupplier
 {
     @Override

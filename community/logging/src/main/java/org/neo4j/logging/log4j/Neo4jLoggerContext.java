@@ -22,6 +22,8 @@ package org.neo4j.logging.log4j;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.message.StringFormatterMessageFactory;
+import org.apache.logging.log4j.spi.ExtendedLogger;
 
 import java.io.Closeable;
 
@@ -32,11 +34,6 @@ import org.neo4j.io.IOUtils;
  */
 public class Neo4jLoggerContext implements Closeable
 {
-    static
-    {
-        Log4jPluginLoadingWorkaround.doLog4jPluginLoadingWorkaround();
-    }
-
     private final LoggerContext ctx;
     private final Closeable additionalClosable;
 
@@ -50,9 +47,20 @@ public class Neo4jLoggerContext implements Closeable
      * Package-private specifically to not leak {@link Logger} outside logging module.
      * Should not be used outside of the logging module.
      */
-    Logger getLogger( String name )
+    ExtendedLogger getLogger( Class<?> clazz )
     {
-        return ctx.getLogger( name );
+        // StringFormatterMessageFactory will recognize printf syntax, default it anchor {} which we don't use
+        return ctx.getLogger( clazz, StringFormatterMessageFactory.INSTANCE );
+    }
+
+    /**
+     * Package-private specifically to not leak {@link Logger} outside logging module.
+     * Should not be used outside of the logging module.
+     */
+    ExtendedLogger getLogger( String name )
+    {
+        // StringFormatterMessageFactory will recognize printf syntax, default it anchor {} which we don't use
+        return ctx.getLogger( name, StringFormatterMessageFactory.INSTANCE );
     }
 
     /**

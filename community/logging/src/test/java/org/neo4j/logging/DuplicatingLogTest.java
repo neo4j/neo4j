@@ -24,18 +24,14 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Method;
 
-import org.neo4j.logging.log4j.LogExtended;
-import org.neo4j.logging.log4j.Neo4jLogMessage;
-import org.neo4j.logging.log4j.Neo4jMessageSupplier;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class DuplicatingLogTest
 {
-    final Log log1 = mock( Log.class );
-    final Log log2 = mock( Log.class );
+    private final Log log1 = mock( Log.class );
+    private final Log log2 = mock( Log.class );
 
     @ParameterizedTest
     @ValueSource( strings = {"debug", "info", "warn", "error"} )
@@ -61,15 +57,15 @@ class DuplicatingLogTest
     {
         // Given
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
-        Method messageLog = LogExtended.class.getMethod( type, Neo4jLogMessage.class );
-        Method stringLog = LogExtended.class.getMethod( type, String.class );
+        Method messageLog = Log.class.getMethod( type, Neo4jLogMessage.class );
 
         // When
-        messageLog.invoke( log, new MyMessage() );
+        MyMessage message = new MyMessage();
+        messageLog.invoke( log, message );
 
         // Then
-        stringLog.invoke( verify( log1 ), "When the going gets weird" );
-        stringLog.invoke( verify( log2 ), "When the going gets weird" );
+        messageLog.invoke( verify( log1 ), message );
+        messageLog.invoke( verify( log2 ), message );
         verifyNoMoreInteractions( log1 );
         verifyNoMoreInteractions( log2 );
     }
@@ -80,15 +76,15 @@ class DuplicatingLogTest
     {
         // Given
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
-        Method messageLog = LogExtended.class.getMethod( type, Neo4jMessageSupplier.class );
-        Method stringLog = LogExtended.class.getMethod( type, String.class );
+        Method messageLog = Log.class.getMethod( type, Neo4jMessageSupplier.class );
 
         // When
-        messageLog.invoke( log, (Neo4jMessageSupplier) MyMessage::new );
+        Neo4jMessageSupplier supplier = MyMessage::new;
+        messageLog.invoke( log, supplier );
 
         // Then
-        stringLog.invoke( verify( log1 ), "When the going gets weird" );
-        stringLog.invoke( verify( log2 ), "When the going gets weird" );
+        messageLog.invoke( verify( log1 ), supplier );
+        messageLog.invoke( verify( log2 ), supplier );
         verifyNoMoreInteractions( log1 );
         verifyNoMoreInteractions( log2 );
     }

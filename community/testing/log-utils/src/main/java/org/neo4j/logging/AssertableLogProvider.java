@@ -27,8 +27,6 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 
-import org.neo4j.logging.log4j.Neo4jLogMessage;
-
 import static java.lang.String.format;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
 
@@ -190,7 +188,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
     }
 
-    protected class AssertableLog extends AbstractLog
+    protected class AssertableLog implements Log
     {
         private final String context;
 
@@ -284,9 +282,21 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
 
         @Override
+        public void debug( Neo4jMessageSupplier supplier )
+        {
+            logCalls.add( new LogCall( context, Level.DEBUG, supplier.get().getFormattedMessage(), null, null ) );
+        }
+
+        @Override
         public void info( Neo4jLogMessage message )
         {
             logCalls.add( new LogCall( context, Level.INFO, message.getFormattedMessage(), null, null ) );
+        }
+
+        @Override
+        public void info( Neo4jMessageSupplier supplier )
+        {
+            logCalls.add( new LogCall( context, Level.INFO, supplier.get().getFormattedMessage(), null, null ) );
         }
 
         @Override
@@ -296,9 +306,21 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
 
         @Override
+        public void warn( Neo4jMessageSupplier supplier )
+        {
+            logCalls.add( new LogCall( context, Level.WARN, supplier.get().getFormattedMessage(), null, null ) );
+        }
+
+        @Override
         public void error( Neo4jLogMessage message )
         {
             logCalls.add( new LogCall( context, Level.ERROR, message.getFormattedMessage(), null, null ) );
+        }
+
+        @Override
+        public void error( Neo4jMessageSupplier supplier )
+        {
+            logCalls.add( new LogCall( context, Level.ERROR, supplier.get().getFormattedMessage(), null, null ) );
         }
 
         @Override

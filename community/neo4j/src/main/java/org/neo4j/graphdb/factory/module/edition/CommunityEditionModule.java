@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.logging.log4j.LogExtended;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
@@ -218,7 +217,7 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
         Config config = globalModule.getGlobalConfig();
         FileSystemAbstraction fileSystem = globalModule.getFileSystem();
         LogProvider logProvider = globalModule.getLogService().getUserLogProvider();
-        AbstractSecurityLog securityLog = new CommunitySecurityLog( (LogExtended) logProvider.getLog( UserSecurityGraphComponent.class ) );
+        AbstractSecurityLog securityLog = new CommunitySecurityLog( logProvider.getLog( UserSecurityGraphComponent.class ) );
 
         var communityComponent = CommunitySecurityModule.createSecurityComponent( securityLog, config, fileSystem, logProvider );
 

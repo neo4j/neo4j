@@ -19,12 +19,13 @@
  */
 package org.neo4j.logging.internal;
 
-import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.Neo4jLogMessage;
+import org.neo4j.logging.Neo4jMessageSupplier;
 
 import static java.util.Objects.requireNonNull;
 
-public class PrefixedLog extends AbstractLog
+public class PrefixedLog implements Log
 {
     private final String prefix;
     private final Log delegate;
@@ -113,6 +114,58 @@ public class PrefixedLog extends AbstractLog
     public void error( String format, Object... arguments )
     {
         delegate.error( withPrefix( format ), arguments );
+    }
+
+    @Override
+    public void debug( Neo4jLogMessage message )
+    {
+    }
+
+    @Override
+    public void debug( Neo4jMessageSupplier supplier )
+    {
+    }
+
+    @Override
+    public void info( Neo4jLogMessage message )
+    {
+
+    }
+
+    @Override
+    public void info( Neo4jMessageSupplier supplier )
+    {
+
+    }
+
+    @Override
+    public void warn( Neo4jLogMessage message )
+    {
+
+    }
+
+    @Override
+    public void warn( Neo4jMessageSupplier supplier )
+    {
+
+    }
+
+    @Override
+    public void error( Neo4jLogMessage message )
+    {
+
+    }
+
+    @Override
+    public void error( Neo4jMessageSupplier supplier )
+    {
+
+    }
+
+    @Override
+    public void error( Neo4jLogMessage message, Throwable throwable )
+    {
+
     }
 
     private String withPrefix( String message )

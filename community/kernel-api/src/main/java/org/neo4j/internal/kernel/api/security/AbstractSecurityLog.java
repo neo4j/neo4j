@@ -21,16 +21,16 @@ package org.neo4j.internal.kernel.api.security;
 
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.log4j.LogExtended;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.log4j.StructureAwareMessage;
 
 import static org.neo4j.internal.helpers.Strings.escape;
 
 public abstract class AbstractSecurityLog extends LifecycleAdapter
 {
-    LogExtended inner;
+    private Log inner;
 
-    public void setLog( LogExtended inner )
+    public void setLog( Log inner )
     {
         this.inner = inner;
     }

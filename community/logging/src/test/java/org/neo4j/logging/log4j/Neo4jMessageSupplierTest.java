@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.ByteArrayOutputStream;
 
 import org.neo4j.logging.Level;
+import org.neo4j.logging.Neo4jMessageSupplier;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;

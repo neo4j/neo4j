@@ -84,9 +84,9 @@ public class Neo4jJsonLogLayout extends Neo4jLogLayout
         {
             buffer.append( ",\"message\":\"" );
             final int start = buffer.length();
-            if ( message instanceof StringBuilderFormattable )
+            if ( message instanceof StringBuilderFormattable msg )
             {
-                ((StringBuilderFormattable) message).formatTo( buffer ); // Garbage-free optimized message
+                msg.formatTo( buffer ); // Garbage-free optimized message
             }
             else
             {

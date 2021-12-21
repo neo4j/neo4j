@@ -19,7 +19,7 @@
  */
 package org.neo4j.logging.log4j;
 
-import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.spi.ExtendedLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -58,7 +58,7 @@ class LogConfigEphemeralTest
         Path targetFile = dir.homePath().resolve( "debug.log" );
 
         ctx = LogConfig.createBuilder( fs, targetFile, Level.DEBUG ).build();
-        Logger logger = ctx.getLogger( "test" );
+        ExtendedLogger logger = ctx.getLogger( "test" );
         logger.warn( "test" );
 
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );

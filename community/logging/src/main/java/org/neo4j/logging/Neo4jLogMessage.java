@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging.log4j;
+package org.neo4j.logging;
 
 import org.apache.logging.log4j.message.Message;
 
-/**
- * Used to contain log4j to this maven module. Should be removed in 5.0.
- */
+import org.neo4j.annotations.api.PublicApi;
+
+@PublicApi
 public interface Neo4jLogMessage extends Message
 {
 }

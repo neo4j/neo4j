@@ -72,7 +72,6 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.SecurityLogHelper;
-import org.neo4j.logging.log4j.LogExtended;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -144,7 +143,7 @@ abstract class OperationsTest
         when( transaction.storeCursors() ).thenReturn( storeCursors );
         when( transaction.securityContext() ).thenReturn( SecurityContext.authDisabled( AccessMode.Static.FULL, EMBEDDED_CONNECTION, DB_NAME ) );
         logHelper = new SecurityLogHelper( getFormat() );
-        securityLog = new CommunitySecurityLog( (LogExtended) logHelper.getLogProvider().getLog( this.getClass() ) );
+        securityLog = new CommunitySecurityLog( logHelper.getLogProvider().getLog( this.getClass() ) );
         when( transaction.securityAuthorizationHandler() ).thenReturn( new SecurityAuthorizationHandler( securityLog ) );
 
         DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );

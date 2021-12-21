@@ -19,23 +19,25 @@
  */
 package org.neo4j.logging.log4j;
 
-import org.neo4j.logging.AbstractLog;
+import org.apache.logging.log4j.spi.ExtendedLogger;
+import org.apache.logging.log4j.spi.ExtendedLoggerWrapper;
+
 import org.neo4j.logging.Log;
+import org.neo4j.logging.Neo4jLogMessage;
+import org.neo4j.logging.Neo4jMessageSupplier;
 
 /**
  * A {@link Log} implementation that uses the Log4j configuration the logger is connected to.
  */
-public class Log4jLog extends AbstractLog
+public class Log4jLog extends ExtendedLoggerWrapper implements Log
 {
-    final org.apache.logging.log4j.Logger logger;
-
     /**
-     * Package-private specifically to not leak Logger outside logging module.
-     * Should not be used outside of the logging module - {@link Log4jLogProvider#getLog} should be used instead.
+     * Package-private specifically to not leak Logger outside logging module. Should not be used outside of the logging module - {@link
+     * Log4jLogProvider#getLog} should be used instead.
      */
-    Log4jLog( org.apache.logging.log4j.Logger logger )
+    Log4jLog( ExtendedLogger logger )
     {
-        this.logger = logger;
+        super( logger, logger.getName(), logger.getMessageFactory() );
     }
 
     @Override
@@ -57,24 +59,6 @@ public class Log4jLog extends AbstractLog
     }
 
     @Override
-    public void debug( String message )
-    {
-        logger.debug( message );
-    }
-
-    @Override
-    public void debug( String message, Throwable throwable )
-    {
-        logger.debug( message, throwable );
-    }
-
-    @Override
-    public void debug( String format, Object... arguments )
-    {
-        logger.printf( org.apache.logging.log4j.Level.DEBUG, format, arguments );
-    }
-
-    @Override
     public void info( Neo4jLogMessage message )
     {
         logger.info( message );
@@ -84,24 +68,6 @@ public class Log4jLog extends AbstractLog
     public void info( Neo4jMessageSupplier supplier )
     {
         logger.info( supplier );
-    }
-
-    @Override
-    public void info( String message )
-    {
-        logger.info( message );
-    }
-
-    @Override
-    public void info( String message, Throwable throwable )
-    {
-        logger.info( message, throwable );
-    }
-
-    @Override
-    public void info( String format, Object... arguments )
-    {
-        logger.printf( org.apache.logging.log4j.Level.INFO, format, arguments );
     }
 
     @Override
@@ -117,24 +83,6 @@ public class Log4jLog extends AbstractLog
     }
 
     @Override
-    public void warn( String message )
-    {
-        logger.warn( message );
-    }
-
-    @Override
-    public void warn( String message, Throwable throwable )
-    {
-        logger.warn( message, throwable );
-    }
-
-    @Override
-    public void warn( String format, Object... arguments )
-    {
-        logger.printf( org.apache.logging.log4j.Level.WARN, format, arguments );
-    }
-
-    @Override
     public void error( Neo4jLogMessage message )
     {
         logger.error( message );
@@ -147,26 +95,8 @@ public class Log4jLog extends AbstractLog
     }
 
     @Override
-    public void error( String message )
-    {
-        logger.error( message );
-    }
-
-    @Override
     public void error( Neo4jLogMessage message, Throwable throwable )
     {
         logger.error( message, throwable );
-    }
-
-    @Override
-    public void error( String message, Throwable throwable )
-    {
-        logger.error( message, throwable );
-    }
-
-    @Override
-    public void error( String format, Object... arguments )
-    {
-        logger.printf( org.apache.logging.log4j.Level.ERROR, format, arguments );
     }
 }

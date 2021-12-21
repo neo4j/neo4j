@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.stream.Stream;
 
 import org.neo4j.logging.Level;
+import org.neo4j.logging.Neo4jMessageSupplier;
 
 abstract class Log4jLogTestBase
 {

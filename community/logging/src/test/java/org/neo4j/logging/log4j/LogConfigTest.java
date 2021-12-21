@@ -19,7 +19,7 @@
  */
 package org.neo4j.logging.log4j;
 
-import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.spi.ExtendedLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,7 +78,7 @@ class LogConfigTest
         ctx = LogConfig.createBuilder( outContent, Level.DEBUG )
                 .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.debug( "test" );
         logger.info( "test" );
         logger.warn( "test" );
@@ -119,7 +119,7 @@ class LogConfigTest
 
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
 
-        Logger logger = ctx.getLogger( "test" );
+        ExtendedLogger logger = ctx.getLogger( "test" );
 
         logger.warn( "test" );
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
@@ -145,7 +145,7 @@ class LogConfigTest
 
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
 
-        Logger logger = ctx.getLogger( "test" );
+        ExtendedLogger logger = ctx.getLogger( "test" );
 
         logger.warn( "test1" );
         logger.warn( "test2" );
@@ -178,7 +178,7 @@ class LogConfigTest
 
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
 
-        Logger logger = ctx.getLogger( "className" );
+        ExtendedLogger logger = ctx.getLogger( "className" );
 
         logger.warn( "Long line that will get next message to be written to next file" );
         logger.warn( "test2" );
@@ -208,7 +208,7 @@ class LogConfigTest
 
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( false );
 
-        Logger logger = ctx.getLogger( "test" );
+        ExtendedLogger logger = ctx.getLogger( "test" );
         logger.warn( "test" );
 
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( true );
@@ -222,7 +222,7 @@ class LogConfigTest
         ctx = LogConfig.createBuilder( outContent, Level.INFO )
                 .build();
 
-        Logger logger = ctx.getLogger( "test" );
+        ExtendedLogger logger = ctx.getLogger( "test" );
         logger.warn( "test" );
 
         assertThat( outContent.toString() ).contains( "test" );
@@ -238,7 +238,7 @@ class LogConfigTest
                 .logToSystemOut()
                 .build();
 
-        Logger logger = ctx.getLogger( "test" );
+        ExtendedLogger logger = ctx.getLogger( "test" );
         logger.warn( "test" );
 
         assertThat( fs.fileExists( targetFile ) ).isEqualTo( false );
@@ -257,7 +257,7 @@ class LogConfigTest
                 .withRotation( 100, 2 )
                 .build();
 
-        Logger logger = ctx.getLogger( "test" );
+        ExtendedLogger logger = ctx.getLogger( "test" );
 
         logger.warn( "test1" );
         logger.warn( "test2" );
@@ -285,7 +285,7 @@ class LogConfigTest
                 .withTimezone( LogTimeZone.UTC )
                 .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.warn( "test" );
 
         assertThat( outContent.toString() ).matches( format( DATE_NO_TIMEZONE_PATTERN + "\\+0000 %-5s \\[o\\.n\\.classname] test%n", Level.WARN ) );
@@ -304,7 +304,7 @@ class LogConfigTest
                            .withTimezone( LogTimeZone.SYSTEM )
                            .build();
 
-            Logger logger = ctx.getLogger( "org.neo4j.classname" );
+            ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
             logger.warn( "test" );
 
             assertThat( outContent.toString() ).matches( format( DATE_NO_TIMEZONE_PATTERN + "\\+0400 %-5s \\[o\\.n\\.classname] test%n", Level.WARN ) );
@@ -324,7 +324,7 @@ class LogConfigTest
                 .withFormat( FormattedLogFormat.PLAIN )
                 .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.warn( "test" );
 
         assertThat( outContent.toString() ).matches( DATE_PATTERN + format( " %-5s \\[o\\.n\\.classname] test%n", Level.WARN ) );
@@ -340,7 +340,7 @@ class LogConfigTest
                 .withCategory( false )
                 .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.warn( "test" );
 
         assertThat( outContent.toString() ).matches( DATE_PATTERN + format( " %-5s test%n", Level.WARN ) );
@@ -355,7 +355,7 @@ class LogConfigTest
                 .withFormat( FormattedLogFormat.JSON )
                 .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.warn( "test" );
 
         assertThat( outContent.toString() ).matches( format(
@@ -372,7 +372,7 @@ class LogConfigTest
                 .withCategory( false )
                 .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.warn( "test" );
 
         assertThat( outContent.toString() ).matches( format(
@@ -388,7 +388,7 @@ class LogConfigTest
                 .withFormat( FormattedLogFormat.JSON )
                 .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.warn( "test", newThrowable( "stack" ) );
 
         assertThat( outContent.toString() ).matches( format(
@@ -405,7 +405,7 @@ class LogConfigTest
                        .withFormat( FormattedLogFormat.JSON )
                        .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.info( new MyStructure() );
 
         assertThat( outContent.toString() ).matches(
@@ -423,7 +423,7 @@ class LogConfigTest
                        .withCategory( false )
                        .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.info( new MyStructure(), newThrowable( "test" ) );
 
         assertThat( outContent.toString() ).matches(
@@ -440,7 +440,7 @@ class LogConfigTest
                        .withFormat( FormattedLogFormat.PLAIN )
                        .build();
 
-        Logger logger = ctx.getLogger( "org.neo4j.classname" );
+        ExtendedLogger logger = ctx.getLogger( "org.neo4j.classname" );
         logger.warn( new MyStructure() );
 
         assertThat( outContent.toString() ).matches( DATE_PATTERN + format( " %-5s \\[o\\.n\\.classname] 1c%n", Level.WARN ) );

@@ -5,7 +5,7 @@
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
         <version>5.0.0-SNAPSHOT</version>
-        <relativePath>../..</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <properties>
@@ -54,14 +54,6 @@
     </licenses>
 
     <dependencies>
-        <!-- WARNING -->
-        <!-- Be very careful when adding dependencies in this class -->
-        <!-- A bug in the Maven Shade Plugin may cause an infinite loop (livelock) while creating the dependency reduced pom on parallel builds -->
-        <!-- It seems to happen if the added dependencies are already transitive dependencies -->
-        <!-- Likely fixed by https://github.com/apache/maven-shade-plugin/pull/16 -->
-        <!-- Please verify that added dependencies does not break this by doing a full parallel maven build on the root project -->
-        <!-- Example "mvn clean install -T -DskipTests" -->
-        <!-- WARNING -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-io</artifactId>
@@ -91,68 +83,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <artifactSet>
-                        <includes>
-                            <include>org.apache.logging.log4j:*</include>
-                        </includes>
-                    </artifactSet>
-                    <relocations>
-                        <relocation>
-                            <!-- Don't change shadedPattern without updating in Log4jPluginLoadingWorkaround as well -->
-                            <pattern>org.apache.logging.log4j</pattern>
-                            <shadedPattern>org.neo4j.logging.shaded.log4j</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <!-- workaround for also relocating log4j multi-release jars -->
-                            <pattern>META-INF.versions.9.org.apache.logging.log4j</pattern>
-                            <shadedPattern>META-INF.versions.9.org.neo4j.logging.shaded.log4j</shadedPattern>
-                        </relocation>
-                    </relocations>
-                    <transformers>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <manifestEntries>
-                                <Multi-Release>true</Multi-Release>
-                            </manifestEntries>
-                        </transformer>
-                    </transformers>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>**/javax.annotation.processing.Processor</exclude>
-                                <!-- Skip the plugins listing file to not interfere with any external Log4j dependencies.
-                                     We work around this file not existing in Log4jPluginLoadingWorkaround. -->
-                                <exclude>**/Log4j2Plugins.dat</exclude>
-                            </excludes>
-                        </filter>
-                        <filter>
-                            <artifact>org.apache.logging.log4j:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/MANIFEST.MF</exclude>
-                                <exclude>META-INF/DEPENDENCIES</exclude>
-                                <exclude>META-INF/LICENSE</exclude>
-                                <exclude>META-INF/NOTICE</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

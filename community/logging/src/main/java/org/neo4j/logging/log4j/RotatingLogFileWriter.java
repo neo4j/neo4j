@@ -21,7 +21,6 @@ package org.neo4j.logging.log4j;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.OutputStreamAppender;
 import org.apache.logging.log4j.core.appender.RollingFileAppender;
@@ -30,6 +29,7 @@ import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.apache.logging.log4j.spi.ExtendedLogger;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -45,14 +45,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  */
 public class RotatingLogFileWriter implements Closeable
 {
-    static
-    {
-        Log4jPluginLoadingWorkaround.doLog4jPluginLoadingWorkaround();
-    }
-
     private static final String APPENDER_NAME = "rotatingWriter";
 
-    private final Logger log;
+    private final ExtendedLogger log;
     private final Neo4jLoggerContext ctx;
 
     /**
