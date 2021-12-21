@@ -31,48 +31,28 @@ trait AstNode[T] {
 
   def typedRewrite[R <: T](f: Expression => Expression)(implicit mf: ClassTag[R]): R = rewrite(f) match {
     case value: R => value
-    case _          => throw new CypherTypeException("Invalid rewrite")
+    case _        => throw new CypherTypeException("Invalid rewrite")
   }
 
-  def contains(e:Expression) = exists(e == _)
-
-  def exists(f: Expression => Boolean) = filter(f).nonEmpty
-
-  def filter(isMatch: Expression => Boolean): Seq[Expression] =
-  // We use our visit method to create an traversable, from which we create the Seq
-    new Traversable[Expression] {
-      def foreach[U](f: Expression => U) {
-        visit {
-          case e: Expression if isMatch(e) => f(e)
-        }
+  def exists(f: Expression => Boolean): Boolean = {
+    var iterator = children.iterator
+    while (iterator.hasNext) {
+      val value = iterator.next()
+      value match {
+        case e: Expression if f(e) => return true
+        case _ => //continue
       }
-    }.toIndexedSeq
-
-  def visitChildren(f: PartialFunction[AstNode[_], Any]) {
-    children.foreach(child => {
-      if (f.isDefinedAt(child)) {
-        f(child)
+      //exhausted current children continue to next
+      if (!iterator.hasNext) {
+        iterator = value.children.iterator
       }
-
-      child.visitChildren(f)
-    })
-  }
-
-  def visit(f: PartialFunction[AstNode[_], Any]) {
-    visitChildren(f)
-
-    if (f.isDefinedAt(this)) {
-      f(this)
-    }
-  }
-
-
-  def visitFirst(f: PartialFunction[AstNode[_], Any]) {
-    if (f.isDefinedAt(this)) {
-      f(this)
     }
 
-    visitChildren(f)
+    //finally check this node
+    this match {
+      case e: Expression => f(e)
+      case _ => false
+    }
   }
 }
 
