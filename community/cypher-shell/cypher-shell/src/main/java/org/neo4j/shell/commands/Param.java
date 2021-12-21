@@ -74,7 +74,16 @@ public class Param extends ParameterSetter<CommandException> implements Command
         public Metadata metadata()
         {
             var help = "Set the specified query parameter to the value given";
-            return new Metadata( ":param", "Set the value of a query parameter", "name => value", help, List.of() );
+            var usage = """
+                    name => <Cypher Expression>
+
+                    For example:
+                        :param name => 42
+                        :param name => 'string value'
+                        :param name => { mapKey: 'map value' }
+                        :param name => [ 1, 2, 3 ]
+                    """;
+            return new Metadata( ":param", "Set the value of a query parameter", usage, help, List.of() );
         }
 
         @Override

@@ -29,7 +29,6 @@ import org.neo4j.shell.exception.ParameterException;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -186,6 +185,6 @@ class ParamTest
     void printUsage()
     {
         String usage = cmd.metadata().usage();
-        assertEquals( usage, "name => value" );
+        assertThat( usage, containsString( "name => <Cypher Expression>" ) );
     }
 }
