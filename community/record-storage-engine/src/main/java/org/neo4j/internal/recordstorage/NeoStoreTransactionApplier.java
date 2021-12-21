@@ -109,9 +109,13 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         {
             lockGroup.add( lockService.acquireNodeLock( command.getNodeId(), LockType.EXCLUSIVE ) );
         }
-        else
+        else if ( command.after.isRelSet() )
         {
             lockGroup.add( lockService.acquireRelationshipLock( command.getRelId(), LockType.EXCLUSIVE ) );
+        }
+        else if ( command.after.isSchemaSet() )
+        {
+            lockGroup.add( lockService.acquireCustomLock( Command.RECOVERY_LOCK_TYPE_SCHEMA_RULE, command.getSchemaRuleId(), LockType.EXCLUSIVE ) );
         }
 
         updateStore( neoStores.getPropertyStore(), command, PROPERTY_CURSOR );

@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -86,7 +87,7 @@ class PropertyCreatorTest
                 pageCache, fileSystem, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();
-        StoreCursors storeCursors = StoreCursors.NULL;
+        StoreCursors storeCursors = new CachedStoreCursors( neoStores, NULL );
         var pageCacheTracer = new DefaultPageCacheTracer();
         cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "propertyStore" ) );
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore, storeCursors ), cursorContext, PROPERTY_CURSOR,
@@ -400,6 +401,7 @@ class PropertyCreatorTest
 
             prev = record;
         }
+        this.records.commit();
     }
 
     private void existingRecord( PropertyRecord record, ExpectedRecord initialRecord )
@@ -424,7 +426,7 @@ class PropertyCreatorTest
         int expectedRecordCursor = 0;
         while ( !Record.NO_NEXT_PROPERTY.is( nextProp ) )
         {
-            PropertyRecord record = records.getIfLoaded( nextProp ).forReadingData();
+            PropertyRecord record = records.getOrLoad( nextProp, primitive.forReadingLinkage() ).forReadingData();
             assertRecord( record, expectedRecords[expectedRecordCursor++] );
             nextProp = record.getNextProp();
         }

@@ -89,6 +89,11 @@ public class PropertyDeleter
                 RecordProxy<PropertyRecord,PrimitiveRecord> propertyChange = propertyRecords.getOrLoad( nextProp, primitive );
                 PropertyRecord propRecord = propertyChange.forChangingData();
                 deletePropertyRecordIncludingValueRecords( propRecord );
+
+                // set created flag in before state for the dynamic records that will be removed, so reverse recovery can re-create them
+                var before = propertyChange.getBefore();
+                markValueRecordsAsCreated( before );
+
                 if ( ++count >= CYCLE_DETECTION_THRESHOLD )
                 {
                     if ( seenPropertyIds == null )
@@ -117,6 +122,24 @@ public class PropertyDeleter
             logInconsistentPropertyChain( primitive, "cycle", e );
         }
         primitive.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+    }
+
+    private void markValueRecordsAsCreated( PropertyRecord beforeRecord )
+    {
+        for ( var beforeBlock : beforeRecord )
+        {
+            markValueRecordsAsCreated( beforeBlock );
+        }
+    }
+
+    private void markValueRecordsAsCreated( PropertyBlock beforeBlock )
+    {
+        assert beforeBlock != null;
+        for ( DynamicRecord beforeDynamicRecord : beforeBlock.getValueRecords() )
+        {
+            assert beforeDynamicRecord.inUse();
+            beforeDynamicRecord.setCreated();
+        }
     }
 
     private void logInconsistentPropertyChain( PrimitiveRecord primitive, String causeMessage, Throwable cause )
@@ -178,12 +201,7 @@ public class PropertyDeleter
     {
         for ( PropertyBlock block : record )
         {
-            for ( DynamicRecord valueRecord : block.getValueRecords() )
-            {
-                assert valueRecord.inUse();
-                valueRecord.setInUse( false );
-                record.addDeletedRecord( valueRecord );
-            }
+            deleteValueRecords( record, block );
         }
         record.clearPropertyBlocks();
         record.setInUse( false );
@@ -227,12 +245,12 @@ public class PropertyDeleter
                                              + propertyId + "]" );
         }
 
-        for ( DynamicRecord valueRecord : block.getValueRecords() )
-        {
-            assert valueRecord.inUse();
-            valueRecord.setInUse( false, block.getType().intValue() );
-            propRecord.addDeletedRecord( valueRecord );
-        }
+        deleteValueRecords( propRecord, block );
+
+        // set created flag in before state for the dynmaic records that will be removed, so reverse recovery can re-create them
+        var before = recordChange.getBefore();
+        markValueRecordsAsCreated( before.getPropertyBlock( propertyKey ) );
+
         if ( propRecord.size() > 0 )
         {
             /*
@@ -244,6 +262,16 @@ public class PropertyDeleter
         else
         {
             unlinkPropertyRecord( propRecord, propertyRecords, primitiveProxy );
+        }
+    }
+
+    private static void deleteValueRecords( PropertyRecord propRecord, PropertyBlock block )
+    {
+        for ( var valueRecord : block.getValueRecords() )
+        {
+            assert valueRecord.inUse();
+            valueRecord.setInUse( false, block.getType().intValue() );
+            propRecord.addDeletedRecord( valueRecord );
         }
     }
 

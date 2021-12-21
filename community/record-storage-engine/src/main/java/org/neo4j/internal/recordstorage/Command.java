@@ -62,6 +62,7 @@ public abstract class Command implements StorageCommand
     private static final int RECOVERY_LOCK_TYPE_PROPERTY_DYNAMIC = 1;
     private static final int RECOVERY_LOCK_TYPE_NODE_LABEL_DYNAMIC = 2;
     private static final int RECOVERY_LOCK_TYPE_RELATIONSHIP_GROUP = 3;
+    public static final int RECOVERY_LOCK_TYPE_SCHEMA_RULE = 4;
 
     protected final LogCommandSerialization serialization;
     private int keyHash;
@@ -419,9 +420,13 @@ public abstract class Command implements StorageCommand
             {
                 locks.add( lockService.acquireNodeLock( getNodeId(), LockType.EXCLUSIVE ) );
             }
-            else
+            else if ( after.isRelSet() )
             {
                 locks.add( lockService.acquireRelationshipLock( getRelId(), LockType.EXCLUSIVE ) );
+            }
+            else if ( after.isSchemaSet() )
+            {
+                locks.add( lockService.acquireCustomLock( RECOVERY_LOCK_TYPE_SCHEMA_RULE, getSchemaRuleId(), LockType.EXCLUSIVE ) );
             }
 
             // Guard for reuse of these records

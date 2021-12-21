@@ -354,6 +354,13 @@ public final class Bits
         return value ? flag : 0;
     }
 
+    public static byte bitFlags( int flag1, int flag2, int flag3, int flag4, int flag5, int flag6, int flag7, int flag8 )
+    {
+        int result = flag1 | flag2 | flag3 | flag4 | flag5 | flag6 | flag7 | flag8;
+        assert (result & ~0xFF) == 0;
+        return (byte) result;
+    }
+
     public static byte bitFlags( int flag1, int flag2, int flag3, int flag4, int flag5, int flag6, int flag7 )
     {
         int result = flag1 | flag2 | flag3 | flag4 | flag5 | flag6 | flag7;

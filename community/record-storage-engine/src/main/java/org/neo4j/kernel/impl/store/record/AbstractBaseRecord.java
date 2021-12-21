@@ -141,6 +141,11 @@ public abstract class AbstractBaseRecord
         this.requiresSecondaryUnit = secondaryUnitId != NO_ID;
     }
 
+    public void setSecondaryUnitCreated( boolean value )
+    {
+        this.createdSecondaryUnit = value;
+    }
+
     public boolean hasSecondaryUnitId()
     {
         return secondaryUnitId != NO_ID;

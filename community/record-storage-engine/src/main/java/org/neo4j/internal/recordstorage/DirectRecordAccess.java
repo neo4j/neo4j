@@ -122,6 +122,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         private final CursorContext cursorContext;
         private boolean changed;
         private final boolean created;
+        private RECORD before;
 
         DirectRecordProxy( long key, RECORD record, ADDITIONAL additionalData, boolean created, CursorContext cursorContext )
         {
@@ -189,7 +190,16 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         @Override
         public RECORD getBefore()
         {
-            return loader.load( key, additionalData, RecordLoad.NORMAL );
+            ensureHasBeforeRecordImage();
+            return before;
+        }
+
+        private void ensureHasBeforeRecordImage()
+        {
+            if ( before == null )
+            {
+                this.before = loader.copy( record );
+            }
         }
 
         @Override

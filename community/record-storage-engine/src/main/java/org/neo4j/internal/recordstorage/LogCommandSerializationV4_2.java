@@ -627,7 +627,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
         return record;
     }
 
-    static DynamicRecord readDynamicRecord( ReadableChannel channel ) throws IOException
+    private static DynamicRecord readDynamicRecord( ReadableChannel channel ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         long id = channel.getLong();
@@ -659,7 +659,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
         return record;
     }
 
-    static <T> int readDynamicRecords( ReadableChannel channel, T target, CommandReading.DynamicRecordAdder<T> adder )
+    private static <T> int readDynamicRecords( ReadableChannel channel, T target, CommandReading.DynamicRecordAdder<T> adder )
             throws IOException
     {
         int numberOfRecords = channel.getInt();
@@ -1422,12 +1422,12 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
                 .putLong( command.delta() );
     }
 
-    static void writeDynamicRecords( WritableChannel channel, List<DynamicRecord> records ) throws IOException
+    private static void writeDynamicRecords( WritableChannel channel, List<DynamicRecord> records ) throws IOException
     {
         writeDynamicRecords( channel, records, records.size() );
     }
 
-    static void writeDynamicRecords( WritableChannel channel, List<DynamicRecord> records, int size ) throws IOException
+    private static void writeDynamicRecords( WritableChannel channel, List<DynamicRecord> records, int size ) throws IOException
     {
         channel.putInt( size ); // 4
         for ( int i = 0; i < records.size(); i++ )
@@ -1436,7 +1436,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
         }
     }
 
-    static void writeDynamicRecord( WritableChannel channel, DynamicRecord record ) throws IOException
+    private static void writeDynamicRecord( WritableChannel channel, DynamicRecord record ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         if ( record.inUse() )

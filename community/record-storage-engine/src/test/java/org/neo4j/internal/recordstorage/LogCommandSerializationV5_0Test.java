@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
@@ -28,17 +27,24 @@ import java.io.IOException;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
 public class LogCommandSerializationV5_0Test extends LogCommandSerializationV4_3D_3Test
@@ -46,6 +52,32 @@ public class LogCommandSerializationV5_0Test extends LogCommandSerializationV4_3
 
     @Inject
     private RandomSupport random;
+
+    @RepeatedTest( 10 )
+    void propertyKeyCommand() throws Exception
+    {
+        testDoubleSerialization( Command.PropertyKeyTokenCommand.class, createRandomPropertyKeyTokenCommand() );
+    }
+
+    Command.PropertyKeyTokenCommand createRandomPropertyKeyTokenCommand()
+    {
+        var id = random.nextInt();
+        var before = createRandomPropertyKeyTokenRecord( id );
+        var after = createRandomPropertyKeyTokenRecord( id );
+        return new Command.PropertyKeyTokenCommand( writer(), before, after );
+    }
+
+    PropertyKeyTokenRecord createRandomPropertyKeyTokenRecord( int id )
+    {
+        var record = new PropertyKeyTokenRecord( id );
+        record.initialize( random.nextBoolean(), random.nextInt(), random.nextInt() );
+        record.setInternal( random.nextBoolean() );
+        if ( random.nextBoolean() )
+        {
+            record.setCreated();
+        }
+        return record;
+    }
 
     @RepeatedTest( 10 )
     void schemaCommandSerialization() throws IOException
@@ -65,20 +97,77 @@ public class LogCommandSerializationV5_0Test extends LogCommandSerializationV4_3
     SchemaRecord createRandomSchemaRecord( long id )
     {
         var record = new SchemaRecord( id );
-        record.initialize( random.nextBoolean(), random.nextLong() );
+        var inUse = random.nextBoolean();
+        record.initialize( inUse, inUse ? random.nextLong() : -1 );
         if ( random.nextBoolean() )
         {
             record.setCreated();
         }
-        record.setConstraint( random.nextBoolean() );
+        if ( inUse )
+        {
+            record.setConstraint( random.nextBoolean() );
+        }
+        return record;
+    }
+
+    @RepeatedTest( 10 )
+    void propertyCommandSerialization() throws IOException
+    {
+        testDoubleSerialization( Command.PropertyCommand.class, createRandomProperty() );
+    }
+
+    Command.PropertyCommand createRandomProperty()
+    {
+        var id = Math.abs( random.nextLong() );
+        var before = createRandomPropertyRecord( id );
+        var after = createRandomPropertyRecord( id );
+        return new Command.PropertyCommand( writer(), before, after );
+    }
+
+    PropertyRecord createRandomPropertyRecord( long id )
+    {
+        var record = new PropertyRecord( id );
+        record.initialize( random.nextBoolean(), random.nextLong(), random.nextLong() );
+        if ( random.nextBoolean() )
+        {
+            record.setCreated();
+        }
+        if ( record.inUse() )
+        {
+            PropertyBlock block = new PropertyBlock();
+            PropertyStore.encodeValue( block, random.nextInt( 1000 ), Values.of( 123 ), null, null, NULL, INSTANCE );
+            record.addPropertyBlock( block );
+        }
+        if ( random.nextBoolean() )
+        {
+            record.addDeletedRecord( new DynamicRecord( random.nextLong( 1000 ) ) );
+        }
+        if ( random.nextBoolean() )
+        {
+            if ( random.nextBoolean() )
+            {
+                record.setSecondaryUnitIdOnCreate( random.nextLong( 1000 ) );
+            }
+            else
+            {
+                record.setSecondaryUnitIdOnLoad( random.nextLong( 1000 ) );
+            }
+        }
+        switch ( random.nextInt( 3 ) )
+        {
+        case 0 -> record.setNodeId( 44 );
+        case 1 -> record.setRelId( 88 );
+        default -> record.setSchemaRuleId( 11 );
+        }
+
         return record;
     }
 
     /**
      * The purpose of this test is to verify that serialization of deserialized command produces the same checksum. This test doesn't assert equality of
      * original and deserialized commands, as input supposed to be randomly generated and can produce records that contain information that will not be
-     * serialized. I.e. serialization of record not in use can skip irrelevant information.
-     * On the other side, if something is written into the tx log, it must be read during deserialization
+     * serialized. I.e. serialization of record not in use can skip irrelevant information. On the other side, if something is written into the tx log, it must
+     * be read during deserialization
      * <p>
      * Possible improvement: validate that original record and deserialized record are applied to store they produce equal data.
      */
@@ -103,6 +192,7 @@ public class LogCommandSerializationV5_0Test extends LogCommandSerializationV4_3
         var readTwice = (Command.BaseCommand<?>) reader.read( anotherChannel );
         assertThat( readTwice ).isInstanceOf( type );
 
+        assertCommandsEqual( original, readOnce );
         assertCommandsEqual( readOnce, readTwice );
         assertThat( originalChecksum ).as( "Checksums must be equal after double serialization \n" +
                                            "Original: " + original + "\n" +
@@ -119,10 +209,10 @@ public class LogCommandSerializationV5_0Test extends LogCommandSerializationV4_3
 
     private static void assertEqualsIncludingFlags( AbstractBaseRecord expected, AbstractBaseRecord record )
     {
-        assertEquals( expected, record );
-        assertEquals( expected.isCreated(), record.isCreated() );
-        assertEquals( expected.isUseFixedReferences(), record.isUseFixedReferences() );
-        assertEquals( expected.isSecondaryUnitCreated(), record.isSecondaryUnitCreated() );
+        assertThat( expected ).isEqualTo( record );
+        assertThat( expected.isCreated() ).as( "Created flag mismatch" ).isEqualTo( record.isCreated() );
+        assertThat( expected.isUseFixedReferences() ).as( "Fixed references flag mismatch" ).isEqualTo( record.isUseFixedReferences() );
+        assertThat( expected.isSecondaryUnitCreated() ).as( "Secondary unit created flag mismatch" ).isEqualTo( record.isSecondaryUnitCreated() );
     }
 
     @Override

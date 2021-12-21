@@ -386,12 +386,17 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     {
         StringBuilder buf = new StringBuilder();
         buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
-                prevProp ).append( ",next=" ).append( nextProp );
+                prevProp ).append( ",next=" ).append( nextProp ).append( ",created=" ).append( isCreated() ).append( "," );
 
-        if ( entityId != -1 )
+        switch ( entityType )
         {
-            buf.append( entityType == TYPE_NODE ? ",node=" : ",rel=" ).append( entityId );
+            case TYPE_NODE -> buf.append( "node" );
+            case TYPE_REL -> buf.append( "rel" );
+            case TYPE_SCHEMA_RULE -> buf.append( "schema" );
+            default -> buf.append( "unkownType(" ).append( entityType ).append( ")" );
         }
+
+        buf.append( "=" ).append( entityId );
 
         if ( blocksLoaded )
         {

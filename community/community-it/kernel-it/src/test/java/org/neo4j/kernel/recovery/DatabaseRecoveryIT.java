@@ -20,6 +20,7 @@
 package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,6 +44,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -111,6 +113,7 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Long.max;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -132,6 +135,8 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 class DatabaseRecoveryIT
 {
     private static final String[] TOKENS = new String[] {"Token1", "Token2", "Token3", "Token4", "Token5"};
+    private static final String[] MORE_TOKENS = new String[] {"Token1", "Token2", "Token3", "Token4", "Token5",
+                                                              "Token6", "Token7", "Token8", "Token9", "Token0"};
 
     @Inject
     private TestDirectory directory;
@@ -388,7 +393,7 @@ class DatabaseRecoveryIT
         crashedFs.close();
     }
 
-    @Test
+    @RepeatedTest( 10 )
     void shouldSeeTheSameRecordsAtCheckpointAsAfterReverseRecovery() throws Exception
     {
         // given
@@ -398,12 +403,12 @@ class DatabaseRecoveryIT
                 .impermanent()
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        produceRandomGraphUpdates( db, 100 );
+        produceRandomGraphUpdates( db, 100, false );
         checkPoint( db );
         EphemeralFileSystemAbstraction checkPointFs = fs.snapshot();
 
         // when
-        produceRandomGraphUpdates( db, 100 );
+        produceRandomGraphUpdates( db, 300, true );
         flush( db );
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
 
@@ -510,7 +515,7 @@ class DatabaseRecoveryIT
                 boolean deletedAndDynamicPropertyRecord = !record1.inUse() && store1 instanceof AbstractDynamicStore;
                 if ( !deletedAndDynamicPropertyRecord )
                 {
-                    assertEquals( record1, record2 );
+                    assertThat( record2 ).as( "Record missmatch in store " + store1 ).isEqualTo( record1 );
                 }
                 // else this record is a dynamic record which came from a property record update, a dynamic record which will not be set back
                 // to unused during reverse recovery and therefore cannot be checked with equality between the two versions of that record.
@@ -530,10 +535,11 @@ class DatabaseRecoveryIT
                 .forceCheckPoint( new SimpleTriggerInfo( "Manual trigger" ) );
     }
 
-    private void produceRandomGraphUpdates( GraphDatabaseService db, int numberOfTransactions )
+    private void produceRandomGraphUpdates( GraphDatabaseService db, int numberOfTransactions, boolean moreTokens )
     {
         // Load all existing nodes
         List<Node> nodes = new ArrayList<>();
+        List<String> indexNames = new ArrayList<>();
         try ( Transaction tx = db.beginTx() )
         {
             try ( ResourceIterator<Node> allNodes = tx.getAllNodes().iterator() )
@@ -543,95 +549,159 @@ class DatabaseRecoveryIT
                     nodes.add( allNodes.next() );
                 }
             }
-            tx.commit();
+            tx.schema().getIndexes().forEach( i -> indexNames.add( i.getName() ) );
         }
 
         for ( int i = 0; i < numberOfTransactions; i++ )
         {
-            int transactionSize = random.intBetween( 1, 30 );
-            try ( Transaction tx = db.beginTx() )
+            if ( random.nextFloat() < 0.1 )
             {
-                for ( int j = 0; j < transactionSize; j++ )
+                randomSchemaOperation( db, indexNames, moreTokens );
+            }
+            else
+            {
+                randomDataOperation( db, nodes, moreTokens );
+            }
+        }
+    }
+
+    private void randomSchemaOperation( GraphDatabaseService db, List<String> indexNames, boolean moreTokens )
+    {
+        try ( var tx = db.beginTx() )
+        {
+            if ( random.nextFloat() < 0.5 )
+            {
+                try
                 {
-                    float operationType = random.nextFloat();
-                    float operation = random.nextFloat();
-                    if ( operationType < 0.5 )
-                    {   // create
-                        if ( operation < 0.5 )
-                        {   // create node (w/ random label, prop)
-                            Node node = tx.createNode( random.nextBoolean() ? new Label[] { randomLabel() } : new Label[0] );
-                            if ( random.nextBoolean() )
-                            {
-                                node.setProperty( randomKey(), random.nextValueAsObject() );
-                            }
-                        }
-                        else
-                        {   // create relationship (w/ random prop)
-                            if ( !nodes.isEmpty() )
-                            {
-                                Relationship relationship = tx.getNodeById( random.among( nodes ).getId() )
-                                        .createRelationshipTo( tx.getNodeById( random.among( nodes ).getId() ), randomRelationshipType() );
-                                if ( random.nextBoolean() )
-                                {
-                                    relationship.setProperty( randomKey(), random.nextValueAsObject() );
-                                }
-                            }
-                        }
+                    // try to create new index
+                    if ( random.nextFloat() < 0.5 )
+                    {
+                        var index = tx.schema().indexFor( randomLabel( moreTokens ) ).on( randomKey( moreTokens ) ).create();
+                        indexNames.add( index.getName() );
                     }
-                    else if ( operationType < 0.8 )
-                    {   // change
-                        if ( operation < 0.25 )
-                        {   // add label
-                            random.among( nodes, node -> tx.getNodeById( node.getId() ).addLabel( randomLabel() ) );
-                        }
-                        else if ( operation < 0.5 )
-                        {   // remove label
-                            random.among( nodes, node -> tx.getNodeById( node.getId() ).removeLabel( randomLabel() ) );
-                        }
-                        else if ( operation < 0.75 )
-                        {   // set node property
-                            random.among( nodes, node -> tx.getNodeById( node.getId() ).setProperty( randomKey(), random.nextValueAsObject() ) );
-                        }
-                        else
-                        {   // set relationship property
-                            onRandomRelationship( nodes, relationship ->
-                                    tx.getRelationshipById( relationship.getId() ).setProperty( randomKey(),
-                                            random.nextValueAsObject() ), tx );
+                    else
+                    {
+                        var index = tx.schema().indexFor( randomRelationshipType( moreTokens ) ).on( randomKey( moreTokens ) ).create();
+                        indexNames.add( index.getName() );
+                    }
+                }
+                catch ( ConstraintViolationException e )
+                {
+                    // such index already exists, try to delete random one instead
+                    deleteRandomIndex( indexNames, tx );
+                }
+            }
+            else
+            {
+                // try to delete random index
+                deleteRandomIndex( indexNames, tx );
+            }
+            tx.commit();
+        }
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 5, MINUTES );
+        }
+    }
+
+    private void deleteRandomIndex( List<String> indexNames, Transaction tx )
+    {
+        if ( indexNames.isEmpty() )
+        {
+            // nothing left to delete
+            return;
+        }
+        var indexToDelete = random.among( indexNames );
+        tx.schema().getIndexByName( indexToDelete ).drop();
+        indexNames.remove( indexToDelete );
+    }
+
+    private void randomDataOperation( GraphDatabaseService db, List<Node> nodes, boolean moreTokens )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            int transactionSize = random.intBetween( 1, 30 );
+            for ( int j = 0; j < transactionSize; j++ )
+            {
+                float operationType = random.nextFloat();
+                float operation = random.nextFloat();
+                if ( operationType < 0.5 )
+                {   // create
+                    if ( operation < 0.5 )
+                    {   // create node (w/ random label, prop)
+                        Node node = tx.createNode( random.nextBoolean() ? new Label[]{randomLabel( moreTokens )} : new Label[0] );
+                        if ( random.nextBoolean() )
+                        {
+                            node.setProperty( randomKey( moreTokens ), random.nextValueAsObject() );
                         }
                     }
                     else
-                    {   // delete
-
-                        if ( operation < 0.25 )
-                        {   // remove node property
-                            random.among( nodes, node -> tx.getNodeById( node.getId() ).removeProperty( randomKey() ) );
-                        }
-                        else if ( operation < 0.5 )
-                        {   // remove relationship property
-                            onRandomRelationship( nodes, relationship ->
-                                    relationship.removeProperty( randomKey() ), tx );
-                        }
-                        else if ( operation < 0.9 )
-                        {   // delete relationship
-                            onRandomRelationship( nodes, Relationship::delete, tx );
-                        }
-                        else
-                        {   // delete node
-                            random.among( nodes, node ->
+                    {   // create relationship (w/ random prop)
+                        if ( !nodes.isEmpty() )
+                        {
+                            Relationship relationship = tx.getNodeById( random.among( nodes ).getId() )
+                                                          .createRelationshipTo( tx.getNodeById( random.among( nodes ).getId() ), randomRelationshipType(
+                                                                  moreTokens ) );
+                            if ( random.nextBoolean() )
                             {
-                                node = tx.getNodeById( node.getId() );
-                                for ( Relationship relationship : node.getRelationships() )
-                                {
-                                    relationship.delete();
-                                }
-                                node.delete();
-                                nodes.remove( node );
-                            } );
+                                relationship.setProperty( randomKey( moreTokens ), random.nextValueAsObject() );
+                            }
                         }
                     }
                 }
-                tx.commit();
+                else if ( operationType < 0.8 )
+                {   // change
+                    if ( operation < 0.25 )
+                    {   // add label
+                        random.among( nodes, node -> tx.getNodeById( node.getId() ).addLabel( randomLabel(moreTokens) ) );
+                    }
+                    else if ( operation < 0.5 )
+                    {   // remove label
+                        random.among( nodes, node -> tx.getNodeById( node.getId() ).removeLabel( randomLabel(moreTokens) ) );
+                    }
+                    else if ( operation < 0.75 )
+                    {   // set node property
+                        random.among( nodes, node -> tx.getNodeById( node.getId() ).setProperty( randomKey(moreTokens), random.nextValueAsObject() ) );
+                    }
+                    else
+                    {   // set relationship property
+                        onRandomRelationship( nodes, relationship ->
+                                tx.getRelationshipById( relationship.getId() ).setProperty( randomKey(moreTokens),
+                                                                                            random.nextValueAsObject() ), tx );
+                    }
+                }
+                else
+                {   // delete
+
+                    if ( operation < 0.25 )
+                    {   // remove node property
+                        random.among( nodes, node -> tx.getNodeById( node.getId() ).removeProperty( randomKey(moreTokens) ) );
+                    }
+                    else if ( operation < 0.5 )
+                    {   // remove relationship property
+                        onRandomRelationship( nodes, relationship ->
+                                relationship.removeProperty( randomKey(moreTokens) ), tx );
+                    }
+                    else if ( operation < 0.9 )
+                    {   // delete relationship
+                        onRandomRelationship( nodes, Relationship::delete, tx );
+                    }
+                    else
+                    {   // delete node
+                        random.among( nodes, node ->
+                        {
+                            node = tx.getNodeById( node.getId() );
+                            for ( Relationship relationship : node.getRelationships() )
+                            {
+                                relationship.delete();
+                            }
+                            node.delete();
+                            nodes.remove( node );
+                        } );
+                    }
+                }
             }
+            tx.commit();
         }
     }
 
@@ -640,19 +710,19 @@ class DatabaseRecoveryIT
         random.among( nodes, node -> random.among( asList( transaction.getNodeById( node.getId() ).getRelationships() ), action ) );
     }
 
-    private RelationshipType randomRelationshipType()
+    private RelationshipType randomRelationshipType( boolean moreTokens )
     {
-        return RelationshipType.withName( random.among( TOKENS ) );
+        return moreTokens ? RelationshipType.withName( random.among( MORE_TOKENS ) ) : RelationshipType.withName( random.among( TOKENS ) );
     }
 
-    private String randomKey()
+    private String randomKey( boolean moreTokens )
     {
-        return random.among( TOKENS );
+        return moreTokens ? random.among( MORE_TOKENS ) : random.among( TOKENS );
     }
 
-    private Label randomLabel()
+    private Label randomLabel( boolean moreTokens )
     {
-        return Label.label( random.among( TOKENS ) );
+        return moreTokens ? Label.label( random.among( MORE_TOKENS ) ) : Label.label( random.among( TOKENS ) );
     }
 
     private static void assertSameUpdates( Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtCrash,

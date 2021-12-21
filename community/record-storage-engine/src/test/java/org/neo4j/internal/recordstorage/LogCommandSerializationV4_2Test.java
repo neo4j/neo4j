@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -527,10 +529,10 @@ class LogCommandSerializationV4_2Test
 
     private static <RECORD extends AbstractBaseRecord> void assertEqualsIncludingFlags( RECORD expected, RECORD record )
     {
-        assertEquals( expected, record );
-        assertEquals( expected.isCreated(), record.isCreated() );
-        assertEquals( expected.isUseFixedReferences(), record.isUseFixedReferences() );
-        assertEquals( expected.isSecondaryUnitCreated(), record.isSecondaryUnitCreated() );
+        assertThat( expected ).isEqualTo( record );
+        assertThat( expected.isCreated() ).as( "Created flag mismatch" ).isEqualTo( record.isCreated() );
+        assertThat( expected.isUseFixedReferences() ).as( "Fixed references flag mismatch" ).isEqualTo( record.isUseFixedReferences() );
+        assertThat( expected.isSecondaryUnitCreated() ).as( "Secondary unit created flag mismatch" ).isEqualTo( record.isSecondaryUnitCreated() );
     }
 
     protected LogCommandSerialization writer()

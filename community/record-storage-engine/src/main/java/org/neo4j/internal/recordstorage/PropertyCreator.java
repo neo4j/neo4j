@@ -104,8 +104,8 @@ public class PropertyCreator
                 // We found an existing property and whatever happens we have to remove the existing
                 // block so that we can add the new one, where ever we decide to place it
                 existingHostProxy = proxy;
-                PropertyRecord existingHost = existingHostProxy.forChangingData();
-                removeProperty( primitive, existingHost, existingBlock );
+                var existingHost = existingHostProxy.forChangingData();
+                removeProperty( propertyKey, primitive, existingBlock, existingHost, existingHostProxy.getBefore() );
 
                 // Now see if we at this point can add the new block
                 if ( block.getSize() <= existingBlock.getSize() || // cheap check
@@ -165,15 +165,25 @@ public class PropertyCreator
         assert traverser.assertPropertyChain( primitive, propertyRecords );
     }
 
-    private static void removeProperty( PrimitiveRecord primitive, PropertyRecord host, PropertyBlock block )
+    private static void removeProperty( int propertyKey, PrimitiveRecord primitive, PropertyBlock existingBlock,
+                                        PropertyRecord host, PropertyRecord existingHostBefore )
     {
-        host.removePropertyBlock( block.getKeyIndexId() );
+        host.removePropertyBlock( existingBlock.getKeyIndexId() );
         host.setChanged( primitive );
-        for ( DynamicRecord record : block.getValueRecords() )
+        for ( DynamicRecord record : existingBlock.getValueRecords() )
         {
             assert record.inUse();
-            record.setInUse( false, block.getType().intValue() );
+            record.setInUse( false, existingBlock.getType().intValue() );
             host.addDeletedRecord( record );
+        }
+
+        // set created flag in before state for the dynmaic records that will be removed, so reverse recovery can re-create them
+        var beforeBlock = existingHostBefore.getPropertyBlock( propertyKey );
+        assert beforeBlock != null;
+        for ( DynamicRecord beforeDynamicRecord : beforeBlock.getValueRecords() )
+        {
+            assert beforeDynamicRecord.inUse();
+            beforeDynamicRecord.setCreated();
         }
     }
 

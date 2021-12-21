@@ -52,6 +52,10 @@ public enum Record
     public static final int ADDITIONAL_FLAG_2 = 0b0100_0000;
     public static final int ADDITIONAL_FLAG_3 = 0b1000_0000;
 
+    public static final int SECONDARY_UNIT_CREATED_IN_TX = ADDITIONAL_FLAG_1;
+    public static final int PROPERTY_OWNED_BY_NODE = ADDITIONAL_FLAG_2;
+    public static final int PROPERTY_OWNED_BY_RELATIONSHIP = ADDITIONAL_FLAG_3;
+
     private final byte byteValue;
     private final int intValue;
 
