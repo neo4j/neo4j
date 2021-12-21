@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.graphdb
+
 import java.lang
 import java.util
-
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Path
@@ -30,12 +31,10 @@ import org.neo4j.graphdb.traversal.Paths
 
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-
 import scala.collection.mutable
 
 case class PathImpl(pathEntities: Entity*)
-  extends org.neo4j.graphdb.Path
-  with Traversable[Entity] {
+  extends org.neo4j.graphdb.Path {
 
   val sz = pathEntities.size
 
@@ -82,9 +81,7 @@ case class PathImpl(pathEntities: Entity*)
 
   def iterator(): util.Iterator[Entity] = pathEntities.asJava.iterator()
 
-  def foreach[U](f: Entity => U) {
-    pathEntities.foreach(f)
-  }
+  def toSeq[Entity]: Seq[graphdb.Entity] = pathEntities
 
   override def toString(): String = Paths.defaultPathToString(this)
 
