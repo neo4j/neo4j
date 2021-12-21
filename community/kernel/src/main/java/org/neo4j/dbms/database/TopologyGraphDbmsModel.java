@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -33,20 +34,27 @@ public interface TopologyGraphDbmsModel
 {
     enum HostedOnMode
     {
-        raft( GraphDatabaseSettings.Mode.CORE ),
-        replica( GraphDatabaseSettings.Mode.READ_REPLICA ),
-        single( GraphDatabaseSettings.Mode.SINGLE );
+        raft( 1, GraphDatabaseSettings.Mode.CORE ),
+        replica( 2, GraphDatabaseSettings.Mode.READ_REPLICA ),
+        single( 0, GraphDatabaseSettings.Mode.SINGLE );
 
         private final GraphDatabaseSettings.Mode instanceMode;
+        private final byte code;
 
-        HostedOnMode( GraphDatabaseSettings.Mode instanceMode )
+        HostedOnMode( int code, GraphDatabaseSettings.Mode instanceMode )
         {
+            this.code = (byte) code;
             this.instanceMode = instanceMode;
         }
 
         public GraphDatabaseSettings.Mode instanceMode()
         {
             return instanceMode;
+        }
+
+        public byte code()
+        {
+            return code;
         }
 
         public static HostedOnMode from( GraphDatabaseSettings.Mode instanceMode )
@@ -59,6 +67,14 @@ public interface TopologyGraphDbmsModel
                 }
             }
             throw new IllegalArgumentException( "Invalid instance mode found: " + instanceMode );
+        }
+
+        public static HostedOnMode forCode( byte code )
+        {
+            return Arrays.stream( values() )
+                         .filter( value -> value.code == code )
+                         .findFirst()
+                         .orElseThrow( () -> new IllegalArgumentException( "Invalid hosted on mode: " + code ) );
         }
     }
 
