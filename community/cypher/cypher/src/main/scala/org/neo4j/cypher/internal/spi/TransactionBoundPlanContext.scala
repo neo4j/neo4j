@@ -68,9 +68,9 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.InternalLog
 import org.neo4j.values.storable.ValueCategory
 
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object TransactionBoundPlanContext {
   def apply(tc: TransactionalContextWrapper,

@@ -28,8 +28,8 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 
 import java.util.Collections.emptyList
-import scala.collection.JavaConverters.asJavaIterableConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsJava
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
 
 abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],

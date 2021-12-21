@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],

@@ -31,7 +31,8 @@ import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherVersion
 
 import java.io.File
-import scala.collection.JavaConverters.asScalaSetConverter
+
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 /**
  * Holds all configuration options for the Neo4j Cypher execution engine, compilers and runtimes.

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
 
 abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],

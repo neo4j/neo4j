@@ -77,7 +77,7 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import java.lang.Boolean.FALSE
 import java.net.URL
 import java.util.concurrent.atomic.AtomicReference
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
 

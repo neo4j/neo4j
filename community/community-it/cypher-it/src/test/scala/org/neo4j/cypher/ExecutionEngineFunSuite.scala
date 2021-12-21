@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class ExecutionEngineFunSuite
   extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport with QueryPlanTestSupport {

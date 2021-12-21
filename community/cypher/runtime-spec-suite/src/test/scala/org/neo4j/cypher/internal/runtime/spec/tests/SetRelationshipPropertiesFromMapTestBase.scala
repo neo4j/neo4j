@@ -29,7 +29,7 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],

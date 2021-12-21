@@ -94,7 +94,7 @@ class ToIntegerListFunctionTest extends CypherFunSuite with GeneratorDrivenPrope
   test("should not throw an exception for any value in the list") {
     val generator: Gen[List[Any]] = Gen.listOf(Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double]))
     forAll(generator) { s => {
-      import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+      import scala.jdk.CollectionConverters.IterableHasAsScala
       val result = toIntegerList(s)
       Inspectors.forAll(result.asInstanceOf[ListValue].asScala) {  _ should (be (a [LongValue]) or equal(NO_VALUE)) }
     }}

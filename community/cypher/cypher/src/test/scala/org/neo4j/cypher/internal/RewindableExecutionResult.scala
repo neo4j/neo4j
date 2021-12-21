@@ -37,9 +37,9 @@ import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QuerySubscription
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
+import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 trait RewindableExecutionResult {
   def columns: Array[String]

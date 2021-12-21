@@ -68,10 +68,10 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Optional
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
-import scala.collection.JavaConverters.setAsJavaSetConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Try
 
 case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDatabaseResolver: DefaultDatabaseResolver,

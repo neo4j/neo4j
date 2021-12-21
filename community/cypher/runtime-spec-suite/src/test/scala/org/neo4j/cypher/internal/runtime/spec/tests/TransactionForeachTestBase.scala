@@ -41,8 +41,8 @@ import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.InternalLogProvider
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
                                                          edition: Edition[CONTEXT],

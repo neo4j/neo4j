@@ -60,7 +60,7 @@ import org.neo4j.exceptions.Neo4jException
 import org.neo4j.messages.MessageUtil
 import org.neo4j.messages.MessageUtil.Numerus
 
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object VerifyBestPlan {
   private val prettifier = Prettifier(ExpressionStringifier())

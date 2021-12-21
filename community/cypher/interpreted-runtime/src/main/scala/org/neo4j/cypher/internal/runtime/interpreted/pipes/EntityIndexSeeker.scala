@@ -59,7 +59,7 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
-import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 /**
  * Mixin trait with functionality for executing logical index queries.

@@ -50,15 +50,14 @@ import org.neo4j.logging.NullLogProvider
 import java.util
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
-import scala.collection.JavaConverters.asJavaIterable
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.mapAsJavaMap
 import scala.collection.Map
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.IterableOnce
+import scala.jdk.CollectionConverters.IterableHasAsJava
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineHelper {
   self: CypherFunSuite with GraphDatabaseTestSupport =>
@@ -105,15 +104,15 @@ object ExecutionEngineHelper {
   }
 
   def asJavaMapDeep(map: Map[String, Any]): java.util.Map[String, AnyRef] = {
-    mapAsJavaMap(map.mapValues(asJavaValueDeep))
+    map.view.mapValues(asJavaValueDeep).toMap.asJava
   }
 
   def asJavaValueDeep(any: Any): AnyRef =
     any match {
       case map: Map[_, _] => asJavaMapDeep(map.asInstanceOf[Map[String, Any]])
       case array: Array[Any] => array.map(asJavaValueDeep)
-      case iterable: Iterable[_] => asJavaIterable(iterable.map(asJavaValueDeep))
-      case traversable: IterableOnce[_] => asJavaIterable(traversable.map(asJavaValueDeep).toList)
+      case iterable: Iterable[_] => iterable.map(asJavaValueDeep).asJava
+      case iterableOnce: IterableOnce[_] => iterableOnce.map(asJavaValueDeep).toList.asJava
       case x => x.asInstanceOf[AnyRef]
     }
 

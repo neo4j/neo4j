@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.impl.query.QueryExecution
 
-import scala.collection.JavaConverters.asJavaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsJava
 
 trait InternalExecutionResult extends QueryExecution {
 

@@ -36,8 +36,8 @@ import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-import scala.collection.JavaConverters.bufferAsJavaListConverter
 import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 trait ProcedureSignatureResolverTestSupport {
 

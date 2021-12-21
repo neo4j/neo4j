@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterat
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
                                       lhs: Pipe,

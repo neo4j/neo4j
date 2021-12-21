@@ -59,7 +59,7 @@ import org.neo4j.values.virtual.MapValue
 import java.lang
 import java.time.Clock
 import java.util.concurrent.CopyOnWriteArrayList
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 /**
  * Defines types for all query caches

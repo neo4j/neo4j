@@ -30,7 +30,7 @@ import org.scalactic.TolerantNumerics
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
-import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.language.implicitConversions
 
 class DistanceFunctionTest extends CypherFunSuite {

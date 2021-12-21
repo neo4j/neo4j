@@ -50,8 +50,8 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.immutable.ListMap
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 // SHOW [ALL|UNIQUE|NODE EXIST|RELATIONSHIP EXIST|EXIST|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
 case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {

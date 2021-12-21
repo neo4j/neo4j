@@ -141,10 +141,10 @@ import org.neo4j.values.virtual.VirtualValues
 import java.net.URL
 import java.util.NoSuchElementException
 import scala.collection.Iterator
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.mutable.ArrayBuffer
+import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 sealed class TransactionBoundQueryContext(transactionalContext: TransactionalContextWrapper,
                                           resources: ResourceManager,

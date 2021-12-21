@@ -72,7 +72,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 
 import java.time.Duration
 import java.util.Optional
-import scala.collection.JavaConverters.setAsJavaSetConverter
+import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try

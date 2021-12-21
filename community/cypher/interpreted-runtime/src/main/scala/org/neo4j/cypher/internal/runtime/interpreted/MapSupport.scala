@@ -33,8 +33,8 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.immutable
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 object IsMap extends MapSupport {
 

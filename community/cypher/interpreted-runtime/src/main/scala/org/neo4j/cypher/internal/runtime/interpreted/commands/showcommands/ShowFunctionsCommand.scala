@@ -38,9 +38,9 @@ import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 // SHOW [ALL | BUILT IN | USER DEFINED] FUNCTION[S] [EXECUTABLE [BY {CURRENT USER | username}]] [WHERE clause | YIELD clause]
 case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {

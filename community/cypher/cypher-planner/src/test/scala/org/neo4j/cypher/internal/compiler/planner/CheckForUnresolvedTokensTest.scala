@@ -56,7 +56,7 @@ import org.neo4j.values.storable.DurationFields
 import org.neo4j.values.storable.PointFields
 import org.neo4j.values.storable.TemporalValue.TemporalFields
 
-import scala.collection.JavaConverters.asScalaSetConverter
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
 

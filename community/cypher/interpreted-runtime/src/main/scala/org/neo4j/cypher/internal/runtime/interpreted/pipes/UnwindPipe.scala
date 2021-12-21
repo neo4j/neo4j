@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
                      (val id: Id = Id.INVALID_ID)

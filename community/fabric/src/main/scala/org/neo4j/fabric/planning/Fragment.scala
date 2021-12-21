@@ -40,8 +40,8 @@ import org.neo4j.fabric.util.PrettyPrinting
 import org.neo4j.graphdb.ExecutionPlanDescription
 
 import java.util
-import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.collection.JavaConverters.setAsJavaSet
+import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.SetHasAsJava
 
 sealed trait Fragment extends Fragment.RewritingSupport {
   /** Columns available to this fragment from an applied argument */
@@ -224,7 +224,7 @@ object Fragment {
 
   sealed abstract class Description(name: String, fragment: Fragment) extends ExecutionPlanDescription {
     override def getName: String = name
-    override def getIdentifiers: util.Set[String] = setAsJavaSet(fragment.outputColumns.toSet)
+    override def getIdentifiers: util.Set[String] = fragment.outputColumns.toSet.asJava
     override def hasProfilerStatistics: Boolean = false
     override def getProfilerStatistics: ExecutionPlanDescription.ProfilerStatistics = null
   }

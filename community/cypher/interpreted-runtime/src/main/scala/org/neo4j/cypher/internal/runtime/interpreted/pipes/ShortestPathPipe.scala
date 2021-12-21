@@ -30,7 +30,7 @@ import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes

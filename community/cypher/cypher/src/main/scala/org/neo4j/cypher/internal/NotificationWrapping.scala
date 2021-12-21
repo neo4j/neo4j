@@ -66,8 +66,8 @@ import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 
-import scala.collection.JavaConverters.seqAsJavaListConverter
-import scala.collection.JavaConverters.setAsJavaSetConverter
+import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.jdk.CollectionConverters.SetHasAsJava
 
 object NotificationWrapping {
 

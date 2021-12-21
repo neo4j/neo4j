@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],

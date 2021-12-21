@@ -43,8 +43,8 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
 import java.util
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
-import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 // SHOW TRANSACTION[S] [transaction-id[,...]] [WHERE clause|YIELD clause]
 case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], verbose: Boolean, defaultColumns: List[ShowColumn]) extends Command(defaultColumns) {

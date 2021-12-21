@@ -27,8 +27,8 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.StringJoiner
-import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.immutable.ListMap
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 object ShowSchemaCommandHelper {
   def escapeBackticks(str: String): String = str.replaceAllLiterally("`", "``")

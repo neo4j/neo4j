@@ -48,7 +48,8 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.values.virtual.MapValue
 
 import java.time.Clock
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                                     metricsFactory: MetricsFactory,

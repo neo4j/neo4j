@@ -38,7 +38,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
 import java.net.URL
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,

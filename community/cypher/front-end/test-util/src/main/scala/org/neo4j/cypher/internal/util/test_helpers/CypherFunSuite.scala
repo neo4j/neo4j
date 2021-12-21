@@ -25,8 +25,8 @@ import org.scalatest.FunSuiteLike
 import org.scalatest.Matchers
 import org.scalatest.Status
 import org.scalatest.Suite
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.junit.JUnitRunner
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.reflect.Manifest
 

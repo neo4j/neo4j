@@ -25,7 +25,7 @@ import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.driver.Session
 import org.neo4j.driver.TransactionConfig
 
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 case class DriverCypherExecutor(private val session: Session) extends CypherExecutor with DriverExceptionConverter {
 

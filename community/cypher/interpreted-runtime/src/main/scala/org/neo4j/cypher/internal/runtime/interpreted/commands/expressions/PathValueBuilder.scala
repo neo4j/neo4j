@@ -30,7 +30,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.function.Consumer
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVisitor] {
   private val nodes = LongLists.mutable.empty

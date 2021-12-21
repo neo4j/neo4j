@@ -39,7 +39,7 @@ import org.neo4j.test.utils.TestDirectory
 
 import java.io.File
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 

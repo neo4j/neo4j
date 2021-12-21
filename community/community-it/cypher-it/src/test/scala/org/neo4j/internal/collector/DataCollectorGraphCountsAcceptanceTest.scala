@@ -25,7 +25,7 @@ import org.neo4j.cypher.GraphIcing
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.IndexType
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite with GraphIcing with SampleGraphs {
 

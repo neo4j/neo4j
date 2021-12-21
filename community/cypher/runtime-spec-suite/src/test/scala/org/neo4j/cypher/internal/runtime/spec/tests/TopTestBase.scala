@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.helpers.ArrayUtil.MAX_ARRAY_SIZE
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class TopTestBase[CONTEXT <: RuntimeContext](
                                                         edition: Edition[CONTEXT],

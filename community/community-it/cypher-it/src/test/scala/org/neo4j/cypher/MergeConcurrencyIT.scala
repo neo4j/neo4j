@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 class MergeConcurrencyIT extends ExecutionEngineFunSuite {
 

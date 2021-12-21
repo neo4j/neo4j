@@ -22,7 +22,7 @@ package org.neo4j.fabric
 import org.junit.runner.RunWith
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 abstract class FabricTest extends FreeSpec with Matchers {

@@ -34,7 +34,7 @@ import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
 import org.neo4j.lock.ResourceTypes.LABEL
 import org.neo4j.lock.ResourceTypes.NODE
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],

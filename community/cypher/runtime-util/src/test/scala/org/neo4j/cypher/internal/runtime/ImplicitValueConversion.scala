@@ -56,8 +56,8 @@ import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues.list
 
-import scala.collection.JavaConverters.asJavaIterableConverter
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters.IterableHasAsJava
+import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.language.implicitConversions
 import scala.IterableOnce
 

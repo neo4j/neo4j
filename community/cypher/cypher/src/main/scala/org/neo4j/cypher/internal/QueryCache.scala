@@ -34,6 +34,8 @@ import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
+import scala.jdk.CollectionConverters.MapHasAsScala
+
 /**
  * Tracer for cache activity.
  * Default implementations do nothing.
@@ -387,8 +389,7 @@ object QueryCache {
     }
 
     // Implemented to simplify testing
-    override def toString: String =
-      scala.collection.JavaConverters.mapAsScalaMap(resultMap).toString
+    override def toString: String = resultMap.asScala.toString
   }
 
   object ParameterTypeMap {

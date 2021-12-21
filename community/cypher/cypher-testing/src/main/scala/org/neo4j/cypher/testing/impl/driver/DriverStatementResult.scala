@@ -26,8 +26,8 @@ import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.SeverityLevel
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 case class DriverStatementResult(private val driverResult: Result) extends StatementResult {
 

@@ -27,9 +27,10 @@ import org.neo4j.graphdb.traversal.Paths
 
 import java.lang
 import java.util
-import scala.collection.JavaConverters.asJavaIterableConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.IterableHasAsJava
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 case class PathImpl(pathEntities: Entity*)
   extends org.neo4j.graphdb.Path {

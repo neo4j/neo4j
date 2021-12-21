@@ -49,7 +49,7 @@ import org.neo4j.values.storable.IntValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 import java.util.UUID
 

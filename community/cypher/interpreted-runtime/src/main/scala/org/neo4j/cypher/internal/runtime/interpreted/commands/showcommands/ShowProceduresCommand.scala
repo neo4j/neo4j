@@ -37,7 +37,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util
-import scala.collection.JavaConverters.asScalaSetConverter
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 // SHOW PROCEDURE[S] [EXECUTABLE [BY {CURRENT USER | username}]] [WHERE clause | YIELD clause]
 case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {

@@ -28,9 +28,9 @@ import java.util.stream.StreamSupport
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.values.virtual.MapValue
 
-import scala.collection.JavaConverters.asJavaIteratorConverter
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.jdk.CollectionConverters.IteratorHasAsJava
 
 /**
  * Data collector section which contains query invocation data. This includes the query itself,

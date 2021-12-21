@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
 import java.util.regex.Pattern
-import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 class ExecutionResultTest extends ExecutionEngineFunSuite {
 

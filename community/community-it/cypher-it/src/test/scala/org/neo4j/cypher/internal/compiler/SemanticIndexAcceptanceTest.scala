@@ -45,8 +45,8 @@ import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.MatchResult
 import org.scalatest.prop.PropertyChecks
 
-import scala.collection.JavaConverters.asScalaSetConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.SetHasAsScala
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 /**
  * After a failure, do this to reproduce with the actual values that caused the error:

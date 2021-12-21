@@ -84,7 +84,7 @@ class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElement
   }
 
   implicit class CheckValeNeoSafe(expected: ArrayValue) {
-    import scala.collection.JavaConverters.seqAsJavaListConverter
+    import scala.jdk.CollectionConverters.SeqHasAsJava
     def ==>(vals: Any*): Unit =
       makeValueNeoSafe(ValueUtils.asListValue(vals.asJava)) should equal(expected)
   }

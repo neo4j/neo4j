@@ -43,8 +43,8 @@ import org.neo4j.values.virtual.MapValue
 
 import java.lang
 import java.time.Clock
-import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 /**
  * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive

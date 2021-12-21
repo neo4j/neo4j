@@ -39,9 +39,9 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 
 import java.io.PrintWriter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.immutable
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
                                                          edition: Edition[CONTEXT],

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.preparser.javacc.PreParserResult
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.SyntaxException
 
-import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.util.matching.Regex
 
 /**

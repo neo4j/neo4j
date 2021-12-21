@@ -86,8 +86,8 @@ import java.time.chrono.ChronoZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.mutable.ArrayBuffer
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Random
 
 object RuntimeTestSuite {

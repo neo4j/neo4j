@@ -34,7 +34,7 @@ import org.neo4j.logging.InternalLogProvider
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import java.lang.Boolean.TRUE
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 trait RuntimeContextManagerFactory[CONTEXT <: RuntimeContext] {
   def newRuntimeContextManager(cypherRuntimeConfiguration: CypherRuntimeConfiguration,

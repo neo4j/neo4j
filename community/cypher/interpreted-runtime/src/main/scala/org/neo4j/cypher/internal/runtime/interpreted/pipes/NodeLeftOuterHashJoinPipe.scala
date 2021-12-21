@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.LongArray
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.asScalaSetConverter
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
                                      lhs: Pipe,

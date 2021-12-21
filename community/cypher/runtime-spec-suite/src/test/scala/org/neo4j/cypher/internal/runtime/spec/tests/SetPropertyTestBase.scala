@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],

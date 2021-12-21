@@ -24,8 +24,8 @@ import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Result
 import org.neo4j.internal.helpers.collection.Iterables
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 case class EmbeddedStatementResult(private val embeddedResult: Result) extends StatementResult {
   override def columns(): Seq[String] = embeddedResult.columns().asScala.toList

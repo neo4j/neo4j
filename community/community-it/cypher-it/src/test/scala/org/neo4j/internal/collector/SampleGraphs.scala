@@ -21,7 +21,7 @@ package org.neo4j.internal.collector
 
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 trait SampleGraphs {
   self: ExecutionEngineFunSuite =>

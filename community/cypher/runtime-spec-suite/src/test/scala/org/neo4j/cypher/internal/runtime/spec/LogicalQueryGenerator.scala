@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.NullLog
 import org.scalacheck.Gen
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 object LogicalQueryGenerator {
 

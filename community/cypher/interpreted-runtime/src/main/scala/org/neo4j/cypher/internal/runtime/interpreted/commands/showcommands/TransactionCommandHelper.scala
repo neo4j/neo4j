@@ -35,8 +35,8 @@ import org.neo4j.values.storable.StringValue
 import org.neo4j.values.virtual.ListValue
 
 import java.util.Objects
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 case object TransactionCommandHelper {
   def isSelfOrAllows(username: String, actionOnResource: AdminActionOnResource, securityContext: SecurityContext): Boolean =

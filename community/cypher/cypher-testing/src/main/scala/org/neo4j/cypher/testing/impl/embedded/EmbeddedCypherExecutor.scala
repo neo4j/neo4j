@@ -25,7 +25,7 @@ import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result
 
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 case class EmbeddedCypherExecutor(private val graph: GraphDatabaseService) extends CypherExecutor with EmbeddedExceptionConverter {
   override def beginTransaction(): CypherExecutorTransaction = EmbeddedTransaction(graph.beginTx())

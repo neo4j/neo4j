@@ -57,8 +57,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.collection.immutable
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
 
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](

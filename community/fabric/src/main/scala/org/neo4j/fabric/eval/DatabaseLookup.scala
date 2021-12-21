@@ -23,10 +23,10 @@ import org.neo4j.kernel.database.DatabaseIdRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 
-import scala.collection.JavaConverters.mapAsScalaMapConverter
-import scala.collection.JavaConverters.asScalaSetConverter
 import scala.collection.SortedSet
 import scala.collection.immutable.SortedMap
+import scala.jdk.CollectionConverters.MapHasAsScala
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 trait DatabaseLookup {
 

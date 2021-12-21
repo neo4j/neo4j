@@ -27,8 +27,8 @@ import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.spatial.Point
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 object EmbeddedRecordConverter {
   def convertMap(embeddedValue: util.Map[String, AnyRef]): Map[String, AnyRef] =

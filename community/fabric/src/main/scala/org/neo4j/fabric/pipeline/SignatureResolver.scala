@@ -62,8 +62,8 @@ import org.neo4j.procedure.Mode
 
 import java.util.Optional
 import java.util.function.Supplier
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 class SignatureResolver(registrySupplier: Supplier[GlobalProcedures]) extends ProcedureSignatureResolver {
 

@@ -37,8 +37,8 @@ import org.neo4j.graphdb.RelationshipType
 import org.scalatest.Outcome
 
 import java.lang.System.lineSeparator
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.util.Random
 
 abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](

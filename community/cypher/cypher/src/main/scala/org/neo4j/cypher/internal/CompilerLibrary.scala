@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
 
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 /**
  * Keeps track of all cypher compilers, and finds the relevant compiler for a preparsed query.

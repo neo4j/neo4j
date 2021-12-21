@@ -56,9 +56,9 @@ import org.scalatest.matchers.Matcher
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.util.Try
 
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {

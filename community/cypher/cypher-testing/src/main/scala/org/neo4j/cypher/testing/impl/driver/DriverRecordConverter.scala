@@ -28,8 +28,8 @@ import org.neo4j.driver.types.Point
 import org.neo4j.driver.types.Relationship
 
 import java.util
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 object DriverRecordConverter {
 

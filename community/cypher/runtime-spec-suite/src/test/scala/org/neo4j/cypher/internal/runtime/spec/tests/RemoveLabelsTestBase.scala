@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.internal.helpers.collection.Iterators
 
 import java.util
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],

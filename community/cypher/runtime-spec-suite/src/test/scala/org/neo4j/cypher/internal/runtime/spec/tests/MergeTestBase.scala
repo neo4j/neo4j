@@ -42,7 +42,7 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.helpers.collection.Iterators
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class MergeTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],

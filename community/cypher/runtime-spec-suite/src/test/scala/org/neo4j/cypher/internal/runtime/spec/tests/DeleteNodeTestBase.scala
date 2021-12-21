@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.RelationshipType
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],

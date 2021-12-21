@@ -56,7 +56,7 @@ import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
 
 import java.util.Optional
-import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.jdk.CollectionConverters.ListHasAsScala
 
 object procsHelpers {
 

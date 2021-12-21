@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.server.security.auth.AuthProcedures
 
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 class CypherQueryObfuscatorIT extends CypherFunSuite {
 

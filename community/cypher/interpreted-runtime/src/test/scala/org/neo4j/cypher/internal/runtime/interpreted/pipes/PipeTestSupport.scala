@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 

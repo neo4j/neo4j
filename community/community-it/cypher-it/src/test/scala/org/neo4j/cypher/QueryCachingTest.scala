@@ -31,9 +31,9 @@ import org.neo4j.graphdb.config.Setting
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import java.time.Duration
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInternalSettings.query_execution_plan_cache_size.defaultValue()) extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 

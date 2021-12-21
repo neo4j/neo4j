@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 
 import java.util.Collections
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],

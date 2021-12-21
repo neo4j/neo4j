@@ -23,9 +23,9 @@ import java.util
 
 import org.neo4j.cypher.internal.util.Eagerly.immutableMapValues
 
-import scala.collection.JavaConverters.mapAsJavaMapConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.Map
+import scala.jdk.CollectionConverters.MapHasAsJava
+import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.IterableOnce
 
 // This converts runtime scala values into runtime Java value

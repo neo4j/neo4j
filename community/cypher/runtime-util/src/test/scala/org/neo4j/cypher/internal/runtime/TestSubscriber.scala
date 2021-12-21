@@ -28,8 +28,8 @@ import org.neo4j.graphdb
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait TestSubscriber extends QuerySubscriber {
   def isCompleted: Boolean

@@ -41,7 +41,7 @@ import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import java.util
 import java.util.Collections
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters.MapHasAsJava
 
 //noinspection RedundantDefaultArgument
 // uses default argument for clarification in some tests

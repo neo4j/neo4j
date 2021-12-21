@@ -31,8 +31,8 @@ import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.internal.helpers.collection.Iterables
 
 import java.util
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
     edition: Edition[CONTEXT],

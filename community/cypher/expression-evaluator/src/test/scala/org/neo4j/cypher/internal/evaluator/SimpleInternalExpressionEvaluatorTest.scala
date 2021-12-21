@@ -32,7 +32,7 @@ import org.neo4j.values.virtual.VirtualValues.list
 import org.neo4j.values.virtual.VirtualValues.map
 import org.scalatest.FunSuiteLike
 import org.scalatest.Matchers
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 import java.lang.Math.PI
 import java.lang.Math.sin

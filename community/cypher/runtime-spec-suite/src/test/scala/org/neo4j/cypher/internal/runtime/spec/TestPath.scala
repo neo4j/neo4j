@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
 
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 /**
  * Test org.neo4j.graphdb.Path implementation, used for runtime spec suite assertions.

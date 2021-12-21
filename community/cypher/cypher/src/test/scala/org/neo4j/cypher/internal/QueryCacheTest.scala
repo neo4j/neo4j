@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 class QueryCacheTest extends CypherFunSuite {
 

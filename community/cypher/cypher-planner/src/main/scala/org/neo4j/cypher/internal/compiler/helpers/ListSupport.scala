@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 
-import scala.collection.JavaConverters.mapAsScalaMapConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.Map
 import scala.collection.Seq
+import scala.jdk.CollectionConverters.MapHasAsScala
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.Iterable
 
 object IsList extends ListSupport {

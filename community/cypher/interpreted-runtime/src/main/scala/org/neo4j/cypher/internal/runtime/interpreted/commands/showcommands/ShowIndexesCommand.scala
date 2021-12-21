@@ -56,8 +56,8 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.immutable.ListMap
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 // SHOW [ALL|BTREE|FULLTEXT|LOOKUP|POINT|RANGE|TEXT] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
 case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
