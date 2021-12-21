@@ -82,4 +82,8 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH (n) WHERE 1.0<7 RETURN n AS r", "MATCH (n) WHERE true RETURN n AS r")
     assertRewrite("MATCH (n) WHERE 1.2<1 RETURN n AS r", "MATCH (n) WHERE false RETURN n AS r")
   }
+
+  test("doesn't fail on / by zero") {
+    assertRewrite("RETURN 1/0 AS r", "RETURN 1/0 AS r")
+  }
 }

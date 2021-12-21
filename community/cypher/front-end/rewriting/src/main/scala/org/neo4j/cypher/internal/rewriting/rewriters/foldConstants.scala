@@ -56,7 +56,9 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
   try {
     instance.apply(that)
   } catch {
-    case e: java.lang.ArithmeticException => throw cypherExceptionFactory.arithmeticException(e.getMessage, e)
+    // Don't fail planning because we failed to compute this. Rather leave the expression unchanged.
+    // If the expression is never evaluated, then failing here would be wrong.
+    case _: java.lang.ArithmeticException => that
   }
 
   private def containsSensitive(e: BinaryOperatorExpression): Boolean = (e.lhs, e.rhs) match {
