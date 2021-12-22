@@ -36,7 +36,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -53,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -76,7 +76,7 @@ class NodeImporterTest
         JobScheduler scheduler = new ThreadPoolJobScheduler();
         try ( Lifespan life = new Lifespan( scheduler );
               BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, layout,
-                      Standard.LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults(),
+                      defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults(),
                       INSTANCE ) )
         {
             stores.createNew();
@@ -113,7 +113,7 @@ class NodeImporterTest
         JobScheduler scheduler = new ThreadPoolJobScheduler();
         try ( Lifespan life = new Lifespan( scheduler );
                 BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, layout,
-                        Standard.LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults(),
+                        defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults(),
                         INSTANCE ) )
         {
             stores.createNew();

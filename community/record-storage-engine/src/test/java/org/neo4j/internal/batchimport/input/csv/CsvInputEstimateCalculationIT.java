@@ -81,10 +81,10 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Percentage.withPercentage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Readables.wrap;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.RandomEntityDataGenerator.convert;
@@ -94,7 +94,7 @@ import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
-import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -152,7 +152,7 @@ class CsvInputEstimateCalculationIT
     {
         // given a couple of input files of various layouts
         Input input = generateData();
-        RecordFormats format = LATEST_RECORD_FORMATS;
+        RecordFormats format = defaultFormat();
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
                 format.property().getRecordSize( NO_STORE_HEADER ),
                 GraphDatabaseInternalSettings.string_block_size.defaultValue(), 0,
@@ -203,7 +203,7 @@ class CsvInputEstimateCalculationIT
 
         // when
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
-                LATEST_RECORD_FORMATS.property().getRecordSize( NO_STORE_HEADER ),
+                defaultFormat().property().getRecordSize( NO_STORE_HEADER ),
                 GraphDatabaseInternalSettings.string_block_size.defaultValue(), 0,
                 GraphDatabaseInternalSettings.array_block_size.defaultValue(), 0 ) );
 

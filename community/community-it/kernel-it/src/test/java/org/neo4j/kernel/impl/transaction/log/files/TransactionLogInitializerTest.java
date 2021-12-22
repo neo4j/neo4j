@@ -41,7 +41,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_STORE_VERSION;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.storageengine.api.StoreVersion.versionStringToLong;
 
@@ -57,7 +57,7 @@ class TransactionLogInitializerTest
         //Given
         var metaStore = mock( MetadataProvider.class );
         var txn = new TransactionId( 3, -1322858814, currentTimeMillis() );
-        when( metaStore.getStoreId() ).thenReturn( new StoreId( versionStringToLong( LATEST_STORE_VERSION ) ) );
+        when( metaStore.getStoreId() ).thenReturn( new StoreId( versionStringToLong( defaultFormat().storeVersion() ) ) );
         when( metaStore.getLastClosedTransaction() ).thenReturn( new ClosedTransactionMetadata( txn.transactionId(), new LogPosition( 0, 1613 ) ) );
         when( metaStore.getLastCommittedTransaction() ).thenReturn( txn );
         when( metaStore.getLastCommittedTransactionId() ).thenReturn( txn.transactionId() );

@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.gibiBytes;
-import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 class HeapSizeSanityCheckerTest
 {
@@ -59,7 +59,7 @@ class HeapSizeSanityCheckerTest
         Input.Estimates estimates = Input.knownEstimates( 1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes( 50 ), gibiBytes( 100 ), 0 );
 
         // when
-        checker.sanityCheck( estimates, LATEST_RECORD_FORMATS, baseMemory, memoryUser1, memoryUser2 );
+        checker.sanityCheck( estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2 );
 
         // then
         verify( monitor ).insufficientAvailableMemory( anyLong(), anyLong(), anyLong() );
@@ -78,7 +78,7 @@ class HeapSizeSanityCheckerTest
         Input.Estimates estimates = Input.knownEstimates( 1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes( 50 ), gibiBytes( 100 ), 0 );
 
         // when
-        checker.sanityCheck( estimates, LATEST_RECORD_FORMATS, baseMemory, memoryUser1, memoryUser2 );
+        checker.sanityCheck( estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2 );
 
         // then
         verify( monitor ).insufficientHeapSize( anyLong(), anyLong() );
@@ -97,7 +97,7 @@ class HeapSizeSanityCheckerTest
         Input.Estimates estimates = Input.knownEstimates( 1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes( 50 ), gibiBytes( 100 ), 0 );
 
         // when
-        checker.sanityCheck( estimates, LATEST_RECORD_FORMATS, baseMemory, memoryUser1, memoryUser2 );
+        checker.sanityCheck( estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2 );
 
         // then
         verify( monitor ).abundantHeapSize( anyLong(), anyLong() );
@@ -117,7 +117,7 @@ class HeapSizeSanityCheckerTest
         Input.Estimates estimates = Input.knownEstimates( 1_000_000_000, 10_000_000_000L, 2_000_000_000L, 0, gibiBytes( 50 ), gibiBytes( 100 ), 0 );
 
         // when
-        checker.sanityCheck( estimates, LATEST_RECORD_FORMATS, baseMemory, memoryUser1, memoryUser2 );
+        checker.sanityCheck( estimates, defaultFormat(), baseMemory, memoryUser1, memoryUser2 );
 
         // then
         verifyNoMoreInteractions( monitor );

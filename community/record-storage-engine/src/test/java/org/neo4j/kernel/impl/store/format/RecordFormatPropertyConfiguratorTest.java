@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -46,6 +45,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 class RecordFormatPropertyConfiguratorTest
 {
@@ -53,7 +53,7 @@ class RecordFormatPropertyConfiguratorTest
     void keepUserDefinedFormatConfig()
     {
         Config config = Config.defaults( string_block_size, 36 );
-        RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
+        RecordFormats recordFormats = defaultFormat();
         configureRecordFormat( recordFormats, config );
         assertEquals( 36, config.get( string_block_size ).intValue(), "Should keep used specified value" );
     }
@@ -85,7 +85,7 @@ class RecordFormatPropertyConfiguratorTest
 
     private class ResizableRecordFormats implements RecordFormats
     {
-        private int dynamicRecordHeaderSize;
+        private final int dynamicRecordHeaderSize;
 
         ResizableRecordFormats( int dynamicRecordHeaderSize )
         {

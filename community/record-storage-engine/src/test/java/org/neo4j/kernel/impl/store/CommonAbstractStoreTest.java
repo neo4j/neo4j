@@ -47,7 +47,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
@@ -78,6 +77,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -149,7 +149,7 @@ class CommonAbstractStoreTest
         when( pagedFile.io( eq( 0L ), eq( PagedFile.PF_SHARED_READ_LOCK ), any() ) ).thenReturn( pageCursor );
         when( pageCursor.next() ).thenReturn( false );
 
-        RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
+        RecordFormats recordFormats = defaultFormat();
 
         try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, idFile, config, RecordIdType.NODE_LABELS, idGeneratorFactory, pageCache,
                 NullLogProvider.getInstance(), GraphDatabaseInternalSettings.label_block_size.defaultValue(), recordFormats, writable(),

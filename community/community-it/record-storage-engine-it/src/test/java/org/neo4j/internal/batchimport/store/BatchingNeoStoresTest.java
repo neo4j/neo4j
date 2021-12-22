@@ -109,8 +109,8 @@ import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELA
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
-import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
@@ -164,7 +164,7 @@ class BatchingNeoStoresTest
                 .build();
 
         // WHEN
-        RecordFormats recordFormats = LATEST_RECORD_FORMATS;
+        RecordFormats recordFormats = defaultFormat();
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
               BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout,
@@ -187,7 +187,7 @@ class BatchingNeoStoresTest
             // given all the stores with some records in them
             testDirectory.cleanup();
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
-                    PageCacheTracer.NULL, databaseLayout, LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    PageCacheTracer.NULL, databaseLayout, defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults(), INSTANCE ) )
             {
                 stores.createNew();
@@ -199,7 +199,7 @@ class BatchingNeoStoresTest
 
             // when opening and pruning all except the one we test
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
-                    PageCacheTracer.NULL, databaseLayout, LATEST_RECORD_FORMATS, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    PageCacheTracer.NULL, databaseLayout, defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults(), INSTANCE ) )
             {
                 stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
@@ -225,7 +225,7 @@ class BatchingNeoStoresTest
     void shouldDecideToAllocateDoubleRelationshipRecordUnitsOnLargeAmountOfRelationshipsOnSupportedFormat() throws Exception
     {
         // given
-        RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
+        RecordFormats formats = new ForcedSecondaryUnitRecordFormats( defaultFormat() );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
@@ -245,7 +245,7 @@ class BatchingNeoStoresTest
     void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLowAmountOfRelationshipsOnSupportedFormat() throws Exception
     {
         // given
-        RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
+        RecordFormats formats = new ForcedSecondaryUnitRecordFormats( defaultFormat() );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
@@ -265,7 +265,7 @@ class BatchingNeoStoresTest
     void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsOnLargeAmountOfRelationshipsOnUnsupportedFormat() throws Exception
     {
         // given
-        RecordFormats formats = LATEST_RECORD_FORMATS;
+        RecordFormats formats = defaultFormat();
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
@@ -295,7 +295,7 @@ class BatchingNeoStoresTest
 
         // when
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, databaseLayout, LATEST_RECORD_FORMATS, Configuration.DEFAULT,
+                pageCache, PageCacheTracer.NULL, databaseLayout, defaultFormat(), Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();

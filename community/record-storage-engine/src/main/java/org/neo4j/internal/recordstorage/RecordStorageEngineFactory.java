@@ -87,7 +87,6 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
@@ -139,6 +138,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERT
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 
@@ -176,7 +176,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StoreVersion defaultStoreVersion()
     {
-        return new RecordStoreVersion( Standard.LATEST_RECORD_FORMATS );
+        return new RecordStoreVersion( defaultFormat() );
     }
 
     @Override

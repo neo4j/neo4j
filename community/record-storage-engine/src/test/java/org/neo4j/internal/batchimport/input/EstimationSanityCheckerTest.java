@@ -23,11 +23,11 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 class EstimationSanityCheckerTest
 {
@@ -35,7 +35,7 @@ class EstimationSanityCheckerTest
     void shouldWarnAboutCountGettingCloseToCapacity()
     {
         // given
-        RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
+        RecordFormats formats = defaultFormat();
         Monitor monitor = mock( Monitor.class );
         Input.Estimates estimates = Input.knownEstimates( formats.node().getMaxId() - 1000, formats.relationship().getMaxId() - 1000,
                 0, 0, 0, 0, 0 ); // we don't care about the rest of the estimates in this checking
@@ -52,7 +52,7 @@ class EstimationSanityCheckerTest
     void shouldWarnAboutCountHigherThanCapacity()
     {
         // given
-        RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
+        RecordFormats formats = defaultFormat();
         Monitor monitor = mock( Monitor.class );
         Input.Estimates estimates = Input.knownEstimates( formats.node().getMaxId() * 2, formats.relationship().getMaxId() * 2,
                 0, 0, 0, 0, 0 ); // we don't care about the rest of the estimates in this checking
@@ -69,7 +69,7 @@ class EstimationSanityCheckerTest
     void shouldNotWantIfCountWayLowerThanCapacity()
     {
         // given
-        RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
+        RecordFormats formats = defaultFormat();
         Monitor monitor = mock( Monitor.class );
         Input.Estimates estimates = Input.knownEstimates( 1000, 1000,
                 0, 0, 0, 0, 0 ); // we don't care about the rest of the estimates in this checking

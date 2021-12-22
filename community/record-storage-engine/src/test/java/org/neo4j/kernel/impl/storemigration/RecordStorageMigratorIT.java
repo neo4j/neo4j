@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.eclipse.collections.api.iterator.MutableLongIterator;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,10 +30,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.NoSuchElementException;
-import java.util.SplittableRandom;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -46,10 +41,8 @@ import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
-import org.neo4j.internal.recordstorage.RandomSchema;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -110,9 +103,6 @@ class RecordStorageMigratorIT
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";
     private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
-    private static final int MAX_PROPERTY_KEY_ID = 500;
-    private static final int MAX_RELATIONSHIP_TYPE_ID = 100;
-    private static final int MAX_LABEL_ID = 100;
     private static final long TX_ID = 42;
 
     @Inject
@@ -445,122 +435,6 @@ class RecordStorageMigratorIT
         }
         nameStore.flush( NULL );
         tokenStore.flush( NULL );
-    }
-
-    private static class RealIdsRandomSchema extends RandomSchema
-    {
-        private final Pair<LongHashSet,LongHashSet> newIndexes;
-        private final Pair<LongHashSet,LongHashSet> newConstraints;
-        private final Pair<LongHashSet,LongHashSet> existingIndexes;
-        private final Pair<LongHashSet,LongHashSet> existingConstraints;
-
-        RealIdsRandomSchema( SplittableRandom rng, LongHashSet indexes, LongHashSet constraints )
-        {
-            super( rng );
-            this.newIndexes = Pair.of( indexes, new LongHashSet() );
-            this.newConstraints = Pair.of( constraints, new LongHashSet() );
-            this.existingIndexes = Pair.of( new LongHashSet( indexes ), new LongHashSet() );
-            this.existingConstraints = Pair.of( new LongHashSet( constraints ), new LongHashSet() );
-        }
-
-        @Override
-        protected int maxPropertyId()
-        {
-            return MAX_PROPERTY_KEY_ID;
-        }
-
-        @Override
-        protected int maxRelationshipTypeId()
-        {
-            return MAX_RELATIONSHIP_TYPE_ID;
-        }
-
-        @Override
-        protected int maxLabelId()
-        {
-            return MAX_LABEL_ID;
-        }
-
-        @Override
-        protected int defaultLabelIdsArrayMaxLength()
-        {
-            return 20;
-        }
-
-        @Override
-        protected int defaultRelationshipTypeIdsArrayMaxLength()
-        {
-            return 20;
-        }
-
-        @Override
-        protected int defaultPropertyKeyIdsArrayMaxLength()
-        {
-            return 100;
-        }
-
-        @Override
-        public long nextRuleIdForIndex()
-        {
-            return nextRuleId( newIndexes );
-        }
-
-        @Override
-        public long existingConstraintId()
-        {
-            return nextRuleId( existingConstraints );
-        }
-
-        @Override
-        public long nextRuleIdForConstraint()
-        {
-            return nextRuleId( newConstraints );
-        }
-
-        @Override
-        public long existingIndexId()
-        {
-            return nextRuleId( existingIndexes );
-        }
-
-        private long nextRuleId( Pair<LongHashSet,LongHashSet> idSet )
-        {
-            try
-            {
-                MutableLongIterator itr = idSet.first().longIterator();
-                long next = itr.next();
-                itr.remove();
-                idSet.other().add( next );
-                return next;
-            }
-            catch ( NoSuchElementException exception )
-            {
-                rollback();
-                throw exception;
-            }
-        }
-
-        public void rollback()
-        {
-            for ( Pair<LongHashSet,LongHashSet> pair : Arrays.asList( newIndexes, newConstraints, existingIndexes, existingConstraints ) )
-            {
-                pair.first().addAll( pair.other() );
-                pair.other().clear();
-            }
-        }
-
-        public void commit()
-        {
-            for ( Pair<LongHashSet,LongHashSet> pair : Arrays.asList( newIndexes, newConstraints, existingIndexes, existingConstraints ) )
-            {
-                pair.other().clear();
-            }
-        }
-
-        boolean hasMoreIds()
-        {
-            return newIndexes.first().notEmpty() || newConstraints.first().notEmpty();
-        }
     }
 
     private static String getVersionToMigrateFrom( RecordStoreVersionCheck check )

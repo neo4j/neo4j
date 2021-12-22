@@ -77,7 +77,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.RandomSupport;
@@ -126,6 +125,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 @Neo4jLayoutExtension
 @ExtendWith( { RandomExtension.class, SuppressOutputExtension.class} )
@@ -1698,7 +1698,7 @@ class ImportCommandTest
         // THEN
         NeoStores stores = getDatabaseApi().getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        int headerSize = defaultFormat().dynamic().getRecordHeaderSize();
         assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
         assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
     }

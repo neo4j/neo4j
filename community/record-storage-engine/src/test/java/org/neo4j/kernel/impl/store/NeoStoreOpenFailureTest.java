@@ -33,7 +33,6 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.DisabledForRoot;
@@ -47,6 +46,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -66,7 +66,7 @@ class NeoStoreOpenFailureTest
         Config config = Config.defaults();
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
         LogProvider logProvider = NullLogProvider.getInstance();
-        RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
+        RecordFormats formats = defaultFormat();
         RecordFormatPropertyConfigurator.configureRecordFormat( formats, config );
         boolean create = true;
         StoreType[] storeTypes = StoreType.values();

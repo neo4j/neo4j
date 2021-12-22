@@ -69,7 +69,6 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -138,6 +137,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -1238,7 +1238,7 @@ class TransactionRecordStateTest
     @Test
     void shouldPrepareRelevantRecords() throws Exception
     {
-        PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats( Standard.LATEST_RECORD_FORMATS );
+        PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats( defaultFormat() );
         createStores( Config.defaults( dense_node_threshold, 1 ), format );
         // WHEN
         TransactionRecordState state = newTransactionRecordState();

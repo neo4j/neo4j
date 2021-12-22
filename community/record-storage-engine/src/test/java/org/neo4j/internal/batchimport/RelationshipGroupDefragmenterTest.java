@@ -48,12 +48,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,7 +68,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -88,8 +88,8 @@ class RelationshipGroupDefragmenterTest
     private static Stream<Arguments> parameters()
     {
         return Stream.of(
-            of( LATEST_RECORD_FORMATS, 1 ),
-            of( new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS ), 2 )
+            of( defaultFormat(), 1 ),
+            of( new ForcedSecondaryUnitRecordFormats( defaultFormat() ), 2 )
         );
     }
 
@@ -117,7 +117,7 @@ class RelationshipGroupDefragmenterTest
     @Test
     void tracePageCacheAccessOnDefragmentation() throws IOException
     {
-        init( LATEST_RECORD_FORMATS, 1 );
+        init( defaultFormat(), 1 );
 
         int nodeCount = 10;
         int relationshipTypeCount = 5;

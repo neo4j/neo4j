@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.impl.store.NoStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -45,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 @PageCacheExtension
 class PageCachePrefetchingTest
@@ -81,7 +81,7 @@ class PageCachePrefetchingTest
     @Test
     void scanningWithPreFetchMustGiveScannerFewerPageFaultsWhenScannerIsSlow() throws Exception
     {
-        RecordFormat<RelationshipRecord> format = Standard.LATEST_RECORD_FORMATS.relationship();
+        RecordFormat<RelationshipRecord> format = defaultFormat().relationship();
         RelationshipRecord record = format.newRecord();
         int recordSize = format.getRecordSize( NoStoreHeader.NO_STORE_HEADER );
         int recordsPerPage = PageCache.PAGE_SIZE / recordSize;

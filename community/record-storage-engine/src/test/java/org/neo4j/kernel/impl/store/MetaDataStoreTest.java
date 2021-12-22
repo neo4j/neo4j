@@ -55,7 +55,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -85,7 +84,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_STORE_VERSION;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.storageengine.api.StoreVersion.versionStringToLong;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -561,7 +560,7 @@ class MetaDataStoreTest
     void mustSupportScanningAllRecords()
     {
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        long storeVersion = versionStringToLong( Standard.LATEST_RECORD_FORMATS.storeVersion() );
+        long storeVersion = versionStringToLong( defaultFormat().storeVersion() );
         try ( MetaDataStore store = newMetaDataStore() )
         {
             writeCorrectMetaDataRecord( store, positions, storeVersion );
@@ -605,7 +604,7 @@ class MetaDataStoreTest
     void mustSupportScanningAllRecordsWithRecordCursor()
     {
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        long storeVersion = versionStringToLong( Standard.LATEST_RECORD_FORMATS.storeVersion());
+        long storeVersion = versionStringToLong( defaultFormat().storeVersion());
         try ( MetaDataStore store = newMetaDataStore() )
         {
             writeCorrectMetaDataRecord( store, positions, storeVersion );
@@ -760,7 +759,7 @@ class MetaDataStoreTest
         // given
         int creationTime = 1;
         int randomId = 2;
-        long storeVersion = versionStringToLong( LATEST_STORE_VERSION );
+        long storeVersion = versionStringToLong( defaultFormat().storeVersion() );
         int upgradeTime = 4;
         int upgradeTxId = 5;
         int upgradeTxChecksum = 6;
