@@ -79,6 +79,7 @@ public class Cypher<STATEMENT,
                     CALL_RESULT_ITEM,
                     HINT,
                     EXPRESSION,
+                    LABEL_EXPRESSION,
                     PARAMETER extends EXPRESSION,
                     VARIABLE extends EXPRESSION,
                     PROPERTY extends EXPRESSION,
@@ -117,6 +118,7 @@ public class Cypher<STATEMENT,
                CALL_RESULT_ITEM,
                HINT,
                EXPRESSION,
+               LABEL_EXPRESSION,
                PARAMETER,
                VARIABLE,
                PROPERTY,
@@ -154,6 +156,7 @@ public class Cypher<STATEMENT,
                              CALL_RESULT_ITEM,
                              HINT,
                              EXPRESSION,
+                             LABEL_EXPRESSION,
                              PARAMETER,
                              VARIABLE,
                              PROPERTY,
@@ -395,6 +398,8 @@ TOKEN [IGNORE_CASE] :
     | < KEY: "KEY" >
     | < LABEL: "LABEL" >
     | < LABELS: "LABELS" >
+    | < AMPERSAND: "&" >
+    | < EXCLAMATION_MARK: "!" >
     | < LBRACKET: "[" >
     | < LCURLY: "{" >
     | < LE: "<=" >
@@ -2136,19 +2141,26 @@ NODE_PATTERN NodePattern() :
     Token t;
     VARIABLE v = null;
     List<StringPos<POS>> labels = new ArrayList<>();
+    LABEL_EXPRESSION labelExpression = null;
     EXPRESSION properties = null;
     EXPRESSION predicate = null;
 }
 {
     t=<LPAREN>
     (
-        v=Variable() [labels=NodeLabels()] [properties=Properties()] [<WHERE> predicate=Expression()]
-        | [labels=NodeLabels()] [properties=Properties()]
+        v=Variable() (LOOKAHEAD( NotLabelExpression() ) labels=NodeLabels() | labelExpression=LabelExpression())? [properties=Properties()] [<WHERE> predicate=Expression()]
+        | (LOOKAHEAD( NotLabelExpression() ) labels=NodeLabels() | labelExpression=LabelExpression())? [properties=Properties()]
     )
     <RPAREN>
     {
-        return astFactory.nodePattern( pos( t ), v, labels, properties, predicate );
+        return astFactory.nodePattern( pos( t ), v, labels, labelExpression, properties, predicate );
     }
+}
+
+void NotLabelExpression() :
+{}
+{
+    LabelOrRelType() (<WHERE> | <RPAREN> | <LCURLY>  | ":")
 }
 
 List<StringPos<POS>> NodeLabels() :
@@ -2291,6 +2303,76 @@ PATH_LENGTH PathLengthLiteral( Token t ) :
             String v = v1 == null ? "" : v1.image;
             return astFactory.pathLength( pos( t ), v1 == null ? null : pos ( v1 ), v1 == null ? null : pos ( v1 ), v, v);
         }
+}
+
+// LABEL EXPRESSIONS
+
+LABEL_EXPRESSION LabelExpression() :
+{
+    LABEL_EXPRESSION e;
+}
+{
+    ":" e=LabelExpression4()
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression4() :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression3() ( t=<BAR> temp=LabelExpression3() { e = astFactory.labelDisjunction( pos( t ), e, temp ); } )*
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression3() :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression2() (t=<AMPERSAND> temp=LabelExpression2() { e = astFactory.labelConjunction( pos( t ), e, temp ); } )*
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression2() :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+}
+{
+    (
+        LOOKAHEAD( 3 ) t=<EXCLAMATION_MARK> e=LabelExpression2() { e = astFactory.labelNegation( pos( t ), e ); }
+        | e=LabelExpression1()
+    )
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression1() :
+{
+    LABEL_EXPRESSION e = null;
+    String label = null;
+    Token t;
+}
+{
+    (
+        <LPAREN> e=LabelExpression4() <RPAREN>
+        | t=SymbolicNameString() { e = astFactory.labelAtom( pos ( t ), t.image ); }
+    )
+    {
+        return e;
+    }
 }
 
 // EXPRESSIONS

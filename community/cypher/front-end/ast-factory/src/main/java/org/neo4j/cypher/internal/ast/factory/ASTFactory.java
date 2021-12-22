@@ -53,6 +53,7 @@ public interface ASTFactory<STATEMENT,
         CALL_RESULT_ITEM,
         HINT,
         EXPRESSION,
+        LABEL_EXPRESSION,
         PARAMETER extends EXPRESSION,
         VARIABLE extends EXPRESSION,
         PROPERTY extends EXPRESSION,
@@ -72,7 +73,7 @@ public interface ASTFactory<STATEMENT,
         PRIVILEGE_QUALIFIER,
         SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
         POS>
-        extends ASTExpressionFactory<EXPRESSION,PARAMETER,PATTERN,VARIABLE,PROPERTY,MAP_PROJECTION_ITEM,POS>
+        extends ASTExpressionFactory<EXPRESSION, LABEL_EXPRESSION, PARAMETER,PATTERN,VARIABLE,PROPERTY,MAP_PROJECTION_ITEM,POS>
 {
     final class NULL
     {
@@ -188,7 +189,7 @@ public interface ASTFactory<STATEMENT,
 
     PATTERN everyPathPattern( List<NODE_PATTERN> nodes, List<REL_PATTERN> relationships );
 
-    NODE_PATTERN nodePattern( POS p, VARIABLE v, List<StringPos<POS>> labels, EXPRESSION properties, EXPRESSION predicate );
+    NODE_PATTERN nodePattern( POS p, VARIABLE v, List<StringPos<POS>> labels, LABEL_EXPRESSION labelExpression, EXPRESSION properties, EXPRESSION predicate );
 
     REL_PATTERN relationshipPattern( POS p,
                                      boolean left,

@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -378,6 +379,14 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def ors(expressions: Expression*): Ors = Ors(expressions)(pos)
 
   def and(lhs: Expression, rhs: Expression): And = And(lhs, rhs)(pos)
+
+  def labelConjunction(lhs: LabelExpression, rhs: LabelExpression): LabelExpression = LabelExpression.Conjunction(lhs, rhs)(pos)
+
+  def labelDisjunction(lhs: LabelExpression, rhs: LabelExpression): LabelExpression = LabelExpression.Disjunction(lhs, rhs)(pos)
+
+  def labelNegation(e: LabelExpression): LabelExpression = LabelExpression.Negation(e)(pos)
+
+  def labelAtom(name: String): LabelExpression = LabelExpression.Label(LabelOrRelTypeName(name)(pos))(pos)
 
   def ands(expressions: Expression*): Ands = Ands(expressions)(pos)
 

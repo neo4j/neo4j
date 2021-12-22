@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
  */
 public interface ASTExpressionFactory<
         EXPRESSION,
+        LABEL_EXPRESSION,
         PARAMETER,
         PATTERN,
         VARIABLE extends EXPRESSION,
@@ -81,6 +82,14 @@ public interface ASTExpressionFactory<
     EXPRESSION xor( POS p, EXPRESSION lhs, EXPRESSION rhs );
 
     EXPRESSION and( POS p, EXPRESSION lhs, EXPRESSION rhs );
+
+    LABEL_EXPRESSION labelConjunction( POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs );
+
+    LABEL_EXPRESSION labelDisjunction( POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs );
+
+    LABEL_EXPRESSION labelNegation( POS p, LABEL_EXPRESSION e );
+
+    LABEL_EXPRESSION labelAtom( POS p, String e );
 
     EXPRESSION ands( List<EXPRESSION> exprs );
 

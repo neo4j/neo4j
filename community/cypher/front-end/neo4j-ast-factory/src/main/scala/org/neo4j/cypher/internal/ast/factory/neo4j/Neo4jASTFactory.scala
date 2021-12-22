@@ -436,6 +436,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     ProcedureResultItem,
     UsingHint,
     Expression,
+    LabelExpression,
     Parameter,
     Variable,
     Property,
@@ -713,14 +714,10 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   override def nodePattern(p: InputPosition,
                            v: Variable,
                            labels: util.List[StringPos[InputPosition]],
+                           labelExpression: LabelExpression,
                            properties: Expression,
                            predicate: Expression): NodePattern = {
-//    // FIXME: Temporary hack
-//    val maybeSingleLabelExpression = labelExpression match {
-//      case LabelLeaf(label) => Some(LabelName(label.name)(label.position))
-//      case _                => None
-//    }
-    NodePattern(Option(v), labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), None, Option(properties), Option(predicate))(p)
+    NodePattern(Option(v), labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), Option(labelExpression), Option(properties), Option(predicate))(p)
   }
 
   override def relationshipPattern(p: InputPosition,
@@ -1786,5 +1783,15 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   private def pretty[T <: AnyRef](ts: util.List[T]): String = {
     ts.stream().map[String](t => t.toString).collect(Collectors.joining(","))
   }
+
+  override def labelConjunction(p: InputPosition,
+                                lhs: LabelExpression,
+                                rhs: LabelExpression): LabelExpression = LabelExpression.Conjunction(lhs, rhs)(p)
+
+  override def labelDisjunction(p: InputPosition, lhs: LabelExpression, rhs: LabelExpression): LabelExpression = LabelExpression.Disjunction(lhs, rhs)(p)
+
+  override def labelNegation(p: InputPosition, e: LabelExpression): LabelExpression = LabelExpression.Negation(e)(p)
+
+  override def labelAtom(p: InputPosition, n: String): LabelExpression = LabelExpression.Label(LabelOrRelTypeName(n)(p))(p)
 }
 
