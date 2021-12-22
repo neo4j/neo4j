@@ -3191,6 +3191,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | statement=ShowProcedures( start, useClause )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowTransactions( start, useClause )
+        | statement=ShowPrivileges( start, useClause )
     )
     {
         return statement;
@@ -3222,6 +3223,7 @@ STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) :
         | statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
+        | statement=ShowPrivileges( start, useClause )
     )
     {
         return statement;
@@ -4387,6 +4389,22 @@ STATEMENT_WITH_GRAPH ShowCurrentUser( Token start, USE_CLAUSE useClause ):
 }
 
 // Privilege commands
+
+STATEMENT_WITH_GRAPH ShowPrivileges( Token start, USE_CLAUSE useClause ):
+{
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    WHERE where = null;
+}
+{
+    (<PRIVILEGE> | <PRIVILEGES>) (
+        ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+        | ( where=WhereClause() )
+    )?
+    {
+        return astFactory.useGraph( astFactory.showAllPrivileges( pos( start ), yield, returnClause, where ), useClause );
+    }
+}
 
 ADMINISTRATION_COMMAND grantRoleManagement(Token start):
 {

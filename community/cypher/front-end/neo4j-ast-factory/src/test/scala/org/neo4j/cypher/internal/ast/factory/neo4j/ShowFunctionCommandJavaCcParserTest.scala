@@ -179,6 +179,8 @@ class ShowFunctionCommandJavaCcParserTest extends ParserComparisonTestBase with 
         |  "NODE"
         |  "POINT"
         |  "POPULATED"
+        |  "PRIVILEGE"
+        |  "PRIVILEGES"
         |  "PROCEDURE"
         |  "PROCEDURES"
         |  "PROPERTY"
