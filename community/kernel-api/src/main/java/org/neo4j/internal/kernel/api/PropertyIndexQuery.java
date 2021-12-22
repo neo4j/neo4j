@@ -125,10 +125,14 @@ public abstract class PropertyIndexQuery implements IndexQuery
                                                  (TextValue) from, fromInclusive,
                                                  (TextValue) to, toInclusive );
 
-            // Todo: remove special case with removal of wrapper
             case GEOMETRY -> new BoundingBoxRangeWrapper( propertyKeyId,
-                                                          (PointValue) from, fromInclusive,
-                                                          (PointValue) to, toInclusive );
+                    (PointValue) from, fromInclusive,
+                    (PointValue) to, toInclusive );
+
+            case DURATION,
+                    DURATION_ARRAY,
+                    // TODO: GEOMETRY,
+                    GEOMETRY_ARRAY -> new IncomparableRangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
 
             default -> new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
         };
@@ -590,6 +594,34 @@ public abstract class PropertyIndexQuery implements IndexQuery
         public IndexQueryType type()
         {
             return IndexQueryType.BOUNDING_BOX;
+        }
+    }
+
+    /**
+     * Some value types are defined as incomparable and range seek must always return empty result for any range of those types.
+     * This is how the behaviour is defined by the Cypher value spec.
+     * <p>
+     * Incomparable types:
+     * <ul>
+     *     <li>{@link ValueGroup#DURATION}</li>
+     *     <li>{@link ValueGroup#DURATION_ARRAY}</li>
+     *     <li>{@link ValueGroup#GEOMETRY}</li>
+     *     <li>{@link ValueGroup#GEOMETRY_ARRAY}</li>
+     * </ul>
+     */
+    public static class IncomparableRangePredicate<T extends Value> extends RangePredicate<Value>
+    {
+
+        private IncomparableRangePredicate( int propertyKeyId, ValueGroup valueGroup, T from, boolean fromInclusive, T to,
+                boolean toInclusive )
+        {
+            super( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
+        }
+
+        @Override
+        public boolean acceptsValue( Value value )
+        {
+            return false;
         }
     }
 

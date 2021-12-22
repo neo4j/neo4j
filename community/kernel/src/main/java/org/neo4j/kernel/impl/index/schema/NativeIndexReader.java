@@ -154,7 +154,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
     void startSeekForInitializedRange( IndexProgressor.EntityValueClient client, KEY treeKeyFrom, KEY treeKeyTo, CursorContext cursorContext,
                                        AccessMode accessMode, boolean needFilter, IndexQueryConstraints constraints, PropertyIndexQuery... query )
     {
-        if ( isEmptyRange( treeKeyFrom, treeKeyTo ) )
+        if ( isEmptyRange( treeKeyFrom, treeKeyTo ) || isEmptyResultQuery( query ) )
         {
             client.initialize( descriptor, IndexProgressor.EMPTY, accessMode, false, constraints, query );
             return;
@@ -194,6 +194,19 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
         return layout.compare( treeKeyFrom, treeKeyTo ) > 0;
     }
 
+    private boolean isEmptyResultQuery( PropertyIndexQuery... predicates )
+    {
+        for ( int i = 0; i < predicates.length; i++ )
+        {
+            if ( predicates[i] instanceof PropertyIndexQuery.IncomparableRangePredicate )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @Override
     public PartitionedValueSeek valueSeek( int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query )
     {
@@ -210,6 +223,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
     class NativePartitionedValueSeek implements PartitionedValueSeek
     {
         private final PropertyIndexQuery[] query;
+        private final boolean emptyResultQuery;
         private final boolean filter;
         private final List<KEY> partitionEdges;
         private final AtomicInteger nextFrom = new AtomicInteger();
@@ -227,6 +241,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
             filter = initializeRangeForQuery( fromInclusive, toExclusive, this.query );
 
             partitionEdges = tree.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, queryContext.cursorContext() );
+            emptyResultQuery = isEmptyResultQuery( query );
         }
 
         @Override
@@ -240,7 +255,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
         {
             final var from = nextFrom.getAndIncrement();
             final var to = from + 1;
-            if ( to >= partitionEdges.size() )
+            if ( to >= partitionEdges.size() || emptyResultQuery )
             {
                 return IndexProgressor.EMPTY;
             }
