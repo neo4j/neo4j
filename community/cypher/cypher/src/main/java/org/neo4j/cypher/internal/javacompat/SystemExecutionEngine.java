@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
-import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 /**
  * This class is a specialized form of the ExecutionEngine containing two internal Cypher engines.
@@ -42,7 +41,7 @@ class SystemExecutionEngine extends ExecutionEngine
      * and translate them into normal Cypher against the SYSTEM database, processed by the inner Cypher runtime, which understands normal Cypher.
      */
     SystemExecutionEngine( GraphDatabaseQueryService queryService,
-                           LogProvider logProvider,
+                           InternalLogProvider logProvider,
                            CypherQueryCaches systemQueryCaches,
                            CompilerFactory systemCompilerFactory,
                            CypherQueryCaches normalQueryCaches,

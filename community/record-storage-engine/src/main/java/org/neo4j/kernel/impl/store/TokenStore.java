@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -68,7 +68,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider,
+            InternalLogProvider logProvider,
             DynamicStringStore nameStore,
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,

@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.util.WrappingEntity;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.virtual.MapValue;
 
@@ -61,7 +61,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     /**
      * Creates an execution engine around the given graph database
      */
-    public ExecutionEngine( GraphDatabaseQueryService queryService, CypherQueryCaches queryCaches, LogProvider logProvider,
+    public ExecutionEngine( GraphDatabaseQueryService queryService, CypherQueryCaches queryCaches, InternalLogProvider logProvider,
                             CompilerFactory compilerFactory )
     {
         cypherExecutionEngine =
@@ -86,7 +86,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     protected static org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine( GraphDatabaseQueryService queryService, CypherQueryCaches queryCaches,
-            LogProvider logProvider, CompilerLibrary compilerLibrary )
+            InternalLogProvider logProvider, CompilerLibrary compilerLibrary )
     {
         DependencyResolver resolver = queryService.getDependencyResolver();
         Monitors monitors = resolver.resolveDependency( Monitors.class );

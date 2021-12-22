@@ -24,21 +24,21 @@ import java.util.function.Function;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.neo4j.internal.helpers.Strings.TAB;
 
 public class InconsistencyMessageLogger implements InconsistencyLogger
 {
-    private final Log log;
+    private final InternalLog log;
     private final Function<AbstractBaseRecord,String> recordToStringFunction;
 
-    public InconsistencyMessageLogger( Log log )
+    public InconsistencyMessageLogger( InternalLog log )
     {
         this( log, AbstractBaseRecord::toString );
     }
 
-    public InconsistencyMessageLogger( Log log, Function<AbstractBaseRecord,String> recordToStringFunction )
+    public InconsistencyMessageLogger( InternalLog log, Function<AbstractBaseRecord,String> recordToStringFunction )
     {
         this.log = log;
         this.recordToStringFunction = recordToStringFunction;

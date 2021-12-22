@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -29,8 +30,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.internal.kernel.api.IndexMonitor;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
@@ -44,13 +44,13 @@ class IndexProxyCreator
     private final IndexStatisticsStore indexStatisticsStore;
     private final IndexProviderMap providerMap;
     private final TokenNameLookup tokenNameLookup;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
 
     IndexProxyCreator( IndexSamplingConfig samplingConfig,
             IndexStatisticsStore indexStatisticsStore,
             IndexProviderMap providerMap,
             TokenNameLookup tokenNameLookup,
-            LogProvider logProvider )
+            InternalLogProvider logProvider )
     {
         this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;

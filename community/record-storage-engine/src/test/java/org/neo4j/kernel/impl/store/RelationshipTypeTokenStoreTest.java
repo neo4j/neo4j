@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
@@ -55,7 +55,7 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
 
     @Override
     protected TokenStore<RelationshipTypeTokenRecord> instantiateStore( Path file, Path idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
-            LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
+            InternalLogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
         return new RelationshipTypeTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats,
                 DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME, immutable.empty() );

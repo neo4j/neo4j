@@ -68,7 +68,7 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.impl.query.FunctionInformation
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
@@ -341,7 +341,7 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def systemGraph: GraphDatabaseService = translateException(tokenNameLookup, inner.systemGraph)
 
-  override def logProvider: LogProvider = translateException(tokenNameLookup, inner.logProvider)
+  override def logProvider: InternalLogProvider = translateException(tokenNameLookup, inner.logProvider)
 
   override def providedLanguageFunctions(): Seq[FunctionInformation] = translateException(tokenNameLookup, inner.providedLanguageFunctions)
 

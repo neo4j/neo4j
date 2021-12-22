@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.lang.Boolean.TRUE;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.select_specific_record_format;
@@ -92,7 +92,7 @@ public class DatabaseConfig extends Config implements Lifecycle
     }
 
     @Override
-    public void setLogger( Log internalLog )
+    public void setLogger( InternalLog internalLog )
     {
         globalConfig.setLogger( internalLog );
     }

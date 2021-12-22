@@ -46,8 +46,8 @@ import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
@@ -69,7 +69,7 @@ public class IndexSamplingController
     private final RecoveryCondition indexRecoveryCondition;
     private final boolean backgroundSampling;
     private final Lock samplingLock = new ReentrantLock();
-    private final Log log;
+    private final InternalLog log;
     private final boolean logRecoverIndexSamples;
     private final boolean asyncRecoverIndexSamples;
     private final boolean asyncRecoverIndexSamplesWait;
@@ -85,7 +85,7 @@ public class IndexSamplingController
                              IndexMapSnapshotProvider indexMapSnapshotProvider,
                              JobScheduler scheduler,
                              RecoveryCondition indexRecoveryCondition,
-                             LogProvider logProvider,
+                             InternalLogProvider logProvider,
                              Config config,
                              String databaseName )
     {

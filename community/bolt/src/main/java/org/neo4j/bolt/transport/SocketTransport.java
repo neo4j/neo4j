@@ -32,7 +32,7 @@ import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.UnauthenticatedChannelProtector;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryPool;
@@ -47,7 +47,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final SocketAddress address;
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
-    private final LogProvider logging;
+    private final InternalLogProvider logging;
     private final TransportThrottleGroup throttleGroup;
     private final BoltProtocolFactory boltProtocolFactory;
     private final NetworkConnectionTracker connectionTracker;
@@ -58,7 +58,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final AuthConfigProvider authConfigProvider;
     private final Config config;
 
-    public SocketTransport( String connector, SocketAddress address, SslContext sslCtx, boolean encryptionRequired, LogProvider logging,
+    public SocketTransport( String connector, SocketAddress address, SslContext sslCtx, boolean encryptionRequired, InternalLogProvider logging,
                             TransportThrottleGroup throttleGroup, BoltProtocolFactory boltProtocolFactory,
                             NetworkConnectionTracker connectionTracker, Duration channelTimeout, long maxMessageSize,
                             ByteBufAllocator allocator, MemoryPool memoryPool, AuthConfigProvider authConfigProvider, Config config )

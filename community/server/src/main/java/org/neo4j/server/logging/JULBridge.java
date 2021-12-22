@@ -29,17 +29,17 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 public class JULBridge extends Handler
 {
     private static final String UNKNOWN_LOGGER_NAME = "unknown";
 
-    private final LogProvider logProvider;
-    private final ConcurrentMap<String, Log> logs = new ConcurrentHashMap<>();
+    private final InternalLogProvider logProvider;
+    private final ConcurrentMap<String,InternalLog> logs = new ConcurrentHashMap<>();
 
-    protected JULBridge( LogProvider logProvider )
+    protected JULBridge( InternalLogProvider logProvider )
     {
         this.logProvider = logProvider;
     }
@@ -49,7 +49,7 @@ public class JULBridge extends Handler
         LogManager.getLogManager().reset();
     }
 
-    public static void forwardTo( LogProvider logProvider )
+    public static void forwardTo( InternalLogProvider logProvider )
     {
         rootJULLogger().addHandler( new JULBridge( logProvider ) );
     }
@@ -74,11 +74,11 @@ public class JULBridge extends Handler
         }
 
         String context = record.getLoggerName();
-        Log log = getLog( ( context != null ) ? context : UNKNOWN_LOGGER_NAME );
+        InternalLog log = getLog( ( context != null ) ? context : UNKNOWN_LOGGER_NAME );
         log( log, record.getLevel().intValue(), message, record.getThrown() );
     }
 
-    private static void log( Log log, int level, String message, Throwable throwable )
+    private static void log( InternalLog log, int level, String message, Throwable throwable )
     {
         if ( level <= Level.FINE.intValue() )
         {
@@ -126,12 +126,12 @@ public class JULBridge extends Handler
         }
     }
 
-    private Log getLog( String name )
+    private InternalLog getLog( String name )
     {
-        Log log = logs.get( name );
+        InternalLog log = logs.get( name );
         if ( log == null )
         {
-            Log newLog = logProvider.getLog( name );
+            InternalLog newLog = logProvider.getLog( name );
             log = logs.putIfAbsent( name, newLog );
             if ( log == null )
             {

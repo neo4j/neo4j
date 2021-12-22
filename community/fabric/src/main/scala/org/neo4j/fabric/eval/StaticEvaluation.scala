@@ -75,7 +75,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.internal.GraphDatabaseAPI
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ValueMapper
@@ -430,7 +430,7 @@ object StaticEvaluation {
 
     override def systemGraph: GraphDatabaseService = notAvailable()
 
-    override def logProvider: LogProvider = notAvailable()
+    override def logProvider: InternalLogProvider = notAvailable()
 
     override def providedLanguageFunctions(): Seq[FunctionInformation] = notAvailable()
 

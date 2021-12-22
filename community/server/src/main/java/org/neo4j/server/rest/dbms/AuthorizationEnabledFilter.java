@@ -41,8 +41,8 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 import org.neo4j.server.web.JettyHttpConnection;
 import org.neo4j.string.UTF8;
@@ -55,10 +55,10 @@ import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 public class AuthorizationEnabledFilter extends AuthorizationFilter
 {
     private final Supplier<AuthManager> authManagerSupplier;
-    private final Log log;
+    private final InternalLog log;
     private final List<Pattern> uriWhitelist;
 
-    public AuthorizationEnabledFilter( Supplier<AuthManager> authManager, LogProvider logProvider, List<Pattern> uriWhitelist )
+    public AuthorizationEnabledFilter( Supplier<AuthManager> authManager, InternalLogProvider logProvider, List<Pattern> uriWhitelist )
     {
         this.authManagerSupplier = authManager;
         this.log = logProvider.getLog( getClass() );

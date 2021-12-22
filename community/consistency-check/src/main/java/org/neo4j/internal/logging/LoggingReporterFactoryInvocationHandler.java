@@ -25,16 +25,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.annotations.documented.DocumentedUtils;
 import org.neo4j.annotations.documented.Warning;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 public class LoggingReporterFactoryInvocationHandler implements InvocationHandler
 {
-    private final Log log;
+    private final InternalLog log;
     private final boolean formattedMessages;
     private final AtomicInteger errors = new AtomicInteger();
     private final AtomicInteger warnings = new AtomicInteger();
 
-    public LoggingReporterFactoryInvocationHandler( Log log, boolean formattedMessages )
+    public LoggingReporterFactoryInvocationHandler( InternalLog log, boolean formattedMessages )
     {
         this.log = log;
         this.formattedMessages = formattedMessages;

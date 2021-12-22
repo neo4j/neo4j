@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.function.Consumer;
 
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.apache.logging.log4j.core.layout.PatternLayout.newSerializerBuilder;
 
@@ -48,7 +48,7 @@ import static org.apache.logging.log4j.core.layout.PatternLayout.newSerializerBu
 public class Neo4jLogLayout extends AbstractStringLayout
 {
     protected final Serializer eventSerializer;
-    protected volatile Consumer<Log> headerLogger;
+    protected volatile Consumer<InternalLog> headerLogger;
     protected volatile String headerClassName;
 
     protected Neo4jLogLayout( String pattern, Neo4jConfiguration config )
@@ -100,7 +100,7 @@ public class Neo4jLogLayout extends AbstractStringLayout
     }
 
     // Will make all log files created after this is set get their header from the consumer.
-    public void setHeaderLogger( Consumer<Log> headerLogger, String className )
+    public void setHeaderLogger( Consumer<InternalLog> headerLogger, String className )
     {
         this.headerLogger = headerLogger;
         this.headerClassName = className;

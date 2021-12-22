@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.util.monitoring;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.lang.String.format;
 
@@ -34,13 +34,13 @@ public class LogProgressReporter implements ProgressReporter
     private static final int STRIDE = 10;
     private static final int HUNDRED = 100;
 
-    private final Log log;
+    private final InternalLog log;
 
     private long current;
     private int currentPercent;
     private long max;
 
-    public LogProgressReporter( Log log )
+    public LogProgressReporter( InternalLog log )
     {
         this.log = log;
     }

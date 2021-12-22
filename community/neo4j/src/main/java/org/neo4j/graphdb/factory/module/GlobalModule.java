@@ -81,8 +81,8 @@ import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -302,7 +302,7 @@ public class GlobalModule
     {
         if ( !config.get( filewatcher_enabled ) )
         {
-            Log log = logging.getInternalLog( getClass() );
+            InternalLog log = logging.getInternalLog( getClass() );
             log.info( "File watcher disabled by configuration." );
             return FileSystemWatcherService.EMPTY_WATCHER;
         }
@@ -313,13 +313,13 @@ public class GlobalModule
         }
         catch ( Exception e )
         {
-            Log log = logging.getInternalLog( getClass() );
+            InternalLog log = logging.getInternalLog( getClass() );
             log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store files will be disabled.", e );
             return FileSystemWatcherService.EMPTY_WATCHER;
         }
     }
 
-    protected LogService createLogService( LogProvider userLogProvider )
+    protected LogService createLogService( InternalLogProvider userLogProvider )
     {
         // Will get diagnostics as header in each newly created log file (diagnostics in the first file is printed during start up).
         Neo4jLoggerContext loggerContext =
@@ -359,7 +359,7 @@ public class GlobalModule
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers, JobScheduler jobScheduler,
             SystemNanoClock clock, MemoryPools memoryPools )
     {
-        Log pageCacheLog = logging.getInternalLog( PageCache.class );
+        InternalLog pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(), pageCacheLog,
                                                                                         jobScheduler, clock, memoryPools );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();

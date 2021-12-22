@@ -21,7 +21,7 @@ package org.neo4j.bolt.txtracking;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -33,7 +33,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 public class SimpleReconciledTransactionTracker implements ReconciledTransactionTracker
 {
     private final DatabaseManagementService dbService;
-    private final Log log;
+    private final InternalLog log;
 
     public SimpleReconciledTransactionTracker( DatabaseManagementService dbService, LogService logService )
     {

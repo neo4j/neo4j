@@ -70,8 +70,8 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -117,7 +117,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
     private final Iterable<IndexDescriptor> indexDescriptors;
-    private final Log internalLog;
+    private final InternalLog internalLog;
     private final IndexStatisticsStore indexStatisticsStore;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
@@ -126,7 +126,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final Config config;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler jobScheduler;
-    private final LogProvider internalLogProvider;
+    private final InternalLogProvider internalLogProvider;
     private final IndexMonitor monitor;
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
@@ -151,7 +151,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             TokenNameLookup tokenNameLookup,
             JobScheduler scheduler,
             SchemaState schemaState,
-            LogProvider internalLogProvider,
+            InternalLogProvider internalLogProvider,
             IndexMonitor monitor,
             IndexStatisticsStore indexStatisticsStore,
             CursorContextFactory contextFactory,

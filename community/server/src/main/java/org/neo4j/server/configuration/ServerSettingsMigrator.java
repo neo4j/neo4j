@@ -24,7 +24,7 @@ import java.util.Map;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.SettingMigrator;
 import org.neo4j.configuration.SettingMigrators;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
 
@@ -32,7 +32,7 @@ import static org.neo4j.server.configuration.ServerSettings.http_auth_allowlist;
 public class ServerSettingsMigrator implements SettingMigrator
 {
     @Override
-    public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+    public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
     {
         SettingMigrators.migrateSettingNameChange( values, log, "dbms.security.http_auth_whitelist", http_auth_allowlist );
     }

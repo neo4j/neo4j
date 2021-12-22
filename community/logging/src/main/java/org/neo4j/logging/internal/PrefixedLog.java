@@ -19,18 +19,18 @@
  */
 package org.neo4j.logging.internal;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Neo4jLogMessage;
 import org.neo4j.logging.Neo4jMessageSupplier;
 
 import static java.util.Objects.requireNonNull;
 
-public class PrefixedLog implements Log
+public class PrefixedLog implements InternalLog
 {
     private final String prefix;
-    private final Log delegate;
+    private final InternalLog delegate;
 
-    PrefixedLog( String prefix, Log delegate )
+    PrefixedLog( String prefix, InternalLog delegate )
     {
         requireNonNull( prefix, "prefix must be a string" );
         requireNonNull( delegate, "delegate log cannot be null" );

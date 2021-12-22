@@ -53,8 +53,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.util.concurrent.Runnables;
@@ -83,7 +83,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     protected final PageCache pageCache;
     protected final IdType idType;
     protected final IdGeneratorFactory idGeneratorFactory;
-    protected final Log log;
+    protected final InternalLog log;
     protected final String storeVersion;
     protected final RecordFormat<RECORD> recordFormat;
     final Path storageFile;
@@ -126,7 +126,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider,
+            InternalLogProvider logProvider,
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
             StoreHeaderFormat<HEADER> storeHeaderFormat,

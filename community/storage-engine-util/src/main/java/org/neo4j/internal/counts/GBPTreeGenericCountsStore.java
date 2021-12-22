@@ -53,7 +53,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
@@ -108,12 +108,12 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private final int highMarkCacheSize;
     protected volatile CountsChanges changes = createCountChanges();
     private final TxIdInformation txIdInformation;
-    private final LogProvider userLogProvider;
+    private final InternalLogProvider userLogProvider;
     private volatile boolean started;
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, Monitor monitor, String databaseName,
-            int maxCacheSize, LogProvider userLogProvider, CursorContextFactory contextFactory ) throws IOException
+            int maxCacheSize, InternalLogProvider userLogProvider, CursorContextFactory contextFactory ) throws IOException
     {
         this.userLogProvider = userLogProvider;
         this.readOnlyChecker = readOnlyChecker;

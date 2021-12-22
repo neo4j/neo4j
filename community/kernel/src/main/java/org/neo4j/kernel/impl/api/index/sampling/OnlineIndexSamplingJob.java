@@ -26,8 +26,8 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.util.DurationLogger;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
@@ -38,13 +38,13 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final long indexId;
     private final IndexProxy indexProxy;
     private final IndexStatisticsStore indexStatisticsStore;
-    private final Log log;
+    private final InternalLog log;
     private final String indexUserDescription;
     private final String indexName;
     private final CursorContextFactory contextFactory;
 
     OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStatisticsStore indexStatisticsStore, String indexUserDescription, String indexName,
-            LogProvider logProvider, CursorContextFactory contextFactory )
+            InternalLogProvider logProvider, CursorContextFactory contextFactory )
     {
         this.indexId = indexId;
         this.indexProxy = indexProxy;

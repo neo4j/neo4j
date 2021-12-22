@@ -66,7 +66,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.lifecycle.LifeSupport
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.storageengine.api.TransactionIdStore
 import org.neo4j.values.AnyValue
@@ -84,7 +84,7 @@ import scala.collection.mutable.ArrayBuffer
 class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseService,
                                                     val edition: Edition[CONTEXT],
                                                     val workloadMode: Boolean,
-                                                    val logProvider: LogProvider,
+                                                    val logProvider: InternalLogProvider,
                                                     val debugOptions: CypherDebugOptions = CypherDebugOptions.default,
                                                    ) extends RuntimeExecutionSupport[CONTEXT] {
 

@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.lang.String.format;
 
 public class DurationLogger implements AutoCloseable
 {
-    private final Log log;
+    private final InternalLog log;
     private final String tag;
 
     private long start;
     private String outcome = "Not finished";
 
-    public DurationLogger( Log log, String tag )
+    public DurationLogger( InternalLog log, String tag )
     {
         this.log = log;
         this.tag = tag;

@@ -49,7 +49,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -168,7 +168,7 @@ public class QuickImport implements Callable<Void>
         Header nodeHeader = parseNodeHeader( this.nodeHeader, idType, extractors, groups );
         Header relationshipHeader = parseRelationshipHeader( this.relationshipHeader, idType, extractors, groups );
         Config dbConfig = dbConfigPath != null ? Config.newBuilder().fromFile( dbConfigPath ).build() : Config.defaults();
-        LogProvider logging = NullLogProvider.getInstance();
+        InternalLogProvider logging = NullLogProvider.getInstance();
         long pageCacheMemory = this.pageCacheMemory != null ? this.pageCacheMemory : org.neo4j.internal.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY;
         org.neo4j.internal.batchimport.Configuration importConfig = new org.neo4j.internal.batchimport.Configuration.Overridden( defaultConfiguration() )
         {

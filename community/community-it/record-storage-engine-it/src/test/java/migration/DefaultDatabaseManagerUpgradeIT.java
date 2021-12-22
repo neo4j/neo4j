@@ -47,8 +47,8 @@ import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -81,13 +81,13 @@ class DefaultDatabaseManagerUpgradeIT
     @Inject
     private RecordDatabaseLayout databaseLayout;
     private DatabaseManagementService dbms;
-    private LogProvider userLogProvider;
+    private InternalLogProvider userLogProvider;
 
     @BeforeEach
     void setUp() throws IOException
     {
         // Create store with standard format. This will be upgraded to high_limit in tests.
-        userLogProvider = mock( LogProvider.class, RETURNS_MOCKS );
+        userLogProvider = mock( InternalLogProvider.class, RETURNS_MOCKS );
         Path prepareDirectory = testDirectory.directory( "prepare" );
         MigrationTestUtils.prepareSampleLegacyDatabase( StandardV4_3.STORE_VERSION, fs, databaseLayout, prepareDirectory );
     }
@@ -169,7 +169,7 @@ class DefaultDatabaseManagerUpgradeIT
      */
     private void useThrowingMigrationLogProvider( Exception e )
     {
-        Log mockedLog = mock( Log.class, RETURNS_MOCKS );
+        InternalLog mockedLog = mock( InternalLog.class, RETURNS_MOCKS );
         when( userLogProvider.getLog( DatabaseMigrator.class ) ).thenReturn( mockedLog );
         Mockito.doThrow( e ).when( mockedLog ).info( anyString() );
     }

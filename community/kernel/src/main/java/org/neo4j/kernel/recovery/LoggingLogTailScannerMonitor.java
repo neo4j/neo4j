@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 public class LoggingLogTailScannerMonitor implements LogTailScannerMonitor
 {
-    private final Log log;
+    private final InternalLog log;
 
-    public LoggingLogTailScannerMonitor( Log log )
+    public LoggingLogTailScannerMonitor( InternalLog log )
     {
         this.log = log;
     }

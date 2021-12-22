@@ -35,8 +35,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.internal.helpers.ArrayUtil;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 
@@ -88,7 +88,7 @@ public class Monitors
      * @param parent to propagate events to.
      * @param logProvider to create a logger.
      */
-    public Monitors( Monitors parent, LogProvider logProvider )
+    public Monitors( Monitors parent, InternalLogProvider logProvider )
     {
         this( parent, new LoggingFailureHandler( logProvider ) );
     }
@@ -263,9 +263,9 @@ public class Monitors
 
     public static class LoggingFailureHandler implements FailureHandler
     {
-        private final Log log;
+        private final InternalLog log;
 
-        public LoggingFailureHandler( LogProvider logProvider )
+        public LoggingFailureHandler( InternalLogProvider logProvider )
         {
             log = logProvider.getLog( Monitors.class );
         }

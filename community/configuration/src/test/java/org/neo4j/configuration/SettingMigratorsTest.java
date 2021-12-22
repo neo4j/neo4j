@@ -42,7 +42,7 @@ import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.FormattedLogFormat;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -139,7 +139,7 @@ class SettingMigratorsTest
             Config config = Config.newBuilder()
                     .fromFile( confFile )
                     .build();
-            Log log = mock( Log.class );
+            InternalLog log = mock( InternalLog.class );
             config.setLogger( log );
 
             assertEquals( "foo", config.get( GraphDatabaseSettings.default_database ) );
@@ -150,7 +150,7 @@ class SettingMigratorsTest
                     .fromFile( confFile )
                     .set( GraphDatabaseSettings.default_database, "bar" )
                     .build();
-            Log log = mock( Log.class );
+            InternalLog log = mock( InternalLog.class );
             config.setLogger( log );
 
             assertEquals( "bar", config.get( GraphDatabaseSettings.default_database ) );

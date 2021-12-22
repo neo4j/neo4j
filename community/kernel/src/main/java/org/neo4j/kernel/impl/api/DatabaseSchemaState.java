@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 /**
  * Used for the actual storage of "schema state".
@@ -35,9 +35,9 @@ import org.neo4j.logging.LogProvider;
 public class DatabaseSchemaState implements SchemaState
 {
     private final Map<Object, Object> state;
-    private final Log log;
+    private final InternalLog log;
 
-    public DatabaseSchemaState( LogProvider logProvider )
+    public DatabaseSchemaState( InternalLogProvider logProvider )
     {
         this.state = new ConcurrentHashMap<>();
         this.log = logProvider.getLog( getClass() );

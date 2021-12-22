@@ -21,7 +21,7 @@ package org.neo4j.dbms.archive.printer;
 
 import java.io.PrintStream;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,7 +42,7 @@ public class ProgressPrinters
         return new EmptyOutputProgressPrinter();
     }
 
-    public static OutputProgressPrinter logProviderPrinter( Log log )
+    public static OutputProgressPrinter logProviderPrinter( InternalLog log )
     {
         requireNonNull( log );
         return new LogOutputProgressPrinter( log );
@@ -87,9 +87,9 @@ public class ProgressPrinters
 
     private static class LogOutputProgressPrinter implements OutputProgressPrinter
     {
-        private final Log log;
+        private final InternalLog log;
 
-        LogOutputProgressPrinter( Log log )
+        LogOutputProgressPrinter( InternalLog log )
         {
             this.log = log;
         }

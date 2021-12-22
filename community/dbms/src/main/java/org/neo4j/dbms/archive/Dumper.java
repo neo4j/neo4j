@@ -41,7 +41,7 @@ import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
@@ -67,7 +67,7 @@ public class Dumper
         this( ProgressPrinters.printStreamPrinter( output ) );
     }
 
-    public Dumper( LogProvider logProvider )
+    public Dumper( InternalLogProvider logProvider )
     {
         this( ProgressPrinters.logProviderPrinter( logProvider.getLog( Dumper.class ) ) );
     }

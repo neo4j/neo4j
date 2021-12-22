@@ -24,8 +24,8 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 
 public class LockWorkFailureDump
@@ -41,12 +41,12 @@ public class LockWorkFailureDump
     {
         try ( OutputStream out = Files.newOutputStream( file ) )
         {
-            LogProvider logProvider = new Log4jLogProvider( out );
+            InternalLogProvider logProvider = new Log4jLogProvider( out );
             //  * locks held by the lock manager
             lm.accept( new DumpLocksVisitor( logProvider.getLog( LockWorkFailureDump.class ) ) );
             //  * rag manager state;
             //  * workers state
-            Log log = logProvider.getLog( getClass() );
+            InternalLog log = logProvider.getLog( getClass() );
             for ( LockWorker worker : workers )
             {
                 // - what each is doing and have up to now

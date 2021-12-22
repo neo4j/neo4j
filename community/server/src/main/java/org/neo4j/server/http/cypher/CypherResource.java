@@ -29,7 +29,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.time.SystemNanoClock;
@@ -45,7 +45,7 @@ public class CypherResource extends AbstractCypherResource
     public CypherResource( @Context HttpTransactionManager httpTransactionManager,
                            @Context UriInfo uriInfo,
                            @Context MemoryPool memoryPool,
-                           @Context Log log,
+                           @Context InternalLog log,
                            @Context HttpHeaders headers,
                            @Context HttpServletRequest request,
                            @PathParam( DB_PATH_PARAM_NAME ) String databaseName,

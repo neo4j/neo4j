@@ -21,7 +21,7 @@ package org.neo4j.logging.internal;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 
 import static java.lang.String.format;
@@ -36,7 +36,7 @@ class PrefixedLogTest
     @Test
     void shouldContainPrefix()
     {
-        var mockedLog = mock( Log.class );
+        var mockedLog = mock( InternalLog.class );
         var prefixedLog = new PrefixedLog( prefix, mockedLog );
 
         var message = "message";

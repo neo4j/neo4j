@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 public final class WebContainerHelper
 {
@@ -68,7 +68,7 @@ public final class WebContainerHelper
         return createContainer( builder, true, path );
     }
 
-    public static TestWebContainer createNonPersistentContainer( LogProvider logProvider ) throws Exception
+    public static TestWebContainer createNonPersistentContainer( InternalLogProvider logProvider ) throws Exception
     {
         return createContainer( CommunityWebContainerBuilder.builder( logProvider ), false, null );
     }

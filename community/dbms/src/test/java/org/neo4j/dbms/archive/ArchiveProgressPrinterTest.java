@@ -27,7 +27,7 @@ import java.io.PrintStream;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,7 +68,7 @@ class ArchiveProgressPrinterTest
     void printProgressLogger()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log providerLog = logProvider.getLog( ArchiveProgressPrinterTest.class );
+        InternalLog providerLog = logProvider.getLog( ArchiveProgressPrinterTest.class );
         OutputProgressPrinter outputPrinter = ProgressPrinters.logProviderPrinter( providerLog );
 
         executeSomeWork( outputPrinter );

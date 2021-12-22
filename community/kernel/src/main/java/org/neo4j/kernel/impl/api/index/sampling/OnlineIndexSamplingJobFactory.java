@@ -23,16 +23,16 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
 {
     private final IndexStatisticsStore indexStatisticsStore;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final TokenNameLookup nameLookup;
     private final CursorContextFactory contextFactory;
 
-    public OnlineIndexSamplingJobFactory( IndexStatisticsStore indexStatisticsStore, TokenNameLookup nameLookup, LogProvider logProvider,
+    public OnlineIndexSamplingJobFactory( IndexStatisticsStore indexStatisticsStore, TokenNameLookup nameLookup, InternalLogProvider logProvider,
             CursorContextFactory contextFactory )
     {
         this.indexStatisticsStore = indexStatisticsStore;

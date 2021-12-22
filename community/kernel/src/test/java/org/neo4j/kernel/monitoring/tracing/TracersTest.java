@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
@@ -45,7 +45,7 @@ class TracersTest
     private final SystemNanoClock clock = Clocks.nanoClock();
     private final Monitors monitors = new Monitors();
 
-    private Log log;
+    private InternalLog log;
 
     @BeforeEach
     void setUp()

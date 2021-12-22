@@ -30,7 +30,7 @@ import java.util.function.Function;
 import static java.lang.String.format;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
 
-public class AssertableLogProvider extends AbstractLogProvider<Log>
+public class AssertableLogProvider extends AbstractLogProvider<InternalLog>
 {
     private final boolean debugEnabled;
     private final Queue<LogCall> logCalls = new LinkedBlockingQueue<>();
@@ -188,7 +188,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
     }
 
-    protected class AssertableLog implements Log
+    protected class AssertableLog implements InternalLog
     {
         private final String context;
 
@@ -331,13 +331,13 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
     }
 
     @Override
-    protected Log buildLog( Class<?> loggingClass )
+    protected InternalLog buildLog( Class<?> loggingClass )
     {
         return new AssertableLog( loggingClass.getName() );
     }
 
     @Override
-    protected Log buildLog( String context )
+    protected InternalLog buildLog( String context )
     {
         return new AssertableLog( context );
     }

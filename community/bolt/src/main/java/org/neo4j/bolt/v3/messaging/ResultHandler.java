@@ -24,13 +24,13 @@ import java.io.IOException;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 
 public class ResultHandler extends MessageProcessingHandler
 {
-    public ResultHandler( BoltResponseMessageWriter handler, BoltConnection connection, Log log )
+    public ResultHandler( BoltResponseMessageWriter handler, BoltConnection connection, InternalLog log )
     {
         super( handler, connection, log );
     }

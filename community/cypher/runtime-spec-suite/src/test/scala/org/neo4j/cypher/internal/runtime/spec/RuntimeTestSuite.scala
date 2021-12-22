@@ -63,7 +63,7 @@ import org.neo4j.lock.LockType
 import org.neo4j.lock.ResourceType
 import org.neo4j.lock.ResourceTypes
 import org.neo4j.logging.AssertableLogProvider
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.DurationValue
@@ -144,7 +144,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
                                          edition: Edition[CONTEXT],
                                          workloadMode: Boolean,
-                                         logProvider: LogProvider): RuntimeTestSupport[CONTEXT] = {
+                                         logProvider: InternalLogProvider): RuntimeTestSupport[CONTEXT] = {
     new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions)
   }
 

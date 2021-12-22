@@ -61,8 +61,8 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.lock.LockService;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -121,9 +121,9 @@ public interface StorageEngineFactory
      */
     StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
-            IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider internalLogProvider,
-            LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean createStoreIfNotExists,
-            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
+            IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, InternalLogProvider internalLogProvider,
+            InternalLogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            boolean createStoreIfNotExists, DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
             throws IOException;
 
     /**
@@ -276,8 +276,8 @@ public interface StorageEngineFactory
      * @throws ConsistencyCheckIncompleteException on failure doing the consistency check.
      */
     void consistencyCheck( FileSystemAbstraction fileSystem, DatabaseLayout layout, Config config, PageCache pageCache, IndexProviderMap indexProviders,
-            Log log, ConsistencySummaryStatistics summary, int numberOfThreads, double memoryLimitLeewayFactor, OutputStream progressOutput, boolean verbose,
-            ConsistencyFlags flags, CursorContextFactory contextFactory ) throws ConsistencyCheckIncompleteException;
+            InternalLog log, ConsistencySummaryStatistics summary, int numberOfThreads, double memoryLimitLeewayFactor, OutputStream progressOutput,
+            boolean verbose, ConsistencyFlags flags, CursorContextFactory contextFactory ) throws ConsistencyCheckIncompleteException;
 
     /**
      * @return the default {@link StorageEngineFactory}.

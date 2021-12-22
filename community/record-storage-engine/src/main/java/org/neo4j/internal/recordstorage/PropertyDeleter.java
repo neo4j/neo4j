@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
@@ -58,13 +58,13 @@ public class PropertyDeleter
     private final PropertyTraverser traverser;
     private final NeoStores neoStores;
     private final TokenNameLookup tokenNameLookup;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final Config config;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final StoreCursors storeCursors;
 
-    public PropertyDeleter( PropertyTraverser traverser, NeoStores neoStores, TokenNameLookup tokenNameLookup, LogProvider logProvider, Config config,
+    public PropertyDeleter( PropertyTraverser traverser, NeoStores neoStores, TokenNameLookup tokenNameLookup, InternalLogProvider logProvider, Config config,
             CursorContext cursorContext, MemoryTracker memoryTracker, StoreCursors storeCursors )
     {
         this.traverser = traverser;

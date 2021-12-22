@@ -40,8 +40,8 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -88,13 +88,13 @@ public class StoreUpgrader
     private final LinkedHashMap<String, StoreMigrationParticipant> participants = new LinkedHashMap<>();
     private final Config config;
     private final FileSystemAbstraction fileSystem;
-    private final Log log;
+    private final InternalLog log;
     private final LogsUpgrader logsUpgrader;
     private final String configuredFormat;
     private final CursorContextFactory contextFactory;
 
     public StoreUpgrader( StorageEngineFactory storageEngineFactory, StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor,
-            Config config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogsUpgrader logsUpgrader, CursorContextFactory contextFactory )
+            Config config, FileSystemAbstraction fileSystem, InternalLogProvider logProvider, LogsUpgrader logsUpgrader, CursorContextFactory contextFactory )
     {
         this.storageEngineFactory = storageEngineFactory;
         this.storeVersionCheck = storeVersionCheck;

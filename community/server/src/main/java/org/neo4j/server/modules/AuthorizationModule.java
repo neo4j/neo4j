@@ -27,7 +27,7 @@ import javax.servlet.Filter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.server.rest.dbms.AuthorizationDisabledFilter;
 import org.neo4j.server.rest.dbms.AuthorizationEnabledFilter;
 import org.neo4j.server.web.WebServer;
@@ -43,10 +43,10 @@ public class AuthorizationModule implements ServerModule
     private final WebServer webServer;
     private final Config config;
     private final Supplier<AuthManager> authManagerSupplier;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final List<Pattern> uriWhitelist;
 
-    public AuthorizationModule( WebServer webServer, Supplier<AuthManager> authManager, LogProvider logProvider,
+    public AuthorizationModule( WebServer webServer, Supplier<AuthManager> authManager, InternalLogProvider logProvider,
             Config config, List<Pattern> uriWhitelist )
     {
         this.webServer = webServer;

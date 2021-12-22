@@ -27,8 +27,8 @@ import java.io.ByteArrayOutputStream;
 import java.lang.invoke.VarHandle;
 import java.util.HashMap;
 
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Level;
-import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 import static java.time.Duration.ofMinutes;
@@ -49,10 +49,10 @@ class Log4jLogProviderTest
 
         Log4jLogProvider logProvider = new Log4jLogProvider( outContent );
 
-        Log log = logProvider.getLog( "stringAsCategory" );
+        InternalLog log = logProvider.getLog( "stringAsCategory" );
         log.info( "testMessage" );
 
-        Log log2 = logProvider.getLog( Log4jLog.class );
+        InternalLog log2 = logProvider.getLog( Log4jLog.class );
         log2.info( "testMessage2" );
 
         assertThat( outContent.toString() ).matches( format( DATE_PATTERN + " %-5s \\[stringAsCategory\\] testMessage%n" +

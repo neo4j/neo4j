@@ -36,7 +36,7 @@ import org.neo4j.internal.schema
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
-import org.neo4j.logging.Log
+import org.neo4j.logging.InternalLog
 
 class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
@@ -46,7 +46,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
   private val descriptor: schema.IndexDescriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyId)).withName("wut!").materialise(11L)
   private var read: Read = _
   private var schemaRead: SchemaRead = _
-  private val log = mock[Log]
+  private val log = mock[InternalLog]
 
 
   test("indexPropertyExistsSelectivity should compute selectivity") {
@@ -90,7 +90,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     when(read.countsForNodeWithoutTxState(labelId)).thenReturn(20L)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
-    val theLog = mock[Log]
+    val theLog = mock[InternalLog]
 
     //when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
@@ -105,7 +105,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     when(read.countsForNodeWithoutTxState(labelId)).thenReturn(20L)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
-    val theLog = mock[Log]
+    val theLog = mock[InternalLog]
 
     //when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
@@ -168,7 +168,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
-    val theLog = mock[Log]
+    val theLog = mock[InternalLog]
 
     //when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
@@ -184,7 +184,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
-    val theLog = mock[Log]
+    val theLog = mock[InternalLog]
 
     //when
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)

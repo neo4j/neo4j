@@ -20,9 +20,9 @@
 package org.neo4j.logging;
 
 /**
- * A {@link LogProvider} implementation that discards all messages
+ * A {@link InternalLogProvider} implementation that discards all messages
  */
-public final class NullLogProvider implements LogProvider
+public final class NullLogProvider implements InternalLogProvider
 {
     private static final NullLogProvider INSTANCE = new NullLogProvider();
 
@@ -39,13 +39,13 @@ public final class NullLogProvider implements LogProvider
     }
 
     @Override
-    public Log getLog( Class<?> loggingClass )
+    public InternalLog getLog( Class<?> loggingClass )
     {
         return NullLog.getInstance();
     }
 
     @Override
-    public Log getLog( String name )
+    public InternalLog getLog( String name )
     {
         return NullLog.getInstance();
     }

@@ -24,7 +24,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -58,7 +58,7 @@ public abstract class QueryEngineProvider
 
     public interface SPI
     {
-        LogProvider logProvider();
+        InternalLogProvider logProvider();
 
         Monitors monitors();
 
@@ -71,7 +71,7 @@ public abstract class QueryEngineProvider
         Config config();
     }
 
-    public static SPI spi( LogProvider logProvider,
+    public static SPI spi( InternalLogProvider logProvider,
                            Monitors monitors,
                            JobScheduler jobScheduler,
                            LifeSupport lifeSupport,
@@ -81,7 +81,7 @@ public abstract class QueryEngineProvider
         return new SPI()
         {
             @Override
-            public LogProvider logProvider()
+            public InternalLogProvider logProvider()
             {
                 return logProvider;
             }

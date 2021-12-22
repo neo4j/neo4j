@@ -29,7 +29,7 @@ import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 
 /**
@@ -39,7 +39,7 @@ public class DefaultFileDeletionEventListener implements FileWatchEventListener
 {
     private final DatabaseLayout databaseLayout;
     private final Set<WatchedResource> watchedResources;
-    private final Log internalLog;
+    private final InternalLog internalLog;
     private final Predicate<String> fileNameFilter;
 
     DefaultFileDeletionEventListener( DatabaseLayout databaseLayout, Set<WatchedResource> watchedResources, LogService logService,

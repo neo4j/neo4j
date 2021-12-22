@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -45,9 +45,9 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
     private final Path storeDir;
     private final String databaseName;
     private final CursorContextFactory contextFactory;
-    private final Log log;
+    private final InternalLog log;
 
-    public PageCachedNumberArrayFactory( PageCache pageCache, CursorContextFactory contextFactory, Path storeDir, Log log, String databaseName )
+    public PageCachedNumberArrayFactory( PageCache pageCache, CursorContextFactory contextFactory, Path storeDir, InternalLog log, String databaseName )
     {
         this.pageCache = requireNonNull( pageCache );
         this.log = log;

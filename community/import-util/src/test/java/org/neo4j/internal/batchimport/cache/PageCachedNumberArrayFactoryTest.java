@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -51,7 +51,7 @@ class PageCachedNumberArrayFactoryTest
     void shouldLogAllocationOnIntArray()
     {
         // given
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         Path dir = directory.directory( "cache" );
         PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
 
@@ -66,7 +66,7 @@ class PageCachedNumberArrayFactoryTest
     void shouldLogAllocationOnLongArray()
     {
         // given
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         Path dir = directory.directory( "cache" );
         PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
 
@@ -81,7 +81,7 @@ class PageCachedNumberArrayFactoryTest
     void shouldLogAllocationOnByteArray()
     {
         // given
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         Path dir = directory.directory( "cache" );
         PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
 

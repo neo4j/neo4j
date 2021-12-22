@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
 import org.neo4j.util.VisibleForTesting;
@@ -63,7 +63,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     private final ProcedureCompiler compiler;
     private final ThrowingConsumer<GlobalProceduresRegistry, ProcedureException> builtin;
     private final Path proceduresDirectory;
-    private final Log log;
+    private final InternalLog log;
 
     @VisibleForTesting
     public GlobalProceduresRegistry()
@@ -74,7 +74,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     public GlobalProceduresRegistry(
             ThrowingConsumer<GlobalProceduresRegistry,ProcedureException> builtin,
             Path proceduresDirectory,
-            Log log,
+            InternalLog log,
             ProcedureConfig config )
     {
         this.builtin = builtin;

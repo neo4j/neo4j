@@ -19,8 +19,8 @@
  */
 package org.neo4j.logging.internal;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 
@@ -40,25 +40,25 @@ public final class NullLogService implements LogService
     }
 
     @Override
-    public LogProvider getUserLogProvider()
+    public InternalLogProvider getUserLogProvider()
     {
         return NULL_LOG_PROVIDER;
     }
 
     @Override
-    public Log getUserLog( Class<?> loggingClass )
+    public InternalLog getUserLog( Class<?> loggingClass )
     {
         return NULL_LOG;
     }
 
     @Override
-    public LogProvider getInternalLogProvider()
+    public InternalLogProvider getInternalLogProvider()
     {
         return NULL_LOG_PROVIDER;
     }
 
     @Override
-    public Log getInternalLog( Class<?> loggingClass )
+    public InternalLog getInternalLog( Class<?> loggingClass )
     {
         return NULL_LOG;
     }

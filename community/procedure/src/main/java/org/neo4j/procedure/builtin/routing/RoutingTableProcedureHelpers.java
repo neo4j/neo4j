@@ -25,7 +25,7 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -34,7 +34,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class RoutingTableProcedureHelpers
 {
-    static Optional<SocketAddress> findClientProvidedAddress( MapValue routingContext, int defaultBoltPort, Log log ) throws ProcedureException
+    static Optional<SocketAddress> findClientProvidedAddress( MapValue routingContext, int defaultBoltPort, InternalLog log ) throws ProcedureException
     {
         var address = routingContext.get( GetRoutingTableProcedure.ADDRESS_CONTEXT_KEY );
         if ( address == null || address == NO_VALUE )

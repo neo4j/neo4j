@@ -25,7 +25,7 @@ import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.bolt.v3.messaging.response.FatalFailureMessage;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -42,7 +42,7 @@ class FailureMessageEncoderTest
     {
         // Given
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         FailureMessageEncoder encoder = new FailureMessageEncoder( log );
 
         // When
@@ -61,7 +61,7 @@ class FailureMessageEncoderTest
     void shouldLogErrorIfIsFatalError() throws Throwable
     {
         Neo4jPack.Packer packer = mock( Neo4jPack.Packer.class );
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         FailureMessageEncoder encoder = new FailureMessageEncoder( log );
 
         // When

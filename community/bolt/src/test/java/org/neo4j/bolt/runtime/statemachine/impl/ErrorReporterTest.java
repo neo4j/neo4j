@@ -27,7 +27,7 @@ import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.exceptions.SecurityAdministrationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -96,7 +96,7 @@ class ErrorReporterTest
         assertThat( internalLog ).doesNotHaveAnyLogs();
     }
 
-    private static ErrorReporter newErrorReporter( LogProvider userLog, LogProvider internalLog )
+    private static ErrorReporter newErrorReporter( InternalLogProvider userLog, InternalLogProvider internalLog )
     {
         return new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
     }

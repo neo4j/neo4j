@@ -35,7 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.DoubleLatch;
@@ -59,7 +59,7 @@ class FileUserRepositoryTest
     @Inject
     private TestDirectory testDirectory;
 
-    private final LogProvider logProvider = NullLogProvider.getInstance();
+    private final InternalLogProvider logProvider = NullLogProvider.getInstance();
     private Path authFile;
 
     @BeforeEach

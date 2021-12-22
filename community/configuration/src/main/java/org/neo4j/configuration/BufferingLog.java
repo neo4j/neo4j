@@ -22,7 +22,7 @@ package org.neo4j.configuration;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Neo4jLogMessage;
 import org.neo4j.logging.Neo4jMessageSupplier;
 
@@ -44,12 +44,12 @@ import org.neo4j.logging.Neo4jMessageSupplier;
  * subjected to an unbounded quantity of log messages, since the buffer keeps
  * all messages until it gets a chance to replay them.
  */
-public class BufferingLog implements Log
+public class BufferingLog implements InternalLog
 {
     @FunctionalInterface
     private interface LogMessage
     {
-        void replayInto( Log other );
+        void replayInto( InternalLog other );
     }
 
     private final Queue<LogMessage> buffer = new ArrayDeque<>();
@@ -191,7 +191,7 @@ public class BufferingLog implements Log
      *
      * @param other the log to reply into
      */
-    public void replayInto( Log other )
+    public void replayInto( InternalLog other )
     {
         synchronized ( buffer )
         {

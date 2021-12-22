@@ -23,7 +23,7 @@ import java.time.Clock;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 
 import static java.lang.String.format;
@@ -37,18 +37,18 @@ class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     static final String TX_LOGS_MIGRATION_COMPLETED = "Transaction logs migration completed.";
     private static final String MESSAGE_COMPLETED_WITH_DURATION = MESSAGE_COMPLETED + ", took %s";
 
-    private final Log log;
+    private final InternalLog log;
     private final Clock clock;
     private int numStages;
     private int currentStage;
     private long startTime;
 
-    VisibleMigrationProgressMonitor( Log log )
+    VisibleMigrationProgressMonitor( InternalLog log )
     {
         this( log, Clock.systemUTC() );
     }
 
-    VisibleMigrationProgressMonitor( Log log, Clock clock )
+    VisibleMigrationProgressMonitor( InternalLog log, Clock clock )
     {
         this.log = log;
         this.clock = clock;

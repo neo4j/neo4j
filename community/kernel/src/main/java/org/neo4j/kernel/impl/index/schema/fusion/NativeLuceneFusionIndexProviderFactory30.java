@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
@@ -67,7 +67,7 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
     protected FusionIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
                                                   Config config, DatabaseReadOnlyChecker readOnlyChecker,
                                                   RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                                  DatabaseLayout databaseLayout, Log log,
+                                                  DatabaseLayout databaseLayout, InternalLog log,
                                                   TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
     {
         return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,

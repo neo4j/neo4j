@@ -40,7 +40,7 @@ import org.neo4j.bolt.v4.messaging.DiscardMessageDecoder;
 import org.neo4j.bolt.v4.messaging.PullMessageDecoder;
 import org.neo4j.bolt.v4.messaging.RunMessageDecoder;
 import org.neo4j.bolt.v41.messaging.decoder.HelloMessageDecoder;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 
@@ -80,7 +80,7 @@ public class BoltRequestMessageReaderV41 extends BoltRequestMessageReader
         return new MessageProcessingHandler( responseMessageWriter, connection, internalLog( logService ) );
     }
 
-    private static Log internalLog( LogService logService )
+    private static InternalLog internalLog( LogService logService )
     {
         return logService.getInternalLog( BoltRequestMessageReaderV41.class );
     }

@@ -59,7 +59,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
@@ -1083,7 +1083,7 @@ class MetaDataStoreTest
 
     private MetaDataStore newMetaDataStore( CursorContextFactory contextFactory )
     {
-        LogProvider logProvider = NullLogProvider.getInstance();
+        InternalLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
                         pageCacheWithFakeOverflow, fs, logProvider, contextFactory, writable() );

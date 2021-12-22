@@ -23,7 +23,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.FullyParsedQuery;
-import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.graphdb.Result;
@@ -34,7 +33,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.virtual.MapValue;
 
 /**
@@ -47,7 +46,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
 {
     private final int maxQueryExecutionAttempts;
 
-    SnapshotExecutionEngine( GraphDatabaseQueryService queryService, Config config, CypherQueryCaches queryCaches, LogProvider logProvider,
+    SnapshotExecutionEngine( GraphDatabaseQueryService queryService, Config config, CypherQueryCaches queryCaches, InternalLogProvider logProvider,
                              CompilerFactory compilerFactory )
     {
         super( queryService, queryCaches, logProvider, compilerFactory );

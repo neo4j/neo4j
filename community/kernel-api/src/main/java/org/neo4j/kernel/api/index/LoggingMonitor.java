@@ -25,15 +25,15 @@ import java.nio.file.Path;
 import java.util.StringJoiner;
 
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.neo4j.internal.helpers.Format.duration;
 
 public class LoggingMonitor implements IndexProvider.Monitor
 {
-    private final Log log;
+    private final InternalLog log;
 
-    public LoggingMonitor( Log log )
+    public LoggingMonitor( InternalLog log )
     {
         this.log = log;
     }

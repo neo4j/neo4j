@@ -55,8 +55,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -132,8 +132,8 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     private final IndexStoreView storeView;
     private final CursorContextFactory contextFactory;
     private final NodePropertyAccessor propertyAccessor;
-    private final LogProvider logProvider;
-    private final Log log;
+    private final InternalLogProvider logProvider;
+    private final InternalLog log;
     private final EntityType type;
     private final SchemaState schemaState;
     private final PhaseTracker phaseTracker;
@@ -145,7 +145,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     private final String databaseName;
     private final Subject subject;
 
-    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
+    public MultipleIndexPopulator( IndexStoreView storeView, InternalLogProvider logProvider, EntityType type, SchemaState schemaState,
             JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, CursorContextFactory contextFactory,
             MemoryTracker memoryTracker, String databaseName, Subject subject, Config config )
     {
@@ -532,11 +532,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     {
         private final Map<SchemaDescriptor,IndexPopulationUpdater> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
-        private final Log log;
+        private final InternalLog log;
         private final CursorContext cursorContext;
 
         MultipleIndexUpdater( MultipleIndexPopulator multipleIndexPopulator,
-                Map<SchemaDescriptor,IndexPopulationUpdater> populationsWithUpdaters, LogProvider logProvider, CursorContext cursorContext )
+                Map<SchemaDescriptor,IndexPopulationUpdater> populationsWithUpdaters, InternalLogProvider logProvider, CursorContext cursorContext )
         {
             this.multipleIndexPopulator = multipleIndexPopulator;
             this.populationsWithUpdaters = populationsWithUpdaters;

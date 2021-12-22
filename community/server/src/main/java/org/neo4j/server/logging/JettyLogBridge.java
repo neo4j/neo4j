@@ -25,8 +25,8 @@ import org.eclipse.jetty.util.log.Logger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlaceholders;
@@ -34,9 +34,9 @@ import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlace
 public class JettyLogBridge extends AbstractLogger
 {
     private static final Pattern packagePattern = Pattern.compile( "(\\w)\\w+\\." );
-    private static final AtomicReference<LogProvider> logProvider = new AtomicReference<>( NullLogProvider.getInstance() );
+    private static final AtomicReference<InternalLogProvider> logProvider = new AtomicReference<>( NullLogProvider.getInstance() );
     private final String fullname;
-    private final Log log;
+    private final InternalLog log;
 
     public JettyLogBridge()
     {
@@ -49,7 +49,7 @@ public class JettyLogBridge extends AbstractLogger
         this.log = logProvider.get().getLog( packagePattern.matcher( fullname ).replaceAll( "$1." ) );
     }
 
-    public static LogProvider setLogProvider( LogProvider newLogProvider )
+    public static InternalLogProvider setLogProvider( InternalLogProvider newLogProvider )
     {
         return logProvider.getAndSet( newLogProvider );
     }

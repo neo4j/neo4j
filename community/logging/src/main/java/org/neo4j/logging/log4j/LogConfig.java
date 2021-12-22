@@ -40,7 +40,7 @@ import java.util.function.Consumer;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.FormattedLogFormat;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.LogTimeZone;
 
 import static org.neo4j.util.Preconditions.checkArgument;
@@ -190,7 +190,7 @@ public final class LogConfig
         private FormattedLogFormat format = FormattedLogFormat.PLAIN;
         private LogTimeZone timezone = LogTimeZone.UTC;
         private boolean includeCategory = true;
-        private Consumer<Log> headerLogger;
+        private Consumer<InternalLog> headerLogger;
         private String headerClassName;
         private boolean logToSystemOut;
         private boolean createOnDemand;
@@ -236,7 +236,7 @@ public final class LogConfig
             return this;
         }
 
-        public Builder withHeaderLogger( Consumer<Log> headerLogger, String headerClassName )
+        public Builder withHeaderLogger( Consumer<InternalLog> headerLogger, String headerClassName )
         {
             this.headerLogger = headerLogger;
             this.headerClassName = headerClassName;

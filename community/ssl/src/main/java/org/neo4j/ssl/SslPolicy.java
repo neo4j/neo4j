@@ -37,8 +37,8 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.configuration.ssl.ClientAuth;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 public class SslPolicy
 {
@@ -55,10 +55,10 @@ public class SslPolicy
     private final SslProvider sslProvider;
 
     private final boolean verifyHostname;
-    private final Log log;
+    private final InternalLog log;
 
     public SslPolicy( PrivateKey privateKey, X509Certificate[] keyCertChain, List<String> tlsVersions, List<String> ciphers, ClientAuth clientAuth,
-            TrustManagerFactory trustManagerFactory, SslProvider sslProvider, boolean verifyHostname, LogProvider logProvider )
+            TrustManagerFactory trustManagerFactory, SslProvider sslProvider, boolean verifyHostname, InternalLogProvider logProvider )
     {
         this.privateKey = privateKey;
         this.keyCertChain = keyCertChain;

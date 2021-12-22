@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
@@ -86,8 +86,8 @@ public class ProcedureTest
     void shouldInjectLogging() throws KernelException
     {
         // Given
-        Log log = spy( Log.class );
-        components.register( Log.class, ctx -> log );
+        InternalLog log = spy( InternalLog.class );
+        components.register( InternalLog.class, ctx -> log );
         CallableProcedure procedure =
                 procedureCompiler.compileProcedure( LoggingProcedure.class, null, true ).get( 0 );
 
@@ -274,7 +274,7 @@ public class ProcedureTest
     void shouldSupportProcedureDeprecation() throws Throwable
     {
         // Given
-        Log log = mock(Log.class);
+        InternalLog log = mock( InternalLog.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 components, log, ProcedureConfig.DEFAULT );
 
@@ -312,7 +312,7 @@ public class ProcedureTest
         ProcedureConfig config = new ProcedureConfig(
                 Config.defaults( procedure_allowlist, List.of( "org.neo4j.procedure.impl.listCoolPeople" ) ) );
 
-        Log log = mock(Log.class);
+        InternalLog log = mock( InternalLog.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
 
@@ -333,7 +333,7 @@ public class ProcedureTest
         ProcedureConfig config = new ProcedureConfig(
                 Config.defaults( procedure_allowlist, List.of( "org.neo4j.procedure.impl.NOTlistCoolPeople" ) ) );
 
-        Log log = mock(Log.class);
+        InternalLog log = mock( InternalLog.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
 
@@ -351,7 +351,7 @@ public class ProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_allowlist, List.of( "empty" ) ) );
-        Log log = mock(Log.class);
+        InternalLog log = mock( InternalLog.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
 
@@ -368,7 +368,7 @@ public class ProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_allowlist, List.of( "" ) ) );
-        Log log = mock(Log.class);
+        InternalLog log = mock( InternalLog.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
 
@@ -421,7 +421,7 @@ public class ProcedureTest
     public static class LoggingProcedure
     {
         @Context
-        public Log log;
+        public InternalLog log;
 
         @Procedure
         public Stream<MyOutputRecord> logAround()

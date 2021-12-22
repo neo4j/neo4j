@@ -30,8 +30,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class DuplicatingLogTest
 {
-    private final Log log1 = mock( Log.class );
-    private final Log log2 = mock( Log.class );
+    private final InternalLog log1 = mock( InternalLog.class );
+    private final InternalLog log2 = mock( InternalLog.class );
 
     @ParameterizedTest
     @ValueSource( strings = {"debug", "info", "warn", "error"} )
@@ -39,7 +39,7 @@ class DuplicatingLogTest
     {
         // Given
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
-        Method m = Log.class.getMethod( type, String.class );
+        Method m = InternalLog.class.getMethod( type, String.class );
 
         // When
         m.invoke( log, "When the going gets weird" );
@@ -57,7 +57,7 @@ class DuplicatingLogTest
     {
         // Given
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
-        Method messageLog = Log.class.getMethod( type, Neo4jLogMessage.class );
+        Method messageLog = InternalLog.class.getMethod( type, Neo4jLogMessage.class );
 
         // When
         MyMessage message = new MyMessage();
@@ -76,7 +76,7 @@ class DuplicatingLogTest
     {
         // Given
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
-        Method messageLog = Log.class.getMethod( type, Neo4jMessageSupplier.class );
+        Method messageLog = InternalLog.class.getMethod( type, Neo4jMessageSupplier.class );
 
         // When
         Neo4jMessageSupplier supplier = MyMessage::new;

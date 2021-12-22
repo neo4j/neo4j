@@ -121,7 +121,7 @@ import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue
 import org.neo4j.kernel.impl.util.PathWrappingPathValue
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.internal.LogService
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
@@ -1202,7 +1202,7 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[DatabaseManagementService]).database(SYSTEM_DATABASE_NAME)
   }
 
-  override def logProvider: LogProvider  = {
+  override def logProvider: InternalLogProvider  = {
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[LogService]).getInternalLogProvider
   }
 

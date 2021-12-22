@@ -28,9 +28,8 @@ import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
@@ -39,7 +38,7 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
 {
     private final FileSystemAbstraction fileSystem;
     private final NativeAccess nativeAccess;
-    private final Log log;
+    private final InternalLog log;
     private final AtomicLong rotationThreshold;
     private final Config config;
     private final String databaseName;
@@ -49,8 +48,8 @@ public class LogFileChannelNativeAccessor implements ChannelNativeAccessor
         this( fileSystem, context.getNativeAccess(), context.getLogProvider(), context.getRotationThreshold(), context.getConfig(), context.getDatabaseName() );
     }
 
-    public LogFileChannelNativeAccessor( FileSystemAbstraction fileSystem, NativeAccess nativeAccess, LogProvider logProvider, AtomicLong rotationThreshold,
-            Config config, String databaseName )
+    public LogFileChannelNativeAccessor( FileSystemAbstraction fileSystem, NativeAccess nativeAccess, InternalLogProvider logProvider,
+            AtomicLong rotationThreshold, Config config, String databaseName )
     {
         this.fileSystem = fileSystem;
         this.nativeAccess = nativeAccess;

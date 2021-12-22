@@ -44,6 +44,8 @@ import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.logging.ExternalLogProviderWrapper;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
@@ -61,7 +63,7 @@ public class DatabaseManagementServiceBuilder
     protected final List<ExtensionFactory<?>> extensions = new ArrayList<>();
     protected final List<DatabaseEventListener> databaseEventListeners = new ArrayList<>();
     protected Monitors monitors;
-    protected LogProvider userLogProvider = NullLogProvider.getInstance();
+    private InternalLogProvider userLogProvider = NullLogProvider.getInstance();
     protected DependencyResolver dependencies = new Dependencies();
     protected final Map<String,URLAccessRule> urlAccessRules = new HashMap<>();
     protected Path homeDirectory;
@@ -124,7 +126,14 @@ public class DatabaseManagementServiceBuilder
 
     public DatabaseManagementServiceBuilder setUserLogProvider( LogProvider userLogProvider )
     {
-        this.userLogProvider = userLogProvider;
+        if ( userLogProvider instanceof InternalLogProvider internalLogProvider )
+        {
+            this.userLogProvider = internalLogProvider;
+        }
+        else
+        {
+            this.userLogProvider = new ExternalLogProviderWrapper( userLogProvider );
+        }
         return this;
     }
 

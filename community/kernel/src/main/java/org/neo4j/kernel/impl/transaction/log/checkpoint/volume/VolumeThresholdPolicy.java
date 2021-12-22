@@ -25,7 +25,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresholdPolicy;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.time.SystemNanoClock;
 
 @ServiceProvider
@@ -38,7 +38,7 @@ public class VolumeThresholdPolicy implements CheckPointThresholdPolicy
     }
 
     @Override
-    public CheckPointThreshold createThreshold( Config config, SystemNanoClock clock, LogPruning logPruning, LogProvider logProvider )
+    public CheckPointThreshold createThreshold( Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider )
     {
         long checkpointIntervalVolume = config.get( GraphDatabaseSettings.check_point_interval_volume );
         long logFileSize = config.get( GraphDatabaseSettings.logical_log_rotation_threshold );

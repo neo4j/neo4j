@@ -64,7 +64,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
@@ -106,13 +106,13 @@ public class FulltextIndexProvider extends IndexProvider
     private final String defaultAnalyzerName;
     private final boolean defaultEventuallyConsistentSetting;
     private final DatabaseReadOnlyChecker readOnlyChecker;
-    private final Log log;
+    private final InternalLog log;
     private final IndexUpdateSink indexUpdateSink;
     private final IndexStorageFactory indexStorageFactory;
 
     public FulltextIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
             FileSystemAbstraction fileSystem, Config config, TokenHolders tokenHolders, DirectoryFactory directoryFactory,
-            DatabaseReadOnlyChecker readOnlyChecker, JobScheduler scheduler, Log log )
+            DatabaseReadOnlyChecker readOnlyChecker, JobScheduler scheduler, InternalLog log )
     {
         super( descriptor, directoryStructureFactory );
         this.fileSystem = fileSystem;

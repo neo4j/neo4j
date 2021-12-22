@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.util.Bits;
@@ -74,7 +74,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider,
+            InternalLogProvider logProvider,
             DynamicArrayStore dynamicLabelStore,
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,

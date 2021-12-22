@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.lang.String.format;
 
 public class ReverseTransactionCursorLoggingMonitor implements ReversedTransactionCursorMonitor
 {
-    private final Log log;
+    private final InternalLog log;
 
-    public ReverseTransactionCursorLoggingMonitor( Log log )
+    public ReverseTransactionCursorLoggingMonitor( InternalLog log )
     {
         this.log = log;
     }

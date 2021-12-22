@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.monitoring;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.VmPauseMonitor;
 
 import static java.util.Objects.requireNonNull;
 
 public class LoggingVmPauseMonitor implements VmPauseMonitor.Monitor
 {
-    private final Log log;
+    private final InternalLog log;
 
-    public LoggingVmPauseMonitor( Log log )
+    public LoggingVmPauseMonitor( InternalLog log )
     {
         this.log = requireNonNull( log );
     }

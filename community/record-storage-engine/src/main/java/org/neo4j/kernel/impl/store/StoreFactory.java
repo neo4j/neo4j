@@ -37,7 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.DIRECT;
@@ -53,7 +53,7 @@ public class StoreFactory
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final PageCache pageCache;
     private final RecordFormats recordFormats;
     private final CursorContextFactory contextFactory;
@@ -61,7 +61,8 @@ public class StoreFactory
     private final ImmutableSet<OpenOption> openOptions;
 
     public StoreFactory( DatabaseLayout directoryStructure, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, CursorContextFactory contextFactory, DatabaseReadOnlyChecker readOnlyChecker )
+            FileSystemAbstraction fileSystemAbstraction, InternalLogProvider logProvider, CursorContextFactory contextFactory,
+            DatabaseReadOnlyChecker readOnlyChecker )
     {
         this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 selectForStoreOrConfigForNewDbs( config, RecordDatabaseLayout.convert( directoryStructure ), fileSystemAbstraction, pageCache, logProvider,
@@ -69,7 +70,7 @@ public class StoreFactory
     }
 
     public StoreFactory( DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider, CursorContextFactory contextFactory,
+            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, InternalLogProvider logProvider, CursorContextFactory contextFactory,
             DatabaseReadOnlyChecker readOnlyChecker, ImmutableSet<OpenOption> openOptions )
     {
         this.databaseLayout = RecordDatabaseLayout.convert( databaseLayout );

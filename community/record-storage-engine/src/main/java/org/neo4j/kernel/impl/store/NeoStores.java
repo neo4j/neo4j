@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.apache.commons.lang3.ArrayUtils.contains;
@@ -78,7 +78,7 @@ public class NeoStores implements AutoCloseable
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
     private final PageCache pageCache;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final boolean createIfNotExist;
     private final CursorContextFactory contextFactory;
     private final StoreType[] initializedStores;
@@ -93,7 +93,7 @@ public class NeoStores implements AutoCloseable
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            final LogProvider logProvider,
+            final InternalLogProvider logProvider,
             RecordFormats recordFormats,
             boolean createIfNotExist,
             CursorContextFactory contextFactory,

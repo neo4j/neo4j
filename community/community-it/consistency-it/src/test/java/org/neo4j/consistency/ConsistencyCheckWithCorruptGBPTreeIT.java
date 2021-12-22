@@ -72,7 +72,7 @@ import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -735,30 +735,30 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         }
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider ) throws ConsistencyCheckIncompleteException
+    private ConsistencyCheckService.Result runConsistencyCheck( InternalLogProvider logProvider ) throws ConsistencyCheckIncompleteException
     {
         return runConsistencyCheck( logProvider, (OutputStream) null );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, Consumer<Config> adaptConfig )
+    private ConsistencyCheckService.Result runConsistencyCheck( InternalLogProvider logProvider, Consumer<Config> adaptConfig )
             throws ConsistencyCheckIncompleteException
     {
         return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, null, DEFAULT, adaptConfig );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ConsistencyFlags consistencyFlags )
+    private ConsistencyCheckService.Result runConsistencyCheck( InternalLogProvider logProvider, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
         return runConsistencyCheck( logProvider, null, consistencyFlags );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, OutputStream progressOutput )
+    private ConsistencyCheckService.Result runConsistencyCheck( InternalLogProvider logProvider, OutputStream progressOutput )
             throws ConsistencyCheckIncompleteException
     {
         return runConsistencyCheck( logProvider, progressOutput, DEFAULT );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, OutputStream progressOutput,
+    private ConsistencyCheckService.Result runConsistencyCheck( InternalLogProvider logProvider, OutputStream progressOutput,
             ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
@@ -766,13 +766,13 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     private static ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
-            LogProvider logProvider, OutputStream progressOutput, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
+            InternalLogProvider logProvider, OutputStream progressOutput, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressOutput, consistencyFlags, config -> {} );
     }
 
     private static ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
-            LogProvider logProvider, OutputStream progressOutput, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig )
+            InternalLogProvider logProvider, OutputStream progressOutput, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig )
             throws ConsistencyCheckIncompleteException
     {
         Config config = Config.newBuilder()

@@ -39,7 +39,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.http.cypher.consumer.OutputEventStreamResultConsumer;
@@ -77,7 +77,7 @@ class Invocation
 {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( Invocation.class );
 
-    private final Log log;
+    private final InternalLog log;
     private final TransactionHandle transactionHandle;
     private final InputEventStream inputEventStream;
     private boolean finishWithCommit;
@@ -90,7 +90,7 @@ class Invocation
     private RuntimeException outputError;
     private TransactionNotificationState transactionNotificationState = TransactionNotificationState.NO_TRANSACTION;
 
-    Invocation( Log log, TransactionHandle transactionHandle, URI commitUri, MemoryPool memoryPool, InputEventStream inputEventStream,
+    Invocation( InternalLog log, TransactionHandle transactionHandle, URI commitUri, MemoryPool memoryPool, InputEventStream inputEventStream,
                 boolean finishWithCommit )
     {
         this.log = log;

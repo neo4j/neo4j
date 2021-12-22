@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 public class DumpLocksVisitor implements Locks.Visitor
 {
-    private final Log log;
+    private final InternalLog log;
 
-    public DumpLocksVisitor( Log log )
+    public DumpLocksVisitor( InternalLog log )
     {
         this.log = log;
     }

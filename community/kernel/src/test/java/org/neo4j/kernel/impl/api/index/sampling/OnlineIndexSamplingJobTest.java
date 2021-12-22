@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +51,7 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 class OnlineIndexSamplingJobTest
 {
     private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
-    private final LogProvider logProvider = NullLogProvider.getInstance();
+    private final InternalLogProvider logProvider = NullLogProvider.getInstance();
     private final long indexId = 1;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );

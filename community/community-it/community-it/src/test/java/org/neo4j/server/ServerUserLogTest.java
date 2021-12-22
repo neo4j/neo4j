@@ -36,7 +36,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -70,7 +70,7 @@ class ServerUserLogTest
         // given
         NeoBootstrapper neoBootstrapper = getServerBootstrapper();
         Path dir = homeDir.homePath();
-        Log logBeforeStart = neoBootstrapper.getLog();
+        InternalLog logBeforeStart = neoBootstrapper.getLog();
 
         // when
         try
@@ -103,7 +103,7 @@ class ServerUserLogTest
         // given
         NeoBootstrapper neoBootstrapper = getServerBootstrapper();
         Path dir = homeDir.homePath();
-        Log logBeforeStart = neoBootstrapper.getLog();
+        InternalLog logBeforeStart = neoBootstrapper.getLog();
 
         // when
         try
@@ -134,7 +134,7 @@ class ServerUserLogTest
         // given
         NeoBootstrapper neoBootstrapper = getServerBootstrapper();
         Path dir = homeDir.homePath();
-        Log logBeforeStart = neoBootstrapper.getLog();
+        InternalLog logBeforeStart = neoBootstrapper.getLog();
         int maxArchives = 4;
 
         // when

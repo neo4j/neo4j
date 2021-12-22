@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
@@ -88,7 +88,7 @@ public class NoSupportPartitionedScanTest extends SupportPartitionedScanTestSuit
                                                         mock( DirectoryFactory.class ),
                                                         mock( DatabaseReadOnlyChecker.class ),
                                                         mock( JobScheduler.class ),
-                                                        mock( Log.class ) );
+                                                        mock( InternalLog.class ) );
 
         final var ids = idGenerator();
         final var index = provider.completeConfiguration(

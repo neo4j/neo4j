@@ -20,7 +20,7 @@
 package org.neo4j.fabric.transaction;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 
 import static java.lang.String.format;
@@ -31,8 +31,8 @@ import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseErro
  */
 public class ErrorReporter
 {
-    private final Log userLog;
-    private final Log debugLog;
+    private final InternalLog userLog;
+    private final InternalLog debugLog;
 
     public ErrorReporter( LogService logging )
     {

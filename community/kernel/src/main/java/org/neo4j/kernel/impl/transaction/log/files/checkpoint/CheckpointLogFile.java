@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.LogTailScannerMonitor;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.util.Collections.emptyList;
@@ -63,7 +63,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     private final TransactionLogFilesHelper fileHelper;
     private final TransactionLogChannelAllocator channelAllocator;
     private final TransactionLogFilesContext context;
-    private final Log log;
+    private final InternalLog log;
     private final long rotationsSize;
     private final LogTailScannerMonitor monitor;
     private LogVersionRepository logVersionRepository;
@@ -103,7 +103,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     }
 
     @Override
-    public Optional<CheckpointInfo> findLatestCheckpoint( Log log ) throws IOException
+    public Optional<CheckpointInfo> findLatestCheckpoint( InternalLog log ) throws IOException
     {
         var versionVisitor = new RangeLogVersionVisitor();
         fileHelper.accept( versionVisitor );

@@ -31,7 +31,7 @@ import java.util.function.Function;
 import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.toIntExact;
@@ -133,7 +133,7 @@ public class NumberArrayFactories
      * {@code pageCache}.
      */
     public static NumberArrayFactory auto( PageCache pageCache, CursorContextFactory contextFactory,
-                                           Path dir, boolean allowHeapAllocation, NumberArrayFactory.Monitor monitor, Log log, String databaseName )
+                                           Path dir, boolean allowHeapAllocation, NumberArrayFactory.Monitor monitor, InternalLog log, String databaseName )
     {
         PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, databaseName );
         ChunkedNumberArrayFactory chunkedArrayFactory = new ChunkedNumberArrayFactory( monitor,

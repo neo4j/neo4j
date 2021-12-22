@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 
@@ -51,8 +51,8 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     private final Config config;
     private final String databaseName;
 
-    public RecordStoreVersionCheck( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout, LogProvider logProvider, Config config,
-            CursorContextFactory contextFactory )
+    public RecordStoreVersionCheck( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout, InternalLogProvider logProvider,
+            Config config, CursorContextFactory contextFactory )
     {
         this( pageCache, databaseLayout, configuredVersion( config, databaseLayout, fs, pageCache, logProvider, contextFactory ), config );
     }
@@ -167,7 +167,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     }
 
     private static RecordFormats configuredVersion( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider, CursorContextFactory contextFactory )
+            InternalLogProvider logProvider, CursorContextFactory contextFactory )
     {
         return RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider, contextFactory );
     }

@@ -67,7 +67,7 @@ import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.FunctionInformation
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.util.VisibleForTesting
@@ -241,7 +241,7 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def systemGraph: GraphDatabaseService
 
-  def logProvider: LogProvider
+  def logProvider: InternalLogProvider
 
   def providedLanguageFunctions: Seq[FunctionInformation]
 

@@ -40,7 +40,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.storage_engine;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -51,11 +51,11 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     private final Lifecycle globalLife;
     private final DatabaseEventListeners databaseEventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
-    private final Log log;
+    private final InternalLog log;
     private final Config globalConfig;
 
     public DatabaseManagementServiceImpl( DatabaseManager<?> databaseManager, Lifecycle globalLife,
-            DatabaseEventListeners databaseEventListeners, GlobalTransactionEventListeners transactionEventListeners, Log log, Config globalConfig )
+            DatabaseEventListeners databaseEventListeners, GlobalTransactionEventListeners transactionEventListeners, InternalLog log, Config globalConfig )
     {
         this.databaseManager = databaseManager;
         this.globalLife = globalLife;

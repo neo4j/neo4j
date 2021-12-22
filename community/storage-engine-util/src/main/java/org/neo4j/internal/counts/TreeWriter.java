@@ -21,7 +21,7 @@ package org.neo4j.internal.counts;
 
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REPLACED;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -33,10 +33,10 @@ class TreeWriter implements CountUpdater.CountWriter
 {
     private final Writer<CountsKey,CountsValue> treeWriter;
     private final CountsValue value = new CountsValue();
-    private final LogProvider userLogProvider;
+    private final InternalLogProvider userLogProvider;
     private final RememberingReplacingMerger merger = new RememberingReplacingMerger();
 
-    TreeWriter( Writer<CountsKey,CountsValue> treeWriter, LogProvider userLogProvider )
+    TreeWriter( Writer<CountsKey,CountsValue> treeWriter, InternalLogProvider userLogProvider )
     {
         this.treeWriter = treeWriter;
         this.userLogProvider = userLogProvider;

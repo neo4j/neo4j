@@ -28,7 +28,7 @@ import org.neo4j.internal.helpers.Format;
 import org.neo4j.internal.helpers.Listeners;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.util.stream.Collectors.joining;
 
@@ -48,11 +48,11 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     private final Listeners<AvailabilityListener> listeners = new Listeners<>();
     private final NamedDatabaseId namedDatabaseId;
     private final Clock clock;
-    private final Log log;
+    private final InternalLog log;
     private final long databaseTimeMillis;
     private final CompositeDatabaseAvailabilityGuard globalGuard;
 
-    public DatabaseAvailabilityGuard( NamedDatabaseId namedDatabaseId, Clock clock, Log log, long databaseTimeMillis,
+    public DatabaseAvailabilityGuard( NamedDatabaseId namedDatabaseId, Clock clock, InternalLog log, long databaseTimeMillis,
             CompositeDatabaseAvailabilityGuard globalGuard )
     {
         this.namedDatabaseId = namedDatabaseId;
@@ -266,10 +266,10 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
 
     private static class LoggingAvailabilityListener implements AvailabilityListener
     {
-        private final Log log;
+        private final InternalLog log;
         private final NamedDatabaseId namedDatabaseId;
 
-        LoggingAvailabilityListener( Log log, NamedDatabaseId namedDatabaseId )
+        LoggingAvailabilityListener( InternalLog log, NamedDatabaseId namedDatabaseId )
         {
             this.log = log;
             this.namedDatabaseId = namedDatabaseId;

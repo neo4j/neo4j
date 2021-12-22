@@ -22,14 +22,14 @@ package org.neo4j.logging.log4j;
 import org.apache.logging.log4j.spi.ExtendedLogger;
 import org.apache.logging.log4j.spi.ExtendedLoggerWrapper;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Neo4jLogMessage;
 import org.neo4j.logging.Neo4jMessageSupplier;
 
 /**
- * A {@link Log} implementation that uses the Log4j configuration the logger is connected to.
+ * A {@link InternalLog} implementation that uses the Log4j configuration the logger is connected to.
  */
-public class Log4jLog extends ExtendedLoggerWrapper implements Log
+public class Log4jLog extends ExtendedLoggerWrapper implements InternalLog
 {
     /**
      * Package-private specifically to not leak Logger outside logging module. Should not be used outside of the logging module - {@link

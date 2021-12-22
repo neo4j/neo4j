@@ -35,6 +35,7 @@ import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -51,7 +52,7 @@ import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
@@ -182,7 +183,7 @@ public abstract class AbstractEditionModule
     }
 
     public abstract Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies,
-            Config config, LogProvider userLogProvider, DbmsInfo dbmsInfo );
+            Config config, InternalLogProvider userLogProvider, DbmsInfo dbmsInfo );
 
     public abstract DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule, DatabaseManager<?> databaseManager,
             Dependencies dependencies, DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent );
@@ -191,7 +192,7 @@ public abstract class AbstractEditionModule
     {
         ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
         Config config = globalModule.getGlobalConfig();
-        LogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
+        InternalLogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
         RoutingTableTTLProvider ttlProvider = RoutingTableTTLProvider.ttlFromConfig( config );
         return new SingleAddressRoutingTableProvider( portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlProvider );
     }

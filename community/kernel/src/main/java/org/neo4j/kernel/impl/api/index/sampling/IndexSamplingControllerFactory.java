@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
 public class IndexSamplingControllerFactory
@@ -39,14 +39,14 @@ public class IndexSamplingControllerFactory
     private final IndexStatisticsStore indexStatisticsStore;
     private final JobScheduler scheduler;
     private final TokenNameLookup tokenNameLookup;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final CursorContextFactory contextFactory;
     private final Config config;
     private final String databaseName;
 
     public IndexSamplingControllerFactory( IndexSamplingConfig samplingConfig, IndexStatisticsStore indexStatisticsStore,
                                            JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                                           LogProvider logProvider, CursorContextFactory contextFactory, Config config, String databaseName )
+                                           InternalLogProvider logProvider, CursorContextFactory contextFactory, Config config, String databaseName )
     {
         this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;
@@ -79,12 +79,12 @@ public class IndexSamplingControllerFactory
         };
     }
 
-    private RecoveryCondition createIndexRecoveryCondition( final LogProvider logProvider,
+    private RecoveryCondition createIndexRecoveryCondition( final InternalLogProvider logProvider,
                                                                      final TokenNameLookup tokenNameLookup )
     {
         return new RecoveryCondition()
         {
-            private final Log log = logProvider.getLog( IndexSamplingController.class );
+            private final InternalLog log = logProvider.getLog( IndexSamplingController.class );
 
             @Override
             public boolean test( IndexDescriptor descriptor )

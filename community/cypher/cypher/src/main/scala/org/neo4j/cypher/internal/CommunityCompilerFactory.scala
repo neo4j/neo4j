@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.logging.Log
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLog
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring
 
 /**
@@ -40,13 +40,13 @@ import org.neo4j.monitoring
  */
 class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
                                kernelMonitors: monitoring.Monitors,
-                               logProvider: LogProvider,
+                               logProvider: InternalLogProvider,
                                plannerConfig: CypherPlannerConfiguration,
                                runtimeConfig: CypherRuntimeConfiguration,
                                queryCaches: CypherQueryCaches,
                               ) extends CompilerFactory {
 
-  private val log: Log = logProvider.getLog(getClass)
+  private val log: InternalLog = logProvider.getLog(getClass)
 
   override def supportsAdministrativeCommands(): Boolean = plannerConfig.planSystemCommands
 

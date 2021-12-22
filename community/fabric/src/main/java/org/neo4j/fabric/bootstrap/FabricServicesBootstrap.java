@@ -66,7 +66,7 @@ import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
@@ -114,7 +114,7 @@ public abstract class FabricServicesBootstrap
 
     public void bootstrapServices()
     {
-        LogProvider internalLogProvider = logService.getInternalLogProvider();
+        InternalLogProvider internalLogProvider = logService.getInternalLogProvider();
 
         @SuppressWarnings( "unchecked" )
         var databaseManager = (DatabaseManager<DatabaseContext>) resolve( DatabaseManager.class );

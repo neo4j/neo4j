@@ -25,9 +25,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
 /**
- * An abstract {@link LogProvider} implementation, which ensures {@link Log}s are cached and reused.
+ * An abstract {@link InternalLogProvider} implementation, which ensures {@link InternalLog}s are cached and reused.
  */
-public abstract class AbstractLogProvider<T extends Log> implements LogProvider
+public abstract class AbstractLogProvider<T extends InternalLog> implements InternalLogProvider
 {
     private final ConcurrentHashMap<String, LogWithContext> logCache = new ConcurrentHashMap<>();
     // read-lock: getting log instances, write-lock: changing log level settings
@@ -67,14 +67,14 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
     }
 
     /**
-     * @param loggingClass the context for the returned {@link Log}
-     * @return a {@link Log} that logs messages with the {@code loggingClass} as the context
+     * @param loggingClass the context for the returned {@link InternalLog}
+     * @return a {@link InternalLog} that logs messages with the {@code loggingClass} as the context
      */
     protected abstract T buildLog( Class<?> loggingClass );
 
     /**
-     * @param name the context for the returned {@link Log}
-     * @return a {@link Log} that logs messages with the specified name as the context
+     * @param name the context for the returned {@link InternalLog}
+     * @return a {@link InternalLog} that logs messages with the specified name as the context
      */
     protected abstract T buildLog( String name );
 

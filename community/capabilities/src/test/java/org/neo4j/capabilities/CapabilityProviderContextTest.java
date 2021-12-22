@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.config.Configuration;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -34,13 +34,13 @@ class CapabilityProviderContextTest
     @Test
     void shouldResolveComponents()
     {
-        var log = mock( Log.class );
+        var log = mock( InternalLog.class );
         var config = mock( Configuration.class );
         var dbms = mock( DatabaseManagementService.class );
         var caps = mock( Capabilities.class );
 
         var deps = new CapabilityProviderDependencies();
-        deps.register( Log.class, () -> log );
+        deps.register( InternalLog.class, () -> log );
         deps.register( Configuration.class, () -> config );
         deps.register( DatabaseManagementService.class, () -> dbms );
         deps.register( Capabilities.class, () -> caps );

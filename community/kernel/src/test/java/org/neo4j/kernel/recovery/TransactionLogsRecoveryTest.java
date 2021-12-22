@@ -72,7 +72,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -225,49 +225,51 @@ class TransactionLogsRecoveryTest
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, recoveryLogFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery(
-                    new DefaultRecoveryService( storageEngine, transactionIdStore, txStore, versionRepository, recoveryLogFiles, NO_MONITOR, mock( Log.class ),
+                    new DefaultRecoveryService( storageEngine, transactionIdStore, txStore, versionRepository, recoveryLogFiles, NO_MONITOR,
+                            mock( InternalLog.class ),
                             false )
-            {
-                private int nr;
-
-                @Override
-                public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag )
-                {
-                    RecoveryApplier actual = super.getRecoveryApplier( mode, cacheTracer, tracerTag );
-                    if ( mode == TransactionApplicationMode.REVERSE_RECOVERY )
                     {
-                        return actual;
-                    }
-
-                    return new RecoveryApplier()
-                    {
-                        @Override
-                        public void close() throws Exception
-                        {
-                            actual.close();
-                        }
+                        private int nr;
 
                         @Override
-                        public boolean visit( CommittedTransactionRepresentation tx ) throws Exception
+                        public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag )
                         {
-                            actual.visit( tx );
-                            switch ( nr++ )
+                            RecoveryApplier actual = super.getRecoveryApplier( mode, cacheTracer, tracerTag );
+                            if ( mode == TransactionApplicationMode.REVERSE_RECOVERY )
                             {
-                            case 0 -> {
-                                assertEquals( lastCommittedTxStartEntry, tx.getStartEntry() );
-                                assertEquals( lastCommittedTxCommitEntry, tx.getCommitEntry() );
+                                return actual;
                             }
-                            case 1 -> {
-                                assertEquals( expectedStartEntry, tx.getStartEntry() );
-                                assertEquals( expectedCommitEntry, tx.getCommitEntry() );
-                            }
-                            default -> fail( "Too many recovered transactions" );
-                            }
-                            return false;
+
+                            return new RecoveryApplier()
+                            {
+                                @Override
+                                public void close() throws Exception
+                                {
+                                    actual.close();
+                                }
+
+                                @Override
+                                public boolean visit( CommittedTransactionRepresentation tx ) throws Exception
+                                {
+                                    actual.visit( tx );
+                                    switch ( nr++ )
+                                    {
+                                    case 0 -> {
+                                        assertEquals( lastCommittedTxStartEntry, tx.getStartEntry() );
+                                        assertEquals( lastCommittedTxCommitEntry, tx.getCommitEntry() );
+                                        }
+                                    case 1 -> {
+                                        assertEquals( expectedStartEntry, tx.getStartEntry() );
+                                        assertEquals( expectedCommitEntry, tx.getCommitEntry() );
+                                        }
+                                    default ->
+                                        fail( "Too many recovered transactions" );
+                                    }
+                                    return false;
+                                }
+                            };
                         }
-                    };
-                }
-            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, RecoveryPredicate.ALL, NULL ) );
+                    }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, RecoveryPredicate.ALL, NULL ) );
 
             life.start();
 
@@ -324,9 +326,9 @@ class TransactionLogsRecoveryTest
                     fail( "Recovery should not be required" );
                 }
             } );
-            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
-                                                                               txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ), false ),
-                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, RecoveryPredicate.ALL, NULL ) );
+            life.add( new TransactionLogsRecovery(
+                    new DefaultRecoveryService( storageEngine, transactionIdStore, txStore, versionRepository, logFiles, NO_MONITOR, mock( InternalLog.class ),
+                            false ), logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, RecoveryPredicate.ALL, NULL ) );
 
             life.start();
 
@@ -585,9 +587,9 @@ class TransactionLogsRecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false, config );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
-            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
-                                                                               txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ), false ),
-                    logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker, RecoveryPredicate.ALL, NULL ) );
+            life.add( new TransactionLogsRecovery(
+                    new DefaultRecoveryService( storageEngine, transactionIdStore, txStore, versionRepository, logFiles, NO_MONITOR, mock( InternalLog.class ),
+                            false ), logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker, RecoveryPredicate.ALL, NULL ) );
 
             life.start();
         }

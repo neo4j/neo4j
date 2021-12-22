@@ -23,7 +23,7 @@ import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.requirePositive;
@@ -40,7 +40,7 @@ public class CappedLogger
     private static final AtomicLongFieldUpdater<CappedLogger> LAST_CHECK =
             AtomicLongFieldUpdater.newUpdater( CappedLogger.class, "lastCheck" );
 
-    private final Log delegate;
+    private final InternalLog delegate;
     private final long timeLimitMillis;
     private final Clock clock;
 
@@ -55,7 +55,7 @@ public class CappedLogger
      * @param unit The time unit.
      * @param clock The clock to use for reading the current time when checking this limit.
      */
-    public CappedLogger( Log delegate, long time, TimeUnit unit, Clock clock )
+    public CappedLogger( InternalLog delegate, long time, TimeUnit unit, Clock clock )
     {
         this.delegate = requireNonNull( delegate );
         this.clock = requireNonNull( clock );

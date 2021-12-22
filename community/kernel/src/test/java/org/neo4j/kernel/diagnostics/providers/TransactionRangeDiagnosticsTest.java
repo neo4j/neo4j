@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.StoreId;
 
 import static org.mockito.Mockito.mock;
@@ -54,7 +54,7 @@ class TransactionRangeDiagnosticsTest
         // GIVEN
         Database database = databaseWithLogFilesContainingLowestTxId( noLogs() );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log logger = logProvider.getLog( getClass() );
+        InternalLog logger = logProvider.getLog( getClass() );
 
         // WHEN
         new TransactionRangeDiagnostics( database ).dump( logger::info );
@@ -75,7 +75,7 @@ class TransactionRangeDiagnosticsTest
         Database database = databaseWithLogFilesContainingLowestTxId(
                 logWithTransactions( logVersion, logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log logger = logProvider.getLog( getClass() );
+        InternalLog logger = logProvider.getLog( getClass() );
 
         // WHEN
         new TransactionRangeDiagnostics( database ).dump( logger::info );
@@ -96,7 +96,7 @@ class TransactionRangeDiagnosticsTest
         Database database = databaseWithLogFilesContainingLowestTxId(
                 logWithTransactionsInNextToOldestLog( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log logger = logProvider.getLog( getClass() );
+        InternalLog logger = logProvider.getLog( getClass() );
 
         // WHEN
         new TransactionRangeDiagnostics( database ).dump( logger::info );
@@ -125,7 +125,7 @@ class TransactionRangeDiagnosticsTest
                         new LogEntryDetachedCheckpoint( KernelVersion.LATEST, checkpointLogPosition, 1234, storeId, "testing" ),
                         checkpointLogPosition, afterCheckpointLogPosition, readerPostPosition ) ) ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log logger = logProvider.getLog( getClass() );
+        InternalLog logger = logProvider.getLog( getClass() );
 
         // WHEN
         new TransactionRangeDiagnostics( database ).dump( logger::info );
@@ -144,7 +144,7 @@ class TransactionRangeDiagnosticsTest
                 transactionLogs -> {},
                 checkpointLogsWithLastCheckpoint( 0, 0, null ) ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log logger = logProvider.getLog( getClass() );
+        InternalLog logger = logProvider.getLog( getClass() );
 
         // WHEN
         new TransactionRangeDiagnostics( database ).dump( logger::info );

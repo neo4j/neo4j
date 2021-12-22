@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.util.regex.Pattern.compile;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
@@ -39,10 +39,10 @@ public class JvmChecker
             "the Java runtime. Please use Oracle(R) Java(TM) 17 or OpenJDK(TM) 17.";
     private static final Pattern SUPPORTED_JAVA_NAME_PATTERN = compile( "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server) VM" );
 
-    private final Log log;
+    private final InternalLog log;
     private final JvmMetadataRepository jvmMetadataRepository;
 
-    public JvmChecker( Log log, JvmMetadataRepository jvmMetadataRepository )
+    public JvmChecker( InternalLog log, JvmMetadataRepository jvmMetadataRepository )
     {
         this.log = log;
         this.jvmMetadataRepository = jvmMetadataRepository;

@@ -56,8 +56,8 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.AssertableLogProvider.Level
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.LogAssertions.assertThat
-import org.neo4j.logging.LogProvider
 import org.neo4j.logging.NullLogProvider
 
 import java.time.Clock
@@ -82,7 +82,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   private def createCompiler(config: CypherConfiguration,
                              clock: Clock = Clock.systemUTC(),
-                             logProvider: LogProvider = NullLogProvider.getInstance): CypherCurrentCompiler[RuntimeContext] = {
+                             logProvider: InternalLogProvider = NullLogProvider.getInstance): CypherCurrentCompiler[RuntimeContext] = {
     val caches = new CypherQueryCaches(
       CypherQueryCaches.Config.fromCypherConfiguration(config),
       () => 1,

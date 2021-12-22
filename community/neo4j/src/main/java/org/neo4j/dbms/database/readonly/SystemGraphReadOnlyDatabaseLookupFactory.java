@@ -30,17 +30,17 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyDatabases.LookupFactory
 {
     private final DatabaseManager<?> databaseManager;
-    private final Log log;
+    private final InternalLog log;
 
     private volatile SystemGraphLookup previousLookup;
 
-    public SystemGraphReadOnlyDatabaseLookupFactory( DatabaseManager<?> databaseManager, LogProvider logProvider )
+    public SystemGraphReadOnlyDatabaseLookupFactory( DatabaseManager<?> databaseManager, InternalLogProvider logProvider )
     {
         this.databaseManager = databaseManager;
         this.previousLookup = SystemGraphLookup.ALWAYS_READONLY;

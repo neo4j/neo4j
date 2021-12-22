@@ -31,8 +31,8 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.time.Stopwatch;
@@ -51,7 +51,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final ForceOperation forceOperation;
     private final LogPruning logPruning;
     private final Health databaseHealth;
-    private final Log log;
+    private final InternalLog log;
     private final DatabaseTracers tracers;
     private final StoreCopyCheckPointMutex mutex;
     private final CursorContextFactory cursorContextFactory;
@@ -66,7 +66,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             LogPruning logPruning,
             CheckpointAppender checkpointAppender,
             Health databaseHealth,
-            LogProvider logProvider,
+            InternalLogProvider logProvider,
             DatabaseTracers tracers,
             StoreCopyCheckPointMutex mutex,
             CursorContextFactory cursorContextFactory,

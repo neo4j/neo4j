@@ -37,7 +37,7 @@ import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.transport.pipeline.KeepAliveHandler;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.FeatureToggles;
 
@@ -55,8 +55,8 @@ public class DefaultBoltConnection implements BoltConnection
     private final BoltConnectionLifetimeListener listener;
     private final BoltConnectionQueueMonitor queueMonitor;
 
-    private final Log log;
-    private final Log userLog;
+    private final InternalLog log;
+    private final InternalLog userLog;
 
     private final int maxBatchSize;
     private final List<Job> batch;

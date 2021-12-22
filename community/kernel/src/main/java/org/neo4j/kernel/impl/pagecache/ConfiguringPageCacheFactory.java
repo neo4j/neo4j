@@ -33,7 +33,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MachineMemory;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
@@ -52,14 +52,14 @@ public class ConfiguringPageCacheFactory
     private final FileSystemAbstraction fs;
     private final Config config;
     private final PageCacheTracer pageCacheTracer;
-    private final Log log;
+    private final InternalLog log;
     private PageCache pageCache;
     private final JobScheduler scheduler;
     private final SystemNanoClock clock;
     private final MemoryPools memoryPools;
     private final Function<MuninnPageCache.Configuration,MuninnPageCache.Configuration> pageCacheConfigurator;
 
-    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, Log log, JobScheduler scheduler,
+    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, InternalLog log, JobScheduler scheduler,
             SystemNanoClock clock, MemoryPools memoryPools )
     {
         this( fs, config, pageCacheTracer, log, scheduler, clock, memoryPools, c -> c );
@@ -76,7 +76,7 @@ public class ConfiguringPageCacheFactory
      * @param memoryPools database memory pools to register page cache specific instance
      * @param pageCacheConfigurator additional configuration for the page cache
      */
-    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, Log log, JobScheduler scheduler,
+    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, InternalLog log, JobScheduler scheduler,
             SystemNanoClock clock, MemoryPools memoryPools, Function<MuninnPageCache.Configuration,MuninnPageCache.Configuration> pageCacheConfigurator )
     {
         this.fs = fs;
@@ -200,7 +200,7 @@ public class ConfiguringPageCacheFactory
     }
 
     private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, PageCacheTracer pageCacheTracer,
-                                                                        MemoryTracker memoryTracker, Log log )
+                                                                        MemoryTracker memoryTracker, InternalLog log )
     {
         if ( !UnsafeUtil.unsafeByteBufferAccessAvailable() )
         {

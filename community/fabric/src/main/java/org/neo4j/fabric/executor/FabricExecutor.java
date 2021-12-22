@@ -67,8 +67,8 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -90,13 +90,13 @@ public class FabricExecutor
     private final FabricPlanner planner;
     private final UseEvaluation useEvaluation;
     private final CatalogManager catalogManager;
-    private final Log log;
+    private final InternalLog log;
     private final FabricStatementLifecycles statementLifecycles;
     private final Executor fabricWorkerExecutor;
     private final Optional<NormalizedDatabaseName> fabricDatabaseName;
 
     public FabricExecutor( FabricConfig config, FabricPlanner planner, UseEvaluation useEvaluation, CatalogManager catalogManager,
-                           LogProvider internalLog, FabricStatementLifecycles statementLifecycles, Executor fabricWorkerExecutor )
+                           InternalLogProvider internalLog, FabricStatementLifecycles statementLifecycles, Executor fabricWorkerExecutor )
     {
         this.fabricDatabaseName = config.getFabricDatabaseName();
         this.dataStreamConfig = config.getDataStream();
@@ -606,7 +606,7 @@ public class FabricExecutor
     private class FabricLoggingStatementExecution extends FabricStatementExecution
     {
         private final AtomicInteger step;
-        private final Log log;
+        private final InternalLog log;
 
         FabricLoggingStatementExecution(
                 FabricPlan plan,
@@ -615,7 +615,7 @@ public class FabricExecutor
                 AccessMode accessMode,
                 RoutingContext routingContext,
                 FabricTransaction.FabricExecutionContext ctx,
-                Log log,
+                InternalLog log,
                 StatementLifecycle lifecycle,
                 FabricConfig.DataStream dataStreamConfig )
         {

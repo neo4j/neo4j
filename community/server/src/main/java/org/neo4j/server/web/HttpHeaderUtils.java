@@ -28,7 +28,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -68,7 +68,7 @@ public class HttpHeaderUtils
      * @param errorLog errors log for header parsing errors
      * @return custom timeout if header set, -1 otherwise or when value is not a valid number.
      */
-    public static long getTransactionTimeout( HttpServletRequest request, Log errorLog )
+    public static long getTransactionTimeout( HttpServletRequest request, InternalLog errorLog )
     {
         String headerValue = request.getHeader( MAX_EXECUTION_TIME_HEADER );
         return getTransactionTimeout( headerValue, errorLog );
@@ -82,7 +82,7 @@ public class HttpHeaderUtils
      * @param errorLog errors log for header parsing errors
      * @return custom timeout if header set, -1 otherwise or when value is not a valid number.
      */
-    public static long getTransactionTimeout( HttpHeaders headers, Log errorLog )
+    public static long getTransactionTimeout( HttpHeaders headers, InternalLog errorLog )
     {
         String headerValue = headers.getHeaderString( MAX_EXECUTION_TIME_HEADER );
         return getTransactionTimeout( headerValue, errorLog );
@@ -111,7 +111,7 @@ public class HttpHeaderUtils
         }
     }
 
-    private static long getTransactionTimeout( String headerValue, Log errorLog )
+    private static long getTransactionTimeout( String headerValue, InternalLog errorLog )
     {
         if ( headerValue != null )
         {

@@ -46,7 +46,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -214,7 +214,7 @@ public class RecordStorageEngineSupport
                 transactionApplierTransformer;
 
         ExtendedRecordStorageEngine( RecordDatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
-                LogProvider internalLogProvider, LogProvider userLogProvider, TokenHolders tokenHolders, SchemaState schemaState,
+                InternalLogProvider internalLogProvider, InternalLogProvider userLogProvider, TokenHolders tokenHolders, SchemaState schemaState,
                 ConstraintRuleAccessor constraintSemantics,
                 IndexConfigCompleter indexConfigCompleter,
                 LockService lockService, Health databaseHealth,

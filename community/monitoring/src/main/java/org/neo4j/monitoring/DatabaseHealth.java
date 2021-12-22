@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 public class DatabaseHealth extends LifecycleAdapter implements Health
 {
@@ -32,10 +32,10 @@ public class DatabaseHealth extends LifecycleAdapter implements Health
 
     private volatile boolean healthy = true;
     private final PanicEventGenerator panicEventGenerator;
-    private final Log log;
+    private final InternalLog log;
     private volatile Throwable causeOfPanic;
 
-    public DatabaseHealth( PanicEventGenerator panicEventGenerator, Log log )
+    public DatabaseHealth( PanicEventGenerator panicEventGenerator, InternalLog log )
     {
         this.panicEventGenerator = panicEventGenerator;
         this.log = log;

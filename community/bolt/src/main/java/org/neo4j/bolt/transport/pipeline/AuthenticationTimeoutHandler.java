@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.logging.Log;
 import org.neo4j.memory.HeapEstimator;
 
 import static java.lang.String.format;

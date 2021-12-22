@@ -37,8 +37,8 @@ import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.ProtocolHandshaker;
 import org.neo4j.bolt.transport.pipeline.WebSocketFrameTranslator;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
@@ -63,14 +63,14 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
     private final boolean isEncrypted;
-    private final LogProvider logging;
+    private final InternalLogProvider logging;
     private final BoltProtocolFactory boltProtocolFactory;
-    private final Log log;
+    private final InternalLog log;
     private final ChannelProtector channelProtector;
     private final MemoryTracker memoryTracker;
     private final DiscoveryResponseHandler discoveryResponseHandler;
 
-    TransportSelectionHandler( BoltChannel boltChannel, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
+    TransportSelectionHandler( BoltChannel boltChannel, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, InternalLogProvider logging,
                                BoltProtocolFactory boltProtocolFactory, ChannelProtector channelProtector, MemoryTracker memoryTracker,
                                DiscoveryResponseHandler discoveryResponseHandler )
     {

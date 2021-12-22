@@ -33,7 +33,7 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Job;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -48,7 +48,7 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     private final String connector;
     private final ExecutorFactory executorFactory;
     private final JobScheduler scheduler;
-    private final Log log;
+    private final InternalLog log;
     private final ConcurrentHashMap<String,BoltConnection> activeConnections = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String,CompletableFuture<Boolean>> activeWorkItems = new ConcurrentHashMap<>();
     private final int corePoolSize;

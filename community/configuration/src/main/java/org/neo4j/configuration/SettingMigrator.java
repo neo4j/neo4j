@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 /**
  * Implementations are responsible for migrating deprecated {@link Setting}s.
@@ -39,5 +39,5 @@ public interface SettingMigrator
      * @param defaultValues The map uses the name of settings as keys, and textual representation of default values, as values
      * @param log The log to relay warnings about the use of deprecated Settings
      */
-    void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log );
+    void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log );
 }

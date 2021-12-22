@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 
 /**
  * This trait can be mix-ined to [[RuntimeTestSuite]]s to enable logical plan rewrites before execution.
@@ -45,17 +45,17 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
     graphDb: GraphDatabaseService,
     edition: Edition[CONTEXT],
     workloadMode: Boolean,
-    logProvider: LogProvider
+    logProvider: InternalLogProvider
   ): RuntimeTestSupport[CONTEXT] = {
     new RewritingRuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions)
   }
 
   class RewritingRuntimeTestSupport[CONTEXT <: RuntimeContext](
-    graphDb: GraphDatabaseService,
-    edition: Edition[CONTEXT],
-    workloadMode: Boolean,
-    logProvider: LogProvider,
-    debugOptions: CypherDebugOptions = CypherDebugOptions.default,
+                                                                graphDb: GraphDatabaseService,
+                                                                edition: Edition[CONTEXT],
+                                                                workloadMode: Boolean,
+                                                                logProvider: InternalLogProvider,
+                                                                debugOptions: CypherDebugOptions = CypherDebugOptions.default,
   ) extends RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions) {
 
     override def buildPlan(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {

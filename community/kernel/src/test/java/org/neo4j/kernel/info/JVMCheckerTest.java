@@ -22,7 +22,7 @@ package org.neo4j.kernel.info;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -34,7 +34,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 class JVMCheckerTest
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private final Log log = logProvider.getLog( "test" );
+    private final InternalLog log = logProvider.getLog( "test" );
 
     @Test
     void shouldIssueWarningWhenUsingHotspotServerVmVersion12()

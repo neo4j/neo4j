@@ -22,7 +22,7 @@ package org.neo4j.server.security.auth;
 import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 public interface FileRepository
 {
@@ -35,7 +35,7 @@ public interface FileRepository
         return path.resolveSibling( path.getFileName() + ".migrated" );
     }
 
-    static void assertNotMigrated( Path path, FileSystemAbstraction fileSystem, Log log )
+    static void assertNotMigrated( Path path, FileSystemAbstraction fileSystem, InternalLog log )
     {
         Path migratedFile = getMigratedFile( path );
         if ( fileSystem.fileExists( migratedFile ) )

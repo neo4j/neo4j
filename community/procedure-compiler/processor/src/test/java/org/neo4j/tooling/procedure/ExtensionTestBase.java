@@ -28,7 +28,7 @@ import javax.tools.JavaFileObject;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.tooling.procedure.testutils.JavaFileObjectUtils;
 
@@ -105,7 +105,7 @@ public abstract class ExtensionTestBase
                         "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field " +
                                 "BadContextUnsupportedTypeError#foo, expected one of: <" +
                                 GraphDatabaseService.class.getName() + ">, <" +
-                                Log.class.getName() + ">, <" +
+                                InternalLog.class.getName() + ">, <" +
                                 TerminationGuard.class.getName() + ">, <" +
                                 SecurityContext.class.getName() + ">, <" +
                                 Transaction.class.getName() + ">" )

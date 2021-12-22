@@ -48,8 +48,8 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 import static java.lang.String.format;
@@ -62,9 +62,9 @@ public class ConstraintIndexCreator
 {
     private final IndexingService indexingService;
     private final Supplier<Kernel> kernelSupplier;
-    private final Log log;
+    private final InternalLog log;
 
-    public ConstraintIndexCreator( Supplier<Kernel> kernelSupplier, IndexingService indexingService, LogProvider logProvider )
+    public ConstraintIndexCreator( Supplier<Kernel> kernelSupplier, IndexingService indexingService, InternalLogProvider logProvider )
     {
         this.kernelSupplier = kernelSupplier;
         this.indexingService = indexingService;

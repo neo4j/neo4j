@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
@@ -91,7 +91,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         Path namesIdFile = dir.file( "label-tokens.db.names.id" );
 
         IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
-        LogProvider logProvider = NullLogProvider.getInstance();
+        InternalLogProvider logProvider = NullLogProvider.getInstance();
 
         RecordFormats formats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
@@ -111,7 +111,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     protected abstract StoreCursors createCursors( TokenStore<R> store, DynamicStringStore nameStore );
 
     protected abstract TokenStore<R> instantiateStore( Path file, Path idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
-            LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config );
+            InternalLogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config );
 
     @AfterEach
     void tearDown() throws IOException

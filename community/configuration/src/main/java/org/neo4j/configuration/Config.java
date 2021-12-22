@@ -64,7 +64,7 @@ import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.service.Services;
 import org.neo4j.util.Preconditions;
 
@@ -91,7 +91,7 @@ public class Config implements Configuration
         private final Map<String,Object> overriddenDefaults = new HashMap<>();
         private final List<Path> configFiles = new ArrayList<>();
         private Config fromConfig;
-        private final Log log = new BufferingLog();
+        private final InternalLog log = new BufferingLog();
         private boolean expandCommands;
 
         private static <T> boolean allowedToOverrideValues( String setting, T value, Map<String,T> settingValues )
@@ -520,7 +520,7 @@ public class Config implements Configuration
 
     protected final Map<String,Entry<?>> settings = new HashMap<>();
     private final Map<Class<? extends GroupSetting>, Map<String,GroupSetting>> allGroupInstances = new HashMap<>();
-    private Log log;
+    private InternalLog log;
     private final boolean expandCommands;
     private final Configuration validationConfig = new ValidationConfig();
     private Duration commandEvaluationTimeout = config_command_evaluation_timeout.defaultValue();
@@ -537,7 +537,7 @@ public class Config implements Configuration
             Map<String,Object> settingValueObjects,
             Map<String,Object> overriddenDefaultObjects,
             Config fromConfig,
-            Log log,
+            InternalLog log,
             boolean expandCommands )
     {
         this.log = log;
@@ -988,7 +988,7 @@ public class Config implements Configuration
         return sb.toString();
     }
 
-    public void setLogger( Log log )
+    public void setLogger( InternalLog log )
     {
         if ( this.log instanceof BufferingLog )
         {

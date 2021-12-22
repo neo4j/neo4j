@@ -35,8 +35,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -60,13 +60,13 @@ public class TransactionLogQueue extends LifecycleAdapter
     private final TransactionMetadataCache transactionMetadataCache;
     private final MpscUnboundedXaddArrayQueue<TxQueueElement> txAppendQueue;
     private final JobScheduler jobScheduler;
-    private final Log log;
+    private final InternalLog log;
     private TransactionWriter transactionWriter;
     private Thread logAppender;
     private volatile boolean stopped;
 
     public TransactionLogQueue( LogFiles logFiles, TransactionIdStore transactionIdStore, Health databaseHealth,
-            TransactionMetadataCache transactionMetadataCache, JobScheduler jobScheduler, LogProvider logProvider )
+            TransactionMetadataCache transactionMetadataCache, JobScheduler jobScheduler, InternalLogProvider logProvider )
     {
         this.logFiles = logFiles;
         this.logRotation = logFiles.getLogFile().getLogRotation();
@@ -186,13 +186,13 @@ public class TransactionLogQueue extends LifecycleAdapter
         private final Health databaseHealth;
         private final TransactionMetadataCache transactionMetadataCache;
         private final LogRotation logRotation;
-        private final Log log;
+        private final InternalLog log;
         private final int checksum;
         private volatile boolean stopped;
         private final MessagePassingQueue.WaitStrategy waitStrategy;
 
         TransactionWriter( MpscUnboundedXaddArrayQueue<TxQueueElement> txQueue, LogFile logFile, TransactionIdStore transactionIdStore, Health databaseHealth,
-                TransactionMetadataCache transactionMetadataCache, LogRotation logRotation, Log log )
+                TransactionMetadataCache transactionMetadataCache, LogRotation logRotation, InternalLog log )
         {
             this.txQueue = txQueue;
             this.transactionLogWriter = logFile.getTransactionLogWriter();

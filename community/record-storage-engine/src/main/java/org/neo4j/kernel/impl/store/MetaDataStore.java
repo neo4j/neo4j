@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
@@ -192,7 +192,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile boolean closed;
 
     MetaDataStore( Path file, Config conf,
-            PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
+            PageCache pageCache, InternalLogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
             String storeVersion, CursorContextFactory contextFactory,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,

@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.recovery.Recovery;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.kernel.recovery.facade.RecoveryFacadeMonitor.EMPTY_MONITOR;
@@ -40,10 +40,10 @@ public class DatabaseRecoveryFacade implements RecoveryFacade
     private final DatabaseTracers tracers;
     private final Config config;
     private final MemoryTracker memoryTracker;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
 
     public DatabaseRecoveryFacade( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, MemoryTracker memoryTracker,
-            LogProvider logProvider )
+            InternalLogProvider logProvider )
     {
         this.fs = fs;
         this.pageCache = pageCache;

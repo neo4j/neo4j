@@ -27,8 +27,8 @@ import java.util.UUID;
 
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Level;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 class DatabaseLogServiceTest
 {
-    private LogProvider logProvider;
+    private InternalLogProvider logProvider;
     private DatabaseLogService logService;
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final NamedDatabaseId namedDatabaseId = DatabaseIdFactory.from( "foo", UUID.randomUUID() );

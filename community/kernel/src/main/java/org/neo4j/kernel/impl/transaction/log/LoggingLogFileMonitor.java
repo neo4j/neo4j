@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryPredicate;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Format.date;
@@ -38,9 +38,9 @@ public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInfo
 {
     private long firstTransactionRecovered = -1;
     private long lastTransactionRecovered;
-    private final Log log;
+    private final InternalLog log;
 
-    public LoggingLogFileMonitor( Log log )
+    public LoggingLogFileMonitor( InternalLog log )
     {
         this.log = log;
     }

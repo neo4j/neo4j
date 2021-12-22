@@ -49,7 +49,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
@@ -389,7 +389,7 @@ class ParallelRecoveryVisitorTest
         }
 
         @Override
-        public void dumpDiagnostics( Log errorLog, DiagnosticsLogger diagnosticsLog )
+        public void dumpDiagnostics( InternalLog errorLog, DiagnosticsLogger diagnosticsLog )
         {
             throw new UnsupportedOperationException();
         }

@@ -20,15 +20,12 @@
 package org.neo4j.capabilities;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 class CapabilityProviderDependenciesTest
@@ -38,26 +35,26 @@ class CapabilityProviderDependenciesTest
     void shouldRegisterAndGet()
     {
         var deps = new CapabilityProviderDependencies();
-        var log = mock( Log.class );
+        var log = mock( InternalLog.class );
 
-        deps.register( Log.class, () -> log );
-        assertThat( deps.get( Log.class ) ).isSameAs( log );
+        deps.register( InternalLog.class, () -> log );
+        assertThat( deps.get( InternalLog.class ) ).isSameAs( log );
     }
 
     @Test
     void shouldNotRegisterTwice()
     {
         var deps = new CapabilityProviderDependencies();
-        var log = mock( Log.class );
+        var log = mock( InternalLog.class );
 
-        assertThatCode( () -> deps.register( Log.class, () -> log ) ).doesNotThrowAnyException();
-        assertThatCode( () -> deps.register( Log.class, () -> log ) ).isInstanceOf( UnsupportedOperationException.class );
+        assertThatCode( () -> deps.register( InternalLog.class, () -> log ) ).doesNotThrowAnyException();
+        assertThatCode( () -> deps.register( InternalLog.class, () -> log ) ).isInstanceOf( UnsupportedOperationException.class );
     }
 
     @Test
     void shouldThrowIfNotRegistered()
     {
         var deps = new CapabilityProviderDependencies();
-        assertThatCode( () -> deps.get( Log.class ) ).isInstanceOf( UnsatisfiedDependencyException.class );
+        assertThatCode( () -> deps.get( InternalLog.class ) ).isInstanceOf( UnsatisfiedDependencyException.class );
     }
 }

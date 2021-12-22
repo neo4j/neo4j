@@ -27,8 +27,8 @@ import java.util.List;
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 /**
  * Stores user auth data. In memory, but backed by persistent storage so changes to this repository will survive
@@ -41,11 +41,11 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
 
     // TODO: We could improve concurrency by using a ReadWriteLock
 
-    private final Log log;
+    private final InternalLog log;
 
     private final UserSerialization serialization = new UserSerialization();
 
-    public FileUserRepository( FileSystemAbstraction fileSystem, Path path, LogProvider logProvider )
+    public FileUserRepository( FileSystemAbstraction fileSystem, Path path, InternalLogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.authFile = path;

@@ -26,7 +26,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiLocksFactory;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.service.Services;
 import org.neo4j.time.SystemNanoClock;
@@ -46,13 +46,13 @@ public final class EditionLocksFactories
 
     public static LocksFactory createLockFactory( Config config, LogService logService )
     {
-        Log lockFactoriesLog = logService.getInternalLog( EditionLocksFactories.class );
+        InternalLog lockFactoriesLog = logService.getInternalLog( EditionLocksFactories.class );
         LocksFactory locksFactory = getLocksFactory( config.get( GraphDatabaseInternalSettings.lock_manager ), lockFactoriesLog );
         lockFactoriesLog.info( "Locking implementation '" + locksFactory.getName() + "' selected." );
         return locksFactory;
     }
 
-    private static LocksFactory getLocksFactory( String key, Log lockFactoriesLog )
+    private static LocksFactory getLocksFactory( String key, InternalLog lockFactoriesLog )
     {
         // we can have community lock manager configured in the wild. Ignore that and log warning message.
         var factoryKey = checkForOldCommunityValue( lockFactoriesLog, key );
@@ -65,7 +65,7 @@ public final class EditionLocksFactories
                 .orElseThrow(() -> new IllegalArgumentException( "No lock manager found with the name '" + key + "'." ) );
     }
 
-    private static String checkForOldCommunityValue( Log lockFactoriesLog, String factoryKey )
+    private static String checkForOldCommunityValue( InternalLog lockFactoriesLog, String factoryKey )
     {
         if ( OLD_COMMUNITY_LOCK_MANAGER_NAME.equals( factoryKey ) )
         {

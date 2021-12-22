@@ -20,14 +20,14 @@
 package org.neo4j.logging;
 
 /**
- * A {@link Log} implementation that duplicates all messages to other Log instances
+ * A {@link InternalLog} implementation that duplicates all messages to other Log instances
  */
-public class DuplicatingLog implements Log
+public class DuplicatingLog implements InternalLog
 {
-    private final Log log1;
-    private final Log log2;
+    private final InternalLog log1;
+    private final InternalLog log2;
 
-    public DuplicatingLog( Log log1, Log log2 )
+    public DuplicatingLog( InternalLog log1, InternalLog log2 )
     {
         this.log1 = log1;
         this.log2 = log2;

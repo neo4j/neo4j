@@ -32,21 +32,21 @@ import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.schema
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.logging.Log
+import org.neo4j.logging.InternalLog
 
 import java.lang.Math.min
 
 object TransactionBoundGraphStatistics {
-  def apply(transactionalContext: TransactionalContext, log: Log): MinimumGraphStatistics =
+  def apply(transactionalContext: TransactionalContext, log: InternalLog): MinimumGraphStatistics =
     apply(transactionalContext.kernelTransaction().dataRead(),
       transactionalContext.kernelTransaction().schemaRead(),
       log)
 
-  def apply(read: Read, schemaRead: SchemaRead, log: Log): MinimumGraphStatistics = {
+  def apply(read: Read, schemaRead: SchemaRead, log: InternalLog): MinimumGraphStatistics = {
     new MinimumGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead, log))
   }
 
-  private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead, log: Log) extends GraphStatistics with IndexDescriptorCompatibility {
+  private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead, log: InternalLog) extends GraphStatistics with IndexDescriptorCompatibility {
 
     override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {

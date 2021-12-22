@@ -35,7 +35,7 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -153,7 +153,7 @@ public interface StorageEngine extends Lifecycle
      * @param errorLog to which to log error messages.
      * @param diagnosticsLog to which to log diagnostics messages.
      */
-    void dumpDiagnostics( Log errorLog, DiagnosticsLogger diagnosticsLog );
+    void dumpDiagnostics( InternalLog errorLog, DiagnosticsLogger diagnosticsLog );
 
     /**
      * Force close all opened resources. This may be called during startup if there's a failure

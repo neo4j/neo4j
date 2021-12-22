@@ -28,21 +28,21 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.ConfigPatternBuilder;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 public class SimpleClientRoutingDomainChecker implements ClientRoutingDomainChecker
 {
-    protected final Log log;
+    protected final InternalLog log;
 
     private volatile Pattern[] domainPatterns;
 
-    private SimpleClientRoutingDomainChecker( LogProvider logProvider )
+    private SimpleClientRoutingDomainChecker( InternalLogProvider logProvider )
     {
         this.log = logProvider.getLog( this.getClass() );
     }
 
-    public static ClientRoutingDomainChecker fromConfig( Config config, LogProvider logProvider )
+    public static ClientRoutingDomainChecker fromConfig( Config config, InternalLogProvider logProvider )
     {
         var simpleChecker = new SimpleClientRoutingDomainChecker( logProvider );
 

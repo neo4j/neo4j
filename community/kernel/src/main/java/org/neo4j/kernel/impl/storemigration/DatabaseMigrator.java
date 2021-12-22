@@ -30,8 +30,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -91,9 +91,9 @@ public class DatabaseMigrator
         StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, contextFactory );
         var logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, databaseLayout, pageCache, config, dependencyResolver,
                                                       memoryTracker, databaseHealth, contextFactory );
-        Log userLog = logService.getUserLog( DatabaseMigrator.class );
+        InternalLog userLog = logService.getUserLog( DatabaseMigrator.class );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( userLog );
-        LogProvider logProvider = logService.getInternalLogProvider();
+        InternalLogProvider logProvider = logService.getInternalLogProvider();
         StoreUpgrader storeUpgrader = new StoreUpgrader( storageEngineFactory, versionCheck, progress, config, fs, logProvider, logsUpgrader, contextFactory );
 
         // Get all the participants from the storage engine and add them where they want to be

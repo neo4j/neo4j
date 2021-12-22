@@ -31,8 +31,8 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
@@ -46,16 +46,16 @@ public class LogPruningImpl implements LogPruning
     private final Lock pruneLock;
     private final FileSystemAbstraction fs;
     private final LogFiles logFiles;
-    private final Log log;
+    private final InternalLog log;
     private final LogPruneStrategyFactory strategyFactory;
     private final Clock clock;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final int checkpointFilesToKeep;
     private volatile LogPruneStrategy pruneStrategy;
 
     public LogPruningImpl( FileSystemAbstraction fs,
                            LogFiles logFiles,
-                           LogProvider logProvider,
+                           InternalLogProvider logProvider,
                            LogPruneStrategyFactory strategyFactory,
                            Clock clock,
                            Config config,

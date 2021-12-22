@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.util.VisibleForTesting;
@@ -49,12 +49,12 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private final Clock clock;
 
-    private final Log log;
+    private final InternalLog log;
     private final Duration transactionTimeout;
 
     private final MemoryPool memoryPool;
 
-    public TransactionHandleRegistry( Clock clock, Duration transactionTimeout, LogProvider logProvider, MemoryPool memoryPool )
+    public TransactionHandleRegistry( Clock clock, Duration transactionTimeout, InternalLogProvider logProvider, MemoryPool memoryPool )
     {
         this.clock = clock;
         this.transactionTimeout = transactionTimeout;

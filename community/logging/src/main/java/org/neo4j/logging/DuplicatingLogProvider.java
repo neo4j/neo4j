@@ -20,27 +20,27 @@
 package org.neo4j.logging;
 
 /**
- * A {@link LogProvider} implementation that duplicates all messages to other LogProvider instances
+ * A {@link InternalLogProvider} implementation that duplicates all messages to other LogProvider instances
  */
-public class DuplicatingLogProvider implements LogProvider
+public class DuplicatingLogProvider implements InternalLogProvider
 {
-    private final LogProvider logProvider1;
-    private final LogProvider logProvider2;
+    private final InternalLogProvider logProvider1;
+    private final InternalLogProvider logProvider2;
 
-    public DuplicatingLogProvider( LogProvider logProvider1, LogProvider logProvider2 )
+    public DuplicatingLogProvider( InternalLogProvider logProvider1, InternalLogProvider logProvider2 )
     {
         this.logProvider1 = logProvider1;
         this.logProvider2 = logProvider2;
     }
 
     @Override
-    public Log getLog( Class<?> loggingClass )
+    public InternalLog getLog( Class<?> loggingClass )
     {
         return new DuplicatingLog( logProvider1.getLog( loggingClass ), logProvider2.getLog( loggingClass ) );
     }
 
     @Override
-    public Log getLog( String name )
+    public InternalLog getLog( String name )
     {
         return new DuplicatingLog( logProvider1.getLog( name ), logProvider2.getLog( name ) );
     }

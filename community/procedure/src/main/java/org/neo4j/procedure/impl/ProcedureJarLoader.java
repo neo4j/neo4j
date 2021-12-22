@@ -39,7 +39,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 /**
  * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
@@ -48,9 +48,9 @@ import org.neo4j.logging.Log;
 class ProcedureJarLoader
 {
     private final ProcedureCompiler compiler;
-    private final Log log;
+    private final InternalLog log;
 
-    ProcedureJarLoader( ProcedureCompiler compiler, Log log )
+    ProcedureJarLoader( ProcedureCompiler compiler, InternalLog log )
     {
         this.compiler = compiler;
         this.log = log;

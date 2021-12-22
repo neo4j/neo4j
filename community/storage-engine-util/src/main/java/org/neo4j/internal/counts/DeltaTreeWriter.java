@@ -28,7 +28,7 @@ import java.util.function.ToLongFunction;
 
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.index.internal.gbptree.Writer;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 /**
  * Writes delta counts somewhat directly into the tree. Changes are still gathered in {@link CountsChanges}, but will be written in sorted batches
@@ -41,12 +41,12 @@ class DeltaTreeWriter implements CountUpdater.CountWriter
     private final Function<CountsKey,AtomicLong> defaultToStoredCount;
     private final Comparator<CountsKey> comparator;
     private final int maxCacheSize;
-    private final LogProvider userLogProvider;
+    private final InternalLogProvider userLogProvider;
     private CountsChanges changes = new MapCountsChanges();
     private int changeCounter;
 
     DeltaTreeWriter( ThrowingSupplier<Writer<CountsKey,CountsValue>,IOException> treeWriter, ToLongFunction<CountsKey> lookup,
-            Comparator<CountsKey> comparator, int maxCacheSize, LogProvider userLogProvider )
+            Comparator<CountsKey> comparator, int maxCacheSize, InternalLogProvider userLogProvider )
     {
         this.treeWriter = treeWriter;
         this.defaultToStoredCount = k -> new AtomicLong( lookup.applyAsLong( k ) );

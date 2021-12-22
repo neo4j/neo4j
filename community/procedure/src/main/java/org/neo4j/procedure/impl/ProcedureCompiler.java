@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.procedure.FailedLoadAggregatedFunction;
 import org.neo4j.kernel.api.procedure.FailedLoadFunction;
 import org.neo4j.kernel.api.procedure.FailedLoadProcedure;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Internal;
@@ -67,13 +67,13 @@ class ProcedureCompiler
     private final MethodSignatureCompiler inputSignatureDeterminer;
     private final FieldInjections safeFieldInjections;
     private final FieldInjections allFieldInjections;
-    private final Log log;
+    private final InternalLog log;
     private final TypeCheckers typeCheckers;
     private final ProcedureConfig config;
     private final NamingRestrictions restrictions;
 
     ProcedureCompiler( TypeCheckers typeCheckers, ComponentRegistry safeComponents,
-            ComponentRegistry allComponents, Log log, ProcedureConfig config )
+            ComponentRegistry allComponents, InternalLog log, ProcedureConfig config )
     {
         this(
                 new MethodSignatureCompiler( typeCheckers ),
@@ -91,7 +91,7 @@ class ProcedureCompiler
             ProcedureOutputSignatureCompiler outputSignatureCompiler,
             FieldInjections safeFieldInjections,
             FieldInjections allFieldInjections,
-            Log log,
+            InternalLog log,
             TypeCheckers typeCheckers,
             ProcedureConfig config,
             NamingRestrictions restrictions )

@@ -74,7 +74,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -106,7 +106,7 @@ public class BuiltInDbmsProcedures
     private static final int HARD_CHAR_LIMIT = 2048;
 
     @Context
-    public Log log;
+    public InternalLog log;
 
     @Context
     public DependencyResolver resolver;

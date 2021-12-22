@@ -35,7 +35,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.service.Services;
 
@@ -131,7 +131,7 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
     {
         var dependencies = new CapabilityProviderDependencies();
         dependencies.register( Configuration.class, () -> resolver.resolveDependency( Configuration.class ) );
-        dependencies.register( Log.class, () -> resolver.resolveDependency( LogService.class ).getUserLog( Capabilities.class ) );
+        dependencies.register( InternalLog.class, () -> resolver.resolveDependency( LogService.class ).getUserLog( Capabilities.class ) );
         dependencies.register( DatabaseManagementService.class, () -> resolver.resolveDependency( DatabaseManagementService.class ) );
 
         capabilityProviders.forEach( p -> p.register( new CapabilityProviderContext( dependencies ), new NamespaceAwareCapabilityRegistry( p.namespace() ) ) );

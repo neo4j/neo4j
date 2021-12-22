@@ -44,7 +44,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
@@ -70,7 +70,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     private final BufferingLog startupLog = new BufferingLog();
-    private volatile Log log = startupLog;
+    private volatile InternalLog log = startupLog;
     private String serverAddress = "unknown address";
     private String serverLocation = "unknown location";
     private MachineMemory machineMemory = MachineMemory.DEFAULT;
@@ -238,7 +238,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
         return databaseManagementService;
     }
 
-    public Log getLog()
+    public InternalLog getLog()
     {
         return log;
     }

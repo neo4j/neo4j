@@ -51,8 +51,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.LogAssertions;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
@@ -268,7 +268,7 @@ class CommonAbstractStoreTest
 
     private TheStore newStore()
     {
-        LogProvider log = NullLogProvider.getInstance();
+        InternalLogProvider log = NullLogProvider.getInstance();
         TheStore store = new TheStore( storeFile, idStoreFile, config, idType, idGeneratorFactory, mockedPageCache, log, recordFormat, immutable.empty() );
         store.initialise( false, CONTEXT_FACTORY );
         return store;
@@ -285,7 +285,7 @@ class CommonAbstractStoreTest
         static final String STORE_VERSION = "v1";
 
         TheStore( Path file, Path idFile, Config configuration, RecordIdType idType, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-                LogProvider logProvider, RecordFormat<TheRecord> recordFormat, ImmutableSet<OpenOption> openOptions )
+                InternalLogProvider logProvider, RecordFormat<TheRecord> recordFormat, ImmutableSet<OpenOption> openOptions )
         {
             super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat,
                     NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, STORE_VERSION, writable(), DEFAULT_DATABASE_NAME, openOptions );

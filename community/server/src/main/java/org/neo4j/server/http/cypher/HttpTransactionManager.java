@@ -30,7 +30,7 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
@@ -50,7 +50,7 @@ public class HttpTransactionManager
     private final JobScheduler jobScheduler;
     private final TransactionManager transactionManager;
     private final BoltGraphDatabaseManagementServiceSPI boltSPI;
-    private final LogProvider userLogProvider;
+    private final InternalLogProvider userLogProvider;
     private final MemoryPool memoryPool;
     private final AuthManager authManager;
     private final Clock clock;
@@ -58,7 +58,7 @@ public class HttpTransactionManager
 
     public HttpTransactionManager( DatabaseManagementService managementService, MemoryPool memoryPool,
                                    JobScheduler jobScheduler, Clock clock, Duration transactionTimeout,
-                                   LogProvider userLogProvider, TransactionManager transactionManager, BoltGraphDatabaseManagementServiceSPI boltSPI,
+                                   InternalLogProvider userLogProvider, TransactionManager transactionManager, BoltGraphDatabaseManagementServiceSPI boltSPI,
                                    AuthManager authManager, boolean readByDefault )
     {
         this.managementService = managementService;

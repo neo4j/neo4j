@@ -29,7 +29,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 
@@ -51,7 +51,7 @@ class SingleInstanceRoutingProcedureInstallerTest
         ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
         ClientRoutingDomainChecker clientRoutingDomainChecker = mock( ClientRoutingDomainChecker.class );
         Config config = Config.defaults();
-        LogProvider logProvider = NullLogProvider.getInstance();
+        InternalLogProvider logProvider = NullLogProvider.getInstance();
 
         SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker,
                                                                                                          portRegister, config, logProvider );

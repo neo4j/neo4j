@@ -36,7 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -54,7 +54,7 @@ public class DbmsDiagnosticsManager
     private static final int CONCISE_DATABASE_NAMES_PER_ROW = 5;
     private final Dependencies dependencies;
     private final boolean enabled;
-    private final Log internalLog;
+    private final InternalLog internalLog;
 
     public DbmsDiagnosticsManager( Dependencies dependencies, LogService logService )
     {
@@ -84,7 +84,7 @@ public class DbmsDiagnosticsManager
         dumpAll( internalLog );
     }
 
-    public void dumpAll( Log log )
+    public void dumpAll( InternalLog log )
     {
         if ( enabled )
         {
@@ -93,7 +93,7 @@ public class DbmsDiagnosticsManager
         }
     }
 
-    private void dumpAllDatabases( Log log )
+    private void dumpAllDatabases( InternalLog log )
     {
         Collection<? extends DatabaseContext> values = getDatabaseManager().registeredDatabases().values();
         if ( values.size() > CONCISE_DATABASE_DUMP_THRESHOLD )
@@ -106,7 +106,7 @@ public class DbmsDiagnosticsManager
         }
     }
 
-    private static void dumpConciseDiagnostics( Collection<? extends DatabaseContext> databaseContexts, Log log )
+    private static void dumpConciseDiagnostics( Collection<? extends DatabaseContext> databaseContexts, InternalLog log )
     {
         var startedDbs = databaseContexts.stream().map( DatabaseContext::database ).filter( Database::isStarted ).collect( toList() );
         var stoppedDbs = databaseContexts.stream().map( DatabaseContext::database ).filter( not( Database::isStarted ) ).collect( toList() );
@@ -145,7 +145,7 @@ public class DbmsDiagnosticsManager
                 .collect( joining( ", " ) ) );
     }
 
-    private void dumpSystemDiagnostics( Log log )
+    private void dumpSystemDiagnostics( InternalLog log )
     {
         dumpAsSingleMessage( log, stringJoiner ->
         {
@@ -158,7 +158,7 @@ public class DbmsDiagnosticsManager
         } );
     }
 
-    private static void dumpDatabaseDiagnostics( Database database, Log log, boolean checkStatus )
+    private static void dumpDatabaseDiagnostics( Database database, InternalLog log, boolean checkStatus )
     {
         dumpAsSingleMessageWithDbPrefix( log, stringJoiner ->
         {
@@ -185,12 +185,12 @@ public class DbmsDiagnosticsManager
         }, database.getNamedDatabaseId() );
     }
 
-    private static void dumpAsSingleMessageWithDbPrefix( Log log, Consumer<StringJoiner> dumpFunction, NamedDatabaseId db )
+    private static void dumpAsSingleMessageWithDbPrefix( InternalLog log, Consumer<StringJoiner> dumpFunction, NamedDatabaseId db )
     {
         dumpAsSingleMessageWithPrefix( log, dumpFunction, "[" + db.logPrefix() + "] " );
     }
 
-    private static void dumpAsSingleMessage( Log log, Consumer<StringJoiner> dumpFunction )
+    private static void dumpAsSingleMessage( InternalLog log, Consumer<StringJoiner> dumpFunction )
     {
         dumpAsSingleMessageWithPrefix( log, dumpFunction, "" );
     }
@@ -198,7 +198,7 @@ public class DbmsDiagnosticsManager
     /**
      * Messages will be buffered and logged as one single message to make sure that diagnostics are grouped together in the log.
      */
-    private static void dumpAsSingleMessageWithPrefix( Log log, Consumer<StringJoiner> dumpFunction, String prefix )
+    private static void dumpAsSingleMessageWithPrefix( InternalLog log, Consumer<StringJoiner> dumpFunction, String prefix )
     {
         // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
         // This is first and foremost useful for speeding up testing.

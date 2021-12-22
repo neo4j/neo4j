@@ -34,7 +34,7 @@ import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
@@ -47,7 +47,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   override protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
                                                   edition: Edition[CONTEXT],
                                                   workloadMode: Boolean,
-                                                  logProvider: LogProvider): RuntimeTestSupport[CONTEXT] = {
+                                                  logProvider: InternalLogProvider): RuntimeTestSupport[CONTEXT] = {
     new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions) {
       override def getTransactionType: Type = Type.IMPLICIT
     }

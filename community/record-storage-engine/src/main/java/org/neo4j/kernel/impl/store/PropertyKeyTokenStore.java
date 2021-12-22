@@ -31,7 +31,7 @@ import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
@@ -50,7 +50,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            LogProvider logProvider,
+            InternalLogProvider logProvider,
             DynamicStringStore nameStore,
             RecordFormats recordFormats,
             DatabaseReadOnlyChecker readOnlyChecker,

@@ -30,8 +30,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.FormattedLogFormat;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Level;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
@@ -42,7 +42,7 @@ import static org.apache.commons.lang3.StringUtils.defaultString;
 
 public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog, AsyncEvents.Monitor
 {
-    private final Log log;
+    private final InternalLog log;
     private final Neo4jLoggerContext loggerContext;
 
     public RotatingRequestLog( FileSystemAbstraction fs, LogTimeZone logTimeZone, String logFile, long rotationSize,

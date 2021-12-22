@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.diagnostics;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.center;
@@ -39,7 +39,7 @@ public final class DiagnosticsManager
     {
     }
 
-    public static <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider, Log errorLog, DiagnosticsLogger diagnosticsLog )
+    public static <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider, InternalLog errorLog, DiagnosticsLogger diagnosticsLog )
     {
         for ( E provider : enumProvider.getEnumConstants() )
         {
@@ -47,7 +47,7 @@ public final class DiagnosticsManager
         }
     }
 
-    public static void dump( DiagnosticsProvider provider, Log errorLog, DiagnosticsLogger diagnosticsLog )
+    public static void dump( DiagnosticsProvider provider, InternalLog errorLog, DiagnosticsLogger diagnosticsLog )
     {
         try
         {

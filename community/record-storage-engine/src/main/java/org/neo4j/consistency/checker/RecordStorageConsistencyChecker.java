@@ -70,7 +70,7 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -106,7 +106,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private final IdGeneratorFactory idGeneratorFactory;
     private final ConsistencySummaryStatistics summary;
     private final ProgressMonitorFactory progressFactory;
-    private final Log log;
+    private final InternalLog log;
     private final ConsistencyFlags consistencyFlags;
     private final CursorContextFactory contextFactory;
     private final CacheAccess cacheAccess;
@@ -120,7 +120,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
     public RecordStorageConsistencyChecker( FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout, PageCache pageCache, NeoStores neoStores,
             IndexProviderMap indexProviders, IndexAccessorLookup accessorLookup, IdGeneratorFactory idGeneratorFactory, ConsistencySummaryStatistics summary,
-            ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, Log log, boolean verbose, ConsistencyFlags consistencyFlags,
+            ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, InternalLog log, boolean verbose, ConsistencyFlags consistencyFlags,
             EntityBasedMemoryLimiter.Factory memoryLimit, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
     {
         this.fileSystem = fileSystem;

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.transaction.monitor;
 import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
@@ -33,7 +33,7 @@ import org.neo4j.time.SystemNanoClock;
 public abstract class TransactionMonitor implements Runnable
 {
     private final SystemNanoClock clock;
-    private final Log log;
+    private final InternalLog log;
 
     public TransactionMonitor( SystemNanoClock clock, LogService logService )
     {

@@ -33,7 +33,7 @@ import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.bolt.v3.messaging.response.FatalFailureMessage;
 import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -47,14 +47,14 @@ public class MessageProcessingHandler implements BoltResponseHandler
             new HashSet<>( Arrays.asList( Status.Transaction.Terminated, Status.Transaction.LockClientStopped ) );
     private final MapValueBuilder metadata = new MapValueBuilder();
 
-    protected final Log log;
+    protected final InternalLog log;
     protected final BoltConnection connection;
     protected final BoltResponseMessageWriter messageWriter;
 
     private Neo4jError error;
     private boolean ignored;
 
-    public MessageProcessingHandler( BoltResponseMessageWriter messageWriter, BoltConnection connection, Log logger )
+    public MessageProcessingHandler( BoltResponseMessageWriter messageWriter, BoltConnection connection, InternalLog logger )
     {
         this.messageWriter = messageWriter;
         this.connection = connection;

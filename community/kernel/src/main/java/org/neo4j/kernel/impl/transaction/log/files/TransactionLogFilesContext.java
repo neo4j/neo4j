@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
@@ -49,7 +49,7 @@ public class TransactionLogFilesContext
     private final Supplier<LogPosition> lastClosedPositionSupplier;
     private final Supplier<LogVersionRepository> logVersionRepositorySupplier;
     private final FileSystemAbstraction fileSystem;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final DatabaseTracers databaseTracers;
     private final NativeAccess nativeAccess;
     private final MemoryTracker memoryTracker;
@@ -65,7 +65,7 @@ public class TransactionLogFilesContext
 
     public TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
-            Supplier<LogVersionRepository> logVersionRepositorySupplier,FileSystemAbstraction fileSystem, LogProvider logProvider,
+            Supplier<LogVersionRepository> logVersionRepositorySupplier,FileSystemAbstraction fileSystem, InternalLogProvider logProvider,
             DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
             MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
             KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config, LogTailInformation externalTailInfo )
@@ -128,7 +128,7 @@ public class TransactionLogFilesContext
         return fileSystem;
     }
 
-    public LogProvider getLogProvider()
+    public InternalLogProvider getLogProvider()
     {
         return logProvider;
     }

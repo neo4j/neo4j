@@ -55,8 +55,8 @@ import org.neo4j.configuration.SslSystemSettings;
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.ssl.PkiUtils;
 import org.neo4j.ssl.SslPolicy;
 import org.neo4j.string.SecureString;
@@ -81,11 +81,11 @@ public class SslPolicyLoader
     private final Map<SslPolicyScope,SslPolicy> policies = new ConcurrentHashMap<>();
     private final Config config;
     private final SslProvider sslProvider;
-    private final LogProvider logProvider;
-    private final Log log;
+    private final InternalLogProvider logProvider;
+    private final InternalLog log;
     private final boolean skipDotFiles;
 
-    private SslPolicyLoader( Config config, LogProvider logProvider )
+    private SslPolicyLoader( Config config, InternalLogProvider logProvider )
     {
         this.config = config;
         this.skipDotFiles = config.get( SslSystemInternalSettings.ignore_dotfiles );
@@ -100,7 +100,7 @@ public class SslPolicyLoader
      * @param config The configuration for the SSL policies.
      * @return A factory populated with SSL policies.
      */
-    public static SslPolicyLoader create( Config config, LogProvider logProvider )
+    public static SslPolicyLoader create( Config config, InternalLogProvider logProvider )
     {
         SslPolicyLoader policyFactory = new SslPolicyLoader( config, logProvider );
         policyFactory.load();

@@ -23,7 +23,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.LoggingVmPauseMonitor;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.VmPauseMonitor;
 import org.neo4j.scheduler.JobScheduler;
@@ -31,14 +31,14 @@ import org.neo4j.scheduler.JobScheduler;
 public class VmPauseMonitorComponent extends LifecycleAdapter
 {
     private final Config config;
-    private final Log log;
+    private final InternalLog log;
     private final JobScheduler jobScheduler;
     private final VmPauseMonitor.Monitor monitor;
     private final LoggingVmPauseMonitor loggingVmPauseMonitor;
     private final Monitors globalMonitors;
     private volatile VmPauseMonitor vmPauseMonitor;
 
-    public VmPauseMonitorComponent( Config config, Log log, JobScheduler jobScheduler, Monitors globalMonitors )
+    public VmPauseMonitorComponent( Config config, InternalLog log, JobScheduler jobScheduler, Monitors globalMonitors )
     {
         this.config = config;
         this.log = log;

@@ -23,8 +23,8 @@ import io.netty.util.internal.logging.AbstractInternalLogger;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlaceholders;
 
@@ -33,9 +33,9 @@ import static org.neo4j.logging.internal.LogMessageUtil.slf4jToStringFormatPlace
  */
 public class Netty4LoggerFactory extends InternalLoggerFactory
 {
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
 
-    public Netty4LoggerFactory( LogProvider logProvider )
+    public Netty4LoggerFactory( InternalLogProvider logProvider )
     {
         this.logProvider = logProvider;
     }
@@ -43,7 +43,7 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
     @Override
     public InternalLogger newInstance( String name )
     {
-        final Log log = logProvider.getLog( name );
+        final InternalLog log = logProvider.getLog( name );
         return new AbstractInternalLogger( name )
         {
             @Override

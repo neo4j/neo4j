@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
@@ -32,7 +32,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 class ConfigDiagnosticsTest
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private final Log log = logProvider.getLog( ConfigDiagnostics.class );
+    private final InternalLog log = logProvider.getLog( ConfigDiagnostics.class );
 
     @Test
     void dumpConfigValues()

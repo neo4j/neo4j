@@ -25,7 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockService;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,7 +35,7 @@ class IndexStoreViewFactoryTest
 {
     FullScanStoreView fullScanStoreView = mock( FullScanStoreView.class );
     LockService lockService = mock( LockService.class );
-    LogProvider logProvider = mock( LogProvider.class );
+    InternalLogProvider logProvider = mock( InternalLogProvider.class );
     IndexProxyProvider indexProxies = mock( IndexProxyProvider.class );
     Locks locks = mock( Locks.class);
 

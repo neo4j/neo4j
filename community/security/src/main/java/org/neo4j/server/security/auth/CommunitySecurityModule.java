@@ -33,7 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.SecurityModule;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
@@ -45,7 +45,7 @@ import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID
 
 public class CommunitySecurityModule extends SecurityModule
 {
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final Config config;
     private final Dependencies globalDependencies;
     private BasicSystemGraphRealm authManager;
@@ -98,7 +98,7 @@ public class CommunitySecurityModule extends SecurityModule
 
     private static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
 
-    private static FileUserRepository getInitialUserRepository( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
+    private static FileUserRepository getInitialUserRepository( Config config, InternalLogProvider logProvider, FileSystemAbstraction fileSystem )
     {
         return new FileUserRepository( fileSystem, getInitialUserRepositoryFile( config ), logProvider );
     }
@@ -110,7 +110,7 @@ public class CommunitySecurityModule extends SecurityModule
     }
 
     public static UserSecurityGraphComponent createSecurityComponent( AbstractSecurityLog securityLog, Config config, FileSystemAbstraction fileSystem,
-                                                                      LogProvider logProvider )
+                                                                      InternalLogProvider logProvider )
     {
         UserRepository initialUserRepository = CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
 

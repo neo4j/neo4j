@@ -25,7 +25,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.helpers.TimeUtil;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
@@ -36,7 +36,7 @@ public class LoggingPhaseTracker implements PhaseTracker
     static final int PERIOD_INTERVAL = FeatureToggles.getInteger( LoggingPhaseTracker.class, "period_interval", 600 );
 
     private final long periodInterval;
-    private final Log log;
+    private final InternalLog log;
     private final Clock clock;
 
     private final EnumMap<Phase,Logger> times = new EnumMap<>( Phase.class );
@@ -45,13 +45,13 @@ public class LoggingPhaseTracker implements PhaseTracker
     private boolean stopped;
     private long lastPeriodReport = -1;
 
-    LoggingPhaseTracker( Log log )
+    LoggingPhaseTracker( InternalLog log )
     {
         this( PERIOD_INTERVAL, log, Clock.systemUTC() );
     }
 
     @VisibleForTesting
-    LoggingPhaseTracker( long periodIntervalInSeconds, Log log, Clock clock )
+    LoggingPhaseTracker( long periodIntervalInSeconds, InternalLog log, Clock clock )
     {
         this.periodInterval = TimeUnit.SECONDS.toMillis( periodIntervalInSeconds );
         this.log = log;

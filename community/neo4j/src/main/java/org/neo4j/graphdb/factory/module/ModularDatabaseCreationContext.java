@@ -64,7 +64,7 @@ import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
@@ -480,7 +480,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, long databaseTimeoutMillis )
     {
-        Log guardLog = databaseLogService.getInternalLog( DatabaseAvailabilityGuard.class );
+        InternalLog guardLog = databaseLogService.getInternalLog( DatabaseAvailabilityGuard.class );
         return new DatabaseAvailabilityGuard( namedDatabaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard() );
     }
 

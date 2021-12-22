@@ -52,7 +52,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributesCacheKey
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.kernel.impl.query.QueryCacheStatistics
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
@@ -275,7 +275,7 @@ class CypherQueryCaches(
   cacheFactory: CaffeineCacheFactory,
   clock: Clock,
   kernelMonitors: Monitors,
-  logProvider: LogProvider,
+  logProvider: InternalLogProvider,
 ) {
 
   private val log = logProvider.getLog(getClass)

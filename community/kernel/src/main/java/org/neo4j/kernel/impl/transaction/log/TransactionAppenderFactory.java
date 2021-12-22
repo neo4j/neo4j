@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -32,7 +32,7 @@ public class TransactionAppenderFactory
 {
     public static TransactionAppender createTransactionAppender( LogFiles logFiles, TransactionIdStore transactionIdStore,
             TransactionMetadataCache transactionMetadataCache, Config config, Health databaseHealth, JobScheduler scheduler,
-            LogProvider logProvider )
+            InternalLogProvider logProvider )
     {
         if ( config.get( dedicated_transaction_appender ) )
         {

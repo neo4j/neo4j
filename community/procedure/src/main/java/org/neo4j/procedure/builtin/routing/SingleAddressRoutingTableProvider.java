@@ -29,8 +29,8 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.procedure.builtin.routing.RoutingTableProcedureHelpers.findClientProvidedAddress;
@@ -47,9 +47,9 @@ public class SingleAddressRoutingTableProvider implements ClientSideRoutingTable
     private final RoutingOption routingOption;
     private final RoutingTableTTLProvider routingTableTTLProvider;
     private final Config config;
-    private final Log log;
+    private final InternalLog log;
 
-    public SingleAddressRoutingTableProvider( ConnectorPortRegister portRegister, RoutingOption routingOption, Config config, LogProvider logProvider,
+    public SingleAddressRoutingTableProvider( ConnectorPortRegister portRegister, RoutingOption routingOption, Config config, InternalLogProvider logProvider,
             RoutingTableTTLProvider ttlProvider )
     {
         this.portRegister = portRegister;

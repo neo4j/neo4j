@@ -58,8 +58,8 @@ import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 import org.neo4j.ssl.SslPolicy;
@@ -96,9 +96,9 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
     private final boolean ocspStaplingEnabled;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
-    private final Log log;
+    private final InternalLog log;
 
-    public Jetty9WebServer( LogProvider logProvider, Config config, NetworkConnectionTracker connectionTracker, ByteBufferPool byteBufferPool )
+    public Jetty9WebServer( InternalLogProvider logProvider, Config config, NetworkConnectionTracker connectionTracker, ByteBufferPool byteBufferPool )
     {
         this.log = logProvider.getLog( getClass() );
         this.ocspStaplingEnabled = config.get( CommonConnectorConfig.ocsp_stapling_enabled );

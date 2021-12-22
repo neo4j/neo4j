@@ -26,18 +26,18 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 public final class EntryTimespanThreshold implements Threshold
 {
     private final long timeToKeepInMillis;
     private final Clock clock;
     private final TimeUnit timeUnit;
-    private final Log log;
+    private final InternalLog log;
     private long lowerLimit;
 
-    EntryTimespanThreshold( LogProvider logProvider, Clock clock, TimeUnit timeUnit, long timeToKeep )
+    EntryTimespanThreshold( InternalLogProvider logProvider, Clock clock, TimeUnit timeUnit, long timeToKeep )
     {
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;

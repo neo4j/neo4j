@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.lifecycle.LifeSupport
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import java.lang.Boolean.TRUE
@@ -40,7 +40,7 @@ trait RuntimeContextManagerFactory[CONTEXT <: RuntimeContext] {
   def newRuntimeContextManager(cypherRuntimeConfiguration: CypherRuntimeConfiguration,
                                dependencyResolver: DependencyResolver,
                                lifeSupport: LifeSupport,
-                               logProvider: LogProvider): RuntimeContextManager[CONTEXT]
+                               logProvider: InternalLogProvider): RuntimeContextManager[CONTEXT]
 }
 
 class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
@@ -72,7 +72,7 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
     configs.collectFirst { case (key, value) if key == setting => value.asInstanceOf[T] }
   }
 
-  def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport, logProvider: LogProvider): RuntimeContextManager[CONTEXT] =
+  def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport, logProvider: InternalLogProvider): RuntimeContextManager[CONTEXT] =
     runtimeContextManagerFactory.newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport, logProvider)
 
   def runtimeConfig(): CypherRuntimeConfiguration = {

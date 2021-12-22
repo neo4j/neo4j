@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StoreVersion;
 
@@ -143,7 +143,7 @@ public class RecordFormatSelector
      * @return selected record format
      * @throws IllegalArgumentException if requested format not found
      */
-    public static RecordFormats selectForConfig( Config config, LogProvider logProvider )
+    public static RecordFormats selectForConfig( Config config, InternalLogProvider logProvider )
     {
         String recordFormat = configuredRecordFormat( config );
         if ( StringUtils.isEmpty( recordFormat ) )
@@ -168,8 +168,8 @@ public class RecordFormatSelector
      * @return record format of the given store or <code>null</code> if {@link RecordDatabaseLayout#metadataStore()} file not
      * found or can't be read
      */
-    public static RecordFormats selectForStore( RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider,
-            CursorContextFactory contextFactory )
+    public static RecordFormats selectForStore( RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+            InternalLogProvider logProvider, CursorContextFactory contextFactory )
     {
         Path neoStoreFile = databaseLayout.metadataStore();
         if ( fs.fileExists( neoStoreFile ) )
@@ -211,7 +211,7 @@ public class RecordFormatSelector
      * @return record format from the store (if it can be read) or configured record format or default format
      */
     public static RecordFormats selectForStoreOrConfigForNewDbs( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs,
-            PageCache pageCache, LogProvider logProvider, CursorContextFactory contextFactory )
+            PageCache pageCache, InternalLogProvider logProvider, CursorContextFactory contextFactory )
     {
         RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider, contextFactory );
         if ( currentFormat != null )
@@ -284,7 +284,7 @@ public class RecordFormatSelector
      * @return newest record format compatible with the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
      */
     public static RecordFormats selectNewestFormat( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider, CursorContextFactory contextFactory )
+            InternalLogProvider logProvider, CursorContextFactory contextFactory )
     {
         String specificFormat = config.get( GraphDatabaseInternalSettings.select_specific_record_format );
         if ( StringUtils.isNotEmpty( specificFormat ) )
@@ -408,7 +408,7 @@ public class RecordFormatSelector
                 .orElse( null );
     }
 
-    private static void info( LogProvider logProvider, String message )
+    private static void info( InternalLogProvider logProvider, String message )
     {
         logProvider.getLog( RecordFormatSelector.class ).info( message );
     }

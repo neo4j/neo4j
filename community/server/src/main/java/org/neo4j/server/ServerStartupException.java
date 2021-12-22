@@ -19,7 +19,7 @@
  */
 package org.neo4j.server;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.lang.String.format;
 
@@ -35,7 +35,7 @@ public class ServerStartupException extends RuntimeException
         super( message );
     }
 
-    public void describeTo( Log log )
+    public void describeTo( InternalLog log )
     {
         // By default, log the full error. The intention is that sub classes can override this and
         // specify less extreme logging options.

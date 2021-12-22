@@ -21,22 +21,22 @@ package org.neo4j.logging.internal;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.DuplicatingLogProvider;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
 
 public class SimpleLogService extends AbstractLogService implements Lifecycle
 {
-    private final LogProvider userLogProvider;
-    private final LogProvider internalLogProvider;
+    private final InternalLogProvider userLogProvider;
+    private final InternalLogProvider internalLogProvider;
 
     /**
-     * Create log service where both: user and internal log provider use the same {@link LogProvider} as a provider. Should be used when user and internal are
-     * backed by same log provider.
+     * Create log service where both: user and internal log provider use the same {@link InternalLogProvider} as a provider.
+     * Should be used when user and internal are backed by same log provider.
      *
      * @param commonLogProvider log provider
      */
-    public SimpleLogService( LogProvider commonLogProvider )
+    public SimpleLogService( InternalLogProvider commonLogProvider )
     {
         this.userLogProvider = commonLogProvider;
         this.internalLogProvider = commonLogProvider;
@@ -49,7 +49,7 @@ public class SimpleLogService extends AbstractLogService implements Lifecycle
      * @param userLogProvider     user log provider
      * @param internalLogProvider internal log provider
      */
-    public SimpleLogService( LogProvider userLogProvider, LogProvider internalLogProvider )
+    public SimpleLogService( InternalLogProvider userLogProvider, InternalLogProvider internalLogProvider )
     {
         this.userLogProvider = new DuplicatingLogProvider( userLogProvider, internalLogProvider );
         this.internalLogProvider = internalLogProvider;
@@ -61,13 +61,13 @@ public class SimpleLogService extends AbstractLogService implements Lifecycle
     }
 
     @Override
-    public LogProvider getUserLogProvider()
+    public InternalLogProvider getUserLogProvider()
     {
         return this.userLogProvider;
     }
 
     @Override
-    public LogProvider getInternalLogProvider()
+    public InternalLogProvider getInternalLogProvider()
     {
         return this.internalLogProvider;
     }

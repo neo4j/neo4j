@@ -21,7 +21,7 @@ package org.neo4j.bolt.runtime.statemachine.impl;
 
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.logging.DuplicatingLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 
 import static java.lang.String.format;
@@ -32,8 +32,8 @@ import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseErro
  */
 class ErrorReporter
 {
-    private final Log userLog;
-    private final Log debugLog;
+    private final InternalLog userLog;
+    private final InternalLog debugLog;
 
     ErrorReporter( LogService logging )
     {
@@ -41,7 +41,7 @@ class ErrorReporter
         this.debugLog = logging.getInternalLog( ErrorReporter.class );
     }
 
-    ErrorReporter( Log userLog, Log debugLog )
+    ErrorReporter( InternalLog userLog, InternalLog debugLog )
     {
         this.userLog = userLog;
         this.debugLog = debugLog;

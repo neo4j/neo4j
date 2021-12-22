@@ -39,7 +39,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
@@ -85,7 +85,7 @@ public class LogFilesBuilder
     private Config config;
     private Long rotationThreshold;
     private LogEntryReader logEntryReader;
-    private LogProvider logProvider = NullLogProvider.getInstance();
+    private InternalLogProvider logProvider = NullLogProvider.getInstance();
     private DependencyResolver dependencies;
     private FileSystemAbstraction fileSystem;
     private LogVersionRepository logVersionRepository;
@@ -186,7 +186,7 @@ public class LogFilesBuilder
         return this;
     }
 
-    public LogFilesBuilder withLogProvider( LogProvider logProvider )
+    public LogFilesBuilder withLogProvider( InternalLogProvider logProvider )
     {
         this.logProvider = logProvider;
         return this;

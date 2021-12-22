@@ -33,7 +33,7 @@ import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyListener;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
@@ -49,7 +49,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     }
 
     protected static ReadOnlyDatabases createGlobalReadOnlyChecker( DatabaseManager<?> databaseManager, Config globalConfig,
-            GlobalTransactionEventListeners txListeners, LifeSupport globalLife, LogProvider logProvider )
+            GlobalTransactionEventListeners txListeners, LifeSupport globalLife, InternalLogProvider logProvider )
     {
         var systemGraphReadOnlyLookup = new SystemGraphReadOnlyDatabaseLookupFactory( databaseManager, logProvider );
         var configReadOnlyLookup = new ConfigBasedLookupFactory( globalConfig, databaseManager.databaseIdRepository() );

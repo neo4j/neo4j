@@ -86,8 +86,8 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -130,7 +130,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final NeoStores neoStores;
     private final RecordDatabaseLayout databaseLayout;
     private final Config config;
-    private final LogProvider internalLogProvider;
+    private final InternalLogProvider internalLogProvider;
     private final TokenHolders tokenHolders;
     private final Health databaseHealth;
     private final SchemaCache schemaCache;
@@ -162,8 +162,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             Config config,
             PageCache pageCache,
             FileSystemAbstraction fs,
-            LogProvider internalLogProvider,
-            LogProvider userLogProvider,
+            InternalLogProvider internalLogProvider,
+            InternalLogProvider userLogProvider,
             TokenHolders tokenHolders,
             SchemaState schemaState,
             ConstraintRuleAccessor constraintSemantics,
@@ -267,15 +267,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         return new TransactionApplierFactoryChain( idUpdateListenerFunction, appliers.toArray( new TransactionApplierFactory[0] ) );
     }
 
-    private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout, LogProvider internalLogProvider,
-            LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            CursorContextFactory contextFactory )
+    private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout,
+            InternalLogProvider internalLogProvider, InternalLogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory )
     {
         try
         {
             return new GBPTreeCountsStore( pageCache, layout.countStore(), fs, recoveryCleanupWorkCollector, new CountsBuilder()
             {
-                private final Log log = internalLogProvider.getLog( MetaDataStore.class );
+                private final InternalLog log = internalLogProvider.getLog( MetaDataStore.class );
 
                 @Override
                 public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
@@ -300,8 +300,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout,
-            LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            CursorContextFactory contextFactory )
+            InternalLogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker,
+            Config config, CursorContextFactory contextFactory )
     {
         try
         {
@@ -591,7 +591,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void dumpDiagnostics( Log errorLog, DiagnosticsLogger diagnosticsLog )
+    public void dumpDiagnostics( InternalLog errorLog, DiagnosticsLogger diagnosticsLog )
     {
         DiagnosticsManager.dump( new NeoStoreIdUsage( neoStores ), errorLog, diagnosticsLog );
         DiagnosticsManager.dump( new NeoStoreRecords( neoStores ), errorLog, diagnosticsLog );

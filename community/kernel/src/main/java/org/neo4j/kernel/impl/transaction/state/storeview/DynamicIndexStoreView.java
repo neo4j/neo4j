@@ -42,8 +42,8 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockService;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -61,7 +61,7 @@ public class DynamicIndexStoreView implements IndexStoreView
     private final IndexProxyProvider indexProxies;
     protected final Supplier<StorageReader> storageReader;
     private final Function<CursorContext,StoreCursors> cursorFactory;
-    private final Log log;
+    private final InternalLog log;
 
     public DynamicIndexStoreView( FullScanStoreView fullScanStoreView,
                                   Locks locks,
@@ -70,7 +70,7 @@ public class DynamicIndexStoreView implements IndexStoreView
                                   IndexProxyProvider indexProxies,
                                   Supplier<StorageReader> storageReader,
                                   Function<CursorContext,StoreCursors> cursorFactory,
-                                  LogProvider logProvider )
+                                  InternalLogProvider logProvider )
     {
         this.fullScanStoreView = fullScanStoreView;
         this.locks = locks;

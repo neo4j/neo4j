@@ -42,7 +42,7 @@ import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.SystemGraphDatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableNavigableMap;
@@ -51,7 +51,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 {
     protected final Map<NamedDatabaseId,DB> databaseMap;
     protected final DependencyResolver externalDependencyResolver;
-    protected final Log log;
+    protected final InternalLog log;
     protected final boolean manageDatabasesOnStartAndStop;
     protected final Config config;
     protected final DatabaseContextFactory<DB> databaseContextFactory;

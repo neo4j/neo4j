@@ -29,7 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreResource;
 import org.neo4j.storageengine.api.StoreSnapshot;
@@ -38,7 +38,7 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
 {
     private final Database database;
     private final FileSystemAbstraction fs;
-    private final Log log;
+    private final InternalLog log;
 
     public DefaultStoreSnapshotFactory( Database database, FileSystemAbstraction fs )
     {

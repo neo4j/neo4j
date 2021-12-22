@@ -83,7 +83,7 @@ import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.FunctionInformation
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
@@ -441,7 +441,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def systemGraph: GraphDatabaseService = inner.systemGraph
 
-  override def logProvider: LogProvider = inner.logProvider
+  override def logProvider: InternalLogProvider = inner.logProvider
 
   override def providedLanguageFunctions: Seq[FunctionInformation] = inner.providedLanguageFunctions
 

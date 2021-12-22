@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static java.lang.String.format;
 import static org.mockito.Mockito.mock;
@@ -35,7 +35,7 @@ class InconsistencyMessageLoggerTest
     void shouldUseRecordToStringFunctionForRecords()
     {
         // given
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         InconsistencyMessageLogger logger = new InconsistencyMessageLogger( log, record -> record.hashCode() + " abc" );
 
         // when
@@ -53,7 +53,7 @@ class InconsistencyMessageLoggerTest
     void shouldUseRecordToStringFunctionForArgs()
     {
         // given
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         InconsistencyMessageLogger logger = new InconsistencyMessageLogger( log, record -> record.hashCode() + " abc" );
 
         // when

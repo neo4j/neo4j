@@ -23,7 +23,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
@@ -116,11 +116,11 @@ public class Tracers
      * Otherwise the default implementation is used, and a warning is logged to the given StringLogger.
      * @param desiredImplementationName The name of the desired {@link org.neo4j.kernel.monitoring.tracing
      * .TracerFactory} implementation, as given by its {@link TracerFactory#getName()} method.
-     * @param msgLog A {@link Log} for logging when the desired implementation cannot be created.
+     * @param msgLog A {@link InternalLog} for logging when the desired implementation cannot be created.
      * @param monitors the monitoring manager
      * @param jobScheduler a scheduler for async jobs
      */
-    public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler,
+    public Tracers( String desiredImplementationName, InternalLog msgLog, Monitors monitors, JobScheduler jobScheduler,
             SystemNanoClock clock, Config config )
     {
         this.clock = clock;
@@ -143,7 +143,7 @@ public class Tracers
         return tracersFactory.createDatabaseTracer( clock );
     }
 
-    private static TracerFactory createTracersFactory( String desiredImplementationName, Log msgLog )
+    private static TracerFactory createTracersFactory( String desiredImplementationName, InternalLog msgLog )
     {
         if ( NULL_TRACERS_NAME.equalsIgnoreCase( desiredImplementationName ) )
         {
@@ -155,7 +155,7 @@ public class Tracers
         }
     }
 
-    private static TracerFactory selectTracerFactory( String desiredImplementationName, Log msgLog )
+    private static TracerFactory selectTracerFactory( String desiredImplementationName, InternalLog msgLog )
     {
         if ( isBlank( desiredImplementationName ) )
         {

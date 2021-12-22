@@ -25,7 +25,7 @@ import java.util.Collection;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Job;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 
 /**
@@ -35,7 +35,7 @@ import org.neo4j.logging.internal.LogService;
  */
 public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
 {
-    private final Log log;
+    private final InternalLog log;
     private final int lowWatermark;
     private final int highWatermark;
 

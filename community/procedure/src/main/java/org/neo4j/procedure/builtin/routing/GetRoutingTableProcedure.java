@@ -37,8 +37,8 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -63,7 +63,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     private final ProcedureSignature signature;
     private final DatabaseManager<?> databaseManager;
 
-    protected final Log log;
+    protected final InternalLog log;
     private final RoutingTableProcedureValidator validator;
     private final ClientSideRoutingTableProvider clientSideRoutingTableProvider;
     private final ServerSideRoutingTableProvider serverSideRoutingTableProvider;
@@ -74,7 +74,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
 
     public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseManager<?> databaseManager,
                                      RoutingTableProcedureValidator validator, SingleAddressRoutingTableProvider routingTableProvider,
-                                     ClientRoutingDomainChecker clientRoutingDomainChecker, Config config, LogProvider logProvider )
+                                     ClientRoutingDomainChecker clientRoutingDomainChecker, Config config, InternalLogProvider logProvider )
     {
         this( namespace, description, databaseManager, validator, routingTableProvider, routingTableProvider, clientRoutingDomainChecker, config, logProvider );
     }
@@ -82,7 +82,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseManager<?> databaseManager,
                                      RoutingTableProcedureValidator validator, ClientSideRoutingTableProvider clientSideRoutingTableProvider,
                                      ServerSideRoutingTableProvider serverSideRoutingTableProvider, ClientRoutingDomainChecker clientRoutingDomainChecker,
-                                     Config config, LogProvider logProvider )
+                                     Config config, InternalLogProvider logProvider )
     {
         this.signature = buildSignature( namespace, description );
         this.databaseManager = databaseManager;

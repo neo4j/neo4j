@@ -50,7 +50,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.internal.locker.FileLockException;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -380,9 +380,9 @@ class CheckConsistencyCommandIT
         }
 
         @Override
-        public ConsistencyCheckService with( LogProvider logProvider )
+        public ConsistencyCheckService with( InternalLogProvider logProvider )
         {
-            arguments.put( LogProvider.class, logProvider );
+            arguments.put( InternalLogProvider.class, logProvider );
             super.with( logProvider );
             return new TrackingConsistencyCheckService( this );
         }

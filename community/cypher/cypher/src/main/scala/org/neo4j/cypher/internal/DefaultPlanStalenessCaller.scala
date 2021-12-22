@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.spi.TransactionBoundGraphStatistics
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.logging.Log
+import org.neo4j.logging.InternalLog
 
 import java.time.Clock
 
@@ -39,7 +39,7 @@ class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
                                                    divergenceCalculator: StatsDivergenceCalculator,
                                                    lastCommittedTxIdProvider: () => Long,
                                                    reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityState,
-                                                   log: Log) extends PlanStalenessCaller[EXECUTABLE_QUERY] {
+                                                   log: InternalLog) extends PlanStalenessCaller[EXECUTABLE_QUERY] {
 
   override def staleness(transactionalContext: TransactionalContext,
                          cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {

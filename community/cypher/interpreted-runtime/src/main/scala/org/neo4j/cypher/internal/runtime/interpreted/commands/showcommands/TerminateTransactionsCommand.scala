@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.security.UserSegment
 import org.neo4j.kernel.api.KernelTransactionHandle
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.database.NamedDatabaseId
-import org.neo4j.logging.Log
+import org.neo4j.logging.InternalLog
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -44,7 +44,7 @@ case class TerminateTransactionsCommand(givenIds: Either[List[String], Expressio
     val executingUser = securityContext.subject.executingUser()
     val authenticatedUser = securityContext.subject.authenticatedUser()
     val loggingUser = if (securityContext.impersonating()) s"$authenticatedUser:$executingUser" else executingUser
-    val log: Log = state.query.logProvider.getLog(getClass)
+    val log: InternalLog = state.query.logProvider.getLog(getClass)
 
     log.info("User %s trying to terminate transactions: %s.", loggingUser, ids.mkString("[", ", ", "]"))
 

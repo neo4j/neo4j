@@ -27,7 +27,7 @@ import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.packstream.ByteBufInput;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.UnpackerProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 
@@ -40,7 +40,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
     private final ByteBufInput input;
     private final Neo4jPack.Unpacker unpacker;
     private final BoltRequestMessageReader reader;
-    private final Log log;
+    private final InternalLog log;
 
     public MessageDecoder( UnpackerProvider unpackProvider, BoltRequestMessageReader reader, LogService logService )
     {

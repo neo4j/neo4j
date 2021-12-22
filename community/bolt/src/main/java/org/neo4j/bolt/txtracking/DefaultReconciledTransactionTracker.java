@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
@@ -48,7 +48,7 @@ public class DefaultReconciledTransactionTracker implements ReconciledTransactio
      * Re-initialization can happen after a store copy of the system database.
      */
     private final ReadWriteLock initializationLock;
-    private final Log log;
+    private final InternalLog log;
 
     private long startingNumber;
     private OutOfOrderSequence sequence;

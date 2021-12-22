@@ -30,8 +30,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.server.web.HttpMethod;
 
 import static org.neo4j.server.web.HttpHeaderUtils.isValidHttpHeaderName;
@@ -50,11 +50,11 @@ public class CorsFilter implements Filter
     public static final String ACCESS_CONTROL_REQUEST_HEADERS = "Access-Control-Request-Headers";
     public static final String VARY = "Vary";
 
-    private final Log log;
+    private final InternalLog log;
     private final String accessControlAllowOrigin;
     private final String vary;
 
-    public CorsFilter( LogProvider logProvider, String accessControlAllowOrigin )
+    public CorsFilter( InternalLogProvider logProvider, String accessControlAllowOrigin )
     {
         this.log = logProvider.getLog( getClass() );
         this.accessControlAllowOrigin = accessControlAllowOrigin;

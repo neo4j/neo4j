@@ -91,8 +91,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.facade.DatabaseRecoveryFacade;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -160,7 +160,7 @@ public final class Recovery
      * @return helper recovery checker
      */
     public static DatabaseRecoveryFacade recoveryFacade( FileSystemAbstraction fs, PageCache pageCache, Tracers tracers, Config config,
-            MemoryTracker memoryTracker, LogProvider logProvider )
+            MemoryTracker memoryTracker, InternalLogProvider logProvider )
     {
         return new DatabaseRecoveryFacade( fs, pageCache, new DatabaseTracers( tracers ), config, memoryTracker, logProvider );
     }
@@ -221,7 +221,7 @@ public final class Recovery
 
         private StorageEngineFactory storageEngineFactory;
         private boolean forceRunRecovery;
-        private LogProvider logProvider = NullLogProvider.getInstance();
+        private InternalLogProvider logProvider = NullLogProvider.getInstance();
         private Monitors globalMonitors = new Monitors();
         private Iterable<ExtensionFactory<?>> extensionFactories;
         private Optional<LogFiles> providedLogFiles = Optional.empty();
@@ -296,7 +296,7 @@ public final class Recovery
         /**
          * @param logProvider log provider
          */
-        public Context log( LogProvider logProvider )
+        public Context log( InternalLogProvider logProvider )
         {
             this.logProvider = logProvider;
             return this;
@@ -352,12 +352,12 @@ public final class Recovery
 
     private static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
             Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery,
-            LogProvider logProvider, Monitors globalMonitors,
+            InternalLogProvider logProvider, Monitors globalMonitors,
             Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogFiles> providedLogFiles,
             RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock, IOController ioController, RecoveryPredicate recoveryPredicate )
             throws IOException
     {
-        Log recoveryLog = logProvider.getLog( Recovery.class );
+        InternalLog recoveryLog = logProvider.getLog( Recovery.class );
         if ( !forceRunRecovery && !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogFiles, memoryTracker, tracers ) )
         {
             return;
@@ -508,7 +508,7 @@ public final class Recovery
     private static TransactionLogsRecovery transactionLogRecovery( FileSystemAbstraction fileSystemAbstraction, TransactionIdStore transactionIdStore,
             RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
-            Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log, RecoveryStartupChecker startupChecker,
+            Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, InternalLog log, RecoveryStartupChecker startupChecker,
             PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, boolean doParallelRecovery, RecoveryPredicate recoveryPredicate )
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, transactionIdStore, logicalTransactionStore,
@@ -565,7 +565,7 @@ public final class Recovery
 
     private static class RecoveryAvailabilityGuard extends DatabaseAvailabilityGuard
     {
-        RecoveryAvailabilityGuard( NamedDatabaseId namedDatabaseId, Clock clock, Log log )
+        RecoveryAvailabilityGuard( NamedDatabaseId namedDatabaseId, Clock clock, InternalLog log )
         {
             // we do not want ot pass real config to guard for recovery
             super( namedDatabaseId, clock, log, 0, new CompositeDatabaseAvailabilityGuard( clock, Config.defaults() ) );
@@ -586,7 +586,7 @@ public final class Recovery
     // for example duplicated logging records in user facing logs
     private static class NonListenableMonitors extends Monitors
     {
-        NonListenableMonitors( Monitors monitors, LogProvider logProvider )
+        NonListenableMonitors( Monitors monitors, InternalLogProvider logProvider )
         {
             super( monitors, logProvider );
         }
@@ -601,9 +601,9 @@ public final class Recovery
     {
         private final Config config;
         private final LogTailInformation logTailInformation;
-        private final Log log;
+        private final InternalLog log;
 
-        MissingTransactionLogsCheck( Config config, LogTailInformation logTailInformation, Log log )
+        MissingTransactionLogsCheck( Config config, LogTailInformation logTailInformation, InternalLog log )
         {
             this.config = config;
             this.logTailInformation = logTailInformation;

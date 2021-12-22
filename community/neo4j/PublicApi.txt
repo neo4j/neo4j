@@ -24,4 +24,3 @@ org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setExternalDependencies(org
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setMonitors(org.neo4j.monitoring.Monitors) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setUserLogProvider(org.neo4j.logging.LogProvider) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::urlAccessRules java.util.Map<java.lang.String,org.neo4j.graphdb.security.URLAccessRule> protected final
-org.neo4j.dbms.api.DatabaseManagementServiceBuilder::userLogProvider org.neo4j.logging.LogProvider protected

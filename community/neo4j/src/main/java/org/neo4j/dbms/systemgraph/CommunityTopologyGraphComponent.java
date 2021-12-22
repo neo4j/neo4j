@@ -28,8 +28,8 @@ import org.neo4j.dbms.systemgraph.versions.KnownCommunityTopologyComponentVersio
 import org.neo4j.dbms.systemgraph.versions.NoCommunityTopologyComponentVersion;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.neo4j.dbms.database.ComponentVersion.COMMUNITY_TOPOLOGY_GRAPH_COMPONENT;
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
@@ -40,11 +40,11 @@ import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSIO
  */
 public class CommunityTopologyGraphComponent extends AbstractSystemGraphComponent
 {
-    private final Log log;
+    private final InternalLog log;
     private final KnownSystemComponentVersions<KnownCommunityTopologyComponentVersion> knownCommunityTopologyComponentVersions =
             new KnownSystemComponentVersions<>( new NoCommunityTopologyComponentVersion() );
 
-    public CommunityTopologyGraphComponent( Config config, LogProvider logProvider )
+    public CommunityTopologyGraphComponent( Config config, InternalLogProvider logProvider )
     {
         super( config );
         this.log = logProvider.getLog( getClass() );

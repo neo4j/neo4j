@@ -32,14 +32,14 @@ public class SpiedAssertableLogProvider extends AssertableLogProvider
     }
 
     @Override
-    protected Log buildLog( Class<?> loggingClass )
+    protected InternalLog buildLog( Class<?> loggingClass )
     {
         var name = loggingClass.getName();
         return buildLog( name );
     }
 
     @Override
-    protected Log buildLog( String context )
+    protected InternalLog buildLog( String context )
     {
         if ( context.equals( spied ) )
         {

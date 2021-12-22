@@ -153,8 +153,8 @@ import org.neo4j.kernel.recovery.RecoveryPredicate;
 import org.neo4j.kernel.recovery.RecoveryStartupChecker;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.DatabaseLogProvider;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
@@ -196,7 +196,7 @@ public class Database extends LifecycleAdapter
     private final DependencyResolver globalDependencies;
     private final PageCache globalPageCache;
 
-    private final Log msgLog;
+    private final InternalLog msgLog;
     private final DatabaseLogService databaseLogService;
     private final DatabaseLogProvider internalLogProvider;
     private final DatabaseLogProvider userLogProvider;
@@ -710,7 +710,7 @@ public class Database extends LifecycleAdapter
             JobScheduler jobScheduler,
             IndexProviderMap indexProviderMap,
             TokenNameLookup tokenNameLookup,
-            LogProvider internalLogProvider,
+            InternalLogProvider internalLogProvider,
             IndexMonitor indexMonitor,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
@@ -729,7 +729,7 @@ public class Database extends LifecycleAdapter
         return namedDatabaseId.isSystemDatabase();
     }
 
-    private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config, LogProvider logProvider, JobScheduler scheduler,
+    private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config, InternalLogProvider logProvider, JobScheduler scheduler,
             CheckPointerImpl.ForceOperation forceOperation, LogEntryReader logEntryReader, MetadataProvider metadataProvider, Monitors monitors,
             Dependencies databaseDependencies, CursorContextFactory cursorContextFactory )
     {

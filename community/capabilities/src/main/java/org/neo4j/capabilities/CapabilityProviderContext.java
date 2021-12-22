@@ -21,7 +21,7 @@ package org.neo4j.capabilities;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.config.Configuration;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 /**
  * Provides access to core DBMS components during capability registration.
@@ -54,9 +54,9 @@ public final class CapabilityProviderContext
     /**
      * @return log component.
      */
-    public Log log()
+    public InternalLog log()
     {
-        return get( Log.class );
+        return get( InternalLog.class );
     }
 
     /**

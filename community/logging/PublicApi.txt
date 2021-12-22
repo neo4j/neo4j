@@ -15,25 +15,16 @@ org.neo4j.logging.Log public abstract interface
 org.neo4j.logging.Log::debug(java.lang.String) void public abstract
 org.neo4j.logging.Log::debug(java.lang.String, java.lang.Object...) void public abstract
 org.neo4j.logging.Log::debug(java.lang.String, java.lang.Throwable) void public abstract
-org.neo4j.logging.Log::debug(org.neo4j.logging.Neo4jLogMessage) void public abstract
-org.neo4j.logging.Log::debug(org.neo4j.logging.Neo4jMessageSupplier) void public abstract
 org.neo4j.logging.Log::error(java.lang.String) void public abstract
 org.neo4j.logging.Log::error(java.lang.String, java.lang.Object...) void public abstract
 org.neo4j.logging.Log::error(java.lang.String, java.lang.Throwable) void public abstract
-org.neo4j.logging.Log::error(org.neo4j.logging.Neo4jLogMessage) void public abstract
-org.neo4j.logging.Log::error(org.neo4j.logging.Neo4jLogMessage, java.lang.Throwable) void public abstract
-org.neo4j.logging.Log::error(org.neo4j.logging.Neo4jMessageSupplier) void public abstract
 org.neo4j.logging.Log::info(java.lang.String) void public abstract
 org.neo4j.logging.Log::info(java.lang.String, java.lang.Object...) void public abstract
 org.neo4j.logging.Log::info(java.lang.String, java.lang.Throwable) void public abstract
-org.neo4j.logging.Log::info(org.neo4j.logging.Neo4jLogMessage) void public abstract
-org.neo4j.logging.Log::info(org.neo4j.logging.Neo4jMessageSupplier) void public abstract
 org.neo4j.logging.Log::isDebugEnabled() boolean public abstract
 org.neo4j.logging.Log::warn(java.lang.String) void public abstract
 org.neo4j.logging.Log::warn(java.lang.String, java.lang.Object...) void public abstract
 org.neo4j.logging.Log::warn(java.lang.String, java.lang.Throwable) void public abstract
-org.neo4j.logging.Log::warn(org.neo4j.logging.Neo4jLogMessage) void public abstract
-org.neo4j.logging.Log::warn(org.neo4j.logging.Neo4jMessageSupplier) void public abstract
 org.neo4j.logging.LogProvider public abstract interface
 org.neo4j.logging.LogProvider::getLog(java.lang.Class<?>) org.neo4j.logging.Log public abstract
 org.neo4j.logging.LogProvider::getLog(java.lang.String) org.neo4j.logging.Log public abstract
@@ -43,7 +34,3 @@ org.neo4j.logging.LogTimeZone::UTC org.neo4j.logging.LogTimeZone public static f
 org.neo4j.logging.LogTimeZone::getZoneId() java.time.ZoneId public abstract
 org.neo4j.logging.LogTimeZone::valueOf(java.lang.String) org.neo4j.logging.LogTimeZone public static
 org.neo4j.logging.LogTimeZone::values() org.neo4j.logging.LogTimeZone[] public static
-org.neo4j.logging.Neo4jLogMessage public abstract interface implements org.apache.logging.log4j.message.Message
-org.neo4j.logging.Neo4jMessageSupplier public abstract interface implements org.apache.logging.log4j.util.MessageSupplier
-org.neo4j.logging.Neo4jMessageSupplier::forMessage(java.lang.String, java.lang.Object...) org.neo4j.logging.Neo4jLogMessage public static
-org.neo4j.logging.Neo4jMessageSupplier::get() org.neo4j.logging.Neo4jLogMessage public abstract

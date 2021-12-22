@@ -27,7 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -40,7 +40,7 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     private final ExecutorFactory executorFactory;
     private final JobScheduler scheduler;
     private final LogService logService;
-    private final Log internalLog;
+    private final InternalLog internalLog;
     private volatile BoltScheduler boltScheduler;
 
     private ExecutorService forkJoinThreadPool;

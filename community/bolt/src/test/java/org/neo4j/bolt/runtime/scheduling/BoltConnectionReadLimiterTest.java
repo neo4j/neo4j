@@ -29,7 +29,7 @@ import java.util.Arrays;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Job;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 
 import static java.util.Collections.emptyMap;
@@ -53,13 +53,13 @@ class BoltConnectionReadLimiterTest
     private static final Job job = machine -> machine.process( new HelloMessage( emptyMap() ), nullResponseHandler() );
     private BoltConnection connection;
     private EmbeddedChannel channel;
-    private Log log;
+    private InternalLog log;
 
     @BeforeEach
     void setup()
     {
         channel = new EmbeddedChannel();
-        log = mock( Log.class );
+        log = mock( InternalLog.class );
 
         connection = mock( BoltConnection.class );
         when( connection.id() ).thenReturn( channel.id().asLongText() );

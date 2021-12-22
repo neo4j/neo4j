@@ -23,15 +23,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 public final class EntryCountThreshold implements Threshold
 {
     private final long maxTransactionCount;
-    private final Log log;
+    private final InternalLog log;
 
-    EntryCountThreshold( LogProvider logProvider, long maxTransactionCount )
+    EntryCountThreshold( InternalLogProvider logProvider, long maxTransactionCount )
     {
         this.log = logProvider.getLog( getClass() );
         this.maxTransactionCount = maxTransactionCount;

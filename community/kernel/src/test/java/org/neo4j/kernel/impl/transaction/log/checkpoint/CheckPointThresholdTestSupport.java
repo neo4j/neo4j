@@ -32,7 +32,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -49,7 +49,7 @@ public class CheckPointThresholdTestSupport
     protected Config config;
     protected FakeClock clock;
     protected LogPruning logPruning;
-    protected LogProvider logProvider;
+    protected InternalLogProvider logProvider;
     protected Integer intervalTx;
     protected Duration intervalTime;
     protected Consumer<String> notTriggered;

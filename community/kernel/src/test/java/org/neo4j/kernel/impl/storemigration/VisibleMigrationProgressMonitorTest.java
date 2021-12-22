@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.time.FakeClock;
 
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -38,7 +38,7 @@ class VisibleMigrationProgressMonitorTest
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log = logProvider.getLog( getClass() );
+        InternalLog log = logProvider.getLog( getClass() );
         VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
         monitor.started( 1 );
 
@@ -54,7 +54,7 @@ class VisibleMigrationProgressMonitorTest
     void progressNeverReportMoreThenHundredPercent()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log = logProvider.getLog( getClass() );
+        InternalLog log = logProvider.getLog( getClass() );
         VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
 
         monitor.started( 1 );
@@ -68,7 +68,7 @@ class VisibleMigrationProgressMonitorTest
     void reportStartStopOfTransactionLogsMigration()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log = logProvider.getLog( getClass() );
+        InternalLog log = logProvider.getLog( getClass() );
         VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
 
         monitor.startTransactionLogsMigration();
@@ -83,7 +83,7 @@ class VisibleMigrationProgressMonitorTest
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log = logProvider.getLog( getClass() );
+        InternalLog log = logProvider.getLog( getClass() );
         FakeClock clock = new FakeClock();
         VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log, clock );
 

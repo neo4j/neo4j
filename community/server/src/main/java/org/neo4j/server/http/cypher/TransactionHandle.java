@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -93,7 +93,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final Duration customTransactionTimeout;
     private final long id;
     private long expirationTimestamp = -1;
-    private final LogProvider userLogProvider;
+    private final InternalLogProvider userLogProvider;
     private final BoltGraphDatabaseManagementServiceSPI boltSPI;
     private String txManagerTxId;
     LoginContext loginContext;
@@ -106,7 +106,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     TransactionHandle( String databaseName, QueryExecutionEngine engine,
                        TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, LoginContext loginContext,
                        ClientConnectionInfo clientConnectionInfo, long customTransactionTimeoutMillis, TransactionManager transactionManager,
-                       LogProvider logProvider, BoltGraphDatabaseManagementServiceSPI boltSPI, MemoryTracker memoryTracker, AuthManager authManager,
+                       InternalLogProvider logProvider, BoltGraphDatabaseManagementServiceSPI boltSPI, MemoryTracker memoryTracker, AuthManager authManager,
                        SystemNanoClock clock, boolean readByDefault )
     {
         this.databaseName = databaseName;

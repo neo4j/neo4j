@@ -20,9 +20,9 @@
 package org.neo4j.logging;
 
 /**
- * A {@link Log} implementation that discards all messages
+ * A {@link InternalLog} implementation that discards all messages
  */
-public final class NullLog implements Log
+public final class NullLog implements InternalLog
 {
     private static final NullLog INSTANCE = new NullLog();
 

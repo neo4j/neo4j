@@ -30,7 +30,7 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 
@@ -60,7 +60,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     }
 
     private Monitors monitors;
-    private LogProvider userLogProvider;
+    private InternalLogProvider userLogProvider;
     private DependencyResolver dependencies;
     private List<ExtensionFactory<?>> extensions;
     private List<DatabaseEventListener> databaseEventListeners;
@@ -68,7 +68,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
 
     private GraphDatabaseDependencies(
             Monitors monitors,
-            LogProvider userLogProvider,
+            InternalLogProvider userLogProvider,
             DependencyResolver dependencies,
             Iterable<ExtensionFactory<?>> extensions,
             Map<String,URLAccessRule> urlAccessRules,
@@ -90,7 +90,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
         return this;
     }
 
-    public GraphDatabaseDependencies userLogProvider( LogProvider userLogProvider )
+    public GraphDatabaseDependencies userLogProvider( InternalLogProvider userLogProvider )
     {
         this.userLogProvider = userLogProvider;
         return this;
@@ -128,7 +128,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     }
 
     @Override
-    public LogProvider userLogProvider()
+    public InternalLogProvider userLogProvider()
     {
         return userLogProvider;
     }

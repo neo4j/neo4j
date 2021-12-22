@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
@@ -56,7 +56,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val config: CypherConfiguration,
                       val compilerLibrary: CompilerLibrary,
                       val queryCaches: CypherQueryCaches,
-                      val logProvider: LogProvider,
+                      val logProvider: InternalLogProvider,
                       val clock: Clock = Clock.systemUTC() ) {
 
   require(queryService != null, "Can't work with a null graph database")

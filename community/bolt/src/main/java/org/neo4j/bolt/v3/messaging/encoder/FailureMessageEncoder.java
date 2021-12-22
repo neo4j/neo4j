@@ -25,13 +25,13 @@ import org.neo4j.bolt.messaging.ResponseMessageEncoder;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.bolt.v3.messaging.response.FatalFailureMessage;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 public class FailureMessageEncoder implements ResponseMessageEncoder<FailureMessage>
 {
-    private final Log log;
+    private final InternalLog log;
 
-    public FailureMessageEncoder( Log log )
+    public FailureMessageEncoder( InternalLog log )
     {
         this.log = log;
     }

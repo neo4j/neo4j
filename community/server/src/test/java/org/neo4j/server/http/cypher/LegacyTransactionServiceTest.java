@@ -35,8 +35,8 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
@@ -55,18 +55,19 @@ class LegacyTransactionServiceTest
     private DefaultDatabaseResolver databaseResolver;
     private HttpTransactionManager httpTransactionManager;
     private UriInfo uriInfo;
-    private Log log;
+    private InternalLog log;
 
     @BeforeEach
     void prepareDependencies()
     {
         request = mock( HttpServletRequest.class );
         databaseResolver = mock( DefaultDatabaseResolver.class );
-        httpTransactionManager = spy( new HttpTransactionManager( null, mock( MemoryPool.class ), mock( JobScheduler.class ), Clock.systemUTC(),
-                Duration.ofMinutes( 2 ), mock( LogProvider.class ), mock( TransactionManager.class ), mock( BoltGraphDatabaseManagementServiceSPI.class ), mock(
-                AuthManager.class ), true ) );
+        httpTransactionManager =
+                spy( new HttpTransactionManager( null, mock( MemoryPool.class ), mock( JobScheduler.class ), Clock.systemUTC(), Duration.ofMinutes( 2 ),
+                        mock( InternalLogProvider.class ), mock( TransactionManager.class ), mock( BoltGraphDatabaseManagementServiceSPI.class ),
+                        mock( AuthManager.class ), true ) );
         uriInfo = mock( UriInfo.class );
-        log = mock( Log.class );
+        log = mock( InternalLog.class );
 
         doReturn( UriBuilder.fromUri( "http://localhost:7474/db/data/transaction" ) )
                 .when( uriInfo )

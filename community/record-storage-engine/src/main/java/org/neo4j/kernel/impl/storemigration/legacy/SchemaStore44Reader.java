@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.PropertyKeyValue;
@@ -109,7 +110,7 @@ public class SchemaStore44Reader implements AutoCloseable
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             CursorContextFactory cursorContextFactory,
-            LogProvider logProvider,
+            InternalLogProvider logProvider,
             RecordFormats recordFormats,
             String databaseName,
             ImmutableSet<OpenOption> openOptions
@@ -470,7 +471,7 @@ public class SchemaStore44Reader implements AutoCloseable
                 IdGeneratorFactory idGeneratorFactory,
                 PageCache pageCache,
                 CursorContextFactory cursorContextFactory,
-                LogProvider logProvider,
+                InternalLogProvider logProvider,
                 RecordFormats recordFormats,
                 DatabaseReadOnlyChecker readOnlyChecker,
                 String databaseName,

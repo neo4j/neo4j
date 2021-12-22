@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
@@ -83,7 +83,7 @@ public class ProcedureJarLoaderTest
     @Inject
     private TestDirectory testDirectory;
 
-    private final Log log = mock( Log.class );
+    private final InternalLog log = mock( InternalLog.class );
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( InternalTransaction.class ) );
     private final ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), NullLog.getInstance() );

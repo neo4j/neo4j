@@ -69,8 +69,9 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.StatusDetailsAccessor;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
@@ -135,7 +136,7 @@ public class DatabaseManagementServiceFactory
         LifeSupport globalLife = globalModule.getGlobalLife();
 
         LogService logService = globalModule.getLogService();
-        Log internalLog = logService.getInternalLog( getClass() );
+        InternalLog internalLog = logService.getInternalLog( getClass() );
         DatabaseManager<?> databaseManager = edition.createDatabaseManager( globalModule );
         DatabaseManagementService managementService = createManagementService( globalModule, globalLife, internalLog, databaseManager );
         globalDependencies.satisfyDependencies( managementService );
@@ -185,7 +186,7 @@ public class DatabaseManagementServiceFactory
         return managementService;
     }
 
-    protected DatabaseManagementService createManagementService( GlobalModule globalModule, LifeSupport globalLife, Log internalLog,
+    protected DatabaseManagementService createManagementService( GlobalModule globalModule, LifeSupport globalLife, InternalLog internalLog,
             DatabaseManager<?> databaseManager )
     {
         return new DatabaseManagementServiceImpl( databaseManager, globalLife,
@@ -193,7 +194,7 @@ public class DatabaseManagementServiceFactory
     }
 
     private Lifecycle createWebServer( AbstractEditionModule edition, DatabaseManagementService managementService,
-                                       Dependencies globalDependencies, Config config, LogProvider userLogProvider )
+                                       Dependencies globalDependencies, Config config, InternalLogProvider userLogProvider )
     {
         if ( shouldEnableWebServer( config ) )
         {
@@ -207,7 +208,7 @@ public class DatabaseManagementServiceFactory
         return (config.get( HttpConnector.enabled ) || config.get( HttpsConnector.enabled )) && !config.get( ServerSettings.http_enabled_modules ).isEmpty();
     }
 
-    private static void startDatabaseServer( GlobalModule globalModule, LifeSupport globalLife, Log internalLog, DatabaseManager<?> databaseManager,
+    private static void startDatabaseServer( GlobalModule globalModule, LifeSupport globalLife, InternalLog internalLog, DatabaseManager<?> databaseManager,
             DatabaseManagementService managementService )
     {
 
@@ -288,8 +289,8 @@ public class DatabaseManagementServiceFactory
             Config globalConfig = globalModule.getGlobalConfig();
             Path proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir );
             LogService logService = globalModule.getLogService();
-            Log internalLog = logService.getInternalLog( GlobalProcedures.class );
-            Log proceduresLog = logService.getUserLog( GlobalProcedures.class );
+            InternalLog internalLog = logService.getInternalLog( GlobalProcedures.class );
+            InternalLog proceduresLog = logService.getUserLog( GlobalProcedures.class );
 
             ProcedureConfig procedureConfig = new ProcedureConfig( globalConfig );
             Edition neo4jEdition = globalModule.getDbmsInfo().edition;
@@ -363,7 +364,7 @@ public class DatabaseManagementServiceFactory
                                globalModule.getCentralBufferMangerHolder(), globalModule.getTransactionManager() );
     }
 
-    private static void dumpDbmsInfo( Log log, GraphDatabaseAPI system )
+    private static void dumpDbmsInfo( InternalLog log, GraphDatabaseAPI system )
     {
         try
         {

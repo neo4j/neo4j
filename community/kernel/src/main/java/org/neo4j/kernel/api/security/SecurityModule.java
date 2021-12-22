@@ -22,11 +22,11 @@ package org.neo4j.kernel.api.security;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 public abstract class SecurityModule implements SecurityProvider
 {
-    protected static void registerProcedure( GlobalProcedures globalProcedures, Log log, Class procedureClass, String warning )
+    protected static void registerProcedure( GlobalProcedures globalProcedures, InternalLog log, Class procedureClass, String warning )
     {
         try
         {

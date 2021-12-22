@@ -30,7 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.time.Clocks;
@@ -58,7 +58,7 @@ class DatabaseAvailabilityGuardTest
     private static final AvailabilityRequirement REQUIREMENT_2 = new DescriptiveAvailabilityRequirement( "Requirement 2" );
 
     private final Clock clock = Clocks.systemClock();
-    private final Log log = mock( Log.class );
+    private final InternalLog log = mock( InternalLog.class );
 
     @Inject
     private LifeSupport life;
@@ -362,19 +362,19 @@ class DatabaseAvailabilityGuardTest
         assertTrue( isAvailableFuture.get( 5, SECONDS ) );
     }
 
-    private static void verifyLogging( Log log, VerificationMode mode )
+    private static void verifyLogging( InternalLog log, VerificationMode mode )
     {
         verify( log, mode ).info( anyString(), Mockito.<Object[]>any() );
     }
 
-    private DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, Log log )
+    private DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, InternalLog log )
     {
         DatabaseAvailabilityGuard availabilityGuard = createAvailabilityGuard( clock, log );
         life.add( availabilityGuard );
         return availabilityGuard;
     }
 
-    private static DatabaseAvailabilityGuard createAvailabilityGuard( Clock clock, Log log )
+    private static DatabaseAvailabilityGuard createAvailabilityGuard( Clock clock, InternalLog log )
     {
         return new DatabaseAvailabilityGuard( from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), clock, log, 0,
                 mock( CompositeDatabaseAvailabilityGuard.class ) );

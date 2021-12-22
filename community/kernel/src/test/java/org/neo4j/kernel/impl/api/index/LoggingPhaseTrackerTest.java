@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.time.FakeClock;
 
@@ -126,7 +126,7 @@ class LoggingPhaseTrackerTest
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        Log log = logProvider.getLog( IndexPopulationJob.class );
+        InternalLog log = logProvider.getLog( IndexPopulationJob.class );
         PhaseTracker phaseTracker = getPhaseTracker( log );
         phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
         sleep( 100 );
@@ -161,7 +161,7 @@ class LoggingPhaseTrackerTest
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        Log log = logProvider.getLog( IndexPopulationJob.class );
+        InternalLog log = logProvider.getLog( IndexPopulationJob.class );
         PhaseTracker phaseTracker = getPhaseTracker( 1, log );
         phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
 
@@ -198,7 +198,7 @@ class LoggingPhaseTrackerTest
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        Log log = logProvider.getLog( IndexPopulationJob.class );
+        InternalLog log = logProvider.getLog( IndexPopulationJob.class );
         PhaseTracker phaseTracker = getPhaseTracker( 1, log );
 
         // when
@@ -216,12 +216,12 @@ class LoggingPhaseTrackerTest
         return getPhaseTracker( NullLog.getInstance() );
     }
 
-    private LoggingPhaseTracker getPhaseTracker( Log log )
+    private LoggingPhaseTracker getPhaseTracker( InternalLog log )
     {
         return getPhaseTracker( PERIOD_INTERVAL, log );
     }
 
-    private LoggingPhaseTracker getPhaseTracker( int periodIntervalInSeconds, Log log )
+    private LoggingPhaseTracker getPhaseTracker( int periodIntervalInSeconds, InternalLog log )
     {
         return new LoggingPhaseTracker( periodIntervalInSeconds, log, clock );
     }

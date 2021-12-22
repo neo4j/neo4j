@@ -32,8 +32,8 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
@@ -46,7 +46,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
 
     private final BoltChannel boltChannel;
     private final BoltProtocolFactory boltProtocolFactory;
-    private final Log log;
+    private final InternalLog log;
     private final boolean encryptionRequired;
     private final boolean encrypted;
     private final ChannelProtector channelProtector;
@@ -55,7 +55,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     private ByteBuf handshakeBuffer;
     private BoltProtocol protocol;
 
-    public ProtocolHandshaker( BoltProtocolFactory boltProtocolFactory, BoltChannel boltChannel, LogProvider logging,
+    public ProtocolHandshaker( BoltProtocolFactory boltProtocolFactory, BoltChannel boltChannel, InternalLogProvider logging,
                                boolean encryptionRequired, boolean encrypted, ChannelProtector channelProtector, MemoryTracker memoryTracker )
     {
         this.boltProtocolFactory = boltProtocolFactory;

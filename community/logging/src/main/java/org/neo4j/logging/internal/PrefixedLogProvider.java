@@ -20,14 +20,14 @@
 package org.neo4j.logging.internal;
 
 import org.neo4j.logging.AbstractLogProvider;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 public class PrefixedLogProvider extends AbstractLogProvider<PrefixedLog>
 {
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final String prefix;
 
-    public PrefixedLogProvider( LogProvider logProvider, String prefix )
+    public PrefixedLogProvider( InternalLogProvider logProvider, String prefix )
     {
         this.logProvider = logProvider;
         this.prefix = prefix;

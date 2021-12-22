@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
@@ -63,7 +63,7 @@ public class ResourceInjectionTest
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( InternalTransaction.class ) );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private Log log = logProvider.getLog( getClass() );
+    private InternalLog log = logProvider.getLog( getClass() );
 
     @BeforeEach
     void setUp()

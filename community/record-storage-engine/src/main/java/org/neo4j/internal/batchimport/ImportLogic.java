@@ -63,7 +63,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -97,7 +97,7 @@ public class ImportLogic implements Closeable
     private final BatchingNeoStores neoStore;
     private final Configuration config;
     private final Config dbConfig;
-    private final Log log;
+    private final InternalLog log;
     private final CursorContextFactory contextFactory;
     private final IndexImporterFactory indexImporterFactory;
     private final MemoryTracker memoryTracker;

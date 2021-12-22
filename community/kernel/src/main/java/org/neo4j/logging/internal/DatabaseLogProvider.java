@@ -20,17 +20,17 @@
 package org.neo4j.logging.internal;
 
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 public class DatabaseLogProvider extends PrefixedLogProvider
 {
-    public DatabaseLogProvider( NamedDatabaseId namedDatabaseId, LogProvider delegate )
+    public DatabaseLogProvider( NamedDatabaseId namedDatabaseId, InternalLogProvider delegate )
     {
         this( namedDatabaseId.logPrefix(), delegate );
     }
 
-    private DatabaseLogProvider( String prefix, LogProvider delegate )
+    private DatabaseLogProvider( String prefix, InternalLogProvider delegate )
     {
         super( delegate, prefix );
     }

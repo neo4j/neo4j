@@ -34,8 +34,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.TestDatabaseManagementServiceFactory;
 import org.neo4j.time.SystemNanoClock;
@@ -49,7 +49,7 @@ public class TestFabricDatabaseManagementServiceFactory extends TestDatabaseMana
                                                        boolean impermanent,
                                                        FileSystemAbstraction fileSystem,
                                                        SystemNanoClock clock,
-                                                       LogProvider internalLogProvider,
+                                                       InternalLogProvider internalLogProvider,
                                                        Config config )
     {
         super( dbmsInfo, editionFactory, impermanent, fileSystem, clock, internalLogProvider );
@@ -58,7 +58,7 @@ public class TestFabricDatabaseManagementServiceFactory extends TestDatabaseMana
     }
 
     @Override
-    protected DatabaseManagementService createManagementService( GlobalModule globalModule, LifeSupport globalLife, Log internalLog,
+    protected DatabaseManagementService createManagementService( GlobalModule globalModule, LifeSupport globalLife, InternalLog internalLog,
                                                                  DatabaseManager<?> databaseManager )
     {
         return new DatabaseManagementServiceImpl( databaseManager,

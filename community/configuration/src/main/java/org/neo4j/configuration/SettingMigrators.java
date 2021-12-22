@@ -39,7 +39,7 @@ import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.FormattedLogFormat;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static java.lang.String.format;
@@ -70,7 +70,7 @@ public final class SettingMigrators
     public static class ActiveDatabaseMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingNameChange( values, log, "dbms.active_database", default_database );
         }
@@ -82,7 +82,7 @@ public final class SettingMigrators
         private static final String INDEX_PROVIDER_SETTING = "dbms.index.default_schema_provider";
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             String oldSchemaProvider = values.remove( INDEX_PROVIDER_SETTING );
             if ( isBlank( oldSchemaProvider ) )
@@ -122,7 +122,7 @@ public final class SettingMigrators
         private static final Pattern oldConnector = Pattern.compile( "^unsupported\\.dbms\\.db\\.spatial\\.crs\\.([^.]+)\\.(min|max)\\.([xyz])$");
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             List<String> oldCrs = new ArrayList<>();
             Map<String, List<String>> crsValues = new HashMap<>();
@@ -161,13 +161,13 @@ public final class SettingMigrators
         private static final String ANY_CONNECTOR = "bolt|http|https";
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateOldConnectors( values, log );
             migrateConnectorAddresses( values, defaultValues, log );
         }
 
-        private static void migrateOldConnectors( Map<String,String> values, Log log )
+        private static void migrateOldConnectors( Map<String,String> values, InternalLog log )
         {
             Map<String, Matcher> oldConnectors = new HashMap<>();
             values.forEach( ( setting, value ) ->
@@ -198,7 +198,7 @@ public final class SettingMigrators
             } );
         }
 
-        private static void migrateConnectorAddresses( Map<String,String> values, Map<String,String> defValues,  Log log )
+        private static void migrateConnectorAddresses( Map<String,String> values, Map<String,String> defValues,  InternalLog log )
         {
             migrateAdvertisedAddressInheritanceChange( values, defValues, log, BoltConnector.listen_address.name(), BoltConnector.advertised_address.name() );
             migrateAdvertisedAddressInheritanceChange( values, defValues, log, HttpConnector.listen_address.name(), HttpConnector.advertised_address.name() );
@@ -210,7 +210,7 @@ public final class SettingMigrators
     public static class DefaultAddressMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingNameChange( values, log, "dbms.connectors.default_listen_address", default_listen_address );
             migrateSettingNameChange( values, log, "dbms.connectors.default_advertised_address", default_advertised_address );
@@ -232,13 +232,13 @@ public final class SettingMigrators
                 List.of( "dbms.directories.certificates", "unsupported.dbms.security.tls_certificate_file", "unsupported.dbms.security.tls_key_file" );
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migratePolicies( values, log );
             warnUseOfLegacyPolicy( values, log );
         }
 
-        private static void migratePolicies( Map<String,String> values, Log log )
+        private static void migratePolicies( Map<String,String> values, InternalLog log )
         {
             Map<String,String> valueCopy = new HashMap<>( values );
             Map<String,SslPolicyScope> oldNameToScope = new HashMap<>();
@@ -276,7 +276,7 @@ public final class SettingMigrators
             } );
         }
 
-        private static void warnUseOfLegacyPolicy( Map<String,String> values, Log log )
+        private static void warnUseOfLegacyPolicy( Map<String,String> values, InternalLog log )
         {
             for ( String legacySetting : legacySettings )
             {
@@ -294,7 +294,7 @@ public final class SettingMigrators
         private static final Pattern pattern = Pattern.compile( "^dbms\\.ssl\\.policy\\.([^.]+)\\.allow_key_generation$" );
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             var toRemove = new HashSet<String>();
 
@@ -319,7 +319,7 @@ public final class SettingMigrators
         private static final String settingName = "dbms.procedures.kill_query_verbose";
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingRemoval( values, log, settingName, "It's no longer possible to disable verbose kill query logging" );
         }
@@ -331,7 +331,7 @@ public final class SettingMigrators
         private static final String settingName = "unsupported.dbms.multi_threaded_schema_index_population_enabled";
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingRemoval( values, log, settingName, "It's no longer possible to disable multi-threaded index population" );
         }
@@ -344,7 +344,7 @@ public final class SettingMigrators
         private static final String settingName = GraphDatabaseSettings.log_queries.name();
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             String value = values.get( settingName );
             if ( SettingValueParsers.TRUE.equalsIgnoreCase( value ) )
@@ -364,7 +364,7 @@ public final class SettingMigrators
     public static class DatabaseMemoryMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingNameChange( values, log, "dbms.tx_state.max_off_heap_memory", tx_state_max_off_heap_memory );
             migrateSettingNameChange( values, log, "dbms.tx_state.off_heap.max_cacheable_block_size", tx_state_off_heap_max_cacheable_block_size );
@@ -393,7 +393,7 @@ public final class SettingMigrators
     public static class WhitelistSettingsMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingNameChange( values, log, "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist );
             migrateSettingNameChange( values, log, "dbms.security.procedures.whitelist", procedure_allowlist );
@@ -407,7 +407,7 @@ public final class SettingMigrators
     public static class DatababaseMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingNameChange( values, log, "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size );
         }
@@ -417,7 +417,7 @@ public final class SettingMigrators
     public static class ReadOnlyMigration implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingNameChange( values, log, "dbms.read_only", read_only_database_default );
         }
@@ -428,7 +428,7 @@ public final class SettingMigrators
     {
 
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             final var refuseToBeLeader = "causal_clustering.refuse_to_be_leader";
             final var refuseToBeLeaderValue = values.get( refuseToBeLeader );
@@ -441,7 +441,7 @@ public final class SettingMigrators
     }
 
     public static void migrateAdvertisedAddressInheritanceChange( Map<String,String> values, Map<String,String> defaultValues,
-            Log log, String listenAddress, String advertisedAddress )
+            InternalLog log, String listenAddress, String advertisedAddress )
     {
         String listenValue = values.get( listenAddress );
         if ( isNotBlank( listenValue ) )
@@ -497,7 +497,7 @@ public final class SettingMigrators
     public static class ConsistencyCheckerSettingsMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingRemoval( values, log, "unsupported.consistency_checker.experimental",
                     "There is no longer multiple different consistency checkers to choose from" );
@@ -509,7 +509,7 @@ public final class SettingMigrators
     public static class ConnectorKeepAliveSettingsMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingNameChange( values, log, "dbms.connector.bolt.connection_keep_alive_scheduling_interval",
                                       BoltConnector.connection_keep_alive_streaming_scheduling_interval );
@@ -520,7 +520,7 @@ public final class SettingMigrators
     public static class LogFormatMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             String value = values.remove( "unsupported.dbms.logs.format" );
             if ( isNotBlank( value ) )
@@ -546,7 +546,7 @@ public final class SettingMigrators
     public static class ForsetiMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             String value = values.remove( "unsupported.dbms.locks.forseti_deadlock_resolution_strategy" );
             if ( isNotBlank( value ) )
@@ -556,7 +556,7 @@ public final class SettingMigrators
         }
     }
 
-    public static void migrateSettingNameChange( Map<String,String> values, Log log, String oldSetting, Setting<?> newSetting )
+    public static void migrateSettingNameChange( Map<String,String> values, InternalLog log, String oldSetting, Setting<?> newSetting )
     {
         String value = values.remove( oldSetting );
         if ( isNotBlank( value ) )
@@ -566,7 +566,7 @@ public final class SettingMigrators
         }
     }
 
-    public static void migrateSettingRemoval( Map<String,String> values, Log log, String name, String additionalDescription )
+    public static void migrateSettingRemoval( Map<String,String> values, InternalLog log, String name, String additionalDescription )
     {
         if ( values.containsKey( name ) )
         {

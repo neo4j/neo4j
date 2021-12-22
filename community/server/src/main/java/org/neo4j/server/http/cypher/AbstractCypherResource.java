@@ -36,7 +36,7 @@ import javax.ws.rs.core.UriInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryTracker;
@@ -56,11 +56,11 @@ public abstract class AbstractCypherResource
     private final HttpTransactionManager httpTransactionManager;
     private final TransactionUriScheme uriScheme;
     private final MemoryPool memoryPool;
-    private final Log log;
+    private final InternalLog log;
     private final String databaseName;
     private final SystemNanoClock clock;
 
-    AbstractCypherResource( HttpTransactionManager httpTransactionManager, UriInfo uriInfo, MemoryPool memoryPool, Log log, String databaseName,
+    AbstractCypherResource( HttpTransactionManager httpTransactionManager, UriInfo uriInfo, MemoryPool memoryPool, InternalLog log, String databaseName,
                             SystemNanoClock clock )
     {
         this.httpTransactionManager = httpTransactionManager;

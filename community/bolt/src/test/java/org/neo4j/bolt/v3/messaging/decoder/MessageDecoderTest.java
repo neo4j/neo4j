@@ -55,7 +55,7 @@ import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.values.AnyValue;
@@ -262,7 +262,7 @@ public class MessageDecoderTest
                 new BoltRequestMessageReaderV3( connection, responseMessageHandler, mock( ChannelProtector.class ), NullLogService.getInstance() );
 
         LogService logService = mock( LogService.class );
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         when( logService.getInternalLog( MessageDecoder.class ) ).thenReturn( log );
 
         channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest::newUnpacker, requestMessageReader, logService ) );
@@ -286,7 +286,7 @@ public class MessageDecoderTest
         doThrow( error ).when( requestMessageReader ).read( any() );
 
         LogService logService = mock( LogService.class );
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         when( logService.getInternalLog( MessageDecoder.class ) ).thenReturn( log );
 
         channel = new EmbeddedChannel( new MessageDecoder( packerUnderTest::newUnpacker, requestMessageReader, logService ) );
@@ -347,7 +347,7 @@ public class MessageDecoderTest
         return new MessageDecoder( packerUnderTest::newUnpacker, reader, NullLogService.getInstance() );
     }
 
-    private static void assertMessageHexDumpLogged( Log logMock, byte[] messageBytes )
+    private static void assertMessageHexDumpLogged( InternalLog logMock, byte[] messageBytes )
     {
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass( String.class );
         verify( logMock ).error( captor.capture() );

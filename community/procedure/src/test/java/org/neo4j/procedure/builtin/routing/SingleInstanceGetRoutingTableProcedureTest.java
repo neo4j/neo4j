@@ -56,7 +56,7 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
@@ -483,7 +483,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
     }
 
     protected GetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config,
-                                                     LogProvider logProvider )
+                                                     InternalLogProvider logProvider )
     {
         var clientRoutingDomainChecker = SimpleClientRoutingDomainChecker.fromConfig( config, logProvider );
         return new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider )

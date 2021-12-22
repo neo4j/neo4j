@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 /**
  * Handle the collection of database event listeners, and fire events as needed.
@@ -33,9 +33,9 @@ import org.neo4j.logging.Log;
 public class DatabaseEventListeners
 {
     private final List<DatabaseEventListener> databaseEventListeners = new CopyOnWriteArrayList<>();
-    private final Log log;
+    private final InternalLog log;
 
-    public DatabaseEventListeners( Log log )
+    public DatabaseEventListeners( InternalLog log )
     {
         this.log = log;
     }

@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockService;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -40,7 +40,7 @@ public class IndexStoreViewFactory
     private final LockService lockService;
     private final Config config;
     private final Supplier<StorageReader> storageReader;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
 
     public IndexStoreViewFactory(
             Config config,
@@ -49,7 +49,7 @@ public class IndexStoreViewFactory
             Locks locks,
             FullScanStoreView fullScanStoreView,
             LockService lockService,
-            LogProvider logProvider )
+            InternalLogProvider logProvider )
     {
         this.cursorFactory = cursorFactory;
         this.locks = locks;

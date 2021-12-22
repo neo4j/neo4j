@@ -39,7 +39,6 @@ import javax.net.ssl.SSLException;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
@@ -50,6 +49,7 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.transport.BoltMemoryPool;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
 import org.neo4j.bolt.transport.DefaultBoltProtocolFactory;
@@ -73,7 +73,7 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
@@ -145,7 +145,7 @@ public class BoltServer extends LifecycleAdapter
     @Override
     public void init()
     {
-        Log log = logService.getInternalLog( BoltServer.class );
+        InternalLog log = logService.getInternalLog( BoltServer.class );
 
         boltMemoryPool = new BoltMemoryPool( memoryPools, NETTY_BUF_ALLOCATOR.metric() );
         life.add( new BoltMemoryPoolLifeCycleAdapter( boltMemoryPool ) );
@@ -329,7 +329,7 @@ public class BoltServer extends LifecycleAdapter
 
     private ProtocolInitializer createExternalProtocolInitializer( BoltProtocolFactory boltProtocolFactory,
                                                                    TransportThrottleGroup throttleGroup,
-                                                                   Log log,
+                                                                   InternalLog log,
                                                                    ByteBufAllocator bufferAllocator )
     {
         SslContext sslCtx;

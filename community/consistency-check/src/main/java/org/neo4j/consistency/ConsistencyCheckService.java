@@ -50,9 +50,9 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.DuplicatingLog;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Level;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -88,7 +88,7 @@ public class ConsistencyCheckService
     private final DatabaseLayout layout;
     private final Config config;
     private final OutputStream progressOutput;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final boolean verbose;
@@ -104,7 +104,7 @@ public class ConsistencyCheckService
                 ConsistencyFlags.DEFAULT, PageCacheTracer.NULL, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), EmptyMemoryTracker.INSTANCE );
     }
 
-    private ConsistencyCheckService( Date timestamp, DatabaseLayout layout, Config config, OutputStream progressOutput, LogProvider logProvider,
+    private ConsistencyCheckService( Date timestamp, DatabaseLayout layout, Config config, OutputStream progressOutput, InternalLogProvider logProvider,
             FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose, Path reportDir, ConsistencyFlags consistencyFlags,
             PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
@@ -153,7 +153,7 @@ public class ConsistencyCheckService
                 consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
-    public ConsistencyCheckService with( LogProvider logProvider )
+    public ConsistencyCheckService with( InternalLogProvider logProvider )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
                 consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
@@ -349,7 +349,7 @@ public class ConsistencyCheckService
         }
     }
 
-    private boolean consistencyCheckSingleCheckable( Log log, ConsistencySummaryStatistics summary, ConsistencyCheckable checkable,
+    private boolean consistencyCheckSingleCheckable( InternalLog log, ConsistencySummaryStatistics summary, ConsistencyCheckable checkable,
             String type, CursorContext cursorContext )
     {
         LoggingReporterFactoryInvocationHandler handler = new LoggingReporterFactoryInvocationHandler( log, true );

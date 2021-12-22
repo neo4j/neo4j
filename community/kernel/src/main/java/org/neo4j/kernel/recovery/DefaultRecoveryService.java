@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -45,12 +45,12 @@ public class DefaultRecoveryService implements RecoveryService
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final LogVersionRepository logVersionRepository;
-    private final Log log;
+    private final InternalLog log;
     private final boolean doParallelRecovery;
 
     DefaultRecoveryService( StorageEngine storageEngine, TransactionIdStore transactionIdStore,
             LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository, LogFiles logFiles,
-            RecoveryStartInformationProvider.Monitor monitor, Log log, boolean doParallelRecovery )
+            RecoveryStartInformationProvider.Monitor monitor, InternalLog log, boolean doParallelRecovery )
     {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;

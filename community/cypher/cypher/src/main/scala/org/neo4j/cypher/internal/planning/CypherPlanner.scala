@@ -95,7 +95,7 @@ import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.logging.Log
+import org.neo4j.logging.InternalLog
 import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
@@ -109,7 +109,7 @@ object CypherPlanner {
    * This back-door is intended for quick handling of bugs and support cases
    * where we need to inject some specific indexes and statistics.
    */
-  var customPlanContextCreator: Option[(TransactionalContextWrapper, InternalNotificationLogger, Log) => PlanContext] = None
+  var customPlanContextCreator: Option[(TransactionalContextWrapper, InternalNotificationLogger, InternalLog) => PlanContext] = None
 
   /**
    * Create a Query Graph solver that matches the configurations and pre-parser options.
@@ -157,7 +157,7 @@ object CypherPlanner {
 case class CypherPlanner(config: CypherPlannerConfiguration,
                          clock: Clock,
                          kernelMonitors: monitoring.Monitors,
-                         log: Log,
+                         log: InternalLog,
                          queryCaches: CypherQueryCaches,
                          plannerOption: CypherPlannerOption,
                          updateStrategy: CypherUpdateStrategy,

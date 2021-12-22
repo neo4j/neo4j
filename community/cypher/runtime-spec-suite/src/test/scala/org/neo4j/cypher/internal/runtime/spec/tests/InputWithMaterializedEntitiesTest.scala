@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
@@ -233,7 +233,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
   override protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
                                                   edition: Edition[CONTEXT],
                                                   workloadMode: Boolean,
-                                                  logProvider: LogProvider): RuntimeTestSupport[CONTEXT] = {
+                                                  logProvider: InternalLogProvider): RuntimeTestSupport[CONTEXT] = {
     new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider) {
 
       override protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {

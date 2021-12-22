@@ -44,6 +44,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.database.NoOpSystemGraphInitializer;
 import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.LazyProcedures;
@@ -67,7 +68,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public static final boolean FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_DEFAULT_VALUE = false;
 
     protected FileSystemAbstraction fileSystem;
-    protected LogProvider internalLogProvider;
+    protected InternalLogProvider internalLogProvider;
     protected SystemNanoClock clock;
     protected boolean impermanent;
     protected Config fromConfig;
@@ -76,7 +77,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     public TestDatabaseManagementServiceBuilder()
     {
-        super( (Path) null );
+        super( null );
     }
 
     public TestDatabaseManagementServiceBuilder( Path homeDirectory )
@@ -186,7 +187,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return this;
     }
 
-    public TestDatabaseManagementServiceBuilder setInternalLogProvider( LogProvider internalLogProvider )
+    public TestDatabaseManagementServiceBuilder setInternalLogProvider( InternalLogProvider internalLogProvider )
     {
         this.internalLogProvider = internalLogProvider;
         return this;

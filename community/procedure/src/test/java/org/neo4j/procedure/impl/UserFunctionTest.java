@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
@@ -86,8 +86,8 @@ public class UserFunctionTest
     void shouldInjectLogging() throws KernelException
     {
         // Given
-        Log log = spy( Log.class );
-        components.register( Log.class, ctx -> log );
+        InternalLog log = spy( InternalLog.class );
+        components.register( InternalLog.class, ctx -> log );
         CallableUserFunction function = procedureCompiler.compileFunction( LoggingFunction.class, false ).get( 0 );
 
         // When
@@ -253,7 +253,7 @@ public class UserFunctionTest
     void shouldNotLoadNoneWhiteListedFunction() throws Throwable
     {
         // Given
-        Log log = spy(Log.class);
+        InternalLog log = spy( InternalLog.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
                 log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "WrongName" ) ) ) );
 
@@ -266,7 +266,7 @@ public class UserFunctionTest
     void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
     {
         // Given
-        Log log = spy(Log.class);
+        InternalLog log = spy( InternalLog.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
                 log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "" ) ) ) );
 
@@ -279,7 +279,7 @@ public class UserFunctionTest
     void shouldSupportFunctionDeprecation() throws Throwable
     {
         // Given
-        Log log = mock(Log.class);
+        InternalLog log = mock( InternalLog.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 new ComponentRegistry(), log, ProcedureConfig.DEFAULT );
 
@@ -343,7 +343,7 @@ public class UserFunctionTest
     public static class LoggingFunction
     {
         @Context
-        public Log log;
+        public InternalLog log;
 
         @UserFunction
         public long logAround()

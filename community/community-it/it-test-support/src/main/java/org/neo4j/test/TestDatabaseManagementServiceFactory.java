@@ -36,7 +36,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.internal.locker.Locker;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -48,11 +48,11 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
 {
     private final boolean impermanent;
     private FileSystemAbstraction fileSystem;
-    private LogProvider internalLogProvider;
+    private InternalLogProvider internalLogProvider;
     private final SystemNanoClock clock;
 
     public TestDatabaseManagementServiceFactory( DbmsInfo dbmsInfo, Function<GlobalModule,AbstractEditionModule> editionFactory, boolean impermanent,
-                                                 FileSystemAbstraction fileSystem, SystemNanoClock clock, LogProvider internalLogProvider )
+                                                 FileSystemAbstraction fileSystem, SystemNanoClock clock, InternalLogProvider internalLogProvider )
     {
         super( dbmsInfo, editionFactory );
         this.impermanent = impermanent;
@@ -101,7 +101,7 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         }
 
         @Override
-        protected LogService createLogService( LogProvider userLogProvider )
+        protected LogService createLogService( InternalLogProvider userLogProvider )
         {
             if ( internalLogProvider == null )
             {

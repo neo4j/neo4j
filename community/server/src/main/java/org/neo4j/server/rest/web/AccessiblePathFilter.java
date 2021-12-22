@@ -28,17 +28,17 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
 
 public class AccessiblePathFilter extends AbstractFilter
 {
     private final List<Pattern> blacklist;
-    private final Log log;
+    private final InternalLog log;
 
-    public AccessiblePathFilter( LogProvider logProvider, List<String> blacklist )
+    public AccessiblePathFilter( InternalLogProvider logProvider, List<String> blacklist )
     {
         this.blacklist = blacklist.stream().map( Pattern::compile ).collect( toUnmodifiableList() );
         this.log = logProvider.getLog( getClass() );

@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
 import org.neo4j.kernel.api.procedure.CallableUserFunction
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.NullLogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
@@ -72,7 +72,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def databaseConfig(): Map[Setting[_],Object] = Map()
 
-  def logProvider: LogProvider = NullLogProvider.getInstance()
+  def logProvider: InternalLogProvider = NullLogProvider.getInstance()
 
   /**
    * @return Some(url, databaseName) to load an existing database instead of creating an impermanent test database

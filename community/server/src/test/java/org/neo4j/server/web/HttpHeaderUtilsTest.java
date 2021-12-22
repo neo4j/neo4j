@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,7 +46,7 @@ public class HttpHeaderUtilsTest
     void retrieveCustomTransactionTimeout()
     {
         when( request.getHeader( MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "100" );
-        Log log = logProvider.getLog( HttpServletRequest.class );
+        InternalLog log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( 100, transactionTimeout, "Transaction timeout should be retrieved." );
         assertThat( logProvider ).doesNotHaveAnyLogs();
@@ -55,7 +55,7 @@ public class HttpHeaderUtilsTest
     @Test
     void defaultValueWhenCustomTransactionTimeoutNotSpecified()
     {
-        Log log = logProvider.getLog( HttpServletRequest.class );
+        InternalLog log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( 0, transactionTimeout, "Transaction timeout not specified." );
         assertThat( logProvider ).doesNotHaveAnyLogs();
@@ -65,7 +65,7 @@ public class HttpHeaderUtilsTest
     void defaultValueWhenCustomTransactionTimeoutNotANumber()
     {
         when( request.getHeader( MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "aa" );
-        Log log = logProvider.getLog( HttpServletRequest.class );
+        InternalLog log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( 0, transactionTimeout, "Transaction timeout not specified." );
         assertThat( logProvider ).containsMessages( "Fail to parse `max-execution-time` " +

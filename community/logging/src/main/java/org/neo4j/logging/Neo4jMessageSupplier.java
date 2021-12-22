@@ -21,9 +21,6 @@ package org.neo4j.logging;
 
 import org.apache.logging.log4j.util.MessageSupplier;
 
-import org.neo4j.annotations.api.PublicApi;
-
-@PublicApi
 public interface Neo4jMessageSupplier extends MessageSupplier
 {
     @Override

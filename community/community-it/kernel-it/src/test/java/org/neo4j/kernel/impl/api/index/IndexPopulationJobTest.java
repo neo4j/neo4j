@@ -73,7 +73,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobHandle;
@@ -587,7 +587,7 @@ class IndexPopulationJobTest
     void shouldCloseAndFailOnFailure() throws Exception
     {
         createNode( map( name, "irrelephant" ), FIRST );
-        LogProvider logProvider = NullLogProvider.getInstance();
+        InternalLogProvider logProvider = NullLogProvider.getInstance();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         IndexPopulator populator = spy( indexPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, EntityType.NODE, indexPrototype( FIRST, name, false ) );
@@ -852,20 +852,20 @@ class IndexPopulationJobTest
         return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype, contextFactory );
     }
 
-    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, IndexStoreView storeView, LogProvider logProvider,
-            EntityType type, IndexPrototype prototype, CursorContextFactory contextFactory )
+    private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, IndexStoreView storeView,
+            InternalLogProvider logProvider, EntityType type, IndexPrototype prototype, CursorContextFactory contextFactory )
     {
         return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, contextFactory );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper,
-            IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype )
+            IndexStoreView storeView, InternalLogProvider logProvider, EntityType type, IndexPrototype prototype )
     {
         return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, CONTEXT_FACTORY );
     }
 
     private IndexPopulationJob newIndexPopulationJob( FailedIndexProxyFactory failureDelegateFactory, IndexPopulator populator, FlippableIndexProxy flipper,
-            IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype, CursorContextFactory contextFactory )
+            IndexStoreView storeView, InternalLogProvider logProvider, EntityType type, IndexPrototype prototype, CursorContextFactory contextFactory )
     {
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
@@ -940,7 +940,7 @@ class IndexPopulationJobTest
     {
         private volatile boolean closed;
 
-        TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
+        TrackingMultipleIndexPopulator( IndexStoreView storeView, InternalLogProvider logProvider, EntityType type, SchemaState schemaState,
                 JobScheduler jobScheduler, TokenNameLookup tokens )
         {
             super( storeView, logProvider, type, schemaState, jobScheduler, tokens, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, Config.defaults() );

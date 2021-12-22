@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.TerminationGuard;
 
@@ -38,7 +38,7 @@ public class RestrictedContextTypes
     public GraphDatabaseService graphDatabaseService;
 
     @Context
-    public Log log;
+    public InternalLog log;
 
     @Context
     public TerminationGuard terminationGuard;

@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.procedure.TerminationGuard;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
@@ -54,7 +54,7 @@ public class ContextFieldVisitorTest
             "@org.neo4j.procedure.Context usage error: found unknown type <java.lang.String> on field " +
             "UnknownContextType#unsupportedType, expected one of: <" +
                     GraphDatabaseService.class.getName() + ">, <" +
-                    Log.class.getName() + ">, <" +
+                    InternalLog.class.getName() + ">, <" +
                     TerminationGuard.class.getName() + ">, <" +
                     SecurityContext.class.getName() + ">, <" +
                     Transaction.class.getName() + ">" );

@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -47,7 +47,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     private final MemoryTracker memoryTracker;
     private final PropertyStore propertyStore;
     private final TokenNameLookup tokenNameLookup;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final int denseNodeThreshold;
     // The setting for relaxed dense node locking is a supplier since the command creation context instances are created once per
     // kernel transaction object and so will be reused between transactions. The relaxed locking feature may change from tx to tx
@@ -61,7 +61,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     private CursorContext cursorContext;
     private StoreCursors storeCursors;
 
-    RecordStorageCommandCreationContext( NeoStores neoStores, TokenNameLookup tokenNameLookup, LogProvider logProvider, int denseNodeThreshold,
+    RecordStorageCommandCreationContext( NeoStores neoStores, TokenNameLookup tokenNameLookup, InternalLogProvider logProvider, int denseNodeThreshold,
             BooleanSupplier relaxedLockingForDenseNodes, Config config, MemoryTracker memoryTracker )
     {
         this.tokenNameLookup = tokenNameLookup;

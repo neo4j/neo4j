@@ -52,8 +52,8 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryPools;
@@ -94,8 +94,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
 
     static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
 
-    protected final LogProvider userLogProvider;
-    private final Log log;
+    protected final InternalLogProvider userLogProvider;
+    private final InternalLog log;
     private final DbmsInfo dbmsInfo;
     private final MemoryPool requestMemoryPool;
     private final MemoryPool transactionMemoryPool;
@@ -131,7 +131,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     protected abstract WebServer createWebServer();
 
     public AbstractNeoWebServer( DatabaseManagementService databaseManagementService, Dependencies globalDependencies, Config config,
-                                 LogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools, TransactionManager transactionManager,
+                                 InternalLogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools, TransactionManager transactionManager,
                                  SystemNanoClock clock )
     {
         this.databaseManagementService = databaseManagementService;
@@ -446,8 +446,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         binder.addSingletonBinding( httpTransactionManager, HttpTransactionManager.class );
         binder.addSingletonBinding( databaseResolver, DefaultDatabaseResolver.class );
         binder.addLazyBinding( authManagerSupplier, AuthManager.class );
-        binder.addSingletonBinding( userLogProvider, LogProvider.class );
-        binder.addSingletonBinding( userLogProvider.getLog( NeoWebServer.class ), Log.class );
+        binder.addSingletonBinding( userLogProvider, InternalLogProvider.class );
+        binder.addSingletonBinding( userLogProvider.getLog( NeoWebServer.class ), InternalLog.class );
 
         return binder;
     }
@@ -483,7 +483,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         public void start() throws Exception
         {
             LogService logService = globalDependencies.resolveDependency( LogService.class );
-            Log serverLog = logService.getInternalLog( ServerComponentsLifecycleAdapter.class );
+            InternalLog serverLog = logService.getInternalLog( ServerComponentsLifecycleAdapter.class );
             serverLog.info( "Starting web server" );
             configureWebServer();
 

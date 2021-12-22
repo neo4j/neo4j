@@ -21,9 +21,6 @@ package org.neo4j.logging;
 
 import org.apache.logging.log4j.message.Message;
 
-import org.neo4j.annotations.api.PublicApi;
-
-@PublicApi
 public interface Neo4jLogMessage extends Message
 {
 }

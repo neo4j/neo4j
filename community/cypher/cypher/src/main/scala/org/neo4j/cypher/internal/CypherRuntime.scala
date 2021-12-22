@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import java.io.File
-import java.time.Clock
-
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
@@ -43,8 +40,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.internal.kernel.api.SchemaRead
-import org.neo4j.logging.Log
+import org.neo4j.logging.InternalLog
 import org.neo4j.util.Preconditions
+
+import java.io.File
+import java.time.Clock
 
 /**
  * A cypher runtime. Compiles logical plans into a executable form, which can
@@ -105,7 +105,7 @@ abstract class RuntimeContext {
   def schemaRead: SchemaRead
   def config: CypherRuntimeConfiguration
   def compileExpressions: Boolean
-  def log: Log
+  def log: InternalLog
   def anonymousVariableNameGenerator: AnonymousVariableNameGenerator
 }
 

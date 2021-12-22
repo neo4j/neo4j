@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
@@ -50,7 +50,7 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider>
             // if running as part of cluster indexes should be writable to allow catchup process to accept transactions
             readOnlyChecker = DatabaseReadOnlyChecker.writable();
         }
-        Log log = logService.getInternalLogProvider().getLog( loggingClass() );
+        InternalLog log = logService.getInternalLogProvider().getLog( loggingClass() );
         String monitorTag = descriptor().toString();
         monitors.addMonitorListener( new LoggingMonitor( log ), monitorTag );
         return internalCreate( pageCache, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, databaseLayout,
@@ -64,6 +64,6 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider>
     protected abstract T internalCreate( PageCache pageCache, FileSystemAbstraction fs,
                                          Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
                                          RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
-                                         Log log, TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory );
+                                         InternalLog log, TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory );
 
 }

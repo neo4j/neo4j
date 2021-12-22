@@ -28,7 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
 import org.neo4j.server.config.AuthConfigProvider;
@@ -51,7 +51,7 @@ import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communit
 public class CommunityNeoWebServer extends AbstractNeoWebServer
 {
     public CommunityNeoWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
-                                  LogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools, TransactionManager transactionManager,
+                                  InternalLogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools, TransactionManager transactionManager,
                                   SystemNanoClock clock )
     {
         super( managementService, globalDependencies, config, userLogProvider, dbmsInfo, memoryPools, transactionManager, clock );

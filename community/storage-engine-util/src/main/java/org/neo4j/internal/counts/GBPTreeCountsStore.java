@@ -34,7 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
@@ -92,7 +92,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
 
     public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             CountsBuilder initialCountsBuilder, DatabaseReadOnlyChecker readOnlyChecker, Monitor monitor, String databaseName,
-            int maxCacheSize, LogProvider userLogProvider, CursorContextFactory contextFactory ) throws IOException
+            int maxCacheSize, InternalLogProvider userLogProvider, CursorContextFactory contextFactory ) throws IOException
     {
         super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnlyChecker, NAME,
                 monitor, databaseName, maxCacheSize, userLogProvider, contextFactory );

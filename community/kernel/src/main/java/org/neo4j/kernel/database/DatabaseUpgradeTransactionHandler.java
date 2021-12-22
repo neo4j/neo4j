@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.lock.Lock;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -64,11 +64,11 @@ class DatabaseUpgradeTransactionHandler
     //
     // I.e. the upgrade transaction wouldn't be a strong barrier. This lock prevents this scenario.
     private final UpgradeLocker locker;
-    private final Log log;
+    private final InternalLog log;
 
     DatabaseUpgradeTransactionHandler( StorageEngine storageEngine, DbmsRuntimeRepository dbmsRuntimeRepository,
             KernelVersionRepository kernelVersionRepository, DatabaseTransactionEventListeners transactionEventListeners, UpgradeLocker locker,
-            LogProvider logProvider )
+            InternalLogProvider logProvider )
     {
         this.storageEngine = storageEngine;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;

@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.logging.LogProvider
+import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.NullLogProvider
 
 import java.util
@@ -88,7 +88,7 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineH
 }
 
 object ExecutionEngineHelper {
-  def createEngine(db: GraphDatabaseService, logProvider: LogProvider): ExecutionEngine = {
+  def createEngine(db: GraphDatabaseService, logProvider: InternalLogProvider): ExecutionEngine = {
     val service = new GraphDatabaseCypherService(db)
     createEngine(service, logProvider)
   }
@@ -98,7 +98,7 @@ object ExecutionEngineHelper {
     createEngine(service, NullLogProvider.getInstance())
   }
 
-  def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
+  def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: InternalLogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
     val resolver = graphDatabaseCypherService.getDependencyResolver
     resolver.resolveDependency(classOf[QueryExecutionEngine]).asInstanceOf[org.neo4j.cypher.internal.javacompat.ExecutionEngine].getCypherExecutionEngine
   }

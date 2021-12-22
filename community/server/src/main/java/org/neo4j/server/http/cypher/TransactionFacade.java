@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
@@ -59,13 +59,13 @@ class TransactionFacade
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionManager transactionManager;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private final BoltGraphDatabaseManagementServiceSPI boltSPI;
     private final AuthManager authManager;
     private final boolean readByDefault;
 
     TransactionFacade( String databaseName, QueryExecutionEngine engine, TransactionRegistry registry,
-                       TransactionManager transactionManager, LogProvider logProvider, BoltGraphDatabaseManagementServiceSPI boltSPI,
+                       TransactionManager transactionManager, InternalLogProvider logProvider, BoltGraphDatabaseManagementServiceSPI boltSPI,
                        AuthManager authManager, boolean readByDefault )
     {
         this.databaseName = databaseName;

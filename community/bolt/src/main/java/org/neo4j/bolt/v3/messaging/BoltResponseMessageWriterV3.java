@@ -40,7 +40,7 @@ import org.neo4j.bolt.v3.messaging.response.IgnoredMessage;
 import org.neo4j.bolt.v3.messaging.response.RecordMessage;
 import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.AnyValue;
@@ -57,7 +57,7 @@ public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
 
     private final PackOutput output;
     private final Neo4jPack.Packer packer;
-    private final Log log;
+    private final InternalLog log;
     private final Map<Byte,ResponseMessageEncoder<ResponseMessage>> encoders;
     private RecordMessageEncoder recordMessageEncoder = new RecordMessageEncoder();
 
@@ -100,7 +100,7 @@ public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
         return this.output;
     }
 
-    public Log log()
+    public InternalLog log()
     {
         return this.log;
     }

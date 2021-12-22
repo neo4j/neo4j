@@ -20,7 +20,7 @@
 package org.neo4j.server.http.cypher;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
 
@@ -31,10 +31,10 @@ class RollbackInvocation
 {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RollbackInvocation.class );
 
-    private final Log log;
+    private final InternalLog log;
     private final TransactionHandle transactionHandle;
 
-    RollbackInvocation( Log log, TransactionHandle transactionHandle )
+    RollbackInvocation( InternalLog log, TransactionHandle transactionHandle )
     {
         this.log = log;
         this.transactionHandle = transactionHandle;

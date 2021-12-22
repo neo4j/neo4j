@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
@@ -81,7 +81,7 @@ public interface CheckPointThreshold
      * Create and configure a {@link CheckPointThreshold} based on the given configurations.
      */
     static CheckPointThreshold createThreshold(
-            Config config, SystemNanoClock clock, LogPruning logPruning, LogProvider logProvider )
+            Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider )
     {
         String policyName = config.get( check_point_policy ).name().toLowerCase();
         CheckPointThresholdPolicy policy;

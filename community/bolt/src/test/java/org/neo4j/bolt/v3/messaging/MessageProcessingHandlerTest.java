@@ -30,7 +30,7 @@ import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -52,7 +52,7 @@ public class MessageProcessingHandlerTest
 
         BoltConnection connection = mock( BoltConnection.class );
         MessageProcessingHandler handler =
-                new MessageProcessingHandler( msgWriter, connection, mock( Log.class ) );
+                new MessageProcessingHandler( msgWriter, connection, mock( InternalLog.class ) );
 
         // When
         handler.onFinish();

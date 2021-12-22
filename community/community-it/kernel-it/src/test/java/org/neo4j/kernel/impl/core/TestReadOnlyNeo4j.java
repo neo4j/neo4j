@@ -43,7 +43,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -197,7 +197,7 @@ class TestReadOnlyNeo4j
         return result;
     }
 
-    private DatabaseManagementService dbmsReadOnly( LogProvider logProvider )
+    private DatabaseManagementService dbmsReadOnly( InternalLogProvider logProvider )
     {
         return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )

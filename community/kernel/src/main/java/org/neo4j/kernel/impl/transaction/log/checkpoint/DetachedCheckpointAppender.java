@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
@@ -71,7 +71,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private NativeScopedBuffer buffer;
     private PhysicalLogVersionedStoreChannel channel;
     private LogVersionRepository logVersionRepository;
-    private final Log log;
+    private final InternalLog log;
     private final DetachedLogTailScanner logTailScanner;
 
     public DetachedCheckpointAppender( TransactionLogChannelAllocator channelAllocator, TransactionLogFilesContext context, CheckpointFile checkpointFile,

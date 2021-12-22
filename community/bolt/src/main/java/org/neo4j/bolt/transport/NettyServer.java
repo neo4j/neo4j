@@ -47,7 +47,7 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 
 import static java.lang.Boolean.FALSE;
@@ -67,8 +67,8 @@ public class NettyServer extends LifecycleAdapter
     private final ThreadFactory tf;
     private final ProtocolInitializer loopbackInitializer;
     private final ConnectorPortRegister portRegister;
-    private final Log userLog;
-    private final Log internalLog;
+    private final InternalLog userLog;
+    private final InternalLog internalLog;
 
     private EventLoopGroup eventLoopGroup;
     private final List<Channel> serverChannels;

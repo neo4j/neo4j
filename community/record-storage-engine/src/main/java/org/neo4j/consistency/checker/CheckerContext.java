@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.token.TokenHolders;
@@ -68,7 +68,7 @@ class CheckerContext
     final IndexAccessor relationshipTypeIndex;
     final CursorContextFactory contextFactory;
     private final AtomicBoolean cancelled;
-    private final Log log;
+    private final InternalLog log;
     private final boolean verbose;
 
     CheckerContext(
@@ -84,7 +84,7 @@ class CheckerContext
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
             MemoryTracker memoryTracker,
-            Log log, boolean verbose,
+            InternalLog log, boolean verbose,
             ConsistencyFlags consistencyFlags,
             CursorContextFactory contextFactory )
     {
@@ -105,7 +105,7 @@ class CheckerContext
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
             MemoryTracker memoryTracker,
-            Log log, boolean verbose,
+            InternalLog log, boolean verbose,
             AtomicBoolean cancelled,
             ConsistencyFlags consistencyFlags,
             CursorContextFactory contextFactory )

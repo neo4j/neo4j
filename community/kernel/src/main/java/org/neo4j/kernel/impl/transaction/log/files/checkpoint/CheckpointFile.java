@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.RotatableFile;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 
 /**
  * Access to underlying store checkpoints, that can be stored in multiple log files, separate log files etc.
@@ -47,7 +47,7 @@ public interface CheckpointFile extends Lifecycle, RotatableFile
      * @param log custom log
      * @return last checkpoint
      */
-    Optional<CheckpointInfo> findLatestCheckpoint( Log log ) throws IOException;
+    Optional<CheckpointInfo> findLatestCheckpoint( InternalLog log ) throws IOException;
 
     /**
      * List of all reachable checkpoints from earliest to latest available

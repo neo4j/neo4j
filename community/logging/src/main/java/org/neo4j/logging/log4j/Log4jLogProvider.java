@@ -22,14 +22,14 @@ package org.neo4j.logging.log4j;
 import java.io.Closeable;
 import java.io.OutputStream;
 
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Level;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 /**
- * A {@link LogProvider} implementation that uses the Log4j configuration ctx is connected to.
+ * A {@link InternalLogProvider} implementation that uses the Log4j configuration ctx is connected to.
  */
-public class Log4jLogProvider implements LogProvider, Closeable
+public class Log4jLogProvider implements InternalLogProvider, Closeable
 {
     private final Neo4jLoggerContext ctx;
 
@@ -54,13 +54,13 @@ public class Log4jLogProvider implements LogProvider, Closeable
     }
 
     @Override
-    public Log getLog( Class<?> loggingClass )
+    public InternalLog getLog( Class<?> loggingClass )
     {
         return new Log4jLog( ctx.getLogger( loggingClass ) );
     }
 
     @Override
-    public Log getLog( String name )
+    public InternalLog getLog( String name )
     {
         return new Log4jLog( ctx.getLogger( name ) );
     }

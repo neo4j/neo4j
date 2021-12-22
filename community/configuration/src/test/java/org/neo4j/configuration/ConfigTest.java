@@ -55,7 +55,7 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -637,7 +637,7 @@ class ConfigTest
     @Test
     void shouldLogIfConfigFileCouldNotBeFound()
     {
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         Path confFile = testDirectory.file( "test.conf" ); // Note: we don't create the file.
 
         Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
@@ -652,7 +652,7 @@ class ConfigTest
     void shouldLogIfConfigFileCouldNotBeRead() throws IOException
     {
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
-        Log log = logProvider.getLog( Config.class );
+        InternalLog log = logProvider.getLog( Config.class );
         Path confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.toFile().createNewFile() );
         assumeTrue( confFile.toFile().setReadable( false ) );
@@ -831,7 +831,7 @@ class ConfigTest
     @Test
     void mustWarnIfFileContainsDuplicateSettings() throws Exception
     {
-        Log log = mock( Log.class );
+        InternalLog log = mock( InternalLog.class );
         Path confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile, Arrays.asList(
                 BootloaderSettings.initial_heap_size.name() + "=5g",

@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
@@ -40,12 +40,12 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
     private final IndexProxyStrategy indexProxyStrategy;
     private final MinimalIndexAccessor minimalIndexAccessor;
-    private final Log log;
+    private final InternalLog log;
 
     FailedIndexProxy( IndexProxyStrategy indexProxyStrategy,
             MinimalIndexAccessor minimalIndexAccessor,
             IndexPopulationFailure populationFailure,
-            LogProvider logProvider )
+            InternalLogProvider logProvider )
     {
         super( indexProxyStrategy, populationFailure );
         this.indexProxyStrategy = indexProxyStrategy;

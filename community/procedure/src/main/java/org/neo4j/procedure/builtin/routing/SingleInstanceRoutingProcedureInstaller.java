@@ -24,7 +24,7 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 
 import static org.neo4j.procedure.builtin.routing.RoutingTableTTLProvider.ttlFromConfig;
 
@@ -36,10 +36,10 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
     private final ClientRoutingDomainChecker clientRoutingDomainChecker;
     private final ConnectorPortRegister portRegister;
     private final Config config;
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
 
     public SingleInstanceRoutingProcedureInstaller( DatabaseManager<?> databaseManager, ClientRoutingDomainChecker clientRoutingDomainChecker,
-                                                    ConnectorPortRegister portRegister, Config config, LogProvider logProvider )
+                                                    ConnectorPortRegister portRegister, Config config, InternalLogProvider logProvider )
     {
         this.databaseManager = databaseManager;
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;

@@ -39,7 +39,7 @@ import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
@@ -118,8 +118,8 @@ public class UserAggregationFunctionTest
     void shouldInjectLogging() throws KernelException
     {
         // Given
-        Log log = spy( Log.class );
-        components.register( Log.class, ctx -> log );
+        InternalLog log = spy( InternalLog.class );
+        components.register( InternalLog.class, ctx -> log );
         CallableUserAggregationFunction
                 function = procedureCompiler.compileAggregationFunction( LoggingFunction.class ).get( 0 );
 
@@ -315,7 +315,7 @@ public class UserAggregationFunctionTest
     void shouldNotLoadNoneWhiteListedFunction() throws Throwable
     {
         // Given
-        Log log = spy(Log.class);
+        InternalLog log = spy( InternalLog.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
                 log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "WrongName" ) ) ) );
 
@@ -328,7 +328,7 @@ public class UserAggregationFunctionTest
     void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
     {
         // Given
-        Log log = spy(Log.class);
+        InternalLog log = spy( InternalLog.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
                 log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_allowlist, List.of( "" ) ) ) );
 
@@ -341,7 +341,7 @@ public class UserAggregationFunctionTest
     void shouldSupportFunctionDeprecation() throws Throwable
     {
         // Given
-        Log log = mock(Log.class);
+        InternalLog log = mock( InternalLog.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 new ComponentRegistry(), log, ProcedureConfig.DEFAULT );
 
@@ -551,7 +551,7 @@ public class UserAggregationFunctionTest
     public static class LoggingFunction
     {
         @Context
-        public Log log;
+        public InternalLog log;
 
         @UserAggregationFunction
         public LoggingAggregator log()

@@ -56,8 +56,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
@@ -105,14 +105,14 @@ class InvocationTest
     private static final Statement NULL_STATEMENT = null;
     private static final String TX_ID = "123";
 
-    private final Log log = mock( Log.class );
+    private final InternalLog log = mock( InternalLog.class );
     // cannot be mocked because is final
     private final QueryExecutionType queryExecutionType = null;
     private final QueryStatistics queryStatistics = mock( QueryStatistics.class );
     private final ExecutionPlanDescription executionPlanDescription = mock( ExecutionPlanDescription.class );
     private final Iterable<Notification> notifications = emptyList();
     private final TransactionManager transactionManager = mock( TransactionManager.class );
-    private final LogProvider logProvider = mock( LogProvider.class );
+    private final InternalLogProvider logProvider = mock( InternalLogProvider.class );
     private final BoltGraphDatabaseManagementServiceSPI boltSPI = mock( BoltGraphDatabaseManagementServiceSPI.class );
     private final QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
     private final InternalTransaction internalTransaction = mock( InternalTransaction.class );
@@ -760,7 +760,7 @@ class InvocationTest
         TransactionManager txManager = mock( TransactionManager.class );
         TransactionHandle handle =
                 new TransactionHandle( "neo4j", executionEngine, mock( TransactionRegistry.class ), uriScheme, true, AUTH_DISABLED,
-                                       mock( ClientConnectionInfo.class ), 100, txManager, mock( LogProvider.class ),
+                                       mock( ClientConnectionInfo.class ), 100, txManager, mock( InternalLogProvider.class ),
                                        mock( BoltGraphDatabaseManagementServiceSPI.class ), mock( MemoryTracker.class ), mock( AuthManager.class ),
                                        Clocks.nanoClock(), true );
 
@@ -934,7 +934,7 @@ class InvocationTest
 
         setupResultMocks();
 
-        var invocation = new Invocation( mock( Log.class ), handle, uriScheme.txCommitUri( 1337L ), memoryPool, inputEventStream, true );
+        var invocation = new Invocation( mock( InternalLog.class ), handle, uriScheme.txCommitUri( 1337L ), memoryPool, inputEventStream, true );
 
         invocation.execute( outputEventStream );
 
@@ -959,7 +959,7 @@ class InvocationTest
                 .when( outputEventStream )
                 .writeStatementEnd( any(), any(), any(), any() );
 
-        var invocation = new Invocation( mock( Log.class ), handle, uriScheme.txCommitUri( 1337L ), memoryPool, inputEventStream, true );
+        var invocation = new Invocation( mock( InternalLog.class ), handle, uriScheme.txCommitUri( 1337L ), memoryPool, inputEventStream, true );
 
         assertThrows( ConnectionException.class, () -> invocation.execute( outputEventStream ) );
 

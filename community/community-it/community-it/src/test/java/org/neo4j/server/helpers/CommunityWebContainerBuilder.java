@@ -38,8 +38,8 @@ import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.WebContainerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
@@ -57,7 +57,7 @@ public class CommunityWebContainerBuilder
 {
     private static final SocketAddress ANY_ADDRESS = new SocketAddress( "localhost", 0 );
 
-    private final LogProvider logProvider;
+    private final InternalLogProvider logProvider;
     private SocketAddress address = new SocketAddress( "localhost", HttpConnector.DEFAULT_PORT );
     private SocketAddress httpsAddress = new SocketAddress( "localhost", HttpsConnector.DEFAULT_PORT );
     private String maxThreads;
@@ -77,7 +77,7 @@ public class CommunityWebContainerBuilder
     private boolean httpsEnabled;
     private DependencyResolver dependencies = new Dependencies();
 
-    public static CommunityWebContainerBuilder builder( LogProvider logProvider )
+    public static CommunityWebContainerBuilder builder( InternalLogProvider logProvider )
     {
         return new CommunityWebContainerBuilder( logProvider );
     }
@@ -97,7 +97,7 @@ public class CommunityWebContainerBuilder
         checkState( dataDir != null || !persistent, "Must specify path" );
         final Path configFile = createConfigFiles();
 
-        Log log = logProvider.getLog( getClass() );
+        InternalLog log = logProvider.getLog( getClass() );
         Config config = Config.newBuilder()
                 .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
                 .fromFile( configFile )
@@ -196,7 +196,7 @@ public class CommunityWebContainerBuilder
         return properties;
     }
 
-    protected CommunityWebContainerBuilder( LogProvider logProvider )
+    protected CommunityWebContainerBuilder( InternalLogProvider logProvider )
     {
         this.logProvider = logProvider;
     }

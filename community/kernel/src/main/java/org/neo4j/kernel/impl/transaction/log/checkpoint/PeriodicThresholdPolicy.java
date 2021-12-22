@@ -23,7 +23,7 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold.or;
@@ -43,7 +43,7 @@ public class PeriodicThresholdPolicy implements CheckPointThresholdPolicy
 
     @Override
     public CheckPointThreshold createThreshold(
-            Config config, SystemNanoClock clock, LogPruning logPruning, LogProvider logProvider )
+            Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider )
     {
         int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
         final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
