@@ -542,7 +542,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     {
         try ( LogForceEvent logForceEvent = logForceEvents.beginLogForce() )
         {
-            databaseHealth.assertHealthy( IOException.class );
             flush();
         }
         catch ( final Throwable panic )

@@ -82,7 +82,7 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     @Override
     public LogPosition getCurrentPosition() throws IOException
     {
-        return new LogPosition( channel.getVersion(),position() );
+        return new LogPosition( channel.getVersion(), position() );
     }
 
     @Override
