@@ -123,9 +123,9 @@ trait Patterns extends Parser
 
   private def NodePattern: Rule1[expressions.NodePattern] = rule("a node pattern") (
     group("(" ~~ Variable ~ MaybeNodeLabels ~ MaybeProperties ~ MaybeWhereSubClause ~~ ")") ~~>>
-      { (v, labels, props, where) => expressions.NodePattern(Some(v), labels, props, where)}
+      { (v, labels, props, where) => expressions.NodePattern(Some(v), labels, None, props, where)}
     | group("(" ~~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>>
-      { (labels, props) => expressions.NodePattern(None, labels, props, None)}
+      { (labels, props) => expressions.NodePattern(None, labels, None, props, None)}
     | group(Variable ~ MaybeNodeLabels ~ MaybeProperties)  ~~>>
       (expressions.InvalidNodePattern(_, _, _)) // Here to give nice error messages
   )

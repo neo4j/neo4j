@@ -22,10 +22,12 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 
 object LabelPredicateNormalizer extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
-    case p@NodePattern(Some(id), labels, _, _) if labels.nonEmpty => Vector(HasLabels(id.copyId, labels)(p.position))
+    // TODO
+    case p@NodePattern(Some(id), labels, _, _, _) if labels.nonEmpty => Vector(HasLabels(id.copyId, labels)(p.position))
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(Some(_), labels, _, _) if labels.nonEmpty => p.copy(labels = Seq.empty)(p.position)
+    // TODO
+    case p@NodePattern(Some(_), labels, _, _, _) if labels.nonEmpty => p.copy(labels = Seq.empty)(p.position)
   }
 }

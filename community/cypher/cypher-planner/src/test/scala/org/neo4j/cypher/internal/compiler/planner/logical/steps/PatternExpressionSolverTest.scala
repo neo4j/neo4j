@@ -177,9 +177,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
       val (relName, relPos) = getNameAndPosition(Left(relOffset))
 
       PatternExpression(RelationshipsPattern(RelationshipChain(
-        NodePattern(Some(varFor(left)), Seq.empty, None, None) _,
+        NodePattern(Some(varFor(left)), Seq.empty, None, None, None) _,
         RelationshipPattern(relName, Seq.empty, None, None, None, dir)(relPos),
-        NodePattern(right, Seq.empty, None, None)(rightPos)) _)(DummyPosition(position)))(Set.empty, varToCollect, collectionName)
+        NodePattern(right, Seq.empty, None, None, None)(rightPos)) _)(DummyPosition(position)))(Set.empty, varToCollect, collectionName)
     }
 
 }

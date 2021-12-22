@@ -382,7 +382,7 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(match_(NodePattern(Some(varFor("n")), Seq.empty, None, None)(pos)), with_(varFor("n").as("true")), returnVars("true")), Seq("true"))
+          .leaf(Seq(match_(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)), with_(varFor("n").as("true")), returnVars("true")), Seq("true"))
       )
     }
 
@@ -394,7 +394,7 @@ class FabricFragmenterTest
           |""".stripMargin
       ).shouldEqual(
         init(defaultUse)
-          .leaf(Seq(match_(NodePattern(Some(varFor("n")), Seq.empty, None, None)(pos)), with_(varFor("n").as("true")), returnLit(true -> "true")), Seq("true"))
+          .leaf(Seq(match_(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)), with_(varFor("n").as("true")), returnLit(true -> "true")), Seq("true"))
       )
     }
 
@@ -406,8 +406,8 @@ class FabricFragmenterTest
       ).shouldEqual(
         init(defaultUse)
           .leaf(Seq(
-            match_(NodePattern(Some(varFor("n")), Seq.empty, None, None)(pos)),
-            create(NodePattern(Some(varFor("m")), Seq.empty, None, None)(pos)),
+            match_(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)),
+            create(NodePattern(Some(varFor("m")), Seq.empty, None, None, None)(pos)),
           ), Seq.empty)
       )
     }
@@ -462,7 +462,7 @@ class FabricFragmenterTest
       ).shouldEqual(
         init(defaultUse)
           .leaf(Seq(
-            match_(NodePattern(Some(varFor("n")), Seq.empty, None, None)(pos)),
+            match_(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)),
             resolved(call(Seq("my", "ns"), "unitProcedure", Some(Seq()), None)),
           ), Seq.empty)
       )

@@ -14,17 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.rewriting.rewriters
+package org.neo4j.cypher.internal.expressions
 
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.util.InputPosition
 
-object NodePatternPredicateNormalizer extends MatchPredicateNormalizer {
-  override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
-    case NodePattern(_, _, _, _, Some(expr)) => Vector(expr)
-  }
+trait LabelExpression extends Expression
 
-  override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(_, _, _, _, Some(_)) => p.copy(predicate = None)(p.position)
-  }
+case class LabelConjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition) extends LabelExpression {
+}
+
+case class LabelDisjunction(lhs: LabelExpression, rhs: LabelExpression)(val position: InputPosition) extends LabelExpression {
+}
+
+case class LabelNegation(e: LabelExpression)(val position: InputPosition) extends LabelExpression {
+}
+
+case class LabelLeaf(label: LabelOrRelTypeName)(val position: InputPosition) extends LabelExpression {
 }

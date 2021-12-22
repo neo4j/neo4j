@@ -328,6 +328,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -713,8 +714,14 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                            v: Variable,
                            labels: util.List[StringPos[InputPosition]],
                            properties: Expression,
-                           predicate: Expression): NodePattern =
-    NodePattern(Option(v), labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), Option(properties), Option(predicate))(p)
+                           predicate: Expression): NodePattern = {
+//    // FIXME: Temporary hack
+//    val maybeSingleLabelExpression = labelExpression match {
+//      case LabelLeaf(label) => Some(LabelName(label.name)(label.position))
+//      case _                => None
+//    }
+    NodePattern(Option(v), labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), None, Option(properties), Option(predicate))(p)
+  }
 
   override def relationshipPattern(p: InputPosition,
                                    left: Boolean,

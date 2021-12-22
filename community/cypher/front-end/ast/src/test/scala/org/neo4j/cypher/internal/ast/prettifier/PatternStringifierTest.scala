@@ -34,6 +34,7 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     val pattern = NodePattern(
       Some(varFor("n")),
       Seq(labelName("Foo"), labelName("Bar")),
+      None,
       Some(mapOf("prop" -> literalString("test"))),
       Some(greaterThan(prop("r", "otherProp"), literalInt(123))),
     )(pos)
@@ -45,6 +46,7 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     val pattern = NodePattern(
       None,
       Seq.empty,
+      None,
       Some(mapOf("prop" -> literalString("test"))),
       None,
     )(pos)
@@ -58,6 +60,7 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
       None,
       Seq.empty,
       None,
+      None,
       Some(falseLiteral),
     )(pos)
 
@@ -68,6 +71,7 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     val pattern = NodePattern(
       None,
       Seq.empty,
+      None,
       None,
       None,
     )(pos)

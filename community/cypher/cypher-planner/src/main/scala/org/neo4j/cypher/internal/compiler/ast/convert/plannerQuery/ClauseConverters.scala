@@ -318,7 +318,7 @@ object ClauseConverters {
 
     clause.pattern.patternParts.foreach {
       //CREATE (n :L1:L2 {prop: 42})
-      case EveryPath(NodePattern(Some(id), labels, props, None)) =>
+      case EveryPath(NodePattern(Some(id), labels, _, props, None)) =>
         nodes += CreateNode(id.name, labels, props)
         seenPatternNodes += id.name
         ()
@@ -374,7 +374,7 @@ object ClauseConverters {
   private case class CreateRelCommand(create: CreateRelationship, variable: LogicalVariable)
 
   private def createNodeCommand(pattern: NodePattern): CreateNodeCommand =  pattern match {
-    case NodePattern(Some(variable), labels, props, None) => CreateNodeCommand(CreateNode(variable.name, labels, props), variable)
+    case NodePattern(Some(variable), labels, _, props, None) => CreateNodeCommand(CreateNode(variable.name, labels, props), variable)
     case _ => throw new InternalException("All nodes must be named at this instance")
   }
 
@@ -384,7 +384,7 @@ object ClauseConverters {
 
     //CREATE ()-[:R]->()
     //Semantic checking enforces types.size == 1
-    case RelationshipChain(leftNode@NodePattern(Some(leftVar), _, _, _), RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
+    case RelationshipChain(leftNode@NodePattern(Some(leftVar), _, _, _, _), RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _, _)) =>
       (Vector(
         createNodeCommand(leftNode),
         createNodeCommand(rightNode)
@@ -393,7 +393,7 @@ object ClauseConverters {
       ))
 
     //CREATE ()->[:R]->()-[:R]->...->()
-    case RelationshipChain(left, RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
+    case RelationshipChain(left, RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _, _)) =>
       val (nodes, rels) = allCreatePatterns(left)
       (nodes :+
         createNodeCommand(rightNode)
@@ -535,7 +535,7 @@ object ClauseConverters {
 
     clause.pattern match {
       //MERGE (n :L1:L2 {prop: 42})
-      case EveryPath(NodePattern(Some(id), labels, props, _)) =>
+      case EveryPath(NodePattern(Some(id), labels, _, props, _)) =>
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))

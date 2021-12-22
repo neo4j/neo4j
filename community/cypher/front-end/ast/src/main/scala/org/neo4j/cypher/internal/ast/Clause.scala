@@ -417,7 +417,7 @@ case class Match(
   private def getPropertyPredicates(variable: String): Seq[String] = {
     where.map(w => collectPropertiesInPredicates(variable, w.expression)).getOrElse(Seq.empty[String]) ++
       pattern.treeFold(Seq.empty[String]) {
-        case NodePattern(Some(Variable(id)), _, properties, predicate) if variable == id =>
+        case NodePattern(Some(Variable(id)), _, _, properties, predicate) if variable == id =>
           acc => SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(collectPropertiesInPredicates(variable, _)).getOrElse(Seq.empty[String]))
         case RelationshipPattern(Some(Variable(id)), _, _, properties, predicate, _, _) if variable == id =>
           acc => SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(collectPropertiesInPredicates(variable, _)).getOrElse(Seq.empty[String]))
@@ -484,7 +484,7 @@ case class Match(
 
   private def getLabelAndRelTypePredicates(variable: String): Seq[String] = {
     val inlinedLabels = pattern.fold(Seq.empty[String]) {
-      case NodePattern(Some(Variable(id)), nodeLabels, _, _) if variable == id =>
+      case NodePattern(Some(Variable(id)), nodeLabels, _, _, _) if variable == id =>
         list => list ++ nodeLabels.map(_.name)
     }
     val inlinedRelTypes = pattern.fold(Seq.empty[String]) {

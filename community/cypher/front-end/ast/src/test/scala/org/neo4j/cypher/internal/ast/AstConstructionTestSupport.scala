@@ -384,19 +384,19 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
 
   def nodePat(): NodePattern =
-    NodePattern(None, Seq(), None, None)(pos)
+    NodePattern(None, Seq(), None, None, None)(pos)
 
   def nodePat(name: String, position: InputPosition = pos): NodePattern =
-    NodePattern(Some(Variable(name)(increasePos(position, 1))), Seq(), None, None)(position)
+    NodePattern(Some(Variable(name)(increasePos(position, 1))), Seq(), None, None, None)(position)
 
   def nodePat(name: String, labels: String*): NodePattern =
-    NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None, None)(pos)
+    NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None, None, None)(pos)
 
   def patternExpression(nodeVar1: Variable, nodeVar2: Variable): PatternExpression =
     PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(nodeVar1), Seq.empty, None, None)(pos),
+      NodePattern(Some(nodeVar1), Seq.empty, None, None, None)(pos),
       RelationshipPattern(None, Seq.empty, None, None, None, BOTH)(pos),
-      NodePattern(Some(nodeVar2), Seq.empty, None, None)(pos)
+      NodePattern(Some(nodeVar2), Seq.empty, None, None, None)(pos)
     )(pos))(pos))(Set.empty, "", "")
 
   def query(part: QueryPart): Query =

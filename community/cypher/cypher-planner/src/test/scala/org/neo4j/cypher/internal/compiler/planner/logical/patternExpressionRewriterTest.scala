@@ -116,9 +116,9 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
 
   private def newPatExpr(left: String, right: String): PatternExpression = {
     PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor(left)), Seq.empty, None, None) _,
+      NodePattern(Some(varFor(left)), Seq.empty, None, None, None) _,
       RelationshipPattern(Some(varFor("  REL666")), Seq.empty, None, None, None, SemanticDirection.OUTGOING) _,
-      NodePattern(Some(varFor(right)), Seq.empty, None, None) _) _) _)(Set.empty, "", "")
+      NodePattern(Some(varFor(right)), Seq.empty, None, None, None) _) _) _)(Set.empty, "", "")
   }
 
   private def createStrategy: QueryGraphSolver = {

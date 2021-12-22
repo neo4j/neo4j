@@ -205,7 +205,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
   @tailrec
   private def flip(element: PatternElement, step: PathStep): PathStep  = {
     element match {
-      case np@NodePattern(node, _, _, _) =>
+      case np@NodePattern(node, _, _, _, _) =>
         NodePathStep(node.get.copyId, step)(np.position)
 
       case rc@RelationshipChain(leftSide, RelationshipPattern(rel, _, length, _, _, direction, _), to) => length match {

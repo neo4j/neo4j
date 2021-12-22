@@ -376,7 +376,7 @@ object Deprecations {
       def isDefinition(variable: LogicalVariable): Boolean = allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
 
       val (declaredVariables, referencedVariables) = pattern.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-        case NodePattern(maybeVariable, _, maybeProperties, _)                  => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+        case NodePattern(maybeVariable, _, _, maybeProperties, _)                  => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
         case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
         case NamedPatternPart(variable, _)                                      => acc => TraverseChildren((acc._1 + variable, acc._2))
       }

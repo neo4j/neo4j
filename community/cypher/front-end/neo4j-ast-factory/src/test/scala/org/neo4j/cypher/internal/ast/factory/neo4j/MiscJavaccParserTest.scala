@@ -78,8 +78,8 @@ class MiscJavaccParserTest extends JavaccParserAstTestBase[Any] {
   test("should allow True and False as label name") {
     implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
 
-    parsing("(:True)") shouldGive NodePattern(None, Seq(labelName("True")), None, None)_
-    parsing("(:False)") shouldGive NodePattern(None, Seq(labelName("False")), None, None)_
+    parsing("(:True)") shouldGive NodePattern(None, Seq(labelName("True")), None, None, None)_
+    parsing("(:False)") shouldGive NodePattern(None, Seq(labelName("False")), None, None, None)_
 
     parsing("(t:True)") shouldGive nodePat("t", "True")
     parsing("(f:False)") shouldGive nodePat("f", "False")
