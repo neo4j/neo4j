@@ -43,11 +43,64 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
     assertSameAST(testName)
   }
 
+  // Show user privileges
+
+  test("SHOW USER user PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USERS $user PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER `us%er` PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER user, $user PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER user, $user PRIVILEGE") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USERS user1, $user, user2 PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USERS PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER privilege PRIVILEGE") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER privilege, privileges PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test(s"SHOW USER defined PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test(s"SHOW USERS yield, where PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
   // yield / skip / limit / order by / where
 
   Seq(
     "",
     "ALL",
+    "USER",
+    "USER neo4j",
+    "USERS neo4j, $user",
   ).foreach { privType =>
     Seq(
       "PRIVILEGE",
@@ -95,6 +148,37 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
     }
   }
 
+  // yield and where edge cases
+
+  Seq(
+    "USER",
+    "USERS"
+  ).foreach { privType =>
+    test(s"SHOW $privType yield PRIVILEGES YIELD access RETURN *") {
+      assertSameAST(testName)
+    }
+
+    test(s"SHOW $privType yield, where PRIVILEGES YIELD access RETURN *") {
+      assertSameAST(testName)
+    }
+
+    test(s"SHOW $privType where PRIVILEGE WHERE access = 'none'") {
+      assertSameAST(testName)
+    }
+
+    test(s"SHOW $privType privilege PRIVILEGE YIELD access RETURN *") {
+      assertSameAST(testName)
+    }
+
+    test(s"SHOW $privType privileges PRIVILEGES YIELD access RETURN *") {
+      assertSameAST(testName)
+    }
+
+    test(s"SHOW $privType privilege, privileges PRIVILEGES YIELD access RETURN *") {
+      assertSameAST(testName)
+    }
+  }
+
   // Fails to parse
 
   test("SHOW PRIVILAGES") {
@@ -137,6 +221,39 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
+
+    assertJavaCCException(testName, exceptionMessage)
+  }
+
+  test("SHOW ALL USER user PRIVILEGES") {
+    val exceptionMessage =
+      s"""Invalid input 'USER': expected
+         |  "CONSTRAINT"
+         |  "CONSTRAINTS"
+         |  "FUNCTION"
+         |  "FUNCTIONS"
+         |  "INDEX"
+         |  "INDEXES"
+         |  "PRIVILEGE"
+         |  "PRIVILEGES"
+         |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
+
+    assertJavaCCException(testName, exceptionMessage)
+  }
+
+  test("SHOW USER us%er PRIVILEGES") {
+    assertJavaCCException(testName, """Invalid input '%': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 13 (offset: 12))""")
+  }
+
+  test("SHOW USER user PRIVILEGES YIELD *, blah RETURN user") {
+    val exceptionMessage =
+      s"""Invalid input ',': expected
+         |  "LIMIT"
+         |  "ORDER"
+         |  "RETURN"
+         |  "SKIP"
+         |  "WHERE"
+         |  <EOF> (line 1, column 34 (offset: 33))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
   }

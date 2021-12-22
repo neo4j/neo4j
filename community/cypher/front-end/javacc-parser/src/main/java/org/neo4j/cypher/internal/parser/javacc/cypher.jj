@@ -3181,17 +3181,17 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | showCommandType=<RELATIONSHIP> statement=ShowRelationshipCommand( start, useClause )
         | showCommandType=<REL> statement=ShowRelCommand( start, useClause )
         | showCommandType=<BUILT> <IN> statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.BUILT_IN )
-        | showCommandType=<USER> <DEFINED> statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.USER_DEFINED )
         | statement=ShowRoles( start, useClause, true )
         | statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowDatabase( start, useClause )
-        | statement=ShowUsers( start, useClause )
         | statement=ShowCurrentUser( start, useClause )
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowProcedures( start, useClause )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowTransactions( start, useClause )
         | statement=ShowPrivileges( start, useClause )
+        | statement=ShowUserCommand( start, useClause )
+        | <USERS> statement=ShowUsersCommand( start, useClause )
     )
     {
         return statement;
@@ -3224,6 +3224,37 @@ STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) :
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowPrivileges( start, useClause )
+    )
+    {
+        return statement;
+    }
+}
+
+STATEMENT ShowUserCommand( Token start, USE_CLAUSE useClause ) :
+{
+    Token showCommandType = null;
+    STATEMENT statement = null;
+}
+{
+    (
+        // Need a lookahead of 3 to distinguish 'SHOW USER DEFINED FUNCTION[S]' from 'SHOW USER defined[, ...] PRIVILEGE[S]'
+       LOOKAHEAD(<USER> <DEFINED> ( <FUNCTION> | <FUNCTIONS> )) showCommandType=<USER> <DEFINED>
+            statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.USER_DEFINED )
+       | <USER> statement=ShowUserPrivileges( start, useClause )
+    )
+    {
+        return statement;
+    }
+}STATEMENT ShowUsersCommand( Token start, USE_CLAUSE useClause ) :
+{
+    STATEMENT statement = null;
+}
+{
+    (
+        // Need these lookaheads to distinguish e.g. 'SHOW USERS YIELD ...' from 'SHOW USERS yield[, ...] PRIVILEGE[S]'
+        LOOKAHEAD(( <YIELD> | <WHERE> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowUserPrivileges( start, useClause )
+        | LOOKAHEAD(<YIELD> | <WHERE> | <EOF>) statement=ShowUsers( start, useClause )
+        | statement=ShowUserPrivileges( start, useClause )
     )
     {
         return statement;
@@ -4364,7 +4395,7 @@ STATEMENT_WITH_GRAPH ShowUsers( Token start, USE_CLAUSE useClause ):
     WHERE where = null;
 }
 {
-    <USERS> (
+    (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
         | where=WhereClause()
     )?
@@ -4403,6 +4434,30 @@ STATEMENT_WITH_GRAPH ShowPrivileges( Token start, USE_CLAUSE useClause ):
     )?
     {
         return astFactory.useGraph( astFactory.showAllPrivileges( pos( start ), yield, returnClause, where ), useClause );
+    }
+}
+
+STATEMENT_WITH_GRAPH ShowUserPrivileges( Token start, USE_CLAUSE useClause ):
+{
+    List<SimpleEither<String, PARAMETER>> users = null;
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    WHERE where = null;
+}
+{
+    (
+        // The lookahead is needed to distinguish 'SHOW USER[S] privilege[, ..] PRIVILEGE[S] ...' and 'SHOW USER[S] PRIVILEGE[S] ...'
+        LOOKAHEAD(( <PRIVILEGE> | <PRIVILEGES> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) (users=SymbolicNameOrStringParameterList() ( <PRIVILEGE> | <PRIVILEGES> ))
+        | ( <PRIVILEGE> | <PRIVILEGES> )
+        | (users=SymbolicNameOrStringParameterList() ( <PRIVILEGE> | <PRIVILEGES> ))
+    )
+    (
+        ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+        | ( where=WhereClause() )
+    )?
+
+    {
+        return astFactory.useGraph( astFactory.showUserPrivileges( pos( start ), users, yield, returnClause, where ), useClause );
     }
 }
 

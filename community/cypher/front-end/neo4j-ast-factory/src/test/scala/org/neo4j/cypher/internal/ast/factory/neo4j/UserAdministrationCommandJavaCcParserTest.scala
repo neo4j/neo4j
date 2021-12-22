@@ -71,7 +71,15 @@ class UserAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW USER") {
-    assertJavaCCException(testName, "Invalid input '': expected \"DEFINED\" (line 1, column 10 (offset: 9))")
+    val exceptionMessage =
+      s"""Invalid input '': expected
+         |  "DEFINED"
+         |  "PRIVILEGE"
+         |  "PRIVILEGES"
+         |  a parameter
+         |  an identifier (line 1, column 10 (offset: 9))""".stripMargin
+
+    assertJavaCCException(testName, exceptionMessage)
   }
 
   test("SHOW USERS YIELD *,blah RETURN user") {

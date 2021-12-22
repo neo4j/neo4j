@@ -254,11 +254,11 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
   }
 
   test("SHOW user PROCEDURE") {
-    assertJavaCCException(testName, """Invalid input 'PROCEDURE': expected "DEFINED" (line 1, column 11 (offset: 10))""")
+    assertJavaCCException(testName, """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))""")
   }
 
   test("SHOW USER user PROCEDURE") {
-    assertJavaCCException(testName, """Invalid input 'user': expected "DEFINED" (line 1, column 11 (offset: 10))""")
+    assertJavaCCException(testName, """Invalid input 'PROCEDURE': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))""")
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY USER user") {

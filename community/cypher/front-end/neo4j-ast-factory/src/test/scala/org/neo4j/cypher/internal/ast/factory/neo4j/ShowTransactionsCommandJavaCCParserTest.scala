@@ -239,7 +239,7 @@ class ShowTransactionsCommandJavaCCParserTest extends ParserComparisonTestBase w
 
   test("SHOW USER user TRANSACTION") {
     assertJavaCCException(testName,
-      """Invalid input 'user': expected "DEFINED" (line 1, column 11 (offset: 10))""".stripMargin)
+      """Invalid input 'TRANSACTION': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))""".stripMargin)
   }
 
   test("SHOW TRANSACTION EXECUTED BY USER user") {

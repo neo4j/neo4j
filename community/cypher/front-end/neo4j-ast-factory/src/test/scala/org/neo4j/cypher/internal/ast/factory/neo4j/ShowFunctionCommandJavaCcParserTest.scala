@@ -245,11 +245,11 @@ class ShowFunctionCommandJavaCcParserTest extends ParserComparisonTestBase with 
   }
 
   test("SHOW user FUNCTION") {
-    assertJavaCCException(testName, """Invalid input 'FUNCTION': expected "DEFINED" (line 1, column 11 (offset: 10))""")
+    assertJavaCCException(testName, """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 19 (offset: 18))""")
   }
 
   test("SHOW USER user FUNCTION") {
-    assertJavaCCException(testName, """Invalid input 'user': expected "DEFINED" (line 1, column 11 (offset: 10))""")
+    assertJavaCCException(testName, """Invalid input 'FUNCTION': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))""")
   }
 
   test("SHOW FUNCTION EXECUTABLE BY USER user") {
@@ -273,7 +273,7 @@ class ShowFunctionCommandJavaCcParserTest extends ParserComparisonTestBase with 
   }
 
   test("SHOW USER FUNCTIONS") {
-    assertJavaCCException(testName, """Invalid input 'FUNCTIONS': expected "DEFINED" (line 1, column 11 (offset: 10))""")
+    assertJavaCCException(testName, """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))""")
   }
 
   test("SHOW USER-DEFINED FUNCTIONS") {
