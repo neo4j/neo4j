@@ -279,7 +279,7 @@ public final class SettingValueParsers
                         {
                             builder.append( ' ' );
                         }
-                        else
+                        else if ( !atBoundary )
                         {
                             // Start interpreting the rest as a new setting
                             builder.append( System.lineSeparator() );
@@ -341,7 +341,7 @@ public final class SettingValueParsers
                 {
                     builder.append( System.lineSeparator() );
                 }
-                builder.append( parseLine( settings[i] ) );
+                builder.append( parseLine( settings[i].trim() ) );
             }
             return builder.toString();
         }
