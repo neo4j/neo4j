@@ -75,13 +75,15 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
     if (self.hasNext) Stream.cons(self.next(), self.toStream)
     else Stream.empty[T]
   }
+
   def toArray[B >: T : ClassTag]: Array[B] = {
-      val buffer = ArrayBuffer.empty[B]
-      while (hasNext) {
-        buffer.append(next())
-      }
+    val buffer = ArrayBuffer.empty[B]
+    while (hasNext) {
+      buffer.append(next())
+    }
     buffer.toArray
   }
+
   def toSet[B >: T]: immutable.Set[B] = toStream.toSet
   def foreach[U](f: T => U): Unit = {
     while (hasNext) {

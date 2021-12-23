@@ -72,7 +72,6 @@ class OrderedGroupingAggTable(orderedGroupingFunction: (CypherRow, QueryState) =
     current.eq(first) || currentGroupKey == orderedGroupingFunction(current, state)
   }
 
-
   override def result(): ClosingIterator[CypherRow] = {
     val addOrderedKeys = AggregationPipe.computeAddKeysToResultRowFunction(orderedGroupingColumns)
     super.result().map { row =>

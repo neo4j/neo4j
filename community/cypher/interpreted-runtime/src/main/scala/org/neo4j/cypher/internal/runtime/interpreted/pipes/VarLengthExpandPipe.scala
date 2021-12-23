@@ -101,11 +101,10 @@ case class VarLengthExpandPipe(source: Pipe,
     def expand(row: CypherRow, n: VirtualNodeValue): ClosingIterator[CypherRow] = {
       if (filteringStep.filterNode(row, state)(n)) {
         val paths = varLengthExpand(n, state, max, row)
-        val foo = paths.collect {
+        paths.collect {
           case (node, rels) if rels.size >= min && isToNodeValid(row, node) =>
             rowFactory.copyWith(row, relName, rels.asList, toName, node)
         }
-        foo
       } else {
         ClosingIterator.empty
       }
