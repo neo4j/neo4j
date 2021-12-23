@@ -132,6 +132,7 @@ object SizeEstimation {
             val sizeOfNewArray = if (typ.isPrimitive) 2 else 3
             sizeOfIntPush(numberOfElements) + sizeOfNewArray + (0 until numberOfElements).map(i => 1 + sizeOfIntPush(i) + 1).sum
           case NewArray(typ, size) => sizeOfIntPush(size) + (if (typ.isPrimitive) 2 else 3)
+          case NewArrayDynamicSize(typ, _) => if (typ.isPrimitive) 2 else 3
 
           //Conditions and loops
           case _: Ternary => 2 * JUMP_INSTRUCTION //two jump instructions

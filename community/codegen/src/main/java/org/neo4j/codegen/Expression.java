@@ -590,6 +590,18 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression newArray( TypeReference baseType, Expression size )
+    {
+        return new Expression( arrayOf( baseType ) )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.newArray( baseType, size );
+            }
+        };
+    }
+
     //TODO deduce type from constants
     public static Expression newInitializedArray( TypeReference baseType, Expression... constants )
     {

@@ -345,6 +345,16 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
+    public void newArray( TypeReference type, Expression size )
+    {
+        result.append( "newArray{type=" );
+        type.writeTo( result );
+        result.append( ", size=" );
+        size.accept( this );
+        result.append( '}' );
+    }
+
+    @Override
     public void longToDouble( Expression expression )
     {
         result.append( "(double)" );

@@ -2472,6 +2472,34 @@ public abstract class CodeGenerationTest
                         .invoke( new long[]{3L, 4L, 3L} ) );
     }
 
+    @Test
+    void shouldCreateAndPopulateArrayWithDynamicSize() throws Throwable
+    {
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "LongArrayClass" ) )
+        {
+            try ( CodeBlock body = simple.generateMethod( long[].class, "get",
+                                                          param( int.class, "size" ),
+                                                          param( long.class, "value" ) ) )
+            {
+                body.assign( typeReference( long[].class ), "array", newArray( typeReference( long.class ), body.load( "size" ) ) );
+                var i = body.declare( typeReference( int.class ), "i" );
+                body.assign( i, constant( 0 ) );
+                try ( var innerBody = body.whileLoop( Expression.lt( body.load( "i" ), body.load( "size" ) ) ) )
+                {
+                    innerBody.expression( arraySet( body.load( "array" ), innerBody.load( "i" ), innerBody.load( "value" ) ) );
+                    innerBody.assign( i, add( innerBody.load( "i" ), constant( 1 ) ) );
+                }
+                body.returns( body.load( "array" ) );
+            }
+            handle = simple.handle();
+        }
+
+        assertArrayEquals( new long[]{42L, 42L, 42L},
+                           (long[]) instanceMethod( handle.newInstance(), "get", int.class, long.class )
+                                   .invoke( 3, 42L ) );
+    }
+
     private <T, U> void assertArrayLoad( Class<T> returnType, Class<U> arrayType, U array, int index, T expected )
             throws Throwable
     {

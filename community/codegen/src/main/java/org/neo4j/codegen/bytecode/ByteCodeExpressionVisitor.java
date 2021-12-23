@@ -707,6 +707,13 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
+    public void newArray( TypeReference type, Expression size )
+    {
+        size.accept( this );
+        createArray( type );
+    }
+
+    @Override
     public void longToDouble( Expression expression )
     {
         expression.accept( this );

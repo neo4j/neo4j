@@ -81,6 +81,8 @@ public interface ExpressionVisitor
 
     void newArray( TypeReference type, int size );
 
+    void newArray( TypeReference type, Expression size );
+
     void longToDouble( Expression expression );
 
     void pop( Expression expression );

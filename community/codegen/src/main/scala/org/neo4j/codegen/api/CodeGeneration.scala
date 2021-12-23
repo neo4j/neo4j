@@ -367,6 +367,10 @@ object CodeGeneration {
     case NewArray(baseType, size) =>
       codegen.Expression.newArray(baseType, size)
 
+    //new Foo[size]
+    case NewArrayDynamicSize(baseType, size) =>
+      codegen.Expression.newArray(baseType, compileExpression(size, block))
+
     case Returns(value: IntermediateRepresentation) =>
       block.returns(compileExpression(value, block))
       codegen.Expression.EMPTY

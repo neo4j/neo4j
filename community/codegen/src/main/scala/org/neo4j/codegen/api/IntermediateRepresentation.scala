@@ -501,6 +501,10 @@ case class NewArray(baseType: codegen.TypeReference, size: Int) extends Intermed
   override def typeReference: TypeReference = TypeReference.arrayOf(baseType)
 }
 
+case class NewArrayDynamicSize(baseType: codegen.TypeReference, size: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.arrayOf(baseType)
+}
+
 case class Returns(representation: IntermediateRepresentation) extends IntermediateRepresentation {
   override def typeReference: TypeReference = TypeReference.VOID
 }
@@ -1151,6 +1155,8 @@ object IntermediateRepresentation {
   def newInstance(inner: ExtendClass, params: IntermediateRepresentation*): NewInstanceInnerClass = NewInstanceInnerClass(inner, params)
 
   def newArray(baseType: codegen.TypeReference, size: Int): NewArray = NewArray(baseType, size)
+
+  def newDynamicallySizedArray(baseType: codegen.TypeReference, size: IntermediateRepresentation): NewArrayDynamicSize = NewArrayDynamicSize(baseType, size)
 
   def not(test: IntermediateRepresentation): IntermediateRepresentation = {
     @tailrec
