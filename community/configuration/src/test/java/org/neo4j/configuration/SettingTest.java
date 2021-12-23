@@ -401,10 +401,16 @@ class SettingTest
                 "value1",                   // value1
                 "value2 value3",            // value2 value3
                 "\"value 4\" \"value 5\"",  // "value 4" "value 5"
-                "\"value 6\"",              // "value 6"
+                "\"value  6\"",             // "value  6"
                 "value\"quoted\"",          // value"quoted"
                 "\"value \"\"\"",           // "value """
                 "\"\"quote",                // ""quote          Escaped start quote
+                " valuewithspace  ",        // valuewithspace
+                "strwithctrl\u000b\u0002",  // some control characters
+                " values  with   spaces ",  // values  with  spaces
+                "\"one quoted\"   value  ", // one quoted value             Note double spaces
+                "  one  \"quoted   value\"",// one quoted value             Note double spaces
+                "\"two quoted\"  \"values\""// "two quoted" "values"        Note double spaces
             };
         var outputs = new String[]
             {
@@ -413,10 +419,21 @@ class SettingTest
                 "value3",                   // value3
                 "value 4",                  // value 4
                 "value 5",                  // value 5
-                "value 6",                  // value 6
+                "value  6",                 // value  6
                 "value\"quoted\"",          // value"quoted"
                 "value \"",                 // value "
                 "\"quote",                  // "quote
+                "valuewithspace",           // valuewithspace
+                "strwithctrl",              // some control characters
+                "values",                   // values
+                "with",                     // with
+                "spaces",                   // spaces
+                "one quoted",               // one quoted
+                "value",                    // value
+                "one",                      // one
+                "quoted   value",           // quoted   value
+                "two quoted",               // two quoted
+                "values",                   // values
             };
         var actualSettings = setting.parse( String.join( System.lineSeparator(), inputs ) );
         var expectedSettings = String.join( System.lineSeparator(), outputs );
