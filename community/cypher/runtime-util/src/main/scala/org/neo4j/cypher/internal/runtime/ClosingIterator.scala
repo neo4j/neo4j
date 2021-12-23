@@ -68,14 +68,12 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
   // PUBLIC API
   def isEmpty: Boolean = !hasNext
   def nonEmpty: Boolean = hasNext
-  def toTraversable: Traversable[T] = toStream
-  def toSeq: Seq[T] = toStream
-  def toList: List[T] = toStream.toList
-  def toStream: Stream[T] = {
-    if (self.hasNext) Stream.cons(self.next(), self.toStream)
-    else Stream.empty[T]
+  def toSeq: Seq[T] = toIterator.toSeq
+  def toList: List[T] = toIterator.toList
+  def toIterator: Iterator[T] = new Iterator[T] {
+    override def hasNext: Boolean = self.hasNext
+    override def next(): T = self.next()
   }
-
   def toArray[B >: T : ClassTag]: Array[B] = {
     val buffer = ArrayBuffer.empty[B]
     while (hasNext) {
@@ -83,8 +81,7 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
     }
     buffer.toArray
   }
-
-  def toSet[B >: T]: immutable.Set[B] = toStream.toSet
+  def toSet[B >: T]: immutable.Set[B] = toIterator.toSet
   def foreach[U](f: T => U): Unit = {
     while (hasNext) {
       f(next())

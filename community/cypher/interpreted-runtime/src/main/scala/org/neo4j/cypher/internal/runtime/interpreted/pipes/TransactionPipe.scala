@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.EntityTransformer
+import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.CypherRowEntityTransformer
 import org.neo4j.exceptions.InternalException
@@ -59,9 +59,9 @@ trait TransactionPipe {
           while (result.hasNext) {
             result.next()
           }
-          Stream.empty
+          Iterator.empty
         } else {
-          result.toStream
+          result.toIterator
         }
       }
 
