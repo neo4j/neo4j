@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.KernelVersion;
@@ -90,11 +89,20 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                     }
                     catch ( IllegalArgumentException e )
                     {
-                        throw new UnsupportedLogVersionException( String.format(
-                                "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This " +
-                                        "indicates that the log files originates from an older version of neo4j, which we don't support " +
-                                        "migrations from.",
-                                versionCode, KernelVersion.EARLIEST ) );
+                        String msg;
+                        if ( versionCode > KernelVersion.LATEST.version() )
+                        {
+                            msg = String.format( "Log file contains entries with prefix %d, and the highest supported prefix is %s. This " +
+                                                 "indicates that the log files originates from an newer version of neo4j, which we don't support " +
+                                                 "downgrading from.", versionCode, KernelVersion.LATEST );
+                        }
+                        else
+                        {
+                            msg = String.format( "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This " +
+                                                 "indicates that the log files originates from an older version of neo4j, which we don't support " +
+                                                 "migrations from.", versionCode, KernelVersion.EARLIEST );
+                        }
+                        throw new UnsupportedLogVersionException( msg );
                     }
                     // Since checksum is calculated over the whole entry we need to rewind and begin
                     // a new checksum segment if we change version parser.
