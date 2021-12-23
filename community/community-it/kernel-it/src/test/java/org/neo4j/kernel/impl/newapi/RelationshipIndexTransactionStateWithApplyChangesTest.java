@@ -49,8 +49,8 @@ public class RelationshipIndexTransactionStateWithApplyChangesTest extends Index
         Write write = tx.dataWrite();
         long node = write.nodeCreate();
         int relType = tx.tokenWrite().relationshipTypeGetOrCreateForName( DEFAULT_TYPE );
-        write.relationshipCreate( node, relType, node );
-        return setPropsOnEntity( tx, node, val, val2 );
+        long rel = write.relationshipCreate( node, relType, node );
+        return setPropsOnEntity( tx, rel, val, val2 );
     }
 
     @Override
