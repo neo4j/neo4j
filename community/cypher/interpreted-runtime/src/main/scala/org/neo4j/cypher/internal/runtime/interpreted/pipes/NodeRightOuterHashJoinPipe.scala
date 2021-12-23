@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
@@ -46,12 +47,12 @@ case class NodeRightOuterHashJoinPipe(nodeVariables: Set[String],
         case Some(joinKey) =>
           val lhsRows = probeTable(joinKey)
           if (lhsRows.hasNext) {
-            ClosingIterator.asClosingIterator(lhsRows.asScala.map { lhsRow =>
+            lhsRows.asScala.map { lhsRow =>
               val outputRow = rowFactory.copyWith(rhsRow)
               // lhs and rhs might have different nullability - should use nullability on rhs
               outputRow.mergeWith(lhsRow, state.query, false)
               outputRow
-            })
+            }.asClosingIterator
           } else {
             ClosingIterator.single(addNulls(rhsRow))
           }

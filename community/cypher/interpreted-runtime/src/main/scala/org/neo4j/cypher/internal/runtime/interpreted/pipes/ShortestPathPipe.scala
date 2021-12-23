@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -71,7 +72,7 @@ case class ShortestPathPipe(source: Pipe,
               throw new InternalException(s"Expected path, got '$value'")
           }
       }
-      ClosingIterator(iterator)
+      iterator.asClosingIterator
     })
   }
 }

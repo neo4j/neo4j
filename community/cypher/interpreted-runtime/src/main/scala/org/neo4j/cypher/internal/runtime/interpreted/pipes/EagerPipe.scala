@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
@@ -39,6 +40,6 @@ case class EagerPipe(src: Pipe)(val id: Id = Id.INVALID_ID)
     while (input.hasNext) {
       buffer.add(input.next())
     }
-    ClosingIterator(buffer.autoClosingIterator().asScala).closing(buffer)
+    buffer.autoClosingIterator().asClosingIterator.closing(buffer)
   }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.QueryStatistics
@@ -68,7 +69,7 @@ trait TransactionPipe {
       val subqueryStatistics = stateWithNewTransaction.getStatistics
       state.query.addStatistics(subqueryStatistics)
 
-      ClosingIterator.asClosingIterator(result)
+      result.asClosingIterator
     }
   }
 

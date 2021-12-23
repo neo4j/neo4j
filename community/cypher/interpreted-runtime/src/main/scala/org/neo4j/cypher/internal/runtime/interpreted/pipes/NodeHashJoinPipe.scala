@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -28,8 +29,6 @@ import org.neo4j.kernel.impl.util.collection
 import org.neo4j.values.storable.LongArray
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
-
-import scala.collection.JavaConverters.asScalaIteratorConverter
 
 case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
                            (val id: Id = Id.INVALID_ID)
@@ -56,7 +55,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
       for {
         rhsRow <- rhsIterator
         joinKey <- computeKey(rhsRow)
-        lhsRow <- ClosingIterator.asClosingIterator(table.get(joinKey).asScala)
+        lhsRow <- table.get(joinKey).asClosingIterator
       } yield {
         val output = lhsRow.createClone()
         output.mergeWith(rhsRow, state.query)

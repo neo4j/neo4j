@@ -275,7 +275,26 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
   }
 }
 
+
+
 object ClosingIterator {
+
+  implicit class JavaIteratorAsClosingIterator[T](val iterator: java.util.Iterator[T]) {
+    def asClosingIterator: ClosingIterator[T] = new DelegatingClosingJavaIterator(iterator)
+  }
+
+  implicit class JavaCollectionAsClosingIterator[T](val collection: java.util.Collection[T]) {
+    def asClosingIterator: ClosingIterator[T] = new DelegatingClosingJavaIterator(collection.iterator())
+  }
+
+  implicit class ScalaSeqAsClosingIterator[T](val seq: GenTraversableOnce[T]) {
+    def asClosingIterator: ClosingIterator[T] =new DelegatingClosingIterator(seq.toIterator)
+  }
+
+  implicit class OptionAsClosingIterator[T](val option: Option[T]) {
+    def asClosingIterator: ClosingIterator[T] =new DelegatingClosingIterator(option.toIterator)
+  }
+
   /**
    * An empty closing iterator.
    * This cannot be a val, since resources can be mutated.

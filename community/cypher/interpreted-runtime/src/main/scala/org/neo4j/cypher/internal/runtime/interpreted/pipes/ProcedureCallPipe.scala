@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -71,7 +72,7 @@ case class ProcedureCallPipe(source: Pipe,
     builder.sizeHint(resultIndices.length)
     input.flatMap { input =>
       val argValues = argExprs.map(arg => arg(input, state)).toArray
-      val results: ClosingIterator[Array[AnyValue]] = ClosingIterator(call(qtx, argValues, createProcedureCallContext(qtx))) // always returns all items from the procedure
+      val results: ClosingIterator[Array[AnyValue]] = call(qtx, argValues, createProcedureCallContext(qtx)).asClosingIterator // always returns all items from the procedure
       results map { resultValues =>
         resultIndices foreach { case (k, (v, _)) =>
           builder += v -> resultValues(k) // get the output from correct position and add store variable -> value

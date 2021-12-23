@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -91,7 +92,7 @@ case class OptionalExpandIntoPipe(source: Pipe,
                     row.set(relName, Values.NO_VALUE)
                     ClosingIterator.single(row)
                   }
-                  else ClosingIterator.asClosingIterator(filteredRows)
+                  else filteredRows.asClosingIterator
                 } finally {
                   nodeCursor.close()
                 }

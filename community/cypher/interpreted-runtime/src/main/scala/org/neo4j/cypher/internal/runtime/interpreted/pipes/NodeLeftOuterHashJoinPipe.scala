@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.asClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.OptionAsClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.LongArray
@@ -48,9 +51,9 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String],
     val lhsKeys: collection.Set[LongArray] = probeTable.keySet.asScala
     val joinedRows = for {
       rhsRow <- rhsIterator
-      joinKey <- asClosingIterator(computeKey(rhsRow))
+      joinKey <- computeKey(rhsRow).asClosingIterator
       _ = rhsKeys.add(joinKey)
-      lhsRow <- ClosingIterator(probeTable(joinKey))
+      lhsRow <- probeTable(joinKey).asClosingIterator
     } yield {
       val outputRow = rowFactory.copyWith(lhsRow)
       // lhs and rhs might have different nullability - should use nullability on lhs

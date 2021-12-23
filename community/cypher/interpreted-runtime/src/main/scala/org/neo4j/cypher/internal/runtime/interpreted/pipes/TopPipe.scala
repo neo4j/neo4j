@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.Comparator
+import org.neo4j.collection.trackable.HeapTrackingArrayList
 
+import java.util.Comparator
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaCollectionAsClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -61,7 +64,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
     topTable.sort()
 
-    ClosingIterator(topTable.autoClosingIterator(scopedMemoryTracker).asScala).closing(topTable)
+    topTable.autoClosingIterator(scopedMemoryTracker).asClosingIterator.closing(topTable)
   }
 }
 
@@ -103,7 +106,7 @@ case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
       val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
       val first = input.next()
       var best = first
-      val matchingRows = init(best, memoryTracker)
+      val matchingRows: HeapTrackingArrayList[CypherRow] = init(best, memoryTracker)
 
       while (input.hasNext) {
         val ctx = input.next()
@@ -118,7 +121,7 @@ case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
           matchingRows.add(ctx)
         }
       }
-      ClosingIterator(matchingRows.iterator.asScala)
+      matchingRows.asClosingIterator
     }
   }
 
