@@ -126,13 +126,14 @@ public class TransactionLogQueue extends LifecycleAdapter
 
     static class TxQueueElement
     {
-        private static final long PARK_TIME = MILLISECONDS.toNanos( 10 );
+        private static final long PARK_TIME = MILLISECONDS.toNanos( 100 );
 
         private final TransactionToApply batch;
         private final LogAppendEvent logAppendEvent;
         private final Thread executor;
-        private Thread[] threadsToNotify;
         private Throwable throwable;
+        private TxQueueElement[] elementsToNotify;
+        private volatile long[] txIds;
         private volatile long txId;
 
         TxQueueElement( TransactionToApply batch, LogAppendEvent logAppendEvent )
@@ -144,17 +145,21 @@ public class TransactionLogQueue extends LifecycleAdapter
 
         public long getCommittedTxId()
         {
-            while ( txId == 0 )
+            while ( txId == 0 && txIds == null )
             {
-                LockSupport.parkNanos( this, PARK_TIME );
+                LockSupport.parkNanos( PARK_TIME );
             }
-            var threads = this.threadsToNotify;
-            if ( threads != null )
+            var elements = this.elementsToNotify;
+            if ( elements != null )
             {
-                for ( Thread thread : threads )
+                long[] ids = txIds;
+                for ( int i = 1; i < elements.length; i++ )
                 {
-                    LockSupport.unpark( thread );
+                    TxQueueElement element = elements[i];
+                    element.txId = ids[i];
+                    LockSupport.unpark( element.executor );
                 }
+                txId = ids[0];
             }
             var exception = throwable;
             if ( exception != null )
@@ -168,6 +173,7 @@ public class TransactionLogQueue extends LifecycleAdapter
         {
             this.throwable = throwable;
             this.txId = FAILED_TX_MARKER;
+            LockSupport.unpark( executor );
         }
     }
 
@@ -197,7 +203,7 @@ public class TransactionLogQueue extends LifecycleAdapter
             this.transactionMetadataCache = transactionMetadataCache;
             this.logRotation = logRotation;
             this.log = log;
-            this.waitStrategy = new ParkYieldCombineWaitingStrategy();
+            this.waitStrategy = new SpinParkCombineWaitingStrategy();
         }
 
         @Override
@@ -257,6 +263,7 @@ public class TransactionLogQueue extends LifecycleAdapter
             private final TxQueueElement[] txElements = new TransactionLogQueue.TxQueueElement[CONSUMER_MAX_BATCH];
             private final long[] txIds = new long[CONSUMER_MAX_BATCH];
             private int index;
+            private TxQueueElement[] elements;
 
             TxConsumer( Health databaseHealth, TransactionIdStore transactionIdStore, TransactionLogWriter transactionLogWriter, int checksum,
                     TransactionMetadataCache transactionMetadataCache )
@@ -278,9 +285,11 @@ public class TransactionLogQueue extends LifecycleAdapter
             {
                 databaseHealth.assertHealthy( IOException.class );
                 int drainedElements = index;
+                elements = new TxQueueElement[drainedElements];
                 for ( int i = 0; i < drainedElements; i++ )
                 {
                     TxQueueElement txQueueElement = txElements[i];
+                    elements[i] = txQueueElement;
                     LogAppendEvent logAppendEvent = txQueueElement.logAppendEvent;
                     long lastTransactionId = TransactionIdStore.BASE_TX_ID;
                     try ( var appendEvent = logAppendEvent.beginAppendTransaction( drainedElements ) )
@@ -344,18 +353,10 @@ public class TransactionLogQueue extends LifecycleAdapter
 
             public void complete()
             {
-                int lastIndex = index - 1;
-                var threadGroup = new Thread[lastIndex];
-                for ( int i = 0; i < lastIndex; i++ )
-                {
-                    TxQueueElement txElement = txElements[i];
-                    threadGroup[i] = txElement.executor;
-                    txElement.txId = txIds[i];
-                }
-                TxQueueElement lastElement = txElements[lastIndex];
-                lastElement.threadsToNotify = threadGroup;
-                lastElement.txId = txIds[lastIndex];
-                LockSupport.unpark( lastElement.executor );
+                TxQueueElement first = txElements[0];
+                first.elementsToNotify = elements;
+                first.txIds = txIds;
+                LockSupport.unpark( first.executor );
 
                 Arrays.fill( txElements, 0, index, null );
                 index = 0;
@@ -379,14 +380,14 @@ public class TransactionLogQueue extends LifecycleAdapter
     }
 
     /**
-     * Message wait strategy that will try to wait at first for number of times for new work by using Thread.yield, and fallback to parkNanos
+     * Message wait strategy that will try to wait at first for number of times for new work by using Thread.onSpinWait, and fallback to parkNanos
      * if new work did not arrive.
      * This is a strategy that should be good on systems with lots of work but may cause some increased latency spikes on systems with relatively small
      * number of incoming transactions.
      */
-    private static class ParkYieldCombineWaitingStrategy implements MessagePassingQueue.WaitStrategy
+    private static class SpinParkCombineWaitingStrategy implements MessagePassingQueue.WaitStrategy
     {
-        private static final int YIELD_THRESHOLD = 1000;
+        private static final int SPIN_THRESHOLD = Runtime.getRuntime().availableProcessors() < 2 ? 1 : 1000;
         private static final int SHORT_PARK_THRESHOLD = 100_000;
         private static final int LONG_PARK_COUNTER = SHORT_PARK_THRESHOLD + 1;
         private static final int SHORT_PARK_TIME = 10;
@@ -395,9 +396,9 @@ public class TransactionLogQueue extends LifecycleAdapter
         @Override
         public int idle( int idleCounter )
         {
-            if ( idleCounter < YIELD_THRESHOLD )
+            if ( idleCounter < SPIN_THRESHOLD )
             {
-                Thread.yield();
+                Thread.onSpinWait();
             }
             else if ( idleCounter < SHORT_PARK_THRESHOLD )
             {
