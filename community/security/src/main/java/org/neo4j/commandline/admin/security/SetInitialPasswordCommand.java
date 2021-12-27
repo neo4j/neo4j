@@ -23,22 +23,18 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.cli.AbstractCommand;
-import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.string.UTF8;
 import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
@@ -69,89 +65,29 @@ public class SetInitialPasswordCommand extends AbstractCommand implements Passwo
         Config config = loadNeo4jConfig();
         FileSystemAbstraction fileSystem = ctx.fs();
 
-        if ( realUsersExist( config ) )
+        Path file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
+        if ( fileSystem.fileExists( file ) )
         {
-            Path authFile = CommunitySecurityModule.getUserRepositoryFile( config );
-            throw new CommandFailedException( realUsersExistErrorMsg( fileSystem, authFile ) );
-        }
-        else
-        {
-            Path file = CommunitySecurityModule.getInitialUserRepositoryFile( config );
-            if ( fileSystem.fileExists( file ) )
-            {
-                fileSystem.deleteFile( file );
-            }
-
-            FileUserRepository userRepository =
-                    new FileUserRepository( fileSystem, file, NullLogProvider.getInstance() );
-            try
-            {
-                userRepository.start();
-                userRepository.create(
-                        new User.Builder( INITIAL_USER_NAME, createCredentialForPassword( UTF8.encode( password ) ) )
-                                .withRequiredPasswordChange( changeRequired )
-                                .build()
-                    );
-                userRepository.shutdown();
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
-            ctx.out().println( "Changed password for user '" + INITIAL_USER_NAME + "'." );
-        }
-    }
-
-    private boolean realUsersExist( Config config )
-    {
-        boolean result = false;
-        Path authFile = CommunitySecurityModule.getUserRepositoryFile( config );
-
-        if ( ctx.fs().fileExists( authFile ) )
-        {
-            result = true;
-
-            // Check if it only contains the default neo4j user
-            FileUserRepository userRepository = new FileUserRepository( ctx.fs(), authFile, NullLogProvider.getInstance() );
-            try ( Lifespan life = new Lifespan( userRepository ) )
-            {
-                ListSnapshot<User> users = userRepository.getSnapshot();
-                if ( users.values().size() == 1 )
-                {
-                    User user = users.values().get( 0 );
-                    if ( INITIAL_USER_NAME.equals( user.name() ) && user.credentials().matchesPassword( UTF8.encode( INITIAL_PASSWORD ) ) )
-                    {
-                        // We allow overwriting an unmodified default neo4j user
-                        result = false;
-                    }
-                }
-            }
-            catch ( IOException e )
-            {
-                // Do not allow overwriting if we had a problem reading the file
-            }
-        }
-        return result;
-    }
-
-    private static String realUsersExistErrorMsg( FileSystemAbstraction fileSystem, Path authFile )
-    {
-        String files;
-        Path parentFile = authFile.getParent();
-        Path roles = parentFile.resolve( "roles" );
-
-        if ( fileSystem.fileExists( roles ) )
-        {
-            files = "`auth` and `roles` files";
-        }
-        else
-        {
-            files = "`auth` file";
+            fileSystem.deleteFile( file );
         }
 
-        return  "the provided initial password was not set because existing Neo4j users were detected at `" +
-               authFile.toAbsolutePath() + "`. Please remove the existing " + files + " if you want to reset your database " +
-                "to only have a default user with the provided password.";
+        FileUserRepository userRepository =
+                new FileUserRepository( fileSystem, file, NullLogProvider.getInstance() );
+        try
+        {
+            userRepository.start();
+            userRepository.create(
+                    new User.Builder( INITIAL_USER_NAME, createCredentialForPassword( UTF8.encode( password ) ) )
+                            .withRequiredPasswordChange( changeRequired )
+                            .build()
+            );
+            userRepository.shutdown();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+        ctx.out().println( "Changed password for user '" + INITIAL_USER_NAME + "'." );
     }
 
     @VisibleForTesting

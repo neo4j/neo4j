@@ -28,8 +28,6 @@ public enum UserSecurityGraphComponentVersion implements ComponentVersion
     /**
      * Version scheme of SECURITY_USER_COMPONENT with breaking changes to the schema:
      * <p>
-     * Version 0 (Neo4j 3.5): - Users were stored in a file.
-     * <p>
      * Version 1 (Neo4j 4.0): - A whole new schema was introduced (see {@link UserSecurityGraphComponent}), so all users must be migrated from the previous file
      * format.
      * <p>
@@ -37,7 +35,6 @@ public enum UserSecurityGraphComponentVersion implements ComponentVersion
      * <p>
      * Version 3 (Neo4j 4.3-drop04): - Introduced user ids
      */
-    COMMUNITY_SECURITY_35( 0, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_35 ),
     COMMUNITY_SECURITY_40( 1, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_40 ),
     COMMUNITY_SECURITY_41( 2, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_41 ),
     COMMUNITY_SECURITY_43D4( 3, SECURITY_USER_COMPONENT, ComponentVersion.Neo4jVersions.VERSION_43D4 ),
@@ -45,7 +42,7 @@ public enum UserSecurityGraphComponentVersion implements ComponentVersion
     COMMUNITY_SECURITY_UNKNOWN_VERSION( UNKNOWN_VERSION, SECURITY_USER_COMPONENT, String.format( "no '%s' graph found", SECURITY_USER_COMPONENT ) );
 
     // Static variables for SECURITY_USER_COMPONENT versions
-    public static final int FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_35.getVersion();
+    public static final int FIRST_VALID_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_40.getVersion();
     public static final int FIRST_RUNTIME_SUPPORTED_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_40.getVersion();
     public static final int LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_43D4.getVersion();
 

@@ -96,44 +96,25 @@ public class CommunitySecurityModule extends SecurityModule
         return null;
     }
 
-    private static final String USER_STORE_FILENAME = "auth";
     private static final String INITIAL_USER_STORE_FILENAME = "auth.ini";
-
-    public static FileUserRepository getUserRepository( Config config, LogProvider logProvider,
-            FileSystemAbstraction fileSystem )
-    {
-        return new FileUserRepository( fileSystem, getUserRepositoryFile( config ), logProvider );
-    }
 
     private static FileUserRepository getInitialUserRepository( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
     {
         return new FileUserRepository( fileSystem, getInitialUserRepositoryFile( config ), logProvider );
     }
 
-    public static Path getUserRepositoryFile( Config config )
-    {
-        return getUserRepositoryFile( config, USER_STORE_FILENAME );
-    }
-
     public static Path getInitialUserRepositoryFile( Config config )
     {
-        return getUserRepositoryFile( config, INITIAL_USER_STORE_FILENAME );
-    }
-
-    private static Path getUserRepositoryFile( Config config, String fileName )
-    {
-        // Resolve auth store file names
         Path authStoreDir = config.get( GraphDatabaseInternalSettings.auth_store_directory );
-        return authStoreDir.resolve( fileName );
+        return authStoreDir.resolve( INITIAL_USER_STORE_FILENAME );
     }
 
     public static UserSecurityGraphComponent createSecurityComponent( AbstractSecurityLog securityLog, Config config, FileSystemAbstraction fileSystem,
                                                                       LogProvider logProvider )
     {
-        UserRepository migrationUserRepository = CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         UserRepository initialUserRepository = CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
 
-        return new UserSecurityGraphComponent( securityLog, migrationUserRepository, initialUserRepository, config );
+        return new UserSecurityGraphComponent( securityLog, initialUserRepository, config );
     }
 
     public static AuthenticationStrategy createAuthenticationStrategy( Config config )

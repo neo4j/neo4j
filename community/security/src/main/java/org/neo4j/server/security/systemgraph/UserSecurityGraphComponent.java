@@ -28,7 +28,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_0_35;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_1_40;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_2_41;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_3_43D4;
@@ -50,16 +49,14 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
             new KnownSystemComponentVersions<>( new NoCommunitySecurityComponentVersion() );
     private final AbstractSecurityLog securityLog;
 
-    public UserSecurityGraphComponent( AbstractSecurityLog securityLog, UserRepository userRepository, UserRepository initialPasswordRepo, Config config )
+    public UserSecurityGraphComponent( AbstractSecurityLog securityLog, UserRepository initialPasswordRepo, Config config )
     {
         super( config );
         this.securityLog = securityLog;
-        KnownCommunitySecurityComponentVersion version0 = new CommunitySecurityComponentVersion_0_35( securityLog, userRepository );
-        KnownCommunitySecurityComponentVersion version1 = new CommunitySecurityComponentVersion_1_40( securityLog, initialPasswordRepo, version0 );
+        KnownCommunitySecurityComponentVersion version1 = new CommunitySecurityComponentVersion_1_40( securityLog, initialPasswordRepo );
         KnownCommunitySecurityComponentVersion version2 = new CommunitySecurityComponentVersion_2_41( securityLog, initialPasswordRepo, version1 );
         KnownCommunitySecurityComponentVersion version3 = new CommunitySecurityComponentVersion_3_43D4( securityLog, initialPasswordRepo, version2 );
 
-        knownUserSecurityComponentVersions.add( version0 );
         knownUserSecurityComponentVersions.add( version1 );
         knownUserSecurityComponentVersions.add( version2 );
         knownUserSecurityComponentVersions.add( version3 );

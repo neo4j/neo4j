@@ -60,7 +60,7 @@ public class SetDefaultAdminCommand extends AbstractCommand
         Config config = loadNeo4jConfig();
         try
         {
-            Path adminIniFile = CommunitySecurityModule.getUserRepositoryFile( config ).getParent().resolve( ADMIN_INI );
+            Path adminIniFile = CommunitySecurityModule.getInitialUserRepositoryFile( config ).resolveSibling( ADMIN_INI );
             if ( ctx.fs().fileExists( adminIniFile ) )
             {
                 ctx.fs().deleteFile( adminIniFile );

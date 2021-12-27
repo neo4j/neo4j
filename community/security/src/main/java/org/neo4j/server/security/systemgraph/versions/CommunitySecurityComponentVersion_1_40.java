@@ -30,13 +30,9 @@ import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVe
  */
 public class CommunitySecurityComponentVersion_1_40 extends SupportedCommunitySecurityComponentVersion
 {
-    private final KnownCommunitySecurityComponentVersion previous;
-
-    public CommunitySecurityComponentVersion_1_40( AbstractSecurityLog securityLog, UserRepository userRepository,
-            KnownCommunitySecurityComponentVersion previous )
+    public CommunitySecurityComponentVersion_1_40( AbstractSecurityLog securityLog, UserRepository userRepository )
     {
         super( COMMUNITY_SECURITY_40, securityLog, userRepository );
-        this.previous = previous;
     }
 
     @Override
@@ -48,10 +44,5 @@ public class CommunitySecurityComponentVersion_1_40 extends SupportedCommunitySe
     @Override
     public void upgradeSecurityGraph( Transaction tx, int fromVersion ) throws Exception
     {
-       if ( fromVersion < version )
-       {
-           // this will create users
-           previous.upgradeSecurityGraph( tx, fromVersion );
-       }
     }
 }

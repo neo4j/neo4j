@@ -64,7 +64,6 @@ class SetInitialPasswordCommandTest
                                                                        fileSystem ) );
 
         authInitFile = CommunitySecurityModule.getInitialUserRepositoryFile( command.loadNeo4jConfig() );
-        CommunitySecurityModule.getUserRepositoryFile( command.loadNeo4jConfig() );
     }
 
     @Test

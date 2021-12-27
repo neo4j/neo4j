@@ -24,20 +24,14 @@ import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.LegacyCredential;
-import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -46,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.server.security.auth.CommunitySecurityModule.getInitialUserRepositoryFile;
 
 @EphemeralTestDirectoryExtension
 class SetDefaultAdminCommandTest
@@ -59,20 +54,13 @@ class SetDefaultAdminCommandTest
     private Path adminIniFile;
 
     @BeforeEach
-    void setup() throws IOException, InvalidArgumentsException
+    void setup()
     {
         command = new SetDefaultAdminCommand( new ExecutionContext( testDir.directory( "home" ),
                                                                     testDir.directory( "conf" ), mock( PrintStream.class ), mock( PrintStream.class ),
                                                                     fileSystem ) );
         final Config config = command.loadNeo4jConfig();
-        UserRepository users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(),
-            fileSystem );
-        users.create(
-            new User.Builder( "jake", LegacyCredential.forPassword( "123" ) )
-                .withRequiredPasswordChange( false )
-                .build()
-        );
-        adminIniFile = CommunitySecurityModule.getUserRepositoryFile( config ).resolveSibling( "admin.ini" );
+        adminIniFile = getInitialUserRepositoryFile( config ).resolveSibling( "admin.ini" );
     }
 
     @Test

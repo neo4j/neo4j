@@ -56,7 +56,6 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
@@ -81,7 +80,6 @@ import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.CURRENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
-import static org.neo4j.dbms.database.SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
@@ -101,7 +99,7 @@ class UserSecurityGraphComponentTest
     private static AuthManager authManager;
 
     @BeforeAll
-    static void setup() throws IOException, InvalidArgumentsException
+    static void setup()
     {
         Config cfg = Config.newBuilder()
                            .set( auth_enabled, TRUE )
@@ -121,15 +119,9 @@ class UserSecurityGraphComponentTest
         // Insert a custom SecurityUserComponent instead of the default one,
         // in order to have a handle on it and to migrate a 3.5 user
         systemGraphComponents.deregister( SECURITY_USER_COMPONENT );
-        UserRepository oldUsers = new InMemoryUserRepository();
-        User oldUser = new User.Builder( "alice", credentialFor( "secret" ) )
-                .withRequiredPasswordChange( false )
-                .build();
-
-        oldUsers.create( oldUser );
         UserRepository initialPassword = new InMemoryUserRepository();
         userSecurityGraphComponent =
-                new UserSecurityGraphComponent( CommunitySecurityLog.NULL_LOG, oldUsers, initialPassword, Config.defaults() );
+                new UserSecurityGraphComponent( CommunitySecurityLog.NULL_LOG, initialPassword, Config.defaults() );
         systemGraphComponents.register( userSecurityGraphComponent );
 
         // remove DBMS runtime component as it is not a subject of this test
@@ -192,26 +184,10 @@ class UserSecurityGraphComponentTest
     static Stream<Arguments> versionAndStatusProvider()
     {
         return Stream.of(
-                Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_35, UNSUPPORTED_BUT_CAN_UPGRADE ),
                 Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40, REQUIRES_UPGRADE ),
                 Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_41, REQUIRES_UPGRADE ),
                 Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_43D4, CURRENT )
         );
-    }
-
-    @Test
-    void shouldAddUserOnUpgradeFrom3_5() throws Exception
-    {
-        // Given
-        initializeLatestSystem();
-        initUserSecurityComponent( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_35 );
-
-        // When running dbms.upgrade
-        systemGraphComponents.upgradeToCurrent( system );
-
-        // Then
-        HashMap<String, Object> usernameAndIds = getUserNamesAndIds();
-        assertThat( usernameAndIds.get( "alice" ) ).isNotNull();
     }
 
     @ParameterizedTest

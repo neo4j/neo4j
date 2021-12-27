@@ -674,7 +674,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val systemGraphComponents = new SystemGraphComponents()
     systemGraphComponents.register(new DefaultSystemGraphComponent(config, Clock.systemUTC))
     systemGraphComponents.register(new CommunityTopologyGraphComponent(config, NullLogProvider.getInstance()))
-    systemGraphComponents.register(new UserSecurityGraphComponent(mock[AbstractSecurityLog], new InMemoryUserRepository, new InMemoryUserRepository, config))
+    systemGraphComponents.register(new UserSecurityGraphComponent(mock[AbstractSecurityLog], new InMemoryUserRepository, config))
 
     val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
     val systemSupplier = SystemGraphRealmHelper.makeSystemSupplier(databaseManager)
