@@ -31,8 +31,6 @@ import java.util.stream.Collectors;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING;
-import org.neo4j.procedure.builtin.QueryId;
-import org.neo4j.procedure.builtin.TransactionId;
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -67,6 +65,8 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.builtin.QueryId;
+import org.neo4j.procedure.builtin.TransactionId;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.AnyValue;
@@ -83,6 +83,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1035,6 +1036,23 @@ class Neo4jTransactionalContextIT
         // Actual assertion
         assertThat( profileStatisticsProvider.getPageCacheHits(), equalTo( closedTxHits + lastHits ) );
         assertThat( profileStatisticsProvider.getPageCacheMisses(), equalTo( closedTxFaults + lastFaults ) );
+    }
+
+    @Test
+    void restartingContextDoesNotLeakKernelTransaction()
+    {
+        InternalTransaction transaction = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var transactionContext = createTransactionContext( transaction );
+
+        var kernelTransactions = graph.getDependencyResolver().resolveDependency( KernelTransactions.class );
+        int initialActiveCount = kernelTransactions.getNumberOfActiveTransactions();
+
+        for ( int i = 0; i < 1024; i++ )
+        {
+            transactionContext.commitAndRestartTx();
+            // we check with some offset to make sure any background job will not fail assertion
+            assertEquals( initialActiveCount, kernelTransactions.getNumberOfActiveTransactions(), 5 );
+        }
     }
 
     @Test
