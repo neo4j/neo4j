@@ -28,8 +28,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.IOException;
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,10 +36,8 @@ import java.util.stream.Stream;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
-import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -52,13 +48,10 @@ import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
@@ -86,7 +79,7 @@ import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecur
 
 @TestDirectoryExtension
 @TestInstance( PER_CLASS )
-class UserSecurityGraphComponentTest
+class UserSecurityGraphComponentIT
 {
     @Inject
     @SuppressWarnings( "unused" )
@@ -113,18 +106,11 @@ class UserSecurityGraphComponentTest
                 .build();
         system = (GraphDatabaseFacade) dbms.database( SYSTEM_DATABASE_NAME );
         DependencyResolver resolver = system.getDependencyResolver();
-        systemGraphComponents = resolver.resolveDependency( SystemGraphComponents.class );
         authManager = resolver.resolveDependency( AuthManager.class );
-
-        // Insert a custom SecurityUserComponent instead of the default one,
-        // in order to have a handle on it and to migrate a 3.5 user
-        systemGraphComponents.deregister( SECURITY_USER_COMPONENT );
-        UserRepository initialPassword = new InMemoryUserRepository();
-        userSecurityGraphComponent =
-                new UserSecurityGraphComponent( CommunitySecurityLog.NULL_LOG, initialPassword, Config.defaults() );
-        systemGraphComponents.register( userSecurityGraphComponent );
+        userSecurityGraphComponent = new UserSecurityGraphComponent( CommunitySecurityLog.NULL_LOG, new InMemoryUserRepository(), Config.defaults() );
 
         // remove DBMS runtime component as it is not a subject of this test
+        systemGraphComponents = resolver.resolveDependency( SystemGraphComponents.class );
         systemGraphComponents.deregister( DBMS_RUNTIME_COMPONENT );
     }
 
@@ -136,6 +122,9 @@ class UserSecurityGraphComponentTest
             n.getRelationships().forEach( Relationship::delete );
             n.delete();
         } ) );
+        // Remove the SecurityUserComponent, to be able to initialize it with the correct version
+        systemGraphComponents.deregister( SECURITY_USER_COMPONENT );
+        systemGraphComponents.initializeSystemGraph( system );
     }
 
     @AfterAll
@@ -148,7 +137,6 @@ class UserSecurityGraphComponentTest
     @MethodSource( "supportedPreviousVersions" )
     void shouldAuthenticate( UserSecurityGraphComponentVersion version ) throws Exception
     {
-        initializeLatestSystem();
         initUserSecurityComponent( version );
         LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ),  EMBEDDED_CONNECTION);
         assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
@@ -157,7 +145,8 @@ class UserSecurityGraphComponentTest
     @Test
     void shouldInitializeDefaultVersion() throws Exception
     {
-        systemGraphComponents.initializeSystemGraph( system );
+        userSecurityGraphComponent.initializeSystemGraph( system, true );
+        systemGraphComponents.register( userSecurityGraphComponent );
 
         HashMap<String,SystemGraphComponent.Status> statuses = new HashMap<>();
         inTx( tx ->
@@ -176,7 +165,6 @@ class UserSecurityGraphComponentTest
     @MethodSource( "versionAndStatusProvider" )
     void shouldInitializeAndUpgradeSystemGraph( UserSecurityGraphComponentVersion version, SystemGraphComponent.Status initialStatus ) throws Exception
     {
-        initializeLatestSystem();
         initUserSecurityComponent( version );
         assertCanUpgradeThisVersionAndThenUpgradeIt( initialStatus );
     }
@@ -195,7 +183,6 @@ class UserSecurityGraphComponentTest
     void shouldAddUserIdsOnUpgradeFromOlderSystemDb( UserSecurityGraphComponentVersion version ) throws Exception
     {
         // Given
-        initializeLatestSystem();
         initUserSecurityComponent( version );
 
         createUser( version, "alice" );
@@ -218,9 +205,8 @@ class UserSecurityGraphComponentTest
     private static Stream<Arguments> supportedPreviousVersions()
     {
         return Arrays.stream( UserSecurityGraphComponentVersion.values() )
-                  .filter( version -> version.runtimeSupported() &&
-                                      version.getVersion() < UserSecurityGraphComponentVersion.LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION )
-                .map( Arguments::of );
+                     .filter( version -> version.runtimeSupported() && !version.isCurrent() )
+                     .map( Arguments::of );
     }
 
     private static void assertCanUpgradeThisVersionAndThenUpgradeIt( SystemGraphComponent.Status initialState ) throws Exception
@@ -295,33 +281,20 @@ class UserSecurityGraphComponentTest
         }
     }
 
-    private static void initializeLatestSystem() throws Exception
-    {
-        var systemGraphComponent = new DefaultSystemGraphComponent( Config.defaults(), Clock.systemUTC() );
-        systemGraphComponent.initializeSystemGraph( system, true );
-
-        var communityTopologyComponent = new CommunityTopologyGraphComponent( Config.defaults(), NullLogProvider.getInstance() );
-        communityTopologyComponent.initializeSystemGraph( system, true );
-    }
-
     private static void initUserSecurityComponent( UserSecurityGraphComponentVersion version ) throws Exception
     {
         KnownCommunitySecurityComponentVersion builder = userSecurityGraphComponent.findSecurityGraphComponentVersion( version );
         inTx( tx -> userSecurityGraphComponent.initializeSystemGraphConstraints( tx ) );
 
-        switch ( version )
+        inTx( builder::setupUsers );
+        if ( version != UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40 )
         {
-        case COMMUNITY_SECURITY_40:
-            inTx( builder::setupUsers );
-            break;
-        case COMMUNITY_SECURITY_41:
-        case COMMUNITY_SECURITY_43D4:
-            inTx( builder::setupUsers );
             inTx( tx -> builder.setVersionProperty( tx, version.getVersion() ) );
-            break;
-        default:
-            break;
         }
+        userSecurityGraphComponent.postInitialization( system, true );
+
+        // re-add the user security component to allow querying for status
+        systemGraphComponents.register( userSecurityGraphComponent );
     }
 
     private static void inTx( ThrowingConsumer<Transaction,Exception> consumer ) throws Exception

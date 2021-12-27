@@ -20,20 +20,14 @@
 package org.neo4j.security;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -41,18 +35,14 @@ import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
-import org.neo4j.string.UTF8;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
@@ -128,15 +118,6 @@ public class BasicSystemGraphRealmTestHelper
         }
     }
 
-    private static Map<String,Object> testAuthenticationToken( String username, String password )
-    {
-        Map<String,Object> authToken = new TreeMap<>();
-        authToken.put( AuthToken.PRINCIPAL, username );
-        authToken.put( AuthToken.CREDENTIALS, UTF8.encode( password ) );
-        authToken.put( AuthToken.SCHEME_KEY, AuthToken.BASIC_SCHEME );
-        return authToken;
-    }
-
     public static void assertAuthenticationSucceeds( SystemGraphRealmHelper realmHelper, String username, String password ) throws Exception
     {
         assertAuthenticationSucceeds( realmHelper, username, password, false );
@@ -147,32 +128,15 @@ public class BasicSystemGraphRealmTestHelper
     {
         var user = realmHelper.getUser( username );
         assertTrue( user.credentials().matchesPassword( password( password ) ) );
-        assertEquals( changeRequired, user.passwordChangeRequired() );
+        assertThat( user.passwordChangeRequired() )
+                .withFailMessage( "Expected change required to be %s, but was %s", changeRequired, user.passwordChangeRequired() )
+                .isEqualTo( changeRequired );
     }
 
     public static void assertAuthenticationFails( SystemGraphRealmHelper realmHelper, String username, String password ) throws Exception
     {
         var user = realmHelper.getUser( username );
         assertFalse( user.credentials().matchesPassword( password( password ) ) );
-    }
-
-    static void assertAuthenticationFailsWithTooManyAttempts( BasicSystemGraphRealm realm, String username, String badPassword, int attempts )
-            throws InvalidAuthTokenException
-    {
-        for ( int i = 0; i < attempts; i++ )
-        {
-            LoginContext login = realm.login( testAuthenticationToken( username, badPassword ), EMBEDDED_CONNECTION );
-            if ( AuthenticationResult.SUCCESS.equals( login.subject().getAuthenticationResult() ) )
-            {
-                fail( "Unexpectedly succeeded in logging in" );
-            }
-            else if ( AuthenticationResult.TOO_MANY_ATTEMPTS.equals( login.subject().getAuthenticationResult() ) )
-            {
-                // this is what we wanted
-                return;
-            }
-        }
-        fail( "Did not get an ExcessiveAttemptsException after " + attempts + " attempts." );
     }
 
     public static User createUser( String userName, String password, boolean pwdChangeRequired )

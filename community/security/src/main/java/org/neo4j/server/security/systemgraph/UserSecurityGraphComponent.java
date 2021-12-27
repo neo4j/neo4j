@@ -33,6 +33,7 @@ import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponent
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_3_43D4;
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
@@ -100,8 +101,9 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
         latest.setVersionProperty( tx, latest.version );
     }
 
+    @VisibleForTesting
     @Override
-    protected void postInitialization( GraphDatabaseService system, boolean wasInitialized ) throws Exception
+    public void postInitialization( GraphDatabaseService system, boolean wasInitialized ) throws Exception
     {
         try ( Transaction tx = system.beginTx() )
         {

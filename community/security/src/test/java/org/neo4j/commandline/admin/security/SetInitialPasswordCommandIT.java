@@ -125,60 +125,6 @@ class SetInitialPasswordCommandIT
     }
 
     @Test
-    void shouldErrorIfRealUsersAlreadyExistCommunity() throws Throwable
-    {
-        // Given
-        Path authFile = getAuthFile( "auth" );
-        fileSystem.mkdirs( authFile.getParent() );
-        fileSystem.write( authFile );
-
-        // When
-        var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
-        assertThat( e.getMessage() ).contains( "the provided initial password was not set because existing Neo4j users were detected" );
-
-        // Then
-        assertNoAuthIniFile();
-    }
-
-    @Test
-    void shouldErrorIfRealUsersAlreadyExistEnterprise() throws Throwable
-    {
-        // Given
-        Path authFile = getAuthFile( "auth" );
-        Path rolesFile = getAuthFile( "roles" );
-
-        fileSystem.mkdirs( authFile.getParent() );
-        fileSystem.write( authFile );
-        fileSystem.write( rolesFile );
-
-        // When
-        var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
-        assertThat( e.getMessage() ).contains( "the provided initial password was not set because existing Neo4j users were detected" );
-
-        // Then
-        assertNoAuthIniFile();
-    }
-
-    @Test
-    void shouldErrorIfRealUsersAlreadyExistV2() throws Throwable
-    {
-        // Given
-        // Create an `auth` file with the default neo4j user, but not the default password
-        executeCommand( "not-the-default-password" );
-        Path authFile = getAuthFile( "auth" );
-        fileSystem.mkdirs( authFile.getParent() );
-        fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
-
-        // When
-        var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
-        assertThat( e.getMessage() ).contains( "the provided initial password was not set because existing Neo4j users were detected" );
-
-        // Then
-        assertNoAuthIniFile();
-        verify( out ).println( "Changed password for user 'neo4j'." ); // This is from the initial setup
-    }
-
-    @Test
     void shouldNotErrorIfOnlyTheUnmodifiedDefaultNeo4jUserAlreadyExists() throws Throwable
     {
         // Given

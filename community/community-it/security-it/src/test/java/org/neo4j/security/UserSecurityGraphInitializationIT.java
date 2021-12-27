@@ -34,6 +34,7 @@ import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper;
@@ -42,6 +43,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationFails;
@@ -129,6 +131,45 @@ class UserSecurityGraphInitializationIT
         assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD );
         assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, "neo4j2" );
         assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, "abc" );
+    }
+
+    @Test
+    void shouldNotLoadInitialUserWithInitialPasswordWhenOtherUsersExist() throws Throwable
+    {
+        // Given
+        startSystemGraphRealm();
+        try ( var tx = dbManager.testSystemDb.beginTx() )
+        {
+            tx.execute( "CREATE USER Alice SET PASSWORD 'meh'" );
+            tx.commit();
+        }
+        // When
+        initialPassword.create( createUser( INITIAL_USER_NAME, "neo4j2", false ) );
+        systemGraphInitializer.start();
+
+        // Then
+        assertAuthenticationSucceeds( realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true );
+        assertAuthenticationFails( realmHelper, INITIAL_USER_NAME, "neo4j2" );
+    }
+
+    @Test
+    void shouldNotReCreateInitialUser() throws Throwable
+    {
+        // Given
+        startSystemGraphRealm();
+        try ( var tx = dbManager.testSystemDb.beginTx() )
+        {
+            tx.execute( String.format( "DROP USER %s", INITIAL_USER_NAME ) );
+            tx.commit();
+        }
+        // When
+        initialPassword.create( createUser( INITIAL_USER_NAME, "neo4j2", false ) );
+        systemGraphInitializer.start();
+
+        // Then
+        assertThatThrownBy( () -> realmHelper.getUser( INITIAL_USER_NAME ) )
+                .isInstanceOf( InvalidArgumentsException.class )
+                .hasMessage( String.format( "User '%s' does not exist.", INITIAL_USER_NAME ) );
     }
 
     private void startSystemGraphRealm() throws Exception
