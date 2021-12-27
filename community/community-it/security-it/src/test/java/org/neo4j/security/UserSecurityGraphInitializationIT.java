@@ -48,6 +48,9 @@ import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthentic
 import static org.neo4j.security.BasicSystemGraphRealmTestHelper.assertAuthenticationSucceeds;
 import static org.neo4j.security.BasicSystemGraphRealmTestHelper.createUser;
 
+/**
+ * This class tests initialization of a fresh system database.
+ */
 @TestDirectoryExtension
 class UserSecurityGraphInitializationIT
 {
