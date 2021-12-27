@@ -26,13 +26,10 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING;
-import org.neo4j.procedure.builtin.QueryId;
-import org.neo4j.procedure.builtin.TransactionId;
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -67,6 +64,8 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.builtin.QueryId;
+import org.neo4j.procedure.builtin.TransactionId;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.AnyValue;
@@ -75,13 +74,8 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Offset.offset;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -99,7 +93,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 class Neo4jTransactionalContextIT
 {
     @Inject
-    private GraphDatabaseAPI graphOps;
+    private GraphDatabaseAPI databaseAPI;
     @Inject
     private GraphDatabaseQueryService graph;
 
@@ -126,7 +120,7 @@ class Neo4jTransactionalContextIT
         long previousCacheHits = getPageCacheHits( ctx );
         ctx.transaction().getAllNodes().iterator().stream().count();
         long laterCacheHits = getPageCacheHits( ctx );
-        assertThat( "Assuming generatePageCacheHits to generate some page cache hits", laterCacheHits, greaterThan( previousCacheHits ) );
+        assertThat( laterCacheHits ).as( "Assuming generatePageCacheHits to generate some page cache hits" ).isGreaterThan( previousCacheHits );
     }
 
     private void getLocks( TransactionalContext ctx, String label )
@@ -154,7 +148,7 @@ class Neo4jTransactionalContextIT
     @BeforeEach
     void setup()
     {
-        transactionFactory = new FacadeKernelTransactionFactory( Config.newBuilder().build(), (GraphDatabaseFacade) graphOps );
+        transactionFactory = new FacadeKernelTransactionFactory( Config.newBuilder().build(), (GraphDatabaseFacade) databaseAPI );
     }
 
     public static class Procedures
@@ -173,7 +167,7 @@ class Neo4jTransactionalContextIT
     void nestedQueriesWithExceptionsShouldCleanUpProperly() throws KernelException
     {
         // Given
-        graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class ).registerProcedure( Neo4jTransactionalContextIT.Procedures.class );
+        databaseAPI.getDependencyResolver().resolveDependency( GlobalProcedures.class ).registerProcedure( Neo4jTransactionalContextIT.Procedures.class );
 
         var tx = graph.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
 
@@ -223,10 +217,10 @@ class Neo4jTransactionalContextIT
         var innerCtx = outerCtx.contextWithNewTransaction();
 
         // Then
-        assertThat( executingQuery, sameInstance( innerCtx.executingQuery() ) );
-        assertThat( executingQuery.rawQueryText(), equalTo( queryText ) );
+        assertThat( executingQuery ).isSameAs( innerCtx.executingQuery() );
+        assertThat( executingQuery.rawQueryText() ).isEqualTo( queryText );
         var snapshot = executingQuery.snapshot();
-        assertThat( snapshot.transactionId(), equalTo( outerTx.kernelTransaction().getUserTransactionId() ) );
+        assertThat( snapshot.transactionId() ).isEqualTo( outerTx.kernelTransaction().getUserTransactionId() );
     }
 
     @Test
@@ -235,7 +229,7 @@ class Neo4jTransactionalContextIT
         // Given
 
         // Add data to database so that we get page hits/faults
-        graphOps.executeTransactionally( "CREATE (n)" );
+        databaseAPI.executeTransactionally( "CREATE (n)" );
 
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var outerCtx = createTransactionContext( outerTx );
@@ -255,8 +249,8 @@ class Neo4jTransactionalContextIT
         // Then
         var snapshot = executingQuery.snapshot();
         // Actual assertion
-        assertThat( snapshot.pageHits(), equalTo( outerHits + innerHits ) );
-        assertThat( snapshot.pageFaults(), equalTo( outerFaults + innerFaults ) );
+        assertThat( snapshot.pageHits() ).isEqualTo( outerHits + innerHits );
+        assertThat( snapshot.pageFaults() ).isEqualTo( outerFaults + innerFaults );
     }
 
     @Test
@@ -265,7 +259,7 @@ class Neo4jTransactionalContextIT
         // Given
 
         // Add data to database so that we get page hits/faults
-        graphOps.executeTransactionally( "CREATE (n)" );
+        databaseAPI.executeTransactionally( "CREATE (n)" );
 
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var outerCtx = createTransactionContext( outerTx );
@@ -302,8 +296,8 @@ class Neo4jTransactionalContextIT
         // Then
         var snapshot = executingQuery.snapshot();
         // Actual assertion
-        assertThat( snapshot.pageHits(), equalTo( outerHits + closedInnerHits + openInnerHits ) );
-        assertThat( snapshot.pageFaults(), equalTo( outerFaults + closedInnerFaults + openInnerFaults ) );
+        assertThat( snapshot.pageHits() ).isEqualTo( outerHits + closedInnerHits + openInnerHits );
+        assertThat( snapshot.pageFaults() ).isEqualTo( outerFaults + closedInnerFaults + openInnerFaults );
     }
 
     @Test
@@ -312,7 +306,7 @@ class Neo4jTransactionalContextIT
         // Given
 
         // Add data to database so that we get page hits/faults
-        graphOps.executeTransactionally( "CREATE (n)" );
+        databaseAPI.executeTransactionally( "CREATE (n)" );
 
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var outerCtx = createTransactionContext( outerTx );
@@ -345,10 +339,10 @@ class Neo4jTransactionalContextIT
         var outerProfileStatisticsProvider = outerCtx.kernelStatisticProvider();
         var innerProfileStatisticsProvider = openInnerCtx.kernelStatisticProvider();
         // Actual assertion
-        assertThat( outerProfileStatisticsProvider.getPageCacheHits(), equalTo( outerHits ) );
-        assertThat( outerProfileStatisticsProvider.getPageCacheMisses(), equalTo( outerFaults ) );
-        assertThat( innerProfileStatisticsProvider.getPageCacheHits(), equalTo( openInnerHits ) );
-        assertThat( innerProfileStatisticsProvider.getPageCacheMisses(), equalTo( openInnerFaults ) );
+        assertThat( outerProfileStatisticsProvider.getPageCacheHits() ).isEqualTo( outerHits );
+        assertThat( outerProfileStatisticsProvider.getPageCacheMisses() ).isEqualTo( outerFaults );
+        assertThat( innerProfileStatisticsProvider.getPageCacheHits() ).isEqualTo( openInnerHits );
+        assertThat( innerProfileStatisticsProvider.getPageCacheMisses() ).isEqualTo( openInnerFaults );
     }
 
     @Test
@@ -357,7 +351,7 @@ class Neo4jTransactionalContextIT
         // Given
 
         // Add data to database so that we get page hits/faults
-        graphOps.executeTransactionally( "CREATE (n)" );
+        databaseAPI.executeTransactionally( "CREATE (n)" );
 
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var outerCtx = createTransactionContext( outerTx );
@@ -393,8 +387,8 @@ class Neo4jTransactionalContextIT
         // Then
         var snapshot = executingQuery.snapshot();
         // Actual assertion
-        assertThat( snapshot.pageHits(), equalTo( outerHits + closedInnerHits + openInnerHits ) );
-        assertThat( snapshot.pageFaults(), equalTo( outerFaults + closedInnerFaults + openInnerFaults ) );
+        assertThat( snapshot.pageHits() ).isEqualTo( outerHits + closedInnerHits + openInnerHits );
+        assertThat( snapshot.pageFaults() ).isEqualTo( outerFaults + closedInnerFaults + openInnerFaults );
     }
 
     @Test
@@ -403,7 +397,7 @@ class Neo4jTransactionalContextIT
         // Given
 
         // Add data to database so that we can get locks
-        graphOps.executeTransactionally( "CREATE (:A), (:B), (:C)" );
+        databaseAPI.executeTransactionally( "CREATE (:A), (:B), (:C)" );
 
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var outerCtx = createTransactionContext( outerTx );
@@ -429,11 +423,11 @@ class Neo4jTransactionalContextIT
         // Then
         var snapshot = executingQuery.snapshot();
         // Make sure we are not just summing up 0s
-        assertThat( outerActiveLocks, greaterThan( 0L ) );
-        assertThat( innerActiveLocks1, greaterThan( 0L ) );
-        assertThat( innerActiveLocks2, greaterThan( 0L ) );
+        assertThat( outerActiveLocks ).isGreaterThan( 0L );
+        assertThat( innerActiveLocks1 ).isGreaterThan( 0L );
+        assertThat( innerActiveLocks2 ).isGreaterThan( 0L );
         // Actual assertion
-        assertThat( snapshot.activeLockCount(), equalTo( outerActiveLocks + innerActiveLocks1 + innerActiveLocks2 ) );
+        assertThat( snapshot.activeLockCount() ).isEqualTo( outerActiveLocks + innerActiveLocks1 + innerActiveLocks2 );
     }
 
     @Test
@@ -442,7 +436,7 @@ class Neo4jTransactionalContextIT
         // Given
 
         // Add data to database so that we get page hits/faults
-        graphOps.executeTransactionally( "CREATE (:A), (:B), (:C), (:D)" );
+        databaseAPI.executeTransactionally( "CREATE (:A), (:B), (:C), (:D)" );
 
         var outerTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var outerCtx = createTransactionContext( outerTx );
@@ -476,12 +470,12 @@ class Neo4jTransactionalContextIT
         // Then
         var snapshot = executingQuery.snapshot();
         // Make sure we are not just summing up 0s
-        assertThat( outerActiveLocks, greaterThan( 0L ) );
-        assertThat( closedInnerActiveLocksAbort, greaterThan( 0L ) );
-        assertThat( closedInnerActiveLocksCommit, greaterThan( 0L ) );
-        assertThat( openInnerActiveLocks, greaterThan( 0L ) );
+        assertThat( outerActiveLocks ).isGreaterThan( 0L );
+        assertThat( closedInnerActiveLocksAbort ).isGreaterThan( 0L );
+        assertThat( closedInnerActiveLocksCommit ).isGreaterThan( 0L );
+        assertThat( openInnerActiveLocks ).isGreaterThan( 0L );
         // Actual assertion
-        assertThat( snapshot.activeLockCount(), equalTo( outerActiveLocks + openInnerActiveLocks ) );
+        assertThat( snapshot.activeLockCount() ).isEqualTo( outerActiveLocks + openInnerActiveLocks );
     }
 
     @Test
@@ -543,8 +537,8 @@ class Neo4jTransactionalContextIT
         var snapshot = executingQuery.snapshot();
         var snapshotBytes = snapshot.allocatedBytes();
         var profilingBytes = queryMemoryTracker.heapHighWaterMark();
-        assertThat( snapshotBytes, equalTo( growingArraySize + outerHighWaterMark + Math.max( innerHighWaterMark, openHighWaterMark ) ) );
-        assertThat( profilingBytes, equalTo( snapshotBytes ) );
+        assertThat( snapshotBytes ).isEqualTo( growingArraySize + outerHighWaterMark + Math.max( innerHighWaterMark, openHighWaterMark ) );
+        assertThat( profilingBytes ).isEqualTo( snapshotBytes );
     }
 
     @Test
@@ -817,7 +811,7 @@ class Neo4jTransactionalContextIT
         var ctx = createTransactionContext( outerTx );
         var innerCtx = ctx.contextWithNewTransaction();
 
-        var procsRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        var procsRegistry = databaseAPI.getDependencyResolver().resolveDependency( GlobalProcedures.class );
         var txSetMetaData = procsRegistry.procedure( new QualifiedName( new String[]{"tx"}, "setMetaData" ) );
         var id = txSetMetaData.id();
         var procContext = new ProcedureCallContext( id, new String[0], false, "", false );
@@ -827,8 +821,8 @@ class Neo4jTransactionalContextIT
         innerCtx.kernelTransaction().procedures().procedureCallDbms( id, arguments, procContext );
 
         // Then
-        assertThat( innerCtx.kernelTransaction().getMetaData(), equalTo( Collections.singletonMap( "foo", "bar" ) ) );
-        assertThat( ctx.kernelTransaction().getMetaData(), equalTo( Collections.emptyMap() ) );
+        assertThat( innerCtx.kernelTransaction().getMetaData() ).isEqualTo( Collections.singletonMap( "foo", "bar" ) );
+        assertThat( ctx.kernelTransaction().getMetaData() ).isEqualTo( Collections.emptyMap() );
     }
 
     @Test
@@ -847,7 +841,7 @@ class Neo4jTransactionalContextIT
         var innerCtx = ctx.contextWithNewTransaction();
         var innerTx = innerCtx.transaction();
 
-        var procsRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        var procsRegistry = databaseAPI.getDependencyResolver().resolveDependency( GlobalProcedures.class );
         var listTransactions = procsRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "listTransactions" ) );
         var id = listTransactions.id();
         var transactionIdIndex = listTransactions.signature().outputSignature().indexOf( FieldSignature.outputField( "transactionId", Neo4jTypes.NTString ) );
@@ -864,24 +858,24 @@ class Neo4jTransactionalContextIT
         );
 
         var mapper = new DefaultValueMapper( innerTx );
-        var transactionIds = procResult.stream().map( array -> array[transactionIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
-        var currentQueries = procResult.stream().map( array -> array[currentQueryIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
-        var currentQueryIds = procResult.stream().map( array -> array[currentQueryIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
-        var outerTransactionIds = procResult.stream().map( array -> array[outerTransactionIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
+        var transactionIds = procResult.stream().map( array -> array[transactionIdIndex].map( mapper ) ).toList();
+        var currentQueries = procResult.stream().map( array -> array[currentQueryIndex].map( mapper ) ).toList();
+        var currentQueryIds = procResult.stream().map( array -> array[currentQueryIdIndex].map( mapper ) ).toList();
+        var outerTransactionIds = procResult.stream().map( array -> array[outerTransactionIdIndex].map( mapper ) ).toList();
 
         // Then
         var expectedOuterTxId = new TransactionId( outerTx.getDatabaseName(), outerTx.kernelTransaction().getUserTransactionId() ).toString();
         var expectedInnerTxId = new TransactionId( innerTx.getDatabaseName(), innerTx.kernelTransaction().getUserTransactionId() ).toString();
         var expectedQueryId = String.format( "query-%s", ctx.executingQuery().id() );
 
-        assertThat( transactionIds, containsInAnyOrder( expectedOuterTxId, expectedInnerTxId) );
-        assertThat( transactionIds, hasSize(2) );
-        assertThat( currentQueries, containsInAnyOrder( queryText, queryText) );
-        assertThat( currentQueries, hasSize(2) );
-        assertThat( currentQueryIds, containsInAnyOrder( expectedQueryId, expectedQueryId) );
-        assertThat( currentQueryIds, hasSize(2) );
-        assertThat( outerTransactionIds, containsInAnyOrder( expectedOuterTxId, "") );
-        assertThat( outerTransactionIds, hasSize(2) );
+        assertThat( transactionIds ).contains( expectedOuterTxId, expectedInnerTxId );
+        assertThat( transactionIds ).hasSize( 2 );
+        assertThat( currentQueries ).contains( queryText, queryText );
+        assertThat( currentQueries ).hasSize( 2 );
+        assertThat( currentQueryIds ).contains( expectedQueryId, expectedQueryId );
+        assertThat( currentQueryIds ).hasSize( 2 );
+        assertThat( outerTransactionIds ).contains( expectedOuterTxId, "" );
+        assertThat( outerTransactionIds ).hasSize( 2 );
     }
 
     @Test
@@ -900,7 +894,7 @@ class Neo4jTransactionalContextIT
         var innerCtx = ctx.contextWithNewTransaction();
         var innerTx = innerCtx.transaction();
 
-        var procsRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        var procsRegistry = databaseAPI.getDependencyResolver().resolveDependency( GlobalProcedures.class );
         var listQueries = procsRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "listQueries" ) );
         var procedureId = listQueries.id();
         var transactionIdIndex = listQueries.signature().outputSignature().indexOf( FieldSignature.outputField( "transactionId", Neo4jTypes.NTString ) );
@@ -914,17 +908,17 @@ class Neo4jTransactionalContextIT
         );
 
         var mapper = new DefaultValueMapper( innerTx );
-        var transactionIds = procResult.stream().map( array -> array[transactionIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
-        var queries = procResult.stream().map( array -> array[queryIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
-        var queryIds = procResult.stream().map( array -> array[queryIdIndex].map( mapper ) ).collect( Collectors.toUnmodifiableList() );
+        var transactionIds = procResult.stream().map( array -> array[transactionIdIndex].map( mapper ) ).toList();
+        var queries = procResult.stream().map( array -> array[queryIndex].map( mapper ) ).toList();
+        var queryIds = procResult.stream().map( array -> array[queryIdIndex].map( mapper ) ).toList();
 
         // Then
         var expectedTransactionId = new TransactionId( outerTx.getDatabaseName(), outerTx.kernelTransaction().getUserTransactionId() ).toString();
         var expectedQueryId = String.format( "query-%s", ctx.executingQuery().id() );
 
-        assertThat( transactionIds, equalTo( Collections.singletonList( expectedTransactionId ) ) );
-        assertThat( queries, equalTo( Collections.singletonList( queryText ) ) );
-        assertThat( queryIds, equalTo( Collections.singletonList( expectedQueryId ) ) );
+        assertThat( transactionIds ).isEqualTo( Collections.singletonList( expectedTransactionId ) );
+        assertThat( queries ).isEqualTo( Collections.singletonList( queryText ) );
+        assertThat( queryIds ).isEqualTo( Collections.singletonList( expectedQueryId ) );
     }
 
     @Test
@@ -943,7 +937,7 @@ class Neo4jTransactionalContextIT
         var innerCtx = ctx.contextWithNewTransaction();
         var innerTx = innerCtx.transaction();
 
-        var procedureRegistry = graphOps.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        var procedureRegistry = databaseAPI.getDependencyResolver().resolveDependency( GlobalProcedures.class );
         var listQueries = procedureRegistry.procedure( new QualifiedName( new String[]{"dbms"}, "killQuery" ) );
         var procedureId = listQueries.id();
         var procContext = new ProcedureCallContext( procedureId, new String[]{}, false, "", false );
@@ -957,15 +951,13 @@ class Neo4jTransactionalContextIT
         assertTrue( outerTx.terminationReason().isPresent() );
     }
 
-    // PERIODIC COMMIT
-
     @Test
     void periodicCommitQueryShouldSumUpPageHitsFaultsFromFirstAndSecondTransactionInQuerySnapshot()
     {
         // Given
 
         // Add data to database so that we get page hits/faults
-        graphOps.executeTransactionally( "CREATE (n)" );
+        databaseAPI.executeTransactionally( "CREATE (n)" );
 
         var transaction = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var ctx = createTransactionContext( transaction );
@@ -995,9 +987,9 @@ class Neo4jTransactionalContextIT
         // Then
         var snapshot = executingQuery.snapshot();
         // Actual assertion
-        assertThat( snapshot.transactionId(), equalTo( lastTx.kernelTransaction().getUserTransactionId() ) );
-        assertThat( snapshot.pageHits(), equalTo( closedTxHits + lastHits ) );
-        assertThat( snapshot.pageFaults(), equalTo( closedTxFaults + lastFaults ) );
+        assertThat( snapshot.transactionId() ).isEqualTo( lastTx.kernelTransaction().getUserTransactionId() );
+        assertThat( snapshot.pageHits() ).isEqualTo( closedTxHits + lastHits );
+        assertThat( snapshot.pageFaults() ).isEqualTo( closedTxFaults + lastFaults );
     }
 
     @Test
@@ -1006,7 +998,7 @@ class Neo4jTransactionalContextIT
         // Given
 
         // Add data to database so that we get page hits/faults
-        graphOps.executeTransactionally( "CREATE (n)" );
+        databaseAPI.executeTransactionally( "CREATE (n)" );
 
         var transaction = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
         var ctx = createTransactionContext( transaction );
@@ -1033,8 +1025,25 @@ class Neo4jTransactionalContextIT
         // Then
         var profileStatisticsProvider = ctx.kernelStatisticProvider();
         // Actual assertion
-        assertThat( profileStatisticsProvider.getPageCacheHits(), equalTo( closedTxHits + lastHits ) );
-        assertThat( profileStatisticsProvider.getPageCacheMisses(), equalTo( closedTxFaults + lastFaults ) );
+        assertThat( profileStatisticsProvider.getPageCacheHits() ).isEqualTo( closedTxHits + lastHits );
+        assertThat( profileStatisticsProvider.getPageCacheMisses() ).isEqualTo( closedTxFaults + lastFaults );
+    }
+
+    @Test
+    void restartingContextDoesNotLeakKernelTransaction()
+    {
+        InternalTransaction transaction = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var transactionContext = createTransactionContext( transaction );
+
+        var kernelTransactions = graph.getDependencyResolver().resolveDependency( KernelTransactions.class );
+        int initialActiveCount = kernelTransactions.getNumberOfActiveTransactions();
+
+        for ( int i = 0; i < 1024; i++ )
+        {
+            transactionContext.commitAndRestartTx();
+            // we check with some offset to make sure any background job will not fail assertion
+            assertThat( kernelTransactions.getNumberOfActiveTransactions() ).isCloseTo( initialActiveCount, offset( 5 ) );
+        }
     }
 
     @Test
@@ -1058,9 +1067,9 @@ class Neo4jTransactionalContextIT
         //noinspection OptionalGetWithoutIsPresent
         var secondExecutingQuery = ((KernelStatement) secondStatement).queryRegistry().executingQuery().get();
 
-        assertThat( secondKernelTx, not( sameInstance( firstKernelTx ) ) );
-        assertThat( secondStatement, not( sameInstance( firstStatement ) ) );
-        assertThat( secondExecutingQuery, sameInstance( firstExecutingQuery ) );
+        assertThat( secondKernelTx ).isNotSameAs( firstKernelTx );
+        assertThat( secondStatement ).isNotSameAs( firstStatement );
+        assertThat( secondExecutingQuery ).isSameAs( firstExecutingQuery );
         assertFalse( firstKernelTx.isOpen() );
     }
 }

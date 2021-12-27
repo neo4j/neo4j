@@ -192,7 +192,10 @@ public class Neo4jTransactionalContext implements TransactionalContext
         try
         {
             oldStatement.close();
-            return oldKernelTx.commit();
+            try ( oldKernelTx )
+            {
+                return oldKernelTx.commit();
+            }
         }
         catch ( Throwable t )
         {
