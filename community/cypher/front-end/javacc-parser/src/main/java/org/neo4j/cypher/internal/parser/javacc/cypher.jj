@@ -326,6 +326,8 @@ TOKEN [IGNORE_CASE] :
     | < CALL: "CALL" >
     | < CASE: "CASE" >
     | < CHANGE: "CHANGE">
+    | < COMMAND: "COMMAND">
+    | < COMMANDS: "COMMANDS">
     | < COMMIT: "COMMIT" >
     | < CONSTRAINT: "CONSTRAINT" >
     | < CONSTRAINTS: "CONSTRAINTS" >
@@ -4439,41 +4441,61 @@ STATEMENT_WITH_GRAPH ShowCurrentUser( Token start, USE_CLAUSE useClause ):
 
 STATEMENT_WITH_GRAPH ShowPrivileges( Token start, USE_CLAUSE useClause ):
 {
+    boolean asCommand = false;
+    boolean asRevoke = false;
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
     WHERE where = null;
 }
 {
-    (<PRIVILEGE> | <PRIVILEGES>) (
+    (<PRIVILEGE> | <PRIVILEGES>)
+    (
+        <AS>
+        (<REVOKE>  { asRevoke=true; })?
+        ( <COMMAND> | <COMMANDS> )
+        { asCommand=true; }
+    )?
+    (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
         | ( where=WhereClause() )
     )?
     {
-        return astFactory.useGraph( astFactory.showAllPrivileges( pos( start ), yield, returnClause, where ), useClause );
+        return astFactory.useGraph( astFactory.showAllPrivileges( pos( start ), asCommand, asRevoke, yield, returnClause, where ), useClause );
     }
 }
 
 STATEMENT_WITH_GRAPH ShowRolePrivileges( Token start, USE_CLAUSE useClause ):
 {
     List<SimpleEither<String, PARAMETER>> roles = null;
+    boolean asCommand = false;
+    boolean asRevoke = false;
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
     WHERE where = null;
 }
 {
     roles=SymbolicNameOrStringParameterList()
-    (<PRIVILEGE> | <PRIVILEGES>) (
+    (<PRIVILEGE> | <PRIVILEGES>)
+     (
+        <AS>
+        (<REVOKE>  { asRevoke=true; })?
+        ( <COMMAND> | <COMMANDS> )
+        { asCommand=true; }
+    )?
+    (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
         | ( where=WhereClause() )
     )?
     {
-        return astFactory.useGraph( astFactory.showRolePrivileges( pos( start ), roles, yield, returnClause, where ), useClause );
+        return astFactory.useGraph( astFactory.showRolePrivileges( pos( start ), roles, asCommand, asRevoke, yield, returnClause, where ), useClause );
     }
 }
 
 STATEMENT_WITH_GRAPH ShowUserPrivileges( Token start, USE_CLAUSE useClause ):
 {
     List<SimpleEither<String, PARAMETER>> users = null;
+    boolean asCommand = false;
+    boolean asRevoke = false;
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
     WHERE where = null;
@@ -4486,12 +4508,17 @@ STATEMENT_WITH_GRAPH ShowUserPrivileges( Token start, USE_CLAUSE useClause ):
         | (users=SymbolicNameOrStringParameterList() ( <PRIVILEGE> | <PRIVILEGES> ))
     )
     (
+        <AS>
+        (<REVOKE>  { asRevoke=true; })?
+        ( <COMMAND> | <COMMANDS> )
+        { asCommand=true; }
+    )?
+    (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
         | ( where=WhereClause() )
     )?
-
     {
-        return astFactory.useGraph( astFactory.showUserPrivileges( pos( start ), users, yield, returnClause, where ), useClause );
+        return astFactory.useGraph( astFactory.showUserPrivileges( pos( start ), users, asCommand, asRevoke, yield, returnClause, where ), useClause );
     }
 }
 
@@ -5301,6 +5328,8 @@ Token SymbolicNameString() :
         | t=<CALL>
         | t=<CASE>
         | t=<CHANGE>
+        | t=<COMMAND>
+        | t=<COMMANDS>
         | t=<COMMIT>
         | t=<CONSTRAINT>
         | t=<CONSTRAINTS>

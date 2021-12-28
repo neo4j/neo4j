@@ -135,95 +135,175 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
     assertSameAST(testName)
   }
 
+  // Show privileges as commands
+
+  test("SHOW PRIVILEGES AS COMMAND") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW PRIVILEGES AS COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW PRIVILEGES AS REVOKE COMMAND") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW PRIVILEGES AS REVOKE COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ALL PRIVILEGES AS COMMAND") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ALL PRIVILEGE AS COMMAND") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ALL PRIVILEGES AS REVOKE COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER user PRIVILEGES AS COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USERS $user PRIVILEGES AS REVOKE COMMAND") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER `us%er` PRIVILEGES AS COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER `us%er` PRIVILEGE AS COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER user, $user PRIVILEGES AS REVOKE COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USER PRIVILEGES AS COMMAND") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USERS PRIVILEGES AS REVOKE COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW USERS PRIVILEGE AS REVOKE COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLE role PRIVILEGES AS COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLE role PRIVILEGE AS COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLE $role PRIVILEGES AS REVOKE COMMAND") {
+    assertSameAST(testName)
+  }
+
   // yield / skip / limit / order by / where
 
-  Seq(
-    "",
-    "ALL",
-    "USER",
-    "USER neo4j",
-    "USERS neo4j, $user",
-    "ROLES $role",
-    "ROLE $role, reader"
-  ).foreach { privType =>
     Seq(
-      "PRIVILEGE",
-      "PRIVILEGES"
-    ).foreach { privilegeOrPrivileges =>
-      test(s"SHOW $privType $privilegeOrPrivileges WHERE access = 'GRANTED'") {
-        assertSameAST(testName)
+    " AS COMMANDS",
+    " AS REVOKE COMMANDS",
+    ""
+  ).foreach { optionalAsRev: String =>
+      Seq(
+        "",
+        "ALL",
+        "USER",
+        "USER neo4j",
+        "USERS neo4j, $user",
+        "ROLES $role",
+        "ROLE $role, reader"
+      ).foreach { privType =>
+        Seq(
+          "PRIVILEGE",
+          "PRIVILEGES"
+        ).foreach { privilegeOrPrivileges =>
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev WHERE access = 'GRANTED'") {
+            assertSameAST(testName)
+          }
+
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev WHERE access = 'GRANTED' AND action = 'match'") {
+            assertSameAST(testName)
+          }
+
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD access ORDER BY access") {
+            assertSameAST(testName)
+          }
+
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD access ORDER BY access WHERE access ='none'") {
+            assertSameAST(testName)
+          }
+
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
+            assertSameAST(testName)
+          }
+
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD access SKIP -1") {
+            assertSameAST(testName)
+          }
+
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD access, action RETURN access, count(action) ORDER BY access") {
+            assertSameAST(testName)
+          }
+
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD access, action SKIP 1 RETURN access, action") {
+            assertSameAST(testName)
+          }
+
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD access, action WHERE access = 'none' RETURN action") {
+            assertSameAST(testName)
+          }
+
+          test(s"SHOW $privType $privilegeOrPrivileges$optionalAsRev YIELD * RETURN *") {
+            assertSameAST(testName)
+          }
+        }
       }
 
-      test(s"SHOW $privType $privilegeOrPrivileges WHERE access = 'GRANTED' AND action = 'match'") {
-        assertSameAST(testName)
-      }
+      // yield and where edge cases
 
-      test(s"SHOW $privType $privilegeOrPrivileges YIELD access ORDER BY access") {
-        assertSameAST(testName)
-      }
+      Seq(
+        "USER",
+        "USERS",
+        "ROLE",
+        "ROLES"
+      ).foreach { privType =>
+        test(s"SHOW $privType yield PRIVILEGES$optionalAsRev YIELD access RETURN *") {
+          assertSameAST(testName)
+        }
 
-      test(s"SHOW $privType $privilegeOrPrivileges YIELD access ORDER BY access WHERE access ='none'") {
-        assertSameAST(testName)
-      }
+        test(s"SHOW $privType yield, where PRIVILEGES$optionalAsRev YIELD access RETURN *") {
+          assertSameAST(testName)
+        }
 
-      test(s"SHOW $privType $privilegeOrPrivileges YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
-        assertSameAST(testName)
-      }
+        test(s"SHOW $privType where PRIVILEGE$optionalAsRev WHERE access = 'none'") {
+          assertSameAST(testName)
+        }
 
-      test(s"SHOW $privType $privilegeOrPrivileges YIELD access SKIP -1") {
-        assertSameAST(testName)
-      }
+        test(s"SHOW $privType privilege PRIVILEGE$optionalAsRev YIELD access RETURN *") {
+          assertSameAST(testName)
+        }
 
-      test(s"SHOW $privType $privilegeOrPrivileges YIELD access, action RETURN access, count(action) ORDER BY access") {
-        assertSameAST(testName)
-      }
+        test(s"SHOW $privType privileges PRIVILEGES$optionalAsRev YIELD access RETURN *") {
+          assertSameAST(testName)
+        }
 
-      test(s"SHOW $privType $privilegeOrPrivileges YIELD access, action SKIP 1 RETURN access, action") {
-        assertSameAST(testName)
-      }
-
-      test(s"SHOW $privType $privilegeOrPrivileges YIELD access, action WHERE access = 'none' RETURN action") {
-        assertSameAST(testName)
-      }
-
-      test(s"SHOW $privType $privilegeOrPrivileges YIELD * RETURN *") {
-        assertSameAST(testName)
+        test(s"SHOW $privType privilege, privileges PRIVILEGES$optionalAsRev YIELD access RETURN *") {
+          assertSameAST(testName)
+        }
       }
     }
-  }
-
-  // yield and where edge cases
-
-  Seq(
-    "USER",
-    "USERS",
-    "ROLE",
-    "ROLES"
-  ).foreach { privType =>
-    test(s"SHOW $privType yield PRIVILEGES YIELD access RETURN *") {
-      assertSameAST(testName)
-    }
-
-    test(s"SHOW $privType yield, where PRIVILEGES YIELD access RETURN *") {
-      assertSameAST(testName)
-    }
-
-    test(s"SHOW $privType where PRIVILEGE WHERE access = 'none'") {
-      assertSameAST(testName)
-    }
-
-    test(s"SHOW $privType privilege PRIVILEGE YIELD access RETURN *") {
-      assertSameAST(testName)
-    }
-
-    test(s"SHOW $privType privileges PRIVILEGES YIELD access RETURN *") {
-      assertSameAST(testName)
-    }
-
-    test(s"SHOW $privType privilege, privileges PRIVILEGES YIELD access RETURN *") {
-      assertSameAST(testName)
-    }
-  }
 
   // Fails to parse
 
@@ -323,5 +403,25 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
          |  <EOF> (line 1, column 34 (offset: 33))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
+  }
+
+  test("SHOW PRIVILEGES COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW PRIVILEGES REVOKE") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW PRIVILEGES AS REVOKE COMMAND COMMANDS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW PRIVILEGES AS COMMANDS REVOKE") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW PRIVILEGES AS COMMANDS USER user") {
+    assertSameAST(testName)
   }
 }

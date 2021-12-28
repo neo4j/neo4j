@@ -169,6 +169,7 @@ import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
+import org.neo4j.cypher.internal.ast.ReadAdministrationCommand
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
@@ -222,6 +223,8 @@ import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
+import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
+import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowRoleAction
@@ -1432,31 +1435,52 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   // Privilege commands
 
   override def showAllPrivileges(p: InputPosition,
+                                 asCommand: Boolean,
+                                 asRevoke: Boolean,
                                  yieldExpr: Yield,
                                  returnWithoutGraph: Return,
-                                 where: Where): ShowPrivileges = {
-    ShowPrivileges(ShowAllPrivileges()(p), yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+                                 where: Where): ReadAdministrationCommand = {
+    if ( asCommand ) {
+      ShowPrivilegeCommands(ShowAllPrivileges()(p), asRevoke, yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+    } else {
+      ShowPrivileges(ShowAllPrivileges()(p), yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+    }
   }
 
   override def showRolePrivileges(p: InputPosition,
                                   roles:  util.List[SimpleEither[String, Parameter]],
+                                  asCommand: Boolean,
+                                  asRevoke: Boolean,
                                   yieldExpr: Yield,
                                   returnWithoutGraph: Return,
-                                  where: Where): ShowPrivileges = {
-    ShowPrivileges(ShowRolesPrivileges(roles.asScala.map(_.asScala).toList)(p), yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+                                  where: Where): ReadAdministrationCommand = {
+    if ( asCommand ) {
+      ShowPrivilegeCommands(ShowRolesPrivileges(roles.asScala.map(_.asScala).toList)(p), asRevoke, yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+    } else {
+      ShowPrivileges(ShowRolesPrivileges(roles.asScala.map(_.asScala).toList)(p), yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+    }
   }
 
   override def showUserPrivileges(p: InputPosition,
                                   users:  util.List[SimpleEither[String, Parameter]],
+                                  asCommand: Boolean,
+                                  asRevoke: Boolean,
                                   yieldExpr: Yield,
                                   returnWithoutGraph: Return,
-                                  where: Where): ShowPrivileges = {
-    val showPrivilegeScope = if (Option(users).isDefined) {
+                                  where: Where): ReadAdministrationCommand = {
+    if ( asCommand ) {
+      ShowPrivilegeCommands(userPrivilegeScope(p, users), asRevoke, yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+    } else {
+      ShowPrivileges(userPrivilegeScope(p, users), yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+    }
+  }
+
+  private def userPrivilegeScope(p: InputPosition, users: util.List[SimpleEither[String, Parameter]]): ShowPrivilegeScope = {
+    if (Option(users).isDefined) {
       ShowUsersPrivileges(users.asScala.map(_.asScala).toList)(p)
     } else {
       ShowUserPrivileges(None)(p)
     }
-    ShowPrivileges(showPrivilegeScope, yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
   }
 
   override def grantPrivilege(p: InputPosition,

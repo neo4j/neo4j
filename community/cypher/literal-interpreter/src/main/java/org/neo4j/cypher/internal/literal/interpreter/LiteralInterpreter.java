@@ -592,19 +592,21 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     // Privilege commands
 
     @Override
-    public NULL showAllPrivileges( NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
+    public NULL showAllPrivileges( NULL p,  boolean asCommand, boolean asRevoke, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
     {
         throw new UnsupportedOperationException( "showAllPrivileges is not a literal" );
     }
 
     @Override
-    public NULL showRolePrivileges( NULL p, List<SimpleEither<String,Object>> roles, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
+    public NULL showRolePrivileges( NULL p, List<SimpleEither<String,Object>> roles, boolean asCommand, boolean asRevoke, NULL yieldExpr,
+                                    NULL returnWithoutGraph, NULL where )
     {
         throw new UnsupportedOperationException( "showRolePrivileges is not a literal" );
     }
 
     @Override
-    public NULL showUserPrivileges( NULL p, List<SimpleEither<String,Object>> users, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
+    public NULL showUserPrivileges( NULL p, List<SimpleEither<String,Object>> users, boolean asCommand, boolean asRevoke, NULL yieldExpr,
+                                    NULL returnWithoutGraph, NULL where )
     {
         throw new UnsupportedOperationException( "showUserPrivileges is not a literal" );
     }

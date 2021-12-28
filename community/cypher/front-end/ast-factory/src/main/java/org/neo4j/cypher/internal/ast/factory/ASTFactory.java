@@ -337,13 +337,13 @@ public interface ASTFactory<STATEMENT,
 
     // Privilege Commands
 
-    ADMINISTRATION_COMMAND showAllPrivileges( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
+    ADMINISTRATION_COMMAND showAllPrivileges( POS p, boolean asCommand, boolean asRevoke, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
-    ADMINISTRATION_COMMAND showRolePrivileges( POS p, List<SimpleEither<String,PARAMETER>> roles, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph,
-            WHERE where );
+    ADMINISTRATION_COMMAND showRolePrivileges( POS p, List<SimpleEither<String,PARAMETER>> roles, boolean asCommand, boolean asRevoke, YIELD yieldExpr,
+            RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
-    ADMINISTRATION_COMMAND showUserPrivileges( POS p, List<SimpleEither<String,PARAMETER>> users, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph,
-            WHERE where );
+    ADMINISTRATION_COMMAND showUserPrivileges( POS p, List<SimpleEither<String,PARAMETER>> users, boolean asCommand, boolean asRevoke, YIELD yieldExpr,
+            RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
     ADMINISTRATION_COMMAND grantPrivilege( POS p, List<SimpleEither<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege );
 
