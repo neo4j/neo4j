@@ -119,7 +119,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
         // Apparently the Xms/Xmx options are passed in a special form here too
         argList = includeMemoryOption( jvmOpts, argList, "-Xms", "--JvmMs", "Start" );
         argList = includeMemoryOption( jvmOpts, argList, "-Xmx", "--JvmMx", "Max" );
-        runProcess( argList, behaviour().inheritIO() );
+        runProcess( argList, behaviour().inheritIO().blocking() );
     }
 
     private static String multiArg( String key, String... values )
