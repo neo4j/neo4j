@@ -160,7 +160,6 @@ org.neo4j.configuration.GraphDatabaseSettings::preallocate_logical_logs org.neo4
 org.neo4j.configuration.GraphDatabaseSettings::preallocate_store_files org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::procedure_allowlist org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::procedure_unrestricted org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final
-org.neo4j.configuration.GraphDatabaseSettings::procedure_unrestricted org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_log_max_parameter_length org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_statistics_divergence_threshold org.neo4j.graphdb.config.Setting<java.lang.Double> public static final
