@@ -339,6 +339,9 @@ public interface ASTFactory<STATEMENT,
 
     ADMINISTRATION_COMMAND showAllPrivileges( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where );
 
+    ADMINISTRATION_COMMAND showRolePrivileges( POS p, List<SimpleEither<String,PARAMETER>> roles, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph,
+            WHERE where );
+
     ADMINISTRATION_COMMAND showUserPrivileges( POS p, List<SimpleEither<String,PARAMETER>> users, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph,
             WHERE where );
 

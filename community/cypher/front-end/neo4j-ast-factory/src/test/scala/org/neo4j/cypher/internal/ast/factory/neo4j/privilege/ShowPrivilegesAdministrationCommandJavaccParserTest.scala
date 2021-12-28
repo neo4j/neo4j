@@ -43,6 +43,48 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
     assertSameAST(testName)
   }
 
+  // Show role privileges
+
+  test("SHOW ROLE role PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLE role PRIVILEGE") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLE $role PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLES `ro%le` PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLE role1, $roleParam, role2, role3 PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLES role1, $roleParam1, role2, $roleParam2 PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLES privilege PRIVILEGE") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW ROLE privilege, privileges PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test(s"SHOW ROLES yield, where PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
+  test(s"SHOW ROLES with PRIVILEGES") {
+    assertSameAST(testName)
+  }
+
   // Show user privileges
 
   test("SHOW USER user PRIVILEGES") {
@@ -101,6 +143,8 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
     "USER",
     "USER neo4j",
     "USERS neo4j, $user",
+    "ROLES $role",
+    "ROLE $role, reader"
   ).foreach { privType =>
     Seq(
       "PRIVILEGE",
@@ -152,7 +196,9 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
 
   Seq(
     "USER",
-    "USERS"
+    "USERS",
+    "ROLE",
+    "ROLES"
   ).foreach { privType =>
     test(s"SHOW $privType yield PRIVILEGES YIELD access RETURN *") {
       assertSameAST(testName)
@@ -214,6 +260,7 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
          |  "RANGE"
          |  "REL"
          |  "RELATIONSHIP"
+         |  "ROLE"
          |  "ROLES"
          |  "TEXT"
          |  "TRANSACTION"
@@ -221,6 +268,26 @@ class ShowPrivilegesAdministrationCommandJavaccParserTest extends ParserComparis
          |  "UNIQUE"
          |  "USER"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
+
+    assertJavaCCException(testName, exceptionMessage)
+  }
+
+  test("SHOW ROLE PRIVILEGES") {
+    assertJavaCCException(testName, """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 21 (offset: 20))""")
+  }
+
+  test("SHOW ALL ROLE role PRIVILEGES") {
+    val exceptionMessage =
+      s"""Invalid input 'ROLE': expected
+         |  "CONSTRAINT"
+         |  "CONSTRAINTS"
+         |  "FUNCTION"
+         |  "FUNCTIONS"
+         |  "INDEX"
+         |  "INDEXES"
+         |  "PRIVILEGE"
+         |  "PRIVILEGES"
+         |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
   }

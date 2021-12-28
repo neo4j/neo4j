@@ -598,6 +598,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL showRolePrivileges( NULL p, List<SimpleEither<String,Object>> roles, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
+    {
+        throw new UnsupportedOperationException( "showRolePrivileges is not a literal" );
+    }
+
+    @Override
     public NULL showUserPrivileges( NULL p, List<SimpleEither<String,Object>> users, NULL yieldExpr, NULL returnWithoutGraph, NULL where )
     {
         throw new UnsupportedOperationException( "showUserPrivileges is not a literal" );

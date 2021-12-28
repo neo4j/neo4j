@@ -226,6 +226,7 @@ import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
+import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -1435,6 +1436,14 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                                  returnWithoutGraph: Return,
                                  where: Where): ShowPrivileges = {
     ShowPrivileges(ShowAllPrivileges()(p), yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+  }
+
+  override def showRolePrivileges(p: InputPosition,
+                                  roles:  util.List[SimpleEither[String, Parameter]],
+                                  yieldExpr: Yield,
+                                  returnWithoutGraph: Return,
+                                  where: Where): ShowPrivileges = {
+    ShowPrivileges(ShowRolesPrivileges(roles.asScala.map(_.asScala).toList)(p), yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
   }
 
   override def showUserPrivileges(p: InputPosition,

@@ -3165,7 +3165,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
     start=<SHOW>
     (
         showCommandType=<ALL> statement=ShowAllCommand( start, useClause )
-        | <POPULATED> statement=ShowRoles( start, useClause, false )
+        | <POPULATED> <ROLES> statement=ShowRoles( start, useClause, false )
         | showCommandType=<BTREE> statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.BTREE )
         | showCommandType=<RANGE> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.RANGE )
         | showCommandType=<FULLTEXT> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.FULLTEXT )
@@ -3181,7 +3181,6 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | showCommandType=<RELATIONSHIP> statement=ShowRelationshipCommand( start, useClause )
         | showCommandType=<REL> statement=ShowRelCommand( start, useClause )
         | showCommandType=<BUILT> <IN> statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.BUILT_IN )
-        | statement=ShowRoles( start, useClause, true )
         | statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowDatabase( start, useClause )
         | statement=ShowCurrentUser( start, useClause )
@@ -3190,6 +3189,8 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowTransactions( start, useClause )
         | statement=ShowPrivileges( start, useClause )
+        | <ROLE> statement=ShowRolePrivileges( start, useClause )
+        | <ROLES> statement=ShowRolesCommand( start, useClause )
         | statement=ShowUserCommand( start, useClause )
         | <USERS> statement=ShowUsersCommand( start, useClause )
     )
@@ -3219,11 +3220,27 @@ STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) :
 }
 {
     (
-        statement=ShowRoles( start, useClause, true )
+        <ROLES> statement=ShowRoles( start, useClause, true )
         | statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowPrivileges( start, useClause )
+    )
+    {
+        return statement;
+    }
+}
+
+STATEMENT ShowRolesCommand( Token start, USE_CLAUSE useClause ) :
+{
+    STATEMENT statement = null;
+}
+{
+    (
+        // Need these lookaheads to distinguish e.g. 'SHOW ROLES YIELD ...' from 'SHOW ROLES yield[, ...] PRIVILEGE[S]'
+        LOOKAHEAD(( <YIELD> | <WHERE> | <WITH> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowRolePrivileges( start, useClause )
+        | LOOKAHEAD(<YIELD> | <WHERE> | <WITH> | <EOF>) statement=ShowRoles( start, useClause, true )
+        | statement=ShowRolePrivileges( start, useClause )
     )
     {
         return statement;
@@ -4155,7 +4172,6 @@ STATEMENT_WITH_GRAPH ShowRoles( Token start, USE_CLAUSE useClause, boolean showA
     WHERE where = null;
 }
 {
-    <ROLES>
     ( <WITH> <USERS> { withUsers = true; } )?
     (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
@@ -4434,6 +4450,24 @@ STATEMENT_WITH_GRAPH ShowPrivileges( Token start, USE_CLAUSE useClause ):
     )?
     {
         return astFactory.useGraph( astFactory.showAllPrivileges( pos( start ), yield, returnClause, where ), useClause );
+    }
+}
+
+STATEMENT_WITH_GRAPH ShowRolePrivileges( Token start, USE_CLAUSE useClause ):
+{
+    List<SimpleEither<String, PARAMETER>> roles = null;
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    WHERE where = null;
+}
+{
+    roles=SymbolicNameOrStringParameterList()
+    (<PRIVILEGE> | <PRIVILEGES>) (
+        ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+        | ( where=WhereClause() )
+    )?
+    {
+        return astFactory.useGraph( astFactory.showRolePrivileges( pos( start ), roles, yield, returnClause, where ), useClause );
     }
 }
 

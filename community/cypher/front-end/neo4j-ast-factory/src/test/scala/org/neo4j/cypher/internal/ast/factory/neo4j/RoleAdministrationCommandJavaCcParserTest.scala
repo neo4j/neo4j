@@ -85,47 +85,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW ROLE") {
-    val exceptionMessage =
-      s"""Invalid input 'ROLE': expected
-         |  "ALL"
-         |  "BTREE"
-         |  "BUILT"
-         |  "CONSTRAINT"
-         |  "CONSTRAINTS"
-         |  "CURRENT"
-         |  "DATABASE"
-         |  "DATABASES"
-         |  "DEFAULT"
-         |  "EXIST"
-         |  "EXISTENCE"
-         |  "EXISTS"
-         |  "FULLTEXT"
-         |  "FUNCTION"
-         |  "FUNCTIONS"
-         |  "HOME"
-         |  "INDEX"
-         |  "INDEXES"
-         |  "LOOKUP"
-         |  "NODE"
-         |  "POINT"
-         |  "POPULATED"
-         |  "PRIVILEGE"
-         |  "PRIVILEGES"
-         |  "PROCEDURE"
-         |  "PROCEDURES"
-         |  "PROPERTY"
-         |  "RANGE"
-         |  "REL"
-         |  "RELATIONSHIP"
-         |  "ROLES"
-         |  "TEXT"
-         |  "TRANSACTION"
-         |  "TRANSACTIONS"
-         |  "UNIQUE"
-         |  "USER"
-         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
-
-    assertJavaCCException(testName, exceptionMessage)
+    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))")
   }
 
   test("SHOW ALL ROLE") {
@@ -147,91 +107,11 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW ROLE role") {
-    val exceptionMessage =
-      s"""Invalid input 'ROLE': expected
-         |  "ALL"
-         |  "BTREE"
-         |  "BUILT"
-         |  "CONSTRAINT"
-         |  "CONSTRAINTS"
-         |  "CURRENT"
-         |  "DATABASE"
-         |  "DATABASES"
-         |  "DEFAULT"
-         |  "EXIST"
-         |  "EXISTENCE"
-         |  "EXISTS"
-         |  "FULLTEXT"
-         |  "FUNCTION"
-         |  "FUNCTIONS"
-         |  "HOME"
-         |  "INDEX"
-         |  "INDEXES"
-         |  "LOOKUP"
-         |  "NODE"
-         |  "POINT"
-         |  "POPULATED"
-         |  "PRIVILEGE"
-         |  "PRIVILEGES"
-         |  "PROCEDURE"
-         |  "PROCEDURES"
-         |  "PROPERTY"
-         |  "RANGE"
-         |  "REL"
-         |  "RELATIONSHIP"
-         |  "ROLES"
-         |  "TEXT"
-         |  "TRANSACTION"
-         |  "TRANSACTIONS"
-         |  "UNIQUE"
-         |  "USER"
-         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
-
-    assertJavaCCException(testName, exceptionMessage)
+    assertJavaCCException(testName, "Invalid input '': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 15 (offset: 14))")
   }
 
   test("SHOW ROLE WITH USERS") {
-    val exceptionMessage =
-      s"""Invalid input 'ROLE': expected
-         |  "ALL"
-         |  "BTREE"
-         |  "BUILT"
-         |  "CONSTRAINT"
-         |  "CONSTRAINTS"
-         |  "CURRENT"
-         |  "DATABASE"
-         |  "DATABASES"
-         |  "DEFAULT"
-         |  "EXIST"
-         |  "EXISTENCE"
-         |  "EXISTS"
-         |  "FULLTEXT"
-         |  "FUNCTION"
-         |  "FUNCTIONS"
-         |  "HOME"
-         |  "INDEX"
-         |  "INDEXES"
-         |  "LOOKUP"
-         |  "NODE"
-         |  "POINT"
-         |  "POPULATED"
-         |  "PRIVILEGE"
-         |  "PRIVILEGES"
-         |  "PROCEDURE"
-         |  "PROCEDURES"
-         |  "PROPERTY"
-         |  "RANGE"
-         |  "REL"
-         |  "RELATIONSHIP"
-         |  "ROLES"
-         |  "TEXT"
-         |  "TRANSACTION"
-         |  "TRANSACTIONS"
-         |  "UNIQUE"
-         |  "USER"
-         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
-
-    assertJavaCCException(testName, exceptionMessage)
+    assertJavaCCException(testName, "Invalid input 'USERS': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))")
   }
 
   test("SHOW ROLES WITH USER") {
@@ -239,47 +119,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW ROLE WITH USER") {
-    val exceptionMessage =
-      s"""Invalid input 'ROLE': expected
-         |  "ALL"
-         |  "BTREE"
-         |  "BUILT"
-         |  "CONSTRAINT"
-         |  "CONSTRAINTS"
-         |  "CURRENT"
-         |  "DATABASE"
-         |  "DATABASES"
-         |  "DEFAULT"
-         |  "EXIST"
-         |  "EXISTENCE"
-         |  "EXISTS"
-         |  "FULLTEXT"
-         |  "FUNCTION"
-         |  "FUNCTIONS"
-         |  "HOME"
-         |  "INDEX"
-         |  "INDEXES"
-         |  "LOOKUP"
-         |  "NODE"
-         |  "POINT"
-         |  "POPULATED"
-         |  "PRIVILEGE"
-         |  "PRIVILEGES"
-         |  "PROCEDURE"
-         |  "PROCEDURES"
-         |  "PROPERTY"
-         |  "RANGE"
-         |  "REL"
-         |  "RELATIONSHIP"
-         |  "ROLES"
-         |  "TEXT"
-         |  "TRANSACTION"
-         |  "TRANSACTIONS"
-         |  "UNIQUE"
-         |  "USER"
-         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
-
-    assertJavaCCException(testName, exceptionMessage)
+    assertJavaCCException(testName, "Invalid input 'USER': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))")
   }
 
   test("SHOW ALL ROLE WITH USERS") {
