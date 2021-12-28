@@ -27,17 +27,11 @@ class JavaCCParserFallbackTest extends CypherFunSuite {
   test("should fall back") {
     Seq(
       // Not (yet) supported commands
-      "SHOW PRIVILEGES",
-      "SHOW USER username PRIVILEGES",
-      "SHOW ROLE foo PRIVILEGE",
-      "SHOW PRIVILEGES AS COMMANDS",
       "GRANT EXECUTE FUNCTION * ON DBMS TO role",
       "DENY EXECUTE BOOSTED PROCEDURE apoc.match ON DBMS TO role",
 
       // Supported commands containing fallback keywords
       "MATCH (n) RETURN n // EXECUTE",
-      "MATCH (n) RETURN n.Id as privilege",
-      "MATCH (n:Label) WHERE n.cypher = 'SHOW PRIVILEGES' and n.access = 'DENY' RETURN n",
     ).foreach(t => {
       withClue(t) { JavaCCParser.shouldFallback(t) shouldBe true }
     })
@@ -52,7 +46,8 @@ class JavaCCParserFallbackTest extends CypherFunSuite {
       "SHOW DATABASE foo",
       "CREATE USER username SET PASSWORD 'secret'",
       "SHOW ROLES",
-      "GRANT ACCESS ON DATABASE foo TO role"
+      "GRANT ACCESS ON DATABASE foo TO role",
+      "SHOW PRIVILEGES AS COMMANDS"
     ).foreach(t => {
       withClue(t) { JavaCCParser.shouldFallback(t) shouldBe false }
     })
