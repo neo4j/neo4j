@@ -33,6 +33,8 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
 import java.time.ZonedDateTime
+
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.Manifest
 
@@ -49,7 +51,7 @@ object DataCollectorMatchers {
   /**
    * Matches a ZonedDateTime if it occurs between (inclusive) to given points in time.
    */
-  def occurBetween(before: ZonedDateTime, after: ZonedDateTime) = BetweenMatcher(before, after)
+  def occurBetween(before: ZonedDateTime, after: ZonedDateTime): Matcher[ZonedDateTime] = BetweenMatcher(before, after)
 
   case class BetweenMatcher(before: ZonedDateTime, after: ZonedDateTime) extends Matcher[ZonedDateTime] {
 
@@ -78,7 +80,7 @@ object DataCollectorMatchers {
    * Note that any expected value that is a matcher will be used as such, while other expected values will
    * be asserted on using regular equality.
    */
-  def beMapContaining(expected: (String, Any)*) = MapMatcher(expected, exact = false)
+  def beMapContaining(expected: (String, Any)*): Matcher[AnyRef] = MapMatcher(expected, exact = false)
 
   /**
    * Matches a scala Map if it contains exactly the expected key-value pairs.
@@ -86,7 +88,7 @@ object DataCollectorMatchers {
    * Note that any expected value that is a matcher will be used as such, while other expected values will
    * be asserted on using regular equality.
    */
-  def beMap(expected: (String, Any)*) = MapMatcher(expected, exact = true)
+  def beMap(expected: (String, Any)*): Matcher[AnyRef] = MapMatcher(expected, exact = true)
 
   case class MapMatcher(expecteds: Seq[(String, Any)], exact: Boolean) extends Matcher[AnyRef] {
 
@@ -171,7 +173,7 @@ object DataCollectorMatchers {
    * Note that any expected value that is a matcher will be used as such, while other expected values will
    * be asserted on using regular equality.
    */
-  def beListInOrder(expected: Any*) = InOrderMatcher(expected)
+  def beListInOrder(expected: Any*): Matcher[AnyRef] = InOrderMatcher(expected)
 
   case class InOrderMatcher(expected: Seq[Any]) extends Matcher[AnyRef] {
 
@@ -248,7 +250,7 @@ object DataCollectorMatchers {
         matches = result.isRight,
         rawFailureMessage = s"Encountered following mismatches in $left:\n{0}",
         rawNegatedFailureMessage = s"the following element in $left was found, which matches:\n{1}",
-        args = IndexedSeq(result.left.getOrElse(""), result.right.getOrElse("")),
+        args = IndexedSeq(result.left.getOrElse(""), result.getOrElse("")),
       )
     }
 
@@ -259,7 +261,7 @@ object DataCollectorMatchers {
    * Matches instances of the specified type.
    */
   def ofType[T : Manifest]: OfTypeMatcher[T] =
-    OfTypeMatcher[T](manifest.erasure.asInstanceOf[Class[T]])
+    OfTypeMatcher[T](manifest.runtimeClass.asInstanceOf[Class[T]])
 
   case class OfTypeMatcher[T](clazz: Class[T]) extends Matcher[AnyRef] {
 
@@ -287,7 +289,7 @@ object DataCollectorMatchers {
       MatchResult(
         matches = left match {
           case text: String =>
-            val preParsedQuery1 = preParser.preParseQuery(text, profile = false)
+            val preParsedQuery1 = preParser.preParseQuery(text)
             parser.parse(preParsedQuery1.statement, Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset)), new AnonymousVariableNameGenerator) == expectedAst
           case _ => false
         },
@@ -301,6 +303,7 @@ object DataCollectorMatchers {
    * Extract a nested value from a tree of maps.
    */
   def subMap(res: Map[String, AnyRef], keys: String*): AnyRef = {
+    @tailrec
     def inner(res: Map[String, AnyRef], keys: List[String]): AnyRef =
       keys match {
         case Nil => res
@@ -315,22 +318,31 @@ object DataCollectorMatchers {
     inner(res, keys.toList)
   }
 
+  case class WrappedArray[T](array: Array[T]) {
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case seq: Seq[_] =>
+          seq.size == array.length &&
+            seq.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
+        case otherArray: Array[_] =>
+          otherArray.length == array.length &&
+            otherArray.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
+        case _ => false
+      }
+    }
+  }
+
   /**
    * Check whether a == b, but performs element equality on Arrays, instead of instance equality.
    */
-  def arraySafeEquals(a: AnyRef, b: Any): Boolean = {
+  def arraySafeEquals(a: Any, b: Any): Boolean = {
     a match {
-      case arr: Array[_] =>
+      case arr: Array[_] => WrappedArray(arr) == b
+      case _ =>
         b match {
-          case brr: Array[_] => arr.deep == brr.deep
-          case _ => arr.deep == b
-        }
-      case _ => {
-        b match {
-          case brr: Array[_] => a == brr.deep
+          case brr: Array[_] => WrappedArray(brr) == a
           case _ => a == b
         }
-      }
     }
   }
 }
