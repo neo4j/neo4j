@@ -33,7 +33,6 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -49,6 +48,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
+import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static picocli.CommandLine.Command;
@@ -194,7 +194,7 @@ public class StoreInfoCommand extends AbstractCommand
     {
         try
         {
-            return isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty(), memoryTracker );
+            return isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty(), memoryTracker, EMPTY );
         }
         catch ( Exception e )
         {

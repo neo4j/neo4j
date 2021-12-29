@@ -80,6 +80,7 @@ public class DetachedLogTailScanner
         this.checkPointFile = checkpointFile;
         this.fileSystem = context.getFileSystem();
         this.failOnCorruptedLogFiles = context.isFailOnCorruptedLogFiles();
+        this.logTailInformation = context.getExternalTailInfo();
         this.monitor = monitor;
     }
 

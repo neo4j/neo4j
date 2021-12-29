@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
+import java.nio.file.Path;
+
 import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
@@ -47,6 +49,16 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
         public LogFileCreateEvent createLogFile()
         {
             return LogFileCreateEvent.NULL;
+        }
+
+        @Override
+        public void openLogFile( Path filePath )
+        {
+        }
+
+        @Override
+        public void closeLogFile( Path filePath )
+        {
         }
 
         @Override
@@ -111,6 +123,10 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
     };
 
     LogFileCreateEvent createLogFile();
+
+    void openLogFile( Path filePath );
+
+    void closeLogFile( Path filePath );
 
     LogAppendEvent logAppend();
 

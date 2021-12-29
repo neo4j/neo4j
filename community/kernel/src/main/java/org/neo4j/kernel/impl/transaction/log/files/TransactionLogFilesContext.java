@@ -61,13 +61,14 @@ public class TransactionLogFilesContext
     private final Clock clock;
     private final String databaseName;
     private final Config config;
+    private final LogTailInformation externalTailInfo;
 
     public TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
             Supplier<LogVersionRepository> logVersionRepositorySupplier,FileSystemAbstraction fileSystem, LogProvider logProvider,
             DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
             MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
-            KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config )
+            KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config, LogTailInformation externalTailInfo )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
@@ -89,6 +90,7 @@ public class TransactionLogFilesContext
         this.clock = clock;
         this.databaseName = databaseName;
         this.config = config;
+        this.externalTailInfo = externalTailInfo;
     }
 
     AtomicLong getRotationThreshold()
@@ -189,5 +191,10 @@ public class TransactionLogFilesContext
     public Config getConfig()
     {
         return config;
+    }
+
+    public LogTailInformation getExternalTailInfo()
+    {
+        return externalTailInfo;
     }
 }

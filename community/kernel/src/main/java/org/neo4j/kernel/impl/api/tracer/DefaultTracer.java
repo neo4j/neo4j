@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.tracer;
 
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -139,6 +140,16 @@ public class DefaultTracer implements DatabaseTracer
     public LogFileCreateEvent createLogFile()
     {
         return logFileCreateEvent;
+    }
+
+    @Override
+    public void openLogFile( Path filePath )
+    {
+    }
+
+    @Override
+    public void closeLogFile( Path filePath )
+    {
     }
 
     @Override

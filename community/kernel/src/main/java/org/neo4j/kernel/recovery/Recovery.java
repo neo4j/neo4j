@@ -187,14 +187,16 @@ public final class Recovery
                 PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
         {
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-            return isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty(), memoryTracker );
+            return isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty(), memoryTracker,
+                    DatabaseTracers.EMPTY );
         }
     }
 
     public static boolean isRecoveryRequired( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout,
-            StorageEngineFactory storageEngineFactory, Config config, Optional<LogFiles> logFiles, MemoryTracker memoryTracker ) throws IOException
+            StorageEngineFactory storageEngineFactory, Config config, Optional<LogFiles> logFiles, MemoryTracker memoryTracker,
+            DatabaseTracers databaseTracers ) throws IOException
     {
-        RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache, config, storageEngineFactory );
+        RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache, config, storageEngineFactory, databaseTracers );
         return logFiles.isPresent() ? requiredChecker.isRecoveryRequiredAt( databaseLayout, logFiles.get() )
                                     : requiredChecker.isRecoveryRequiredAt( databaseLayout, memoryTracker );
     }
@@ -229,14 +231,6 @@ public final class Recovery
         private final IOController ioController;
         private RecoveryPredicate recoveryPredicate = RecoveryPredicate.ALL;
 
-        /**
-         * @param fileSystemAbstraction database filesystem
-         * @param pageCache page cache used to perform database recovery.
-         * @param databaseLayout database to recover layout.
-         * @param config custom configuration
-         * @param memoryTracker memorytracker
-         * @param tracers underlying operation tracers
-         */
         private Context( FileSystemAbstraction fileSystemAbstraction, PageCache pageCache, DatabaseLayout databaseLayout, Config config,
                 MemoryTracker memoryTracker, DatabaseTracers tracers, IOController ioController )
         {
@@ -365,7 +359,7 @@ public final class Recovery
             throws IOException
     {
         Log recoveryLog = logProvider.getLog( Recovery.class );
-        if ( !forceRunRecovery && !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogFiles, memoryTracker ) )
+        if ( !forceRunRecovery && !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogFiles, memoryTracker, tracers ) )
         {
             return;
         }
@@ -430,10 +424,12 @@ public final class Recovery
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
                 .withConfig( config )
+                .withDatabaseTracers( tracers )
+                .withExternalLogTailInfo( providedLogFiles.map( LogFiles::getTailInformation ).orElse( null ) )
                 .withDependencies( dependencies )
                 .withMemoryTracker( memoryTracker )
                 .build();
-        var logTailInfo = providedLogFiles.orElse( logFiles ).getTailInformation();
+        var logTailInfo = logFiles.getTailInformation();
 
         boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
         validateStoreId( logTailInfo, storageEngine.getStoreId() );

@@ -122,6 +122,7 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
         {
             nativeChannelAccessor.evictFromSystemCache( this, version );
         }
+        databaseTracer.closeLogFile( path );
         super.close();
     }
 

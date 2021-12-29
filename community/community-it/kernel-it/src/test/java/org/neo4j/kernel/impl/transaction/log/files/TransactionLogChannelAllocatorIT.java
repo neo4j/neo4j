@@ -230,7 +230,7 @@ class TransactionLogChannelAllocatorIT
                 SimpleLogVersionRepository::new, fileSystem, logProvider, DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
                 nativeAccess, INSTANCE, new Monitors(), true,
                 new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), () -> KernelVersion.LATEST,
-                Clock.systemUTC(), DEFAULT_DATABASE_NAME, config );
+                Clock.systemUTC(), DEFAULT_DATABASE_NAME, config, null );
     }
 
     private static class AdviseCountingChannelNativeAccessor extends ChannelNativeAccessor.EmptyChannelNativeAccessor

@@ -101,6 +101,7 @@ public class LogFilesBuilder
     private StoreId storeId;
     private NativeAccess nativeAccess;
     private KernelVersionRepository kernelVersionRepository;
+    private LogTailInformation externalLogTail;
 
     private LogFilesBuilder()
     {
@@ -176,6 +177,12 @@ public class LogFilesBuilder
     public LogFilesBuilder withTransactionIdStore( TransactionIdStore transactionIdStore )
     {
         this.transactionIdStore = transactionIdStore;
+        return this;
+    }
+
+    public LogFilesBuilder withExternalLogTailInfo( LogTailInformation externalLogTail )
+    {
+        this.externalLogTail = externalLogTail;
         return this;
     }
 
@@ -326,7 +333,7 @@ public class LogFilesBuilder
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier,
                 fileSystem, logProvider, databaseTracers, storeIdSupplier, nativeAccess, memoryTracker, monitors, config.get( fail_on_corrupted_log_files ),
-                health, kernelVersionRepository, clock, databaseLayout.getDatabaseName(), config );
+                health, kernelVersionRepository, clock, databaseLayout.getDatabaseName(), config, externalLogTail );
     }
 
     private StorageEngineFactory storageEngineFactory()

@@ -25,6 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -45,13 +46,16 @@ class RecoveryRequiredChecker
     private final PageCache pageCache;
     private final Config config;
     private final StorageEngineFactory storageEngineFactory;
+    private final DatabaseTracers databaseTracers;
 
-    RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config, StorageEngineFactory storageEngineFactory )
+    RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config, StorageEngineFactory storageEngineFactory,
+            DatabaseTracers databaseTracers )
     {
         this.fs = fs;
         this.pageCache = pageCache;
         this.config = config;
         this.storageEngineFactory = storageEngineFactory;
+        this.databaseTracers = databaseTracers;
     }
 
     public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
@@ -66,6 +70,7 @@ class RecoveryRequiredChecker
         return LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
                     .withConfig( config )
                     .withMemoryTracker( memoryTracker )
+                    .withDatabaseTracers( databaseTracers )
                     .withStorageEngineFactory( storageEngineFactory )
                     .withLogEntryReader( reader ).build();
     }

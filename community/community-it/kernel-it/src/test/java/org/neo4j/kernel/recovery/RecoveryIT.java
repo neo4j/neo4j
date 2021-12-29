@@ -34,7 +34,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
@@ -72,11 +74,13 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
@@ -145,6 +149,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
+import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile;
 import static org.neo4j.kernel.recovery.facade.RecoveryCriteria.ALL;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -179,12 +184,28 @@ class RecoveryIT
     }
 
     @Test
+    void avoidRescanningLogTailInfoOnRecovery() throws Exception
+    {
+        GraphDatabaseService database = createDatabase();
+        generateSomeData( database );
+        managementService.shutdown();
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+
+        CheckpointTracer checkpointTracer = new CheckpointTracer();
+        var tracers = new DatabaseTracers( checkpointTracer, LockTracer.NONE, PageCacheTracer.NULL );
+        recoverDatabase( tracers );
+
+        // we should have only one pass over log tails during recovery
+        assertEquals( 1, checkpointTracer.getCheckpointOpenCounter() );
+    }
+
+    @Test
     void recoveryRequiredOnDatabaseWithoutCorrectCheckpoints() throws Throwable
     {
         GraphDatabaseService database = createDatabase();
         generateSomeData( database );
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         assertTrue( isRecoveryRequired( databaseLayout ) );
     }
@@ -209,9 +230,9 @@ class RecoveryIT
         managementService = new TestDatabaseManagementServiceBuilder( neo4jLayout ).setConfig( config ).build();
         managementService.database( databaseLayout.getDatabaseName() );
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
-        assertFalse( isRecoveryRequired( databaseLayout, config ) );
+        assertFalse( isRecoveryRequired( databaseLayout, config, buildLogFiles() ) );
     }
 
     @Test
@@ -225,7 +246,7 @@ class RecoveryIT
             createSingleNode( database );
         }
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         recoverDatabase();
 
@@ -251,7 +272,7 @@ class RecoveryIT
             createSingleNode( database );
         }
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         var pageCacheTracer = new DefaultPageCacheTracer();
         var tracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
@@ -292,7 +313,7 @@ class RecoveryIT
             }
         }
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         recoverDatabase();
 
@@ -329,7 +350,7 @@ class RecoveryIT
             }
         }
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         recoverDatabase();
 
@@ -375,7 +396,7 @@ class RecoveryIT
             }
         }
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         recoverDatabase();
 
@@ -440,7 +461,7 @@ class RecoveryIT
             }
         }
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         recoverDatabase();
 
@@ -486,7 +507,7 @@ class RecoveryIT
             }
         }
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         recoverDatabase();
 
@@ -536,7 +557,7 @@ class RecoveryIT
             transaction.commit();
         }
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         recoverDatabase();
 
@@ -583,7 +604,7 @@ class RecoveryIT
             transaction.commit();
         }
         managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         recoverDatabase();
 
@@ -642,7 +663,7 @@ class RecoveryIT
         generateSomeData( database );
         managementService.shutdown();
         assertEquals( 1, countCheckPointsInTransactionLogs() );
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         assertEquals( 0, countCheckPointsInTransactionLogs() );
         assertTrue( isRecoveryRequired( databaseLayout ) );
@@ -780,7 +801,7 @@ class RecoveryIT
 
         assertEquals( 2, countTransactionLogFiles() );
         assertEquals( 2, countCheckPointsInTransactionLogs() );
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         startStopDatabase();
 
@@ -807,8 +828,8 @@ class RecoveryIT
 
         startStopDatabase();
         assertEquals( 2, countCheckPointsInTransactionLogs() );
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         startStopDatabase();
 
@@ -836,7 +857,7 @@ class RecoveryIT
 
         startStopDatabase();
         assertEquals( 2, countCheckPointsInTransactionLogs() );
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         startStopDatabase();
 
@@ -845,13 +866,13 @@ class RecoveryIT
         // and 2 will be truncated instead since truncation is based on position
         // next start-stop cycle will have transaction between so we will have 3 checkpoints as expected.
         assertEquals( 2, countCheckPointsInTransactionLogs() );
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
         builder = null; // Reset log rotation threshold setting to avoid immediate rotation on `createSingleNode()`.
 
         GraphDatabaseService service = createDatabase( logThreshold * 2 ); // Bigger log, to avoid rotation.
         createSingleNode( service );
         this.managementService.shutdown();
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
         startStopDatabase();
 
         assertFalse( isRecoveryRequired( databaseLayout ) );
@@ -982,7 +1003,7 @@ class RecoveryIT
         DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();
 
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
         assertTrue( isRecoveryRequired( layout ) );
 
         Monitors monitors = new Monitors();
@@ -1296,7 +1317,7 @@ class RecoveryIT
         generateSomeData( db );
         managementService.shutdown();
 
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
         assertTrue( isRecoveryRequired( layout ) );
 
         recoverDatabase( RecoveryCriteria.until( originalLastCommitted + 1 ) );
@@ -1314,7 +1335,7 @@ class RecoveryIT
         long originalLastCommitted = getMetadataProvider( db ).getLastCommittedTransactionId();
         managementService.shutdown();
 
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
         assertTrue( isRecoveryRequired( layout ) );
 
         long restoreUntilTxId = originalLastCommitted - 4;
@@ -1389,7 +1410,7 @@ class RecoveryIT
         generateSomeData( db );
         managementService.shutdown();
 
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         assertTrue( isRecoveryRequired( layout ) );
 
@@ -1413,7 +1434,7 @@ class RecoveryIT
         generateSomeData( db );
         managementService.shutdown();
 
-        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
+        removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
         assertTrue( isRecoveryRequired( layout ) );
 
@@ -1504,30 +1525,37 @@ class RecoveryIT
         monitors.addMonitorListener( new LoggingLogFileMonitor( logProvider.getLog( getClass() ) ) );
         Config config = Config.newBuilder().build();
         additionalConfiguration( config );
-        assertTrue( isRecoveryRequired( databaseLayout, config ) );
+        LogFiles logFiles = buildLogFiles( databaseTracers );
+        assertTrue( isRecoveryRequired( databaseLayout, config, logFiles, databaseTracers ) );
         StorageEngineFactory storageEngineFactory = defaultStorageEngine();
 
         Recovery.performRecovery( Recovery.context( fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE, IOController.DISABLED )
                                           .storageEngineFactory( storageEngineFactory )
                                           .log( logProvider )
+                                          .logFiles( logFiles )
                                           .recoveryPredicate( recoveryCriteria.toPredicate() )
                                           .monitors( monitors )
                                           .extensionFactories( Iterables.cast( Services.loadAll( ExtensionFactory.class ) ) )
                                           .startupChecker( RecoveryStartupChecker.EMPTY_CHECKER )
                                           .clock( fakeClock ) );
-        assertFalse( isRecoveryRequired( databaseLayout, config ) );
+        assertFalse( isRecoveryRequired( databaseLayout, config, buildLogFiles() ) );
     }
 
     private boolean isRecoveryRequired( DatabaseLayout layout ) throws Exception
     {
         Config config = Config.newBuilder().build();
         additionalConfiguration( config );
-        return isRecoveryRequired( layout, config );
+        return isRecoveryRequired( layout, config, buildLogFiles() );
     }
 
-    private boolean isRecoveryRequired( DatabaseLayout layout, Config config ) throws Exception
+    private boolean isRecoveryRequired( DatabaseLayout layout, Config config, LogFiles logFiles ) throws Exception
     {
-        return Recovery.isRecoveryRequired( fileSystem, layout, config, INSTANCE );
+        return Recovery.isRecoveryRequired( fileSystem, pageCache, layout, defaultStorageEngine(), config, Optional.of( logFiles ), INSTANCE, EMPTY );
+    }
+
+    private boolean isRecoveryRequired( DatabaseLayout layout, Config config, LogFiles logFiles, DatabaseTracers tracers ) throws Exception
+    {
+        return Recovery.isRecoveryRequired( fileSystem, pageCache, layout, defaultStorageEngine(), config, Optional.of( logFiles ), INSTANCE, tracers );
     }
 
     private int countCheckPointsInTransactionLogs() throws IOException
@@ -1539,9 +1567,15 @@ class RecoveryIT
 
     private LogFiles buildLogFiles() throws IOException
     {
+        return buildLogFiles( EMPTY );
+    }
+
+    private LogFiles buildLogFiles( DatabaseTracers databaseTracers ) throws IOException
+    {
         return LogFilesBuilder
                 .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
                 .withStorageEngineFactory( defaultStorageEngine() )
+                .withDatabaseTracers( databaseTracers )
                 .build();
     }
 
@@ -1682,6 +1716,27 @@ class RecoveryIT
         GlobalGuardConsumer( Dependencies dependencies )
         {
             globalGuard = dependencies.globalGuard();
+        }
+    }
+
+    private static class CheckpointTracer extends DefaultTracer
+    {
+
+        private final AtomicInteger openCounter = new AtomicInteger();
+
+        @Override
+        public void openLogFile( Path filePath )
+        {
+            if ( filePath.toString().contains( "checkpoint" ) )
+            {
+                openCounter.incrementAndGet();
+            }
+            super.openLogFile( filePath );
+        }
+
+        public int getCheckpointOpenCounter()
+        {
+            return openCounter.get();
         }
     }
 }

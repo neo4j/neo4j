@@ -98,6 +98,7 @@ public class TransactionLogChannelAllocator
         {
             throw new NoSuchFileException( fileToOpen.toAbsolutePath().toString() );
         }
+        databaseTracer.openLogFile( fileToOpen );
 
         StoreChannel rawChannel = null;
         try

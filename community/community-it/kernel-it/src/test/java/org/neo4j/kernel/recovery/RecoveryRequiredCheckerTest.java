@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -296,7 +297,7 @@ class RecoveryRequiredCheckerTest
     private static RecoveryRequiredChecker getRecoveryChecker( FileSystemAbstraction fileSystem, PageCache pageCache,
             StorageEngineFactory storageEngineFactory, Config config )
     {
-        return new RecoveryRequiredChecker( fileSystem, pageCache, config, storageEngineFactory );
+        return new RecoveryRequiredChecker( fileSystem, pageCache, config, storageEngineFactory, DatabaseTracers.EMPTY );
     }
 
     private static EphemeralFileSystemAbstraction createSomeDataAndCrash( Path store, Config config ) throws IOException
