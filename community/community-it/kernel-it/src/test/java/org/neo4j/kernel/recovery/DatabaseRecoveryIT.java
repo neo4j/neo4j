@@ -301,8 +301,6 @@ class DatabaseRecoveryIT
             assertNotNull( txFailure );
             adversary.disable();
 
-            healthOf( db ).healed(); // heal the db so it is possible to inspect the data
-
             // now we can observe partially committed state: node is in the index and relationship still present
             try ( Transaction tx = db.beginTx() )
             {

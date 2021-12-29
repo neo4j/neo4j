@@ -524,15 +524,7 @@ public class Database extends LifecycleAdapter
             registerUpgradeListener();
             eventListeners.databaseStart( namedDatabaseId );
 
-            /*
-             * At this point recovery has completed and the database is ready for use. Whatever panic might have
-             * happened before has been healed. So we can safely set the kernel health to ok.
-             * This right now has any real effect only in the case of internal restarts (for example, after a store copy).
-             * Standalone instances will have to be restarted by the user, as is proper for all database panics.
-             */
-            databaseHealth.healed();
             started = true;
-
             postStartupInit( storageExists );
         }
         catch ( Throwable e )

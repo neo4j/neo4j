@@ -27,7 +27,5 @@ public interface Health
 
     boolean isHealthy();
 
-    boolean healed();
-
     Throwable cause();
 }
