@@ -63,6 +63,17 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
+            <!-- disable scalastyle-maven-plugin, because we have no scala -->
+            <plugin>
+                <groupId>org.neo4j</groupId>
+                <artifactId>scalastyle-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>scala-style-check</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>com.helger.maven</groupId>
                 <artifactId>ph-javacc-maven-plugin</artifactId>
