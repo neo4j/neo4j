@@ -610,16 +610,6 @@ abstract class Read implements TxStateHolder,
         ktx.lockClient().acquireShared( ktx.lockTracer(), resource, resourceId );
     }
 
-    private void acquireExclusiveLock( ResourceType type, long... ids )
-    {
-        ktx.lockClient().acquireExclusive( ktx.lockTracer(), type, ids );
-    }
-
-    private void releaseExclusiveLock( ResourceType type, long... ids )
-    {
-        ktx.lockClient().releaseExclusive( type, ids );
-    }
-
     private void acquireSharedLock( ResourceType type, long... ids )
     {
         ktx.lockClient().acquireShared( ktx.lockTracer(), type, ids );
