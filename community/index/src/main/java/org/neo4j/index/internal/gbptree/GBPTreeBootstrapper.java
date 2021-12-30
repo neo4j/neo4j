@@ -82,7 +82,7 @@ public class GBPTreeBootstrapper implements Closeable
             if ( meta.getPayloadSize() != pageCache.payloadSize() )
             {
                 // GBPTree was created with a different page size, re-instantiate page cache and re-read meta.
-                instantiatePageCache( fs, jobScheduler, meta.getPayloadSize() );
+                instantiatePageCache( fs, jobScheduler, pageCachePageForPayload( meta.getPayloadSize() ) );
                 metaVisitor = visitMeta( file );
                 meta = metaVisitor.meta;
             }
@@ -100,6 +100,11 @@ public class GBPTreeBootstrapper implements Closeable
         {
             return new FailedBootstrap( e );
         }
+    }
+
+    private int pageCachePageForPayload( int payload )
+    {
+        return payload + pageCache.pageReservedBytes();
     }
 
     @Override
