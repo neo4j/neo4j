@@ -35,9 +35,11 @@ import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableCheck
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
@@ -90,31 +92,48 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     {
         this.storeId = context.getStoreId();
         logVersionRepository = requireNonNull( context.getLogVersionRepository() );
-        long initialVersion = logVersionRepository.getCheckpointLogVersion();
-        channel = channelAllocator.createLogChannel( initialVersion, context::getLastCommittedTransactionId );
-        context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), initialVersion );
-        seekCheckpointChannel();
+        long version = logVersionRepository.getCheckpointLogVersion();
+        channel = channelAllocator.createLogChannel( version, context::getLastCommittedTransactionId );
+        context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), version );
+        seekCheckpointChannel( version );
         buffer = new NativeScopedBuffer( kibiBytes( 1 ), context.getMemoryTracker() );
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, buffer );
         checkpointWriter = new DetachedCheckpointLogEntryWriter( writer );
     }
 
-    private void seekCheckpointChannel() throws IOException
+    private void seekCheckpointChannel( long expectedVersion ) throws IOException
     {
-        // when we do recovery and know that tail is corrupted there is no reason to scroll to the end since we will do rotation later on before appending
-        // checkpoint after recovery.
-        if ( logTailScanner.getTailInformation().hasUnreadableBytesInCheckpointLogs() )
+        LogTailInformation tailInformation = logTailScanner.getTailInformation();
+        if ( tailInformation.hasUnreadableBytesInCheckpointLogs() )
         {
+            // we have unreadable bytes in the tail and we can't find correct position anyway and will rotate this file away
             return;
         }
+        CheckpointInfo lastCheckPoint = tailInformation.getLastCheckPoint();
+        if ( lastCheckPoint == null )
+        {
+            channel.position( lastReadablePosition() );
+            return;
+        }
+        LogPosition channelPosition = lastCheckPoint.getChannelPositionAfterCheckpoint();
+        if ( channelPosition.getLogVersion() != expectedVersion )
+        {
+            throw new IllegalStateException(
+                    "Expected version of checkpoint log " + expectedVersion + ", does not match to found tail version " + channelPosition.getLogVersion() );
+        }
+        channel.position( channelPosition.getByteOffset() );
+    }
+
+    private long lastReadablePosition() throws IOException
+    {
         try ( var reader = new ReadAheadLogChannel( new UnclosableChannel( channel ), NO_MORE_CHANNELS, context.getMemoryTracker() );
-              var logEntryCursor = new LogEntryCursor( new VersionAwareLogEntryReader( NO_COMMANDS, true ), reader ) )
+                var logEntryCursor = new LogEntryCursor( new VersionAwareLogEntryReader( NO_COMMANDS, true ), reader ) )
         {
             while ( logEntryCursor.next() )
             {
                 logEntryCursor.get();
             }
-            channel.position( reader.getCurrentPosition().getByteOffset() );
+            return reader.getCurrentPosition().getByteOffset();
         }
     }
 

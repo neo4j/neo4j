@@ -75,6 +75,11 @@ public class LogTailInformation
         return storeId;
     }
 
+    public CheckpointInfo getLastCheckPoint()
+    {
+        return lastCheckPoint;
+    }
+
     @Override
     public String toString()
     {
