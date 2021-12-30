@@ -195,7 +195,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     LogEntry logEntry = logEntryCursor.get();
                     checkpoint = verify( logEntry );
                     lastLocation = reader.getCurrentPosition();
-                    checkpoints.add(  new CheckpointInfo( checkpoint, lastCheckpointLocation, lastLocation, lastLocation ) );
+                    checkpoints.add( new CheckpointInfo( checkpoint, lastCheckpointLocation, lastLocation, lastLocation ) );
                 }
                 currentVersion++;
             }
@@ -316,8 +316,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         }
     }
 
-    private record CheckpointEntryInfo(LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition,
-                                              LogPosition channelPositionAfterCheckpoint)
+    private record CheckpointEntryInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint )
     {
     }
 }
