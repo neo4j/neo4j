@@ -43,6 +43,20 @@ public final class UserFunctionSignature
     private final boolean caseInsensitive;
     private final boolean isBuiltIn;
 
+    @Deprecated( forRemoval = true )
+    @SuppressWarnings( "unused" )
+    public UserFunctionSignature( QualifiedName name,
+                                  List<FieldSignature> inputSignature,
+                                  Neo4jTypes.AnyType type,
+                                  String deprecated,
+                                  String[] allowed,
+                                  String description,
+                                  String category,
+                                  boolean caseInsensitive )
+    {
+        this( name, inputSignature, type, deprecated, description, category, caseInsensitive );
+    }
+
     public UserFunctionSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
             Neo4jTypes.AnyType type,
@@ -59,6 +73,21 @@ public final class UserFunctionSignature
         this.category = category;
         this.caseInsensitive = caseInsensitive;
         this.isBuiltIn = false;
+    }
+
+    @Deprecated( forRemoval = true )
+    @SuppressWarnings( "unused" )
+    public UserFunctionSignature( QualifiedName name,
+                                  List<FieldSignature> inputSignature,
+                                  Neo4jTypes.AnyType type,
+                                  String deprecated,
+                                  String[] allowed,
+                                  String description,
+                                  String category,
+                                  boolean caseInsensitive,
+                                  boolean isBuiltIn )
+    {
+        this( name, inputSignature, type, deprecated, description, category, caseInsensitive, isBuiltIn );
     }
 
     public UserFunctionSignature( QualifiedName name,

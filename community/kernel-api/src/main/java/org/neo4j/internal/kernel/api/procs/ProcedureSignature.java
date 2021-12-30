@@ -51,6 +51,28 @@ public class ProcedureSignature
     private final boolean internal;
     private final boolean allowExpiredCredentials;
 
+    @Deprecated( forRemoval = true )
+    @SuppressWarnings( "unused" )
+    public ProcedureSignature(
+            QualifiedName name,
+            List<FieldSignature> inputSignature,
+            List<FieldSignature> outputSignature,
+            Mode mode,
+            boolean admin,
+            String deprecated,
+            String[] allowed,
+            String description,
+            String warning,
+            boolean eager,
+            boolean caseInsensitive,
+            boolean systemProcedure,
+            boolean internal,
+            boolean allowExpiredCredentials )
+    {
+        this( name, inputSignature, outputSignature, mode, admin, deprecated, description, warning, eager, caseInsensitive, systemProcedure, internal,
+              allowExpiredCredentials );
+    }
+
     public ProcedureSignature(
             QualifiedName name,
             List<FieldSignature> inputSignature,
