@@ -3192,9 +3192,26 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | statement=ShowTransactions( start, useClause )
         | statement=ShowPrivileges( start, useClause )
         | <ROLE> statement=ShowRolePrivileges( start, useClause )
-        | <ROLES> statement=ShowRolesCommand( start, useClause )
-        | statement=ShowUserCommand( start, useClause )
-        | <USERS> statement=ShowUsersCommand( start, useClause )
+
+        | <ROLES>
+            (
+                // Need these lookaheads to distinguish e.g. 'SHOW ROLES YIELD ...' from 'SHOW ROLES yield[, ...] PRIVILEGE[S]'
+                LOOKAHEAD(( <YIELD> | <WHERE> | <WITH> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowRolePrivileges( start, useClause )
+                | LOOKAHEAD(<YIELD> | <WHERE> | <WITH> | <EOF>) statement=ShowRoles( start, useClause, true )
+                | statement=ShowRolePrivileges( start, useClause )
+            )
+
+        // Need a lookahead of 3 to distinguish 'SHOW USER DEFINED FUNCTION[S]' from 'SHOW USER defined[, ...] PRIVILEGE[S]'
+        | LOOKAHEAD(<USER> <DEFINED> ( <FUNCTION> | <FUNCTIONS> )) showCommandType=<USER> <DEFINED> statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.USER_DEFINED )
+        | <USER> statement=ShowUserPrivileges( start, useClause )
+
+        | <USERS>
+            (
+                // Need these lookaheads to distinguish e.g. 'SHOW USERS YIELD ...' from 'SHOW USERS yield[, ...] PRIVILEGE[S]'
+                LOOKAHEAD(( <YIELD> | <WHERE> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowUserPrivileges( start, useClause )
+                | LOOKAHEAD(<YIELD> | <WHERE> | <EOF>) statement=ShowUsers( start, useClause )
+                | statement=ShowUserPrivileges( start, useClause )
+            )
     )
     {
         return statement;
@@ -3227,53 +3244,6 @@ STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) :
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowPrivileges( start, useClause )
-    )
-    {
-        return statement;
-    }
-}
-
-STATEMENT ShowRolesCommand( Token start, USE_CLAUSE useClause ) :
-{
-    STATEMENT statement = null;
-}
-{
-    (
-        // Need these lookaheads to distinguish e.g. 'SHOW ROLES YIELD ...' from 'SHOW ROLES yield[, ...] PRIVILEGE[S]'
-        LOOKAHEAD(( <YIELD> | <WHERE> | <WITH> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowRolePrivileges( start, useClause )
-        | LOOKAHEAD(<YIELD> | <WHERE> | <WITH> | <EOF>) statement=ShowRoles( start, useClause, true )
-        | statement=ShowRolePrivileges( start, useClause )
-    )
-    {
-        return statement;
-    }
-}
-
-STATEMENT ShowUserCommand( Token start, USE_CLAUSE useClause ) :
-{
-    Token showCommandType = null;
-    STATEMENT statement = null;
-}
-{
-    (
-        // Need a lookahead of 3 to distinguish 'SHOW USER DEFINED FUNCTION[S]' from 'SHOW USER defined[, ...] PRIVILEGE[S]'
-       LOOKAHEAD(<USER> <DEFINED> ( <FUNCTION> | <FUNCTIONS> )) showCommandType=<USER> <DEFINED>
-            statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.USER_DEFINED )
-       | <USER> statement=ShowUserPrivileges( start, useClause )
-    )
-    {
-        return statement;
-    }
-}STATEMENT ShowUsersCommand( Token start, USE_CLAUSE useClause ) :
-{
-    STATEMENT statement = null;
-}
-{
-    (
-        // Need these lookaheads to distinguish e.g. 'SHOW USERS YIELD ...' from 'SHOW USERS yield[, ...] PRIVILEGE[S]'
-        LOOKAHEAD(( <YIELD> | <WHERE> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowUserPrivileges( start, useClause )
-        | LOOKAHEAD(<YIELD> | <WHERE> | <EOF>) statement=ShowUsers( start, useClause )
-        | statement=ShowUserPrivileges( start, useClause )
     )
     {
         return statement;
