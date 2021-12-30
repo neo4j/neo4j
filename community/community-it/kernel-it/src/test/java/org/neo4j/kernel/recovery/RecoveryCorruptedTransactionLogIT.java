@@ -20,7 +20,6 @@
 package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -156,74 +155,80 @@ class RecoveryCorruptedTransactionLogIT
         txOffsetAfterStart = startStopDatabaseAndGetTxOffset();
     }
 
-    @RepeatedTest( 10 )
+    @Test
     void recoverFromLastCorruptedNotFullyWrittenCheckpointRecord() throws IOException
     {
-        int bytesToTrim = random.nextInt( 1, CHECKPOINT_RECORD_SIZE );
-
-        DatabaseManagementService managementService = databaseFactory.build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( getStoreId( database ) );
-
-        TransactionIdStore transactionIdStore = getTransactionIdStore( database );
-        LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().getLogPosition();
-        long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
-        for ( int i = 0; i < 10; i++ )
+        for ( int iteration = 0; iteration < 10; iteration++ )
         {
-            generateTransaction( database );
+            int bytesToTrim = random.nextInt( 1, CHECKPOINT_RECORD_SIZE );
+
+            DatabaseManagementService managementService = databaseFactory.build();
+            GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            logFiles = buildDefaultLogFiles( getStoreId( database ) );
+
+            TransactionIdStore transactionIdStore = getTransactionIdStore( database );
+            LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().getLogPosition();
+            long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
+            for ( int i = 0; i < 10; i++ )
+            {
+                generateTransaction( database );
+            }
+            long numberOfClosedTransactions = getTransactionIdStore( database ).getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
+
+            DependencyResolver dependencyResolver = database.getDependencyResolver();
+            var databaseCheckpointer = dependencyResolver.resolveDependency( TransactionLogFiles.class ).getCheckpointFile();
+            databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logOffsetBeforeTestTransactions, Instant.now(),
+                    "Fallback checkpoint." );
+            managementService.shutdown();
+
+            truncateBytesFromLastCheckpointLogFile( bytesToTrim );
+            startStopDbRecoveryOfCorruptedLogs();
+
+            assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
+            assertThat( logFiles.getCheckpointFile().getDetachedCheckpointFiles() ).hasSize( 2 );
+            assertEquals( 0, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles() );
+
+            removeDatabaseDirectories();
         }
-        long numberOfClosedTransactions = getTransactionIdStore( database ).getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
-
-        DependencyResolver dependencyResolver = database.getDependencyResolver();
-        var databaseCheckpointer = dependencyResolver.resolveDependency( TransactionLogFiles.class ).getCheckpointFile();
-        databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logOffsetBeforeTestTransactions, Instant.now(),
-                "Fallback checkpoint." );
-        managementService.shutdown();
-
-        truncateBytesFromLastCheckpointLogFile( bytesToTrim );
-        startStopDbRecoveryOfCorruptedLogs();
-
-        assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
-        assertThat( logFiles.getCheckpointFile().getDetachedCheckpointFiles() ).hasSize( 2 );
-        assertEquals( 0, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles() );
-
-        removeDatabaseDirectories();
     }
 
-    @RepeatedTest( 10 )
+    @Test
     void recoverFromLastCorruptedBrokenCheckpointRecord() throws IOException
     {
-        int bytesToAdd = random.nextInt( 1, CHECKPOINT_RECORD_SIZE );
-
-        DatabaseManagementService managementService = databaseFactory.build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( getStoreId( database ) );
-
-        TransactionIdStore transactionIdStore = getTransactionIdStore( database );
-        LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().getLogPosition();
-        long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
-        for ( int i = 0; i < 10; i++ )
+        for ( int iteration = 0; iteration < 10; iteration++ )
         {
-            generateTransaction( database );
+            int bytesToAdd = random.nextInt( 1, CHECKPOINT_RECORD_SIZE );
+
+            DatabaseManagementService managementService = databaseFactory.build();
+            GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            logFiles = buildDefaultLogFiles( getStoreId( database ) );
+
+            TransactionIdStore transactionIdStore = getTransactionIdStore( database );
+            LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().getLogPosition();
+            long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
+            for ( int i = 0; i < 10; i++ )
+            {
+                generateTransaction( database );
+            }
+            long numberOfClosedTransactions = getTransactionIdStore( database ).getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
+
+            DependencyResolver dependencyResolver = database.getDependencyResolver();
+            var databaseCheckpointer = dependencyResolver.resolveDependency( TransactionLogFiles.class ).getCheckpointFile();
+            databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logOffsetBeforeTestTransactions, Instant.now(),
+                    "Fallback checkpoint." );
+            managementService.shutdown();
+
+            removeLastCheckpointRecordFromLastLogFile();
+            appendRandomBytesAfterLastCheckpointRecordFromLastLogFile( bytesToAdd );
+            startStopDbRecoveryOfCorruptedLogs();
+
+            assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
+            assertEquals( iteration + 1, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles() );
+
+            assertThat( logFiles.getCheckpointFile().getDetachedCheckpointFiles() ).hasSize( 2 );
+
+            removeDatabaseDirectories();
         }
-        long numberOfClosedTransactions = getTransactionIdStore( database ).getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
-
-        DependencyResolver dependencyResolver = database.getDependencyResolver();
-        var databaseCheckpointer = dependencyResolver.resolveDependency( TransactionLogFiles.class ).getCheckpointFile();
-        databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logOffsetBeforeTestTransactions, Instant.now(),
-                "Fallback checkpoint." );
-        managementService.shutdown();
-
-        removeLastCheckpointRecordFromLastLogFile();
-        appendRandomBytesAfterLastCheckpointRecordFromLastLogFile( bytesToAdd );
-        startStopDbRecoveryOfCorruptedLogs();
-
-        assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
-        assertEquals( 1, corruptedFilesMonitor.getNumberOfCorruptedCheckpointFiles() );
-
-        assertThat( logFiles.getCheckpointFile().getDetachedCheckpointFiles() ).hasSize( 2 );
-
-        removeDatabaseDirectories();
     }
 
     @Test
@@ -1298,8 +1303,8 @@ class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private static class CorruptedCheckpointMonitor implements LogTailScannerMonitor {
-
+    private static class CorruptedCheckpointMonitor implements LogTailScannerMonitor
+    {
         private final AtomicInteger corruptedFileCounter = new AtomicInteger();
 
         @Override
