@@ -1727,7 +1727,7 @@ class RecoveryIT
         @Override
         public void openLogFile( Path filePath )
         {
-            if ( filePath.toString().contains( "checkpoint" ) )
+            if ( filePath.getFileName().toString().contains( "checkpoint" ) )
             {
                 openCounter.incrementAndGet();
             }
