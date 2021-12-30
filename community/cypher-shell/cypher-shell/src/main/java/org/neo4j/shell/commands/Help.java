@@ -106,7 +106,7 @@ public class Help implements Command
 
         printer.printOut( "Keyboard shortcuts:" );
         printer.printOut( "    Up and down arrows to access statement history." );
-        printer.printOut( "    Tab for autocompletion of commands." );
+        printer.printOut( "    Tab for autocompletion of commands, hit twice to select suggestion from list using arrow keys." );
 
         printer.printOut( "\nFor help on cypher please visit:" );
         printer.printOut( AnsiFormattedText.from( "    " )

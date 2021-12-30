@@ -24,42 +24,54 @@ import org.jline.reader.EOFError;
 import org.jline.reader.ParsedLine;
 import org.jline.reader.Parser;
 import org.jline.reader.SyntaxError;
+import org.jline.reader.impl.DefaultParser;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+import org.neo4j.shell.parser.CypherLanguageService;
+import org.neo4j.shell.parser.CypherLanguageService.Token;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.parser.StatementParser.CommandStatement;
+import org.neo4j.shell.parser.StatementParser.CypherStatement;
+import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatements;
 import org.neo4j.shell.terminal.JlineTerminal.ParsedLineStatements;
 
 import static org.jline.reader.Parser.ParseContext.COMPLETE;
 
 /**
- * Jline Parser that parse cypher shell statements (cypher queries/cypher shell commands).
+ * Jline Parser that parse Cypher Shell statements.
  */
-public class StatementJlineParser implements Parser
+public class StatementJlineParser extends DefaultParser implements Parser
 {
     private static final Logger log = Logger.create();
-    private final StatementParser parser;
+    private final StatementParser statementParser;
+    private final CypherLanguageService cypherSyntax;
     private boolean enableStatementParsing;
 
-    public StatementJlineParser( StatementParser parser )
+    public StatementJlineParser( StatementParser statementParser, CypherLanguageService cypherSyntax )
     {
-        this.parser = parser;
+        this.statementParser = statementParser;
+        this.cypherSyntax = cypherSyntax;
     }
 
     @Override
     public ParsedLine parse( String line, int cursor, ParseContext context ) throws SyntaxError
     {
-        return enableStatementParsing ? doParse( line, cursor, context ) : new UnparsedLine( line, cursor );
-    }
+        if ( !enableStatementParsing )
+        {
+            return new UnparsedLine( line, cursor );
+        }
+        else if ( context == COMPLETE )
+        {
+            return parseForCompletion( line, cursor );
+        }
 
-    private ParsedLine doParse( String line, int cursor, ParseContext context )
-    {
-        return context == COMPLETE ? parseForCompletion( line, cursor ) : parseForExecution( line, cursor );
+        return parseForExecution( line, cursor );
     }
 
     private SimpleParsedStatements parseForExecution( String line, int cursor )
@@ -77,25 +89,52 @@ public class StatementJlineParser implements Parser
 
     private ParsedLine parseForCompletion( String line, int cursor )
     {
-        var parsed = parse( line );
-        var statements = parsed.statements();
+        return parse( line ).statementAtOffset( cursor )
+                .flatMap( s -> completingStatement( s, line, cursor ) )
+                .orElseGet( () -> new BlankCompletion( line, cursor ) );
+    }
 
-        if ( statements.size() == 1
-             && statements.get( 0 ) instanceof CommandStatement command && command.args().isEmpty()
-             && cursor == line.length() )
+    private Optional<ParsedLine> completingStatement( ParsedStatement statement, String line, int cursor )
+    {
+        if ( statement instanceof CommandStatement command && command.args().isEmpty() )
         {
-            return new CompletingCommand( command, line, cursor );
+            return Optional.of( new CommandCompletion( command, line, cursor ) );
+        }
+        else if ( statement instanceof CypherStatement cypher )
+        {
+            return Optional.of( completingCypher( cypher, line, cursor ) );
         }
 
-        // No completion available
-        return new SimpleParsedStatements( parsed, line, cursor );
+        return Optional.empty();
+    }
+
+    private CypherCompletion completingCypher( CypherStatement statement, String line, int cursor )
+    {
+        var tokens = cypherSyntax.tokenize( statement.statement() );
+        int statementStart = statement.beginOffset();
+
+        for ( var token : tokens )
+        {
+            var tokenStart = statementStart + token.beginOffset();
+            var tokenEnd = statementStart + token.endOffset();
+
+            if ( cursor >= tokenStart && cursor - 1 <= tokenEnd )
+            {
+                // Note, we can't use token.image because it's not always identical how it appears in the query string
+                var word = line.substring( tokenStart, tokenEnd + 1 );
+                return new CypherCompletion( statement, line, cursor, tokens, word, cursor - tokenStart );
+            }
+        }
+
+        // Found no token at the cursor position
+        return new CypherCompletion( statement, line, cursor, tokens, "", 0 );
     }
 
     private ParsedStatements parse( String line )
     {
         try
         {
-            return parser.parse( line );
+            return statementParser.parse( line );
         }
         catch ( IOException e )
         {
@@ -140,7 +179,7 @@ public class StatementJlineParser implements Parser
         return null;
     }
 
-    protected record CompletingCommand( CommandStatement statement, String line, int cursor ) implements FirstWordCompletion
+    protected record CommandCompletion(CommandStatement statement, String line, int cursor ) implements CompletingWord, CompletingStatements
     {
         @Override
         public String word()
@@ -149,72 +188,32 @@ public class StatementJlineParser implements Parser
         }
 
         @Override
-        public int rawWordCursor()
-        {
-            return wordCursor();
-        }
-
-        @Override
-        public int rawWordLength()
-        {
-            return statement.name().length();
-        }
-
-        @Override
         public int wordCursor()
-        {
-            return statement.name().length();
-        }
-    }
-
-    protected record SimpleParsedStatements( ParsedStatements statements, String line, int cursor ) implements ParsedLineStatements, NoWordsParsedLine
-    { }
-    protected record UnparsedLine( String line, int cursor ) implements NoWordsParsedLine
-    { }
-
-    protected interface FirstWordCompletion extends CompletingParsedLine
-    {
-        @Override
-        default CharSequence escape( CharSequence candidate, boolean complete )
-        {
-            return candidate;
-        }
-
-        @Override
-        default int rawWordCursor()
-        {
-            return cursor();
-        }
-
-        @Override
-        default int rawWordLength()
-        {
-            return cursor();
-        }
-
-        @Override
-        String word();
-
-        @Override
-        default int wordCursor()
-        {
-            return cursor();
-        }
-
-        @Override
-        default int wordIndex()
         {
             return 0;
         }
-
-        @Override
-        default List<String> words()
-        {
-            return List.of( word() );
-        }
     }
 
-    protected interface NoWordsParsedLine extends CompletingParsedLine
+    protected record BlankCompletion( String line, int cursor ) implements NoWordsParsedLine
+    { }
+
+    protected record CypherCompletion(CypherStatement statement, String line, int cursor, List<Token> tokens, String word, int wordCursor )
+            implements CompletingWord, CompletingStatements
+    { }
+
+    protected record SimpleParsedStatements( ParsedStatements statements, String line, int cursor )
+            implements ParsedLineStatements, NoWordsParsedLine
+    { }
+
+    protected record UnparsedLine( String line, int cursor ) implements NoWordsParsedLine
+    { }
+
+    interface CompletingStatements
+    {
+        ParsedStatement statement();
+    }
+
+    protected interface NoWordsParsedLine extends CompletingWord
     {
         @Override
         default String word()
@@ -227,6 +226,27 @@ public class StatementJlineParser implements Parser
         {
             return 0;
         }
+    }
+
+    private interface CompletingWord extends CompletingParsedLine
+    {
+        @Override
+        default CharSequence escape( CharSequence candidate, boolean complete )
+        {
+            return candidate;
+        }
+
+        @Override
+        default int rawWordCursor()
+        {
+            return wordCursor();
+        }
+
+        @Override
+        default int rawWordLength()
+        {
+            return word().length();
+        }
 
         @Override
         default int wordIndex()
@@ -237,26 +257,7 @@ public class StatementJlineParser implements Parser
         @Override
         default List<String> words()
         {
-            return Collections.emptyList();
+            return Collections.singletonList( word() );
         }
-
-        @Override
-        default CharSequence escape( CharSequence candidate, boolean complete )
-        {
-            return candidate;
-        }
-
-        @Override
-        default int rawWordCursor()
-        {
-            return 0;
-        }
-
-        @Override
-        default int rawWordLength()
-        {
-            return 0;
-        }
-
     }
 }

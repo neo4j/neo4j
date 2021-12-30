@@ -28,7 +28,6 @@ import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
-import org.neo4j.shell.parser.StatementParser.IncompleteStatement;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -67,7 +66,7 @@ class SourceTest
     {
         // given
         cmd.execute( List.of( fileFromResource( "test.cypher" ) ) );
-        verify( shell ).execute( List.of( new CypherStatement( "RETURN 42;" ) ) );
+        verify( shell ).execute( List.of( new CypherStatement( "RETURN 42;", true, 0, 9 ) ) );
         verifyNoMoreInteractions( shell );
     }
 
@@ -97,7 +96,7 @@ class SourceTest
     void shouldTryToExecuteIncompleteStatements() throws CommandException
     {
         cmd.execute( List.of( fileFromResource( "invalid.cypher" ) ) );
-        verify( shell ).execute( List.of( new IncompleteStatement( "INVALID CYPHER\nWITHOUT SEMICOLON\n// Comment at end" ) ) );
+        verify( shell ).execute( List.of( new CypherStatement( "INVALID CYPHER\nWITHOUT SEMICOLON\n// Comment at end", false, 0, 49 ) ) );
         verifyNoMoreInteractions( shell );
     }
 

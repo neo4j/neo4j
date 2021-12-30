@@ -35,7 +35,6 @@ import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
-import org.neo4j.shell.parser.StatementParser.IncompleteStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.printer.Printer;
 
@@ -172,7 +171,7 @@ class NonInteractiveShellRunnerTest
 
         // then
         assertEquals( 99, code );
-        verify( cmdExecuter ).execute( new CypherStatement( "good1;" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "good1;", true, 0, 5 ) );
         verifyNoMoreInteractions( cmdExecuter );
     }
 
@@ -202,8 +201,8 @@ class NonInteractiveShellRunnerTest
 
         assertEquals( 0, code, "Exit code incorrect" );
         verify( printer, times( 0 ) ).printError( anyString() );
-        verify( cmdExecuter ).execute( new CypherStatement( "good1;" ) );
-        verify( cmdExecuter ).execute( new IncompleteStatement( "no semicolon here\n// A comment at end" ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "good1;", true, 0, 5 ) );
+        verify( cmdExecuter ).execute( new CypherStatement( "no semicolon here\n// A comment at end", false, 7, 43 ) );
         verifyNoMoreInteractions( cmdExecuter );
     }
 }

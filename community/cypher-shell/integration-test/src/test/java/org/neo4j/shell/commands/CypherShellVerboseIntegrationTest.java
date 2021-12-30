@@ -64,7 +64,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     {
         try
         {
-            shell.execute( new CypherStatement( "MATCH (n) DETACH DELETE (n)" ) );
+            shell.execute( CypherStatement.complete( "MATCH (n) DETACH DELETE (n)" ) );
         }
         finally
         {
@@ -76,7 +76,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     void parseDuration() throws CommandException
     {
         //when
-        shell.execute( new CypherStatement( "RETURN duration({months:0.75})" ) );
+        shell.execute( CypherStatement.complete( "RETURN duration({months:0.75})" ) );
 
         //then
         assertThat( linePrinter.output(), containsString( "P22DT19H51M49.5S" ) );
@@ -86,7 +86,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     void cypherWithNoReturnStatements() throws CommandException
     {
         //when
-        shell.execute( new CypherStatement( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
+        shell.execute( CypherStatement.complete( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
 
         //then
         assertThat( linePrinter.output(), containsString( "Added 1 nodes, Set 1 properties, Added 1 labels" ) );
@@ -96,7 +96,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     void cypherWithReturnStatements() throws CommandException
     {
         //when
-        shell.execute( new CypherStatement( "CREATE (jane :TestPerson {name: \"Jane Smith\"}) RETURN jane" ) );
+        shell.execute( CypherStatement.complete( "CREATE (jane :TestPerson {name: \"Jane Smith\"}) RETURN jane" ) );
 
         //then
         String output = linePrinter.output();
@@ -117,12 +117,12 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     void resetOutOfTxScenario() throws CommandException
     {
         //when
-        shell.execute( new CypherStatement( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
+        shell.execute( CypherStatement.complete( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
         shell.reset();
 
         //then
-        shell.execute( new CypherStatement( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
-        shell.execute( new CypherStatement( "MATCH (n:TestPerson) RETURN n ORDER BY n.name" ) );
+        shell.execute( CypherStatement.complete( "CREATE (:TestPerson {name: \"Jane Smith\"})" ) );
+        shell.execute( CypherStatement.complete( "MATCH (n:TestPerson) RETURN n ORDER BY n.name" ) );
 
         String result = linePrinter.output();
         assertThat( result, containsString(
@@ -139,18 +139,19 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
         // Make sure we are creating a new NEW index
         try
         {
-            shell.execute( new CypherStatement( "DROP INDEX ON :Person(age)" ) );
+            shell.execute( CypherStatement.complete( "DROP INDEX ON :Person(age)" ) );
         }
         catch ( Exception e )
         {
             // ignore if the index didn't exist
         }
 
-        shell.execute( new CypherStatement( "CREATE INDEX ON :Person(age)" ) );
-        shell.execute( new CypherStatement( "CALL db.awaitIndexes()" ) );
+        shell.execute( CypherStatement.complete( "CREATE INDEX ON :Person(age)" ) );
+        shell.execute( CypherStatement.complete( "CALL db.awaitIndexes()" ) );
 
         //when
-        shell.execute( new CypherStatement( "CYPHER RUNTIME=INTERPRETED EXPLAIN MATCH (n:Person) WHERE n.age >= 18 RETURN n.name, n.age ORDER BY n.age" ) );
+        var q = "CYPHER RUNTIME=INTERPRETED EXPLAIN MATCH (n:Person) WHERE n.age >= 18 RETURN n.name, n.age ORDER BY n.age";
+        shell.execute( CypherStatement.complete( q ) );
 
         //then
         String actual = linePrinter.output();
@@ -165,7 +166,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
         assumeTrue( runningAtLeast( "4.1" ) );
 
         //when
-        shell.execute( new CypherStatement( "EXPLAIN MATCH (n) with n.age AS age RETURN age" ) );
+        shell.execute( CypherStatement.complete( "EXPLAIN MATCH (n) with n.age AS age RETURN age" ) );
 
         //then
         String actual = linePrinter.output();
@@ -181,7 +182,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
         assumeTrue( !runningAtLeast( "4.1" ) );
 
         //when
-        shell.execute( new CypherStatement( "EXPLAIN MATCH (n) with n.age AS age RETURN age" ) );
+        shell.execute( CypherStatement.complete( "EXPLAIN MATCH (n) with n.age AS age RETURN age" ) );
 
         //then
         String actual = linePrinter.output();
@@ -196,7 +197,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
         assumeTrue( majorVersion( shell.getServerVersion() ) < 4 );
 
         //when
-        shell.execute( new CypherStatement( "CYPHER planner=rule EXPLAIN MATCH (e:E) WHERE e.bucket='Live' and e.id = 23253473 RETURN count(e)" ) );
+        shell.execute( CypherStatement.complete( "CYPHER planner=rule EXPLAIN MATCH (e:E) WHERE e.bucket='Live' and e.id = 23253473 RETURN count(e)" ) );
 
         //then
         String actual = linePrinter.output();
@@ -214,7 +215,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
         assumeTrue( runningAtLeast( "4.1" ) );
 
         //when
-        shell.execute( new CypherStatement( "CYPHER RUNTIME=INTERPRETED PROFILE WITH 1 AS x RETURN DISTINCT x" ) );
+        shell.execute( CypherStatement.complete( "CYPHER RUNTIME=INTERPRETED PROFILE WITH 1 AS x RETURN DISTINCT x" ) );
 
         //then
         String actual = linePrinter.output();
@@ -227,7 +228,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     void shouldShowTheNumberOfRows() throws CommandException
     {
         //when
-        shell.execute( new CypherStatement( "UNWIND [1,2,3] AS row RETURN row" ) );
+        shell.execute( CypherStatement.complete( "UNWIND [1,2,3] AS row RETURN row" ) );
 
         //then
         String actual = linePrinter.output();
@@ -238,7 +239,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     void shouldNotContainUnnecessaryNewLines() throws CommandException
     {
         //when
-        shell.execute( new CypherStatement( "UNWIND [1,2,3] AS row RETURN row" ) );
+        shell.execute( CypherStatement.complete( "UNWIND [1,2,3] AS row RETURN row" ) );
 
         //then
         String actual = linePrinter.output();

@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.parser;
 
+import org.eclipse.collections.api.block.predicate.primitive.CharPredicate;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -118,31 +120,35 @@ public class ShellStatementParser implements StatementParser
      */
     private static ParsedStatement parseCommand( PeekingReader reader ) throws IOException
     {
-        var line = reader.readLine();
+        int startOffset = reader.offset();
+        var line = reader.readWhile( c -> c != '\n' && c != '\r' );
+        int endOffset = reader.offset() - 1;
         assert line.startsWith( ":" );
 
         var parts = stripTrailingSemicolons( line ).split( "\\s+" );
         var name = parts[0];
 
+        var nextChar = reader.peek();
+        var isComplete = nextChar == '\n' || nextChar == '\r';
+
         if ( SINGLE_ARGUMENT_COMMANDS.contains( name ) )
         {
             // We don't fully parse the commands (yet), but need some special handling for these cases
             var arg = line.substring( name.length() ).trim();
-            return new CommandStatement( name, arg.isEmpty() ? List.of() : List.of( arg ) );
+            return new CommandStatement( name, arg.isEmpty() ? List.of() : List.of( arg ), isComplete, startOffset, endOffset );
         }
 
-        return new CommandStatement( name, Arrays.stream( parts ).skip( 1 ).toList() );
+        return new CommandStatement( name, Arrays.stream( parts ).skip( 1 ).toList(), isComplete, startOffset, endOffset );
     }
 
     private static String stripTrailingSemicolons( String input )
     {
-
         int i = input.length() - 1;
         while ( i >= 0 && input.charAt( i ) == ';' )
         {
             --i;
         }
-        return input.substring( 0, i + 1);
+        return input.substring( 0, i + 1 );
     }
 
     /*
@@ -150,6 +156,7 @@ public class ShellStatementParser implements StatementParser
      */
     private static ParsedStatement parseCypher( PeekingReader reader ) throws IOException
     {
+        int startOffset = reader.offset();
         String awaitedRightDelimiter = null;
         StringBuilder statement = new StringBuilder();
         int read;
@@ -192,7 +199,7 @@ public class ShellStatementParser implements StatementParser
             // Not escaped, not in a quote, not in a comment
             else if ( current == ';' )
             {
-                return new CypherStatement( statement.toString() );
+                return new CypherStatement( statement.toString(), true, startOffset, reader.offset() - 1 );
             }
             else
             {
@@ -202,7 +209,7 @@ public class ShellStatementParser implements StatementParser
         }
 
         // No more input
-        return new IncompleteStatement( statement.toString() );
+        return new CypherStatement( statement.toString(), false, startOffset, reader.offset() - 1 );
     }
 
     private static boolean isWhitespace( int c )
@@ -251,7 +258,7 @@ public class ShellStatementParser implements StatementParser
      */
     private static String getRightDelimiter( char first, char last )
     {
-        var commentRight = getRightCommentDelimiter( new char[] { first, last } );
+        var commentRight = getRightCommentDelimiter( new char[]{ first, last } );
         return commentRight != null ? commentRight : getRightQuoteDelimiter( last );
     }
 
@@ -280,6 +287,7 @@ public class ShellStatementParser implements StatementParser
     private static class PeekingReader
     {
         private final BufferedReader reader;
+        private int offset;
 
         PeekingReader( Reader reader )
         {
@@ -288,7 +296,13 @@ public class ShellStatementParser implements StatementParser
 
         public int read() throws IOException
         {
-            return reader.read();
+            int read = reader.read();
+            if ( read != -1 )
+            {
+                ++offset;
+            }
+
+            return read;
         }
 
         public int peek() throws IOException
@@ -319,11 +333,11 @@ public class ShellStatementParser implements StatementParser
             return values;
         }
 
-        public void skipUntilAndIncluding( char[] chars  ) throws IOException
+        public void skipUntilAndIncluding( char[] chars ) throws IOException
         {
             int matches = 0;
             int read;
-            while ( ( read = reader.read() ) != -1 )
+            while ( ( read = read() ) != -1 )
             {
                 if ( read == chars[matches] )
                 {
@@ -338,12 +352,29 @@ public class ShellStatementParser implements StatementParser
                     matches = 0;
                 }
             }
-
         }
 
-        public String readLine() throws IOException
+        public String readWhile( CharPredicate predicate ) throws IOException
         {
-            return reader.readLine();
+            var line = new StringBuilder();
+            int peek;
+            while ( ( peek = peek() ) != -1 )
+            {
+                if ( predicate.accept( (char) peek ) )
+                {
+                    line.append( (char) read() );
+                }
+                else
+                {
+                    return line.toString();
+                }
+            }
+            return line.toString();
+        }
+
+        public int offset()
+        {
+            return offset;
         }
     }
 }

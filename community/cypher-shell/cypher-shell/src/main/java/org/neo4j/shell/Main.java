@@ -68,10 +68,10 @@ public class Main
     {
         boolean isInteractive = !args.getNonInteractive() && ShellRunner.isInputInteractive();
         this.printer = new AnsiPrinter( Format.VERBOSE, System.out, System.err );
-        this.terminal = terminalBuilder().interactive( isInteractive ).logger( printer ).build();
         this.args = args;
-        var boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, terminal.isInteractive() ) );
+        var boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, isInteractive ) );
         this.parameters = ParameterService.create( boltStateHandler );
+        this.terminal = terminalBuilder().interactive( isInteractive ).logger( printer ).parameters( parameters ).build();
         this.shell = new CypherShell( printer, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
         this.isOutputInteractive = !args.getNonInteractive() && ShellRunner.isOutputInteractive();
         this.runnerFactory = new ShellRunner.Factory();

@@ -184,19 +184,19 @@ class CypherShellMultiDatabaseIntegrationTest
 
     private void assertOnRegularDB() throws CommandException
     {
-        shell.execute( new CypherStatement( "RETURN 'toadstool'" ) );
+        shell.execute( CypherStatement.complete( "RETURN 'toadstool'" ) );
         assertThat( linePrinter.output(), containsString( "toadstool" ) );
     }
 
     private void assertOnSystemDB() throws CommandException
     {
-        shell.execute( new CypherStatement( "SHOW DATABASES" ) );
+        shell.execute( CypherStatement.complete( "SHOW DATABASES" ) );
         assertThat( linePrinter.output(), containsString( "neo4j" ) );
         assertThat( linePrinter.output(), containsString( "system" ) );
     }
 
     private void assertOnNoValidDB()
     {
-        assertThrows( ClientException.class, () -> shell.execute( new CypherStatement( "RETURN 1" ) ) );
+        assertThrows( ClientException.class, () -> shell.execute( CypherStatement.complete( "RETURN 1" ) ) );
     }
 }

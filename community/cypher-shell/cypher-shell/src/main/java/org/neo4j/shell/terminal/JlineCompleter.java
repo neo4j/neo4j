@@ -25,35 +25,168 @@ import org.jline.reader.LineReader;
 import org.jline.reader.ParsedLine;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.shell.commands.Command;
 import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
-import org.neo4j.shell.terminal.StatementJlineParser.CompletingCommand;
+import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.parser.CypherLanguageService;
+import org.neo4j.shell.terminal.StatementJlineParser.BlankCompletion;
+import org.neo4j.shell.terminal.StatementJlineParser.CommandCompletion;
+import org.neo4j.shell.terminal.StatementJlineParser.CypherCompletion;
 
 /**
- * Provides auto completion for (some) cypher shell statements.
+ * Provides autocompletion for cypher shell statements.
  */
 public class JlineCompleter implements Completer
 {
-    private final List<Candidate> allCommands;
+    private final CommandCompleter commandCompleter;
+    private final CypherCompleter cypherCompleter;
 
-    public JlineCompleter( CommandFactoryHelper commands )
+    public JlineCompleter( CommandFactoryHelper commands, CypherLanguageService parser, ParameterService parameters )
     {
-        this.allCommands = commands.factories().stream().map( f -> toCandidate( f.metadata() ) ).sorted().toList();
-    }
-
-    private static Candidate toCandidate( Command.Metadata command )
-    {
-        return new Candidate( command.name(), command.name(), "Command", command.description(), null, null, true );
+        this.commandCompleter = CommandCompleter.from( commands );
+        this.cypherCompleter = new CypherCompleter( parser, parameters );
     }
 
     @Override
     public void complete( LineReader reader, ParsedLine line, List<Candidate> candidates )
     {
-        // Complete Cypher Shell commands
-        if ( line instanceof CompletingCommand )
+        try
         {
-            candidates.addAll( allCommands );
+            if ( line instanceof BlankCompletion )
+            {
+                candidates.addAll( commandCompleter.complete() );
+                cypherCompleter.completeBlank().forEach( candidates::add );
+            }
+            else if ( line instanceof CommandCompletion )
+            {
+                candidates.addAll( commandCompleter.complete() );
+            }
+            else if ( line instanceof CypherCompletion cypher )
+            {
+                cypherCompleter.complete( cypher ).forEach( candidates::add );
+            }
+        }
+        catch ( Exception e )
+        {
+            // Ignore
+        }
+    }
+
+    private static record CommandCompleter( List<Suggestion> allCommands )
+    {
+        List<Suggestion> complete()
+        {
+            return allCommands;
+        }
+
+        public static CommandCompleter from( CommandFactoryHelper commands )
+        {
+            return new CommandCompleter( commands.metadata().map( Suggestion::command ).toList() );
+        }
+    }
+
+    private static record CypherCompleter(CypherLanguageService parser, ParameterService parameterMap )
+    {
+        Stream<Suggestion> complete( CypherCompletion cypher )
+        {
+            return concat( identifiers( cypher ), parameters(), keywords( queryUntilCompletionWord( cypher ) ) );
+        }
+
+        Stream<Suggestion> completeBlank()
+        {
+            return concat( keywords( "" ), parameters() );
+        }
+
+        /*
+         * Returns cypher keyword suggestions, for example `MATCH`.
+         */
+        private Stream<Suggestion> keywords( String query )
+        {
+            var suggested = parser.suggestNextKeyword( query );
+
+            if ( suggested.isEmpty() )
+            {
+                return parser.keywords().map( Suggestion::cypher );
+            }
+
+            return suggested.stream().map( Suggestion::cypher );
+        }
+
+        /*
+         * Returns identifier suggestions, for example `myNode` if query is `match (myNode)`.
+         */
+        private Stream<Suggestion> identifiers( CypherCompletion cypher )
+        {
+            return cypher.tokens().stream()
+                    .filter( t -> t.isIdentifier() && !t.isParameterIdentifier() )
+                    // Remove the incomplete statement at the end that we're trying to auto-complete
+                    .filter( i -> i.endOffset() + cypher.statement().beginOffset() != cypher.statement().endOffset() )
+                    .map( t -> Suggestion.identifier( t.image() ) );
+        }
+
+        /*
+         * Returns query parameter suggestions, for example `$myParameter`.
+         */
+        private Stream<Suggestion> parameters()
+        {
+            return parameterMap.parameters().keySet().stream().map( Suggestion::parameter );
+        }
+
+        private String queryUntilCompletionWord( CypherCompletion cypher )
+        {
+            int cutAt = cypher.cursor() - cypher.wordCursor() - cypher.statement().beginOffset();
+            return cypher.statement().statement().substring( 0, cutAt );
+        }
+
+        @SafeVarargs
+        private static <T> Stream<T> concat( Stream<T>... streams )
+        {
+            return Stream.of( streams ).reduce( Stream::concat ).orElseGet( Stream::empty );
+        }
+    }
+
+    private enum SuggestionGroup
+    {
+        COMMAND( "Commands" ),
+        IDENTIFIER( "Query Identifiers" ),
+        PARAMETER( "Query Parameters" ),
+        CYPHER( "Query Syntax Suggestions (not complete)" );
+
+        private final String groupName;
+
+        SuggestionGroup( String groupName )
+        {
+            this.groupName = groupName;
+        }
+    }
+
+    private static class Suggestion extends Candidate
+    {
+        Suggestion( String value, SuggestionGroup group, String desc, boolean complete )
+        {
+            super( value, value, group.groupName, desc, null, null, complete );
+        }
+
+        public static Suggestion cypher( String cypher )
+        {
+            return new Suggestion( cypher, SuggestionGroup.CYPHER, null, true );
+        }
+
+        public static Suggestion command( Command.Metadata command )
+        {
+            return new Suggestion( command.name(), SuggestionGroup.COMMAND, command.description(), true );
+        }
+
+        public static Suggestion identifier( String identifier )
+        {
+            return new Suggestion( identifier, SuggestionGroup.IDENTIFIER, null, false );
+        }
+
+        public static Suggestion parameter( String parameterName )
+        {
+            return new Suggestion( "$" + parameterName, SuggestionGroup.PARAMETER, null, true );
         }
     }
 }

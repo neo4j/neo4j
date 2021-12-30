@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
@@ -49,7 +50,7 @@ public class CommandHelper
     )
     {
         var args = new Command.Factory.Arguments( printer, historian, cypherShell, terminal, parameters );
-        CommandFactoryHelper.factoryByName.forEach( ( key, value ) -> commands.put( key, value.executor( args ) ) );
+        new CommandFactoryHelper().factoryByName().forEach( ( key, value ) -> commands.put( key, value.executor( args ) ) );
     }
 
     /**
@@ -103,6 +104,16 @@ public class CommandHelper
         public Collection<Command.Factory> factories()
         {
             return factoryMap.values();
+        }
+
+        public Stream<Command.Metadata> metadata()
+        {
+            return factoryMap.values().stream().map( Command.Factory::metadata );
+        }
+
+        public Map<String, Command.Factory> factoryByName()
+        {
+            return factoryByName;
         }
 
         @VisibleForTesting

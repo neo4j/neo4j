@@ -142,7 +142,7 @@ class CypherShellTest
         OfflineTestShell shell = new OfflineTestShell( printer, mockedBoltStateHandler, mockedPrettyPrinter );
         when( mockedBoltStateHandler.isConnected() ).thenReturn( false );
 
-        CommandException exception = assertThrows( CommandException.class, () -> shell.execute( new CypherStatement( "RETURN 999" ) ) );
+        CommandException exception = assertThrows( CommandException.class, () -> shell.execute( new CypherStatement( "RETURN 999;", true, 0, 0 ) ) );
         assertThat( exception.getMessage(), containsString( "Not connected to Neo4j" ) );
     }
 
@@ -165,14 +165,14 @@ class CypherShellTest
         when( mockedDriver.session() ).thenReturn( session );
 
         OfflineTestShell shell = new OfflineTestShell( printer, boltStateHandler, mockedPrettyPrinter );
-        shell.execute( new CypherStatement( "RETURN 999" ) );
+        shell.execute( new CypherStatement( "RETURN 999;", true, 0, 0 ) );
         verify( printer ).printOut( contains( "999" ) );
     }
 
     @Test
     void incorrectCommandsThrowException()
     {
-        var statement = new CommandStatement( ":help", List.of( "arg1", "arg2" ) );
+        var statement = new CommandStatement( ":help", List.of( "arg1", "arg2" ), true, 0, 0 );
         CommandException exception = assertThrows( CommandException.class, () -> offlineTestShell.execute( statement ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }

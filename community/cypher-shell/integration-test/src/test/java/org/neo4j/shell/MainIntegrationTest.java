@@ -1003,21 +1003,22 @@ class MainIntegrationTest
         if ( majorVersion( shell.getServerVersion() ) >= 4 )
         {
             var changeString = requirePasswordChange ? "" : " CHANGE NOT REQUIRED";
-            shell.execute( new CypherStatement( "CREATE OR REPLACE USER " + name + " SET PASSWORD '" + password + "'" + changeString + ";" ) );
-            shell.execute( new CypherStatement( "GRANT ROLE reader TO " + name + ";" ) );
+            shell.execute( CypherStatement.complete( "CREATE OR REPLACE USER " + name + " SET PASSWORD '" + password + "'" + changeString + ";" ) );
+            shell.execute( CypherStatement.complete( "GRANT ROLE reader TO " + name + ";" ) );
         }
         else
         {
             try
             {
-                shell.execute( new CypherStatement( "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")" ) );
+                shell.execute( CypherStatement.complete( "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")" ) );
             }
             catch ( ClientException e )
             {
                 if ( e.code().equalsIgnoreCase( "Neo.ClientError.General.InvalidArguments" ) && e.getMessage().contains( "already exists" ) )
                 {
-                    shell.execute( new CypherStatement( "CALL dbms.security.deleteUser('" + name + "')" ) );
-                    shell.execute( new CypherStatement( "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")" ) );
+                    shell.execute( CypherStatement.complete( "CALL dbms.security.deleteUser('" + name + "')" ) );
+                    var createUser = "CALL dbms.security.createUser('" + name + "', '" + password + "', " + requirePasswordChange + ")";
+                    shell.execute( CypherStatement.complete( createUser ) );
                 }
             }
         }
@@ -1050,7 +1051,7 @@ class MainIntegrationTest
     {
         try
         {
-            runInSystemDb( shell -> shell.execute( new CypherStatement( "STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) ) );
+            runInSystemDb( shell -> shell.execute( CypherStatement.complete( "STOP DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) ) );
             test.apply();
         }
         catch ( Exception e )
@@ -1059,7 +1060,7 @@ class MainIntegrationTest
         }
         finally
         {
-            runInSystemDb( shell -> shell.execute( new CypherStatement( "START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) ) );
+            runInSystemDb( shell -> shell.execute( CypherStatement.complete( "START DATABASE " + DatabaseManager.DEFAULT_DEFAULT_DB_NAME + ";" ) ) );
         }
     }
 

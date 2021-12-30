@@ -116,7 +116,7 @@ public class History implements Command
         public Metadata metadata()
         {
             var help = "':history' prints a list of the last statements executed\n':history clear' removes all entries from the history";
-            return new Metadata( ":history", "Print a list of the last commands executed", "", help, List.of() );
+            return new Metadata( ":history", "Statement history", "", help, List.of() );
         }
 
         @Override

@@ -57,7 +57,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     {
         try
         {
-            shell.execute( new CypherStatement( "MATCH (n) DETACH DELETE (n)" ) );
+            shell.execute( CypherStatement.complete( "MATCH (n) DETACH DELETE (n)" ) );
         }
         finally
         {
@@ -69,7 +69,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     void cypherWithProfileStatements() throws CommandException
     {
         //when
-        shell.execute( new CypherStatement( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" ) );
+        shell.execute( CypherStatement.complete( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" ) );
 
         //then
         String actual = linePrinter.output();
@@ -92,7 +92,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
         assumeTrue( runningAtLeast( "4.1" ) );
 
         //when
-        shell.execute( new CypherStatement( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" ) );
+        shell.execute( CypherStatement.complete( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" ) );
 
         //then
         String actual = linePrinter.output();
@@ -104,7 +104,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     void cypherWithExplainStatements() throws CommandException
     {
         //when
-        shell.execute( new CypherStatement( "CYPHER RUNTIME=INTERPRETED EXPLAIN RETURN null" ) );
+        shell.execute( CypherStatement.complete( "CYPHER RUNTIME=INTERPRETED EXPLAIN RETURN null" ) );
 
         //then
         String actual = linePrinter.output();

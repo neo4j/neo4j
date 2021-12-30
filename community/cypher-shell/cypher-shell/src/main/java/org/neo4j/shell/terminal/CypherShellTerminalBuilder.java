@@ -33,6 +33,8 @@ import java.io.PrintStream;
 
 import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.parser.CypherLanguageService;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.util.VisibleForTesting;
@@ -48,6 +50,7 @@ public class CypherShellTerminalBuilder
     private InputStream in;
     private boolean isInteractive = true;
     private boolean dumb;
+    private ParameterService parameters;
 
     /** if enabled is true, this is an interactive terminal that supports user input */
     public CypherShellTerminalBuilder interactive( boolean isInteractive )
@@ -59,6 +62,12 @@ public class CypherShellTerminalBuilder
     public CypherShellTerminalBuilder logger( Printer printer )
     {
         this.printer = printer;
+        return this;
+    }
+
+    public CypherShellTerminalBuilder parameters( ParameterService parameters )
+    {
+        this.parameters = parameters;
         return this;
     }
 
@@ -122,14 +131,18 @@ public class CypherShellTerminalBuilder
             jLineTerminal.dumb( true ).type( Terminal.TYPE_DUMB ).attributes( attributes );
         }
 
+        var cypherLangService = CypherLanguageService.get();
+
         var reader = LineReaderBuilder.builder()
             .terminal( jLineTerminal.build() )
-            .parser( new StatementJlineParser( new ShellStatementParser() ) )
-            .completer( new JlineCompleter( new CommandFactoryHelper() ) )
+            .parser( new StatementJlineParser( new ShellStatementParser(), cypherLangService ) )
+            .completer( new JlineCompleter( new CommandFactoryHelper(), cypherLangService, parameters ) )
             .history( new DefaultHistory() ) // The default history is in-memory until we set history file variable
             .expander( new JlineTerminal.EmptyExpander() )
             .option( LineReader.Option.DISABLE_EVENT_EXPANSION, true ) // Disable '!' history expansion
             .option( LineReader.Option.DISABLE_HIGHLIGHTER, true )
+            .option( LineReader.Option.CASE_INSENSITIVE, true )
+            .appName( "Cypher Shell" )
             .build();
 
         return new JlineTerminal( reader, isInteractive, printer );
