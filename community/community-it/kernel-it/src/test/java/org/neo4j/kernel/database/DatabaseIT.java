@@ -117,19 +117,6 @@ class DatabaseIT
     }
 
     @Test
-    void databaseHealthShouldBeHealedOnStart() throws Throwable
-    {
-        database.stop();
-
-        database.init();
-        var databaseHealth = database.getDatabaseHealth();
-        databaseHealth.panic( new Throwable() );
-
-        database.start();
-        databaseHealth.assertHealthy( Throwable.class );
-    }
-
-    @Test
     void dropDataOfNotStartedDatabase()
     {
         database.stop();

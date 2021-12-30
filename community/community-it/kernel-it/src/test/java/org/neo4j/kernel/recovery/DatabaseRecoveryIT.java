@@ -301,17 +301,6 @@ class DatabaseRecoveryIT
             assertNotNull( txFailure );
             adversary.disable();
 
-            // now we can observe partially committed state: node is in the index and relationship still present
-            try ( Transaction tx = db.beginTx() )
-            {
-                assertNotNull( findNode( label, property, "B", tx ) );
-                assertNotNull( tx.getRelationshipById( relationshipId ) );
-                tx.commit();
-            }
-
-            healthOf( db ).panic( txFailure.getCause() ); // panic the db again to force recovery on the next startup
-
-            // restart the database, now with regular page cache
             managementService.shutdown();
             db = startDatabase( storeDir );
 
