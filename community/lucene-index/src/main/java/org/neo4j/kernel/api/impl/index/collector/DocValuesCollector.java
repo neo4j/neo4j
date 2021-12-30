@@ -24,7 +24,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -49,7 +48,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.internal.helpers.collection.ArrayIterator;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
@@ -260,10 +258,6 @@ public class DocValuesCollector extends SimpleCollector
             DocIdSetIterator idIterator = docs.docIdSet;
             Weight weight = new Weight( null )
             {
-                @Override
-                public void extractTerms( Set<Term> terms )
-                {
-                }
 
                 @Override
                 public Explanation explain( LeafReaderContext context, int doc )

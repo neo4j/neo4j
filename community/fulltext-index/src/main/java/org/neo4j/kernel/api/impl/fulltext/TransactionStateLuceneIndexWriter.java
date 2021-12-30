@@ -25,8 +25,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -49,7 +49,7 @@ class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable
     {
         this.config = config;
         this.analyzer = analyzer;
-        directory = new RAMDirectory();
+        directory = new ByteBuffersDirectory();
     }
 
     @Override

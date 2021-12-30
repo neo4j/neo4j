@@ -53,6 +53,10 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Apache Log4j API
   Apache Log4j Core
+  Apache Lucene (module: backward-codecs)
+  Apache Lucene (module: common)
+  Apache Lucene (module: core)
+  Apache Lucene (module: queryparser)
   Apache Shiro :: Cache
   Apache Shiro :: Configuration :: Core
   Apache Shiro :: Configuration :: OGDL
@@ -101,10 +105,6 @@ Apache Software License, Version 2.0
   jPowerShell
   jProcesses
   long
-  Lucene Common Analyzers
-  Lucene Core
-  Lucene Memory
-  Lucene QueryParsers
   magnolia
   mercator
   neo4j-driver

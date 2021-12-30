@@ -66,9 +66,9 @@ class StatsCollector
             try
             {
                 TermStates context = TermStates.build( searcher.getTopReaderContext(), term, true );
-                TermStatistics statistic = searcher.termStatistics( term, context );
-                if ( statistic != null )
+                if ( context.docFreq() > 0 )
                 {
+                    var statistic = searcher.termStatistics( term, context.docFreq(), context.totalTermFreq() );
                     statistics.add( statistic );
                 }
             }

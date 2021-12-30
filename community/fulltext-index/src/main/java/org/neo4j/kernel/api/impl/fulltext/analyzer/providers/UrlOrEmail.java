@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.UAX29URLEmailAnalyzer;
+import org.apache.lucene.analysis.email.UAX29URLEmailAnalyzer;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.schema.AnalyzerProvider;

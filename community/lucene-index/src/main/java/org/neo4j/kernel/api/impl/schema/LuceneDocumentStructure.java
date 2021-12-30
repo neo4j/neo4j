@@ -36,6 +36,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -76,20 +77,6 @@ public class LuceneDocumentStructure
         DocWithId document = reuseDocument( nodeId );
         document.setValues( values );
         return document.document;
-    }
-
-    public static String encodedStringValuesForSampling( Value... values )
-    {
-        StringBuilder sb = new StringBuilder();
-        String sep = "";
-        for ( Value value : values )
-        {
-            sb.append( sep );
-            sep = DELIMITER;
-            ValueEncoding encoding = ValueEncoding.forValue( value );
-            sb.append( encoding.encodeField( encoding.key(), value ).stringValue() );
-        }
-        return sb.toString();
     }
 
     public static MatchAllDocsQuery newScanQuery()
@@ -170,7 +157,7 @@ public class LuceneDocumentStructure
      */
     public static class PrefixMultiTermsQuery extends MultiTermQuery
     {
-        private Term term;
+        private final Term term;
 
         public PrefixMultiTermsQuery( Term term )
         {
@@ -190,9 +177,18 @@ public class LuceneDocumentStructure
             return getClass().getSimpleName() + ", term:" + term + ", field:" + field;
         }
 
+        @Override
+        public void visit( QueryVisitor visitor )
+        {
+            if ( visitor.acceptField( term.field() ) )
+            {
+                visitor.consumeTerms( this, term );
+            }
+        }
+
         private static class PrefixTermsEnum extends FilteredTermsEnum
         {
-            private BytesRef prefix;
+            private final BytesRef prefix;
 
             PrefixTermsEnum( TermsEnum termEnum, BytesRef prefix )
             {

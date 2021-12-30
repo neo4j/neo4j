@@ -36,10 +36,12 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.lucene.index.VectorValues;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,7 +58,7 @@ public class IndexReaderStub extends LeafReader
 
     private static final FieldInfo DUMMY_FIELD_INFO =
             new FieldInfo( "id", 0, false, true, false, IndexOptions.DOCS,
-                    DocValuesType.NONE, -1, Collections.emptyMap(), 1, 1, 8, true );
+                    DocValuesType.NONE, -1, Collections.emptyMap(), 1, 1, 8, 0, VectorSimilarityFunction.EUCLIDEAN, true );
 
     public IndexReaderStub( final NumericDocValues ndv )
     {
@@ -133,13 +135,26 @@ public class IndexReaderStub extends LeafReader
     }
 
     @Override
+    public VectorValues getVectorValues( String field )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TopDocs searchNearestVectors( String field, float[] target, int k, Bits acceptDocs ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public FieldInfos getFieldInfos()
     {
         List<FieldInfo> infos = new ArrayList<>();
         int id = 0;
         for ( String field : fields )
         {
-            infos.add( new FieldInfo( field, id++, true, false, false, IndexOptions.DOCS, DocValuesType.SORTED, 1, MapUtil.stringMap(), 1, 1, 8, false ) );
+            infos.add( new FieldInfo( field, id++, true, false, false, IndexOptions.DOCS, DocValuesType.SORTED, 1, MapUtil.stringMap(), 1, 1, 8, 0,
+                    VectorSimilarityFunction.EUCLIDEAN, false ) );
         }
         return new FieldInfos( infos.toArray( new FieldInfo[0] ) );
     }
@@ -205,7 +220,7 @@ public class IndexReaderStub extends LeafReader
     @Override
     public void document( int docID, StoredFieldVisitor visitor ) throws IOException
     {
-        visitor.stringField( DUMMY_FIELD_INFO, String.valueOf( docID ).getBytes( StandardCharsets.UTF_8 ) );
+        visitor.stringField( DUMMY_FIELD_INFO, String.valueOf( docID ) );
     }
 
     @Override

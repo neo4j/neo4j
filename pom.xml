@@ -113,7 +113,7 @@
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
     <jamm.version>0.3.3</jamm.version>
-    <lucene.version>8.10.1</lucene.version>
+    <lucene.version>9.0.0</lucene.version>
     <bouncycastle.version>1.69</bouncycastle.version>
     <jetty.version>9.4.43.v20210629</jetty.version>
     <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
@@ -952,7 +952,7 @@
       </dependency>
       <dependency>
         <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-analyzers-common</artifactId>
+        <artifactId>lucene-analysis-common</artifactId>
         <version>${lucene.version}</version>
       </dependency>
       <dependency>
