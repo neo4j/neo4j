@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.eclipse.collections.api.LazyIterable;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
@@ -26,6 +27,7 @@ import org.eclipse.collections.api.multimap.MutableMultimap;
 import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.api.tuple.primitive.LongLongPair;
 import org.eclipse.collections.impl.factory.Multimaps;
 import org.eclipse.collections.impl.set.mutable.primitive.SynchronizedLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.UnmodifiableLongSet;
@@ -371,6 +373,30 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
         FrozenCopy()
         {
             super( MutableLinearProbeLongHashSet.this );
+        }
+
+        @Override
+        public LongSet union( LongSet set )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LongSet intersect( LongSet set )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LongSet difference( LongSet set )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LongSet symmetricDifference( LongSet set )
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override

@@ -57,7 +57,7 @@ Apache Software License, Version 2.0
   mercator
   parboiled-core
   parboiled-scala
-  picocli - a mighty tiny Command Line Interface
+  picocli
   Scala Compiler
   WMI4Java
 

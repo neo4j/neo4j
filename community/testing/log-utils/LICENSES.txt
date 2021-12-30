@@ -16,7 +16,6 @@ Apache Software License, Version 2.0
   jackson-databind
   Java Native Access
   Jettison
-  Objenesis
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
 ------------------------------------------------------------------------------

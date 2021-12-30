@@ -100,7 +100,7 @@ Apache Software License, Version 2.0
   oauth-sign
   parboiled-core
   parboiled-scala
-  picocli - a mighty tiny Command Line Interface
+  picocli
   protobufjs
   request
   rxjs

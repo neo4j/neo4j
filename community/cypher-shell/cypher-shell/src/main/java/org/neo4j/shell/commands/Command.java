@@ -66,7 +66,9 @@ public interface Command
         return from( "Incorrect number of arguments.\nUsage: " ).bold( metadata().name() ).append( " " ).append( metadata().usage() );
     }
 
-    record Metadata( String name, String description, String usage, String help, List<String> aliases ) {}
+    record Metadata(String name, String description, String usage, String help, List<String> aliases)
+    {
+    }
 
     interface Factory
     {

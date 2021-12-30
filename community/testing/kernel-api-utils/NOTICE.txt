@@ -34,7 +34,6 @@ Apache Software License, Version 2.0
   Byte Buddy agent
   Java Native Access
   Jettison
-  Objenesis
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API

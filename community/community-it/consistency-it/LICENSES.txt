@@ -69,7 +69,7 @@ Apache Software License, Version 2.0
   Non-Blocking Reactive Foundation for the JVM
   parboiled-core
   parboiled-scala
-  picocli - a mighty tiny Command Line Interface
+  picocli
   Scala Compiler
   WMI4Java
 ------------------------------------------------------------------------------

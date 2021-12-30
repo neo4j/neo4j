@@ -19,7 +19,7 @@
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <moduleName>org.neo4j.cypher.internal.compiler</moduleName>
-        <jline.version>3.20.0</jline.version>
+        <jline.version>3.21.0</jline.version>
     </properties>
 
     <scm>

@@ -46,7 +46,7 @@ Apache Software License, Version 2.0
   long
   neo4j-driver
   oauth-sign
-  picocli - a mighty tiny Command Line Interface
+  picocli
   protobufjs
   request
   rxjs

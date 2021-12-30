@@ -37,7 +37,7 @@ Apache Software License, Version 2.0
   Jettison
   jPowerShell
   jProcesses
-  picocli - a mighty tiny Command Line Interface
+  picocli
   WMI4Java
 
 BSD License

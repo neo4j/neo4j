@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util.collection;
 
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.LazyIterable;
 import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction;
 import org.eclipse.collections.api.block.function.primitive.ObjectLongToObjectFunction;
 import org.eclipse.collections.api.block.predicate.primitive.LongPredicate;
@@ -29,6 +30,7 @@ import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.api.tuple.primitive.LongLongPair;
 import org.eclipse.collections.impl.SpreadFunctions;
 import org.eclipse.collections.impl.primitive.AbstractLongIterable;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
@@ -218,6 +220,12 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
     }
 
     @Override
+    public LazyIterable<LongLongPair> cartesianProduct( LongSet set )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public MutableLongSet select( LongPredicate predicate )
     {
         return select( predicate, new LongHashSet() );
@@ -252,11 +260,10 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
         {
             return true;
         }
-        if ( !(obj instanceof LongSet) )
+        if ( !(obj instanceof final LongSet other) )
         {
             return false;
         }
-        final LongSet other = (LongSet) obj;
         return size() == other.size() && containsAll( other );
     }
 

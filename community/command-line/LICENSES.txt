@@ -16,7 +16,7 @@ Apache Software License, Version 2.0
   Java Concurrency Tools Core Library
   Java Native Access
   Jettison
-  picocli - a mighty tiny Command Line Interface
+  picocli
 ------------------------------------------------------------------------------
 
                                  Apache License
