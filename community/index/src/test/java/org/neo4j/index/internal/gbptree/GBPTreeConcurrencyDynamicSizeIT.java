@@ -26,8 +26,8 @@ import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeC
 public class GBPTreeConcurrencyDynamicSizeIT extends GBPTreeConcurrencyITBase<RawBytes,RawBytes>
 {
     @Override
-    protected TestLayout<RawBytes,RawBytes> getLayout( RandomSupport random, int pageSize )
+    protected TestLayout<RawBytes,RawBytes> getLayout( RandomSupport random, int payloadSize )
     {
-        return new SimpleByteArrayLayout( keyValueSizeCapFromPageSize( pageSize ) / 2, random.intBetween( 0, 10 ) );
+        return new SimpleByteArrayLayout( keyValueSizeCapFromPageSize( payloadSize ) / 2, random.intBetween( 0, 10 ) );
     }
 }

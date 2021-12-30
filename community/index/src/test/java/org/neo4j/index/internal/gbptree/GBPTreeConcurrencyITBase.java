@@ -107,7 +107,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         return this.index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 
-    protected abstract TestLayout<KEY,VALUE> getLayout( RandomSupport random, int pageSize );
+    protected abstract TestLayout<KEY,VALUE> getLayout( RandomSupport random, int payloadSize );
 
     @AfterEach
     void consistencyCheckAndClose() throws IOException
