@@ -52,6 +52,8 @@ import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
 import org.neo4j.server.rest.Neo4jError;
 
+import static org.neo4j.fabric.executor.FabricExecutor.WRITING_IN_READ_NOT_ALLOWED_MSG;
+
 /**
  * A representation of a typical Cypher endpoint invocation that executed submitted statements and produces response body.
  * <p>
@@ -392,7 +394,9 @@ class Invocation
                 neo4jError = new Neo4jError( Status.Request.Invalid,
                                              "Routing of PERIODIC COMMIT is not currently supported. Please retry your request against the cluster leader" );
             }
-            else if ( rootCause.equals( Status.Statement.AccessMode ) )
+            else if ( rootCause.equals( Status.Statement.AccessMode ) &&
+                      cause.getMessage() != null && cause.getMessage().startsWith( WRITING_IN_READ_NOT_ALLOWED_MSG ) )
+
             {
                 neo4jError = new Neo4jError( Status.Request.Invalid, "Routing WRITE queries is not supported in clusters " +
                                                                      "where Server-Side Routing is disabled." );
