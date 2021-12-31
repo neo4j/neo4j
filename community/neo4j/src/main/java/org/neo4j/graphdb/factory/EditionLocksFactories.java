@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.eclipse.jetty.util.StringUtil;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -56,7 +54,7 @@ public final class EditionLocksFactories
     {
         // we can have community lock manager configured in the wild. Ignore that and log warning message.
         var factoryKey = checkForOldCommunityValue( lockFactoriesLog, key );
-        if ( StringUtil.isEmpty( factoryKey ) )
+        if ( factoryKey.isBlank() )
         {
             return Services.loadByPriority( LocksFactory.class ).orElseThrow( () -> new IllegalArgumentException( "No lock manager found" ) );
         }
