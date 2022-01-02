@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
@@ -30,10 +32,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.parboiled.scala.EOI
 
-class CaseExpressionTest extends ParserTest[internal.expressions.Expression, commands.expressions.Expression] with Expressions {
-  implicit val parserToTest = CaseExpression ~ EOI
+class CaseExpressionTest extends JavaccParserTestBase[internal.expressions.Expression, commands.expressions.Expression] {
+  implicit private val parserToTest: JavaccRule[internal.expressions.Expression] = JavaccRule.fromParser(_.CaseExpression())
 
   test("simple_cases") {
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
@@ -79,5 +80,5 @@ class CaseExpressionTest extends ParserTest[internal.expressions.Expression, com
   }
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
-  def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
+  override def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

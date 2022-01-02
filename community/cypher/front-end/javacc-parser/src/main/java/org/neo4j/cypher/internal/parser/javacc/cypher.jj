@@ -62,7 +62,6 @@ import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
 
-/** Simple brace matcher. */
 public class Cypher<STATEMENT,
                     QUERY extends STATEMENT,
                     CLAUSE,
@@ -508,11 +507,10 @@ TOKEN :
 {
     < IDENTIFIER: <LETTER> (<PART_LETTER>)* >
     | < #LETTER:
-        [  // all chars for which Character.isIdentifierStart is true except `$`
+        [  // all chars for which Character.isJavaIdentifierStart(c) && Character.getType(c) != Character.CURRENCY_SYMBOL is true
             "\u0041"-"\u005a",
             "\u005f",
             "\u0061"-"\u007a",
-            "\u00a2"-"\u00a5",
             "\u00aa",
             "\u00b5",
             "\u00ba",
@@ -537,10 +535,8 @@ TOKEN :
             "\u0531"-"\u0556",
             "\u0559",
             "\u0560"-"\u0588",
-            "\u058f",
             "\u05d0"-"\u05ea",
             "\u05ef"-"\u05f2",
-            "\u060b",
             "\u0620"-"\u064a",
             "\u066e"-"\u066f",
             "\u0671"-"\u06d3",
@@ -556,7 +552,7 @@ TOKEN :
             "\u07ca"-"\u07ea",
             "\u07f4"-"\u07f5",
             "\u07fa",
-            "\u07fe"-"\u0815",
+            "\u0800"-"\u0815",
             "\u081a",
             "\u0824",
             "\u0828",
@@ -579,8 +575,8 @@ TOKEN :
             "\u09ce",
             "\u09dc"-"\u09dd",
             "\u09df"-"\u09e1",
-            "\u09f0"-"\u09f3",
-            "\u09fb"-"\u09fc",
+            "\u09f0"-"\u09f1",
+            "\u09fc",
             "\u0a05"-"\u0a0a",
             "\u0a0f"-"\u0a10",
             "\u0a13"-"\u0a28",
@@ -600,7 +596,6 @@ TOKEN :
             "\u0abd",
             "\u0ad0",
             "\u0ae0"-"\u0ae1",
-            "\u0af1",
             "\u0af9",
             "\u0b05"-"\u0b0c",
             "\u0b0f"-"\u0b10",
@@ -623,7 +618,6 @@ TOKEN :
             "\u0ba8"-"\u0baa",
             "\u0bae"-"\u0bb9",
             "\u0bd0",
-            "\u0bf9",
             "\u0c05"-"\u0c0c",
             "\u0c0e"-"\u0c10",
             "\u0c12"-"\u0c28",
@@ -656,7 +650,7 @@ TOKEN :
             "\u0dc0"-"\u0dc6",
             "\u0e01"-"\u0e30",
             "\u0e32"-"\u0e33",
-            "\u0e3f"-"\u0e46",
+            "\u0e40"-"\u0e46",
             "\u0e81"-"\u0e82",
             "\u0e84",
             "\u0e86"-"\u0e8a",
@@ -717,7 +711,7 @@ TOKEN :
             "\u176e"-"\u1770",
             "\u1780"-"\u17b3",
             "\u17d7",
-            "\u17db"-"\u17dc",
+            "\u17dc",
             "\u1820"-"\u1878",
             "\u1880"-"\u1884",
             "\u1887"-"\u18a8",
@@ -771,7 +765,6 @@ TOKEN :
             "\u2071",
             "\u207f",
             "\u2090"-"\u209c",
-            "\u20a0"-"\u20bf",
             "\u2102",
             "\u2107",
             "\u210a"-"\u2113",
@@ -836,7 +829,6 @@ TOKEN :
             "\ua803"-"\ua805",
             "\ua807"-"\ua80a",
             "\ua80c"-"\ua822",
-            "\ua838",
             "\ua840"-"\ua873",
             "\ua882"-"\ua8b3",
             "\ua8f2"-"\ua8f7",
@@ -890,13 +882,11 @@ TOKEN :
             "\ufbd3"-"\ufd3d",
             "\ufd50"-"\ufd8f",
             "\ufd92"-"\ufdc7",
-            "\ufdf0"-"\ufdfc",
+            "\ufdf0"-"\ufdfb",
             "\ufe33"-"\ufe34",
             "\ufe4d"-"\ufe4f",
-            "\ufe69",
             "\ufe70"-"\ufe74",
             "\ufe76"-"\ufefc",
-            "\uff04",
             "\uff21"-"\uff3a",
             "\uff3f",
             "\uff41"-"\uff5a",
@@ -904,9 +894,7 @@ TOKEN :
             "\uffc2"-"\uffc7",
             "\uffca"-"\uffcf",
             "\uffd2"-"\uffd7",
-            "\uffda"-"\uffdc",
-            "\uffe0"-"\uffe1",
-            "\uffe5"-"\uffe6"
+            "\uffda"-"\uffdc"
         ] >
     | < #PART_LETTER:
         [  // all chars for which Character.isIdentifierPart is true
@@ -5405,4 +5393,11 @@ Token SymbolicNameString() :
     {
         return t;
     }
+}
+
+// used in tests
+void EndOfFile() :
+{}
+{
+    <EOF>
 }

@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -25,16 +26,11 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
-import org.neo4j.cypher.internal.parser
-import org.neo4j.cypher.internal.parser.ParserTest
-import org.parboiled.scala.Rule1
 
 class MultipleGraphClauseSemanticCheckingTest
-  extends ParserTest[ast.Statement, SemanticCheckResult] with parser.Statement {
+  extends JavaccParserTestBase[Statement, SemanticCheckResult]  {
 
-  // INFO: Use result.dumpAndExit to debug these tests
-
-  implicit val parser: Rule1[Statement] = Statement
+  implicit val parser: JavaccRule[Statement] = JavaccRule.Statement
 
   test("USE requires feature") {
     parsingWith("""USE g RETURN 1""", multiGraph)
@@ -108,7 +104,7 @@ class MultipleGraphClauseSemanticCheckingTest
     SemanticFeature.ExpressionsInViewInvocations
   )
 
-  override def convert(astNode: ast.Statement): SemanticCheckResult =
+  override def convert(astNode: Statement): SemanticCheckResult =
     convert(astNode, defaultFeatures)
 
   override def convert(astNode: Statement, features: Seq[SemanticFeature]): SemanticCheckResult = {
