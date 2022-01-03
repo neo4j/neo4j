@@ -46,6 +46,24 @@ class SemanticAnalysisTest extends CypherFunSuite {
   private val pipeline = pipelineWithSemanticFeatures()
   private val pipelineWithRelationshipPatternPredicates = pipelineWithSemanticFeatures(SemanticFeature.RelationshipPatternPredicates)
 
+  private val pipelineWithMultiGraphs = pipelineWithSemanticFeatures(
+    SemanticFeature.MultipleGraphs,
+    SemanticFeature.WithInitialQuerySignature,
+  )
+
+  private val pipelineWithUseGraphSelector = pipelineWithSemanticFeatures(
+    SemanticFeature.MultipleGraphs,
+    SemanticFeature.WithInitialQuerySignature,
+    SemanticFeature.UseGraphSelector,
+  )
+
+  private val pipelineWithExpressionsInView = pipelineWithSemanticFeatures(
+    SemanticFeature.MultipleGraphs,
+    SemanticFeature.WithInitialQuerySignature,
+    SemanticFeature.UseGraphSelector,
+    SemanticFeature.ExpressionsInViewInvocations,
+  )
+
   test("should fail for max() with no arguments") {
     val query = "RETURN max() AS max"
 
@@ -842,6 +860,87 @@ class SemanticAnalysisTest extends CypherFunSuite {
       SemanticError("It is not allowed to refer to variables in OF ... ROWS", InputPosition(40, 3, 22)),
       SemanticError("Type mismatch: expected Integer but was List<Integer>", InputPosition(40, 3, 22)),
     )
+  }
+
+  test("should not allow USE when semantic feature is not set") {
+    val startState = initStartState("USE g RETURN 1")
+    val context = new ErrorCollectingContext()
+    pipelineWithMultiGraphs.transform(startState, context)
+    context.errors.map(_.msg) shouldBe Seq(
+      "The `USE GRAPH` clause is not available in this implementation of Cypher due to lack of support for USE graph selector."
+    )
+  }
+
+  test("should allow USE when semantic feature is set") {
+    val startState = initStartState("USE g RETURN 1")
+    val context = new ErrorCollectingContext()
+    pipelineWithUseGraphSelector.transform(startState, context)
+    context.errors shouldBe empty
+  }
+
+  test("Allow single identifier in USE") {
+    val startState = initStartState("USE x RETURN 1")
+    val context = new ErrorCollectingContext()
+    pipelineWithUseGraphSelector.transform(startState, context)
+    context.errors shouldBe empty
+  }
+
+  test("Allow qualified identifier in USE") {
+    val startState = initStartState("USE x.y.z RETURN 1")
+    val context = new ErrorCollectingContext()
+    pipelineWithUseGraphSelector.transform(startState, context)
+    context.errors shouldBe empty
+  }
+
+  test("Allow view invocation in USE") {
+    val startState = initStartState("USE v(g, w(k)) RETURN 1")
+    val context = new ErrorCollectingContext()
+    pipelineWithUseGraphSelector.transform(startState, context)
+    context.errors shouldBe empty
+  }
+
+  test("Allow qualified view invocation in USE") {
+    val startState = initStartState("USE a.b.v(g, x.g, x.v(k)) RETURN 1")
+    val context = new ErrorCollectingContext()
+    pipelineWithUseGraphSelector.transform(startState, context)
+    context.errors shouldBe empty
+  }
+
+  test("Do not allow arbitrary expressions in USE") {
+    val invalidQueries = Seq(
+      "USE 1 RETURN 1",
+      "USE 'a' RETURN 1",
+      "USE [x] RETURN 1",
+      "USE 1 + 2 RETURN 1"
+    )
+
+    for (q <- invalidQueries) withClue(q) {
+      val startState = initStartState(q)
+      val context = new ErrorCollectingContext()
+      pipelineWithUseGraphSelector.transform(startState, context)
+      context.errors.map(_.msg) shouldBe Seq("Invalid graph reference")
+    }
+  }
+
+  test("Disallow expressions in view invocations") {
+    val startState = initStartState("USE a.b.v(1, 1+2, 'x') RETURN 1")
+    val context = new ErrorCollectingContext()
+    pipelineWithUseGraphSelector.transform(startState, context)
+    context.errors.map(_.msg).toSet shouldBe Set("Invalid graph reference")
+  }
+
+  test("Allow expressions in view invocations (with feature flag)") {
+    val startState = initStartState("WITH 1 AS x USE v(2, 'x', x, x+3) RETURN 1")
+    val context = new ErrorCollectingContext()
+    pipelineWithExpressionsInView.transform(startState, context)
+    context.errors shouldBe empty
+  }
+
+  test("Expressions in view invocations are checked (with feature flag)") {
+    val startState = initStartState("WITH 1 AS x USE v(2, 'x', y, x+3) RETURN 1")
+    val context = new ErrorCollectingContext()
+    pipelineWithExpressionsInView.transform(startState, context)
+    context.errors.map(_.msg) shouldBe Seq("Variable `y` not defined")
   }
 
   private def initStartState(query: String) =
