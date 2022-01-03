@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
 {
     private final IndexDescriptor descriptor;
+    private final Config config;
     private IndexSamplingConfig samplingConfig;
     private Supplier<IndexWriterConfig> writerConfigFactory;
 
@@ -52,6 +53,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     {
         super( readOnlyChecker );
         this.descriptor = descriptor;
+        this.config = config;
         this.samplingConfig = new IndexSamplingConfig( config );
         this.writerConfigFactory = () -> IndexWriterConfigs.standard( config );
     }
@@ -100,6 +102,6 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     {
         PartitionedIndexStorage storage = storageBuilder.build();
         return new WritableDatabaseSchemaIndex( storage, descriptor, samplingConfig, new WritableIndexPartitionFactory( writerConfigFactory ),
-                readOnlyChecker );
+                readOnlyChecker, config );
     }
 }

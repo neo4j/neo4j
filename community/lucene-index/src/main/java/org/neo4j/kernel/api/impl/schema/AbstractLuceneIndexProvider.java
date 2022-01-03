@@ -111,7 +111,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
     {
         PartitionedIndexStorage indexStorage = indexStorageFactory.indexStorageOf( descriptor.getId() );
         DroppableIndex<ValueIndexReader> index =
-                new DroppableIndex<>( new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
+                new DroppableIndex<>( new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor, config ) );
         return new LuceneMinimalIndexAccessor<>( descriptor, index, true );
     }
 

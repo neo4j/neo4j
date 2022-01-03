@@ -248,7 +248,7 @@ class DatabaseIndexIntegrationTest
 
         TestLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
         {
-            super( indexStorage, partitionFactory, null );
+            super( indexStorage, partitionFactory, null, Config.defaults() );
         }
 
         @Override

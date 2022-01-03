@@ -227,7 +227,7 @@ public class FulltextIndexProvider extends IndexProvider
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableIndex<>(
-                new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
+                new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor, config ) );
         log.debug( "Creating dropper for fulltext schema index: %s", descriptor );
         return new LuceneMinimalIndexAccessor<>( descriptor, fulltextIndex, isReadOnly() );
     }
@@ -263,7 +263,7 @@ public class FulltextIndexProvider extends IndexProvider
         {
             PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
             DatabaseIndex<FulltextIndexReader> fulltextIndex = new DroppableIndex<>(
-                    new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
+                    new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor, config ) );
             log.debug( "Creating failed index populator for fulltext schema index: %s", descriptor, e );
             return new FailedFulltextIndexPopulator( descriptor, fulltextIndex, e );
         }

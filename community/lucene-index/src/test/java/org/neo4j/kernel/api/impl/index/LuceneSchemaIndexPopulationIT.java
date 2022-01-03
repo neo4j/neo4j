@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -28,6 +26,7 @@ import java.nio.file.Path;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -63,30 +62,21 @@ import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_
 class LuceneSchemaIndexPopulationIT
 {
     private final IndexDescriptor descriptor = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( 0, 0 ) ).withName( "a" ).materialise( 1 );
+    private final Config config = Config.newBuilder()
+                                        .set( GraphDatabaseInternalSettings.lucene_max_partition_size, 10 )
+                                        .build();
 
     @Inject
     private TestDirectory testDir;
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
 
-    @BeforeEach
-    void before()
-    {
-        System.setProperty( "luceneSchemaIndex.maxPartitionSize", "10" );
-    }
-
-    @AfterEach
-    void after()
-    {
-        System.setProperty( "luceneSchemaIndex.maxPartitionSize", "" );
-    }
-
     @ParameterizedTest
     @ValueSource( ints = {7, 11, 14, 20, 35, 58} )
     void partitionedIndexPopulation( int affectedNodes ) throws Exception
     {
         Path rootFolder = testDir.directory( "partitionIndex" + affectedNodes ).resolve( "uniqueIndex" + affectedNodes );
-        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor, writable(), Config.defaults() )
+        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor, writable(), config )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( rootFolder ).build() )
         {

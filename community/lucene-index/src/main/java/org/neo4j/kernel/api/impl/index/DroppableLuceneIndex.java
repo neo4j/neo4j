@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.Closeable;
 import java.util.List;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -30,9 +31,9 @@ import org.neo4j.kernel.api.index.IndexReader;
 
 public class DroppableLuceneIndex<READER extends IndexReader> extends AbstractLuceneIndex<READER> implements Closeable
 {
-    public DroppableLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor )
+    public DroppableLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor, Config config  )
     {
-        super( indexStorage, partitionFactory, descriptor );
+        super( indexStorage, partitionFactory, descriptor, config );
     }
 
     @Override

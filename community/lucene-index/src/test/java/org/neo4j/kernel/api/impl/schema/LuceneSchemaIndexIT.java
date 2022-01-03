@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -34,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -72,19 +71,9 @@ class LuceneSchemaIndexIT
     private DefaultFileSystemAbstraction fileSystem;
 
     private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 0 ) ).withName( "a" ).materialise( 1 );
-    private final Config config = Config.defaults();
-
-    @BeforeEach
-    void before()
-    {
-        System.setProperty( "luceneSchemaIndex.maxPartitionSize", "10" );
-    }
-
-    @AfterEach
-    void after()
-    {
-        System.setProperty( "luceneSchemaIndex.maxPartitionSize", "" );
-    }
+    private final Config config = Config.newBuilder()
+                                        .set( GraphDatabaseInternalSettings.lucene_max_partition_size, 10 )
+                                        .build();
 
     @Test
     void snapshotForPartitionedIndex() throws Exception

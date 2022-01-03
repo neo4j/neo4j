@@ -69,6 +69,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> ephemeral_lucene = newBuilder( "unsupported.dbms.lucene.ephemeral", BOOL, false ).build();
 
     @Internal
+    @Description( "Configure lucene partition size. This is mainly used to test partitioning behaviour without having to create " +
+            "Integer.MAX_VALUE indexed entities." )
+    public static final Setting<Integer> lucene_max_partition_size = newBuilder( "unsupported.dbms.lucene.max_partition_size", INT, null ).build();
+
+    @Internal
     @Description( "Name of the lock manager to be used, as defined in the corresponding LocksFactory." )
     public static final Setting<String> lock_manager = newBuilder( "unsupported.dbms.lock_manager", STRING, "forseti" ).build();
 

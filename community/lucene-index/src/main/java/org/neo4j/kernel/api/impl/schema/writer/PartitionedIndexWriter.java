@@ -26,7 +26,10 @@ import org.apache.lucene.search.Query;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 
@@ -34,22 +37,25 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
  * Schema Lucene index writer implementation that supports writing into multiple partitions and creates partitions
  * on-demand if needed.
  * <p>
- * Writer threats partition as writable if partition has number of live and deleted documents that is less then configured
- * {@link #MAXIMUM_PARTITION_SIZE}.
+ * Writer threats partition as writable if partition has number of live and deleted documents that is less
+ * than a value explicitly configured using {@link GraphDatabaseInternalSettings#lucene_max_partition_size}
+ * or {@link #DEFAULT_MAXIMUM_PARTITION_SIZE} otherwise.
  * First observable partition that satisfy writer criteria is used for writing.
  */
 public class PartitionedIndexWriter implements LuceneIndexWriter
 {
-    private final WritableAbstractDatabaseIndex index;
-
     // by default we still keep a spare of 10% to the maximum partition size: During concurrent updates
     // it could happen that 2 threads reserve space in a partition (without claiming it by doing addDocument):
-    private final Integer MAXIMUM_PARTITION_SIZE = Integer.getInteger( "luceneSchemaIndex.maxPartitionSize",
-            IndexWriter.MAX_DOCS - (IndexWriter.MAX_DOCS / 10) );
+    private static final Integer DEFAULT_MAXIMUM_PARTITION_SIZE = IndexWriter.MAX_DOCS - (IndexWriter.MAX_DOCS / 10);
 
-    public PartitionedIndexWriter( WritableAbstractDatabaseIndex index )
+    private final WritableAbstractDatabaseIndex index;
+    private final int maximumPartitionSize;
+
+    public PartitionedIndexWriter( WritableAbstractDatabaseIndex index, Config config )
     {
         this.index = index;
+        var configuredMaxPartitionSize = config.get( GraphDatabaseInternalSettings.lucene_max_partition_size );
+        maximumPartitionSize = Objects.requireNonNullElse( configuredMaxPartitionSize, DEFAULT_MAXIMUM_PARTITION_SIZE );
     }
 
     @Override
@@ -132,7 +138,7 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
 
     private boolean writablePartition( AbstractIndexPartition partition, int numDocs )
     {
-        return MAXIMUM_PARTITION_SIZE - partition.getIndexWriter().getDocStats().maxDoc >= numDocs;
+        return maximumPartitionSize - partition.getIndexWriter().getDocStats().maxDoc >= numDocs;
     }
 }
 

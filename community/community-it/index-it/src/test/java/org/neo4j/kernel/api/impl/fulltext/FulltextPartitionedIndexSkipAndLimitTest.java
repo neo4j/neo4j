@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -28,9 +26,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.RandomSupport;
@@ -51,16 +52,12 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
 
     private int totalEntities;
 
-    @BeforeEach
-    void before()
+    @ExtensionCallback
+    @Override
+    void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        System.setProperty( "luceneSchemaIndex.maxPartitionSize", "10" );
-    }
-
-    @AfterEach
-    void after()
-    {
-        System.setProperty( "luceneSchemaIndex.maxPartitionSize", "" );
+        super.configure( builder );
+        builder.setConfig( GraphDatabaseInternalSettings.lucene_max_partition_size, 10 );
     }
 
     private void setUp( EntityUtil entityUtil )

@@ -36,6 +36,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -76,12 +77,13 @@ class LuceneSchemaIndexUniquenessVerificationIT
     private SchemaIndex index;
 
     @BeforeEach
-    void setPartitionSize() throws Exception
+    void setUp() throws Exception
     {
-        System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
-
-        Supplier<IndexWriterConfig> configFactory = new TestConfigFactory( Config.defaults() );
-        index = LuceneSchemaIndexBuilder.create( descriptor, writable(), Config.defaults() )
+        var config = Config.newBuilder()
+                           .set( GraphDatabaseInternalSettings.lucene_max_partition_size, DOCS_PER_PARTITION )
+                           .build();
+        Supplier<IndexWriterConfig> configFactory = new TestConfigFactory( config );
+        index = LuceneSchemaIndexBuilder.create( descriptor, writable(), config )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( testDir.directory( "uniquenessVerification" ).resolve( "index" ) )
                 .withWriterConfig( configFactory )
@@ -93,10 +95,8 @@ class LuceneSchemaIndexUniquenessVerificationIT
     }
 
     @AfterEach
-    void resetPartitionSize() throws IOException
+    void tearDown() throws IOException
     {
-        System.setProperty( "luceneSchemaIndex.maxPartitionSize", "" );
-
         IOUtils.closeAll( index );
     }
 

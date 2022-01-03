@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -67,6 +68,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
     protected final PartitionedIndexStorage indexStorage;
     protected final IndexDescriptor descriptor;
     private final IndexPartitionFactory partitionFactory;
+    private final Config config;
 
     // Note that we rely on the thread-safe internal snapshot feature of the CopyOnWriteArrayList
     // for the thread-safety of this and derived classes.
@@ -74,11 +76,12 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
 
     private volatile boolean open;
 
-    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor )
+    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor, Config config )
     {
         this.indexStorage = indexStorage;
         this.partitionFactory = partitionFactory;
         this.descriptor = descriptor;
+        this.config = config;
     }
 
     /**
@@ -194,7 +197,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
     public LuceneIndexWriter getIndexWriter( WritableAbstractDatabaseIndex writableAbstractDatabaseIndex )
     {
         ensureOpen();
-        return new PartitionedIndexWriter( writableAbstractDatabaseIndex );
+        return new PartitionedIndexWriter( writableAbstractDatabaseIndex, config );
     }
 
     public READER getIndexReader() throws IOException

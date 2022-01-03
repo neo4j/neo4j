@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -40,9 +41,9 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
 {
 
     WritableDatabaseSchemaIndex( PartitionedIndexStorage storage, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
-            WritableIndexPartitionFactory writableIndexPartitionFactory, DatabaseReadOnlyChecker readOnlyChecker )
+            WritableIndexPartitionFactory writableIndexPartitionFactory, DatabaseReadOnlyChecker readOnlyChecker, Config config )
     {
-        super( new LuceneSchemaIndex( storage, descriptor, samplingConfig, writableIndexPartitionFactory ), readOnlyChecker );
+        super( new LuceneSchemaIndex( storage, descriptor, samplingConfig, writableIndexPartitionFactory, config ), readOnlyChecker );
     }
 
     /**

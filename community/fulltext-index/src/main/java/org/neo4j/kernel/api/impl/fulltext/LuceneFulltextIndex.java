@@ -47,7 +47,7 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor,
             TokenHolder propertyKeyTokenHolder, Config config, Analyzer analyzer, String[] propertyNames )
     {
-        super( storage, partitionFactory, descriptor );
+        super( storage, partitionFactory, descriptor, config );
         this.descriptor = descriptor;
         this.config = config;
         this.analyzer = analyzer;
