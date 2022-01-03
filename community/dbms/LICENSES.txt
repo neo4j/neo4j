@@ -14,6 +14,7 @@ Apache Software License, Version 2.0
   Apache Lucene (module: common)
   Apache Lucene (module: core)
   Apache Lucene (module: queryparser)
+  Caffeine cache
   Java Concurrency Tools Core Library
   Java Native Access
   Jettison

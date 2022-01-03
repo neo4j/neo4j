@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.internal.helpers.collection.LruCache;
+import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 public class LogHeaderCache
 {
-    private final LruCache<Long,LogHeader> cache;
+    private final LfuCache<Long,LogHeader> cache;
 
     public LogHeaderCache( int headerCacheSize )
     {
-        this.cache = new LruCache<>( "Log header cache", headerCacheSize );
+        this.cache = new LfuCache<>( "Log header cache", headerCacheSize );
     }
 
     public void clear()

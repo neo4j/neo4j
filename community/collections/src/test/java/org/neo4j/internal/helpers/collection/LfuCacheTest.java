@@ -28,48 +28,40 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class LruCacheTest
+class LfuCacheTest
 {
     @Test
     void shouldThrowWhenMaxSizeIsNotGreaterThanZero()
     {
-        assertThrows( IllegalArgumentException.class, () -> new LruCache<>( "TestCache", 0 ) );
+        assertThrows( IllegalArgumentException.class, () -> new LfuCache<>( "TestCache", 0 ) );
     }
 
     @Test
     void shouldThrowWhenPuttingEntryWithNullKey()
     {
-        assertThrows( IllegalArgumentException.class, () ->
-                new LruCache<>( "TestCache", 70 ).put( null, new Object() ) );
+        assertThrows( NullPointerException.class, () ->
+                new LfuCache<>( "TestCache", 70 ).put( null, new Object() ) );
     }
 
     @Test
     void shouldThrowWhenPuttingEntryWithNullValue()
     {
-        assertThrows( IllegalArgumentException.class, () ->
-                new LruCache<>( "TestCache", 70 ).put( new Object(), null ) );
+        assertThrows( NullPointerException.class, () ->
+                new LfuCache<>( "TestCache", 70 ).put( new Object(), null ) );
     }
 
     @Test
     void shouldThrowWhenGettingWithANullKey()
     {
-        assertThrows( IllegalArgumentException.class, () ->
-                new LruCache<>( "TestCache", 70 ).get( null ) );
-    }
-
-    @Test
-    void shouldThrowWhenRemovingWithANullKey()
-    {
-        assertThrows( IllegalArgumentException.class, () ->
-                new LruCache<>( "TestCache", 70 ).remove( null ) );
+        assertThrows( NullPointerException.class, () ->
+                new LfuCache<>( "TestCache", 70 ).get( null ) );
     }
 
     @Test
     void shouldWork()
     {
-        LruCache<Integer, String> cache = new LruCache<>( "TestCache", 3 );
+        LfuCache<Integer, String> cache = new LfuCache<>( "TestCache", 3 );
 
         String s1 = "1";
         Integer key1 = 1;
@@ -95,34 +87,19 @@ class LruCacheTest
 
         cache.put( key5, s5 );
 
-        assertEquals( new HashSet<>( Arrays.asList(key2, key4, key5) ), cache.keySet());
-
         int size = cache.size();
 
         assertEquals( 3, size );
-        assertNull( cache.get( key1 ) );
         assertEquals( s2, cache.get( key2 ) );
-        assertNull( cache.get( key3 ) );
-        assertEquals( s4, cache.get( key4 ) );
-        assertEquals( s5, cache.get( key5 ) );
 
         cache.clear();
-
         assertEquals( 0, cache.size() );
     }
 
     @Test
     void shouldClear()
     {
-        final Set<String> cleaned = new HashSet<>();
-        LruCache<Integer, String> cache = new LruCache<>( "TestCache", 3 )
-        {
-            @Override
-            public void elementCleaned( String element )
-            {
-                cleaned.add( element );
-            }
-        };
+        LfuCache<Integer, String> cache = new LfuCache<>( "TestCache", 3 );
 
         String s1 = "1";
         Integer key1 = 1;
@@ -149,12 +126,10 @@ class LruCacheTest
 
         cache.put( key5, s5 );
 
-        assertEquals( Set.of( new Integer[]{key2, key4, key5} ), cache.keySet() );
         assertEquals( cache.maxSize(), cache.size() );
 
         cache.clear( );
 
         assertEquals( 0, cache.size() );
-        assertEquals( Set.of( new String[]{s1, s2, s3, s4, s5} ), cleaned );
     }
 }

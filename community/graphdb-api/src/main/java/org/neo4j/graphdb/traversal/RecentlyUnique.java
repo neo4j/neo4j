@@ -20,7 +20,7 @@
 package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
-import org.neo4j.internal.helpers.collection.LruCache;
+import org.neo4j.internal.helpers.collection.LfuCache;
 
 /**
  * Filters on items with a recency within limits of {@link #DEFAULT_RECENT_SIZE}.
@@ -30,13 +30,13 @@ class RecentlyUnique extends AbstractUniquenessFilter
     private static final Object PLACE_HOLDER = new Object();
     private static final int DEFAULT_RECENT_SIZE = 10000;
 
-    private final LruCache<Long, Object> recentlyVisited;
+    private final LfuCache<Long, Object> recentlyVisited;
 
     RecentlyUnique( PrimitiveTypeFetcher type, Object parameter )
     {
         super( type );
         parameter = parameter != null ? parameter : DEFAULT_RECENT_SIZE;
-        recentlyVisited = new LruCache<>( "Recently visited", ((Number) parameter).intValue() );
+        recentlyVisited = new LfuCache<>( "Recently visited", ((Number) parameter).intValue() );
     }
 
     @Override

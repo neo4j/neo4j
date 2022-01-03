@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.util.Objects;
 
-import org.neo4j.internal.helpers.collection.LruCache;
+import org.neo4j.internal.helpers.collection.LfuCache;
 
 public class TransactionMetadataCache
 {
     private static final int DEFAULT_TRANSACTION_CACHE_SIZE = 10_000;
-    private final LruCache<Long,TransactionMetadata> txIdMetadataCache;
+    private final LfuCache<Long,TransactionMetadata> txIdMetadataCache;
 
     public TransactionMetadataCache()
     {
-        this.txIdMetadataCache = new LruCache<>( "Tx start position cache", DEFAULT_TRANSACTION_CACHE_SIZE );
+        this.txIdMetadataCache = new LfuCache<>( "Tx start position cache", DEFAULT_TRANSACTION_CACHE_SIZE );
     }
 
     public void clear()

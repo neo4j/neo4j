@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.IOException;
 
-import org.neo4j.internal.helpers.collection.LruCache;
+import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -107,7 +107,7 @@ public class TransactionLogFileInformation implements LogFileInformation
         private static final String FIRST_TRANSACTION_TIME = "First Transaction Time";
         private final LogFiles logFiles;
         private final LogEntryReader logEntryReader;
-        private final LruCache<Long,Long> logFileTimeStamp = new LruCache<>( FIRST_TRANSACTION_TIME, 10_000 );
+        private final LfuCache<Long,Long> logFileTimeStamp = new LfuCache<>( FIRST_TRANSACTION_TIME, 10_000 );
 
         TransactionLogFileTimestampMapper( LogFiles logFiles, LogEntryReader logEntryReader )
         {

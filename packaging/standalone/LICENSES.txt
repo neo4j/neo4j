@@ -34,6 +34,7 @@ Apache Software License, Version 2.0
   ascli
   aws-sign2
   bytebuffer
+  Caffeine cache
   caseless
   detect-libc
   disposables
