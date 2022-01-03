@@ -1,0 +1,145 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher
+
+import org.neo4j.configuration.Config
+import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.testing.api.CypherExecutorException
+import org.neo4j.cypher.testing.api.StatementResult
+import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
+import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService.TestApiKind
+import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.graphdb.TransactionFailureException
+import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.test.TestDatabaseManagementServiceBuilder
+
+class TransactionalQueryErrorBoltAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase with FeatureDatabaseManagementService.TestUsingBolt
+class TransactionalQueryErrorEmbeddedAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase with FeatureDatabaseManagementService.TestUsingEmbedded
+class TransactionalQueryErrorHttpAcceptanceTest extends TransactionalQueryErrorAcceptanceTestBase with FeatureDatabaseManagementService.TestUsingHttp
+
+abstract class TransactionalQueryErrorAcceptanceTestBase
+  extends CypherFunSuite
+  with FeatureDatabaseManagementService.TestBase
+  with CreateTempFileTestSupport {
+
+  // This is an absolute mess...
+
+  test("disallows CALL IN TRANSACTIONS in explicit transaction") {
+    def code = executeInExplicitTx("CALL { CREATE () } IN TRANSACTIONS")
+
+    testApiKind match {
+
+      case TestApiKind.Embedded =>
+        the[TransactionFailureException]
+          .thrownBy(code)
+          .getMessage.should(include("can only be executed in an implicit transaction, but tried to execute in an explicit transaction."))
+
+      case _ =>
+        expectError(
+          Status.Statement.ExecutionFailed,
+          "can only be executed in an implicit transaction, but tried to execute in an explicit transaction."
+        )(code)
+
+    }
+
+  }
+
+  test("disallows PERIODIC COMMIT in explicit transaction") {
+    def code = executeInExplicitTx(s"USING PERIODIC COMMIT LOAD CSV FROM '${createCsv()}' AS l CREATE ()")
+
+    testApiKind match {
+
+      case TestApiKind.Bolt =>
+        expectExplicitTxError(code)
+
+      case TestApiKind.Embedded =>
+        expectError(
+          Status.Statement.SemanticError,
+          "Executing stream that use periodic commit in an open transaction is not possible."
+        )(code)
+
+      case TestApiKind.Http =>
+        cancel("The HTTP api actually allows this...")
+    }
+
+  }
+
+  test("allows EXPLAIN CALL IN TRANSACTIONS in explicit transaction") {
+    expectNoError(executeInExplicitTx("EXPLAIN CALL { CREATE () } IN TRANSACTIONS"))
+  }
+
+  test("allows EXPLAIN PERIODIC COMMIT in explicit transaction") {
+    expectNoError(executeInExplicitTx(s"EXPLAIN USING PERIODIC COMMIT LOAD CSV FROM '${createCsv()}' AS l CREATE ()"))
+  }
+
+  test("allows CALL IN TRANSACTIONS in implicit transaction") {
+    testApiKind match {
+
+      case TestApiKind.Http =>
+        cancel("The HTTP api does not know about CALL IN TX")
+
+      case _ =>
+        expectNoError(executeInImplicitTx("CALL { CREATE () } IN TRANSACTIONS"))
+    }
+
+  }
+
+  test("allows PERIODIC COMMIT in implicit transaction") {
+    expectNoError(executeInImplicitTx(s"USING PERIODIC COMMIT LOAD CSV FROM '${createCsv()}' AS l CREATE ()"))
+  }
+
+  def executeInExplicitTx(statement: String): StatementResult = {
+    val tx = dbms.begin()
+    try {
+      tx.execute(statement)
+    } finally {
+      tx.rollback()
+    }
+  }
+
+  def executeInImplicitTx(statement: String): StatementResult =
+    dbms.execute(statement, Map.empty, identity)
+
+  def expectNoError(code: => Any): Unit =
+    noException.shouldBe(thrownBy(code))
+
+  def expectError(status: Status, messageSubstring: String)(code: => Any): Unit = {
+    val ex = the[CypherExecutorException]
+      .thrownBy(code)
+
+    ex.status.shouldEqual(status)
+    ex.getMessage.should(include(messageSubstring))
+  }
+
+  def expectExplicitTxError(code: => Any): Unit =
+    expectError(
+      Status.Statement.SemanticError,
+      "can only be executed in an implicit transaction, but tried to execute in an explicit transaction."
+    )(code)
+
+  private def createCsv() = createCSVTempFileURL("file") { writer =>
+    writer.println("1,2")
+  }
+
+  override def createBackingDbms(config: Config): DatabaseManagementService =
+    new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
+
+}
