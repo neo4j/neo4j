@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -223,7 +224,6 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
     class NativePartitionedValueSeek implements PartitionedValueSeek
     {
         private final PropertyIndexQuery[] query;
-        private final boolean emptyResultQuery;
         private final boolean filter;
         private final List<KEY> partitionEdges;
         private final AtomicInteger nextFrom = new AtomicInteger();
@@ -240,8 +240,9 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
 
             filter = initializeRangeForQuery( fromInclusive, toExclusive, this.query );
 
-            partitionEdges = tree.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, queryContext.cursorContext() );
-            emptyResultQuery = isEmptyResultQuery( query );
+            partitionEdges = !isEmptyResultQuery( query )
+                             ? tree.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, queryContext.cursorContext() )
+                             : Collections.emptyList();
         }
 
         @Override
@@ -255,7 +256,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
         {
             final var from = nextFrom.getAndIncrement();
             final var to = from + 1;
-            if ( to >= partitionEdges.size() || emptyResultQuery )
+            if ( to >= partitionEdges.size() )
             {
                 return IndexProgressor.EMPTY;
             }

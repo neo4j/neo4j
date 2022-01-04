@@ -611,7 +611,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
      */
     public static class IncomparableRangePredicate<T extends Value> extends RangePredicate<Value>
     {
-
         private IncomparableRangePredicate( int propertyKeyId, ValueGroup valueGroup, T from, boolean fromInclusive, T to,
                 boolean toInclusive )
         {
