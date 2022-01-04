@@ -261,12 +261,7 @@ case class SemanticState(currentScope: ScopeLocation,
                          recordedScopes: ASTAnnotationMap[ASTNode, ScopeLocation],
                          notifications: Set[InternalNotification] = Set.empty,
                          features: Set[SemanticFeature] = Set.empty,
-                         initialWith: Boolean = false,
                          declareVariablesToSuppressDuplicateErrors: Boolean = true) {
-
-  def recogniseInitialWith: SemanticState = copy(initialWith = true)
-
-  def clearInitialWith: SemanticState = if (initialWith) copy(initialWith = false) else this
 
   def scopeTree: Scope = currentScope.rootScope
 

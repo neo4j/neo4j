@@ -306,11 +306,11 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       case (lastResult, (clause, idx)) =>
         val next = clause match {
           case w: With if idx == 0 && lastResult.state.features(SemanticFeature.WithInitialQuerySignature) =>
-            checkHorizon(w, lastResult.state.recogniseInitialWith, None, lastResult.errors)
+            checkHorizon(w, lastResult.state, None, lastResult.errors)
           case c: HorizonClause =>
-            checkHorizon(c, lastResult.state.clearInitialWith, outerScope, lastResult.errors)
+            checkHorizon(c, lastResult.state, outerScope, lastResult.errors)
           case _ =>
-            val checked = clause.semanticCheck(lastResult.state.clearInitialWith)
+            val checked = clause.semanticCheck(lastResult.state)
             val errors = lastResult.errors ++ checked.errors
             val resultState = clause match {
               case _: UpdateClause if idx == lastIndex =>

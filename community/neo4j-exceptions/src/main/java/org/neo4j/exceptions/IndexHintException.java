@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 import org.neo4j.common.EntityType;
 import org.neo4j.kernel.api.exceptions.Status;
 
+/**
+ * A hint was used referring to an index that does not exist.
+ */
 public class IndexHintException extends Neo4jException
 {
     public enum IndexHintIndexType

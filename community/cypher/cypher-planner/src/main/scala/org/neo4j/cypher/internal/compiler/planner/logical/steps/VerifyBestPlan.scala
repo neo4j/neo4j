@@ -145,10 +145,10 @@ object VerifyBestPlan {
   }
 
   private def findUnfulfillableIndexHints(query: PlannerQueryPart, context: LogicalPlanningContext): Set[UnfulfillableIndexHint] = {
-    
+
     val planContext = context.planContext
     val semanticTable = context.semanticTable
-    
+
     def nodeIndexHintFulfillable(labelOrRelType: LabelOrRelTypeName, properties: Seq[PropertyKeyName], indexHintType: UsingIndexHintType): Boolean = {
       val labelName = labelOrRelType.name
       val propertyNames = properties.map(_.name)

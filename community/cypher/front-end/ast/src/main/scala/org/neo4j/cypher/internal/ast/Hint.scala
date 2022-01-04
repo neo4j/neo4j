@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -70,13 +71,13 @@ case class UsingIndexHint(
                            spec: UsingIndexHintSpec = SeekOrScan,
                            indexType: UsingIndexHintType = UsingAnyIndexType,
                          )(val position: InputPosition) extends UsingHint with NodeHint {
-  def variables = NonEmptyList(variable)
-  def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
+  override def variables: NonEmptyList[Variable] = NonEmptyList(variable)
+  override def semanticCheck: SemanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
 }
 
 case class UsingScanHint(variable: Variable, labelOrRelType: LabelOrRelTypeName)(val position: InputPosition) extends UsingHint with NodeHint {
-  def variables = NonEmptyList(variable)
-  def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
+  override def variables: NonEmptyList[Variable] = NonEmptyList(variable)
+  override def semanticCheck: SemanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
 }
 
 object UsingJoinHint {
@@ -85,7 +86,7 @@ object UsingJoinHint {
 }
 
 case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {
-  def semanticCheck =
+  override def semanticCheck: SemanticCheck =
     variables.map { variable => ensureDefined(variable) chain expectType(CTNode.covariant, variable) }.reduceLeft(_ chain _)
 }
 
@@ -93,18 +94,18 @@ case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputP
 
 sealed trait StartItem extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def variable: Variable
-  def name = variable.name
+  def name: String = variable.name
 }
 
 sealed trait NodeStartItem extends StartItem {
-  def semanticCheck = declareVariable(variable, CTNode)
+  def semanticCheck: SemanticCheck = declareVariable(variable, CTNode)
 }
 
 case class NodeByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
 case class AllNodes(variable: Variable)(val position: InputPosition) extends NodeStartItem
 
 sealed trait RelationshipStartItem extends StartItem {
-  def semanticCheck = declareVariable(variable, CTRelationship)
+  def semanticCheck: SemanticCheck = declareVariable(variable, CTRelationship)
 }
 
 case class RelationshipByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem
