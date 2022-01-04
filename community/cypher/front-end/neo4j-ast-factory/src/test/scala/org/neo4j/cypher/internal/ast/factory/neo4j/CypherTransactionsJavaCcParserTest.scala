@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.test_helpers.TestName
-import org.scalatest.FunSuiteLike
 
-class CypherTransactionsJavaCcParserTest extends ParserComparisonTestBase with FunSuiteLike with TestName with AstConstructionTestSupport {
+class CypherTransactionsJavaCcParserTest extends JavaccParserAstTestBase[Clause] with VerifyAstPositionTestSupport {
+
+  implicit private val parser: JavaccRule[Clause] = JavaccRule.SubqueryClause
 
   test("CALL { CREATE (n) } IN TRANSACTIONS") {
-    val expected = query(
+    val expected =
       SubqueryCall(
         SingleQuery(
           Seq(create(
@@ -39,37 +39,40 @@ class CypherTransactionsJavaCcParserTest extends ParserComparisonTestBase with F
         (defaultPos),
         Some(InTransactionsParameters(None)(1, 21, 20))
       )(defaultPos)
-    )
-    assertJavaCCAST(testName, expected)
+
+    parsing(testName) shouldVerify { actual =>
+      actual shouldBe expected
+      verifyPositions(actual, expected)
+    }
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 1 ROW") {
-    val expected = query(subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(1))), create(nodePat("n"))))
-    assertJavaCCAST(testName, expected, comparePosition = false)
+    val expected = subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(1))), create(nodePat("n")))
+    gives(expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 1 ROWS") {
-    val expected = query(subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(1))), create(nodePat("n"))))
-    assertJavaCCAST(testName, expected, comparePosition = false)
+    val expected = subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(1))), create(nodePat("n")))
+    gives(expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROW") {
-    val expected = query(subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(42))), create(nodePat("n"))))
-    assertJavaCCAST(testName, expected, comparePosition = false)
+    val expected = subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(42))), create(nodePat("n")))
+    gives(expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROWS") {
-    val expected = query(subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(42))), create(nodePat("n"))))
-    assertJavaCCAST(testName, expected, comparePosition = false)
+    val expected = subqueryCallInTransactions(inTransactionsParameters(Some(literalInt(42))), create(nodePat("n")))
+    gives(expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF $param ROWS") {
-    val expected = query(subqueryCallInTransactions(inTransactionsParameters(Some(parameter("param", CTAny))), create(nodePat("n"))))
-    assertJavaCCAST(testName, expected, comparePosition = false)
+    val expected = subqueryCallInTransactions(inTransactionsParameters(Some(parameter("param", CTAny))), create(nodePat("n")))
+    gives(expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF NULL ROWS") {
-    val expected = query(subqueryCallInTransactions(inTransactionsParameters(Some(nullLiteral)), create(nodePat("n"))))
-    assertJavaCCAST(testName, expected, comparePosition = false)
+    val expected = subqueryCallInTransactions(inTransactionsParameters(Some(nullLiteral)), create(nodePat("n")))
+    gives(expected)
   }
 }

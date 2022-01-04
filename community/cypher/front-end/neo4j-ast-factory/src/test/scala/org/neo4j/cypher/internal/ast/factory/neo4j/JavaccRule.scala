@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
@@ -47,8 +48,11 @@ object JavaccRule {
 
   def Statement: JavaccRule[Statement] = fromParser(_.Statement())
   def Clause: JavaccRule[Clause] = fromParser(_.Clause())
+  def SubqueryClause: JavaccRule[Clause] = fromParser(_.SubqueryClause())
   def Expression: JavaccRule[Expression] = fromParser(_.Expression())
   def Variable: JavaccRule[Variable] = fromParser(_.Variable())
+  def CaseExpression: JavaccRule[Expression] = fromParser(_.CaseExpression())
+  def NodePattern: JavaccRule[NodePattern] = fromParser(_.NodePattern())
 
   // ParserFactory is only really needed to create the Parser type alias above without writing down all 30+ type parameters that Cypher[A,B,C,..] has.
   trait ParserFactory[P] {

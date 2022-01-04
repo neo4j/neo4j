@@ -55,6 +55,58 @@ class RelationshipPatternPredicateJavaCcParserTest extends CypherFunSuite with T
     )
   }
 
+  test("MATCH ()-[r:R|S|T {prop: 42} WHERE r.otherProp > 123]->()") {
+    parseRelationshipPatterns(testName) shouldBe Seq(
+      RelationshipPattern(
+        Some(varFor("r")),
+        Seq(relTypeName("R"), relTypeName("S"), relTypeName("T")),
+        None,
+        Some(mapOf("prop" -> literal(42))),
+        Some(greaterThan(prop("r", "otherProp"), literalInt(123))),
+        OUTGOING,
+      )(pos)
+    )
+  }
+
+  test("MATCH ()-[WHERE WHERE WHERE.prop > 123]->()") {
+    parseRelationshipPatterns(testName) shouldBe Seq(
+      RelationshipPattern(
+        Some(varFor("WHERE")),
+        Seq.empty,
+        None,
+        None,
+        Some(greaterThan(prop("WHERE", "prop"), literalInt(123))),
+        OUTGOING,
+      )(pos)
+    )
+  }
+
+  test("RETURN [()-[r:R WHERE r.prop > 123]->() | r]") {
+    parseRelationshipPatterns(testName) shouldBe Seq(
+      RelationshipPattern(
+        Some(varFor("r")),
+        Seq(relTypeName("R")),
+        None,
+        None,
+        Some(greaterThan(prop("r", "prop"), literalInt(123))),
+        OUTGOING,
+      )(pos)
+    )
+  }
+
+  test("RETURN exists(()-[r {prop: 'test'} WHERE r.otherProp = 123]->()) AS result") {
+    parseRelationshipPatterns(testName) shouldBe Seq(
+      RelationshipPattern(
+        Some(varFor("r")),
+        Seq.empty,
+        None,
+        Some(mapOf("prop" -> literal("test"))),
+        Some(equals(prop("r", "otherProp"), literalInt(123))),
+        OUTGOING,
+      )(pos)
+    )
+  }
+
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 
   private def parseRelationshipPatterns(query: String): Seq[RelationshipPattern] = {

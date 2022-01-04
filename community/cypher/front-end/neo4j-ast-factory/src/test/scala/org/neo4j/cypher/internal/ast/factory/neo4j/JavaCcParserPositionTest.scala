@@ -40,78 +40,65 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
-import org.scalatest.FunSuiteLike
 
 import scala.util.Try
 
-class JavaCcParserPositionTest extends ParserComparisonTestBase with FunSuiteLike with TestName {
+class JavaCcParserPositionTest extends CypherFunSuite with TestName  {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
   private val javaCcAST = (query: String) => Try(JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator()))
 
   test("MATCH (n) RETURN n.prop") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[Property], InputPosition(17, 1, 18))
   }
 
   test("MATCH (n) SET n.prop = 1") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[SetPropertyItem], InputPosition(14, 1, 15))
   }
 
   test("MATCH (n) REMOVE n.prop") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[RemovePropertyItem], InputPosition(17, 1, 18))
   }
 
   test("LOAD CSV FROM 'url' AS line") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[LoadCSV], InputPosition(0, 1, 1))
   }
 
   test("USE GRAPH(x) RETURN 1 as y ") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[UseGraph], InputPosition(0, 1, 1))
   }
 
   test("CREATE (a)-[:X]->(b)") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[EveryPath], InputPosition(7, 1, 8))
   }
 
   test("SHOW ALL ROLES YIELD role") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[Yield], InputPosition(15, 1, 16))
   }
 
   test("RETURN 3 IN list[0] AS r") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[ContainerIndex], InputPosition(17, 1, 18))
   }
 
   test("RETURN 3 IN [1, 2, 3][0..1] AS r") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[ListSlice], InputPosition(21, 1, 22))
   }
 
   test("MATCH (a) WHERE NOT (a:A)") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[HasLabelsOrTypes], InputPosition(21, 1, 22))
   }
 
   test("USING PERIODIC COMMIT LOAD CSV FROM 'url' AS line RETURN line") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[SingleQuery], InputPosition(22, 1, 23))
     validatePosition(testName, _.isInstanceOf[PeriodicCommitHint], InputPosition(6, 1, 7))
   }
 
   test("MATCH (n) SET n += {name: null}") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[SetIncludingPropertiesFromMapItem], InputPosition(14, 1, 15))
   }
 
   test("MATCH (n) SET n = {name: null}") {
-    assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[SetExactPropertiesFromMapItem], InputPosition(14, 1, 15))
   }
 
@@ -123,7 +110,6 @@ class JavaCcParserPositionTest extends ParserComparisonTestBase with FunSuiteLik
     ("DATABASE neo4j YIELD name", 26),
   ).foreach { case (name, variableOffset) =>
     test(s"SHOW $name") {
-      assertSameAST(testName)
       validatePosition(testName, _.isInstanceOf[ShowDatabase], InputPosition(0, 1, 1))
       validatePosition(testName, _.isInstanceOf[Variable], InputPosition(variableOffset, 1, variableOffset + 1))
     }

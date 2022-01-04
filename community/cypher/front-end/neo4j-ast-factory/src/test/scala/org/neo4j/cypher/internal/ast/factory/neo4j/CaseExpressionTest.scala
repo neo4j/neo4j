@@ -19,32 +19,31 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.Expression
 
-class SubqueryCallParserTest extends JavaccParserAstTestBase[Clause] {
+class CaseExpressionTest extends JavaccParserAstTestBase[Expression] {
+  implicit private val parser: JavaccRule[Expression] = JavaccRule.CaseExpression
 
-  implicit private val parser: JavaccRule[Clause] = JavaccRule.SubqueryClause
-
-  test("CALL { RETURN 1 }") {
-    gives(subqueryCall(return_(literalInt(1).unaliased)))
+  test("CASE WHEN (e) THEN e ELSE null END") {
+    yields {
+      CaseExpression(
+        None,
+        List(varFor("e") -> varFor("e")),
+        Some(nullLiteral))
+    }
   }
 
-  test("CALL { CALL { RETURN 1 as a } }") {
-    gives(subqueryCall(subqueryCall(return_(literalInt(1).as("a")))))
+  test("CASE when(e) WHEN (e) THEN e ELSE null END") {
+    yields {
+      CaseExpression(
+        Some(function("when", varFor("e"))),
+        List(varFor("e") -> varFor("e")),
+        Some(nullLiteral))
+    }
   }
 
-  test("CALL { RETURN 1 AS a UNION RETURN 2 AS a }") {
-    gives(subqueryCall(unionDistinct(
-      singleQuery(return_(literalInt(1).as("a"))),
-      singleQuery(return_(literalInt(2).as("a")))
-    )))
-  }
-
-  test("CALL { }") {
+  test("CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
     failsToParse
-  }
-
-  test("CALL { CREATE (n:N) }") {
-    gives(subqueryCall(create(nodePat("n", "N"))))
   }
 }

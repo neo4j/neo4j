@@ -19,15 +19,20 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class LiteralsTest extends JavaccParserTestBase[Any, Any] {
+class LiteralsTest extends JavaccParserTestBase[Any, Any] with AstConstructionTestSupport {
 
   private val Variable = JavaccRule.Variable
   private val NumberLiteral = JavaccRule.fromParser(_.NumberLiteral())
@@ -62,31 +67,34 @@ class LiteralsTest extends JavaccParserTestBase[Any, Any] {
   test("can parse numbers") {
     implicit val parserToTest: JavaccRule[Expression] = NumberLiteral
 
-    parsing("123") shouldGive expressions.SignedDecimalIntegerLiteral("123")(t)
-    parsing("0") shouldGive expressions.SignedDecimalIntegerLiteral("0")(t)
-    parsing("-23") shouldGive expressions.SignedDecimalIntegerLiteral("-23")(t)
-    parsing("-0") shouldGive expressions.SignedDecimalIntegerLiteral("-0")(t)
+    val validInts = Seq("123", "0", "-23", "-0")
+    for (i <- validInts) withClue(i) {
+      parsing(i) shouldGive SignedDecimalIntegerLiteral(i)(t)
+    }
 
-    parsing("0234") shouldGive expressions.SignedOctalIntegerLiteral("0234")(t)
-    parsing("-0234") shouldGive expressions.SignedOctalIntegerLiteral("-0234")(t)
+    val validOctalInts = Seq("0234", "-0234", "01", "0o1", "0_2")
+    for (o <- validOctalInts) withClue(o) {
+      parsing(o) shouldGive SignedOctalIntegerLiteral(o)(t)
+    }
 
-    parsing("0x1") shouldGive expressions.SignedHexIntegerLiteral("0x1")(t)
-    parsing("0X1") shouldGive expressions.SignedHexIntegerLiteral("0X1")(t)
-    parsing("0xffff") shouldGive expressions.SignedHexIntegerLiteral("0xffff")(t)
-    parsing("-0x45FG") shouldGive expressions.SignedHexIntegerLiteral("-0x45FG")(t)
+    val validHexInts = Seq("0x1", "0X1", "0xffff", "-0x45FG")
+    for (h <- validHexInts) withClue(h) {
+      parsing(h) shouldGive SignedHexIntegerLiteral(h)(t)
+    }
 
-    parsing("1.23") shouldGive expressions.DecimalDoubleLiteral("1.23")(t)
-    parsing("13434.23399") shouldGive expressions.DecimalDoubleLiteral("13434.23399")(t)
-    parsing(".3454") shouldGive expressions.DecimalDoubleLiteral(".3454")(t)
-    parsing("-0.0") shouldGive expressions.DecimalDoubleLiteral("-0.0")(t)
-    parsing("-54366.4") shouldGive expressions.DecimalDoubleLiteral("-54366.4")(t)
-    parsing("-0.3454") shouldGive expressions.DecimalDoubleLiteral("-0.3454")(t)
+    val validDoubles = Seq(
+      "1.23", "13434.23399", ".3454", "-0.0", "-54366.4", "-0.3454",
+      "1E23", "1e23", "1E+23", "1.34E99", "9E-443", "0.0d", ".0d",
+      "1e0d", "0.0f", "0.0somegibberish", "0.0")
+    for (d <- validDoubles) withClue(d) {
+      parsing(d) shouldGive DecimalDoubleLiteral(d)(t)
+    }
+    parsing("- 1.4") shouldGive DecimalDoubleLiteral("-1.4")(t)
 
-    parsing("1E23") shouldGive expressions.DecimalDoubleLiteral("1E23")(t)
-    parsing("1e23") shouldGive expressions.DecimalDoubleLiteral("1e23")(t)
-    parsing("1E+23") shouldGive expressions.DecimalDoubleLiteral("1E+23")(t)
-    parsing("1.34E99") shouldGive expressions.DecimalDoubleLiteral("1.34E99")(t)
-    parsing("9E-443") shouldGive expressions.DecimalDoubleLiteral("9E-443")(t)
+    val invalid = Seq("NaN", "Infinity", "Ox")
+    for (i <- invalid) withClue(i) {
+      assertFails(i)
+    }
   }
 
   test("can parse parameter syntax") {
@@ -95,6 +103,15 @@ class LiteralsTest extends JavaccParserTestBase[Any, Any] {
     parsing("$p") shouldGive expressions.Parameter("p", CTAny)(t)
     parsing("$`the funny horse`") shouldGive expressions.Parameter("the funny horse", CTAny)(t)
     parsing("$0") shouldGive expressions.Parameter("0", CTAny)(t)
+
+    //parameter number boundaries
+
+    parsing("$1_2") shouldGive parameter("1_2", CTAny)
+    parsing("$1") shouldGive parameter("1", CTAny)
+    parsing("$1gibberish") shouldGive parameter("1gibberish", CTAny)
+
+    assertFails("$0_2")
+    assertFails("$1.0f")
   }
 
   test("variables are not allowed to start with currency symbols") {

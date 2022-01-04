@@ -51,12 +51,13 @@ import org.scalatest.Assertions
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 
+import scala.language.implicitConversions
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
 @RunWith(classOf[JUnitRunner])
-abstract class ParserComparisonTestBase() extends Assertions with Matchers {
+abstract class ParserComparisonTestBase() extends Assertions with Matchers with VerifyAstPositionTestSupport {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
 
   private def fixLineSeparator(message: String): String = {
@@ -152,6 +153,9 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
       }
     }
   }
+}
+
+trait VerifyAstPositionTestSupport extends Assertions with Matchers {
 
   def verifyPositions(javaCCAstNode: ASTNode, parboiledASTNode: ASTNode): Unit = {
 

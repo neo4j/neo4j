@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
 
 class CaseExpressionTest extends JavaccParserTestBase[internal.expressions.Expression, commands.expressions.Expression] {
-  implicit private val parserToTest: JavaccRule[internal.expressions.Expression] = JavaccRule.fromParser(_.CaseExpression())
+  implicit private val parserToTest: JavaccRule[internal.expressions.Expression] = JavaccRule.CaseExpression
 
   test("simple_cases") {
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive

@@ -19,32 +19,44 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.expressions.Expression
 
-class SubqueryCallParserTest extends JavaccParserAstTestBase[Clause] {
+class ExpressionTest extends JavaccParserAstTestBase[Expression] {
+  implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
 
-  implicit private val parser: JavaccRule[Clause] = JavaccRule.SubqueryClause
-
-  test("CALL { RETURN 1 }") {
-    gives(subqueryCall(return_(literalInt(1).unaliased)))
+  test("2*(2.0-1.5)") {
+    gives {
+      multiply(literal(2), subtract(literal(2.0), literal(1.5)))
+    }
   }
 
-  test("CALL { CALL { RETURN 1 as a } }") {
-    gives(subqueryCall(subqueryCall(return_(literalInt(1).as("a")))))
+  test("+1.5") {
+    gives {
+      unaryAdd(literal(1.5))
+    }
   }
 
-  test("CALL { RETURN 1 AS a UNION RETURN 2 AS a }") {
-    gives(subqueryCall(unionDistinct(
-      singleQuery(return_(literalInt(1).as("a"))),
-      singleQuery(return_(literalInt(2).as("a")))
-    )))
+  test("+1") {
+    gives {
+      unaryAdd(literal(1))
+    }
   }
 
-  test("CALL { }") {
-    failsToParse
+  test("2*(2.0 - +1.5)") {
+    gives {
+      multiply(literal(2), subtract(literal(2.0), unaryAdd(literal(1.5))))
+    }
   }
 
-  test("CALL { CREATE (n:N) }") {
-    gives(subqueryCall(create(nodePat("n", "N"))))
+  test("0-1") {
+    gives {
+      subtract(literal(0), literal(1))
+    }
+  }
+
+  test("0-0.1") {
+    gives {
+      subtract(literal(0), literal(0.1))
+    }
   }
 }
