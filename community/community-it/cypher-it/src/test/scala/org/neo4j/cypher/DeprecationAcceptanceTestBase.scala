@@ -390,17 +390,17 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("btree index hint") {
     val deprecated = Seq(
-      "MATCH (n:Label) USING BTREE INDEX n:Label(prop) WHERE n.prop > 5 RETURN n",
-      "MATCH (n:Label) USING BTREE INDEX SEEK n:Label(prop) WHERE n.prop > 5 RETURN n",
-      "MATCH ()-[r:REL]->() USING BTREE INDEX r:REL(prop) WHERE r.prop > 5 RETURN r",
-      "MATCH ()-[r:REL]->() USING BTREE INDEX SEEK r:REL(prop) WHERE r.prop > 5 RETURN r",
+      "MATCH (n:Label) USING BTREE INDEX n:Label(prop) WHERE n.prop = 'test' RETURN n",
+      "MATCH (n:Label) USING BTREE INDEX SEEK n:Label(prop) WHERE n.prop = 'test' RETURN n",
+      "MATCH ()-[r:REL]->() USING BTREE INDEX r:REL(prop) WHERE r.prop = 'test' RETURN r",
+      "MATCH ()-[r:REL]->() USING BTREE INDEX SEEK r:REL(prop) WHERE r.prop = 'test' RETURN r",
     )
 
     val notDeprecated = Seq(
-      "MATCH (n:Label) USING INDEX n:Label(prop) WHERE n.prop > 5 RETURN n",
-      "MATCH ()-[r:REL]->() USING TEXT INDEX r:REL(prop) WHERE r.prop > 5 RETURN r",
-      "MATCH (n:Label) USING TEXT INDEX SEEK n:Label(prop) WHERE n.prop > 5 RETURN n",
-      "MATCH ()-[r:REL]->() USING INDEX SEEK r:REL(prop) WHERE r.prop > 5 RETURN r",
+      "MATCH (n:Label) USING INDEX n:Label(prop) WHERE n.prop = 'test' RETURN n",
+      "MATCH ()-[r:REL]->() USING TEXT INDEX r:REL(prop) WHERE r.prop = 'test' RETURN r",
+      "MATCH (n:Label) USING TEXT INDEX SEEK n:Label(prop) WHERE n.prop = 'test' RETURN n",
+      "MATCH ()-[r:REL]->() USING INDEX SEEK r:REL(prop) WHERE r.prop = 'test' RETURN r",
     )
 
     assertNotificationInSupportedVersions(deprecated, DEPRECATED_BTREE_INDEX_SYNTAX)

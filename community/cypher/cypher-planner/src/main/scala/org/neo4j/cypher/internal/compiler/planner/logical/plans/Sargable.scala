@@ -287,7 +287,7 @@ case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args:
   override def propertyValueType(semanticTable: SemanticTable): CypherType = {
 
     def getTypeSpec(expr: Expression): TypeSpec =
-      semanticTable.types.get(expr).map(_.actual).getOrElse(TypeSpec.exact(CTAny))
+      semanticTable.getOptionalActualTypeFor(expr).getOrElse(TypeSpec.exact(CTAny))
 
     // TypeSpec.unwrapLists does not cope with Any, so we use this ugly solution. Can be removed on updated front-end.
     def unwrapLists(x: TypeSpec): TypeSpec =

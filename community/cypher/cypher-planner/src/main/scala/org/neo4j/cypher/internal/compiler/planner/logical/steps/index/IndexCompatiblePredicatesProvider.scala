@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NotExactPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.SingleExactPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.variable
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProvider.findExplicitCompatiblePredicates
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
@@ -71,10 +72,39 @@ trait IndexCompatiblePredicatesProvider {
                                                   ): Set[IndexCompatiblePredicate] = {
     val arguments: Set[LogicalVariable] = argumentIds.map(variable)
 
+    val explicitCompatiblePredicates = findExplicitCompatiblePredicates(arguments, predicates, semanticTable)
+
     def valid(ident: LogicalVariable, dependencies: Set[LogicalVariable]): Boolean =
       !arguments.contains(ident) && dependencies.subsetOf(arguments)
 
-    val explicitCompatiblePredicates = predicates.collect {
+    val implicitCompatiblePredicates = implicitIndexCompatiblePredicates(planContext, indexPredicateProviderContext, predicates, explicitCompatiblePredicates, valid)
+
+    explicitCompatiblePredicates ++ implicitCompatiblePredicates
+  }
+
+  /**
+   * Find any implicit index compatible predicates.
+   *
+   * @param planContext                  planContext to ask for indexes
+   * @param predicates                   the predicates in the query
+   * @param explicitCompatiblePredicates the explicit index compatible predicates that were extracted from predicates
+   * @param valid                        a test that can be applied to check if an implicit predicate is valid
+   *                                     based on its variable and dependencies as arguments to the lambda function.
+   */
+  protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
+                                                  indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
+                                                  predicates: Set[Expression],
+                                                  explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
+                                                  valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[IndexCompatiblePredicate]
+}
+
+object IndexCompatiblePredicatesProvider {
+
+  def findExplicitCompatiblePredicates(arguments: Set[LogicalVariable], predicates: Set[Expression], semanticTable: SemanticTable): Set[IndexCompatiblePredicate] = {
+    def valid(ident: LogicalVariable, dependencies: Set[LogicalVariable]): Boolean =
+      !arguments.contains(ident) && dependencies.subsetOf(arguments)
+
+    predicates.collect {
       // n.prop IN [ ... ]
       case predicate@AsPropertySeekable(seekable: PropertySeekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.args.asQueryExpression
@@ -139,26 +169,7 @@ trait IndexCompatiblePredicatesProvider {
         IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
           solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Btree, IndexType.Text))
     }
-
-    val implicitCompatiblePredicates = implicitIndexCompatiblePredicates(planContext, indexPredicateProviderContext, predicates, explicitCompatiblePredicates, valid)
-
-    explicitCompatiblePredicates ++ implicitCompatiblePredicates
   }
-
-  /**
-   * Find any implicit index compatible predicates.
-   *
-   * @param planContext                  planContext to ask for indexes
-   * @param predicates                   the predicates in the query
-   * @param explicitCompatiblePredicates the explicit index compatible predicates that were extracted from predicates
-   * @param valid                        a test that can be applied to check if an implicit predicate is valid
-   *                                     based on its variable and dependencies as arguments to the lambda function.
-   */
-  protected def implicitIndexCompatiblePredicates(planContext: PlanContext,
-                                                  indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-                                                  predicates: Set[Expression],
-                                                  explicitCompatiblePredicates: Set[IndexCompatiblePredicate],
-                                                  valid: (LogicalVariable, Set[LogicalVariable]) => Boolean): Set[IndexCompatiblePredicate]
 }
 
 /**

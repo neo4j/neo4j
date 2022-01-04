@@ -68,6 +68,9 @@ class SemanticTable(
   def getActualTypeFor(expr: Expression): TypeSpec =
     types.getOrElse(expr, throw new IllegalStateException(s"Did not find any type information for expression $expr")).actual
 
+  def getOptionalActualTypeFor(expr: Expression): Option[TypeSpec] =
+    types.get(expr).map(_.actual)
+
   /**
    * Returns the actual type of the specified variable name if it exists and has no conflicting type information, else none.
    */

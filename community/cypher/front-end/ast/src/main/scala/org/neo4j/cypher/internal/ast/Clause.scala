@@ -291,40 +291,30 @@ case class Match(
     semantics.SemanticCheckResult(newState, Seq.empty)
   }
 
-  private def checkHints: SemanticCheck = {
+  private def checkHints: SemanticCheck = { semanticState =>
     def getMissingEntityKindError(variable: String,
                                   labelOrRelTypeName: String,
                                   index: Boolean): String = {
-      val preface = s"Cannot use ${if (index) "index" else "label/relationship type scan"} hint in this context."
-      getLabelAndRelTypePredicates(variable) match {
-        case LabelAndRelTypeNames(Seq(), Seq()) =>
-          s"""|$preface
-              | Must use label/relationship type '$labelOrRelTypeName' on the node/relationship
-              | that this hint is referring to, but no label/relationship type was found for node/relationship '$variable'.
-              | Note that the label/relationship type${if (index) " and property comparison"} must be specified on a non-optional node/relationship.""".stripLinesAndMargins
-        case LabelAndRelTypeNames(labels: Seq[String], Seq()) =>
-          s"""|$preface
-              | Must use label '$labelOrRelTypeName' on the node
-              | that this hint is referring to, but only the labels ${labels.mkString("'", ",", "'")} were found for node '$variable'.
-              | Note that the label${if (index) " and property comparison"} must be specified on a non-optional node.""".stripLinesAndMargins
-        case LabelAndRelTypeNames(Seq(), relTypes: Seq[String]) =>
-          s"""|$preface
-              | Must use relationship type '$labelOrRelTypeName' on the relationship
-              | that this hint is referring to, but only the relationship types ${relTypes.mkString("'", ",", "'")} were found for relationship '$variable'.
-              | Note that the relationship type${if (index) " and property comparison"} must be specified on a non-optional relationship.""".stripLinesAndMargins
-        case _ =>
-          throw new IllegalStateException(s"Both labels and relationship types specified for variable '$variable'")
+      val isNode = semanticState.isNode(variable)
+      val typeName = if (isNode) "label" else "relationship type"
+      val entityName = if (isNode) "node" else "relationship"
+      val operatorDescription = if (index) "index" else s"$typeName scan"
+      val typePredicates = getLabelAndRelTypePredicates(variable).distinct
+      val foundTypePredicatesDescription = typePredicates match {
+        case Seq() => s"no $typeName was"
+        case Seq(typePredicate) => s"only the $typeName '$typePredicate' was"
+        case typePredicates => s"only the ${typeName}s '${typePredicates.mkString("', '")}' were"
       }
+      s"""|Cannot use $operatorDescription hint in this context.
+          | Must use $typeName '$labelOrRelTypeName' on the $entityName
+          | that this hint is referring to, but $foundTypePredicatesDescription found for $entityName '$variable'.
+          | Note that the $typeName${if (index) " and property comparison" else ""} must be specified on a non-optional $entityName.""".stripLinesAndMargins
     }
 
     def getMissingPropertyError(variable: String, propertiesInHint: Seq[PropertyKeyName]): String = {
       val plural = propertiesInHint.size > 1
-      val isNodeHint = getLabelAndRelTypePredicates(variable) match {
-        case LabelAndRelTypeNames(labels: Seq[String], Seq()) => true
-        case LabelAndRelTypeNames(Seq(), relTypes: Seq[String]) => false
-        case _ => throw new IllegalStateException(s"Indetermined entity kind for '$variable'")
-      }
-      val propertiesInPredicates: Seq[String] = getPropertyPredicates(variable)
+      val isNodeHint = semanticState.isNode(variable)
+      val propertiesInPredicates = getPropertyPredicates(variable)
       val foundPropertiesDescription = propertiesInPredicates match {
         case Seq() => "none was"
         case Seq(property) => s"only '$property' was"
@@ -356,7 +346,7 @@ case class Match(
         if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
     }
-    error.getOrElse(success)
+    error.getOrElse(success)(semanticState)
   }
 
   private[ast] def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
@@ -433,11 +423,7 @@ case class Match(
   private[ast] def containsLabelOrRelTypePredicate(variable: String, labelOrRelType: String): Boolean =
     getLabelAndRelTypePredicates(variable).contains(labelOrRelType)
 
-  private case class LabelAndRelTypeNames(labels: Seq[String], relTypes: Seq[String]) {
-    def contains(name: String): Boolean = labels.contains(name) || relTypes.contains(name)
-  }
-
-  private def getLabelAndRelTypePredicates(variable: String) : LabelAndRelTypeNames = {
+  private def getLabelAndRelTypePredicates(variable: String): Seq[String] = {
     val inlinedLabels = pattern.fold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), nodeLabels, _, _) if variable == id =>
         list => list ++ nodeLabels.map(_.name)
@@ -466,7 +452,7 @@ case class Match(
     }
     val allLabels = inlinedLabels ++ predicateLabels
     val allRelTypes = inlinedRelTypes ++ predicateRelTypes
-    LabelAndRelTypeNames(allLabels, allRelTypes)
+    allLabels ++ allRelTypes
   }
 
   def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.findAllByClass[LogicalVariable].toSet

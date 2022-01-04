@@ -77,9 +77,11 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityTo
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -183,6 +185,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     when(m.id(any[LabelName])).thenReturn(None)
     when(m.id(any[RelTypeName])).thenReturn(None)
     when(m.types).thenReturn(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo])
+    when(m.getOptionalActualTypeFor(any[Expression])).thenReturn(None)
     m
   }
 
@@ -311,11 +314,16 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     res
   }
 
+  def textSelections(id: String): Selections = {
+    Selections(Set(Predicate(Set.empty, in(prop(id, "name"), listOfString("test")))))
+  }
+
   def newMockedLogicalPlan(idNames: Set[String],
                            planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes,
                            hints: Set[Hint] = Set[Hint](),
+                           selections: Selections = Selections(),
                            availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints))
+    val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints).addSelections(selections))
     newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(1), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
   }
 
@@ -336,8 +344,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                        idNames: Set[String],
                                        patterns: Seq[PatternRelationship] = Seq.empty,
                                        hints: Set[Hint] = Set[Hint](),
+                                       selections: Selections = Selections(),
                                        availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns).addHints(hints))
+    val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns).addHints(hints).addSelections(selections))
     newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
   }
 
