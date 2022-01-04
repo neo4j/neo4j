@@ -1109,7 +1109,7 @@ object IntermediateRepresentation {
     }
   }
 
-  def and(ands: Seq[IntermediateRepresentation]): IntermediateRepresentation = {
+  def and(ands: collection.Seq[IntermediateRepresentation]): IntermediateRepresentation = {
     if (ands.isEmpty) constant(true)
     else if (ands.size == 1) ands.head
     else ands.reduceLeft((l: IntermediateRepresentation, r: IntermediateRepresentation) => and(l, r))
@@ -1130,7 +1130,7 @@ object IntermediateRepresentation {
     }
   }
 
-  def or(ors: Seq[IntermediateRepresentation]): IntermediateRepresentation = {
+  def or(ors: collection.Seq[IntermediateRepresentation]): IntermediateRepresentation = {
     if (ors.isEmpty) constant(true)
     else ors.reduceLeft(or)
   }

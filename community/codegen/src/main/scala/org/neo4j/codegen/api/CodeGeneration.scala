@@ -103,9 +103,9 @@ object CodeGeneration {
       l
     }
 
-    def sourceCode: Seq[(String, String)] = _source
+    def sourceCode: Seq[(String, String)] = _source.toSeq
 
-    def bytecode: Seq[(String, String)] = _bytecode
+    def bytecode: Seq[(String, String)] = _bytecode.toSeq
   }
 
   def compileClass[T](c: ClassDeclaration[T], generator: CodeGenerator): ClassHandle = {
