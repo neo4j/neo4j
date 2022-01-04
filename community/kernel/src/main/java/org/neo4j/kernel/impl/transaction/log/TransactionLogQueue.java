@@ -261,9 +261,9 @@ public class TransactionLogQueue extends LifecycleAdapter
 
             private int checksum;
             private final TxQueueElement[] txElements = new TransactionLogQueue.TxQueueElement[CONSUMER_MAX_BATCH];
-            private final long[] txIds = new long[CONSUMER_MAX_BATCH];
             private int index;
             private TxQueueElement[] elements;
+            private long[] txIds;
 
             TxConsumer( Health databaseHealth, TransactionIdStore transactionIdStore, TransactionLogWriter transactionLogWriter, int checksum,
                     TransactionMetadataCache transactionMetadataCache )
@@ -286,6 +286,7 @@ public class TransactionLogQueue extends LifecycleAdapter
                 databaseHealth.assertHealthy( IOException.class );
                 int drainedElements = index;
                 elements = new TxQueueElement[drainedElements];
+                txIds = new long[drainedElements];
                 for ( int i = 0; i < drainedElements; i++ )
                 {
                     TxQueueElement txQueueElement = txElements[i];
