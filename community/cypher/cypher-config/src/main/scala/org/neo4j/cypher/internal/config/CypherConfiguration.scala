@@ -89,7 +89,6 @@ class CypherConfiguration private (val config: Config) {
   val planningTextIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_text_indexes_enabled)
   val planningRangeIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_range_indexes_enabled)
   val planningPointIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_point_indexes_enabled)
-  val produceResultInSeparatePipeline: Boolean = config.get(GraphDatabaseInternalSettings.produce_result_in_separate_pipeline)
 
   //dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
