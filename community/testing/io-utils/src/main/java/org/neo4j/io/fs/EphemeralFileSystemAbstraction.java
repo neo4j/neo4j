@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Resource;
@@ -297,6 +296,10 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
         else
         {
+            if ( !fileExists( fileName ) )
+            {
+                return;
+            }
             Path[] fileList = listFiles( fileName );
             if ( fileList.length > 0 )
             {
@@ -330,7 +333,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             List<Path> subDirectories = directories.stream()
                                                    .filter( p -> p.startsWith( finalDirectory ) && !p.equals( finalDirectory ) )
                                                    .sorted( Comparator.reverseOrder() )
-                                                   .collect( Collectors.toList() );
+                                                   .toList();
             for ( Path subDirectory : subDirectories )
             {
                 deleteFile( subDirectory );

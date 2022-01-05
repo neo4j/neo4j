@@ -49,6 +49,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -777,6 +778,14 @@ public abstract class FileSystemAbstractionTest
             assertThat( buf.remaining() ).isEqualTo( 4 );
             assertThat( buf.array() ).containsExactly( 1, 2, 3, 4, 0, 0, 0, 0 );
         }
+    }
+
+    @Test
+    void deleteNonExistingFiles()
+    {
+        assertDoesNotThrow( () -> fsa.deleteRecursively( path.resolve( "a" ) ) );
+        assertDoesNotThrow( () -> fsa.deleteFile( path.resolve( "b" ) ) );
+        assertDoesNotThrow( () -> fsa.delete( path.resolve( "c" ) ) );
     }
 
     private void generateFileWithRecords( Path file, int recordCount ) throws IOException
