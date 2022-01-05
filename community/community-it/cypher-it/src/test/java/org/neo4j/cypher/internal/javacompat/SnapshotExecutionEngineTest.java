@@ -23,16 +23,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.util.function.LongSupplier;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
-import org.neo4j.cypher.internal.LastCommittedTxIdProvider;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
-import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory$;
-import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
+import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -40,7 +42,6 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.time.Clocks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,7 +51,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ImpermanentDbmsExtension
 class SnapshotExecutionEngineTest
@@ -76,7 +76,22 @@ class SnapshotExecutionEngineTest
 
         executionEngine = new SnapshotExecutionEngine( new GraphDatabaseCypherService( db ), config, mock( CypherQueryCaches.class ),
                 NullLogProvider.getInstance(), mock( CompilerFactory.class ) );
-        when( transactionalContext.kernelTransaction().cursorContext() ).thenReturn( new CursorContext( NULL, versionContext ) );
+        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, new VersionContextSupplier()
+        {
+            @Override
+            public void init( LongSupplier lastClosedTransactionIdSupplier )
+            {
+
+            }
+
+            @Override
+            public VersionContext createVersionContext()
+            {
+                return versionContext;
+            }
+        } );
+        CursorContext cursorContext = contextFactory.create( "SnapshotExecutionEngineTest" );
+        when( transactionalContext.kernelTransaction().cursorContext() ).thenReturn( cursorContext );
         when( transactionalContext.statement() ).thenReturn( kernelStatement );
         var innerExecution = mock( QueryExecution.class );
         when( executor.execute( any() ) ).thenAnswer( (Answer<QueryExecution>) invocationOnMock ->

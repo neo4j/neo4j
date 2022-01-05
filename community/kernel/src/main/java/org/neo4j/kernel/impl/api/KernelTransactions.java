@@ -32,8 +32,8 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -43,7 +43,7 @@ import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -102,7 +102,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final SystemNanoClock clock;
-    private final VersionContextSupplier versionContextSupplier;
+    private final CursorContextFactory contextFactory;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final TokenHolders tokenHolders;
@@ -150,7 +150,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                                GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, DbmsRuntimeRepository dbmsRuntimeRepository,
                                KernelVersionRepository kernelVersionRepository,
                                SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, AccessCapabilityFactory accessCapabilityFactory,
-                               VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+                               CursorContextFactory contextFactory, CollectionsFactorySupplier collectionsFactorySupplier,
                                ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId,
                                IndexingService indexingService,
                                IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
@@ -180,7 +180,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.indexingService = indexingService;
         this.indexStatisticsStore = indexStatisticsStore;
         this.databaseDependendies = databaseDependencies;
-        this.versionContextSupplier = versionContextSupplier;
+        this.contextFactory = contextFactory;
         this.clock = clock;
         this.collectionsFactorySupplier = collectionsFactorySupplier;
         this.constraintSemantics = constraintSemantics;
@@ -419,7 +419,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             constraintIndexCreator, globalProcedures,
                             transactionCommitProcess, transactionMonitor, txPool, clock, cpuClockRef,
                             tracers, storageEngine, accessCapabilityFactory,
-                            versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
+                            contextFactory, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, indexStatisticsStore,
                             databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
                             securityLog, kernelVersionRepository, dbmsRuntimeRepository, locks.newClient(), KernelTransactions.this );

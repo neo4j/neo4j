@@ -232,7 +232,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest
             throws IOException
     {
         countsStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, PageCacheTracer.NULL,
-                monitor, DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance() );
+                monitor, DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), NULL );
     }
 
     private static class TestableCountsBuilder implements DegreesRebuilder

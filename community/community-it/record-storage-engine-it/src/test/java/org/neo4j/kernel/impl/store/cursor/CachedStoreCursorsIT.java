@@ -25,7 +25,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.cursor.CursorType;
@@ -37,13 +37,14 @@ import org.neo4j.test.extension.Inject;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.io.pagecache.context.EmptyVersionContext.EMPTY;
 
 @DbmsExtension( configurationCallback = "configure" )
 class CachedStoreCursorsIT
 {
     @Inject
     private RecordStorageEngine storageEngine;
+    @Inject
+    private CursorContextFactory contextFactory;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -54,7 +55,7 @@ class CachedStoreCursorsIT
     @Test
     void checkValidationOfClosedReadCursors()
     {
-        try ( var cursorContext = new CursorContext( PageCursorTracer.NULL, EMPTY ) )
+        try ( var cursorContext = contextFactory.create( "checkValidationOfClosedReadCursors" ) )
         {
             var storageCursors = storageEngine.createStorageCursors( cursorContext );
             storageCursors.readCursor( RecordCursorTypes.NODE_CURSOR ).close();
@@ -67,7 +68,7 @@ class CachedStoreCursorsIT
     {
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "cacheRequestedCursors" );
-        try ( var cursorContext = new CursorContext( cursorTracer, EMPTY );
+        try ( var cursorContext = contextFactory.create( cursorTracer );
               var storageCursors = storageEngine.createStorageCursors( cursorContext ) )
         {
             Object[] cursors = new Object[RecordCursorTypes.MAX_TYPE + 1];
@@ -90,7 +91,7 @@ class CachedStoreCursorsIT
     void shouldOnlyAcceptRecordStorageTypes()
     {
         CursorType anotherType = () -> (short) 1;
-        try ( var cursorContext = new CursorContext( PageCursorTracer.NULL, EMPTY );
+        try ( var cursorContext = contextFactory.create( "shouldOnlyAcceptRecordStorageTypes" );
                 var storageCursors = storageEngine.createStorageCursors( cursorContext ) )
         {
             assertThatThrownBy( () -> storageCursors.readCursor( anotherType ) ).isInstanceOf( IllegalArgumentException.class );

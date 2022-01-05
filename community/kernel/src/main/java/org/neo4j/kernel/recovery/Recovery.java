@@ -46,8 +46,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityListener;
@@ -147,6 +147,8 @@ import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
  */
 public final class Recovery
 {
+    private static final String RECOVERY_TAG = "recovery";
+
     private Recovery()
     {
     }
@@ -377,109 +379,108 @@ public final class Recovery
         DatabaseAvailabilityGuard guard = new RecoveryAvailabilityGuard( namedDatabaseId, clock, recoveryLog );
         recoveryLife.add( guard );
 
-        VersionContextSupplier versionContextSupplier = EmptyVersionContextSupplier.EMPTY;
-        DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, recoveryLog );
-
-        TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_LABEL ),
-                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE ) );
-
-        RecoveryCleanupWorkCollector recoveryCleanupCollector = recoveryLife.add(
-                new GroupingRecoveryCleanupWorkCollector( scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK, databaseLayout.getDatabaseName() ) );
-
-        DatabaseExtensions extensions = recoveryLife.add( instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
-                                                                       DbmsInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, readOnlyChecker,
-                                                                       extensionFactories, guard, tracers, namedDatabaseId ) );
-
-        var indexProviderMap = recoveryLife.add( StaticIndexProviderMapFactory.create(
-                recoveryLife, config, databasePageCache, fs, logService, monitors, readOnlyChecker, DbmsInfo.TOOL, recoveryCleanupCollector,
-                tracers.getPageCacheTracer(), databaseLayout, tokenHolders, scheduler, extensions ) );
-
-        StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
-                getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE,
-                new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
-                new DefaultIdController(), databaseHealth, logService.getInternalLogProvider(), logService.getUserLogProvider(), recoveryCleanupCollector,
-                tracers.getPageCacheTracer(), true, readOnlyChecker, memoryTracker );
-
-        // Schema indexes
-        FullScanStoreView fullScanStoreView =
-                new FullScanStoreView( NO_LOCK_SERVICE, storageEngine::newReader, storageEngine::createStorageCursors, config, scheduler );
-        IndexStoreViewFactory indexStoreViewFactory =
-                new IndexStoreViewFactory( config, storageEngine::createStorageCursors, storageEngine::newReader, NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE,
-                        logProvider );
-
-        IndexStatisticsStore indexStatisticsStore =
-                new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, readOnlyChecker, tracers.getPageCacheTracer() );
-        IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreViewFactory, indexStatisticsStore,
-                config, scheduler, indexProviderMap, tokenHolders, logProvider, monitors.newMonitor( IndexMonitor.class ),
-                tracers.getPageCacheTracer(), memoryTracker, databaseLayout.getDatabaseName(), readOnlyChecker );
-
-        MetadataProvider metadataProvider = storageEngine.metadataProvider();
-
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( databaseLayout, config, databasePageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
-                NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
-                new DefaultIdController(), readOnlyChecker, versionContextSupplier, logService, metadataProvider );
-
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
-                .withLogEntryReader( logEntryReader )
-                .withConfig( config )
-                .withDatabaseTracers( tracers )
-                .withExternalLogTailInfo( providedLogFiles.map( LogFiles::getTailInformation ).orElse( null ) )
-                .withDependencies( dependencies )
-                .withMemoryTracker( memoryTracker )
-                .build();
-        var logTailInfo = logFiles.getTailInformation();
-
-        boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
-        validateStoreId( logTailInfo, storageEngine.getStoreId() );
-
-        TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-        PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
-                                                                                                failOnCorruptedLogFiles, config );
-
-        var transactionAppender =
-                createTransactionAppender( logFiles, metadataProvider, metadataCache, config, databaseHealth, scheduler, logProvider );
-
-        LifeSupport schemaLife = new LifeSupport();
-        schemaLife.add( storageEngine.schemaAndTokensLifecycle() );
-        schemaLife.add( indexingService );
-
-        var doParallelRecovery = config.get( GraphDatabaseInternalSettings.do_parallel_recovery );
-        TransactionLogsRecovery transactionLogsRecovery =
-                transactionLogRecovery( fs, metadataProvider, monitors.newMonitor( RecoveryMonitor.class ),
-                                        monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine,
-                                        transactionStore, metadataProvider, schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog,
-                                        startupChecker, tracers.getPageCacheTracer(), memoryTracker, doParallelRecovery, recoveryPredicate );
-
-        CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
-        var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
-        LogPruning logPruning = new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, new ReentrantLock() );
-        CheckPointerImpl checkPointer =
-                new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, logPruning, checkpointAppender,
-                        databaseHealth, logProvider, tracers, new StoreCopyCheckPointMutex(), versionContextSupplier, clock );
-        recoveryLife.add( storageEngine );
-        recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logTailInfo, recoveryLog ) );
-        recoveryLife.add( logFiles );
-        recoveryLife.add( transactionLogsRecovery );
-        recoveryLife.add( transactionAppender );
-        recoveryLife.add( checkPointer );
-        try
+        CursorContextFactory cursorContextFactory = new CursorContextFactory( tracers.getPageCacheTracer(), EmptyVersionContextSupplier.EMPTY );
+        try ( var recoveryContext = cursorContextFactory.create( RECOVERY_TAG ) )
         {
-            recoveryLife.start();
+            DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, recoveryLog );
 
-            if ( databaseHealth.isHealthy() )
+            TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY ),
+                    new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_LABEL ),
+                    new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE ) );
+
+            RecoveryCleanupWorkCollector recoveryCleanupCollector = recoveryLife.add(
+                    new GroupingRecoveryCleanupWorkCollector( scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK, databaseLayout.getDatabaseName() ) );
+
+            DatabaseExtensions extensions = recoveryLife.add(
+                    instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler, DbmsInfo.TOOL, monitors, tokenHolders,
+                            recoveryCleanupCollector, readOnlyChecker, extensionFactories, guard, tracers, namedDatabaseId ) );
+
+            var indexProviderMap = recoveryLife.add(
+                    StaticIndexProviderMapFactory.create( recoveryLife, config, databasePageCache, fs, logService, monitors, readOnlyChecker, DbmsInfo.TOOL,
+                            recoveryCleanupCollector, tracers.getPageCacheTracer(), databaseLayout, tokenHolders, scheduler, extensions ) );
+
+            StorageEngine storageEngine =
+                    storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState, getConstraintSemantics(),
+                            indexProviderMap, NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
+                            new DefaultIdController(), databaseHealth, logService.getInternalLogProvider(), logService.getUserLogProvider(),
+                            recoveryCleanupCollector, tracers.getPageCacheTracer(), true, readOnlyChecker, memoryTracker, recoveryContext );
+
+            // Schema indexes
+            FullScanStoreView fullScanStoreView =
+                    new FullScanStoreView( NO_LOCK_SERVICE, storageEngine::newReader, storageEngine::createStorageCursors, config, scheduler );
+            IndexStoreViewFactory indexStoreViewFactory =
+                    new IndexStoreViewFactory( config, storageEngine::createStorageCursors, storageEngine::newReader, NO_LOCKS, fullScanStoreView,
+                            NO_LOCK_SERVICE, logProvider );
+
+            IndexStatisticsStore indexStatisticsStore =
+                    new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, readOnlyChecker, tracers.getPageCacheTracer(),
+                            recoveryContext );
+            IndexingService indexingService =
+                    Database.buildIndexingService( storageEngine, schemaState, indexStoreViewFactory, indexStatisticsStore, config, scheduler, indexProviderMap,
+                            tokenHolders, logProvider, monitors.newMonitor( IndexMonitor.class ), tracers.getPageCacheTracer(), memoryTracker,
+                            databaseLayout.getDatabaseName(), readOnlyChecker );
+
+            MetadataProvider metadataProvider = storageEngine.metadataProvider();
+
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( databaseLayout, config, databasePageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
+                    NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
+                    new DefaultIdController(), readOnlyChecker, cursorContextFactory, logService, metadataProvider );
+
+            LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withConfig( config ).withDatabaseTracers(
+                    tracers ).withExternalLogTailInfo( providedLogFiles.map( LogFiles::getTailInformation ).orElse( null ) ).withDependencies(
+                    dependencies ).withMemoryTracker( memoryTracker ).build();
+            var logTailInfo = logFiles.getTailInformation();
+
+            boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
+            validateStoreId( logTailInfo, storageEngine.getStoreId() );
+
+            TransactionMetadataCache metadataCache = new TransactionMetadataCache();
+            PhysicalLogicalTransactionStore transactionStore =
+                    new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors, failOnCorruptedLogFiles, config );
+
+            var transactionAppender = createTransactionAppender( logFiles, metadataProvider, metadataCache, config, databaseHealth, scheduler, logProvider );
+
+            LifeSupport schemaLife = new LifeSupport();
+            schemaLife.add( storageEngine.schemaAndTokensLifecycle() );
+            schemaLife.add( indexingService );
+
+            var doParallelRecovery = config.get( GraphDatabaseInternalSettings.do_parallel_recovery );
+            TransactionLogsRecovery transactionLogsRecovery = transactionLogRecovery( fs, metadataProvider, monitors.newMonitor( RecoveryMonitor.class ),
+                    monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, metadataProvider,
+                    schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker, tracers.getPageCacheTracer(), memoryTracker,
+                    doParallelRecovery, recoveryPredicate );
+
+            CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
+            var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
+            LogPruning logPruning = new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, new ReentrantLock() );
+            CheckPointerImpl checkPointer =
+                    new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, logPruning, checkpointAppender, databaseHealth,
+                            logProvider, tracers, new StoreCopyCheckPointMutex(), cursorContextFactory, clock );
+            recoveryLife.add( indexStatisticsStore );
+            recoveryLife.add( storageEngine );
+            recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logTailInfo, recoveryLog ) );
+            recoveryLife.add( logFiles );
+            recoveryLife.add( transactionLogsRecovery );
+            recoveryLife.add( transactionAppender );
+            recoveryLife.add( checkPointer );
+            try
             {
-                if ( logTailInfo.hasUnreadableBytesInCheckpointLogs() )
+                recoveryLife.start();
+
+                if ( databaseHealth.isHealthy() )
                 {
-                     logFiles.getCheckpointFile().rotate();
+                    if ( logTailInfo.hasUnreadableBytesInCheckpointLogs() )
+                    {
+                        logFiles.getCheckpointFile().rotate();
+                    }
+                    checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Recovery completed." ) );
                 }
-                checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Recovery completed." ) );
             }
-        }
-        finally
-        {
-            recoveryLife.shutdown();
+            finally
+            {
+                recoveryLife.shutdown();
+            }
         }
     }
 

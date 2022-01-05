@@ -67,7 +67,7 @@ public class GBPTreeBootstrapper implements Closeable
         this.pageCacheTracer = pageCacheTracer;
     }
 
-    public Bootstrap bootstrapTree( Path file, OpenOption... additionalOptions )
+    public Bootstrap bootstrapTree( Path file, CursorContext cursorContext, OpenOption... additionalOptions )
     {
         try
         {
@@ -93,7 +93,7 @@ public class GBPTreeBootstrapper implements Closeable
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
             GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnlyChecker,
-                    pageCacheTracer, Sets.immutable.of( additionalOptions ), DEFAULT_DATABASE_NAME, file.getFileName().toString() );
+                    pageCacheTracer, Sets.immutable.of( additionalOptions ), DEFAULT_DATABASE_NAME, file.getFileName().toString(), cursorContext );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )

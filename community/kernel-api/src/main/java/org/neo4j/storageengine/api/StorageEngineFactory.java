@@ -33,10 +33,10 @@ import java.util.stream.Collectors;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
@@ -121,7 +121,7 @@ public interface StorageEngineFactory
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
             IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider internalLogProvider,
             LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
-            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker )
+            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker, CursorContext cursorContext )
             throws IOException;
 
     /**

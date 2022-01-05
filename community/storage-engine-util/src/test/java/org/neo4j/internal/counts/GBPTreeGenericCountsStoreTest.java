@@ -51,6 +51,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
@@ -141,9 +143,13 @@ class GBPTreeGenericCountsStoreTest
 
         assertZeroGlobalTracer( pageCacheTracer );
 
-        try ( var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, writable(), pageCacheTracer,
-                NO_MONITOR, DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance() ) )
+        CursorContextFactory cursorContextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
+        try ( var treeBuilder = cursorContextFactory.create( "treeBuilder" );
+              var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, writable(), pageCacheTracer,
+                NO_MONITOR, DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance(), treeBuilder ) )
         {
+            treeBuilder.getCursorTracer().reportEvents();
+
             assertThat( pageCacheTracer.pins() ).isEqualTo( 14 );
             assertThat( pageCacheTracer.unpins() ).isEqualTo( 14 );
             assertThat( pageCacheTracer.hits() ).isEqualTo( 9 );
@@ -494,7 +500,7 @@ class GBPTreeGenericCountsStoreTest
         final Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, readOnly(), PageCacheTracer.NULL, NO_MONITOR,
-                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance() ) );
+                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance(), NULL ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -885,7 +891,7 @@ class GBPTreeGenericCountsStoreTest
     {
         countsStore =
                 new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, "test", PageCacheTracer.NULL, monitor,
-                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance() );
+                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance(), NULL );
     }
 
     private static void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )

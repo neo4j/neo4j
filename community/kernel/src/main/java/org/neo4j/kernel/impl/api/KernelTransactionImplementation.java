@@ -68,9 +68,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.VersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -164,14 +162,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
-    private final PageCacheTracer pageCacheTracer;
     private final Pool<KernelTransactionImplementation> pool;
 
     // For committing
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final TransactionExecutionMonitor transactionExecutionMonitor;
-    private final VersionContextSupplier versionContextSupplier;
     private final LeaseService leaseService;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
@@ -181,6 +177,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ConstraintSemantics constraintSemantics;
     private final StorageLocks storageLocks;
     private CursorContext cursorContext;
+    private final CursorContextFactory contextFactory;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
 
@@ -245,7 +242,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Pool<KernelTransactionImplementation> pool, SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, DatabaseTracers tracers,
             StorageEngine storageEngine, AccessCapabilityFactory accessCapabilityFactory,
-            VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+            CursorContextFactory contextFactory, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
@@ -254,6 +251,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Locks.Client lockClient, KernelTransactions kernelTransactions )
     {
         this.accessCapabilityFactory = accessCapabilityFactory;
+        this.contextFactory = contextFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         long heapGrabSize = config.get( GraphDatabaseInternalSettings.initial_transaction_heap_grab_size );
         this.memoryTracker = config.get( memory_tracking ) ? new LocalMemoryTracker( transactionMemoryPool, 0, heapGrabSize,
@@ -270,8 +268,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.pool = pool;
         this.clocks = new ClockContext( clock );
         this.transactionTracer = tracers.getDatabaseTracer();
-        this.pageCacheTracer = tracers.getPageCacheTracer();
-        this.versionContextSupplier = versionContextSupplier;
         this.leaseService = leaseService;
         this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, cpuClockRef, namedDatabaseId, config );
         this.statistics = new Statistics( this, cpuClockRef, config.get( GraphDatabaseInternalSettings.enable_transaction_heap_allocation_tracking ) );
@@ -316,7 +312,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Type type,
             SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
-        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), versionContextSupplier.createVersionContext() );
+        this.cursorContext = contextFactory.create( TRANSACTION_TAG );
         this.transactionalCursors.reset( cursorContext );
         this.accessCapability = accessCapabilityFactory.newAccessCapability( readOnlyDatabaseChecker );
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;

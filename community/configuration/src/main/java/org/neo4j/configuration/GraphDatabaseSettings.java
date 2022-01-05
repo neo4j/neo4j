@@ -461,7 +461,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Duration> check_point_interval_time =
             newBuilder( "dbms.checkpoint.interval.time", DURATION, ofMinutes( 15 ) ).build();
 
-    @Description( "Configures the volume of transacton logs between check-points. The database will not check-point more often " +
+    @Description( "Configures the volume of transaction logs between check-points. The database will not check-point more often " +
             "than this (unless check pointing is triggered by a different event), but might check-point less " +
             "often than this interval, if performing a check-point takes longer time than the configured " +
             "interval. A check-point is a point in the transaction logs, which recovery would start from. " +

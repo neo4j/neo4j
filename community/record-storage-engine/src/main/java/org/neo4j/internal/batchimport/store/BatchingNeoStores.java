@@ -430,7 +430,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         }
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), builder, writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName,
-                neo4jConfig.get( counts_store_max_cached_entries ), userLogProvider ) )
+                neo4jConfig.get( counts_store_max_cached_entries ), userLogProvider, cursorContext ) )
         {
             countsStore.start( cursorContext, storeCursors, memoryTracker );
             countsStore.checkpoint( cursorContext );

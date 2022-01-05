@@ -200,12 +200,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
             IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider internalLogProvider,
             LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
-            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker )
+            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker, CursorContext cursorContext )
     {
         return new RecordStorageEngine( convert( databaseLayout ), config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState,
                 constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector,
                 cacheTracer, createStoreIfNotExists, memoryTracker, readOnlyChecker, new CommandLockVerification.Factory.RealFactory( config ),
-                LockVerificationMonitor.Factory.defaultFactory( config ) );
+                LockVerificationMonitor.Factory.defaultFactory( config ), cursorContext );
     }
 
     @Override

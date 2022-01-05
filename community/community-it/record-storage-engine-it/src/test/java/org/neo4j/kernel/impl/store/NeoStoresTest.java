@@ -750,7 +750,7 @@ public class NeoStoresTest
                 new RecordStorageEngine( databaseLayout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
                         new DatabaseSchemaState( NullLogProvider.getInstance() ), new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE,
                         mock( Health.class ), idGeneratorFactory, new DefaultIdController(), immediate(), PageCacheTracer.NULL, true, INSTANCE, writable(),
-                        CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
+                        CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, NULL );
         life = new LifeSupport();
         life.add( storageEngine );
         life.add( storageEngine.schemaAndTokensLifecycle() );

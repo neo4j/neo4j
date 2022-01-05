@@ -371,7 +371,7 @@ public class IndexedIdGenerator implements IdGenerator
         monitor.opened( highestWrittenId.get(), highId.get() );
 
         this.layout = new IdRangeLayout( idsPerEntry );
-        this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnlyChecker, databaseName, openOptions );
+        this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnlyChecker, databaseName, cursorContext, openOptions );
 
         this.strictlyPrioritizeFreelist = config.get( GraphDatabaseInternalSettings.strictly_prioritize_id_freelist );
         this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;
@@ -380,13 +380,13 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     private GBPTree<IdRangeKey,IdRange> instantiateTree( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, ImmutableSet<OpenOption> openOptions )
+            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
     {
         try
         {
             final HeaderWriter headerWriter = new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry );
             return new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker,
-                    NULL, openOptions, databaseName, "Indexed ID generator" );
+                    NULL, openOptions, databaseName, "Indexed ID generator", cursorContext );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -693,7 +693,7 @@ public class IndexedIdGenerator implements IdGenerator
                     () -> new NoSuchFileException( path.toAbsolutePath().toString() ) );
             IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
             try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
-                    immediate(), readOnly(), cacheTracer, immutable.empty(), DEFAULT_DATABASE_NAME, "Indexed ID generator" ) )
+                    immediate(), readOnly(), cacheTracer, immutable.empty(), DEFAULT_DATABASE_NAME, "Indexed ID generator", cursorContext ) )
             {
                 System.out.println( header );
                 if ( onlySummary )

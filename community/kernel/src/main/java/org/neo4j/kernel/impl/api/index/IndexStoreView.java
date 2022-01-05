@@ -30,6 +30,8 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 /** The indexing services view of the universe. */
 public interface IndexStoreView
 {
+    IndexStoreView EMPTY = new Adaptor();
+
     /**
      * Retrieve all nodes in the database which have got one or more of the given labels AND
      * one or more of the given property key ids. This scan additionally accepts a consumer
@@ -77,6 +79,8 @@ public interface IndexStoreView
 
     NodePropertyAccessor newPropertyAccessor( CursorContext cursorContext, MemoryTracker memoryTracker );
 
+    boolean isEmpty( CursorContext cursorContext );
+
     StoreScan EMPTY_SCAN = new StoreScan()
     {
         @Override
@@ -95,10 +99,6 @@ public interface IndexStoreView
             return PopulationProgress.DONE;
         }
     };
-
-    IndexStoreView EMPTY = new Adaptor();
-
-    boolean isEmpty();
 
     class Adaptor implements IndexStoreView
     {
@@ -125,7 +125,7 @@ public interface IndexStoreView
         }
 
         @Override
-        public boolean isEmpty()
+        public boolean isEmpty( CursorContext cursorContext )
         {
             return true;
         }

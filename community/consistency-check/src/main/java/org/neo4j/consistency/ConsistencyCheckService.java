@@ -19,7 +19,9 @@
  */
 package org.neo4j.consistency;
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -238,8 +240,9 @@ public class ConsistencyCheckService
 
             if ( consistencyFlags.isCheckIndexStructure() )
             {
-                var indexStatisticsStore = life.add( new IndexStatisticsStore( pageCache, layout, recoveryCleanupWorkCollector, readOnly(), pageCacheTracer ) );
-                consistencyCheckSingleCheckable( log, summary, indexStatisticsStore, "INDEX_STATISTICS", NULL );
+                IndexStatisticsStore statisticsStore = getStatisticStore( pageCache, recoveryCleanupWorkCollector );
+                life.add( statisticsStore );
+                consistencyCheckSingleCheckable( log, summary, statisticsStore, "INDEX_STATISTICS", NULL );
             }
 
             try
@@ -263,6 +266,18 @@ public class ConsistencyCheckService
         finally
         {
             life.shutdown();
+        }
+    }
+
+    private IndexStatisticsStore getStatisticStore( PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
+        try
+        {
+            return new IndexStatisticsStore( pageCache, layout, recoveryCleanupWorkCollector, readOnly(), pageCacheTracer, NULL );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 

@@ -263,7 +263,7 @@ public class BatchInserterImpl implements BatchInserter
 
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
                     new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
-                    databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ), logService.getUserLogProvider() );
+                    databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ), logService.getUserLogProvider(), cursorContext );
             groupDegreesStore.start( cursorContext, storeCursors, memoryTracker );
 
             degreeUpdater = groupDegreesStore.directApply( cursorContext );
@@ -361,7 +361,7 @@ public class BatchInserterImpl implements BatchInserter
         propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, ValueUtils.asValue( propertyValue ), propertyRecords );
     }
 
-    private void repopulateAllIndexes() throws IOException
+    private void repopulateAllIndexes( CursorContext cursorContext ) throws IOException
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         var cacheTracer = PageCacheTracer.NULL;
@@ -370,7 +370,8 @@ public class BatchInserterImpl implements BatchInserter
                 () -> new RecordStorageReader( neoStores, schemaCache ), NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE, logProvider );
 
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
-                immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer );
+                immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer, cursorContext );
+        life.add( indexStatisticsStore );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory, tokenHolders, emptyList(), logProvider,
                         IndexMonitor.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker,
@@ -413,7 +414,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private void rebuildCounts( PageCacheTracer cacheTracer, MemoryTracker memoryTracker ) throws IOException
+    private void rebuildCounts( PageCacheTracer cacheTracer, MemoryTracker memoryTracker, CursorContext cursorContext ) throws IOException
     {
         Path countsStoreFile = databaseLayout.countStore();
         if ( fileSystem.fileExists( countsStoreFile ) )
@@ -424,11 +425,11 @@ public class BatchInserterImpl implements BatchInserter
                 new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
                 initialCountsBuilder, readOnlyChecker, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName(),
-                config.get( counts_store_max_cached_entries ), logService.getUserLogProvider() );
-                var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+                config.get( counts_store_max_cached_entries ), logService.getUserLogProvider(), cursorContext );
+                var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
-            countsStore.start( CursorContext.NULL, storeCursors, memoryTracker );
-            countsStore.checkpoint( CursorContext.NULL );
+            countsStore.start( cursorContext, storeCursors, memoryTracker );
+            countsStore.checkpoint( cursorContext );
         }
     }
 
@@ -529,8 +530,8 @@ public class BatchInserterImpl implements BatchInserter
               groupDegreesStore;
               storeCursors )
         {
-            rebuildCounts( pageCacheTracer, memoryTracker );
-            repopulateAllIndexes();
+            rebuildCounts( pageCacheTracer, memoryTracker, cursorContext );
+            repopulateAllIndexes( cursorContext );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( cursorContext );
             groupDegreesStore.checkpoint( cursorContext );

@@ -114,7 +114,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName,
-            int maxCacheSize, LogProvider userLogProvider ) throws IOException
+            int maxCacheSize, LogProvider userLogProvider, CursorContext cursorContext ) throws IOException
     {
         this.userLogProvider = userLogProvider;
         this.readOnlyChecker = readOnlyChecker;
@@ -130,18 +130,18 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         GBPTree<CountsKey,CountsValue> instantiatedTree;
         try
         {
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, pageCacheTracer );
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, pageCacheTracer, cursorContext );
         }
         catch ( MetadataMismatchException e )
         {
             // Corrupt, delete and rebuild
             fileSystem.deleteFileOrThrow( file );
             header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, pageCacheTracer );
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, pageCacheTracer, cursorContext );
         }
         this.tree = instantiatedTree;
         boolean successful = false;
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( OPEN_COUNT_STORE_TAG ) ) )
+        try
         {
             this.txIdInformation = readTxIdInformation( header.highestGapFreeTxId(), cursorContext );
             // Recreate the tx id state as it was from last checkpoint (or base if empty)
@@ -167,12 +167,12 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     }
 
     private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, Path file, RecoveryCleanupWorkCollector recoveryCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, CountsHeader header, PageCacheTracer pageCacheTracer )
+            DatabaseReadOnlyChecker readOnlyChecker, CountsHeader header, PageCacheTracer pageCacheTracer, CursorContext cursorContext )
     {
         try
         {
             return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnlyChecker, pageCacheTracer,
-                    immutable.empty(), databaseName, name );
+                    immutable.empty(), databaseName, name, cursorContext );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -517,7 +517,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), readOnly(), NULL, immutable.empty(), databaseName, name ) )
+                RecoveryCleanupWorkCollector.ignore(), readOnly(), NULL, immutable.empty(), databaseName, name, CursorContext.NULL ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             tree.visit( new GBPTreeVisitor.Adaptor<>()

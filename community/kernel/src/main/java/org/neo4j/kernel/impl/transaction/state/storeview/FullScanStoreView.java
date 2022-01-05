@@ -43,16 +43,16 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 public class FullScanStoreView implements IndexStoreView
 {
     protected final LockService locks;
-    protected final Supplier<StorageReader> storageEngine;
+    protected final Supplier<StorageReader> storageReaderSupplier;
     private final Function<CursorContext,StoreCursors> storeCursorsFactory;
     protected final Config config;
     protected final JobScheduler scheduler;
 
-    public FullScanStoreView( LockService locks, Supplier<StorageReader> storageEngine, Function<CursorContext,StoreCursors> storeCursorsFactory,
+    public FullScanStoreView( LockService locks, Supplier<StorageReader> storageReaderSupplier, Function<CursorContext,StoreCursors> storeCursorsFactory,
             Config config, JobScheduler scheduler )
     {
         this.locks = locks;
-        this.storageEngine = storageEngine;
+        this.storageReaderSupplier = storageReaderSupplier;
         this.storeCursorsFactory = storeCursorsFactory;
         this.config = config;
         this.scheduler = scheduler;
@@ -63,7 +63,7 @@ public class FullScanStoreView implements IndexStoreView
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
             boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return new NodeStoreScan( config, storageEngine.get(), storeCursorsFactory, locks, labelScanConsumer,
+        return new NodeStoreScan( config, storageReaderSupplier.get(), storeCursorsFactory, locks, labelScanConsumer,
                 propertyScanConsumer, labelIds, propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 
@@ -72,20 +72,20 @@ public class FullScanStoreView implements IndexStoreView
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer relationshipTypeScanConsumer,
             boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return new RelationshipStoreScan( config, storageEngine.get(), storeCursorsFactory, locks, relationshipTypeScanConsumer, propertyScanConsumer,
+        return new RelationshipStoreScan( config, storageReaderSupplier.get(), storeCursorsFactory, locks, relationshipTypeScanConsumer, propertyScanConsumer,
                 relationshipTypeIds, propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 
     @Override
     public NodePropertyAccessor newPropertyAccessor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        return new DefaultNodePropertyAccessor( storageEngine.get(), cursorContext, storeCursorsFactory.apply( cursorContext ), memoryTracker );
+        return new DefaultNodePropertyAccessor( storageReaderSupplier.get(), cursorContext, storeCursorsFactory.apply( cursorContext ), memoryTracker );
     }
 
     @Override
-    public boolean isEmpty()
+    public boolean isEmpty( CursorContext cursorContext )
     {
-        try ( StorageReader reader = storageEngine.get() )
+        try ( StorageReader reader = storageReaderSupplier.get() )
         {
             return reader.nodesGetCount( CursorContext.NULL ) == 0 && reader.relationshipsGetCount( CursorContext.NULL ) == 0;
         }

@@ -91,6 +91,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 {
     private static final String INDEX_STRUCTURE_CHECKER_TAG = "indexStructureChecker";
     private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
+    private static final String REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG = "relGroupStoreConsistencyChecker";
     private static final String SCHEMA_CONSISTENCY_CHECKER_TAG = "schemaConsistencyChecker";
     private static final String CONSISTENCY_CHECKER_TOKEN_LOADER_TAG = "consistencyCheckerTokenLoader";
     static final int[] DEFAULT_SLOT_SIZES = {CacheSlots.ID_SLOT_SIZE, CacheSlots.ID_SLOT_SIZE, 1, 1, 1, 1, 1, 1 /*2 bits unused*/};
@@ -330,7 +331,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
     private void checkCounts()
     {
-        try ( var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( COUNT_STORE_CONSISTENCY_CHECKER_TAG ) );
+                var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
                 new CountsBuilder()
                 {
                     @Override
@@ -345,15 +347,15 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                     {
                         return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                     }
-                }, readOnly(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance() );
-                var checker = observedCounts.checker( reporter );
-                var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( COUNT_STORE_CONSISTENCY_CHECKER_TAG ) ) )
+                }, readOnly(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
+                        cursorContext );
+                var checker = observedCounts.checker( reporter ) )
         {
             if ( context.consistencyFlags.isCheckGraph() )
             {
                 countsStore.accept( checker, cursorContext );
             }
-            consistencyCheckSingleCheckable( report, ProgressListener.NONE, countsStore, RecordType.COUNTS, CursorContext.NULL );
+            consistencyCheckSingleCheckable( report, ProgressListener.NONE, countsStore, RecordType.COUNTS, cursorContext );
         }
         catch ( Exception e )
         {
@@ -364,7 +366,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
     private void checkRelationshipGroupDegressStore()
     {
-        try ( var relationshipGroupDegrees = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG ) );
+              var relationshipGroupDegrees = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
                 RecoveryCleanupWorkCollector.ignore(), new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
         {
             @Override
@@ -379,9 +382,10 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             {
                 return neoStores.getMetaDataStore().getLastCommittedTransactionId();
             }
-        }, readOnly(), cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance() ) )
+        }, readOnly(), cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
+                      cursorContext ) )
         {
-            consistencyCheckSingleCheckable( report, ProgressListener.NONE, relationshipGroupDegrees, RecordType.RELATIONSHIP_GROUP, CursorContext.NULL );
+            consistencyCheckSingleCheckable( report, ProgressListener.NONE, relationshipGroupDegrees, RecordType.RELATIONSHIP_GROUP, cursorContext );
         }
         catch ( Exception e )
         {

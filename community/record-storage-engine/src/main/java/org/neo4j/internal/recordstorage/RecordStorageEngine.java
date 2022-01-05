@@ -32,8 +32,8 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -178,7 +178,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             MemoryTracker otherMemoryTracker,
             DatabaseReadOnlyChecker readOnlyChecker,
             CommandLockVerification.Factory commandLockVerificationFactory,
-            LockVerificationMonitor.Factory lockVerificationFactory
+            LockVerificationMonitor.Factory lockVerificationFactory,
+            CursorContext cursorContext
     )
     {
         this.databaseLayout = databaseLayout;
@@ -212,10 +213,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
 
             countsStore = openCountsStore( pageCache, fs, databaseLayout, internalLogProvider, userLogProvider, recoveryCleanupWorkCollector, readOnlyChecker,
-                    config, cacheTracer );
+                    config, cacheTracer, cursorContext );
 
             groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, userLogProvider, recoveryCleanupWorkCollector, readOnlyChecker, config,
-                    cacheTracer );
+                    cacheTracer, cursorContext );
 
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
             storeEntityCounters = new RecordDatabaseEntityCounters( idGeneratorFactory, countsStore );
@@ -268,7 +269,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout, LogProvider internalLogProvider,
             LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            PageCacheTracer pageCacheTracer )
+            PageCacheTracer pageCacheTracer, CursorContext cursorContext )
     {
         try
         {
@@ -290,7 +291,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                 }
             }, readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
-                    config.get( counts_store_max_cached_entries ), userLogProvider );
+                    config.get( counts_store_max_cached_entries ), userLogProvider, cursorContext );
         }
         catch ( IOException e )
         {
@@ -300,13 +301,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout,
             LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            PageCacheTracer pageCacheTracer )
+            PageCacheTracer pageCacheTracer, CursorContext cursorContext )
     {
         try
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
                     new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
-                    config.get( counts_store_max_cached_entries ), userLogProvider );
+                    config.get( counts_store_max_cached_entries ), userLogProvider, cursorContext );
         }
         catch ( IOException e )
         {

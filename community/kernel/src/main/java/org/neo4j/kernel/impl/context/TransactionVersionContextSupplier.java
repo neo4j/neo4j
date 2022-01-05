@@ -34,7 +34,7 @@ public class TransactionVersionContextSupplier implements VersionContextSupplier
     private LongSupplier lastClosedTransactionIdSupplier;
 
     @Override
-    public void init( LongSupplier lastClosedTransactionIdSupplier, String databaseName )
+    public void init( LongSupplier lastClosedTransactionIdSupplier )
     {
         this.lastClosedTransactionIdSupplier = lastClosedTransactionIdSupplier;
     }

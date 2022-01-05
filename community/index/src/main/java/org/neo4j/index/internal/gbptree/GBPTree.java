@@ -583,7 +583,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      */
     public GBPTree( PageCache pageCache, Path indexFile, Layout<KEY,VALUE> layout, Monitor monitor, Header.Reader headerReader,
             Consumer<PageCursor> headerWriter, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker,
-            PageCacheTracer pageCacheTracer, ImmutableSet<OpenOption> openOptions, String databaseName, String name ) throws MetadataMismatchException
+            PageCacheTracer pageCacheTracer, ImmutableSet<OpenOption> openOptions, String databaseName, String name,
+            CursorContext cursorContext ) throws MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
@@ -596,7 +597,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
 
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) ) )
+        try
         {
             this.pagedFile = openOrCreate( pageCache, indexFile, cursorContext, databaseName, openOptions );
             this.payloadSize = pagedFile.payloadSize();

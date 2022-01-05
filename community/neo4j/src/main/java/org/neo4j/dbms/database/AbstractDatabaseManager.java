@@ -39,8 +39,10 @@ import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
@@ -196,8 +198,8 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         var storageEngineFactory = DatabaseCreationContext.selectStorageEngine( globalModule.getFileSystem(), globalModule.getNeo4jLayout(),
                 globalModule.getPageCache(), databaseConfig, namedDatabaseId );
 
-        return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors,
-                                                   editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ),
+        return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors, editionDatabaseComponents,
+                globalProcedures, createContextFactory( globalModule.getTracers().getPageCacheTracer(), databaseConfig, namedDatabaseId ),
                                                    databaseConfig, LeaseService.NO_LEASES, editionDatabaseComponents.getExternalIdReuseConditionProvider(),
                                                    storageEngineFactory, edition.getReadOnlyChecker() );
     }
@@ -259,11 +261,11 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         }
     }
 
-    protected final VersionContextSupplier createVersionContextSupplier( DatabaseConfig databaseConfig )
+    protected final CursorContextFactory createContextFactory( PageCacheTracer pageCacheTracer, DatabaseConfig databaseConfig, NamedDatabaseId databaseId )
     {
         var factory = externalVersionContextSupplierFactory( globalModule )
                 .orElse( internalVersionContextSupplierFactory( databaseConfig ) );
-        return factory.create();
+        return new CursorContextFactory( pageCacheTracer, factory.create( databaseId ) );
     }
 
     private static Optional<VersionContextSupplier.Factory> externalVersionContextSupplierFactory( GlobalModule globalModule )
@@ -279,6 +281,6 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
 
     private static VersionContextSupplier.Factory internalVersionContextSupplierFactory( DatabaseConfig databaseConfig )
     {
-        return () -> databaseConfig.get( snapshot_query ) ? new TransactionVersionContextSupplier() : EmptyVersionContextSupplier.EMPTY;
+        return databaseId -> databaseConfig.get( snapshot_query ) ? new TransactionVersionContextSupplier() : EmptyVersionContextSupplier.EMPTY;
     }
 }

@@ -19,14 +19,16 @@
  */
 package org.neo4j.snapshot;
 
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link VersionContextSupplier} and {@link VersionContextSupplier.Factory} that can have custom behaviour
@@ -35,26 +37,24 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 public class TestTransactionVersionContextSupplier extends TransactionVersionContextSupplier
 {
     private final Function<String,TestVersionContext> supplier;
-    private String databaseName;
+    private final NamedDatabaseId databaseId;
 
-    public TestTransactionVersionContextSupplier( Function<String,TestVersionContext> supplier )
+    public TestTransactionVersionContextSupplier( Function<String,TestVersionContext> supplier, NamedDatabaseId databaseId )
     {
-        this.supplier = supplier;
+        this.supplier = requireNonNull( supplier );
+        this.databaseId = requireNonNull( databaseId );
     }
 
     @Override
-    public void init( LongSupplier lastClosedTransactionIdSupplier, String databaseName )
+    public void init( LongSupplier lastClosedTransactionIdSupplier )
     {
-        super.init( lastClosedTransactionIdSupplier, databaseName );
-        this.databaseName = databaseName;
+        super.init( lastClosedTransactionIdSupplier );
     }
 
     @Override
     public VersionContext createVersionContext()
     {
-        var name = databaseName;
-        Objects.requireNonNull( name );
-        var ctx = supplier.apply( name );
+        var ctx = supplier.apply( databaseId.name() );
         return ctx == null ? super.createVersionContext() : ctx;
     }
 
@@ -76,9 +76,9 @@ public class TestTransactionVersionContextSupplier extends TransactionVersionCon
         }
 
         @Override
-        public VersionContextSupplier create()
+        public VersionContextSupplier create( NamedDatabaseId databaseId )
         {
-            return new TestTransactionVersionContextSupplier( this::getVersionContext );
+            return new TestTransactionVersionContextSupplier( this::getVersionContext, databaseId );
         }
     }
 }

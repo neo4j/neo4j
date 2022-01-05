@@ -60,7 +60,6 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     // Used in GBPTree.seek. Please don't use for writes
     private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey( Long.MIN_VALUE );
     private static final IndexStatisticsKey HIGHEST_KEY = new IndexStatisticsKey( Long.MAX_VALUE );
-    private static final String INIT_TAG = "Initialize IndexStatisticsStore";
 
     private final PageCache pageCache;
     private final Path path;
@@ -74,8 +73,15 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     // It's assumed that the data in this map will be so small that everything can just be in it always.
     private final ConcurrentHashMap<Long,ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
 
+    public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer, CursorContext cursorContext ) throws IOException
+    {
+        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnlyChecker, databaseLayout.getDatabaseName(),
+                pageCacheTracer, cursorContext );
+    }
+
     public IndexStatisticsStore( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, PageCacheTracer pageCacheTracer )
+            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, PageCacheTracer pageCacheTracer, CursorContext cursorContext ) throws IOException
     {
         this.pageCache = pageCache;
         this.path = path;
@@ -84,31 +90,21 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         this.pageCacheTracer = pageCacheTracer;
         this.layout = new IndexStatisticsLayout();
         this.readOnlyChecker = readOnlyChecker;
+        initTree( cursorContext );
     }
 
-    public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer )
-    {
-        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnlyChecker, databaseLayout.getDatabaseName(),
-                pageCacheTracer );
-    }
-
-    @Override
-    public void init() throws IOException
+    private void initTree( CursorContext cursorContext ) throws IOException
     {
         try
         {
             tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                    recoveryCleanupWorkCollector, readOnlyChecker, pageCacheTracer, immutable.empty(), databaseName, "Statistics store" );
+                    recoveryCleanupWorkCollector, readOnlyChecker, pageCacheTracer, immutable.empty(), databaseName, "Statistics store", cursorContext );
+            scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ), cursorContext );
         }
         catch ( TreeFileNotFoundException e )
         {
             throw new IllegalStateException(
                     "Index statistics store file could not be found, most likely this database needs to be recovered, file:" + path, e );
-        }
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INIT_TAG ) ) )
-        {
-            scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ), cursorContext );
         }
     }
 

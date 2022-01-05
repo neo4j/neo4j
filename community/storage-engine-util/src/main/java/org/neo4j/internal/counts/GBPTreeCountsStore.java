@@ -24,10 +24,10 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Map;
 
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -92,10 +92,10 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
 
     public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             CountsBuilder initialCountsBuilder, DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName,
-            int maxCacheSize, LogProvider userLogProvider ) throws IOException
+            int maxCacheSize, LogProvider userLogProvider, CursorContext cursorContext ) throws IOException
     {
         super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnlyChecker, NAME, pageCacheTracer,
-                monitor, databaseName, maxCacheSize, userLogProvider );
+                monitor, databaseName, maxCacheSize, userLogProvider, cursorContext );
     }
 
     @Override

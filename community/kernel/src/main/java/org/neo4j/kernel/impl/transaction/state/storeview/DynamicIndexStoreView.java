@@ -122,9 +122,9 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public boolean isEmpty()
+    public boolean isEmpty( CursorContext cursorContext )
     {
-        return fullScanStoreView.isEmpty();
+        return fullScanStoreView.isEmpty( cursorContext );
     }
 
     @Override

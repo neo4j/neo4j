@@ -69,7 +69,7 @@ public class RecordStorageEngineTestUtils
         return new RecordStorageEngine( layout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
                 mock( SchemaState.class ), new StandardConstraintRuleAccessor(), c -> c, NO_LOCK_SERVICE, mock( Health.class ),
                 new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(), immediate(), PageCacheTracer.NULL, true,
-                EmptyMemoryTracker.INSTANCE, writable(), CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
+                EmptyMemoryTracker.INSTANCE, writable(), CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, CursorContext.NULL );
     }
 
     public static void applyLogicalChanges( RecordStorageEngine storageEngine, ThrowingBiConsumer<ReadableTransactionState,TxStateVisitor,Exception> changes )

@@ -444,6 +444,7 @@ class BatchInsertTest
             }
 
             // then
+            CursorContext cursorContext = NULL;
             try ( var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fs, RecoveryCleanupWorkCollector.immediate(),
                     new CountsBuilder()
                     {
@@ -459,10 +460,10 @@ class BatchInsertTest
                             return TransactionIdStore.BASE_TX_ID;
                         }
                     }, readOnly(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1000,
-                    NullLogProvider.getInstance() ) )
+                    NullLogProvider.getInstance(), cursorContext ) )
             {
-                countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
-                assertThat( countsStore.relationshipCount( ANY_LABEL, 0, ANY_LABEL, NULL ) ).isEqualTo( (r + 1) * 100L );
+                countsStore.start( cursorContext, StoreCursors.NULL, INSTANCE );
+                assertThat( countsStore.relationshipCount( ANY_LABEL, 0, ANY_LABEL, cursorContext ) ).isEqualTo( (r + 1) * 100L );
             }
         }
     }

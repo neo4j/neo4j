@@ -37,7 +37,7 @@ import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseCreationContext;
@@ -99,7 +99,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final IdController idController;
     private final DbmsInfo dbmsInfo;
-    private final VersionContextSupplier versionContextSupplier;
+    private final CursorContextFactory contextFactory;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
@@ -117,14 +117,14 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
 
     public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, Dependencies globalDependencies,
             Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
-            VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig, LeaseService leaseService,
+            CursorContextFactory contextFactory, DatabaseConfig databaseConfig, LeaseService leaseService,
             ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
             StorageEngineFactory storageEngineFactory, ReadOnlyDatabases globalReadOnlyChecker )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = databaseConfig;
-        this.versionContextSupplier = versionContextSupplier;
+        this.contextFactory = contextFactory;
         this.queryEngineProvider = editionComponents.getQueryEngineProvider();
         this.externalIdReuseConditionProvider = externalIdReuseConditionProvider;
         DatabaseIdContext idContext = editionComponents.getIdContext();
@@ -325,12 +325,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public VersionContextSupplier getVersionContextSupplier()
-    {
-        return versionContextSupplier;
-    }
-
-    @Override
     public CollectionsFactorySupplier getCollectionsFactorySupplier()
     {
         return collectionsFactorySupplier;
@@ -406,6 +400,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public ReadOnlyDatabases getDbmsReadOnlyChecker()
     {
         return readOnlyDatabases;
+    }
+
+    @Override
+    public CursorContextFactory getContextFactory()
+    {
+        return contextFactory;
     }
 
     @Override

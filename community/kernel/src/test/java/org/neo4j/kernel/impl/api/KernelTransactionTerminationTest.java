@@ -33,13 +33,15 @@ import java.util.function.Consumer;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -304,7 +306,8 @@ class KernelTransactionTerminationTest
                    mock( TransactionCommitProcess.class ), monitor, mock( Pool.class ), Clocks.fakeClock(),
                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                    mock( DatabaseTracers.class, RETURNS_MOCKS ), mock( StorageEngine.class, RETURNS_MOCKS ), any -> CanWrite.INSTANCE,
-                   EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
+                   new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY ),
+                   ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
                    mockedTokenHolders(), mock( IndexingService.class ),
                    mock( IndexStatisticsStore.class ), dependencies, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
                    LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),

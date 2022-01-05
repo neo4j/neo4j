@@ -202,6 +202,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         assertThat( testDirectory.getFileSystem().fileExists( databaseLayout.relationshipGroupDegreesStore() ) ).isTrue();
+        CursorContext cursorContext = NULL;
         GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder noRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
         {
             @Override
@@ -215,7 +216,8 @@ class RecordStorageMigratorIT
             {
                 try
                 {
-                    return new RecordStorageEngineFactory().readOnlyTransactionIdStore( fs, databaseLayout, pageCache, NULL ).getLastCommittedTransactionId();
+                    return new RecordStorageEngineFactory().readOnlyTransactionIdStore( fs, databaseLayout, pageCache, cursorContext )
+                                                           .getLastCommittedTransactionId();
                 }
                 catch ( IOException e )
                 {
@@ -226,10 +228,10 @@ class RecordStorageMigratorIT
         try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
                 databaseLayout.relationshipGroupDegreesStore(), testDirectory.getFileSystem(), immediate(), noRebuildAssertion, writable(),
                 PageCacheTracer.NULL, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue(),
-                NullLogProvider.getInstance() ) )
+                NullLogProvider.getInstance(), cursorContext ) )
         {
             // The rebuild would happen here in start and will throw exception (above) if invoked
-            groupDegreesStore.start( NULL, StoreCursors.NULL, INSTANCE );
+            groupDegreesStore.start( cursorContext, StoreCursors.NULL, INSTANCE );
 
             // The store keeps track of committed transactions.
             // It is essential that it starts with the transaction

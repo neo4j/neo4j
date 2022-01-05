@@ -857,18 +857,19 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             LayoutBootstrapper layoutBootstrapper, Path... targetFiles ) throws Exception
     {
         List<Path> treeFiles = new ArrayList<>();
-        try ( JobScheduler jobScheduler = createInitialisedScheduler();
+        try ( CursorContext cursorContext = CursorContext.NULL;
+              JobScheduler jobScheduler = createInitialisedScheduler();
               GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, jobScheduler, layoutBootstrapper, readOnlyChecker, NULL ) )
         {
             for ( Path file : targetFiles )
             {
-                GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file, NO_FLUSH_ON_CLOSE );
+                GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file, cursorContext, NO_FLUSH_ON_CLOSE );
                 if ( bootstrap.isTree() )
                 {
                     treeFiles.add( file );
                     try ( GBPTree<?,?> gbpTree = bootstrap.getTree() )
                     {
-                        InspectingVisitor<?,?> visitor = gbpTree.visit( new InspectingVisitor<>(), CursorContext.NULL );
+                        InspectingVisitor<?,?> visitor = gbpTree.visit( new InspectingVisitor<>(), cursorContext );
                         corruptionInject.corrupt( gbpTree, visitor.get() );
                     }
                 }

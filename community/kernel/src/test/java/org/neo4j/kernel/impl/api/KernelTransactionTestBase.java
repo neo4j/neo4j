@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -188,7 +189,9 @@ class KernelTransactionTestBase
                                                     null, null,
                                                     commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                                                     new DatabaseTracers( new DefaultTracer(), LockTracer.NONE, new DefaultPageCacheTracer() ), storageEngine,
-                                                    any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
+                                                    any -> CanWrite.INSTANCE,
+                                                    new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY ),
+                                                    () -> collectionsFactory,
                                                     new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                                                     mock( IndexingService.class ), mock( IndexStatisticsStore.class ), dependencies, databaseId,
                                                     leaseService, memoryPool, readOnlyChecker.forDatabase( databaseId ),

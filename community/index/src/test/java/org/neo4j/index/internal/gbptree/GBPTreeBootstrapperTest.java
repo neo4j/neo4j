@@ -40,8 +40,8 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -118,14 +118,15 @@ class GBPTreeBootstrapperTest
         ZipUtils.unzipResource( getClass(), zipName, storeFile );
 
         LayoutBootstrapper layoutBootstrapper = ( indexFile, pageCache, meta ) -> layout;
+        CursorContext cursorContext = CursorContext.NULL;
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler();
               GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, scheduler, layoutBootstrapper, readOnly(), PageCacheTracer.NULL ) )
         {
-            GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( storeFile );
+            GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( storeFile, cursorContext );
             assertTrue( bootstrap.isTree() );
             try ( GBPTree<?,?> tree = bootstrap.getTree() )
             {
-                assertTrue( tree.consistencyCheck( CursorContext.NULL ) );
+                assertTrue( tree.consistencyCheck( cursorContext ) );
             }
         }
     }

@@ -25,12 +25,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -98,8 +100,8 @@ public final class KernelTransactionFactory
                                                      mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),
                                                      mock( InternalTransactionCommitProcess.class ), mock( TransactionMonitor.class ),
                                                      mock( Pool.class ), Clocks.nanoClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                                                     mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
-                                                     any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, ON_HEAP,
+                                                     mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine, any -> CanWrite.INSTANCE,
+                                                     new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY ), ON_HEAP,
                                                      new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                                                      mock( IndexingService.class ),
                                                      mock( IndexStatisticsStore.class ), dependencies, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),

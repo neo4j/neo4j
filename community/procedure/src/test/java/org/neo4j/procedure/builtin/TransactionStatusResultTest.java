@@ -40,7 +40,9 @@ import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -289,7 +291,8 @@ class TransactionStatusResultTest
                     new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                     mock( DatabaseTracers.class, RETURNS_MOCKS ),
                     mock( StorageEngine.class, RETURNS_MOCKS ), any -> CanWrite.INSTANCE,
-                    EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
+                    new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY ), ON_HEAP,
+                    new StandardConstraintSemantics(), mock( SchemaState.class ),
                     mockedTokenHolders(), mock( IndexingService.class ),
                     mock( IndexStatisticsStore.class ), dependencies,
                     from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),

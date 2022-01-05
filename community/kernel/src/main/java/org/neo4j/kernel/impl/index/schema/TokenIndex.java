@@ -154,8 +154,11 @@ public class TokenIndex implements ConsistencyCheckable
     {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
-        index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER,
-                headerWriter, recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer, immutable.empty(), databaseName, tokenStoreName );
+        try ( var context = new CursorContext( cacheTracer.createPageCursorTracer( "temporaryContext" ) ) )
+        {
+            index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER, headerWriter,
+                    recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer, immutable.empty(), databaseName, tokenStoreName, context );
+        }
     }
 
     void instantiateUpdater()

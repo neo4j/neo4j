@@ -29,6 +29,9 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
@@ -127,7 +130,11 @@ public class GBPTreeBuilder<KEY,VALUE>
 
     public GBPTree<KEY,VALUE> build()
     {
-        return new GBPTree<>( pageCache, path, layout, monitor, headerReader, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker, pageCacheTracer,
-                openOptions, DEFAULT_DATABASE_NAME, "test tree" );
+        CursorContextFactory cursorContextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
+        try ( CursorContext treeBuilder = cursorContextFactory.create( "treeBuilder" ) )
+        {
+            return new GBPTree<>( pageCache, path, layout, monitor, headerReader, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker, pageCacheTracer,
+                    openOptions, DEFAULT_DATABASE_NAME, "test tree", treeBuilder );
+        }
     }
 }

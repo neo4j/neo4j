@@ -33,6 +33,9 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -66,7 +69,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class CheckPointerImplTest
 {
@@ -365,8 +367,8 @@ class CheckPointerImplTest
         when( databaseTracers.getDatabaseTracer() ).thenReturn( tracer );
         when( databaseTracers.getPageCacheTracer() ).thenReturn( PageCacheTracer.NULL );
         when( metadataProvider.getStoreId() ).thenReturn( storeId );
-        return new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, appender, health,
-                NullLogProvider.getInstance(), databaseTracers, mutex, EMPTY, clock );
+        return new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, appender, health, NullLogProvider.getInstance(), databaseTracers,
+                mutex, new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY ), clock );
     }
 
     private CheckPointerImpl checkPointer()

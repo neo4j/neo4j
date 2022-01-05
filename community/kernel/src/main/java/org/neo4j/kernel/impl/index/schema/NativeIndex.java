@@ -76,9 +76,12 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
         Path storeFile = indexFiles.getStoreFile();
-        tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker,
-                pageCacheTracer, immutable.empty(), databaseName, descriptor.getName() );
-        afterTreeInstantiation( tree );
+        try ( var context = new CursorContext( pageCacheTracer.createPageCursorTracer( "temporaryContext" ) ) )
+        {
+            tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker,
+                    pageCacheTracer, immutable.empty(), databaseName, descriptor.getName(), context );
+            afterTreeInstantiation( tree );
+        }
     }
 
     protected void afterTreeInstantiation( GBPTree<KEY,NullValue> tree )

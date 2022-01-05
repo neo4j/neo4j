@@ -51,8 +51,10 @@ import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -703,7 +705,7 @@ class KernelTransactionsTest
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, storageEngine, mock( GlobalProcedures.class ), transactionIdStore,
                 mock( DbmsRuntimeRepository.class ), () -> KernelVersion.LATEST, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, ON_HEAP,
+                any -> CanWrite.INSTANCE, new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ), ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                 mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES,
@@ -720,7 +722,8 @@ class KernelTransactionsTest
         Dependencies dependencies = createDependencies();
         return new TestKernelTransactions( locks, null, commitProcess,
                 mock( DatabaseTransactionEventListeners.class ), mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine,
-                mock( GlobalProcedures.class ), transactionIdStore, clock, any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(),
+                mock( GlobalProcedures.class ), transactionIdStore, clock, any -> CanWrite.INSTANCE,
+                new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY ), mockedTokenHolders(),
                 dependencies );
     }
 
@@ -768,13 +771,13 @@ class KernelTransactionsTest
                 DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
                 DatabaseTracers tracers, StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore,
                 SystemNanoClock clock, AccessCapabilityFactory accessCapabilityFactory,
-                VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies databaseDependencies )
+                CursorContextFactory contextFactory, TokenHolders tokenHolders, Dependencies databaseDependencies )
         {
             super( Config.defaults(), locks, constraintIndexCreator,
                    transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard,
                    storageEngine, globalProcedures, transactionIdStore, mock( DbmsRuntimeRepository.class ), () -> KernelVersion.LATEST, clock,
                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ), accessCapabilityFactory,
-                   versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
+                   contextFactory, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                    DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,
                    new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),

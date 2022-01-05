@@ -109,6 +109,9 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 public class IndexingService extends LifecycleAdapter implements IndexUpdateListener, IndexingProvidersService
 {
     private static final String INDEX_SERVICE_INDEX_CLOSING_TAG = "indexServiceIndexClosing";
+    private static final String INIT_TAG = "Initialize IndexingService";
+    private static final String START_TAG = "Start index population";
+
     private final IndexSamplingController samplingController;
     private final IndexProxyCreator indexProxyCreator;
     private final IndexProviderMap providerMap;
@@ -127,7 +130,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexMonitor monitor;
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
-    private static final String INIT_TAG = "Initialize IndexingService";
     private final IndexStoreView storeView;
 
     enum State
@@ -237,8 +239,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 return indexMap;
             } );
         }
-
-        indexStatisticsStore.init();
     }
 
     private void validateDefaultProviderExisting()
@@ -276,16 +276,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 internalLog.debug( indexStateInfo( "start", state, descriptor ) );
                 switch ( state )
                 {
-                case ONLINE:
-                case FAILED:
-                    proxy.start();
-                    break;
-                case POPULATING:
-                    // Remember for rebuilding right below in this method
-                    rebuildingDescriptors.put( indexId, descriptor );
-                    break;
-                default:
-                    throw new IllegalStateException( "Unknown state: " + state );
+                case ONLINE, FAILED -> proxy.start();
+                case POPULATING ->
+                        // Remember for rebuilding right below in this method
+                        rebuildingDescriptors.put( indexId, descriptor );
+                default -> throw new IllegalStateException( "Unknown state: " + state );
                 }
             } );
             logIndexStateSummary( "start", indexStates );
@@ -299,7 +294,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             return indexMap;
         } );
 
-        indexStatisticsStore.start();
         samplingController.recoverIndexSamples();
         samplingController.start();
 
@@ -377,7 +371,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             proxy.start();
             indexMap.putIndexProxy( proxy );
         } );
-        startIndexPopulation( populationJob );
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( START_TAG ) ) )
+        {
+            startIndexPopulation( populationJob, cursorContext );
+        }
     }
 
     /**
@@ -429,7 +426,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     {
         samplingController.stop();
         populationJobController.stop();
-        indexStatisticsStore.stop();
     }
 
     // We need to stop indexing service on shutdown since we can have transactions that are ongoing/finishing
@@ -439,7 +435,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     {
         state = State.STOPPED;
         closeAllIndexes();
-        indexStatisticsStore.shutdown();
     }
 
     @Override
@@ -837,9 +832,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer, memoryTracker, databaseName, subject, NODE, config );
     }
 
-    private void startIndexPopulation( IndexPopulationJob job )
+    private void startIndexPopulation( IndexPopulationJob job, CursorContext cursorContext )
     {
-        if ( storeView.isEmpty() )
+        if ( storeView.isEmpty( cursorContext ) )
         {
             // Creating indexes and constraints on an empty database, before ingesting data doesn't need to do unnecessary scheduling juggling,
             // instead just run it on the caller thread.
@@ -944,13 +939,16 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         void startPopulation()
         {
-            if ( nodePopulationJob != null )
+            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( START_TAG ) ) )
             {
-                startIndexPopulation( nodePopulationJob );
-            }
-            if ( relationshipPopulationJob != null )
-            {
-                startIndexPopulation( relationshipPopulationJob );
+                if ( nodePopulationJob != null )
+                {
+                    startIndexPopulation( nodePopulationJob, cursorContext );
+                }
+                if ( relationshipPopulationJob != null )
+                {
+                    startIndexPopulation( relationshipPopulationJob, cursorContext );
+                }
             }
         }
     }

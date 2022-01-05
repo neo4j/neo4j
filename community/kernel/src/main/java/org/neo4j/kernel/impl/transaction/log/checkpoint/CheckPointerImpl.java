@@ -24,9 +24,8 @@ import java.time.Clock;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -55,7 +54,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final Log log;
     private final DatabaseTracers tracers;
     private final StoreCopyCheckPointMutex mutex;
-    private final VersionContextSupplier versionContextSupplier;
+    private final CursorContextFactory cursorContextFactory;
     private final Clock clock;
 
     private volatile long lastCheckPointedTx;
@@ -70,7 +69,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             LogProvider logProvider,
             DatabaseTracers tracers,
             StoreCopyCheckPointMutex mutex,
-            VersionContextSupplier versionContextSupplier,
+            CursorContextFactory cursorContextFactory,
             Clock clock )
     {
         this.checkpointAppender = checkpointAppender;
@@ -82,7 +81,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.log = logProvider.getLog( CheckPointerImpl.class );
         this.tracers = tracers;
         this.mutex = mutex;
-        this.versionContextSupplier = versionContextSupplier;
+        this.cursorContextFactory = cursorContextFactory;
         this.clock = clock;
     }
 
@@ -160,14 +159,12 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private long doCheckPoint( TriggerInfo triggerInfo ) throws IOException
     {
         var databaseTracer = tracers.getDatabaseTracer();
-        var pageCacheTracer = tracers.getPageCacheTracer();
-        var versionContext = versionContextSupplier.createVersionContext();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CHECKPOINT_TAG ), versionContext );
+        try ( var cursorContext = cursorContextFactory.create( CHECKPOINT_TAG );
               LogCheckPointEvent event = databaseTracer.beginCheckPoint() )
         {
             var lastClosedTxData = metadataProvider.getLastClosedTransaction();
             long lastClosedTransactionId = lastClosedTxData.getTransactionId();
-            versionContext.initWrite( lastClosedTransactionId );
+            cursorContext.getVersionContext().initWrite( lastClosedTransactionId );
             LogPosition logPosition = lastClosedTxData.getLogPosition();
             String checkpointReason = triggerInfo.describe( lastClosedTransactionId );
             /*
