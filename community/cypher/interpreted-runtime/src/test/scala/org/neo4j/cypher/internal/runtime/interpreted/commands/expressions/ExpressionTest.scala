@@ -68,16 +68,16 @@ class ExpressionTest extends CypherFunSuite {
       Map("a" -> CTAny))
   }
 
-//  test("should_find_inner_aggregations") {
-//    //GIVEN
-//    val e = LengthFunction(Collect(Property(Variable("n"), PropertyKey("bar"))))
-//
-//    //WHEN
-//    val aggregates = e.filter(e => e.isInstanceOf[AggregationExpression])
-//
-//    //THEN
-//    aggregates.toList should equal( List(Collect(Property(Variable("n"), PropertyKey("bar")))))
-//  }
+  test("should_find_inner_aggregations") {
+    //GIVEN
+    val e = LengthFunction(Collect(Property(Variable("n"), PropertyKey("bar"))))
+
+    //WHEN
+    val hasAggregates = e.exists(e => e.isInstanceOf[AggregationExpression])
+
+    //THEN
+    hasAggregates shouldBe true
+  }
 
   test("should_handle_rewriting_to_non_predicates") {
     // given
