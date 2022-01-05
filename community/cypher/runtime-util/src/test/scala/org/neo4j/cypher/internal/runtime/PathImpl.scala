@@ -81,11 +81,9 @@ case class PathImpl(pathEntities: Entity*)
 
   def iterator(): util.Iterator[Entity] = pathEntities.asJava.iterator()
 
-  def toSeq[Entity]: Seq[graphdb.Entity] = pathEntities
+  override def toString: String = Paths.defaultPathToString(this)
 
-  override def toString(): String = Paths.defaultPathToString(this)
-
-  override def canEqual(that: Any) = that != null && that.isInstanceOf[Path]
+  override def canEqual(that: Any): Boolean = that != null && that.isInstanceOf[Path]
 
   override def equals(p1: Any):Boolean = {
     if (!canEqual(p1)) return false

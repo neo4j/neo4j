@@ -37,7 +37,7 @@ class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
     path.endNode() should equal(node)
     path.nodes().asScala.toList should equal(List(node))
     path.relationships().asScala.toList should equal(List())
-    path.toSeq should equal(Seq(node))
+    path.pathEntities should equal(List(node))
   }
 
   test("twoNodesOneRelationship") {
@@ -51,7 +51,7 @@ class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
     path.endNode() should equal(nodB)
     path.nodes().asScala.toList should equal(List(nodA, nodB))
     path.relationships().asScala.toList should equal(List(rel))
-    path.toSeq should equal(Seq(nodA, rel, nodB))
+    path.pathEntities should equal(List(nodA, rel, nodB))
   }
 
   test("acceptOnlyProperPaths") {
