@@ -31,7 +31,7 @@ import static org.neo4j.util.Preconditions.requirePositive;
  * Thread safe implementation of cache.
  * <p>
  * The cache has a <CODE>maxSize</CODE> set and when the number of cached
- * elements exceeds that limit the least recently used element will be removed.
+ * elements exceeds that limit the least frequently used element will be removed.
  */
 public class LfuCache<K, E>
 {
