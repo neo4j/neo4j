@@ -61,7 +61,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -72,6 +71,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -82,6 +82,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
@@ -465,7 +466,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public ExecutionContext createExecutionContext()
     {
-        return new ThreadExecutionContext();
+        return new ThreadExecutionContext( this, pageCacheTracer );
     }
 
     @Override
@@ -484,11 +485,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public MemoryTracker memoryTracker()
     {
         return memoryTracker;
-    }
-
-    private void mergeExecutionContext( ExecutionContext executionContext )
-    {
-        cursorContext.merge( executionContext.cursorContext() );
     }
 
     private boolean markForTerminationIfPossible( Status reason )
@@ -1490,152 +1486,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
         {
             return SCHEMA;
-        }
-    }
-
-    private class ThreadExecutionContext implements ExecutionContext, AutoCloseable
-    {
-        private final CursorContext context;
-        private final AccessMode accessMode;
-        private final ExecutionContextCursorTracer cursorTracer;
-
-        ThreadExecutionContext()
-        {
-            this.cursorTracer = new ExecutionContextCursorTracer( PageCacheTracer.NULL, TRANSACTION_TAG );
-            this.context = new CursorContext( cursorTracer, cursorContext.getVersionContext() );
-            this.accessMode = securityContext.mode();
-        }
-
-        @Override
-        public CursorContext cursorContext()
-        {
-            return context;
-        }
-
-        @Override
-        public AccessMode accessMode()
-        {
-            return accessMode;
-        }
-
-        @Override
-        public void complete()
-        {
-            context.getCursorTracer().reportEvents();
-        }
-
-        @Override
-        public void close()
-        {
-            while ( !cursorTracer.isCompleted() )
-            {
-                Thread.onSpinWait();
-            }
-            mergeExecutionContext( this );
-        }
-
-    }
-
-    private static class ExecutionContextCursorTracer extends DefaultPageCursorTracer
-    {
-        private long pins;
-        private long unpins;
-        private long hits;
-        private long faults;
-        private long bytesRead;
-        private long bytesWritten;
-        private long evictions;
-        private long evictionExceptions;
-        private long flushes;
-        private long merges;
-        private volatile boolean completed;
-
-        ExecutionContextCursorTracer( PageCacheTracer pageCacheTracer, String tag )
-        {
-            super( pageCacheTracer, tag );
-        }
-
-        // We override report events here since we want to capture all the events accumulated in the tracer and another thread and make
-        // then available to consumer thread. That in ensued by waiting for completed flag by consumer thread.
-        @Override
-        public void reportEvents()
-        {
-            pins = super.pins();
-            unpins = super.unpins();
-            hits = super.hits();
-            faults = super.faults();
-            bytesRead = super.bytesRead();
-            bytesWritten = super.bytesWritten();
-            evictions = super.evictions();
-            evictionExceptions = super.evictionExceptions();
-            flushes = super.flushes();
-            merges = super.merges();
-            completed = true;
-        }
-
-        public boolean isCompleted()
-        {
-            return completed;
-        }
-
-        @Override
-        public long faults()
-        {
-            return faults;
-        }
-
-        @Override
-        public long pins()
-        {
-            return pins;
-        }
-
-        @Override
-        public long unpins()
-        {
-            return unpins;
-        }
-
-        @Override
-        public long hits()
-        {
-            return hits;
-        }
-
-        @Override
-        public long bytesRead()
-        {
-            return bytesRead;
-        }
-
-        @Override
-        public long evictions()
-        {
-            return evictions;
-        }
-
-        @Override
-        public long evictionExceptions()
-        {
-            return evictionExceptions;
-        }
-
-        @Override
-        public long bytesWritten()
-        {
-            return bytesWritten;
-        }
-
-        @Override
-        public long flushes()
-        {
-            return flushes;
-        }
-
-        @Override
-        public long merges()
-        {
-            return merges;
         }
     }
 }

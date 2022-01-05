@@ -141,7 +141,7 @@ class KernelAPIParallelTraversalStressIT
     {
         final NodeCursor nodeCursor;
         final RelationshipTraversalCursor traversalCursor;
-        private final KernelTransaction.ExecutionContext executionContext;
+        private final ExecutionContext executionContext;
 
         NodeAndTraverseCursors( KernelTransaction tx, Kernel kernel )
         {

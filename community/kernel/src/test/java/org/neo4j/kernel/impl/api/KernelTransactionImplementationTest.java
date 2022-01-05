@@ -52,6 +52,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
@@ -834,7 +835,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         try ( var transaction = newTransaction( AUTH_DISABLED ) )
         {
-            List<KernelTransaction.ExecutionContext> executionContexts = new ArrayList<>( workerCount );
+            List<ExecutionContext> executionContexts = new ArrayList<>( workerCount );
             List<Future<?>> futures = new ArrayList<>( workerCount );
             for ( int i = 0; i < workerCount; i++ )
             {
@@ -842,7 +843,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             }
             for ( int i = 0; i < workerCount; i++ )
             {
-                KernelTransaction.ExecutionContext executionContext = executionContexts.get( i );
+                ExecutionContext executionContext = executionContexts.get( i );
                 int iterations = i;
                 futures.add( executorService.submit( () ->
                 {

@@ -24,10 +24,10 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 public class WorkerContext<T extends AutoCloseable> implements AutoCloseable
 {
     private final T cursor;
-    private final KernelTransaction.ExecutionContext context;
+    private final ExecutionContext context;
     private final KernelTransaction owner;
 
-    public WorkerContext( T cursor, KernelTransaction.ExecutionContext context, KernelTransaction owner )
+    public WorkerContext( T cursor, ExecutionContext context, KernelTransaction owner )
     {
         this.cursor = cursor;
         this.context = context;
@@ -45,7 +45,7 @@ public class WorkerContext<T extends AutoCloseable> implements AutoCloseable
         return cursor;
     }
 
-    public KernelTransaction.ExecutionContext getContext()
+    public ExecutionContext getContext()
     {
         return context;
     }

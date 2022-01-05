@@ -45,7 +45,6 @@ import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -511,40 +510,5 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
          * but before the commands have been applied to the transaction log and store.
          */
         void beforeApply();
-    }
-
-    /**
-     * Execution context that should be passed to workers in other threads but that are still belong to the transaction and need to have access to some
-     * transactional resources.
-     * Creation of context should be done in a transaction execution thread. Every other worker thread should have its own execution context.
-     * In the end of evaluation worker thread should call {@link ExecutionContext#complete()} to mark context as completed and prepare data that needs
-     * to be transferred back to owning transaction.
-     * After that transaction executor thread should call {@link ExecutionContext#close()}
-     */
-    interface ExecutionContext extends AutoCloseable
-    {
-        /**
-         * Execution context cursor tracer. Page cache statistic recorded during execution reported back to owning transaction only when context is closed.
-         * @return execution context cursor tracer.
-         */
-        CursorContext cursorContext();
-
-        /**
-         * @return execution context security access mode
-         */
-        AccessMode accessMode();
-
-        /**
-         * Mark execution context as completed and prepare any data that needs to be reported back to owning transaction.
-         * Should be called by thread where work was executed.
-         */
-        void complete();
-
-        /**
-         * Close execution context and merge back any data to the owning transaction if such exists.
-         * Should be called by transaction thread.
-         */
-        @Override
-        void close();
     }
 }
