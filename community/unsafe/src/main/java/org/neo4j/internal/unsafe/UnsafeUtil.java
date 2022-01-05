@@ -152,14 +152,12 @@ public final class UnsafeUtil
         }
         else
         {
-            boolean unaligned;
             String arch = System.getProperty( "os.arch", "?" );
-            unaligned = switch ( arch ) // list of architectures that support unaligned access to memory
+            allowUnalignedMemoryAccess = switch ( arch ) // list of architectures that support unaligned access to memory
                     {
                         case "x86_64", "i386", "x86", "amd64", "ppc64", "ppc64le", "ppc64be" -> true;
                         default -> false;
                     };
-            allowUnalignedMemoryAccess = unaligned;
         }
         storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     }

@@ -523,7 +523,7 @@ public abstract class MuninnPageCursor extends PageCursor
         long can = p + offset + pageReservedBytes;
         if ( boundsCheck )
         {
-            if ( can + size > p + pageSize || can < p || can < p + pageReservedBytes )
+            if ( can + size > p + pageSize || can < p + pageReservedBytes )
             {
                 outOfBounds = true;
                 // Return the victim page when we are out of bounds, since at this point we can't tell if the pointer

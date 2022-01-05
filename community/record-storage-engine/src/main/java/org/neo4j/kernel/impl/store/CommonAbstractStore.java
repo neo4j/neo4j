@@ -378,6 +378,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         storeHeader = header;
         recordSize = determineRecordSize();
         filePageSize = recordFormat.getFilePageSize( pageCache.pageSize(), recordSize );
+        // We have aligned and non-aligned formats. For aligned formats file page size is the same as for page cache and all is fine,
+        // and it should be possible to use payload size easily but another second set of formats are non-aligned.
+        // They have custom file page size that is used to map those files that are record size-dependent and the page cache itself
+        // has no idea about those dances. As result we can't use the payload to begin with for file page size there
+        // since its a page size that should be used to map files and those are with reserved bytes
         recordsPerPage = (filePageSize - pageCache.pageReservedBytes()) / recordSize;
         recordsEndOffset = recordsPerPage * recordSize; // Truncated file page size to whole multiples of record size.
     }

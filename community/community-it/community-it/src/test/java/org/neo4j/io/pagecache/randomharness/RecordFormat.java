@@ -56,7 +56,7 @@ public abstract class RecordFormat
 
     public final void fillWithRecords( PageCursor cursor )
     {
-        cursor.setOffset( reserved_page_header_bytes.defaultValue() );
+        cursor.setOffset( 0 );
         int recordsPerPage = cursor.getCurrentPayloadSize() / getRecordSize();
         for ( int i = 0; i < recordsPerPage; i++ )
         {

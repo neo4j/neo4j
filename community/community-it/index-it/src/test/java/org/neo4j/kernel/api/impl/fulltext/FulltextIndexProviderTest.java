@@ -108,7 +108,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -531,8 +530,7 @@ class FulltextIndexProviderTest
             DefaultIdGeneratorFactory idGenFactory =
                     new DefaultIdGeneratorFactory( fs, RecoveryCleanupWorkCollector.ignore(), databaseLayout.getDatabaseName() );
             try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
-                    PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler, cacheTracer,
-                            config( 100 ).reservedPageBytes( reserved_page_header_bytes.defaultValue() ) ) )
+                    PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler, cacheTracer, config( 100 ) ) )
             {
 
                 StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance(),
