@@ -49,14 +49,14 @@ public final class Cursors
      */
     public static RelationshipTraversalCursor emptyTraversalCursor( org.neo4j.internal.kernel.api.Read read )
     {
-        return new EmptyTraversalCursor( (Read) read );
+        return new EmptyTraversalCursor( read );
     }
 
     public static class EmptyTraversalCursor implements RelationshipTraversalCursor
     {
-        private final Read read;
+        private final org.neo4j.internal.kernel.api.Read read;
 
-        private EmptyTraversalCursor( Read read )
+        private EmptyTraversalCursor( org.neo4j.internal.kernel.api.Read read )
         {
             this.read = read;
         }
@@ -160,7 +160,7 @@ public final class Cursors
         @Override
         public void properties( PropertyCursor cursor, PropertySelection selection )
         {
-            ((DefaultPropertyCursor) cursor).initEmptyRelationship( read, read );
+            ((DefaultPropertyCursor) cursor).initEmptyRelationship( null, () -> {} );
         }
 
         @Override

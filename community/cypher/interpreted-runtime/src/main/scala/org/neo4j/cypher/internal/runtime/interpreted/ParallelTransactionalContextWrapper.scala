@@ -65,7 +65,7 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
 
   override def locks: Locks = tc.kernelTransaction.locks() // kernelExecutionContext.locks()
 
-  override def dataRead: Read = tc.kernelTransaction.dataRead() // kernelExecutionContext.dataRead()
+  override def dataRead: Read = kernelExecutionContext.dataRead()
 
   override def dataWrite: Write = unsupported()
 

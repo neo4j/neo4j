@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Execution context that should be passed to workers in other threads but that are still belong to the transaction and need to have access to some
@@ -43,6 +45,18 @@ public interface ExecutionContext extends AutoCloseable
      * @return execution context security access mode
      */
     AccessMode accessMode();
+
+    /**
+     * {@link Read} implementation used for reads as part of this context
+     */
+    Read dataRead();
+
+    /**
+     * Execution context store cursors. They should be used only in the context of current execution context and should not be shared with any other context.
+     *
+     * @return execution context store cursors.
+     */
+    StoreCursors storeCursors();
 
     /**
      * Mark execution context as completed and prepare any data that needs to be reported back to owning transaction.

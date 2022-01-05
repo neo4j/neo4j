@@ -82,6 +82,7 @@ import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.values.AnyValue;
@@ -104,6 +105,7 @@ public class AllStoreHolder extends Read
     private final MemoryTracker memoryTracker;
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
+    private final ReadSupport readSupport;
 
     public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, StorageLocks storageLocks,
             DefaultPooledCursors cursors, GlobalProcedures globalProcedures, SchemaState schemaState, IndexingService indexingService,
@@ -119,6 +121,7 @@ public class AllStoreHolder extends Read
         this.indexStatisticsStore = indexStatisticsStore;
         this.databaseDependencies = databaseDependencies;
         this.memoryTracker = memoryTracker;
+        this.readSupport = new ReadSupport( storageReader, cursors, this );
     }
 
     @Override
@@ -139,26 +142,7 @@ public class AllStoreHolder extends Read
             }
         }
 
-        AccessMode mode = ktx.securityContext().mode();
-        boolean existsInNodeStore = storageReader.nodeExists( reference, ktx.storeCursors() );
-
-        if ( mode.allowsTraverseAllLabels() )
-        {
-            return existsInNodeStore;
-        }
-        else if ( !existsInNodeStore )
-        {
-            return false;
-        }
-        else
-        {
-            // DefaultNodeCursor already contains traversal checks within next()
-            try ( DefaultNodeCursor node = cursors.allocateNodeCursor( ktx.cursorContext() ) )
-            {
-                ktx.dataRead().singleNode( reference, node );
-                return node.next();
-            }
-        }
+        return readSupport.nodeExistsWithoutTxState( reference, ktx.securityContext().mode(), ktx.storeCursors(), ktx.cursorContext() );
     }
 
     @Override
@@ -402,26 +386,7 @@ public class AllStoreHolder extends Read
             }
         }
         AccessMode mode = ktx.securityContext().mode();
-        CursorContext cursorContext = ktx.cursorContext();
-        boolean existsInRelStore = storageReader.relationshipExists( reference, ktx.storeCursors() );
-
-        if ( mode.allowsTraverseAllRelTypes() )
-        {
-            return existsInRelStore;
-        }
-        else if ( !existsInRelStore )
-        {
-            return false;
-        }
-        else
-        {
-            // DefaultNodeCursor already contains traversal checks within next()
-            try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor( cursorContext ) )
-            {
-                ktx.dataRead().singleRelationship( reference, rels );
-                return rels.next();
-            }
-        }
+        return readSupport.relationshipExistsWithoutTx( reference, mode, ktx.storeCursors(), ktx.cursorContext() );
     }
 
     @Override

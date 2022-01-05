@@ -60,7 +60,7 @@ abstract class DefaultCursors
         return closeable;
     }
 
-    void assertClosed()
+    public void assertClosed()
     {
         if ( trackCursorClose )
         {

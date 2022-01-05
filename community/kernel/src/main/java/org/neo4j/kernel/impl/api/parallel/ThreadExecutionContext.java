@@ -19,11 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 public class ThreadExecutionContext implements ExecutionContext, AutoCloseable
 {
@@ -32,13 +38,17 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable
     private final AccessMode accessMode;
     private final ExecutionContextCursorTracer cursorTracer;
     private final CursorContext ktxContext;
+    private final ThreadExecutionContextRead contextRead;
+    private final StoreCursors storageCursors;
 
-    public ThreadExecutionContext( KernelTransactionImplementation ktx, PageCacheTracer pageCacheTracer )
+    public ThreadExecutionContext( KernelTransactionImplementation ktx, PageCacheTracer pageCacheTracer, StorageEngine storageEngine, Config config )
     {
         this.cursorTracer = new ExecutionContextCursorTracer( pageCacheTracer, TRANSACTION_EXECUTION_TAG );
         this.ktxContext = ktx.cursorContext();
         this.context = new CursorContext( cursorTracer, ktxContext.getVersionContext() );
         this.accessMode = ktx.securityContext().mode();
+        this.storageCursors = storageEngine.createStorageCursors( context );
+        this.contextRead = new ThreadExecutionContextRead( this, ktx.dataRead(), ktx.newStorageReader(), storageCursors, config );
     }
 
     @Override
@@ -54,9 +64,22 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable
     }
 
     @Override
+    public Read dataRead()
+    {
+        return contextRead;
+    }
+
+    @Override
     public void complete()
     {
+        closeAllUnchecked( contextRead, storageCursors );
         context.getCursorTracer().reportEvents();
+    }
+
+    @Override
+    public StoreCursors storeCursors()
+    {
+        return storageCursors;
     }
 
     @Override
