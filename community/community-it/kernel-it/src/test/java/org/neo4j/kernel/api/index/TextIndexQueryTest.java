@@ -118,6 +118,10 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
             jack.setProperty( NAME, "77" );
             jack.createRelationshipTo( matt, FRIEND ).setProperty( SINCE, "1 year" );
 
+            var anonymous = tx.createNode( PERSON );
+            anonymous.setProperty( NAME, "" );
+            anonymous.createRelationshipTo( jack, FRIEND ).setProperty( SINCE, "" );
+
             tx.commit();
         }
     }
@@ -140,35 +144,36 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     @Test
     void shouldFindNodes() throws Exception
     {
-        assertThat( indexedNodes( allEntries() ) ).isEqualTo( 6 );
+        assertThat( indexedNodes( allEntries() ) ).isEqualTo( 7 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "Mike Smith" ) ) ).isEqualTo( 1 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "Unknown" ) ) ).isEqualTo( 0 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "42" ) ) ).isEqualTo( 0 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "77" ) ) ).isEqualTo( 1 );
         assertThat( indexedNodes( stringPrefix( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 1 );
+        assertThat( indexedNodes( stringPrefix( token.propertyKey( NAME ), stringValue( "" ) ) ) ).isEqualTo( 7 );
         assertThat( indexedNodes( stringContains( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 3 );
+        assertThat( indexedNodes( stringContains( token.propertyKey( NAME ), stringValue( "" ) ) ) ).isEqualTo( 7 );
         assertThat( indexedNodes( stringSuffix( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 2 );
+        assertThat( indexedNodes( stringSuffix( token.propertyKey( NAME ), stringValue( "" ) ) ) ).isEqualTo( 7 );
         assertThat( indexedNodes( range( token.propertyKey( NAME ), "Mike Smith", true, "Noah", true ) ) ).isEqualTo( 2 );
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "", true, "James", true ) ) ).isEqualTo( 3 );
     }
 
     @Test
     void shouldFindRelations() throws Exception
     {
-        assertThat( indexedRelations( allEntries() ) ).isEqualTo( 5 );
+        assertThat( indexedRelations( allEntries() ) ).isEqualTo( 6 );
         assertThat( indexedRelations( exact( token.propertyKey( SINCE ), "3 years" ) ) ).isEqualTo( 1 );
         assertThat( indexedRelations( exact( token.propertyKey( SINCE ), "694717800" ) ) ).isEqualTo( 0 );
         assertThat( indexedRelations( exact( token.propertyKey( SINCE ), "Unknown" ) ) ).isEqualTo( 0 );
         assertThat( indexedRelations( stringContains( token.propertyKey( SINCE ), stringValue( "years" ) ) ) ).isEqualTo( 4 );
+        assertThat( indexedRelations( stringContains( token.propertyKey( SINCE ), stringValue( "" ) ) ) ).isEqualTo( 6 );
         assertThat( indexedRelations( stringSuffix( token.propertyKey( SINCE ), stringValue( "years" ) ) ) ).isEqualTo( 3 );
+        assertThat( indexedRelations( stringSuffix( token.propertyKey( SINCE ), stringValue( "" ) ) ) ).isEqualTo( 6 );
         assertThat( indexedRelations( stringPrefix( token.propertyKey( SINCE ), stringValue( "2 years" ) ) ) ).isEqualTo( 2 );
+        assertThat( indexedRelations( stringPrefix( token.propertyKey( SINCE ), stringValue( "" ) ) ) ).isEqualTo( 6 );
         assertThat( indexedRelations( range( token.propertyKey( SINCE ), "2 years", true, "3 years", true ) ) ).isEqualTo( 3 );
-    }
-
-    @Test
-    void shouldFindAllEntries() throws Exception
-    {
-        assertThat( indexedNodes( allEntries() ) ).isEqualTo( 6 );
-        assertThat( indexedRelations( allEntries() ) ).isEqualTo( 5 );
+        assertThat( indexedRelations( range( token.propertyKey( SINCE ), "", true, "3", true ) ) ).isEqualTo( 4 );
     }
 
     @Test
@@ -201,30 +206,6 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
                 .isInstanceOf( IllegalArgumentException.class )
                 .hasMessageContaining( "Index query not supported for %s index. Query: %s",
                                        getIndex( REL_INDEX_NAME ).getIndexProvider().getKey(), since );
-    }
-
-    private long scanNodes() throws Exception
-    {
-        MONITOR.reset();
-        IndexReadSession index = read.indexReadSession( getIndex( NODE_INDEX_NAME ) );
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
-        {
-            read.nodeIndexScan( index, cursor, unconstrained() );
-            assertThat( MONITOR.accessed( IndexType.TEXT ) ).isEqualTo( 1 );
-            return count( cursor );
-        }
-    }
-
-    private long scanRelationships() throws Exception
-    {
-        MONITOR.reset();
-        IndexReadSession index = read.indexReadSession( getIndex( REL_INDEX_NAME ) );
-        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
-        {
-            read.relationshipIndexScan( index, cursor, unconstrained() );
-            assertThat( MONITOR.accessed( IndexType.TEXT ) ).isEqualTo( 1 );
-            return count( cursor );
-        }
     }
 
     private long indexedNodes( PropertyIndexQuery... query ) throws Exception

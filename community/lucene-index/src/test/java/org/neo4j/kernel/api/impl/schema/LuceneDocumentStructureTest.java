@@ -104,41 +104,6 @@ class LuceneDocumentStructureTest
     }
 
     @Test
-    void shouldBuildRangeSeekByStringQueryForStrings()
-    {
-        // given
-        TermRangeQuery query = (TermRangeQuery) LuceneDocumentStructure
-                .newRangeSeekByStringQuery( "foo", false, null, true );
-
-        // then
-        assertEquals( "string", query.getField() );
-        assertEquals( "foo", query.getLowerTerm().utf8ToString() );
-        assertFalse( query.includesLower() );
-        assertNull( query.getUpperTerm() );
-        assertTrue( query.includesUpper() );
-    }
-
-    @Test
-    void shouldBuildWildcardQueries()
-    {
-        // given
-        WildcardQuery query = (WildcardQuery) LuceneDocumentStructure.newWildCardStringQuery( "foo" );
-
-        // then
-        assertEquals( "string", query.getField() );
-    }
-
-    @Test
-    void shouldBuildRangeSeekByPrefixQueryForStrings()
-    {
-        // given
-        MultiTermQuery prefixQuery = (MultiTermQuery) LuceneDocumentStructure.newRangeSeekByPrefixQuery( "Prefix" );
-
-        // then
-        assertThat( prefixQuery.toString() ).as( "Should contain term value" ).contains( "Prefix" );
-    }
-
-    @Test
     void checkFieldUsageForUniquenessVerification()
     {
         assertFalse( useFieldForUniquenessVerification( "id" ) );

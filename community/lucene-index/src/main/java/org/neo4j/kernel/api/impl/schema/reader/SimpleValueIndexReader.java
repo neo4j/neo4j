@@ -136,16 +136,16 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
             return LuceneDocumentStructure.newSeekQuery( ((PropertyIndexQuery.ExactPredicate) predicate).value() );
         case RANGE:
             PropertyIndexQuery.TextRangePredicate sp = (PropertyIndexQuery.TextRangePredicate) predicate;
-            return LuceneDocumentStructure.newRangeSeekByStringQuery( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
+            return CypherStringQueryFactory.range( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
         case STRING_PREFIX:
             PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
-            return LuceneDocumentStructure.newRangeSeekByPrefixQuery( spp.prefix().stringValue() );
+            return CypherStringQueryFactory.stringPrefix( spp.prefix().stringValue() );
         case STRING_CONTAINS:
             PropertyIndexQuery.StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
-            return LuceneDocumentStructure.newWildCardStringQuery( scp.contains().stringValue() );
+            return CypherStringQueryFactory.stringContains( scp.contains().stringValue() );
         case STRING_SUFFIX:
             PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
-            return LuceneDocumentStructure.newSuffixStringQuery( ssp.suffix().stringValue() );
+            return CypherStringQueryFactory.stringSuffix( ssp.suffix().stringValue() );
         default:
             throw new IllegalArgumentException( format( "Index query not supported for %s index. Query: %s", key, predicate ) );
         }

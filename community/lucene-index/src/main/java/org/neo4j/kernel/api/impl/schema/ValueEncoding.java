@@ -74,7 +74,7 @@ public enum ValueEncoding
 
     public abstract String key();
 
-    String key( int propertyNumber )
+    public String key( int propertyNumber )
     {
         if ( propertyNumber == 0 )
         {

@@ -54,7 +54,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.schema.reader.CypherStringQueryFactory;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -140,7 +140,7 @@ public class FulltextIndexReader implements ValueIndexReader
                     PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) indexQuery;
                     String searchTerm = spp.prefix().stringValue();
                     Term term = new Term( propertyNames[0], searchTerm );
-                    query = new LuceneDocumentStructure.PrefixMultiTermsQuery( term );
+                    query = CypherStringQueryFactory.stringPrefix( term );
                 }
                 else if ( indexQuery.getClass() == PropertyIndexQuery.ExactPredicate.class && indexQuery.valueGroup() == ValueGroup.TEXT )
                 {

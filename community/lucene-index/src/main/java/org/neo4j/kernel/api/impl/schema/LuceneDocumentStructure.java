@@ -19,34 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
-
-import java.io.IOException;
-
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -54,7 +35,6 @@ import static org.apache.lucene.document.Field.Store.YES;
 
 public class LuceneDocumentStructure
 {
-    private static final boolean USE_LUCENE_STANDARD_PREFIX_QUERY = FeatureToggles.flag( LuceneDocumentStructure.class, "lucene.standard.prefix.query", false );
 
     public static final String NODE_ID_KEY = "id";
 
@@ -94,52 +74,6 @@ public class LuceneDocumentStructure
         return builder.build();
     }
 
-    public static Query newRangeSeekByStringQuery( String lower, boolean includeLower, String upper, boolean includeUpper )
-    {
-        boolean includeLowerBoundary = StringUtils.EMPTY.equals( lower ) || includeLower;
-        boolean includeUpperBoundary = StringUtils.EMPTY.equals( upper ) || includeUpper;
-        TermRangeQuery termRangeQuery =
-                TermRangeQuery.newStringRange( ValueEncoding.String.key( 0 ), lower, upper, includeLowerBoundary, includeUpperBoundary );
-
-        if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
-        {
-            BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            if ( includeLowerBoundary != includeLower )
-            {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), lower ) ), BooleanClause.Occur.MUST_NOT );
-            }
-            if ( includeUpperBoundary != includeUpper )
-            {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), upper ) ), BooleanClause.Occur.MUST_NOT );
-            }
-            builder.add( termRangeQuery, BooleanClause.Occur.FILTER );
-            return new ConstantScoreQuery( builder.build() );
-        }
-        return termRangeQuery;
-    }
-
-    public static Query newWildCardStringQuery( String searchFor )
-    {
-        String searchTerm = QueryParser.escape( searchFor );
-        Term term = new Term( ValueEncoding.String.key( 0 ), "*" + searchTerm + "*" );
-
-        return new WildcardQuery( term );
-    }
-
-    public static Query newRangeSeekByPrefixQuery( String prefix )
-    {
-        Term term = new Term( ValueEncoding.String.key( 0 ), prefix );
-        return USE_LUCENE_STANDARD_PREFIX_QUERY ? new PrefixQuery( term ) : new PrefixMultiTermsQuery( term );
-    }
-
-    public static Query newSuffixStringQuery( String suffix )
-    {
-        String searchTerm = QueryParser.escape( suffix );
-        Term term = new Term( ValueEncoding.String.key( 0 ), "*" + searchTerm );
-
-        return new WildcardQuery( term );
-    }
-
     public static Term newTermForChangeOrRemove( long nodeId )
     {
         return new Term( NODE_ID_KEY, "" + nodeId );
@@ -148,61 +82,6 @@ public class LuceneDocumentStructure
     public static long getNodeId( Document from )
     {
         return Long.parseLong( from.get( NODE_ID_KEY ) );
-    }
-
-    /**
-     * Simple implementation of prefix query that mimics old lucene way of handling prefix queries.
-     * According to benchmarks this implementation is faster then {@link PrefixQuery} because we do
-     * not construct automaton which is extremely expensive.
-     */
-    public static class PrefixMultiTermsQuery extends MultiTermQuery
-    {
-        private final Term term;
-
-        public PrefixMultiTermsQuery( Term term )
-        {
-            super( term.field() );
-            this.term = term;
-        }
-
-        @Override
-        protected TermsEnum getTermsEnum( Terms terms, AttributeSource atts ) throws IOException
-        {
-            return term.bytes().length == 0 ? terms.iterator() : new PrefixTermsEnum( terms.iterator(), term.bytes() );
-        }
-
-        @Override
-        public String toString( String field )
-        {
-            return getClass().getSimpleName() + ", term:" + term + ", field:" + field;
-        }
-
-        @Override
-        public void visit( QueryVisitor visitor )
-        {
-            if ( visitor.acceptField( term.field() ) )
-            {
-                visitor.consumeTerms( this, term );
-            }
-        }
-
-        private static class PrefixTermsEnum extends FilteredTermsEnum
-        {
-            private final BytesRef prefix;
-
-            PrefixTermsEnum( TermsEnum termEnum, BytesRef prefix )
-            {
-                super( termEnum );
-                this.prefix = prefix;
-                setInitialSeekTerm( this.prefix );
-            }
-
-            @Override
-            protected AcceptStatus accept( BytesRef term )
-            {
-                return StringHelper.startsWith( term, prefix ) ? AcceptStatus.YES : AcceptStatus.END;
-            }
-        }
     }
 
     public static boolean useFieldForUniquenessVerification( String fieldName )
