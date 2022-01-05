@@ -2008,6 +2008,21 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return bTreeNode.inlineKeyValueSizeCap();
     }
 
+    /**
+     * @return size of the file backing this {@link GBPTree}, in bytes.
+     */
+    public long sizeInBytes()
+    {
+        try
+        {
+            return pagedFile.fileSize();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
     private static <KEY, VALUE> OffloadStoreImpl<KEY,VALUE> buildOffload( Layout<KEY,VALUE> layout, IdProvider idProvider, PagedFile pagedFile,
             int payloadSize )
     {
