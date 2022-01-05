@@ -83,7 +83,8 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
     IndexAccessor createAccessor( PageCache pageCache )
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
-        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
+        DatabaseIndexContext context =
+                DatabaseIndexContext.builder( pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
         return new TokenIndexAccessor( context, indexFiles, indexDescriptor, cleanup );
     }
 

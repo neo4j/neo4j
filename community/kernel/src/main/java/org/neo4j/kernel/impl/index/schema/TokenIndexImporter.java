@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -40,16 +41,18 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 public class TokenIndexImporter implements IndexImporter
 {
+    private static final String INDEX_TOKEN_IMPORTER_TAG = "indexTokenImporter";
     private final IndexUpdater updater;
     private final IndexDescriptor index;
     private final TokenIndexAccessor accessor;
     private final CursorContext cursorContext;
 
-    TokenIndexImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache, CursorContext cursorContext, Config config )
+    TokenIndexImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache, CursorContextFactory contextFactory,
+            Config config )
     {
         this.index = index;
-        this.accessor = tokenIndexAccessor( layout, fs, cache, config );
-        this.cursorContext = cursorContext;
+        this.accessor = tokenIndexAccessor( layout, fs, cache, contextFactory, config );
+        this.cursorContext = contextFactory.create( INDEX_TOKEN_IMPORTER_TAG );
         this.updater = accessor.newUpdater( ONLINE, cursorContext, false );
     }
 
@@ -72,9 +75,10 @@ public class TokenIndexImporter implements IndexImporter
         closeAll( updater, () -> accessor.force( cursorContext ), accessor );
     }
 
-    private TokenIndexAccessor tokenIndexAccessor( DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache, Config config )
+    private TokenIndexAccessor tokenIndexAccessor( DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
+            CursorContextFactory contextFactory, Config config )
     {
-        var context = DatabaseIndexContext.builder( pageCache, fs, layout.getDatabaseName() ).build();
+        var context = DatabaseIndexContext.builder( pageCache, fs, contextFactory, layout.getDatabaseName() ).build();
         IndexDirectoryStructure indexDirectoryStructure = IndexDirectoryStructure.directoriesByProvider( layout.databaseDirectory() )
                                                                                  .forProvider( TokenIndexProvider.DESCRIPTOR );
         IndexFiles indexFiles = TokenIndexProvider.indexFiles( index, config, fs, indexDirectoryStructure, layout );

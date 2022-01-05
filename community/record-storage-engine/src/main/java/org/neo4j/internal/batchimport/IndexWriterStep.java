@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
@@ -48,6 +49,8 @@ import static org.neo4j.internal.schema.SchemaNameUtil.generateName;
 
 public abstract class IndexWriterStep<T> extends ProcessorStep<T>
 {
+    private static final String INDEX_IMPORTER_CREATION_TAG = "indexImporterCreation";
+
     public IndexWriterStep( StageControl control, String name, Configuration config, int maxProcessors, PageCacheTracer pageCacheTracer )
     {
         super( control, name, config, maxProcessors, pageCacheTracer );
@@ -55,17 +58,18 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
 
     protected IndexImporter indexImporter(
             IndexConfig indexConfig, IndexImporterFactory importerFactory, BatchingNeoStores neoStores, EntityType entityType,
-            MemoryTracker memoryTracker, CursorContext cursorContext, Function<CursorContext,StoreCursors> storeCursorsFactory )
+            MemoryTracker memoryTracker, CursorContextFactory contextFactory, Function<CursorContext,StoreCursors> storeCursorsFactory )
     {
         var schemaStore = neoStores.getNeoStores().getSchemaStore();
         var metaDataStore = neoStores.getNeoStores().getMetaDataStore();
         var tokenHolders = neoStores.getTokenHolders();
         var schemaRuleAccess = getSchemaRuleAccess( schemaStore, tokenHolders, metaDataStore );
-        try ( var storeCursors = storeCursorsFactory.apply( cursorContext ) )
+        try ( var cursorContext = contextFactory.create( INDEX_IMPORTER_CREATION_TAG );
+                var storeCursors = storeCursorsFactory.apply( cursorContext ) )
         {
             var index = findIndex( entityType, schemaRuleAccess, storeCursors ).orElseGet(
                     () -> createIndex( entityType, indexConfig, schemaRuleAccess, schemaStore, memoryTracker, cursorContext, storeCursors ) );
-            return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), cursorContext );
+            return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), contextFactory );
         }
     }
 

@@ -33,6 +33,8 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -59,7 +61,7 @@ class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderComp
         var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return RangeIndexProviderFactory.
                 create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, PageCacheTracer.NULL,
-                        DEFAULT_DATABASE_NAME );
+                new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ), DEFAULT_DATABASE_NAME );
     }
 
     @Override

@@ -70,6 +70,8 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -181,13 +183,15 @@ public class ParallelBatchImporterTest
         long nodeRandomSeed = random.nextLong();
         long relationshipRandomSeed = random.nextLong();
         var pageCacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         // This will have statistically half the nodes be considered dense
         Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_PER_NODE * 2 );
         IndexImporterFactoryImpl indexImporterFactory = new IndexImporterFactoryImpl( dbConfig );
         final BatchImporter inserter = new ParallelBatchImporter(
                 databaseLayout, fs, pageCacheTracer, config, NullLogService.getInstance(), monitor, EMPTY, dbConfig, getFormat(),
-                Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE );
+                Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE,
+                contextFactory );
         LongAdder propertyCount = new LongAdder();
         LongAdder relationshipCount = new LongAdder();
         try

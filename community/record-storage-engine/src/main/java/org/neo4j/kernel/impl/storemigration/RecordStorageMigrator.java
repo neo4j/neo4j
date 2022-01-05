@@ -86,6 +86,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -176,11 +177,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private final PageCache pageCache;
     private final JobScheduler jobScheduler;
     private final PageCacheTracer cacheTracer;
+    private final CursorContextFactory contextFactory;
     private final BatchImporterFactory batchImporterFactory;
     private final MemoryTracker memoryTracker;
 
     public RecordStorageMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
             LogService logService, JobScheduler jobScheduler, PageCacheTracer cacheTracer,
+            CursorContextFactory contextFactory,
             BatchImporterFactory batchImporterFactory, MemoryTracker memoryTracker )
     {
         super( "Store files" );
@@ -190,6 +193,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         this.logService = logService;
         this.jobScheduler = jobScheduler;
         this.cacheTracer = cacheTracer;
+        this.contextFactory = contextFactory;
         this.batchImporterFactory = batchImporterFactory;
         this.memoryTracker = memoryTracker;
     }
@@ -202,7 +206,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert( migrationLayoutArg );
         // Extract information about the last transaction from legacy neostore
         Path neoStore = directoryLayout.metadataStore();
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( RECORD_STORAGE_MIGRATION_TAG ) )
         {
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, directoryLayout.getDatabaseName(), cursorContext );
             TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId, directoryLayout, cursorContext );
@@ -472,10 +476,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         migrationDirectoryStructure, fileSystem, cacheTracer, importConfig, logService,
                         migrationBatchImporterMonitor( legacyStore, progressReporter,
                                 importConfig ), additionalInitialIds, config, newFormat, Monitor.NO_MONITOR, jobScheduler,
-                        Collector.STRICT, LogFilesInitializer.NULL, indexImporterFactory, memoryTracker );
-                InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker, storeCursors );
+                        Collector.STRICT, LogFilesInitializer.NULL, indexImporterFactory, memoryTracker, contextFactory );
+                InputIterable nodes =
+                        () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, memoryTracker, storeCursors, contextFactory );
                 InputIterable relationships =
-                        () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker, storeCursors );
+                        () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, contextFactory, memoryTracker, storeCursors );
                 long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 + storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
                         storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
                 Estimates estimates =
@@ -633,7 +638,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 config, progressReporter );
     }
 
-    private static InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer,
+    private static InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, CursorContextFactory contextFactory,
             MemoryTracker memoryTracker, StoreCursors storeCursors )
     {
         return new StoreScanAsInputIterator<>( legacyStore.getRelationshipStore() )
@@ -641,22 +646,22 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             @Override
             public InputChunk newChunk()
             {
-                var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( RELATIONSHIP_CHUNK_MIGRATION_TAG ) );
+                var cursorContext = contextFactory.create( RELATIONSHIP_CHUNK_MIGRATION_TAG );
                 return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorContext, storeCursors,
                         memoryTracker );
             }
         };
     }
 
-    private static InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer,
-            MemoryTracker memoryTracker, StoreCursors storeCursors )
+    private static InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, MemoryTracker memoryTracker,
+            StoreCursors storeCursors, CursorContextFactory contextFactory )
     {
         return new StoreScanAsInputIterator<>( legacyStore.getNodeStore() )
         {
             @Override
             public InputChunk newChunk()
             {
-                var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( NODE_CHUNK_MIGRATION_TAG ) );
+                var cursorContext = contextFactory.create( NODE_CHUNK_MIGRATION_TAG );
                 return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorContext, storeCursors,
                         memoryTracker );
             }

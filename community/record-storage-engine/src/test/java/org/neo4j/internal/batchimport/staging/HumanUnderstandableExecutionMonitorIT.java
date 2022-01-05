@@ -46,6 +46,9 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.logging.internal.NullLogService;
@@ -112,7 +115,8 @@ class HumanUnderstandableExecutionMonitorIT
         {
             new ParallelBatchImporter( databaseLayout, fileSystem, NULL, configuration, NullLogService.getInstance(), monitor,
                     EMPTY, defaults(), defaultFormat(), Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
-                    LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE ).doImport( input );
+                    LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE,
+                    new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) ).doImport( input );
 
             // then
             progress.assertAllProgressReachedEnd();

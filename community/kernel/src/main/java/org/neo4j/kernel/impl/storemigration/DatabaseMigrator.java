@@ -27,6 +27,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.logging.Log;
@@ -57,13 +58,14 @@ public class DatabaseMigrator
     private final LegacyTransactionLogsLocator legacyLogsLocator;
     private final StorageEngineFactory storageEngineFactory;
     private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final DatabaseHealth databaseHealth;
 
     public DatabaseMigrator(
             FileSystemAbstraction fs, Config config, LogService logService, DependencyResolver dependencyResolver, PageCache pageCache,
             JobScheduler jobScheduler, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, DatabaseHealth databaseHealth )
+            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory, MemoryTracker memoryTracker, DatabaseHealth databaseHealth )
     {
         this.fs = fs;
         this.config = config;
@@ -72,6 +74,7 @@ public class DatabaseMigrator
         this.pageCache = pageCache;
         this.jobScheduler = jobScheduler;
         this.databaseLayout = databaseLayout;
+        this.contextFactory = contextFactory;
         this.legacyLogsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
         this.storageEngineFactory = storageEngineFactory;
         this.pageCacheTracer = pageCacheTracer;
@@ -97,13 +100,14 @@ public class DatabaseMigrator
 
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants(
-                fs, config, pageCache, jobScheduler, logService, pageCacheTracer, memoryTracker );
+                fs, config, pageCache, jobScheduler, logService, pageCacheTracer, memoryTracker, contextFactory );
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
 
         // Do individual index provider migration last because they may delete files that we need in earlier steps.
-        indexProviderMap.accept( provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
+        indexProviderMap.accept(
+                provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory, contextFactory ) ) );
 
         try
         {
@@ -111,7 +115,7 @@ public class DatabaseMigrator
         }
         catch ( Exception e )
         {
-            userLog.error( "Error upgrading database. Database left intact and will likely not be able to start: " + e.toString() );
+            userLog.error( "Error upgrading database. Database left intact and will likely not be able to start: " + e );
             throw e;
         }
     }

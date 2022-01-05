@@ -393,11 +393,12 @@ public final class Recovery
 
             DatabaseExtensions extensions = recoveryLife.add(
                     instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler, DbmsInfo.TOOL, monitors, tokenHolders,
-                            recoveryCleanupCollector, readOnlyChecker, extensionFactories, guard, tracers, namedDatabaseId ) );
+                            recoveryCleanupCollector, readOnlyChecker, extensionFactories, guard, tracers, namedDatabaseId, cursorContextFactory ) );
 
             var indexProviderMap = recoveryLife.add(
                     StaticIndexProviderMapFactory.create( recoveryLife, config, databasePageCache, fs, logService, monitors, readOnlyChecker, DbmsInfo.TOOL,
-                            recoveryCleanupCollector, tracers.getPageCacheTracer(), databaseLayout, tokenHolders, scheduler, extensions ) );
+                            recoveryCleanupCollector, tracers.getPageCacheTracer(), databaseLayout, tokenHolders, scheduler, cursorContextFactory,
+                            extensions ) );
 
             StorageEngine storageEngine =
                     storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState, getConstraintSemantics(),
@@ -538,7 +539,7 @@ public final class Recovery
                                                                      DatabaseReadOnlyChecker readOnlyChecker,
                                                                      Iterable<ExtensionFactory<?>> extensionFactories,
                                                                      AvailabilityGuard availabilityGuard, DatabaseTracers tracers,
-            NamedDatabaseId namedDatabaseId )
+            NamedDatabaseId namedDatabaseId, CursorContextFactory contextFactory )
     {
         List<ExtensionFactory<?>> recoveryExtensions = stream( extensionFactories )
                 .filter( extension -> extension.getClass().isAnnotationPresent( RecoveryExtension.class ) )
@@ -548,7 +549,7 @@ public final class Recovery
         NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors, logService.getInternalLogProvider() );
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, nonListenableMonitors, jobScheduler,
                 tokenHolders, recoveryCleanupCollector, tracers, databaseLayout, readOnlyChecker, availabilityGuard, namedDatabaseId,
-                FileStoreProviderRegistry.EMPTY );
+                FileStoreProviderRegistry.EMPTY, contextFactory );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );
         return new DatabaseExtensions( extensionContext, recoveryExtensions, deps, ExtensionFailureStrategies.fail() );
     }

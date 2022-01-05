@@ -45,6 +45,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -140,10 +141,12 @@ public class TokenIndexProvider extends IndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
+    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
+            CursorContextFactory contextFactory )
     {
         boolean migrateLegacyFiles = !config.get( use_old_token_index_location );
-        return new TokenIndexMigrator( "Token indexes", fs, pageCache, storageEngineFactory, databaseLayout, this::storeFile, migrateLegacyFiles );
+        return new TokenIndexMigrator( "Token indexes", fs, pageCache, storageEngineFactory, databaseLayout, this::storeFile, migrateLegacyFiles,
+                contextFactory );
     }
 
     @Override

@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -53,9 +54,10 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
     private boolean deleteRelationshipTokenIndex;
     private boolean moveFiles;
     private final boolean migrateLegacyFiles;
+    private final CursorContextFactory contextFactory;
 
     public TokenIndexMigrator( String name, FileSystemAbstraction fileSystem, PageCache pageCache, StorageEngineFactory storageEngineFactory,
-            DatabaseLayout layout, Function<SchemaRule,Path> storeFileProvider, boolean migrateLegacyFiles )
+            DatabaseLayout layout, Function<SchemaRule,Path> storeFileProvider, boolean migrateLegacyFiles, CursorContextFactory contextFactory )
     {
         super( name );
         this.fileSystem = fileSystem;
@@ -64,6 +66,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
         this.layout = layout;
         this.storeFileProvider = storeFileProvider;
         this.migrateLegacyFiles = migrateLegacyFiles;
+        this.contextFactory = contextFactory;
     }
 
     @Override
@@ -108,7 +111,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
     private void moveTokenIndexes( DatabaseLayout databaseLayout ) throws IOException
     {
         for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r,
-                PageCacheTracer.NULL ) )
+                PageCacheTracer.NULL, contextFactory ) )
         {
             if ( !schemaRule.schema().isAnyTokenSchemaDescriptor() )
             {
@@ -146,7 +149,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
     private void deleteRelationshipTypeTokenIndex( DatabaseLayout databaseLayout ) throws IOException
     {
         for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r,
-                PageCacheTracer.NULL ) )
+                PageCacheTracer.NULL, contextFactory ) )
         {
             if ( schemaRule.schema().isAnyTokenSchemaDescriptor() && schemaRule.schema().entityType() == EntityType.RELATIONSHIP )
             {

@@ -662,7 +662,7 @@ public class Database extends LifecycleAdapter
 
         var indexProviderMap = StaticIndexProviderMapFactory.create(
                 indexProvidersLife, databaseConfig, databasePageCache, fs, databaseLogService, databaseMonitors, readOnlyDatabaseChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, tracers.getPageCacheTracer(), databaseLayout, tokenHolders, scheduler, dependencies );
+                recoveryCleanupWorkCollector, tracers.getPageCacheTracer(), databaseLayout, tokenHolders, scheduler, cursorContextFactory, dependencies );
         this.indexProviderMap = indexProvidersLife.add( indexProviderMap );
         dependencies.satisfyDependency( this.indexProviderMap );
         // fulltextadapter for FulltextProcedures
@@ -683,7 +683,7 @@ public class Database extends LifecycleAdapter
     private DatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
     {
         var factory = new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId,
-                tracers.getPageCacheTracer(), memoryTracker, databaseHealth );
+                tracers.getPageCacheTracer(), memoryTracker, databaseHealth, cursorContextFactory );
         return factory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies );
     }
 

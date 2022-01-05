@@ -52,6 +52,8 @@ import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -69,10 +71,10 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityClient;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -91,6 +93,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
@@ -114,6 +117,7 @@ abstract class IndexPopulationStressTest
     private RandomSupport random;
     @Inject
     PageCache pageCache;
+    CursorContextFactory contextFactory;
     @Inject
     FileSystemAbstraction fs;
     @Inject
@@ -150,6 +154,7 @@ abstract class IndexPopulationStressTest
     @BeforeEach
     void setup() throws IOException, EntityNotFoundException
     {
+        contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         indexProvider = providerCreator.apply( this );
         tokenNameLookup = SIMPLE_NAME_LOOKUP;
         descriptor = indexProvider

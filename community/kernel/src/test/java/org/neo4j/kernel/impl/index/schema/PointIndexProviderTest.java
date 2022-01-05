@@ -40,9 +40,9 @@ import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVID
 class PointIndexProviderTest extends IndexProviderTests
 {
     private static final ProviderFactory factory =
-            ( pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout ) ->
+            ( pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout, contextFactory ) ->
             {
-                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withMonitors( monitors )
+                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME ).withMonitors( monitors )
                                                                    .withReadOnlyChecker( readOnlyChecker ).build();
                 return new PointIndexProvider( context, dir, collector, Config.defaults() );
             };

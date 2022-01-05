@@ -29,6 +29,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
@@ -68,21 +69,23 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
                                                   Config config, DatabaseReadOnlyChecker readOnlyChecker,
                                                   RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                                                   DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, Log log,
-                                                  TokenHolders tokenHolders, JobScheduler scheduler )
+                                                  TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
     {
         return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                       pageCacheTracer, databaseLayout.getDatabaseName() );
+                       pageCacheTracer, contextFactory, databaseLayout.getDatabaseName() );
     }
 
     @VisibleForTesting
     public static FusionIndexProvider create( PageCache pageCache, Path databaseDirectory, FileSystemAbstraction fs,
                                               Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
-                                              RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer, String databaseName )
+                                              RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer,
+                                              CursorContextFactory contextFactory, String databaseName )
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
         boolean archiveFailedIndex = config.get( GraphDatabaseInternalSettings.archive_failed_index );
 
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, databaseName ).withMonitors( monitors ).withTag( monitorTag )
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, contextFactory, databaseName )
+                                                                        .withMonitors( monitors ).withTag( monitorTag )
                                                                         .withReadOnlyChecker( readOnlyChecker ).withPageCacheTracer( pageCacheTracer )
                                                                         .build();
         GenericNativeIndexProvider generic =

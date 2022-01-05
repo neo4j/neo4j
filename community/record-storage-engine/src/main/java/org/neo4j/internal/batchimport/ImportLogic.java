@@ -56,6 +56,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -89,6 +90,7 @@ import static org.neo4j.io.IOUtils.closeAll;
 public class ImportLogic implements Closeable
 {
     private static final String IMPORT_COUNT_STORE_REBUILD_TAG = "importCountStoreRebuild";
+    private static final String ID_MAPPER_PREPARATION_TAG = "Id mapper preparation.";
 
     private final Path databaseDirectory;
     private final String databaseName;
@@ -97,6 +99,7 @@ public class ImportLogic implements Closeable
     private final Config dbConfig;
     private final Log log;
     private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final IndexImporterFactory indexImporterFactory;
     private final MemoryTracker memoryTracker;
     private final ExecutionMonitor executionMonitor;
@@ -133,11 +136,10 @@ public class ImportLogic implements Closeable
      * @param recordFormats which {@link RecordFormats record format} to use for the created db.
      * @param badCollector {@link Collector} for bad entries.
      * @param monitor {@link Monitor} for some events.
-     * @param indexImporterFactory
      */
     public ImportLogic( DatabaseLayout databaseLayout, BatchingNeoStores neoStore, Configuration config, Config dbConfig, LogService logService,
             ExecutionMonitor executionMonitor, RecordFormats recordFormats, Collector badCollector, Monitor monitor,
-            PageCacheTracer pageCacheTracer, IndexImporterFactory indexImporterFactory,
+            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory, IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker )
     {
         this.databaseDirectory = databaseLayout.databaseDirectory();
@@ -150,6 +152,7 @@ public class ImportLogic implements Closeable
         this.monitor = monitor;
         this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.indexImporterFactory = indexImporterFactory;
         this.memoryTracker = memoryTracker;
         this.executionMonitor = ExecutionSupervisors.withDynamicProcessorAssignment( executionMonitor, config );
@@ -246,7 +249,7 @@ public class ImportLogic implements Closeable
         if ( idMapper.needsPreparation() )
         {
             MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
-            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "Id mapper preparation." ) );
+            try ( var cursorContext = contextFactory.create( ID_MAPPER_PREPARATION_TAG );
                   var cursors = new CachedStoreCursors( neoStore.getTemporaryNeoStores(), cursorContext ) )
             {
                 PropertyValueLookup inputIdLookup = new NodeInputIdPropertyLookup( neoStore.getTemporaryPropertyStore(), cursors );
@@ -470,7 +473,7 @@ public class ImportLogic implements Closeable
      */
     public void buildCountsStore()
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( IMPORT_COUNT_STORE_REBUILD_TAG ) );
+        try ( var cursorContext = contextFactory.create( IMPORT_COUNT_STORE_REBUILD_TAG );
               var storeCursors = new CachedStoreCursors( neoStore.getNeoStores(), cursorContext ) )
         {
             neoStore.buildCountsStore( new CountsBuilder()
@@ -487,12 +490,13 @@ public class ImportLogic implements Closeable
                     executeStage( new NodeCountsAndLabelIndexBuildStage( config, neoStore, nodeLabelsCache, neoStore.getNodeStore(),
                             neoStore.getLabelRepository().getHighId(),
                             updater, progressMonitor.startSection( "Nodes" ),
-                            indexImporterFactory, pageCacheTracer, storeCursorsFactory, memoryTracker, memoryUsageStats ) );
+                            indexImporterFactory, pageCacheTracer, contextFactory, storeCursorsFactory, memoryTracker, memoryUsageStats ) );
                     // Count label-[type]->label
                     executeStage( new RelationshipCountsAndTypeIndexBuildStage( config, neoStore, nodeLabelsCache, neoStore.getRelationshipStore(),
                             neoStore.getLabelRepository().getHighId(),
                             neoStore.getRelationshipTypeRepository().getHighId(), updater, numberArrayFactory,
-                            progressMonitor.startSection( "Relationships" ),indexImporterFactory, pageCacheTracer, storeCursorsFactory, memoryTracker ) );
+                            progressMonitor.startSection( "Relationships" ),indexImporterFactory, pageCacheTracer,
+                            contextFactory, storeCursorsFactory, memoryTracker ) );
                 }
 
                 @Override

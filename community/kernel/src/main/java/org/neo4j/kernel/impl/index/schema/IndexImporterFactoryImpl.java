@@ -26,8 +26,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 public class IndexImporterFactoryImpl implements IndexImporterFactory
 {
@@ -39,8 +38,9 @@ public class IndexImporterFactoryImpl implements IndexImporterFactory
     }
 
     @Override
-    public IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache, CursorContext cursorContext )
+    public IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
+            CursorContextFactory contextFactory )
     {
-        return new TokenIndexImporter( index, layout, fs, pageCache, cursorContext, config );
+        return new TokenIndexImporter( index, layout, fs, pageCache, contextFactory, config );
     }
 }

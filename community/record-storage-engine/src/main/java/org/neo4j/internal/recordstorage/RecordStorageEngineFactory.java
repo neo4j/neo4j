@@ -72,6 +72,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -187,10 +188,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
-            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
     {
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
-        RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler, cacheTracer,
+        RecordStorageMigrator recordStorageMigrator = new RecordStorageMigrator( fs, pageCache, config, logService, jobScheduler, cacheTracer, contextFactory,
                 batchImporterFactory, memoryTracker );
         return List.of( recordStorageMigrator );
     }
@@ -304,19 +305,18 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout layout, boolean lenient,
-            Function<SchemaRule,SchemaRule> schemaRuleMigration, PageCacheTracer pageCacheTracer )
+            Function<SchemaRule,SchemaRule> schemaRuleMigration, PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory )
     {
         RecordDatabaseLayout databaseLayout = convert( layout );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fs,
                         NullLogProvider.getInstance(), pageCacheTracer, readOnly() );
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "loadSchemaRules" );
-              var cursorContext = new CursorContext( cursorTracer );
+        try ( var cursorContext = contextFactory.create( "loadSchemaRules" );
               var stores = factory.openAllNeoStores();
               var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
         {
             stores.start( cursorContext );
-            TokenHolders tokenHolders = loadReadOnlyTokens( stores, lenient, pageCacheTracer );
+            TokenHolders tokenHolders = loadReadOnlyTokens( stores, lenient, contextFactory );
             List<SchemaRule> rules = new ArrayList<>();
             SchemaStorage storage = new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST );
             if ( lenient )
@@ -337,7 +337,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public TokenHolders loadReadOnlyTokens( FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache, boolean lenient,
-            PageCacheTracer pageCacheTracer )
+            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory )
     {
         RecordDatabaseLayout databaseLayout = convert( layout );
         StoreFactory factory =
@@ -348,15 +348,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
                 StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME ) )
         {
-            return loadReadOnlyTokens( stores, lenient, pageCacheTracer );
+            return loadReadOnlyTokens( stores, lenient, contextFactory );
         }
     }
 
-    private TokenHolders loadReadOnlyTokens( NeoStores stores, boolean lenient, PageCacheTracer pageCacheTracer )
+    private TokenHolders loadReadOnlyTokens( NeoStores stores, boolean lenient, CursorContextFactory contextFactory )
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "loadReadOnlyTokens" );
-                var cursorContext = new CursorContext( cursorTracer );
-                var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
+        try ( var cursorContext = contextFactory.create( "loadReadOnlyTokens" );
+              var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
         {
             stores.start( cursorContext );
             TokensLoader loader = lenient ? StoreTokens.allReadableTokens( stores ) : StoreTokens.allTokens( stores );
@@ -441,7 +440,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public IndexConfig matchingBatchImportIndexConfiguration( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
+    public IndexConfig matchingBatchImportIndexConfiguration( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache,
+            CursorContextFactory contextFactory )
     {
         try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(), new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fs,
                 NullLogProvider.getInstance(), PageCacheTracer.NULL, DatabaseReadOnlyChecker.readOnly() ).openAllNeoStores();
@@ -450,7 +450,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             // Injected NLI will be included if the store we're copying from is older than when token indexes were introduced.
             IndexConfig config = IndexConfig.create();
             SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(),
-                    loadReadOnlyTokens( neoStores, true, PageCacheTracer.NULL ), neoStores.getMetaDataStore() );
+                    loadReadOnlyTokens( neoStores, true, contextFactory ), neoStores.getMetaDataStore() );
             schemaRuleAccess.tokenIndexes( storeCursors ).forEachRemaining( index ->
             {
                 if ( index.schema().entityType() == NODE )
@@ -470,7 +470,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public BatchImporter batchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer, Configuration config,
             LogService logService, PrintStream progressOutput, boolean verboseProgressOutput, AdditionalInitialIds additionalInitialIds, Config dbConfig,
             Monitor monitor, JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
-            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker )
+            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
     {
         RecordFormats recordFormats = RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() );
         ExecutionMonitor executionMonitor = progressOutput != null
@@ -479,17 +479,17 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         return BatchImporterFactory.withHighestPriority().instantiate( databaseLayout, fileSystem, pageCacheTracer, config, logService,
                 executionMonitor, additionalInitialIds, dbConfig,
                 recordFormats, monitor, jobScheduler, badCollector, logFilesInitializer,
-                indexImporterFactory, memoryTracker );
+                indexImporterFactory, memoryTracker, contextFactory );
     }
 
     @Override
     public Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache, PageCacheTracer pageCacheTracer,
-            Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace )
+            Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace, CursorContextFactory contextFactory )
     {
         NeoStores neoStores =
                 new StoreFactory( databaseLayout, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fileSystem, NullLogProvider.getInstance(),
                         pageCacheTracer, readOnly() ).openAllNeoStores();
-        return new LenientStoreInput( neoStores, readBehaviour.decorateTokenHolders( loadReadOnlyTokens( neoStores, true, PageCacheTracer.NULL ) ),
+        return new LenientStoreInput( neoStores, readBehaviour.decorateTokenHolders( loadReadOnlyTokens( neoStores, true, contextFactory ) ),
                 compactNodeIdSpace, pageCacheTracer, readBehaviour );
     }
 

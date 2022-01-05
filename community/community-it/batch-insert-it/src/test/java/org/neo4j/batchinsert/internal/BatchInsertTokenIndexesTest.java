@@ -41,6 +41,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -62,6 +64,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @PageCacheExtension
@@ -119,8 +122,9 @@ public class BatchInsertTokenIndexesTest
         inserter.shutdown();
 
         // verify token index contain inserted entities
-        try ( var accesor = tokenIndexAccessor( EntityType.RELATIONSHIP );
-              var reader = accesor.newTokenReader() )
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+        try ( var accessor = tokenIndexAccessor( EntityType.RELATIONSHIP, contextFactory );
+              var reader = accessor.newTokenReader() )
         {
             assertTokenIndexContains( reader, 0, rel1, rel4 );
             assertTokenIndexContains( reader, 1, rel2 );
@@ -177,9 +181,9 @@ public class BatchInsertTokenIndexesTest
                      .build();
     }
 
-    private TokenIndexAccessor tokenIndexAccessor( EntityType entityType )
+    private TokenIndexAccessor tokenIndexAccessor( EntityType entityType, CursorContextFactory contextFactory )
     {
-        var context = DatabaseIndexContext.builder( pageCache, fs, databaseLayout.getDatabaseName() ).build();
+        var context = DatabaseIndexContext.builder( pageCache, fs, contextFactory, databaseLayout.getDatabaseName() ).build();
 
         IndexDescriptor descriptor = entityType == EntityType.NODE ? labelTokenIdx : relationshipTypeTokenIdx;
         IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() )

@@ -35,6 +35,7 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -53,6 +54,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.logging.internal.NullLogService.getInstance;
@@ -77,12 +79,13 @@ class ImportLogicTest
     {
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
         IndexImporterFactory factory = mock( IndexImporterFactory.class );
+        CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
                 getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
             //noinspection EmptyTryBlock
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, factory, EmptyMemoryTracker.INSTANCE ) )
+                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
             {
                 // nothing to run in this import
                 logic.success();
@@ -151,6 +154,7 @@ class ImportLogicTest
         // given
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
         IndexImporterFactory factory = mock( IndexImporterFactory.class );
+        CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
                 getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
@@ -162,7 +166,7 @@ class ImportLogicTest
                     };
             DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, factory, EmptyMemoryTracker.INSTANCE ) )
+                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
             {
                 logic.putState( dataStatistics );
                 logic.success();

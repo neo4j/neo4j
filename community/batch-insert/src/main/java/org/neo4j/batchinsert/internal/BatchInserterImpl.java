@@ -66,6 +66,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -171,6 +172,7 @@ public class BatchInserterImpl implements BatchInserter
     private final FileSystemAbstraction fileSystem;
     private final JobScheduler jobScheduler;
     private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
     private final MemoryTracker memoryTracker;
@@ -195,7 +197,7 @@ public class BatchInserterImpl implements BatchInserter
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
     public BatchInserterImpl( DatabaseLayout layoutArg, final FileSystemAbstraction fileSystem,
-                       Config fromConfig, DatabaseTracers tracers ) throws IOException
+                       Config fromConfig, DatabaseTracers tracers, CursorContextFactory contextFactory ) throws IOException
     {
         RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.convert( layoutArg );
         rejectAutoUpgrade( fromConfig );
@@ -209,8 +211,9 @@ public class BatchInserterImpl implements BatchInserter
                 .fromConfig( fromConfig )
                 .build();
         this.fileSystem = fileSystem;
+        this.contextFactory = contextFactory;
         pageCacheTracer = tracers.getPageCacheTracer();
-        cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( BATCH_INSERTER_TAG ) );
+        cursorContext = contextFactory.create( BATCH_INSERTER_TAG );
         memoryTracker = EmptyMemoryTracker.INSTANCE;
         life = new LifeSupport();
         this.databaseLayout = databaseLayout;
@@ -280,7 +283,7 @@ public class BatchInserterImpl implements BatchInserter
                                                        any -> new CachedStoreCursors( neoStores, cursorContext ), config, jobScheduler );
             indexProviderMap = life.add( StaticIndexProviderMapFactory.create(
                     life, config, pageCache, fileSystem, logService, monitors, readOnlyChecker, DbmsInfo.TOOL, immediate(), pageCacheTracer,
-                    databaseLayout, tokenHolders, jobScheduler) );
+                    databaseLayout, tokenHolders, jobScheduler, contextFactory ) );
 
             var schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders,
                                                                          neoStores.getMetaDataStore() );

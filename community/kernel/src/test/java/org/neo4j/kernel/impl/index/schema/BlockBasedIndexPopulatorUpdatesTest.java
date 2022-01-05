@@ -36,6 +36,8 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -63,6 +65,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValue
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
@@ -97,7 +100,8 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
         IndexDirectoryStructure directoryStructure = directoriesByProvider( directory.homePath() ).forProvider( providerDescriptor );
         indexFiles = new IndexFiles.Directory( fs, directoryStructure, INDEX_DESCRIPTOR.getId() );
-        databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).build();
+        databaseIndexContext =
+                DatabaseIndexContext.builder( pageCache, fs, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), DEFAULT_DATABASE_NAME ).build();
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
         {

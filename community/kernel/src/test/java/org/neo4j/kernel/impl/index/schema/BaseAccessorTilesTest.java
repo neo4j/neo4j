@@ -36,6 +36,8 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -58,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
 @PageCacheExtension
@@ -75,6 +78,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
     TestDirectory directory;
     @Inject
     PageCache pageCache;
+    CursorContextFactory contextFactory;
     @Inject
     RandomSupport random;
 
@@ -88,6 +92,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
     @BeforeEach
     void setup()
     {
+        contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         descriptor = createDescriptor();
         accessor = createAccessor();
     }

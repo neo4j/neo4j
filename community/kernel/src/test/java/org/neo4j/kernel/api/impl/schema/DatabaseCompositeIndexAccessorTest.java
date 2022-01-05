@@ -54,6 +54,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -101,6 +102,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.extension.Threading.waitingWhileIn;
@@ -324,8 +326,8 @@ public class DatabaseCompositeIndexAccessorTest
         return indexProviderFactories.stream().map( f -> f.create( pageCache, fileSystem, new SimpleLogService( logProvider ),
                                                                    new Monitors(), CONFIG, writable(), DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(),
                                                                    PageCacheTracer.NULL, DatabaseLayout.ofFlat( testDirectory.homePath() ),
-                                                                   new TokenHolders( null, null, null ),
-                                                                   jobScheduler ) ).collect( Collectors.toList() );
+                                                                   new TokenHolders( null, null, null ), jobScheduler,
+                                                                   new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ) ).collect( Collectors.toList() );
     }
 
     private static IndexAccessor indexAccessor( IndexProvider provider, IndexDescriptor descriptor ) throws IOException

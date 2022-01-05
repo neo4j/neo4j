@@ -29,11 +29,13 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.monitoring.Monitors;
 
 import static org.mockito.Mockito.mock;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension.TEST_DIRECTORY;
 
 public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTestSuite
@@ -274,6 +276,7 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                                                                               mock( DatabaseReadOnlyChecker.class ),
                                                                               mock( RecoveryCleanupWorkCollector.class ),
                                                                               mock( PageCacheTracer.class ),
+                                                                              new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
                                                                               "testDatabase" );
 
         final var ids = idGenerator();

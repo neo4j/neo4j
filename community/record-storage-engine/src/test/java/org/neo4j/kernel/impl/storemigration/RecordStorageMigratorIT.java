@@ -28,9 +28,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -40,7 +38,6 @@ import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
@@ -50,18 +47,16 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -158,14 +153,16 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
                 batchImporterFactory, INSTANCE );
         migrator.migrate(
                 databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ),
                 EMPTY );
 
         // WHEN simulating resuming the migration
-        migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, batchImporterFactory, INSTANCE );
+        migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory, batchImporterFactory,
+                INSTANCE );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // THEN starting the new store should be successful
@@ -191,7 +188,8 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
                 batchImporterFactory, INSTANCE );
 
         // WHEN migrating
@@ -262,7 +260,8 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
                 batchImporterFactory, INSTANCE );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, getVersionToMigrateTo( check ), EMPTY );
@@ -294,7 +293,8 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
                 batchImporterFactory, INSTANCE );
 
         // WHEN migrating
@@ -322,7 +322,8 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = SILENT;
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
                 batchImporterFactory, INSTANCE );
 
         // when
@@ -346,11 +347,12 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         String versionToMigrateTo = getVersionToMigrateTo( check );
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
 
         // when
         RecordStorageMigrator migrator =
-                new RecordStorageMigrator( fs, pageCache, CONFIG, NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL, batchImporterFactory,
-                        INSTANCE );
+                new RecordStorageMigrator( fs, pageCache, CONFIG, NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL, contextFactory,
+                        batchImporterFactory, INSTANCE );
 
         // when
         migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo,
@@ -381,13 +383,14 @@ class RecordStorageMigratorIT
         String versionToMigrateTo = getVersionToMigrateTo( check );
         // explicitly set a checkpoint log version into the meta data store
         long checkpointLogVersion = 4;
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
         MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), CHECKPOINT_LOG_VERSION, checkpointLogVersion, databaseLayout.getDatabaseName(),
                 NULL_CONTEXT );
 
         // when
         RecordStorageMigrator migrator =
-                new RecordStorageMigrator( fs, pageCache, CONFIG, NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL, batchImporterFactory,
-                        INSTANCE );
+                new RecordStorageMigrator( fs, pageCache, CONFIG, NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL, contextFactory,
+                        batchImporterFactory, INSTANCE );
 
         // when
         migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo,
@@ -402,41 +405,6 @@ class RecordStorageMigratorIT
             neoStores.start( NULL_CONTEXT );
             assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( checkpointLogVersion );
         }
-    }
-
-    private static <T extends TokenRecord> void createTokens( TokenStore<T> tokenStore, int tokenCount, StoreCursors storeCursors )
-    {
-        T record = tokenStore.newRecord();
-        DynamicStringStore nameStore = tokenStore.getNameStore();
-        record.setInUse( true );
-        record.setCreated();
-        String tokenType = record.getClass().getSimpleName();
-        String prefix = tokenType.substring( 0, tokenType.indexOf( "TokenRecord" ) );
-        for ( int i = 1; i <= tokenCount; i++ )
-        {
-            String name = prefix + i;
-            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ), NULL_CONTEXT, INSTANCE );
-            record.setNameId( (int) Iterables.first( nameRecords ).getId() );
-            record.addNameRecords( nameRecords );
-            record.setId( tokenStore.nextId( NULL_CONTEXT ) );
-            long maxId = 0;
-            try ( var nameCursor = nameStore.openPageCursorForWriting( 0, NULL_CONTEXT ) )
-            {
-                for ( DynamicRecord nameRecord : nameRecords )
-                {
-                    nameStore.updateRecord( nameRecord, nameCursor, NULL_CONTEXT, storeCursors );
-                    maxId = Math.max( nameRecord.getId(), maxId );
-                }
-            }
-            nameStore.setHighestPossibleIdInUse( Math.max( maxId, nameStore.getHighestPossibleIdInUse( NULL_CONTEXT ) ) );
-            try ( var tokenCursor = tokenStore.openPageCursorForWriting( 0, NULL_CONTEXT ) )
-            {
-                tokenStore.updateRecord( record, tokenCursor, NULL_CONTEXT, storeCursors );
-            }
-            tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse( NULL_CONTEXT ) ) );
-        }
-        nameStore.flush( NULL_CONTEXT );
-        tokenStore.flush( NULL_CONTEXT );
     }
 
     private static String getVersionToMigrateFrom( RecordStoreVersionCheck check )

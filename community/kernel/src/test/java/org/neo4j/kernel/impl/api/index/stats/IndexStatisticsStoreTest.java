@@ -69,11 +69,11 @@ class IndexStatisticsStoreTest
     private TestDirectory testDirectory;
 
     private IndexStatisticsStore store;
-    private final PageCacheTracer pageCacheTracer =  new DefaultPageCacheTracer();
+    private final PageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
     private CursorContextFactory cursorContextFactory;
 
     @BeforeEach
-    void start() throws IOException
+    void setUp() throws IOException
     {
         cursorContextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
         store = openStore( "stats" );
@@ -278,12 +278,15 @@ class IndexStatisticsStoreTest
     @Test
     void shouldNotStartWithoutFileIfReadOnly()
     {
-        final Exception e = assertThrows( Exception.class,
-                () -> new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(), DEFAULT_DATABASE_NAME,
-                        PageCacheTracer.NULL, CursorContext.NULL_CONTEXT ) );
-        assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
-        assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
-        assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
+        try ( CursorContext cursorContext = cursorContextFactory.create( "shouldNotStartWithoutFileIfReadOnly" ) )
+        {
+            final Exception e = assertThrows( Exception.class,
+                    () -> new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(), DEFAULT_DATABASE_NAME,
+                            PageCacheTracer.NULL, cursorContext ) );
+            assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
+            assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
+            assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
+        }
     }
 
     private void replaceAndVerifySample( long indexId, IndexSample indexSample )

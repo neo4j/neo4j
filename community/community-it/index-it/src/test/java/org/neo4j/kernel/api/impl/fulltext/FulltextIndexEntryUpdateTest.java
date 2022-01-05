@@ -55,6 +55,9 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -131,6 +134,7 @@ class FulltextIndexEntryUpdateTest
     @BeforeEach
     final void setup()
     {
+        CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY );
         var defaultDatabaseId = DatabaseIdFactory.from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ); //UUID required, but ignored by config lookup
         DatabaseIdRepository databaseIdRepository = mock( DatabaseIdRepository.class );
         Mockito.when( databaseIdRepository.getByName( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( defaultDatabaseId ) );
@@ -140,7 +144,7 @@ class FulltextIndexEntryUpdateTest
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         provider = new FulltextIndexProviderFactory().create( pageCache, fs, NullLogService.getInstance(), new Monitors(), CONFIG, readOnlyChecker,
                                                               DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(), PageCacheTracer.NULL, databaseLayout,
-                                                              tokenHolders, jobScheduler );
+                                                              tokenHolders, jobScheduler, contextFactory );
         life.add( provider );
         life.start();
 
@@ -218,7 +222,7 @@ class FulltextIndexEntryUpdateTest
         final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, supportedValue( id ) ) ),
                                        generateUpdates( removedIds, id -> IndexEntryUpdate.remove( id, index, supportedValue( id ) ) ) )
                                   .flatMap( Collection::stream )
-                                  .collect( Collectors.toUnmodifiableList() );
+                                  .toList();
 
         final var expectedIds = new HashSet<>( addedIds );
         expectedIds.removeAll( removedIds );
@@ -233,7 +237,7 @@ class FulltextIndexEntryUpdateTest
         final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, unsupportedValue( id ) ) ),
                                        generateUpdates( removedIds, id -> IndexEntryUpdate.remove( id, index, unsupportedValue( id ) ) ) )
                                   .flatMap( Collection::stream )
-                                  .collect( Collectors.toUnmodifiableList() );
+                                  .toList();
         populatingUpdaterTest( updates, List.of() );
     }
 
@@ -254,7 +258,7 @@ class FulltextIndexEntryUpdateTest
                                        generateUpdates( changedIds,
                                                         id -> IndexEntryUpdate.change( id, index, unsupportedValue( id ), supportedValue( id ) ) ) )
                                   .flatMap( Collection::stream )
-                                  .collect( Collectors.toUnmodifiableList() );
+                                  .toList();
         populatingUpdaterTest( updates, changedIds );
     }
 
@@ -267,7 +271,7 @@ class FulltextIndexEntryUpdateTest
                                        generateUpdates( changedIds,
                                                         id -> IndexEntryUpdate.change( id, index, supportedValue( id ), unsupportedValue( id ) ) ) )
                                   .flatMap( Collection::stream )
-                                  .collect( Collectors.toUnmodifiableList() );
+                                  .toList();
 
         final var expectedIds = new HashSet<>( addedIds );
         expectedIds.removeAll( changedIds );
@@ -326,7 +330,7 @@ class FulltextIndexEntryUpdateTest
         final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, supportedValue( id ) ) ),
                                        generateUpdates( removedIds, id -> IndexEntryUpdate.remove( id, index, supportedValue( id ) ) ) )
                                   .flatMap( Collection::stream )
-                                  .collect( Collectors.toUnmodifiableList() );
+                                  .toList();
 
         final var expectedIds = new HashSet<>( addedIds );
         expectedIds.removeAll( removedIds );
@@ -341,7 +345,7 @@ class FulltextIndexEntryUpdateTest
         final var updates = Stream.of( generateUpdates( addedIds, id -> IndexEntryUpdate.add( id, index, unsupportedValue( id ) ) ),
                                        generateUpdates( removedIds, id -> IndexEntryUpdate.remove( id, index, unsupportedValue( id ) ) ) )
                                   .flatMap( Collection::stream )
-                                  .collect( Collectors.toUnmodifiableList() );
+                                  .toList();
         updaterTest( updates, List.of() );
     }
 
@@ -362,7 +366,7 @@ class FulltextIndexEntryUpdateTest
                                        generateUpdates( changedIds,
                                                         id -> IndexEntryUpdate.change( id, index, unsupportedValue( id ), supportedValue( id ) ) ) )
                                   .flatMap( Collection::stream )
-                                  .collect( Collectors.toUnmodifiableList() );
+                                  .toList();
         updaterTest( updates, changedIds );
     }
 
@@ -375,7 +379,7 @@ class FulltextIndexEntryUpdateTest
                                        generateUpdates( changedIds,
                                                         id -> IndexEntryUpdate.change( id, index, supportedValue( id ), unsupportedValue( id ) ) ) )
                                   .flatMap( Collection::stream )
-                                  .collect( Collectors.toUnmodifiableList() );
+                                  .toList();
 
         final var expectedIds = new HashSet<>( addedIds );
         expectedIds.removeAll( changedIds );
@@ -406,7 +410,7 @@ class FulltextIndexEntryUpdateTest
     private static Collection<ValueIndexEntryUpdate<IndexDescriptor>> generateUpdates( Collection<Long> ids,
                                                                                        Function<Long,ValueIndexEntryUpdate<IndexDescriptor>> toUpdate )
     {
-        return ids.stream().map( toUpdate ).collect( Collectors.toUnmodifiableList() );
+        return ids.stream().map( toUpdate ).toList();
     }
 
     private static Collection<Long> generateIds( long from, long to )

@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
@@ -145,9 +146,11 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,LAYOUT extend
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
+    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
+            CursorContextFactory contextFactory )
     {
-        return new SchemaIndexMigrator( getProviderDescriptor().name() + " indexes", fs, pageCache, directoryStructure(), storageEngineFactory, false );
+        return new SchemaIndexMigrator( getProviderDescriptor().name() + " indexes", fs, pageCache, directoryStructure(), storageEngineFactory, false,
+                contextFactory );
     }
 
     private Path storeFile( IndexDescriptor descriptor )

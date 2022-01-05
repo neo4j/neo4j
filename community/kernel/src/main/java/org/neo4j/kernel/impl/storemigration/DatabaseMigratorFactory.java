@@ -27,6 +27,7 @@ import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.internal.LogService;
@@ -46,9 +47,11 @@ public class DatabaseMigratorFactory
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
     private final DatabaseHealth databaseHealth;
+    private final CursorContextFactory contextFactory;
 
     public DatabaseMigratorFactory( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler,
-            NamedDatabaseId namedDatabaseId, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, DatabaseHealth databaseHealth )
+            NamedDatabaseId namedDatabaseId, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, DatabaseHealth databaseHealth,
+            CursorContextFactory contextFactory )
     {
         this.fs = fs;
         this.config = config;
@@ -59,6 +62,7 @@ public class DatabaseMigratorFactory
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
         this.databaseHealth = databaseHealth;
+        this.contextFactory = contextFactory;
     }
 
     public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
@@ -66,6 +70,6 @@ public class DatabaseMigratorFactory
     {
         DatabaseConfig dbConfig = new DatabaseConfig( Collections.emptyMap(), config, namedDatabaseId );
         return new DatabaseMigrator( fs, dbConfig, logService, dependencies, pageCache, jobScheduler, databaseLayout,
-                storageEngineFactory, pageCacheTracer, memoryTracker, databaseHealth );
+                storageEngineFactory, pageCacheTracer, contextFactory, memoryTracker, databaseHealth );
     }
 }

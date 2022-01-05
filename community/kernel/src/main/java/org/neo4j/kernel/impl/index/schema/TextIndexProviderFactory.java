@@ -26,6 +26,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
@@ -58,7 +59,8 @@ public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextI
     protected TextIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
                                                 Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
                                                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
-                                                PageCacheTracer pageCacheTracer, Log log, TokenHolders tokenHolders, JobScheduler scheduler )
+                                                PageCacheTracer pageCacheTracer, Log log, TokenHolders tokenHolders, JobScheduler scheduler,
+                                                CursorContextFactory contextFactory )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() );
         return IndexProviderFactoryUtil.textProvider( fs, directoryStructure, monitors, config, readOnlyDatabaseChecker );

@@ -39,7 +39,7 @@ class TextIndexPopulationStressTest extends IndexPopulationStressTest
     {
         super( true, randomValues -> randomValues.nextValueOfTypes( CHAR, STRING, STRING_ALPHANUMERIC, STRING_ASCII, STRING_BMP ), test ->
         {
-            DatabaseIndexContext context = DatabaseIndexContext.builder( test.pageCache, test.fs, DEFAULT_DATABASE_NAME ).build();
+            DatabaseIndexContext context = DatabaseIndexContext.builder( test.pageCache, test.fs, test.contextFactory, DEFAULT_DATABASE_NAME ).build();
             return new TextIndexProvider( context.fileSystem, directoryFactory( false ), test.directory(), new Monitors(), defaults(), writable() );
         } );
     }

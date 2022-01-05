@@ -30,6 +30,7 @@ import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.memory.MemoryTracker;
@@ -46,7 +47,8 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage
 
     public NodeCountsAndLabelIndexBuildStage( Configuration config, BatchingNeoStores neoStores, NodeLabelsCache cache,
             NodeStore nodeStore, int highLabelId, CountsAccessor.Updater countsUpdater, ProgressReporter progressReporter,
-            IndexImporterFactory indexImporterFactory, PageCacheTracer pageCacheTracer, Function<CursorContext,StoreCursors> storeCursorsCreator,
+            IndexImporterFactory indexImporterFactory, PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory,
+            Function<CursorContext,StoreCursors> storeCursorsCreator,
             MemoryTracker memoryTracker, MemoryUsageStatsProvider additionalStatsProviders )
     {
         super( NAME, null, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
@@ -54,7 +56,8 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage
         add( new ReadRecordsStep<>( control(), config, false, nodeStore, pageCacheTracer ) );
         if ( config.indexConfig().createLabelIndex() )
         {
-            add( new LabelIndexWriterStep( control(), config, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer, storeCursorsCreator ) );
+            add( new LabelIndexWriterStep( control(), config, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer, contextFactory,
+                    storeCursorsCreator ) );
         }
         add( new RecordProcessorStep<>( control(), "COUNT", config,
                 () -> new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, 0, pageCacheTracer, storeCursorsCreator,

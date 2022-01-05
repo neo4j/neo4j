@@ -40,6 +40,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
@@ -68,6 +69,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
@@ -86,17 +88,18 @@ public class ConsistencyCheckService
     private final Path reportDir;
     private final ConsistencyFlags consistencyFlags;
     private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
 
     public ConsistencyCheckService( DatabaseLayout layout )
     {
         this( new Date(), layout, Config.defaults(), null, NullLogProvider.getInstance(), new DefaultFileSystemAbstraction(), null, false, null,
-                ConsistencyFlags.DEFAULT, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                ConsistencyFlags.DEFAULT, PageCacheTracer.NULL, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), EmptyMemoryTracker.INSTANCE );
     }
 
     private ConsistencyCheckService( Date timestamp, DatabaseLayout layout, Config config, OutputStream progressOutput, LogProvider logProvider,
             FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose, Path reportDir, ConsistencyFlags consistencyFlags,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         this.timestamp = timestamp;
         this.layout = layout;
@@ -109,79 +112,80 @@ public class ConsistencyCheckService
         this.reportDir = reportDir;
         this.consistencyFlags = consistencyFlags;
         this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
     }
 
     public ConsistencyCheckService with( Date timestamp )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( DatabaseLayout layout )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( Config config )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( OutputStream progressOutput )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( LogProvider logProvider )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( FileSystemAbstraction fileSystem )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( PageCache pageCache )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService verbose( boolean verbose )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( Path reportDir )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( ConsistencyFlags consistencyFlags )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( PageCacheTracer pageCacheTracer )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public ConsistencyCheckService with( MemoryTracker memoryTracker )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
-                consistencyFlags, pageCacheTracer, memoryTracker );
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
     }
 
     public Result runFullConsistencyCheck()
@@ -222,7 +226,8 @@ public class ConsistencyCheckService
             var jobScheduler = life.add( JobSchedulerFactory.createInitialisedScheduler() );
             var recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.ignore();
             var monitors = new Monitors();
-            var tokenHolders = storageEngineFactory.loadReadOnlyTokens( fileSystem, layout, config, pageCache, true, pageCacheTracer );
+            var tokenHolders = storageEngineFactory.loadReadOnlyTokens( fileSystem, layout, config, pageCache, true, pageCacheTracer,
+                    contextFactory );
             var extensions = life.add( instantiateExtensions(
                     layout, fileSystem, config, new SimpleLogService( logProvider ), pageCache, jobScheduler,
                     recoveryCleanupWorkCollector,
@@ -230,7 +235,7 @@ public class ConsistencyCheckService
                     monitors, tokenHolders, pageCacheTracer, readOnly() ) );
             var indexProviders = life.add( StaticIndexProviderMapFactory.create(
                     life, config, pageCache, fileSystem, new SimpleLogService( logProvider ), monitors, readOnly(), TOOL, recoveryCleanupWorkCollector,
-                    pageCacheTracer, layout, tokenHolders, jobScheduler, extensions ) );
+                    pageCacheTracer, layout, tokenHolders, jobScheduler, contextFactory, extensions ) );
 
             // do the consistency check
             life.start();

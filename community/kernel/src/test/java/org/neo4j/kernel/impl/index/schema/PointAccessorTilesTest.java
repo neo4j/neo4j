@@ -23,10 +23,13 @@ import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.PointIndexProvider.DESCRIPTOR;
 
 class PointAccessorTilesTest extends BaseAccessorTilesTest<PointKey>
@@ -44,7 +47,8 @@ class PointAccessorTilesTest extends BaseAccessorTilesTest<PointKey>
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
         PointLayout layout = new PointLayout( indexSettings );
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).build();
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                DEFAULT_DATABASE_NAME ).build();
         StandardConfiguration configuration = new StandardConfiguration();
         return new PointIndexAccessor( databaseIndexContext, indexFiles, layout, collector, descriptor, indexSettings, configuration );
     }

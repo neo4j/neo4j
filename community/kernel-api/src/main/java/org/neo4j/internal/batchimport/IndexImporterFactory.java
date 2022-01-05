@@ -23,7 +23,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
 
@@ -32,7 +32,8 @@ import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
  */
 public interface IndexImporterFactory
 {
-    IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache, CursorContext cursorContext );
+    IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
+            CursorContextFactory contextFactory );
 
     IndexImporterFactory EMPTY = ( descriptor, layout, fs, pageCache, cursorTracer ) -> EMPTY_IMPORTER;
 }

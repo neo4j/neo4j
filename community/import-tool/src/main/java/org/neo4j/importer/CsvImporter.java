@@ -55,6 +55,8 @@ import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
@@ -109,6 +111,7 @@ class CsvImporter implements Importer
     private final PrintStream stdOut;
     private final PrintStream stdErr;
     private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final boolean force;
 
@@ -133,6 +136,7 @@ class CsvImporter implements Importer
         this.relationshipFiles = requireNonNull( b.relationshipFiles );
         this.fileSystem = requireNonNull( b.fileSystem );
         this.pageCacheTracer = requireNonNull( b.pageCacheTracer );
+        this.contextFactory = requireNonNull( b.contextFactory );
         this.memoryTracker = requireNonNull( b.memoryTracker );
         this.stdOut = requireNonNull( b.stdOut );
         this.stdErr = requireNonNull( b.stdErr );
@@ -193,7 +197,8 @@ class CsvImporter implements Importer
                     badCollector,
                     TransactionLogInitializer.getLogFilesInitializer(),
                     new IndexImporterFactoryImpl( databaseConfig ),
-                    memoryTracker );
+                    memoryTracker,
+                    contextFactory );
 
             printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );
 
@@ -422,6 +427,7 @@ class CsvImporter implements Importer
         private final Map<String, List<Path[]>> relationshipFiles = new HashMap<>();
         private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
+        private final CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
         private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;

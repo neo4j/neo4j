@@ -43,6 +43,7 @@ import org.neo4j.internal.batchimport.input.csv.DataFactories;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.logging.internal.NullLogService;
@@ -59,6 +60,7 @@ import org.neo4j.test.utils.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
@@ -87,7 +89,8 @@ class ImportPanicIT
                     databaseLayout, testDirectory.getFileSystem(), PageCacheTracer.NULL,
                     Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitor.INVISIBLE, AdditionalInitialIds.EMPTY,
                     Config.defaults(), StandardV4_3.RECORD_FORMATS, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
-                    LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE );
+                    LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE,
+                    new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
             Iterable<DataFactory> nodeData =
                 DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
             Input brokenCsvInput = new CsvInput(

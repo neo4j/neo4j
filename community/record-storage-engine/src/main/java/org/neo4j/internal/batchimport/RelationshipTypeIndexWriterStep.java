@@ -25,6 +25,7 @@ import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
@@ -35,17 +36,18 @@ import static org.neo4j.io.IOUtils.closeAll;
 
 public class RelationshipTypeIndexWriterStep extends IndexWriterStep<RelationshipRecord[]>
 {
-
     private static final String RELATIONSHIP_INDEX_WRITE_STEP_TAG = "relationshipIndexWriteStep";
     private final CursorContext cursorContext;
     private final IndexImporter importer;
 
     public RelationshipTypeIndexWriterStep( StageControl control, Configuration config, BatchingNeoStores neoStores, IndexImporterFactory indexImporterFactory,
-            MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer, Function<CursorContext,StoreCursors> storeCursorsCreator )
+            MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory,
+            Function<CursorContext,StoreCursors> storeCursorsCreator )
     {
         super( control, "RELATIONSHIP TYPE INDEX", config, 1, pageCacheTracer );
-        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RELATIONSHIP_INDEX_WRITE_STEP_TAG ) );
-        this.importer = indexImporter( config.indexConfig(), indexImporterFactory, neoStores, RELATIONSHIP, memoryTracker, cursorContext, storeCursorsCreator );
+        this.cursorContext = contextFactory.create( RELATIONSHIP_INDEX_WRITE_STEP_TAG );
+        this.importer = indexImporter( config.indexConfig(), indexImporterFactory, neoStores, RELATIONSHIP, memoryTracker, contextFactory,
+                storeCursorsCreator );
     }
 
     @Override

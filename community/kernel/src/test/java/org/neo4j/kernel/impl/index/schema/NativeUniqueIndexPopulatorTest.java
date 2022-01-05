@@ -28,6 +28,8 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -41,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> extends NativeIndexPopulatorTests<KEY>
@@ -64,7 +67,8 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> e
     @Override
     NativeIndexPopulator<KEY> createPopulator( PageCache pageCache ) throws IOException
     {
-        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).build();
+        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                DEFAULT_DATABASE_NAME ).build();
         return populatorFactory.create( context, indexFiles, layout, indexDescriptor, tokenNameLookup );
     }
 

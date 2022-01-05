@@ -64,6 +64,8 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
@@ -403,7 +405,8 @@ class MultipleIndexPopulationStressIT
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemAbstraction, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
                     ExecutionMonitor.INVISIBLE, EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
-                    TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE );
+                    TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE,
+                    new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) );
             importer.doImport( input );
         }
     }

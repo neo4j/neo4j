@@ -38,6 +38,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -51,7 +53,6 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.RandomSupport;
@@ -69,6 +70,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
@@ -96,6 +98,7 @@ class StoreMigratorTest
     private RandomSupport random;
     private JobScheduler jobScheduler;
     private final BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
+    private final CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
 
     @BeforeEach
     void setUp()
@@ -136,7 +139,7 @@ class StoreMigratorTest
 
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
-                batchImporterFactory, INSTANCE );
+                contextFactory, batchImporterFactory, INSTANCE );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL_CONTEXT );
 
         // then
@@ -161,7 +164,7 @@ class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
-                batchImporterFactory, INSTANCE );
+                contextFactory, batchImporterFactory, INSTANCE );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL_CONTEXT );
 
         // then
@@ -195,7 +198,7 @@ class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
-                batchImporterFactory, INSTANCE );
+                contextFactory, batchImporterFactory, INSTANCE );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL_CONTEXT );
 
         // then
@@ -259,7 +262,6 @@ class StoreMigratorTest
                         .setConfig( transaction_logs_root_path, customLogsLocation )
                         .build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        StorageEngineFactory storageEngineFactory = database.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
@@ -275,7 +277,7 @@ class StoreMigratorTest
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
                 MetaDataRecordFormat.FIELD_NOT_PRESENT, databaseLayout.getDatabaseName(), NULL_CONTEXT );
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
-                batchImporterFactory, INSTANCE );
+                contextFactory, batchImporterFactory, INSTANCE );
         LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100, NULL_CONTEXT );
 
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache )
@@ -288,7 +290,7 @@ class StoreMigratorTest
     private RecordStorageMigrator newStoreMigrator()
     {
         return new RecordStorageMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL,
-                batchImporterFactory, INSTANCE );
+                contextFactory, batchImporterFactory, INSTANCE );
     }
 
     private static class MyProgressReporter implements ProgressReporter

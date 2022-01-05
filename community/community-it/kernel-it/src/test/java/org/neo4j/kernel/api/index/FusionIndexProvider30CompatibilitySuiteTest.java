@@ -23,7 +23,6 @@ import org.mockito.Mockito;
 
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.configuration.Config;
@@ -33,6 +32,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -43,6 +43,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class FusionIndexProvider30CompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
 {
@@ -59,7 +60,7 @@ class FusionIndexProvider30CompatibilitySuiteTest extends PropertyIndexProviderC
         var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, databaseIdRepository ) );
         var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return NativeLuceneFusionIndexProviderFactory30.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker,
-                recoveryCleanupWorkCollector, PageCacheTracer.NULL, DEFAULT_DATABASE_NAME );
+                recoveryCleanupWorkCollector, PageCacheTracer.NULL, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), DEFAULT_DATABASE_NAME );
     }
 
     @Override

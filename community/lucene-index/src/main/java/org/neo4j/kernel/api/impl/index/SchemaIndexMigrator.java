@@ -30,6 +30,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -50,11 +51,12 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     private final IndexDirectoryStructure indexDirectoryStructure;
     private final StorageEngineFactory storageEngineFactory;
     private final boolean checkIndexCapabilities;
+    private final CursorContextFactory contextFactory;
     private boolean deleteAllIndexes;
     private boolean deleteRelationshipIndexes;
 
     public SchemaIndexMigrator( String name, FileSystemAbstraction fileSystem, PageCache pageCache, IndexDirectoryStructure indexDirectoryStructure,
-            StorageEngineFactory storageEngineFactory, boolean checkIndexCapabilities )
+            StorageEngineFactory storageEngineFactory, boolean checkIndexCapabilities, CursorContextFactory contextFactory )
     {
         super( name );
         this.fileSystem = fileSystem;
@@ -62,6 +64,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         this.indexDirectoryStructure = indexDirectoryStructure;
         this.storageEngineFactory = storageEngineFactory;
         this.checkIndexCapabilities = checkIndexCapabilities;
+        this.contextFactory = contextFactory;
     }
 
     @Override
@@ -107,7 +110,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     private void deleteRelationshipIndexes( DatabaseLayout databaseLayout ) throws IOException
     {
         for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r,
-                PageCacheTracer.NULL ) )
+                PageCacheTracer.NULL, contextFactory ) )
         {
             if ( schemaRule.schema().entityType() == EntityType.RELATIONSHIP )
             {

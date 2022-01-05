@@ -43,6 +43,8 @@ import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
@@ -222,9 +224,10 @@ public class QuickImport implements Callable<Void>
                 StorageEngineFactory storageEngineFactory = storageEngine != null
                                                             ? StorageEngineFactory.selectStorageEngine( storageEngine )
                                                             : StorageEngineFactory.defaultStorageEngine();
+                var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
                 consumer = storageEngineFactory.batchImporter( DatabaseLayout.ofFlat( dir ), fileSystem, PageCacheTracer.NULL, importConfig,
                         new SimpleLogService( logging, logging ), System.out, verbose, EMPTY, dbConfig, NO_MONITOR, jobScheduler, Collector.EMPTY,
-                        TransactionLogInitializer.getLogFilesInitializer(), new IndexImporterFactoryImpl( dbConfig ), INSTANCE );
+                        TransactionLogInitializer.getLogFilesInitializer(), new IndexImporterFactoryImpl( dbConfig ), INSTANCE, contextFactory );
             }
             consumer.doImport( input );
         }

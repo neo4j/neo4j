@@ -26,6 +26,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -61,7 +62,8 @@ public class BuiltInDelegatingIndexProviderFactory extends ExtensionFactory<Buil
         var provider = delegate.create(
                 dependencies.pageCache(), dependencies.fileSystem(), dependencies.getLogService(), dependencies.monitors(), dependencies.getConfig(),
                 dependencies.readOnlyChecker(), context.dbmsInfo(), dependencies.recoveryCleanupWorkCollector(),
-                dependencies.databaseTracer().getPageCacheTracer(), dependencies.databaseLayout(), dependencies.tokenHolders(), dependencies.jobScheduler() );
+                dependencies.databaseTracer().getPageCacheTracer(), dependencies.databaseLayout(), dependencies.tokenHolders(), dependencies.jobScheduler(),
+                dependencies.contextFactory() );
         return new IndexProvider.Delegating( provider )
         {
             @Override
@@ -72,9 +74,9 @@ public class BuiltInDelegatingIndexProviderFactory extends ExtensionFactory<Buil
 
             @Override
             public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
-                                                                        StorageEngineFactory storageEngineFactory )
+                                                                        StorageEngineFactory storageEngineFactory, CursorContextFactory contextFactory )
             {
-                return new NameOverridingStoreMigrationParticipant( super.storeMigrationParticipant( fs, pageCache, storageEngineFactory ),
+                return new NameOverridingStoreMigrationParticipant( super.storeMigrationParticipant( fs, pageCache, storageEngineFactory, contextFactory ),
                                                                     descriptorOverride.name() );
             }
         };
@@ -97,6 +99,8 @@ public class BuiltInDelegatingIndexProviderFactory extends ExtensionFactory<Buil
         DatabaseLayout databaseLayout();
 
         DatabaseTracers databaseTracer();
+
+        CursorContextFactory contextFactory();
 
         DatabaseReadOnlyChecker readOnlyChecker();
 

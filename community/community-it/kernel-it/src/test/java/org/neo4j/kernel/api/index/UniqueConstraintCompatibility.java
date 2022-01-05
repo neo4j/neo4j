@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -989,9 +990,9 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
 
                 @Override
                 public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
-                                                                            StorageEngineFactory storageEngineFactory )
+                                                                            StorageEngineFactory storageEngineFactory, CursorContextFactory contextFactory )
                 {
-                    return new NameOverridingStoreMigrationParticipant( super.storeMigrationParticipant( fs, pageCache, storageEngineFactory ),
+                    return new NameOverridingStoreMigrationParticipant( super.storeMigrationParticipant( fs, pageCache, storageEngineFactory, contextFactory),
                                                                         descriptorOverride.name() );
                 }
             };

@@ -99,7 +99,7 @@ class GenericAccessorTilesTest extends BaseAccessorTilesTest<BtreeKey>
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
         GenericLayout layout = new GenericLayout( 1, indexSettings );
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).build();
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME ).build();
         StandardConfiguration configuration = new StandardConfiguration();
         return new GenericNativeIndexAccessor( databaseIndexContext, indexFiles, layout, collector, descriptor, indexSettings, configuration,
                 SIMPLE_NAME_LOOKUP );

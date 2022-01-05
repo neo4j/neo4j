@@ -37,6 +37,8 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -58,6 +60,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -72,6 +75,7 @@ abstract class IndexProviderTests
 
     @Inject
     private PageCache pageCache;
+    private CursorContextFactory contextFactory;
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -96,6 +100,7 @@ abstract class IndexProviderTests
     @BeforeEach
     void setup() throws IOException
     {
+        contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         setupIndexFolders( fs );
     }
 
@@ -337,7 +342,8 @@ abstract class IndexProviderTests
 
     private IndexProvider newProvider( DatabaseReadOnlyChecker readOnlyChecker )
     {
-        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitors, immediate(), readOnlyChecker, databaseLayout );
+        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitors, immediate(), readOnlyChecker, databaseLayout,
+                contextFactory );
     }
 
     IndexProvider newProvider()
@@ -364,6 +370,7 @@ abstract class IndexProviderTests
     interface ProviderFactory
     {
         IndexProvider create( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                Monitors monitors, RecoveryCleanupWorkCollector collector, DatabaseReadOnlyChecker readOnlyChecker, DatabaseLayout databaseLayout );
+                Monitors monitors, RecoveryCleanupWorkCollector collector, DatabaseReadOnlyChecker readOnlyChecker, DatabaseLayout databaseLayout,
+                CursorContextFactory contextFactory );
     }
 }

@@ -67,7 +67,8 @@ class NativeIndexAccessorTest extends GenericNativeIndexAccessorTests<BtreeKey>
     NativeIndexAccessor<BtreeKey> createAccessor( PageCache pageCache )
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
-        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
+        DatabaseIndexContext context =
+                DatabaseIndexContext.builder( pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
         return new GenericNativeIndexAccessor( context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR,
                                                SPACE_FILLING_CURVE_SETTINGS, CONFIGURATION, tokenNameLookup );
     }

@@ -37,6 +37,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
@@ -47,7 +48,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 public class TokenIndex implements ConsistencyCheckable
 {
-
+    private static final String TOKEN_INDEX_CREATION_TAG = "tokenIndexCreation";
     /**
      * Written in header to indicate native token index is clean
      *
@@ -111,6 +112,7 @@ public class TokenIndex implements ConsistencyCheckable
     private final PageCacheTracer cacheTracer;
 
     private final String databaseName;
+    private final CursorContextFactory contextFactory;
     /**
      * The actual index which backs this token index.
      */
@@ -145,6 +147,7 @@ public class TokenIndex implements ConsistencyCheckable
         this.fs = databaseIndexContext.fileSystem;
         this.cacheTracer = databaseIndexContext.pageCacheTracer;
         this.databaseName = databaseIndexContext.databaseName;
+        this.contextFactory = databaseIndexContext.contextFactory;
         this.indexFiles = indexFiles;
         this.tokenStoreName = descriptor.getName();
         this.monitoringDescriptor = descriptor;
@@ -154,7 +157,7 @@ public class TokenIndex implements ConsistencyCheckable
     {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
-        try ( var context = new CursorContext( cacheTracer.createPageCursorTracer( "temporaryContext" ) ) )
+        try ( var context = contextFactory.create( TOKEN_INDEX_CREATION_TAG ) )
         {
             index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER, headerWriter,
                     recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer, immutable.empty(), databaseName, tokenStoreName, context );

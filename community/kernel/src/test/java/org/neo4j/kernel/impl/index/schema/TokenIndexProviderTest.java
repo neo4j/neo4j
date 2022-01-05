@@ -36,8 +36,9 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 public class TokenIndexProviderTest extends IndexProviderTests
 {
     private static final ProviderFactory factory =
-            ( pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout ) -> {
-                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, databaseLayout.getDatabaseName() ).withMonitors( monitors )
+            ( pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout, contextFactory ) -> {
+                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, contextFactory,
+                                databaseLayout.getDatabaseName() ).withMonitors( monitors )
                         .withReadOnlyChecker( readOnlyChecker ).build();
                 return new TokenIndexProvider( context, dir, collector, Config.defaults(), databaseLayout );
             };

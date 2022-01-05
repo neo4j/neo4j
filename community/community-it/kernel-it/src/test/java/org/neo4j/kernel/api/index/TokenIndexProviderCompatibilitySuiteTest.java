@@ -36,6 +36,8 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -80,6 +82,6 @@ class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
         var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, databaseIdRepository ) );
         var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return TokenIndexProviderFactory.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                databaseLayout, PageCacheTracer.NULL );
+                databaseLayout, PageCacheTracer.NULL, new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) );
     }
 }

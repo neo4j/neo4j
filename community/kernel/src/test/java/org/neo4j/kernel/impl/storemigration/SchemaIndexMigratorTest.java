@@ -36,6 +36,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -91,7 +94,9 @@ class SchemaIndexMigratorTest
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
         Path indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
         when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
-        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, true );
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, true,
+                contextFactory );
         when( indexProvider.getProviderDescriptor() )
                 .thenReturn( new IndexProviderDescriptor( "key", "version" ) );
 
@@ -118,8 +123,10 @@ class SchemaIndexMigratorTest
         schemaRules.add( forSchema( SchemaDescriptors.forRelType( 5, 3 ) ).withName( "r1" ).materialise( 2L ) );
         schemaRules.add( forSchema( SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "r2" ).materialise( 3L ) );
         schemaRules.add( forSchema( SchemaDescriptors.fulltext( NODE, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "n2" ).materialise( 4L ) );
-        when( storageEngineFactory.loadSchemaRules( any(), any(), any(), any(), anyBoolean(), any(), any() ) ).thenReturn( schemaRules );
-        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, false );
+        when( storageEngineFactory.loadSchemaRules( any(), any(), any(), any(), anyBoolean(), any(), any(), any() ) ).thenReturn( schemaRules );
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, false,
+                contextFactory );
 
         // when
         migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to", IndexImporterFactory.EMPTY );

@@ -38,8 +38,10 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
@@ -51,7 +53,6 @@ import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
-import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,6 +62,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @Neo4jLayoutExtension
 class BatchInserterImplTest
@@ -114,7 +116,8 @@ class BatchInserterImplTest
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
         var databaseTracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
-        try ( var inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, databaseTracers ) )
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+        try ( var inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, databaseTracers, contextFactory ) )
         {
             for ( int i = 0; i < 10; i++ )
             {

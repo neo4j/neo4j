@@ -46,7 +46,10 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -144,8 +147,9 @@ public class StoreUpgraderInterruptionTestIT
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
-        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory,
-                INSTANCE )
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, contextFactory,
+                batchImporterFactory, INSTANCE )
         {
             @Override
             public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
@@ -159,7 +163,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator )
+            newUpgrader( versionCheck, progressMonitor, createIndexMigrator( contextFactory ), failingStoreMigrator )
                     .migrateIfNeeded( workingDatabaseLayout, false );
             fail( "Should throw exception" );
         }
@@ -170,8 +174,9 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
 
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
-        SchemaIndexMigrator indexMigrator = createIndexMigrator();
+        RecordStorageMigrator migrator =
+                new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, contextFactory, batchImporterFactory, INSTANCE );
+        SchemaIndexMigrator indexMigrator = createIndexMigrator( contextFactory );
         newUpgrader( versionCheck, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
@@ -181,10 +186,10 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDatabaseLayout );
     }
 
-    private SchemaIndexMigrator createIndexMigrator()
+    private SchemaIndexMigrator createIndexMigrator( CursorContextFactory contextFactory )
     {
         return new SchemaIndexMigrator( "upgrade test indexes", fs, pageCache, IndexProvider.EMPTY.directoryStructure(),
-                StorageEngineFactory.defaultStorageEngine(), true );
+                StorageEngineFactory.defaultStorageEngine(), true, contextFactory );
     }
 
     @ParameterizedTest
@@ -199,11 +204,13 @@ public class StoreUpgraderInterruptionTestIT
         LogService logService = NullLogService.getInstance();
         var idMigratorTracer = new DefaultPageCacheTracer();
         var recordMigratorTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, baselineFormat ) );
 
-        var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, batchImporterFactory, INSTANCE );
-        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator ).migrateIfNeeded( workingDatabaseLayout, false );
+        var migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, recordMigratorTracer, contextFactory, batchImporterFactory,
+                INSTANCE );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(contextFactory), migrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 
@@ -228,8 +235,9 @@ public class StoreUpgraderInterruptionTestIT
                 Config.defaults(), NULL );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
-        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory,
-                INSTANCE )
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, contextFactory,
+                batchImporterFactory, INSTANCE )
         {
             @Override
             public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
@@ -244,7 +252,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), failingStoreMigrator )
+            newUpgrader( versionCheck, progressMonitor, createIndexMigrator( contextFactory ), failingStoreMigrator )
                     .migrateIfNeeded( workingDatabaseLayout, false );
             fail( "Should throw exception" );
         }
@@ -253,8 +261,9 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, batchImporterFactory, INSTANCE );
-        newUpgrader( versionCheck, progressMonitor, createIndexMigrator(), migrator ).migrateIfNeeded( workingDatabaseLayout, false );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, NULL, contextFactory,
+                batchImporterFactory, INSTANCE );
+        newUpgrader( versionCheck, progressMonitor, createIndexMigrator( contextFactory ), migrator ).migrateIfNeeded( workingDatabaseLayout, false );
 
         assertTrue( checkNeoStoreHasFormatVersion( versionCheck, successorFormat ) );
 

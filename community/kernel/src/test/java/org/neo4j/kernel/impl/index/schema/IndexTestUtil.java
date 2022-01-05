@@ -34,6 +34,8 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
@@ -51,6 +53,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @TestDirectoryExtension
@@ -67,6 +70,7 @@ public abstract class IndexTestUtil<KEY,VALUE, LAYOUT extends Layout<KEY,VALUE>>
     protected TestDirectory directory;
     @Inject
     protected PageCache pageCache;
+    protected CursorContextFactory contextFactory;
     @Inject
     protected RandomSupport random;
 
@@ -80,6 +84,7 @@ public abstract class IndexTestUtil<KEY,VALUE, LAYOUT extends Layout<KEY,VALUE>>
     @BeforeEach
     void setup()
     {
+        contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         indexDescriptor = indexDescriptor();
         layout = layout();
         this.indexFiles = createIndexFiles( fs, directory, indexDescriptor );

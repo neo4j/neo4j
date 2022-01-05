@@ -27,6 +27,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static java.lang.Boolean.FALSE;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
@@ -65,7 +68,7 @@ public final class BatchInserters
 
     public static BatchInserter inserter( DatabaseLayout databaseLayout, FileSystemAbstraction fs, Config config ) throws IOException
     {
-        return new BatchInserterImpl( databaseLayout, fs, config, EMPTY );
+        return new BatchInserterImpl( databaseLayout, fs, config, EMPTY, new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) );
     }
 
     private static DefaultFileSystemAbstraction createFileSystem()

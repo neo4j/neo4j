@@ -1389,7 +1389,7 @@ class IndexingServiceTest
         data.getsProcessedByStoreScanFrom( storeView );
         when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( accessor );
-        when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
+        when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any(), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
         Config config = Config.newBuilder()

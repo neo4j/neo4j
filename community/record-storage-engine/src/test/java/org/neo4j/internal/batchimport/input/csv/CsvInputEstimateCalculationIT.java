@@ -55,6 +55,8 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -167,7 +169,8 @@ class CsvInputEstimateCalculationIT
             PageCacheTracer cacheTracer = PageCacheTracer.NULL;
             new ParallelBatchImporter( databaseLayout, fs, cacheTracer, PBI_CONFIG, NullLogService.getInstance(),
                     INVISIBLE, EMPTY, config, format, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
-                    LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE ).doImport( input );
+                    LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE,
+                    new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) ).doImport( input );
 
             // then compare estimates with actual disk sizes
             SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, cacheTracer );

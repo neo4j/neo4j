@@ -33,6 +33,9 @@ import org.neo4j.common.EntityType;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.monitoring.Monitors;
@@ -94,8 +97,8 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     private TokenIndexPopulator createPopulator( PageCache pageCache, Monitors monitors, String monitorTag )
     {
         DatabaseIndexContext context =
-                DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withMonitors( monitors ).withTag( monitorTag ).withReadOnlyChecker(
-                        writable() ).build();
+                DatabaseIndexContext.builder( pageCache, fs, new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ),
+                        DEFAULT_DATABASE_NAME ).withMonitors( monitors ).withTag( monitorTag ).withReadOnlyChecker( writable() ).build();
         return new TokenIndexPopulator( context, indexFiles, indexDescriptor );
     }
 

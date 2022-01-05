@@ -57,6 +57,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.lock.LockService;
@@ -110,7 +111,7 @@ public interface StorageEngineFactory
      * @return StoreMigrationParticipant for migration.
      */
     List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
-            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
+            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer, MemoryTracker memoryTracker, CursorContextFactory contextFactory );
 
     /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.
@@ -180,10 +181,10 @@ public interface StorageEngineFactory
             LogService logService, String recordFormats, PageCacheTracer cacheTracer, CursorContext cursorContext, MemoryTracker memoryTracker );
 
     List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout, boolean lenient,
-            Function<SchemaRule,SchemaRule> schemaRuleMigration, PageCacheTracer pageCacheTracer );
+            Function<SchemaRule,SchemaRule> schemaRuleMigration, PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory );
 
     TokenHolders loadReadOnlyTokens( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, boolean lenient,
-            PageCacheTracer pageCacheTracer );
+            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory );
 
     /**
      * Asks this storage engine about the state of a specific store before opening it. If this specific store is missing optional or
@@ -227,17 +228,19 @@ public interface StorageEngineFactory
      */
     DatabaseLayout databaseLayout( Neo4jLayout neo4jLayout, String databaseName );
 
-    IndexConfig matchingBatchImportIndexConfiguration( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );
+    IndexConfig matchingBatchImportIndexConfiguration( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache,
+            CursorContextFactory contextFactory );
 
     BatchImporter batchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer, org.neo4j.internal.batchimport.Configuration config, LogService logService,
             PrintStream progressOutput, boolean verboseProgressOutput,
             AdditionalInitialIds additionalInitialIds, Config dbConfig, Monitor monitor,
             JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
-            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker );
+            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker, CursorContextFactory contextFactory );
 
     Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache,
-            PageCacheTracer pageCacheTracer, Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace );
+            PageCacheTracer pageCacheTracer, Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace,
+            CursorContextFactory contextFactory );
 
     /**
      * Checks consistency of a store.

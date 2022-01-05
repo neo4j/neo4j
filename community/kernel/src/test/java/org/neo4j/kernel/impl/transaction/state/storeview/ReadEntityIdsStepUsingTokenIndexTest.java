@@ -38,6 +38,8 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -61,6 +63,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
@@ -79,12 +82,11 @@ class ReadEntityIdsStepUsingTokenIndexTest
 
     @Inject
     PageCache pageCache;
-
     @Inject
     private DatabaseLayout databaseLayout;
-
     @Inject
     private RandomSupport random;
+    private final CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
 
     @Test
     void shouldSeeRecentUpdatesRightInFrontOfExternalUpdatesPoint() throws Exception
@@ -201,7 +203,7 @@ class ReadEntityIdsStepUsingTokenIndexTest
         IndexDirectoryStructure indexDirectoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() )
                 .forProvider( TokenIndexProvider.DESCRIPTOR );
         IndexFiles indexFiles = new IndexFiles.Directory( testDir.getFileSystem(), indexDirectoryStructure, INDEX_DESCRIPTOR.getId() );
-        return new TokenIndexAccessor( DatabaseIndexContext.builder( pageCache, testDir.getFileSystem(), DEFAULT_DATABASE_NAME ).build(),
+        return new TokenIndexAccessor( DatabaseIndexContext.builder( pageCache, testDir.getFileSystem(), contextFactory, DEFAULT_DATABASE_NAME ).build(),
                 indexFiles, INDEX_DESCRIPTOR, immediate() );
     }
 }

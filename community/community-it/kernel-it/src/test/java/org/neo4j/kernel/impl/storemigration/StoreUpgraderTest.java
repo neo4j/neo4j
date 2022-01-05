@@ -51,6 +51,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
@@ -97,6 +98,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -550,11 +552,13 @@ public class StoreUpgraderTest
     {
         NullLogService instance = NullLogService.getInstance();
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler, pageCacheTracer,
-                batchImporterFactory, INSTANCE );
+                contextFactory, batchImporterFactory, INSTANCE );
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         SchemaIndexMigrator indexMigrator =
-                new SchemaIndexMigrator( "Indexes", fileSystem, pageCache, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory, true );
+                new SchemaIndexMigrator( "Indexes", fileSystem, pageCache, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory, true,
+                        contextFactory );
 
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
         DatabaseHealth databaseHealth = new DatabaseHealth( NO_OP, NullLog.getInstance() );
