@@ -53,7 +53,7 @@ abstract class CypherFunSuite
   }
 
   protected def normalizeNewLines(string: String) = {
-    string.replaceAllLiterally("\r\n", "\n")
+    string.replace("\r\n", "\n")
   }
 }
 

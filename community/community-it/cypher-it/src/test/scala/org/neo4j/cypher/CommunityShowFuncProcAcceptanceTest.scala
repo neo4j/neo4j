@@ -88,7 +88,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
   // Brief output
 
   private val builtInFunctionsBrief =
-    builtInFunctionsVerbose.map(m => m.filterKeys(k => Seq("name", "category", "description").contains(k))
+    builtInFunctionsVerbose.map(m => m.view.filterKeys(k => Seq("name", "category", "description").contains(k)).toMap
       .map { case (key, value) => (key, value.asInstanceOf[String]) }) // All brief columns are String columns
 
   private val userDefinedFunctionsBrief = List(
@@ -164,7 +164,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     val result = executeAs(username, password, "SHOW FUNCTIONS EXECUTABLE YIELD name, description, isBuiltIn")
 
     // THEN
-    result.toList should be(allFunctionsVerbose.map(m => m.filterKeys(k => Seq("name", "description", "isBuiltIn").contains(k))))
+    result.toList should be(allFunctionsVerbose.map(m => m.view.filterKeys(k => Seq("name", "description", "isBuiltIn").contains(k)).toMap))
   }
 
   test("should show functions executable by specified user") {
@@ -207,14 +207,14 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
 
   private val allProceduresVerbose: List[Map[String, Any]] = readAll(procResourceUrl)
     .filterNot(m => m("enterpriseOnly").asInstanceOf[Boolean])
-    .map(m => m.filterKeys(k => !k.equals("enterpriseOnly")))
+    .map(m => m.view.filterKeys(k => !k.equals("enterpriseOnly")).toMap)
     .map(m => m.map {
     case ("rolesExecution", _) => ("rolesExecution", null)
     case ("rolesBoostedExecution", _) => ("rolesBoostedExecution", null)
     case m => m
   })
 
-  private val allProceduresBrief = allProceduresVerbose.map(m => m.filterKeys(k => Seq("name", "description", "mode", "worksOnSystem").contains(k)))
+  private val allProceduresBrief = allProceduresVerbose.map(m => m.view.filterKeys(k => Seq("name", "description", "mode", "worksOnSystem").contains(k)).toMap)
 
   test("should show procedures") {
     // GIVEN
@@ -257,7 +257,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
     val result = executeAs(username, password, "SHOW PROCEDURES EXECUTABLE YIELD name, description, signature")
 
     // THEN
-    result.toList should be(allProceduresVerbose.map(m => m.filterKeys(k => Seq("name", "description", "signature").contains(k))))
+    result.toList should be(allProceduresVerbose.map(m => m.view.filterKeys(k => Seq("name", "description", "signature").contains(k)).toMap))
   }
 
   test("should show procedures executable by specified user") {

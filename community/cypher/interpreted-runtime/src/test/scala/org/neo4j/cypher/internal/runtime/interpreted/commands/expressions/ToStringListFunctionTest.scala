@@ -32,9 +32,9 @@ import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 import org.scalacheck.Gen
 import org.scalatest.Inspectors
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class ToStringListFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyChecks {
+class ToStringListFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyChecks {
 
   test("should return null if argument is null") {
     assert(toStringList(null) === NO_VALUE)

@@ -103,16 +103,16 @@ class ActualCostCalculationTest extends CypherFunSuite {
         setUpDb(graph, chunk)
 
         val varName = "x"
-        results.addAll("AllNodeScan", runSimulation(graph, allNodes))
+        results.addAll("AllNodeScan", runSimulation(graph, allNodes).toSeq)
         val labelScanPipe = labelScan(varName, LABEL.name())
-        results.addAll("NodeByLabelScan", runSimulation(graph, labelScanPipe))
-        results.addAll("NodeByID", runSimulation(graph, nodeById(42L)))
-        results.addAll("RelByID", runSimulation(graph, relById(42L)))
-        results.addAll("NodeIndexSeek", runSimulation(graph, indexSeek(graph)))
-        results.addAll("NodeIndexScan", runSimulation(graph, indexScan(graph)))
-        results.addAll("Expand", expandResult(graph, labelScanPipe))
+        results.addAll("NodeByLabelScan", runSimulation(graph, labelScanPipe).toSeq)
+        results.addAll("NodeByID", runSimulation(graph, nodeById(42L)).toSeq)
+        results.addAll("RelByID", runSimulation(graph, relById(42L)).toSeq)
+        results.addAll("NodeIndexSeek", runSimulation(graph, indexSeek(graph)).toSeq)
+        results.addAll("NodeIndexScan", runSimulation(graph, indexScan(graph)).toSeq)
+        results.addAll("Expand", expandResult(graph, labelScanPipe).toSeq)
         val labelScanAndThenPropFilter = runSimulation(graph, propertyFilter(labelScanPipe, varName))
-        results.addAll("LabelScan followed by filter on property", labelScanAndThenPropFilter)
+        results.addAll("LabelScan followed by filter on property", labelScanAndThenPropFilter.toSeq)
       }
 
       results.normalizedResult.foreach {
@@ -134,7 +134,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val chunk = N / STEPS
       for (_ <- 1 to STEPS) {
         setUpDb(graph, chunk)
-        results.addAll("Eager", runSimulation(graph, eager(allNodes)))
+        results.addAll("Eager", runSimulation(graph, eager(allNodes)).toSeq)
       }
 
       results.foreach {
@@ -192,7 +192,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   class ResultTable {
     private val table = mutable.HashMap.empty[String, ListBuffer[DataPoint]]
 
-    def foreach(f: ((String, Seq[DataPoint])) => Unit): Unit = table.foreach(f)
+    def foreach(f: ((String, ListBuffer[DataPoint])) => Unit): Unit = table.foreach(f)
     def add(name: String, dataPoint: DataPoint): Unit =
       table.getOrElseUpdate(name, ListBuffer.empty).append(dataPoint)
 
@@ -200,12 +200,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
       table.getOrElseUpdate(name, ListBuffer.empty).appendAll(dataPoints)
 
     def normalizedResult: collection.Map[String, Double] = {
-      val result = table.mapValues(calculateSimpleResult)
+      val result = table.view.mapValues(calculateSimpleResult).toMap
       val minValue = result.values.min
-      result.mapValues(_/minValue)
+      result.view.mapValues(_/minValue).toMap
     }
 
-    def result: collection.Map[String, Double] = table.mapValues(calculateSimpleResult)
+    def result: collection.Map[String, Double] = table.view.mapValues(calculateSimpleResult).toMap
 
     override def toString: String = table.map{
       case (name, dataPoints) => s"$name: $dataPoints"
@@ -231,7 +231,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   //From the provided data points, estimate slope and intercept in `cost = slope*NROWS + intercept`
-  private def calculateSimpleResult(dataPoints: Seq[DataPoint]): Double= {
+  private def calculateSimpleResult(dataPoints: ListBuffer[DataPoint]): Double= {
     if (dataPoints.isEmpty) {
       throw new IllegalArgumentException("Cannot compute result without any data points")
     } else if (dataPoints.size == 1) {
@@ -245,12 +245,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   //For each rowcount find the median value
-  private def medianPerRowCount(dataPoints: Seq[DataPoint]) =
+  private def medianPerRowCount(dataPoints: ListBuffer[DataPoint]) =
     dataPoints.groupBy(_.numberOfRows).map {
       case (rowCount, dps) => DataPoint(median(dps.map(_.elapsed)), rowCount)
     }
 
-  private def median(values: Seq[Double]) =
+  private def median(values: collection.Seq[Double]) =
     if (values.length % 2 == 0) {
       val sorted = values.sorted
       (sorted(values.size / 2 - 1) + sorted(values.length / 2)) / 2.0
@@ -259,7 +259,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       sorted(values.size / 2)
     }
 
-  private def runSimulation(graph: GraphDatabaseQueryService, pipe: Pipe): Seq[DataPoint] =
+  private def runSimulation(graph: GraphDatabaseQueryService, pipe: Pipe): ListBuffer[DataPoint] =
     runSimulation(graph, Seq(pipe))
 
   private def transactionContext(graph: GraphDatabaseQueryService, tx: InternalTransaction) = {

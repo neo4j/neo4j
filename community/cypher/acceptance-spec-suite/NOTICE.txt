@@ -72,7 +72,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  scala-xml
+  JLine Bundle
   Zstandard
 
 BSD License 2-clause

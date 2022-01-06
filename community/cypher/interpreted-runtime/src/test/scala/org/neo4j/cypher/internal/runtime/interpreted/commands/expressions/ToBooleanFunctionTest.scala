@@ -30,9 +30,9 @@ import org.neo4j.values.storable.Values.FALSE
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.TRUE
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class ToBooleanFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyChecks {
+class ToBooleanFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyChecks {
 
   val tests: Seq[(Any => AnyValue, String)] =
     Seq((toBoolean, "toBoolean"), (toBooleanOrNull, "toBooleanOrNull"))

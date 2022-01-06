@@ -28,7 +28,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import scala.collection.mutable
 
 
-class PartialSortPipeTest extends CypherFunSuite with MockitoSugar {
+class PartialSortPipeTest extends CypherFunSuite {
 
   test("partial sort is lazy") {
     val list = List(

@@ -53,10 +53,10 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.monitoring.Monitors
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 class FabricParsingPropertyTest extends CypherFunSuite
-                                with GeneratorDrivenPropertyChecks
+                                with ScalaCheckDrivenPropertyChecks
                                 with AstConstructionTestSupport {
 
   private val astGenerator = new AstGenerator(simpleStrings = false)
