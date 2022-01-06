@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodeLabelIndexScan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class NodeLabelIndexScanPartitionedScanTestSuite
+abstract class NodeLabelIndexScanPartitionedScanTestSuite
         extends TokenIndexScanPartitionedScanTestSuite<NodeLabelIndexCursor>
 {
     @Override

@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodePropertyIndexSc
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class NodePropertyIndexScanPartitionedScanTestSuite
+abstract class NodePropertyIndexScanPartitionedScanTestSuite
         extends PropertyIndexScanPartitionedScanTestSuite<NodeValueIndexCursor>
 {
     NodePropertyIndexScanPartitionedScanTestSuite( TestIndexType index )

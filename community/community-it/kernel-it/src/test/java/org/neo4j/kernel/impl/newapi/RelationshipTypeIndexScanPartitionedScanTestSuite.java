@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipTypeInd
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RelationshipTypeIndexScanPartitionedScanTestSuite
+abstract class RelationshipTypeIndexScanPartitionedScanTestSuite
         extends TokenIndexScanPartitionedScanTestSuite<RelationshipTypeIndexCursor>
 {
     @Override

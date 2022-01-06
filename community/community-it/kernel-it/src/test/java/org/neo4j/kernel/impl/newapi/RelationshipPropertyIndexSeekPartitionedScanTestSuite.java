@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipPropert
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RelationshipPropertyIndexSeekPartitionedScanTestSuite
+abstract class RelationshipPropertyIndexSeekPartitionedScanTestSuite
         extends PropertyIndexSeekPartitionedScanTestSuite<RelationshipValueIndexCursor>
 {
     RelationshipPropertyIndexSeekPartitionedScanTestSuite( TestIndexType index )

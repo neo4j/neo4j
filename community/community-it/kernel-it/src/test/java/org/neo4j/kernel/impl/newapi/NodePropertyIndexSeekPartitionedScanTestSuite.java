@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodePropertyIndexSe
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class NodePropertyIndexSeekPartitionedScanTestSuite
+abstract class NodePropertyIndexSeekPartitionedScanTestSuite
         extends PropertyIndexSeekPartitionedScanTestSuite<NodeValueIndexCursor>
 {
     NodePropertyIndexSeekPartitionedScanTestSuite( TestIndexType index )
