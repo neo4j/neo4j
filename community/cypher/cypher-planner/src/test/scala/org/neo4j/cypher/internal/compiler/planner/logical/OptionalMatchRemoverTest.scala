@@ -215,6 +215,13 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test(
+    """OPTIONAL MATCH (f:DoesExist&Foo)
+       OPTIONAL MATCH (n:DoesNotExist&Foo)
+       RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b """) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
     """MATCH (a)
           OPTIONAL MATCH (a)-[r:T1]->(b)-[r2:T2]->(c)
           RETURN DISTINCT b as b""") {
@@ -475,6 +482,20 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)
         |MATCH (a)
+        |RETURN a AS res
+        |""".stripMargin
+    )
+  }
+
+  test(
+    """OPTIONAL MATCH (a:A&B)
+      |MATCH (a:A&B)
+      |OPTIONAL MATCH (a:A&B)
+      |RETURN a AS res
+      |""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a:A&B)
+        |MATCH (a:A&B)
         |RETURN a AS res
         |""".stripMargin
     )
