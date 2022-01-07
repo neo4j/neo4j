@@ -537,15 +537,25 @@
             <args>
               <arg>-Xmax-classfile-name</arg>
               <arg>100</arg>
-              <arg>-Xlint</arg>
+              <arg>-Xlint:_,-missing-interpolator</arg>
               <arg>-target:jvm-${scala.target.vm}</arg>
               <arg>-nobootcp</arg>
+              <!-- We need to be able to deprecate APIs and have some time for all teams to adapt. -->
+              <arg>-P:silencer:globalFilters=.*is deprecated</arg>
             </args>
             <jvmArgs>
               <jvmArg>-Xms256m</jvmArg>
               <jvmArg>-Xmx1024m</jvmArg>
             </jvmArgs>
             <secondaryCacheDir>${java.io.tmpdir}</secondaryCacheDir>
+            <compilerPlugins>
+              <!-- Not needed after move to Scala 2.13 -->
+              <compilerPlugin>
+                <groupId>com.github.ghik</groupId>
+                <artifactId>silencer-plugin_${scala.version}</artifactId>
+                <version>1.7.7</version>
+              </compilerPlugin>
+            </compilerPlugins>
           </configuration>
 
           <!-- This is needed to mix scala and java code in the same module -->
