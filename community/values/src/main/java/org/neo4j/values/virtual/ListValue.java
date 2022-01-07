@@ -390,7 +390,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     private static final long INTEGRAL_RANGE_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance( IntegralRangeListValue.class );
-    static final class IntegralRangeListValue extends ListValue
+    public static final class IntegralRangeListValue extends ListValue
     {
         private final long start;
         private final long end;
