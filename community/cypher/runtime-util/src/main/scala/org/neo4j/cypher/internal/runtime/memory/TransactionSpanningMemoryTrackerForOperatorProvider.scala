@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.memory
 
-import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
 
 /**
@@ -30,7 +29,7 @@ trait TransactionSpanningMemoryTrackerForOperatorProvider {
   /**
    * Get the high water mark of allocated heap memory of this operator, in bytes.
    *
-   * @return the maximum number of allocated memory bytes, or [[HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED]], if memory tracking was not enabled.
+   * @return the maximum number of allocated memory bytes, or [[org.neo4j.memory.HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED]], if memory tracking was not enabled.
    */
   def heapHighWaterMarkOfOperator(operatorId: Int): Long
 

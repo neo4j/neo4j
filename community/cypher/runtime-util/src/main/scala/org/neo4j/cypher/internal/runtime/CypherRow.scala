@@ -68,9 +68,9 @@ object ResourceLinenumber {
 
 trait CypherRow extends ReadWriteRow with Measurable {
 
-  @deprecated
+  @deprecated("We shouldn't check for the existence of variables at runtime", since = "4.0")
   def containsName(name: String): Boolean
-  @deprecated
+  @deprecated("We shouldn't check for the existence of variables at runtime", since = "4.1")
   def numberOfColumns: Int
 
   def createClone(): CypherRow
