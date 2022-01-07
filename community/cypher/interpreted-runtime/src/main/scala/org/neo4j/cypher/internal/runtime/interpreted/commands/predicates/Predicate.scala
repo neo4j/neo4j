@@ -57,10 +57,6 @@ abstract class Predicate extends Expression {
   def isTrue(ctx: ReadableRow, state: QueryState): Boolean = isMatch(ctx, state).getOrElse(false)
   def andWith(other: Predicate): Predicate = Ands(this, other)
   def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean]
-
-  // This is the un-dividable list of predicates. They can all be ANDed
-  // together
-  def atoms: Seq[Predicate] = Seq(this)
   def containsIsNull: Boolean
 
   def andWith(preds: Predicate*): Predicate =
@@ -109,8 +105,6 @@ abstract class CompositeBooleanPredicate extends Predicate {
   }
 
   override def arguments: Seq[Expression] = predicates.toIndexedSeq
-
-  override def atoms: Seq[Predicate] = predicates.toIndexedSeq
 }
 
 case class Not(a: Predicate) extends Predicate {

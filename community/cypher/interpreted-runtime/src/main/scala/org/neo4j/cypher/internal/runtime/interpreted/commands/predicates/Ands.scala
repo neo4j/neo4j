@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.VariableCommand
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
@@ -46,38 +44,6 @@ object Ands {
     case Nil => True()
     case single :: Nil => single
     case manyPredicates => Ands(NonEmptyList.from(manyPredicates))
-  }
-}
-
-@deprecated("Use Ands (plural) instead")
-class And(val a: Predicate, val b: Predicate) extends Predicate {
-  def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(ctx, state)
-
-  override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
-  override def toString: String = s"($a AND $b)"
-  override def containsIsNull: Boolean = a.containsIsNull || b.containsIsNull
-  override def rewrite(f: Expression => Expression): Expression = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
-
-  override def arguments: Seq[Expression] = Seq(a, b)
-
-  override def children: Seq[AstNode[_]] = Seq(a, b)
-
-  override def hashCode(): Int = a.hashCode + 37 * b.hashCode
-
-  override def equals(p1: Any): Boolean = p1 match {
-    case null       => false
-    case other: And => a == other.a && b == other.b
-    case _          => false
-  }
-
-}
-
-@deprecated("Use Ands (plural) instead")
-object And {
-  def apply(a: Predicate, b: Predicate): Predicate = (a, b) match {
-    case (True(), other) => other
-    case (other, True()) => other
-    case (_, _)          => new And(a, b)
   }
 }
 
