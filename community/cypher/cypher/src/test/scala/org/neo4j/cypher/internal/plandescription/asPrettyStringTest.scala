@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
+import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -49,5 +50,10 @@ class asPrettyStringTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("should handle CoerceToPredicate") {
     pretty"CoerceToPredicate([1, 2, 3])" shouldBe asPrettyString(CoerceToPredicate(listOfInt(1, 2, 3)))
+  }
+
+  test("should handle CoerceToPredicate with container index and a nested plan expression") {
+    val nestedPlanExpr = NestedPlanCollectExpression(null, null, "[(a)<-[`anon_2`]-(b) | b.prop4 IN [true]]")(pos)
+    pretty"CoerceToPredicate([(a)<-[`anon_2`]-(b) | b.prop4 IN [true]][4])" shouldBe asPrettyString(CoerceToPredicate(containerIndex(nestedPlanExpr, literal(4))))
   }
 }

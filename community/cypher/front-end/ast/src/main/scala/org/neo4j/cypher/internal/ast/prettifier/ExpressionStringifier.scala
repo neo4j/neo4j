@@ -92,6 +92,7 @@ import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
+import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class ExpressionStringifier(
@@ -318,6 +319,10 @@ case class ExpressionStringifier(
 
       case CoerceTo(expr, typ) =>
         apply(expr)
+
+      case CoerceToPredicate(expr) =>
+        val inner = apply(expr)
+        s"CoerceToPredicate($inner)"
 
       case length3_5@Length3_5(argument) =>
         apply(Length.asInvocation(argument)(length3_5.position))
