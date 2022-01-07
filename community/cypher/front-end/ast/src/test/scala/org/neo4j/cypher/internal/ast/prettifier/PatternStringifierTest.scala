@@ -79,6 +79,121 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     patternStringifier(pattern) shouldEqual testName
   }
 
+  test("(:A&B)") {
+    val pattern = NodePattern(
+      None,
+      Seq.empty,
+      Some(
+        labelConjunction(
+          labelAtom("A"),
+          labelAtom("B")
+        )
+      ),
+      None,
+      None,
+    )(pos)
+  }
+
+  test("(:!A&B)") {
+    val pattern = NodePattern(
+      None,
+      Seq.empty,
+      Some(
+        labelConjunction(
+          labelNegation(labelAtom("A")),
+          labelAtom("B")
+        )
+      ),
+      None,
+      None,
+    )(pos)
+  }
+
+  test("(:!(A&B))") {
+    val pattern = NodePattern(
+      None,
+      Seq.empty,
+      Some(
+        labelNegation(
+          labelConjunction(
+            labelAtom("A"),
+            labelAtom("B")
+          )
+        )
+      ),
+      None,
+      None,
+    )(pos)
+  }
+
+  test("(:(A|A)&B)") {
+    val pattern = NodePattern(
+      None,
+      Seq.empty,
+      Some(
+        labelConjunction(
+          labelDisjunction(
+            labelAtom("A"),
+            labelAtom("A")
+          ),
+          labelAtom("B")
+        )
+      ),
+      None,
+      None,
+    )(pos)
+
+    patternStringifier(pattern) shouldEqual testName
+  }
+
+  test("(:!!(A&B)|C&B)") {
+    val pattern = NodePattern(
+      None,
+      Seq.empty,
+      Some(
+        labelDisjunction(
+          labelNegation(
+            labelNegation(
+              labelConjunction(labelAtom("A"), labelAtom("B"))
+            )
+          ),
+          labelConjunction(
+            labelAtom("C"),
+            labelAtom("B"),
+          )
+        )
+      ),
+      None,
+      None,
+    )(pos)
+
+    patternStringifier(pattern) shouldEqual testName
+  }
+
+  test("(:!!((A&B|C)&B))") {
+    val pattern = NodePattern(
+      None,
+      Seq.empty,
+      Some(
+        labelNegation(
+          labelNegation(
+            labelConjunction(
+              labelDisjunction(
+                labelConjunction(labelAtom("A"), labelAtom("B")),
+                labelAtom("C")
+              ),
+              labelAtom("B"),
+            )
+          )
+        )
+      ),
+      None,
+      None,
+    )(pos)
+
+    patternStringifier(pattern) shouldEqual testName
+  }
+
   test("-[r:Foo|Bar*1..5 {prop: 'test'} WHERE r.otherProp > 123]->") {
     val pattern = RelationshipPattern(
       Some(varFor("r")),
