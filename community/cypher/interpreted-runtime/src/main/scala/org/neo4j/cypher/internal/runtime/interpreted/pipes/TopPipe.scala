@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList
-
-import java.util.Comparator
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.collection.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.ClosingIterator
@@ -33,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.memory.MemoryTracker
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import java.util.Comparator
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then

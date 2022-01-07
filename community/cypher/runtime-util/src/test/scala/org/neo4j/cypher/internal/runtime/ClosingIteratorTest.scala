@@ -401,7 +401,7 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("collect should close on explicit close") {
     // given
-    val outer = values(1, "and", 2, "and", 3)
+    val outer = values[Any](1, "and", 2, "and", 3)
     val collected = outer.collect {
       case i: Int => i
     }
@@ -414,7 +414,7 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("collect should close on exhaustion") {
     // given
-    val outer = values(1, "and", 2, "and", 3)
+    val outer = values[Any](1, "and", 2, "and", 3)
     val collected = outer.collect {
       case i: Int => i
     }

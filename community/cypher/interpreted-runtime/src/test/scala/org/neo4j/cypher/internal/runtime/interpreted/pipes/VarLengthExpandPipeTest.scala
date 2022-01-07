@@ -33,9 +33,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.storageengine.api.RelationshipVisitor
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
-import org.neo4j.values.virtual.VirtualNodeValue
 
 class VarLengthExpandPipeTest extends CypherFunSuite {
   private trait WasClosed {
@@ -135,13 +133,6 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
   private def newMockedNode(id: Int): Node = {
     val node = mock[Node]
     when(node.getId).thenReturn(id)
-    when(node.toString).thenReturn("node - " + id.toString)
-    node
-  }
-
-  private def newMockedNodeValue(id: Int): NodeValue = {
-    val node = mock[NodeValue]
-    when(node.id()).thenReturn(id)
     when(node.toString).thenReturn("node - " + id.toString)
     node
   }

@@ -20,16 +20,13 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.runtime.ClosingIterator.asClosingIterator
 import org.neo4j.io.IOUtils
 import org.neo4j.storageengine.api.RelationshipVisitor
 
 import scala.collection.GenTraversableOnce
 import scala.collection.Iterator
 import scala.collection.Iterator.empty
-import scala.collection.Traversable
 import scala.collection.immutable
-import scala.collection.immutable.Stream
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag

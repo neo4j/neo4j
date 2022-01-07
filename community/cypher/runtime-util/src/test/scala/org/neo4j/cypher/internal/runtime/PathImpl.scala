@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.graphdb
-
-import java.lang
-import java.util
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.traversal.Paths
 
+import java.lang
+import java.util
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.mutable
