@@ -297,19 +297,6 @@ class IndexQueryTest
         assertFalse( test( p, LocalDateTimeValue.localDateTime( 2016, 3, 8, 0, 0, 0, 0 ) ) );
     }
 
-    // VALUE GROUP SCAN
-    @Test
-    void testValueGroupRange()
-    {
-        RangePredicate<?> p = PropertyIndexQuery.range( propId, ValueGroup.DATE );
-
-        assertTrue( test( p, DateValue.date( -4000, 1, 31 ) ) );
-        assertTrue( test( p, DateValue.date( 2018, 3, 7 ) ) );
-        assertFalse( test( p, DateTimeValue.datetime( 2018, 3, 7, 0, 0, 0, 0, ZoneOffset.UTC ) ) );
-        assertFalse( test( p, stringValue( "hej" ) ) );
-        assertFalse( test( p, gps2_3d ) );
-    }
-
     // BOUNDING BOX
 
     private final PointValue gps1 = pointValue( CoordinateReferenceSystem.WGS_84, -12.6, -56.7 );

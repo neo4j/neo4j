@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -41,7 +40,7 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
@@ -275,17 +274,16 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         // when
         try ( var reader = accessor.newValueReader() )
         {
-            ValueGroup valueGroup = random.among( allValues ).valueGroup();
-            PropertyIndexQuery.RangePredicate<?> supportedQuery = PropertyIndexQuery.range( 0, valueGroup );
+            PropertyIndexQuery.AllEntriesPredicate supportedQuery = PropertyIndexQuery.allEntries();
 
-            IndexOrderCapability supportedOrders = indexCapability().orderCapability( valueGroup.category() );
+            IndexOrderCapability supportedOrders = indexCapability().orderCapability( ValueCategory.UNKNOWN );
             if ( supportedOrders.supportsAsc() )
             {
-                expectIndexOrder( allValues, valueGroup, reader, IndexOrder.ASCENDING, supportedQuery );
+                expectIndexOrder( allValues, reader, IndexOrder.ASCENDING, supportedQuery );
             }
             if ( supportedOrders.supportsDesc() )
             {
-                expectIndexOrder( allValues, valueGroup, reader, IndexOrder.DESCENDING, supportedQuery );
+                expectIndexOrder( allValues, reader, IndexOrder.DESCENDING, supportedQuery );
             }
         }
     }
@@ -339,15 +337,11 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         return update.getEntityId();
     }
 
-    private static void expectIndexOrder( Value[] allValues,
-            ValueGroup valueGroup,
+    private static void expectIndexOrder( Value[] expectedValues,
             ValueIndexReader reader,
             IndexOrder supportedOrder,
-            PropertyIndexQuery.RangePredicate<?> supportedQuery ) throws IndexNotApplicableKernelException
+            PropertyIndexQuery.AllEntriesPredicate supportedQuery ) throws IndexNotApplicableKernelException
     {
-        Value[] expectedValues = Arrays.stream( allValues )
-                                       .filter( v -> v.valueGroup() == valueGroup )
-                                       .toArray( Value[]::new );
         if ( supportedOrder == IndexOrder.ASCENDING )
         {
             Arrays.sort( expectedValues, Values.COMPARATOR );

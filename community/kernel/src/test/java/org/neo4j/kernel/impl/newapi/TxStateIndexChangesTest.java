@@ -50,7 +50,6 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -196,15 +195,6 @@ class TxStateIndexChangesTest
 
         final var tests = new ArrayList<DynamicTest>();
 
-        tests.addAll( rangeTest( state, ValueGroup.NUMBER,
-                entityWithPropertyValues( 45L, 500 ),
-                entityWithPropertyValues( 42L, 510 ),
-                entityWithPropertyValues( 43L, 520 ),
-                entityWithPropertyValues( 46L, 530 ),
-                entityWithPropertyValues( 48L, 540 ),
-                entityWithPropertyValues( 44L, 550 ),
-                entityWithPropertyValues( 47L, 560 )
-        ) );
         tests.addAll( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), true,
                 entityWithPropertyValues( 42L, 510 ),
                 entityWithPropertyValues( 43L, 520 ),
@@ -302,29 +292,6 @@ class TxStateIndexChangesTest
             assert lo != NO_VALUE;
             assert hi != NO_VALUE;
             final var query = PropertyIndexQuery.range( -1, lo, includeLo, hi, includeHi );
-            final var changes = indexUpdatesForRangeSeek( state, index, new Value[0], query, indexOrder );
-            final var changesWithValues = indexUpdatesWithValuesForRangeSeek( state, index, new Value[0], query, indexOrder );
-
-            assertContains( indexOrder, changes, changesWithValues, expected );
-        } );
-    }
-
-    private Collection<DynamicTest> rangeTest( ReadableTransactionState state, ValueGroup valueGroup,
-                                               EntityWithPropertyValues... expected )
-    {
-        return Arrays.asList( rangeTest( state, IndexOrder.NONE, valueGroup, expected ),
-                              rangeTest( state, IndexOrder.ASCENDING, valueGroup, expected ),
-                              rangeTest( state, IndexOrder.DESCENDING, valueGroup, expected ) );
-    }
-
-    private DynamicTest rangeTest( ReadableTransactionState state,
-                                   IndexOrder indexOrder,
-                                   ValueGroup valueGroup,
-                                   EntityWithPropertyValues... expected )
-    {
-        return DynamicTest.dynamicTest( String.format( "range seek: all valueGroup=%s, order=%s", valueGroup, indexOrder ), () ->
-        {
-            final var query = PropertyIndexQuery.range( -1, valueGroup );
             final var changes = indexUpdatesForRangeSeek( state, index, new Value[0], query, indexOrder );
             final var changesWithValues = indexUpdatesWithValuesForRangeSeek( state, index, new Value[0], query, indexOrder );
 

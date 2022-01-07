@@ -237,7 +237,6 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
     private static Stream<PropertyIndexQuery> unsupportedPredicates()
     {
         return Stream.of( PropertyIndexQuery.exists( 0 ),
-                          PropertyIndexQuery.range( 0, ValueGroup.UNKNOWN ),
                           PropertyIndexQuery.stringPrefix( 0, Values.stringValue( "myValue" ) ),
                           PropertyIndexQuery.stringSuffix( 0, Values.stringValue( "myValue" ) ),
                           PropertyIndexQuery.stringContains( 0, Values.stringValue( "myValue" ) ),

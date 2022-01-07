@@ -351,10 +351,6 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         assertThat( query( exact( 0, base2 ), range( 1, null, true, obj3, true ) ) ).containsExactly( 6L, 7L, 8L );
         assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj2, true ) ) ).containsExactly( 7L );
         assertThat( query( exact( 0, base2 ), range( 1, obj1, false, obj3, false ) ) ).containsExactly( 7L );
-
-        ValueGroup valueGroup = obj1.valueGroup();
-        assertThat( query( exact( 0, base1 ), range( 1, valueGroup ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
-        assertThat( query( exact( 0, base2 ), range( 1, valueGroup ) ) ).containsExactly( 6L, 7L, 8L, 9L, 10L );
     }
 
     private void testIndexSeekExactWithBoundingBox( Value base1, Value base2,
@@ -437,8 +433,6 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         assertThat( query( exact( 0, base2 ), range( 1, null, true, obj2, true ) ) ).containsExactly( 3L, 4L );
         assertThat( query( exact( 0, base2 ), range( 1, obj1, true, null, true ) ) ).containsExactly( 3L, 4L );
         assertThat( query( exact( 0, base2 ), range( 1, obj2, true, obj1, true ) ) ).isEmpty();
-        assertThat( query( exact( 0, base1 ), range( 1, obj1.valueGroup() ) ) ).containsExactly( 1L, 2L );
-        assertThat( query( exact( 0, base2 ), range( 1, obj1.valueGroup() ) ) ).containsExactly( 3L, 4L );
     }
 
     /* stringPrefix */
@@ -742,8 +736,6 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         assertThat( query( range( 0, null, true, obj3, true ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
         assertThat( query( range( 0, obj1, false, obj2, true ), exists( 1 ) ) ).containsExactly( 2L );
         assertThat( query( range( 0, obj1, false, obj3, false ), exists( 1 ) ) ).containsExactly( 2L );
-
-        assertThat( query( range( 0, obj1.valueGroup() ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
     }
 
     private void testIndexSeekBoundingBoxWithExists( PointValue obj1, PointValue obj2, PointValue obj3, PointValue obj4, PointValue obj5 ) throws Exception

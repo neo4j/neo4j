@@ -23,12 +23,10 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -41,26 +39,17 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
-import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,10 +60,8 @@ import static org.neo4j.function.Predicates.in;
 import static org.neo4j.internal.helpers.collection.Iterables.asUniqueSet;
 import static org.neo4j.internal.helpers.collection.Iterators.filter;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
@@ -443,67 +430,6 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         // then
         Set<Long> expectedIds = Collections.emptySet();
         assertEquals( expectedIds, ids );
-    }
-
-    @Test
-    void getValues() throws IndexEntryConflictException, IndexNotApplicableKernelException
-    {
-        // given
-        int nUpdates = 10000;
-        Iterator<ValueIndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator = valueCreatorUtil.randomUpdateGenerator( random );
-        //noinspection unchecked
-        ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates = new ValueIndexEntryUpdate[nUpdates];
-        for ( int i = 0; i < nUpdates; i++ )
-        {
-            someUpdates[i] = randomUpdateGenerator.next();
-        }
-        processAll( someUpdates );
-        Value[] allValues = ValueCreatorUtil.extractValuesFromUpdates( someUpdates );
-
-        // Pick one out of all added values and do a range query for the value group of that value
-        Value value;
-        do
-        {
-            value = random.among( allValues );
-        }
-        while ( Values.isGeometryValue( value ) && !supportedBoundingBoxQueries() );
-
-        PropertyIndexQuery supportedQuery;
-        List<Value> expectedValues;
-        if ( Values.isGeometryValue( value ) )
-        {
-            // Unless it's a point value in which case we query for the specific coordinate reference system instead
-            CoordinateReferenceSystem crs = ((PointValue) value).getCoordinateReferenceSystem();
-            supportedQuery = PropertyIndexQuery.boundingBox( 0, crs );
-            expectedValues = Arrays.stream( allValues )
-                                   .filter( v -> v.valueGroup() == ValueGroup.GEOMETRY )
-                                   .filter( v -> ((PointValue) v).getCoordinateReferenceSystem() == crs )
-                                   .toList();
-        }
-        else
-        {
-            ValueGroup valueGroup = value.valueGroup();
-            supportedQuery = PropertyIndexQuery.range( 0, valueGroup );
-            expectedValues = Arrays.stream( allValues )
-                                   .filter( v -> v.valueGroup() == valueGroup )
-                                   .toList();
-        }
-
-        // when
-        try ( var reader = accessor.newValueReader() )
-        {
-            SimpleEntityValueClient client = new SimpleEntityValueClient();
-            reader.query( client, NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), supportedQuery );
-
-            // then
-            List<Value> foundValues = new ArrayList<>( expectedValues.size() );
-            while ( client.next() )
-            {
-                Value foundValue = client.values[0];
-                foundValues.add( foundValue );
-            }
-            assertThat( foundValues ).as( "values found by query" ).containsExactlyInAnyOrderElementsOf( expectedValues );
-        }
     }
 
     @Test

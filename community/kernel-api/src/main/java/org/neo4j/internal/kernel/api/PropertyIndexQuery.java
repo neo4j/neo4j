@@ -134,18 +134,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
         };
     }
 
-    /**
-     * Create IndexQuery for retrieving all indexed entries of the given value group.
-     */
-    public static RangePredicate<?> range( int propertyKeyId, ValueGroup valueGroup )
-    {
-        if ( valueGroup == ValueGroup.GEOMETRY )
-        {
-            throw new IllegalArgumentException( "Cannot create GeometryRangePredicate without a specified CRS" );
-        }
-        return new RangePredicate<>( propertyKeyId, valueGroup );
-    }
-
     public static BoundingBoxPredicate boundingBox( int propertyKeyId,
                                                     PointValue from, boolean fromInclusive,
                                                     PointValue to, boolean toInclusive )
@@ -396,11 +384,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
             this.fromInclusive = fromInclusive;
             this.to = to;
             this.toInclusive = toInclusive;
-        }
-
-        private RangePredicate( int propertyKeyId, ValueGroup valueGroup )
-        {
-            this( propertyKeyId, valueGroup, null, true, null, true );
         }
 
         @Override
