@@ -19,9 +19,6 @@
  */
 package org.neo4j.codegen.api
 
-import java.nio.file.Path
-import java.nio.file.Paths
-
 import org.neo4j.codegen
 import org.neo4j.codegen.ClassHandle
 import org.neo4j.codegen.CodeGenerationNotSupportedException
@@ -52,7 +49,10 @@ import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.exceptions.CantCompileQueryException
 
+import java.nio.file.Path
+import java.nio.file.Paths
 import scala.collection.mutable.ArrayBuffer
+import scala.language.existentials
 
 /**
  * Produces runnable code from an IntermediateRepresentation
@@ -145,7 +145,7 @@ object CodeGeneration {
     }
   }
 
-  private def beginBlock[Block <: AutoCloseable, T](block: Block)(exhaustBlock: Block => T): T = {
+  private def beginBlock[BlockType <: AutoCloseable, T](block: BlockType)(exhaustBlock: BlockType => T): T = {
     /*
      * In the java API we are using try-with-resources for this. This is slightly problematic since we
      * are then always calling close which potentially will hide errors thrown in code generation.

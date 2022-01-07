@@ -130,6 +130,11 @@
            <plugin>
                <groupId>net.alchim31.maven</groupId>
                <artifactId>scala-maven-plugin</artifactId>
+               <configuration>
+                   <args combine.children="append">
+                       <arg>-Xfatal-warnings</arg>
+                   </args>
+               </configuration>
             </plugin>
             <plugin>
                 <groupId>org.neo4j</groupId>

@@ -19,8 +19,6 @@
  */
 package org.neo4j.codegen.api
 
-import java.lang.reflect.Modifier.isInterface
-
 import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.api.IntermediateRepresentation.block
 import org.neo4j.codegen.api.IntermediateRepresentation.declare
@@ -29,6 +27,7 @@ import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 
+import java.lang.reflect.Modifier.isInterface
 import scala.collection.mutable
 
 object SizeEstimation {
@@ -199,7 +198,7 @@ object SizeEstimation {
             declare(t.typeReference, t.name)
             JUMP_INSTRUCTION + localVarInstruction(t.name)
 
-          case unknown: IntermediateRepresentation => throw new IllegalStateException(s"Don't know how many bytes $unknown will use")
+          case unknown => throw new IllegalStateException(s"Don't know how many bytes $unknown will use")
         }
 
         if (visitChildren) acc => TraverseChildren(acc + bytesForInstruction)
