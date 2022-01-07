@@ -212,10 +212,10 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
             }
 
             return switch ( queryType )
-                    {
-                        case ALL_ENTRIES, EXISTS, EXACT, STRING_PREFIX, RANGE -> true;
-                        default -> false;
-                    };
+            {
+                case ALL_ENTRIES, EXISTS, EXACT, RANGE, STRING_PREFIX -> true;
+                default -> false;
+            };
         }
 
         @Override
