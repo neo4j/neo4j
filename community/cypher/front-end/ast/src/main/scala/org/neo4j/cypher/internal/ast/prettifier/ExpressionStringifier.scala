@@ -90,6 +90,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
+import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class ExpressionStringifier(
@@ -316,6 +317,10 @@ case class ExpressionStringifier(
 
       case CoerceTo(expr, typ) =>
         apply(expr)
+
+      case CoerceToPredicate(expr) =>
+        val inner = apply(expr)
+        s"CoerceToPredicate($inner)"
 
       case _ =>
         extension(this)(ast)
