@@ -132,6 +132,7 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.ListValue.IntegralRangeListValue
 import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
@@ -1281,6 +1282,8 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
 
   class TransactionBoundEntityTransformer extends EntityTransformer {
 
+    private[this] val cache = collection.mutable.Map.empty[AnyValue, AnyValue]
+
     override def rebindEntityWrappingValue(value: AnyValue): AnyValue = value match {
 
       case n: NodeEntityWrappingNodeValue =>
@@ -1294,15 +1297,20 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
         val relValues = p.path().relationships().asScala.map(rebindRelationship).toArray
         VirtualValues.pathReference(nodeValues, relValues)
 
-      case m: MapValue if !m.isEmpty =>
+      case m: MapValue if !m.isEmpty => cache.getOrElseUpdate(m, {
         val builder = new MapValueBuilder(m.size())
         m.foreach((k, v) => builder.add(k, rebindEntityWrappingValue(v)))
         builder.build()
+      })
 
-      case l: ListValue if !l.isEmpty =>
+      case i: IntegralRangeListValue =>
+        i
+
+      case l: ListValue if !l.isEmpty => cache.getOrElseUpdate(l, {
         val builder = ListValueBuilder.newListBuilder(l.size())
         l.forEach(v => builder.add(rebindEntityWrappingValue(v)))
         builder.build()
+      })
 
       case other =>
         other
