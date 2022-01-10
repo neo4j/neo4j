@@ -19,18 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -81,26 +76,7 @@ public class CypherStringQueryFactory
      */
     static Query range( String lower, boolean includeLower, String upper, boolean includeUpper )
     {
-        boolean includeLowerBoundary = StringUtils.EMPTY.equals( lower ) || includeLower;
-        boolean includeUpperBoundary = StringUtils.EMPTY.equals( upper ) || includeUpper;
-        TermRangeQuery termRangeQuery =
-                TermRangeQuery.newStringRange( ValueEncoding.String.key( 0 ), lower, upper, includeLowerBoundary, includeUpperBoundary );
-
-        if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
-        {
-            BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            if ( includeLowerBoundary != includeLower )
-            {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), lower ) ), BooleanClause.Occur.MUST_NOT );
-            }
-            if ( includeUpperBoundary != includeUpper )
-            {
-                builder.add( new TermQuery( new Term( ValueEncoding.String.key( 0 ), upper ) ), BooleanClause.Occur.MUST_NOT );
-            }
-            builder.add( termRangeQuery, BooleanClause.Occur.FILTER );
-            return new ConstantScoreQuery( builder.build() );
-        }
-        return termRangeQuery;
+        return TermRangeQuery.newStringRange( ValueEncoding.String.key( 0 ), lower, upper, includeLower, includeUpper );
     }
 
     /**

@@ -122,6 +122,9 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
             anonymous.setProperty( NAME, "" );
             anonymous.createRelationshipTo( jack, FRIEND ).setProperty( SINCE, "" );
 
+            var x = tx.createNode( PERSON );
+            x.setProperty( NAME, "" );
+
             tx.commit();
         }
     }
@@ -144,19 +147,32 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     @Test
     void shouldFindNodes() throws Exception
     {
-        assertThat( indexedNodes( allEntries() ) ).isEqualTo( 7 );
+        assertThat( indexedNodes( allEntries() ) ).isEqualTo( 8 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "Mike Smith" ) ) ).isEqualTo( 1 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "Unknown" ) ) ).isEqualTo( 0 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "42" ) ) ).isEqualTo( 0 );
         assertThat( indexedNodes( exact( token.propertyKey( NAME ), "77" ) ) ).isEqualTo( 1 );
         assertThat( indexedNodes( stringPrefix( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 1 );
-        assertThat( indexedNodes( stringPrefix( token.propertyKey( NAME ), stringValue( "" ) ) ) ).isEqualTo( 7 );
+        assertThat( indexedNodes( stringPrefix( token.propertyKey( NAME ), stringValue( "" ) ) ) ).isEqualTo( 8 );
         assertThat( indexedNodes( stringContains( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 3 );
-        assertThat( indexedNodes( stringContains( token.propertyKey( NAME ), stringValue( "" ) ) ) ).isEqualTo( 7 );
+        assertThat( indexedNodes( stringContains( token.propertyKey( NAME ), stringValue( "" ) ) ) ).isEqualTo( 8 );
         assertThat( indexedNodes( stringSuffix( token.propertyKey( NAME ), stringValue( "Smith" ) ) ) ).isEqualTo( 2 );
-        assertThat( indexedNodes( stringSuffix( token.propertyKey( NAME ), stringValue( "" ) ) ) ).isEqualTo( 7 );
+        assertThat( indexedNodes( stringSuffix( token.propertyKey( NAME ), stringValue( "" ) ) ) ).isEqualTo( 8 );
         assertThat( indexedNodes( range( token.propertyKey( NAME ), "Mike Smith", true, "Noah", true ) ) ).isEqualTo( 2 );
-        assertThat( indexedNodes( range( token.propertyKey( NAME ), "", true, "James", true ) ) ).isEqualTo( 3 );
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "", true, "James", true ) ) ).isEqualTo( 4 );
+    }
+
+    @Test
+    void shouldFindForRangesWithEmptyString() throws Exception
+    {
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "", true, "Noah", true ) ) ).isEqualTo( 7 );
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "", false, "Noah", false ) ) ).isEqualTo( 4 );
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "Noah", true, "", true ) ) ).isEqualTo( 0 );
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "Noah", false, "", false ) ) ).isEqualTo( 0 );
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "", true, "", true ) ) ).isEqualTo( 2 );
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "", false, "", false ) ) ).isEqualTo( 0 );
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "", false, "", true ) ) ).isEqualTo( 0 );
+        assertThat( indexedNodes( range( token.propertyKey( NAME ), "", true, "", false ) ) ).isEqualTo( 0 );
     }
 
     @Test
