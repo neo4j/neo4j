@@ -278,7 +278,7 @@ class RecoveryCorruptedTransactionLogIT
                 lastClosedTransactionBeforeStart;
         managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
-        addRandomBytesToLastLogFile( this::randomNonZeroBytes );
+        addRandomBytesToLastLogFile( this::randomNonZeroByte );
 
         startStopDbRecoveryOfCorruptedLogs();
 
@@ -329,7 +329,7 @@ class RecoveryCorruptedTransactionLogIT
         managementService.shutdown();
 
         removeLastCheckpointRecordFromLastLogFile();
-        Supplier<Byte> randomBytesSupplier = this::randomNonZeroBytes;
+        Supplier<Byte> randomBytesSupplier = this::randomNonZeroByte;
         BytesCaptureSupplier capturingSupplier = new BytesCaptureSupplier( randomBytesSupplier );
         addRandomBytesToLastLogFile( capturingSupplier );
         assertFalse( recoveryMonitor.wasRecoveryRequired() );
@@ -918,7 +918,10 @@ class RecoveryCorruptedTransactionLogIT
             try ( StoreChannel storeChannel = fileSystem.write( checkpointFile.getDetachedCheckpointFileForVersion( logPosition.getLogVersion() ) )  )
             {
                 storeChannel.position( logPosition.getByteOffset() );
-                storeChannel.writeAll( ByteBuffer.wrap( random.nextBytes( new byte[bytesToAdd] ) ) );
+                var array = random.nextBytes( new byte[bytesToAdd] );
+                // zero at the begining marks end of records
+                array[0] = randomNonZeroByte();
+                storeChannel.writeAll( ByteBuffer.wrap( array ) );
             }
         }
     }
@@ -1045,7 +1048,7 @@ class RecoveryCorruptedTransactionLogIT
      * Used when appending extra randomness at the end of tx log.
      * Use non-zero bytes, randomly generated zero can be treated as "0" kernel version, marking end-of-records in pre-allocated tx log file.
      */
-    private byte randomNonZeroBytes()
+    private byte randomNonZeroByte()
     {
         var b = (byte) random.nextInt( Byte.MIN_VALUE, Byte.MAX_VALUE - 1 );
         if ( b != 0 )
