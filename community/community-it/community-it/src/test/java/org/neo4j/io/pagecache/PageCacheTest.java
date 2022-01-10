@@ -66,6 +66,7 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
@@ -1271,13 +1272,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             configureStandardPageCache();
 
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
-                    PageCursor cursor = pagedFile.io( 0L, PF_SHARED_WRITE_LOCK, NULL ) )
+                    MuninnPageCursor cursor = (MuninnPageCursor) pagedFile.io( 0L, PF_SHARED_WRITE_LOCK, NULL ) )
             {
-                assertThat( cursor.getCurrentPageSize() ).isEqualTo( PageCursor.UNBOUND_PAGE_SIZE );
+                assertThat( cursor.getPageSize() ).isEqualTo( 0 );
                 assertTrue( cursor.next() );
-                assertThat( cursor.getCurrentPageSize() ).isEqualTo( filePageSize );
-                cursor.rewind();
-                assertThat( cursor.getCurrentPageSize() ).isEqualTo( PageCursor.UNBOUND_PAGE_SIZE );
+                assertThat( cursor.getPageSize() ).isEqualTo( filePageSize );
             }
         } );
     }
@@ -4778,7 +4777,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 int bytesCopied;
                 do
                 {
-                    bytesCopied = cursorA.copyTo( 0, cursorB, 0, cursorA.getCurrentPayloadSize() );
+                    bytesCopied = cursorA.copyTo( 0, cursorB, 0, cursorA.getPagedFile().payloadSize() );
                 }
                 while ( cursorA.shouldRetry() );
                 assertThat( bytesCopied ).isEqualTo( pagePayload );

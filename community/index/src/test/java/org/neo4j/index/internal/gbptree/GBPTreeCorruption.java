@@ -245,7 +245,7 @@ public final class GBPTreeCorruption
     {
         return ( cursor, layout, node, treeState ) -> {
             TreeNodeDynamicSize dynamicNode = assertDynamicNode( node );
-            dynamicNode.setAllocOffset( cursor, cursor.getCurrentPayloadSize() ); // Clear alloc space
+            dynamicNode.setAllocOffset( cursor, cursor.getPagedFile().payloadSize() ); // Clear alloc space
         };
     }
 

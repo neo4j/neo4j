@@ -76,21 +76,15 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public int getCurrentPayloadSize()
-    {
-        return pageSize - reservedBytes;
-    }
-
-    @Override
-    public int getCurrentPageSize()
-    {
-        return pageSize;
-    }
-
-    @Override
     public Path getCurrentFile()
     {
         return getRawCurrentFile();
+    }
+
+    @Override
+    public PagedFile getPagedFile()
+    {
+        return new StubPagedFile( pageSize );
     }
 
     @Override

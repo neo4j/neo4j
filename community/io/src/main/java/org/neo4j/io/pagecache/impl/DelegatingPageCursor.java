@@ -25,6 +25,7 @@ import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 
 /**
  * A {@link PageCursor} implementation that delegates all calls to a given delegate PageCursor.
@@ -94,6 +95,12 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
+    public PagedFile getPagedFile()
+    {
+        return delegate.getPagedFile();
+    }
+
+    @Override
     public Path getRawCurrentFile()
     {
         return delegate.getRawCurrentFile();
@@ -109,18 +116,6 @@ public class DelegatingPageCursor extends PageCursor
     public short getShort( int offset )
     {
         return delegate.getShort( offset );
-    }
-
-    @Override
-    public int getCurrentPayloadSize()
-    {
-        return delegate.getCurrentPayloadSize();
-    }
-
-    @Override
-    public int getCurrentPageSize()
-    {
-        return delegate.getCurrentPageSize();
     }
 
     @Override

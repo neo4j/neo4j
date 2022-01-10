@@ -755,7 +755,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             throw new UnderlyingStorageException(
                     "Out of page bounds when reading all meta-data fields. The page in question is page " +
                     cursor.getCurrentPageId() + " of file " + storageFile.toAbsolutePath() + ", with payload size: " +
-                    cursor.getCurrentPayloadSize() + ", and total page size:" + cursor.getCurrentPageSize() );
+                    pagedFile.payloadSize() + ", and total page size:" + pagedFile.pageSize() );
         }
     }
 

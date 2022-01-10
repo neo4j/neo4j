@@ -57,7 +57,7 @@ public abstract class RecordFormat
     public final void fillWithRecords( PageCursor cursor )
     {
         cursor.setOffset( 0 );
-        int recordsPerPage = cursor.getCurrentPayloadSize() / getRecordSize();
+        int recordsPerPage = cursor.getPagedFile().payloadSize() / getRecordSize();
         for ( int i = 0; i < recordsPerPage; i++ )
         {
             writeRecordToPage( cursor, cursor.getCurrentPageId(), recordsPerPage );
@@ -74,7 +74,7 @@ public abstract class RecordFormat
 
     public final void assertRecordsWrittenCorrectly( PageCursor cursor ) throws IOException
     {
-        int currentPayloadSize = cursor.getCurrentPayloadSize();
+        int currentPayloadSize = cursor.getPagedFile().payloadSize();
         int recordSize = getRecordSize();
         int recordsPerPage = currentPayloadSize / recordSize;
         for ( int pageRecordId = 0; pageRecordId < recordsPerPage; pageRecordId++ )
@@ -98,12 +98,12 @@ public abstract class RecordFormat
     protected static String dumpPageContent( PageCursor cursor )
     {
         int initialOffset = cursor.getOffset();
-        byte[] bytes = new byte[cursor.getCurrentPayloadSize()];
+        byte[] bytes = new byte[cursor.getPagedFile().payloadSize()];
         cursor.setOffset( 0 );
         cursor.getBytes( bytes );
         cursor.setOffset( initialOffset );
-        return "Current page: " + cursor.getCurrentPageId() + ", payloadSize: " + cursor.getCurrentPayloadSize() + " Offset: " + initialOffset + ", data: " +
-                Arrays.toString( bytes );
+        return "Current page: " + cursor.getCurrentPageId() + ", payloadSize: " + cursor.getPagedFile().payloadSize() + " Offset: " + initialOffset +
+                ", data: " + Arrays.toString( bytes );
     }
 
     public final void assertRecordsWrittenCorrectly( Path file, StoreChannel channel ) throws IOException

@@ -766,16 +766,6 @@ class CompositePageCursorTest
     }
 
     @Test
-    void currentPageSizeIsUnsupported()
-    {
-        assertThrows( UnsupportedOperationException.class, () ->
-        {
-            PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );
-            pageCursor.getCurrentPayloadSize();
-        } );
-    }
-
-    @Test
     void pageIdEqualFirstCursorPageIdBeforeFlip()
     {
         PageCursor pageCursor = CompositePageCursor.compose( first, PAYLOAD_SIZE, second, PAYLOAD_SIZE );

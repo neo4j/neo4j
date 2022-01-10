@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.String.format;
 import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
@@ -89,32 +90,6 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public int getCurrentPayloadSize()
-    {
-        if ( currentPageId == UNBOUND_PAGE_ID )
-        {
-            return UNBOUND_PAYLOAD_SIZE;
-        }
-        else
-        {
-            return page( currentPageId ).length;
-        }
-    }
-
-    @Override
-    public int getCurrentPageSize()
-    {
-        if ( currentPageId == UNBOUND_PAGE_ID )
-        {
-            return UNBOUND_PAGE_SIZE;
-        }
-        else
-        {
-            return page( currentPageId ).length;
-        }
-    }
-
-    @Override
     public boolean next()
     {
         currentPageId = nextPageId;
@@ -146,8 +121,8 @@ class PageAwareByteArrayCursor extends PageCursor
                     sourceOffset, targetOffset, lengthInBytes, currentPageId ) );
         }
         int bytesToCopy = Math.min( lengthInBytes,
-                Math.min( current.getCurrentPayloadSize() - sourceOffset,
-                        targetCursor.getCurrentPayloadSize() - targetOffset ) );
+                Math.min( current.getPagedFile().payloadSize() - sourceOffset,
+                        targetCursor.getPagedFile().payloadSize() - targetOffset ) );
 
         for ( int i = 0; i < bytesToCopy; i++ )
         {
@@ -199,6 +174,12 @@ class PageAwareByteArrayCursor extends PageCursor
     public Path getCurrentFile()
     {
         return current.getCurrentFile();
+    }
+
+    @Override
+    public PagedFile getPagedFile()
+    {
+        return current.getPagedFile();
     }
 
     @Override

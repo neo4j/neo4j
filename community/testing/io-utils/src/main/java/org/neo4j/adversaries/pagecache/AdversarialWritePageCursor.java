@@ -211,12 +211,6 @@ class AdversarialWritePageCursor extends DelegatingPageCursor
     }
 
     @Override
-    public int getCurrentPayloadSize()
-    {
-        return delegate.getCurrentPayloadSize();
-    }
-
-    @Override
     public Path getCurrentFile()
     {
         return delegate.getCurrentFile();

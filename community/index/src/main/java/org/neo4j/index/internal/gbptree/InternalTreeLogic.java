@@ -1420,7 +1420,7 @@ class InternalTreeLogic<KEY,VALUE>
         try ( PageCursor successorCursor = cursor.openLinkedCursor( successorId ) )
         {
             TreeNode.goTo( successorCursor, "successor", successorId );
-            cursor.copyTo( 0, successorCursor, 0, cursor.getCurrentPayloadSize() );
+            cursor.copyTo( 0, successorCursor, 0, cursor.getPagedFile().payloadSize() );
             TreeNode.setGeneration( successorCursor, unstableGeneration );
             TreeNode.setSuccessor( successorCursor, TreeNode.NO_NODE_FLAG, stableGeneration, unstableGeneration );
         }

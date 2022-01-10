@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 
 class ReadableChannelPageCursor extends PageCursor
 {
@@ -235,19 +236,13 @@ class ReadableChannelPageCursor extends PageCursor
     }
 
     @Override
-    public int getCurrentPayloadSize()
-    {
-        return 0;
-    }
-
-    @Override
-    public int getCurrentPageSize()
-    {
-        return 0;
-    }
-
-    @Override
     public Path getCurrentFile()
+    {
+        return null;
+    }
+
+    @Override
+    public PagedFile getPagedFile()
     {
         return null;
     }

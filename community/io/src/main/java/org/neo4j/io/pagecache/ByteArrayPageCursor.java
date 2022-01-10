@@ -22,11 +22,15 @@ package org.neo4j.io.pagecache;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.monitoring.PageFileCounters;
+import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 
 /**
  * Wraps a byte array and present it as a PageCursor.
@@ -246,21 +250,15 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
-    public int getCurrentPayloadSize()
-    {
-        return buffer.capacity();
-    }
-
-    @Override
-    public int getCurrentPageSize()
-    {
-        return buffer.capacity();
-    }
-
-    @Override
     public Path getCurrentFile()
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PagedFile getPagedFile()
+    {
+        return new ByteArrayPagedFile( buffer.capacity() );
     }
 
     @Override
@@ -297,7 +295,7 @@ public class ByteArrayPageCursor extends PageCursor
         }
         else
         {
-            buffer = ByteBuffer.allocate( getCurrentPayloadSize() );
+            buffer = ByteBuffer.allocate( buffer.capacity() );
             buffers.put( pageId, buffer );
         }
         return true;
@@ -382,7 +380,7 @@ public class ByteArrayPageCursor extends PageCursor
     {
         if ( !buffers.containsKey( pageId ) )
         {
-            buffers.put( pageId, ByteBuffer.allocate( getCurrentPayloadSize() ) );
+            buffers.put( pageId, ByteBuffer.allocate( buffer.capacity() ) );
         }
         return new ByteArrayPageCursor( buffers, pageId );
     }
@@ -399,5 +397,80 @@ public class ByteArrayPageCursor extends PageCursor
         // Because we allow writes; they can't possibly conflict because this class is meant to be used by only one
         // thread at a time anyway.
         return true;
+    }
+
+    private record ByteArrayPagedFile(int pageSize) implements PagedFile
+    {
+        @Override
+        public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int pageSize()
+        {
+            return pageSize;
+        }
+
+        @Override
+        public int payloadSize()
+        {
+            return pageSize;
+        }
+
+        @Override
+        public long fileSize() throws IOException
+        {
+            return pageSize;
+        }
+
+        @Override
+        public Path path()
+        {
+            return null;
+        }
+
+        @Override
+        public void flushAndForce() throws IOException
+        {
+
+        }
+
+        @Override
+        public long getLastPageId() throws IOException
+        {
+            return 0;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+        @Override
+        public void setDeleteOnClose( boolean deleteOnClose )
+        {
+
+        }
+
+        @Override
+        public boolean isDeleteOnClose()
+        {
+            return false;
+        }
+
+        @Override
+        public String getDatabaseName()
+        {
+            return null;
+        }
+
+        @Override
+        public PageFileCounters pageFileCounters()
+        {
+            return PageFileSwapperTracer.NULL;
+        }
     }
 }

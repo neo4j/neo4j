@@ -221,25 +221,17 @@ public abstract class PageCursor implements AutoCloseable
     public abstract long getCurrentPageId();
 
     /**
-     * Get the payload size of the page that the cursor is currently positioned at,
-     * or UNBOUND_PAYLOAD_SIZE if next() has not yet been called on this cursor, or returned false.
-     * A call to rewind() will make the current page unbound as well, until next() is called.
-     */
-    public abstract int getCurrentPayloadSize();
-
-    /**
-     * Get the file page size of the page that the cursor is currently positioned at,
-     * or UNBOUND_PAGE_SIZE if next() has not yet been called on this cursor, or returned false.
-     * A call to rewind() will make the current page unbound as well, until next() is called.
-     */
-    public abstract int getCurrentPageSize();
-
-    /**
      * Get the file the cursor is currently bound to, or {@code null} if next() has not yet been called on this
      * cursor, or returned false.
      * A call to rewind() will make the cursor unbound as well, until next() is called.
      */
     public abstract Path getCurrentFile();
+
+    /**
+     * Get the page file the cursor is currently bound to, or {@code null} if next() has not yet been called on this
+     * cursor, or returned false.
+     */
+    public abstract PagedFile getPagedFile();
 
     /**
      * Get page cursor page file if cursor is still open or null otherwise

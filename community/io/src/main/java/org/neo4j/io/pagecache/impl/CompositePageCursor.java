@@ -25,6 +25,7 @@ import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 
 /**
  * A CompositePageCursor is a seamless view over parts of two other PageCursors.
@@ -401,21 +402,15 @@ public final class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public int getCurrentPayloadSize()
-    {
-        throw new UnsupportedOperationException( "Getting current payload size is not supported on compose PageCursor" );
-    }
-
-    @Override
-    public int getCurrentPageSize()
-    {
-        throw new UnsupportedOperationException( "Getting current page size is not supported on compose PageCursor" );
-    }
-
-    @Override
     public Path getCurrentFile()
     {
         return null;
+    }
+
+    @Override
+    public PagedFile getPagedFile()
+    {
+        return this.first != null ? this.first.getPagedFile() : null;
     }
 
     @Override

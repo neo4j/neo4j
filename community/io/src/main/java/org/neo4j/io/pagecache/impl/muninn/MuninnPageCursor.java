@@ -304,18 +304,6 @@ public abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public final int getCurrentPayloadSize()
-    {
-        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? UNBOUND_PAYLOAD_SIZE : payloadSize;
-    }
-
-    @Override
-    public int getCurrentPageSize()
-    {
-        return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? UNBOUND_PAGE_SIZE : pageSize;
-    }
-
-    @Override
     public Path getRawCurrentFile()
     {
         return pagedFile == null ? null : pagedFile.path();
@@ -325,6 +313,12 @@ public abstract class MuninnPageCursor extends PageCursor
     public final Path getCurrentFile()
     {
         return loadPlainCurrentPageId() == UNBOUND_PAGE_ID ? null : getRawCurrentFile();
+    }
+
+    @Override
+    public PagedFile getPagedFile()
+    {
+        return pagedFile;
     }
 
     /**
@@ -888,21 +882,21 @@ public abstract class MuninnPageCursor extends PageCursor
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
-        int source = sourceOffset + pageReservedBytes;
-        int target = targetOffset + pageReservedBytes;
-        int sourcePageSize = getCurrentPageSize();
-        int targetPageSize = targetCursor.getCurrentPageSize();
         if ( targetCursor.getClass() != MuninnWritePageCursor.class )
         {
             throw new IllegalArgumentException( "Target cursor must be writable" );
         }
+        MuninnPageCursor cursor = (MuninnPageCursor) targetCursor;
+        int source = sourceOffset + pageReservedBytes;
+        int target = targetOffset + pageReservedBytes;
+        int sourcePageSize = pageSize;
+        int targetPageSize = cursor.pageSize;
         if ( source >= pageReservedBytes
              && target >= pageReservedBytes
              && source < sourcePageSize
              && target < targetPageSize
              && lengthInBytes >= 0 )
         {
-            MuninnPageCursor cursor = (MuninnPageCursor) targetCursor;
             int remainingSource = sourcePageSize - source;
             int remainingTarget = targetPageSize - target;
             int bytes = Math.min( lengthInBytes, Math.min( remainingSource, remainingTarget ) );
@@ -934,7 +928,7 @@ public abstract class MuninnPageCursor extends PageCursor
         int pos = buf.position();
         int bytesToCopy = Math.min( buf.limit() - pos, payloadSize - sourceOffset );
         long source = pointer + sourceOffset + pageReservedBytes;
-        if ( sourceOffset < getCurrentPayloadSize() && sourceOffset >= 0 )
+        if ( sourceOffset < payloadSize && sourceOffset >= 0 )
         {
             long target = UnsafeUtil.getDirectByteBufferAddress( buf );
             UnsafeUtil.copyMemory( source, target + pos, bytesToCopy );
@@ -1159,5 +1153,17 @@ public abstract class MuninnPageCursor extends PageCursor
         long pageRef = pinnedPageRef;
         Preconditions.checkState( pageRef != 0, "Cursor is closed." );
         return PageList.getLastModifiedTxId( pageRef );
+    }
+
+    @VisibleForTesting
+    public int getPageSize()
+    {
+        return pageSize;
+    }
+
+    @VisibleForTesting
+    public int getPayloadSize()
+    {
+        return payloadSize;
     }
 }
