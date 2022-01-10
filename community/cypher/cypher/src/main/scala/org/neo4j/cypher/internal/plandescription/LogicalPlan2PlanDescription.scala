@@ -1099,7 +1099,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
   }
 
   private def rangeBoundString(propertyKey: PropertyKeyToken, bound: Bound[expressions.Expression], sign: Char): PrettyString = {
-    pretty"${asPrettyString(propertyKey.name)} ${asPrettyString.raw(sign + bound.inequalitySignSuffix)} ${asPrettyString(bound.endPoint)}"
+    pretty"${asPrettyString(propertyKey.name)} ${asPrettyString.raw(s"$sign${bound.inequalitySignSuffix}")} ${asPrettyString(bound.endPoint)}"
   }
 
   private def prettyPoint(point: Expression) = {

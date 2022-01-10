@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -29,18 +28,24 @@ import org.scalacheck.Gen
 import org.scalacheck.Gen.alphaLowerChar
 import org.scalacheck.Gen.alphaUpperChar
 import org.scalacheck.Shrink
-import org.scalatest.prop.PropertyChecks
+import org.scalactic.anyvals.PosInt
+import org.scalactic.anyvals.PosZDouble
+import org.scalactic.anyvals.PosZInt
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-trait PatternGen extends PropertyChecks {
+import scala.annotation.tailrec
+
+trait PatternGen extends ScalaCheckPropertyChecks {
   protected def minPatternLength = 2
   protected def maxPatternLength = 8
-  protected def numberOfTestRuns = 100
+  protected def numberOfTestRuns: PosInt = PosInt(100)
   protected def maxDiscardedInputs = 500
-  protected def maxSize = 10
+  protected def maxSize: PosZInt = PosZInt(10)
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration = PropertyCheckConfig(
-    minSuccessful = numberOfTestRuns, maxDiscarded = maxDiscardedInputs, maxSize = maxSize
-  )
+  private def calculateMaxDiscardedFactor(): PosZDouble =
+    PosZDouble.from(((maxDiscardedInputs + 1): Double) / (numberOfTestRuns: Double)).get
+
+  override implicit val generatorDrivenConfig: PropertyCheckConfiguration = PropertyCheckConfiguration(numberOfTestRuns, calculateMaxDiscardedFactor(), maxSize)
 
   val nameSeq = new AtomicInteger
 
@@ -85,6 +90,7 @@ trait PatternGen extends PropertyChecks {
 
   def findAllNodeNames(elements: List[Element]): Seq[String] = {
 
+    @tailrec
     def findName(element: Element): Option[String] = element match {
       // either name from node that participates in pattern
       case NodeWithRelationship(node, _) => findName(node)
@@ -100,6 +106,7 @@ trait PatternGen extends PropertyChecks {
 
   def findAllRelationshipNames(elements: List[Element]): Seq[String] = {
 
+    @tailrec
     def findName(element: Element): Option[String] = element match {
       case NodeWithRelationship(_, rel) => findName(rel)
       case NamedRelationship(name, _) => Some(name)

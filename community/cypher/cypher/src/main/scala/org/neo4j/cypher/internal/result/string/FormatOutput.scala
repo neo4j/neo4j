@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.result.string
 
 import org.neo4j.graphdb.QueryStatistics
 
+import scala.collection.mutable.ArrayBuffer
+
 /**
  * Creates formatted tabular output.
  */
@@ -28,7 +30,7 @@ object FormatOutput {
 
   def format(writer: FormatOutputWriter,
              columns: Array[String],
-             result: Seq[Array[String]],
+             result: ArrayBuffer[Array[String]],
              queryStatistics: QueryStatistics): Unit = {
 
     def makeSize(str: String, wantedSize: Int): String = {
@@ -48,7 +50,7 @@ object FormatOutput {
       }).mkString("| ", " | ", " |")
     }
 
-    def calculateColumnSizes(result: Seq[Array[String]]): Array[Int] = {
+    def calculateColumnSizes(result: ArrayBuffer[Array[String]]): Array[Int] = {
       val columnSizes = columns.map(_.length)
 
       for {

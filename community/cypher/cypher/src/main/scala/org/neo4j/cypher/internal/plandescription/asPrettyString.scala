@@ -97,10 +97,10 @@ object asPrettyString {
     def pretty(args: PrettyString*): PrettyString = {
       val connectors = sc.parts.iterator
       val expressions = args.iterator
-      val buf = new StringBuffer(connectors.next)
+      val buf = new StringBuffer(connectors.next())
       while(connectors.hasNext) {
-        buf append expressions.next.prettifiedString
-        buf append connectors.next
+        buf append expressions.next().prettifiedString
+        buf append connectors.next()
       }
       PrettyString(buf.toString)
     }
@@ -109,9 +109,9 @@ object asPrettyString {
   /**
    * Provides the method [[mkPrettyString]] for TraversableOnce[PrettyString]
    */
-  implicit class PrettyStringMaker(traversableOnce: TraversableOnce[PrettyString]) {
-    def mkPrettyString(sep: String): PrettyString = PrettyString(traversableOnce.mkString(sep))
-    def mkPrettyString: PrettyString = PrettyString(traversableOnce.mkString)
-    def mkPrettyString(start: String, sep: String, end: String): PrettyString = PrettyString(traversableOnce.mkString(start, sep, end))
+  implicit class PrettyStringMaker(iterableOnce: IterableOnce[PrettyString]) {
+    def mkPrettyString(sep: String): PrettyString = PrettyString(iterableOnce.iterator.mkString(sep))
+    def mkPrettyString: PrettyString = PrettyString(iterableOnce.iterator.mkString)
+    def mkPrettyString(start: String, sep: String, end: String): PrettyString = PrettyString(iterableOnce.iterator.mkString(start, sep, end))
   }
 }

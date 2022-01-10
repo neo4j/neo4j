@@ -75,7 +75,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def flatten: Seq[InternalPlanDescription] = {
     val flatten = new ArrayBuffer[InternalPlanDescription]
-    val stack = new mutable.ArrayStack[InternalPlanDescription]()
+    val stack = new mutable.Stack[InternalPlanDescription]()
     stack.push(self)
     while (stack.nonEmpty) {
       val plan = stack.pop()
@@ -90,7 +90,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
       }
     }
     flatten
-  }
+  }.toSeq
 
   def totalDbHits: TotalHits = {
     val allMaybeDbHits: Seq[TotalHits] = flatten.map {

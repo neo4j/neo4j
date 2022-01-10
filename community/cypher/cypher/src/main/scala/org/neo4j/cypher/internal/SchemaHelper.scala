@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 import java.util.concurrent.atomic.AtomicLong
+import scala.collection.immutable.ArraySeq
 
 case class SchemaToken(x: Long) extends AnyVal
 
@@ -51,7 +52,7 @@ class SchemaHelper(val queryCache: QueryCache[_,_], val masterCompiler: MasterCo
     // Lock all used indexes
     val labelIds = executionPlan.labelIdsOfUsedIndexes
     val relationshipIds = executionPlan.relationshipsOfUsedIndexes
-    val lookupTypes: Array[EntityType] = executionPlan.lookupEntityTypes
+    val lookupTypes: ArraySeq[EntityType] = ArraySeq.unsafeWrapArray(executionPlan.lookupEntityTypes)
     acquireLocks(tc, labelIds.keys.toArray, relationshipIds.keys.toArray, lookupTypes)
 
     if (lookupTypes.nonEmpty || labelIds.nonEmpty || relationshipIds.nonEmpty) {

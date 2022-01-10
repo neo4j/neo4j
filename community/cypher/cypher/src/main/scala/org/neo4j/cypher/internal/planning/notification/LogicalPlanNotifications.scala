@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.InternalNotification
 
 trait NotificationChecker {
-  def apply(plan: LogicalPlan): TraversableOnce[InternalNotification]
+  def apply(plan: LogicalPlan): IterableOnce[InternalNotification]
 }
 
 object LogicalPlanNotifications {

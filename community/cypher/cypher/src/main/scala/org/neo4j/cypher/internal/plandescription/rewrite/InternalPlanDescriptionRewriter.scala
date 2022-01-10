@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.bottomUp
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 trait InternalPlanDescriptionRewriter {
   def rewrite(plan: InternalPlanDescription): InternalPlanDescription
@@ -113,7 +114,7 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
   override def rewrite(root: InternalPlanDescription): InternalPlanDescription = {
     var currentPipelineInfo: Option[PipelineInfo] = None
     var plansToAggregate = mutable.ArrayBuffer.empty[InternalPlanDescription]
-    val stack = new mutable.ArrayStack[InternalPlanDescription]
+    val stack = new mutable.Stack[InternalPlanDescription]
     val rewritesByPlanId = mutable.Map.empty[Id, PlanRewrite]
 
     def computePipelineArgumentAggregates(): Unit = {
@@ -175,7 +176,7 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
     root.endoRewrite(new ArgumentRewriter(rewritesByPlanId.toMap))
   }
 
-  private def aggregateArguments(plans: Seq[InternalPlanDescription]): AggregatedArguments = {
+  private def aggregateArguments(plans: ArrayBuffer[InternalPlanDescription]): AggregatedArguments = {
     var time = 0L
     var hits = 0L
     var misses = 0L

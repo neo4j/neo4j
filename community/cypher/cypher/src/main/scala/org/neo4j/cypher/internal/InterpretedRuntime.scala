@@ -49,6 +49,8 @@ import org.neo4j.exceptions.PeriodicCommitInOpenTransactionException
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
+import scala.collection.immutable.ArraySeq
+
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "interpreted"
 
@@ -72,7 +74,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       queryIndexRegistrator.result(),
       nExpressionSlots,
       parameterMapping,
-      columns,
+      ArraySeq.unsafeWrapArray(columns),
       context.config.lenientCreateRelationship,
       context.config.memoryTrackingController,
       query.hasLoadCSV,

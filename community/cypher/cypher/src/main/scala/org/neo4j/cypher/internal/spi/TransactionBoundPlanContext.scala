@@ -240,7 +240,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val itr = tc.schemaRead.indexForSchemaNonLocking(descriptor).asScala
       .filter(_.getIndexType == indexType)
       .flatMap(getOnlineIndex)
-    if (itr.hasNext) Some(itr.next) else None
+    if (itr.hasNext) Some(itr.next()) else None
   }
 
   override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {

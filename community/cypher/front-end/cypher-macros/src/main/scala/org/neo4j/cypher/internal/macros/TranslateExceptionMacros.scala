@@ -75,11 +75,11 @@ object TranslateExceptionMacros {
     val innerTypeTree = toTypeTree(tag.tpe)
 
     val translatedIterator = translateExceptionImpl(c)(tokenNameLookup, iteratorFactory)
-    val translatedNext = translateExceptionImpl(c)(tokenNameLookup, q"iterator.next()")
-    val translatedHasNext = translateExceptionImpl(c)(tokenNameLookup, q"iterator.hasNext")
+    val translatedNext = translateExceptionImpl(c)(tokenNameLookup, q"innerIterator.next()")
+    val translatedHasNext = translateExceptionImpl(c)(tokenNameLookup, q"innerIterator.hasNext")
 
     q"""
-        val iterator = $translatedIterator
+        val innerIterator = $translatedIterator
         new Iterator[$innerTypeTree] {
           override def hasNext: Boolean = $translatedHasNext
           override def next(): $innerTypeTree = $translatedNext

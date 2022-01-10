@@ -310,7 +310,9 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val preparedQuery = planner.normalizeQuery(syntacticQuery, plannerContext)
 
 
-    val (queryParamNames, autoExtractParams) = parameterNamesAndValues(preparedQuery.statement())
+    val (queryParamNames, autoExtractParams) = parameterNamesAndValues(preparedQuery.statement()) match {
+      case (qpn: ArrayBuffer[String], aep: MapValue) => (qpn.toSeq, aep)
+    }
 
     // Get obfuscator out ASAP to make query text available for `dbms.listQueries`, etc
     val obfuscator = CypherQueryObfuscator(preparedQuery.obfuscationMetadata())

@@ -352,6 +352,8 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.storable.Values.stringValue
 import org.scalatest.prop.TableDrivenPropertyChecks
 
+import scala.language.implicitConversions
+
 object LogicalPlan2PlanDescriptionTest {
 
   def anonVar(number: String) = s"anon_$number"

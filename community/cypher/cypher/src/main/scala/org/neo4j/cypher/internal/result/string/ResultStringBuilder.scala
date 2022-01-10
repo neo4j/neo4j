@@ -155,7 +155,7 @@ class ResultStringBuilder private(columns: Array[String],
     }
   }
 
-  private def makeString(m: Map[_, _]) = m.map { case (k, v) => s"$k -> ${asTextValue(v)}" }.mkString("{", ", ", "}")
+  private def makeString[K,V](m: Map[K, V]) = m.map { case (k, v) => s"$k -> ${asTextValue(v)}" }.mkString("{", ", ", "}")
 
   private def pathAsTextValue(path: Path): String = {
     val nodes = path.nodes().iterator()

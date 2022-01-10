@@ -156,7 +156,7 @@ object RewindableExecutionResult {
         if (row.nonEmpty) result.append(row.toMap)
       })
       new RewindableExecutionResultImplementation(columns,
-        result,
+        result.toSeq,
         executionMode,
         planDescription(),
         QueryStatistics(subscriber.queryStatistics()),

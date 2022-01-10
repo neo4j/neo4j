@@ -75,7 +75,7 @@ trait OptionsConverter[T] {
     case NoOptions => None
     case OptionsMap(map) => Some(convert(VirtualValues.map(
       map.keys.map(_.toLowerCase).toArray,
-      map.mapValues(evaluate(_, params)).values.toArray)))
+      map.view.mapValues(evaluate(_, params)).values.toArray)))
     case OptionsParam(parameter) =>
       val opsMap = params.get(parameter.name)
       opsMap match {
@@ -632,10 +632,13 @@ object MapValueOps {
       }
     }
 
-    override def -(key: String): Map[String, AnyValue] = {
+    override def removed(key: String): Map[String, AnyValue] = {
       val mvb = new MapValueBuilder()
       mv.foreach((k,v) => if (!k.equals(key)) mvb.add(k,v))
       mvb.build()
     }
+
+    override def updated[V1 >: AnyValue](key: String, value: V1): Map[String, V1] =
+      mv.updatedWith(VirtualValues.map(Array(key), Array(value.asInstanceOf[AnyValue])))
   }
 }
