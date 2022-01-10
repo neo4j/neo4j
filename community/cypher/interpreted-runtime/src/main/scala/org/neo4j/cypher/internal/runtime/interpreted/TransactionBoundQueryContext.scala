@@ -1297,11 +1297,10 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
         val relValues = p.path().relationships().asScala.map(rebindRelationship).toArray
         VirtualValues.pathReference(nodeValues, relValues)
 
-      case m: MapValue if !m.isEmpty => cache.getOrElseUpdate(m, {
+      case m: MapValue if !m.isEmpty =>
         val builder = new MapValueBuilder(m.size())
         m.foreach((k, v) => builder.add(k, rebindEntityWrappingValue(v)))
         builder.build()
-      })
 
       case i: IntegralRangeListValue =>
         i
