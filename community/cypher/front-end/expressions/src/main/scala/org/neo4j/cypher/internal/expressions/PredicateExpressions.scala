@@ -47,7 +47,7 @@ object Ands {
  * but equals and hashCode are overridden to get set semantics for comparison
  * (we assume set semantics when tracking solved expressions during planing)
  */
-case class Ands(exprs: Seq[Expression])(val position: InputPosition) extends BooleanExpression with MultiOperatorExpression {
+case class Ands(exprs: collection.Seq[Expression])(val position: InputPosition) extends BooleanExpression with MultiOperatorExpression {
   override def canonicalOperatorSymbol = "AND"
 
   private val exprSet = exprs.toSet
@@ -78,7 +78,7 @@ case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
  * but equals and hashCode are overridden to get set semantics for comparison
  * (we assume set semantics when tracking solved expressions during planing)
  */
-case class Ors(exprs: Seq[Expression])(val position: InputPosition) extends BooleanExpression with MultiOperatorExpression {
+case class Ors(exprs: collection.Seq[Expression])(val position: InputPosition) extends BooleanExpression with MultiOperatorExpression {
   override def canonicalOperatorSymbol = "OR"
 
   private val exprSet = exprs.toSet

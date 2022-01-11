@@ -34,8 +34,6 @@ import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConver
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
-import scala.collection.GenSet
-import scala.collection.GenTraversableOnce
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.math.Ordering.Implicits
@@ -168,11 +166,11 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
     copy(selections = selections ++ newSelections)
   }
 
-  def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph = {
+  def addHints(addedHints: IterableOnce[Hint]): QueryGraph = {
     copy(hints = hints ++ addedHints)
   }
 
-  def withoutHints(hintsToIgnore: GenSet[Hint]): QueryGraph = copy(
+  def withoutHints(hintsToIgnore: Set[Hint]): QueryGraph = copy(
     hints = hints.diff(hintsToIgnore),
     optionalMatches = optionalMatches.map(_.withoutHints(hintsToIgnore)))
 
@@ -383,8 +381,8 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
         val patternsWithSameName =
           patternRelationships.filterNot(filteredPatterns).filter { r => filteredPatterns.exists(_.name == r.name) }
 
-        queue.enqueue(filteredPatterns.toIndexedSeq.map(_.otherSide(node)): _*)
-        queue.enqueue(patternsWithSameName.toIndexedSeq.flatMap(r => Seq(r.left, r.right)): _*)
+        queue.enqueueAll(filteredPatterns.toIndexedSeq.map(_.otherSide(node)))
+        queue.enqueueAll(patternsWithSameName.toIndexedSeq.flatMap(r => Seq(r.left, r.right)))
 
         val patternsInConnectedComponent = filteredPatterns ++ patternsWithSameName
         qg = qg
@@ -396,7 +394,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
         if (!alreadyHaveArguments && (argumentsOverLapsWith(qg.idsWithoutOptionalMatchesOrUpdates) || predicatePullsInArguments(node))) {
           qg = qg.withArgumentIds(argumentIds)
           val nodesSolvedByArguments = patternNodes intersect qg.argumentIds
-          queue.enqueue(nodesSolvedByArguments.toIndexedSeq: _*)
+          queue.enqueueAll(nodesSolvedByArguments.toIndexedSeq)
         }
       }
     }
@@ -427,14 +425,14 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
     copyPatterns.appendAll(mutatingPatterns)
     copyPatterns += pattern
 
-    copy(mutatingPatterns = copyPatterns)
+    copy(mutatingPatterns = copyPatterns.toIndexedSeq)
   }
 
   def addMutatingPatterns(patterns: Seq[MutatingPattern]): QueryGraph = {
     val copyPatterns = new ArrayBuffer[MutatingPattern](patterns.size)
     copyPatterns.appendAll(mutatingPatterns)
     copyPatterns.appendAll(patterns)
-    copy(mutatingPatterns = copyPatterns)
+    copy(mutatingPatterns = copyPatterns.toIndexedSeq)
   }
 
   override def toString: String = {
@@ -526,7 +524,7 @@ object QueryGraph {
     def compare(x: QueryGraph, y: QueryGraph): Int = {
       val xs = x.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq.sorted
       val ys = y.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq.sorted
-      Implicits.seqDerivedOrdering[Seq, String].compare(xs, ys)
+      Implicits.seqOrdering[Seq, String].compare(xs, ys)
     }
   }
 

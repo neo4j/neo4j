@@ -32,19 +32,18 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
-import scala.collection.mutable.ArrayBuffer
-import scala.Iterable
+import scala.collection.MapView
+import scala.collection.mutable
 
 case class Selections private (predicates: Set[Predicate]) {
   def isEmpty: Boolean = predicates.isEmpty
 
-  def predicatesGiven(ids: Set[String]): Seq[Expression] = {
-    val buffer = new ArrayBuffer[Expression]()
+  def predicatesGiven(ids: Set[String]): collection.Seq[Expression] = {
+    val buffer = new mutable.ArrayBuffer[Expression]()
     predicates.foreach {
       p =>
         if (p.hasDependenciesMet(ids)) {
@@ -54,15 +53,11 @@ case class Selections private (predicates: Set[Predicate]) {
     buffer
   }
 
-  def expressionsContainingVariable: Map[String, Set[Predicate]] = {
+  def expressionsContainingVariable: MapView[String, Set[Predicate]] = {
     predicates.flatMap { predicate =>
       predicate.findAllByClass[Variable].map(v => v.name -> predicate)
-    }.groupBy(_._1).mapValues(p => p.map(_._2))
+    }.groupBy(_._1).view.mapValues(p => p.map(_._2))
   }
-
-  def scalarPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
-
-  def patternPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)
 
   def flatPredicatesSet: Set[Expression] =
     predicates.map(_.expr)
@@ -137,7 +132,7 @@ case class Selections private (predicates: Set[Predicate]) {
   def labelsOnNode(id: String): Set[LabelName] = labelInfo.getOrElse(id, Set.empty)
 
   lazy val labelInfo: Map[String, Set[LabelName]] =
-    labelPredicates.mapValues(_.map(_.labels.head))
+    labelPredicates.view.mapValues(_.map(_.labels.head)).toMap
 
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
     flatPredicates.forall( solvedPredicates.contains )

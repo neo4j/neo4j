@@ -219,10 +219,10 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     recurse(in, this)
   }
 
-  override lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = allPlannerQueries.flatMap(q => q.queryGraph.allQGsWithLeafInfo ++ q.horizon.allQueryGraphs)
+  override lazy val allQGsWithLeafInfo: collection.Seq[QgWithLeafInfo] = allPlannerQueries.flatMap(q => q.queryGraph.allQGsWithLeafInfo ++ q.horizon.allQueryGraphs)
 
   //Returns list of planner query and all of its tails
-  def allPlannerQueries: Seq[SinglePlannerQuery] = {
+  def allPlannerQueries: collection.Seq[SinglePlannerQuery] = {
     val buffer = scala.collection.mutable.ArrayBuffer[SinglePlannerQuery]()
     var current = this
     while (current != null) {
@@ -318,7 +318,7 @@ case class RegularSinglePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
 
   override def hashCode(): Int = {
     if (theHashCode == -1) {
-      val state = Seq(queryInput, queryGraph, horizon, tail, interestingOrder.requiredOrderCandidate.order)
+      val state: Seq[Object] = Seq(queryInput, queryGraph, horizon, tail, interestingOrder.requiredOrderCandidate.order)
       theHashCode = MurmurHash3.seqHash(state)
     }
     theHashCode
@@ -336,7 +336,7 @@ case class RegularSinglePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     val tagLength = Math.max(thisTag.length, otherTag.length) + 1
 
     // Make sure it corresponds with equals
-    val builder = StringBuilder.newBuilder
+    val builder = new StringBuilder()
     builder.append("Differences:\n")
     if (queryInput != other.queryInput) {
       builder.append(" - QueryInput\n")

@@ -45,7 +45,7 @@ trait PlannerQueryPart {
    *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
    *         is not safe to use for planning pattern expressions and pattern comprehensions.
    */
-  def allQGsWithLeafInfo: Seq[QgWithLeafInfo]
+  def allQGsWithLeafInfo: collection.Seq[QgWithLeafInfo]
 
   /**
    * Use this method when you are certain that you are dealing with a SinglePlannerQuery, and not a UnionQuery.
@@ -84,5 +84,5 @@ case class UnionQuery(part: PlannerQueryPart,
 
   override def asSinglePlannerQuery: SinglePlannerQuery = throw new IllegalStateException("Called asSinglePlannerQuery on a UnionQuery")
 
-  override def allQGsWithLeafInfo: Seq[QgWithLeafInfo] = query.allQGsWithLeafInfo ++ part.allQGsWithLeafInfo
+  override def allQGsWithLeafInfo: collection.Seq[QgWithLeafInfo] = query.allQGsWithLeafInfo ++ part.allQGsWithLeafInfo
 }
