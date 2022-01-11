@@ -77,7 +77,6 @@ import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
-import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 case class ExpressionSelectivityCalculator(stats: GraphStatistics,
                                            combiner: SelectivityCombiner,
@@ -109,12 +108,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
     Some(IndexType.Btree),
   ).flatten
-
-  def getTypeIfPossible(semanticTable: SemanticTable, expression: Expression): TypeSpec =
-    semanticTable.types
-      .get(expression)
-      .map(_.actual)
-      .getOrElse(TypeSpec.none)
 
   def apply(exp: Expression, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo)(implicit semanticTable: SemanticTable): Selectivity = exp match {
     // WHERE a:Label

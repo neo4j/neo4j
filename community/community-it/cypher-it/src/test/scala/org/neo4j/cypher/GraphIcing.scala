@@ -146,11 +146,11 @@ trait GraphIcing {
       getNodeConstraint(label, Seq(property))
     }
 
-    def createConstraint(label: String,
-                         properties: Seq[String],
-                         constraintPredicate: ConstraintPredicate,
-                         provider: IndexProviderDescriptor,
-                         name: Option[String] = None): ConstraintDefinition = {
+    def createNodeConstraint(label: String,
+                             properties: Seq[String],
+                             constraintPredicate: ConstraintPredicate,
+                             provider: IndexProviderDescriptor,
+                             name: Option[String] = None): ConstraintDefinition = {
       assert(properties.nonEmpty, "Constraints must have at least one property")
       val nameString = name.map(n => s"`$n`").getOrElse("")
       val propertyString = properties.map(prop => s"n.$prop").mkString(", ")
