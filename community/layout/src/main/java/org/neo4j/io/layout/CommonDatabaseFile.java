@@ -25,15 +25,19 @@ public enum CommonDatabaseFile implements DatabaseFile
     METADATA_STORE( "neostore" );
 
     private final String name;
+
     CommonDatabaseFile( String name )
     {
         this.name = name;
     }
+
+    @Override
     public String getName()
     {
         return name;
     }
 
+    @Override
     public boolean hasIdFile()
     {
         return false;

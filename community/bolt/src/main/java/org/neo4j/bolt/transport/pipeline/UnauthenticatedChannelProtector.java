@@ -49,6 +49,7 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
         this.timeoutHandler = new AuthenticationTimeoutHandler( channelTimeout );
     }
 
+    @Override
     public void afterChannelCreated()
     {
         // Adds auth timeout handlers.
@@ -56,6 +57,7 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
         this.channel.pipeline().addLast( timeoutHandler );
     }
 
+    @Override
     public void beforeBoltProtocolInstalled()
     {
         memoryTracker.allocateHeap( BytesAccumulator.SHALLOW_SIZE );
@@ -73,6 +75,7 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
         }
     }
 
+    @Override
     public void disable()
     {
         // Netty ensures that channel pipelines are cleared when a channel becomes inactive, causing further interactions with the pipeline to fail.

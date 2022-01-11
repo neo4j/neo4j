@@ -323,6 +323,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
      * {@link IndexPopulator index populator} is closed by {@link #flipAfterStoreScan(boolean, CursorContext)},
      * {@link #cancel(IndexPopulation, Throwable, CursorContext)} or {@link #stop(IndexPopulation, CursorContext)}.
      */
+    @Override
     public void close()
     {
         phaseTracker.stop();

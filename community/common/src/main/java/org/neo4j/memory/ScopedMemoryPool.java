@@ -40,6 +40,7 @@ public interface ScopedMemoryPool extends MemoryPool, AutoCloseable
     /**
      * Close and de-register specific memory pool
      */
+    @Override
     void close();
 
     /**

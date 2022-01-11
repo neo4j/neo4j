@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
-import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DateTimeValue;
@@ -284,106 +283,6 @@ public final class CypherCoercions
     private static CypherTypeException cantCoerce( AnyValue value, String type )
     {
         return new CypherTypeException( format( "Can't coerce `%s` to %s", value, type ) );
-    }
-
-    private static class ListMapper implements ValueMapper<ListValue>
-    {
-
-        @Override
-        public ListValue mapPath( VirtualPathValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapNode( VirtualNodeValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapRelationship( VirtualRelationshipValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapMap( MapValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapNoValue()
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapSequence( SequenceValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapText( TextValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapBoolean( BooleanValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapNumber( NumberValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapDateTime( DateTimeValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapLocalDateTime( LocalDateTimeValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapDate( DateValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapTime( TimeValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapLocalTime( LocalTimeValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapDuration( DurationValue value )
-        {
-            return null;
-        }
-
-        @Override
-        public ListValue mapPoint( PointValue value )
-        {
-            return null;
-        }
     }
 
     @FunctionalInterface

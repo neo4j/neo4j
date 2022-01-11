@@ -63,5 +63,6 @@ public interface StoreCursors extends AutoCloseable
 
     PageCursor writeCursor( CursorType type );
 
+    @Override
     void close();
 }

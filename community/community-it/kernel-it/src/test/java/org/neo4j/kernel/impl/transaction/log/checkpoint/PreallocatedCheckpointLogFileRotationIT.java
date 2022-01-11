@@ -37,11 +37,13 @@ import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 @EnabledOnOs( OS.LINUX )
 class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationIT
 {
+    @Override
     protected boolean preallocateLogs()
     {
         return true;
     }
 
+    @Override
     protected long expectedNewFileSize()
     {
         return ROTATION_THRESHOLD;

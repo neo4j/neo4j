@@ -84,6 +84,7 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         return factory;
     }
 
+    @Override
     protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
         return settings ->

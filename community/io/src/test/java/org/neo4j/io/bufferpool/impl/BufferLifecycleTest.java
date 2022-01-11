@@ -51,6 +51,7 @@ class BufferLifecycleTest
     {
         bufferPool = new NeoByteBufferPool( null, jobScheduler )
         {
+            @Override
             MemoryMonitor crateMemoryMonitor( MemoryPools memoryPools )
             {
                 MemoryMonitor memoryMonitor = mock( MemoryMonitor.class );

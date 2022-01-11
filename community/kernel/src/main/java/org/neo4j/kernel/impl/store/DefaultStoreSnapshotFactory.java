@@ -26,7 +26,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -48,6 +47,7 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
         this.log = database.getInternalLogProvider().getLog( getClass() );
     }
 
+    @Override
     public Optional<StoreSnapshot> createStoreSnapshot() throws IOException
     {
         if ( !database.getDatabaseAvailabilityGuard().isAvailable() )

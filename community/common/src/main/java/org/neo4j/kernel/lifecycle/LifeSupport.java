@@ -302,6 +302,7 @@ public class LifeSupport implements Lifecycle, LifecycleStatusProvider
         instances = new ArrayList<>( );
     }
 
+    @Override
     public LifecycleStatus getStatus()
     {
         return status;

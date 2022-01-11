@@ -119,6 +119,7 @@ public class SchemaAcceptanceTestBase
     {
         SEPARATE_TX
                 {
+                    @Override
                     public <EXCEPTION extends Throwable> EXCEPTION execute(
                             GraphDatabaseService db, Consumer<Schema> firstSchemaRule, Consumer<Schema> secondSchemaRule, Class<EXCEPTION> expectedException )
                     {
@@ -138,6 +139,7 @@ public class SchemaAcceptanceTestBase
                 },
         SAME_TX
                 {
+                    @Override
                     public <EXCEPTION extends Throwable> EXCEPTION execute(
                             GraphDatabaseService db, Consumer<Schema> firstSchemaRule, Consumer<Schema> secondSchemaRule, Class<EXCEPTION> expectedException )
                     {

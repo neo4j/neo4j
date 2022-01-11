@@ -373,6 +373,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
         };
     }
 
+    @Override
     public void sort( Comparator<? super E> c )
     {
         final int expectedModCount = modCount;
@@ -718,11 +719,13 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
         {
         }
 
+        @Override
         public boolean hasNext()
         {
             return cursor != size;
         }
 
+        @Override
         @SuppressWarnings( "unchecked" )
         public E next()
         {
@@ -741,6 +744,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
             return (E) elementData[lastRet = i];
         }
 
+        @Override
         public void remove()
         {
             if ( lastRet < 0 )
@@ -803,21 +807,25 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
             cursor = index;
         }
 
+        @Override
         public boolean hasPrevious()
         {
             return cursor != 0;
         }
 
+        @Override
         public int nextIndex()
         {
             return cursor;
         }
 
+        @Override
         public int previousIndex()
         {
             return cursor - 1;
         }
 
+        @Override
         @SuppressWarnings( "unchecked" )
         public E previous()
         {
@@ -836,6 +844,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
             return (E) elementData[lastRet = i];
         }
 
+        @Override
         public void set( E e )
         {
             if ( lastRet < 0 )
@@ -854,6 +863,7 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable
             }
         }
 
+        @Override
         public void add( E e )
         {
             checkForComodification();

@@ -241,6 +241,7 @@ public abstract class Value extends AnyValue
      */
     public abstract String prettyPrint();
 
+    @Override
     public abstract ValueRepresentation valueRepresentation();
 
     public final ValueGroup valueGroup()

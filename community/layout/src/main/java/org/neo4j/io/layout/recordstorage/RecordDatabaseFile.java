@@ -87,11 +87,13 @@ public enum RecordDatabaseFile implements DatabaseFile
         this.hasIdFile = hasIdFile;
     }
 
+    @Override
     public String getName()
     {
         return name;
     }
 
+    @Override
     public boolean hasIdFile()
     {
         return hasIdFile;

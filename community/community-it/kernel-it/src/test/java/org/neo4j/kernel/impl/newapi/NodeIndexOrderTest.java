@@ -43,6 +43,7 @@ class NodeIndexOrderTest
     {
         public static final String DEFAULT_LABEL = "Node";
 
+        @Override
         protected Pair<Long,Value> entityWithProp( KernelTransaction tx, Object value ) throws Exception
         {
             Write write = tx.dataWrite();

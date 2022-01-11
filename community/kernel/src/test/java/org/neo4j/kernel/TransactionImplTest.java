@@ -95,7 +95,7 @@ class TransactionImplTest
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransientFailureException( "Just a random failure" )
                  {
-                     //@Override
+                     @Override
                      public Status status()
                      {
                          return null;

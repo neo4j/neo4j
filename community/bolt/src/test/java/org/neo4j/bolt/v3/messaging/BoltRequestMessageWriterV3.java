@@ -22,9 +22,9 @@ package org.neo4j.bolt.v3.messaging;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
@@ -48,6 +48,7 @@ public class BoltRequestMessageWriterV3 implements BoltRequestMessageWriter
         this.packer = packer;
     }
 
+    @Override
     public BoltRequestMessageWriter write( RequestMessage message ) throws IOException
     {
         if ( message instanceof ResetMessage )
@@ -93,6 +94,7 @@ public class BoltRequestMessageWriterV3 implements BoltRequestMessageWriter
         return this;
     }
 
+    @Override
     public void flush()
     {
         try

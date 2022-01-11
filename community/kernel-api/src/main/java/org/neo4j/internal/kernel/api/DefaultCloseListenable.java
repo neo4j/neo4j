@@ -24,6 +24,7 @@ public abstract class DefaultCloseListenable implements AutoCloseablePlus
     protected CloseListener closeListener;
     private int token;
 
+    @Override
     public final void setCloseListener( CloseListener closeListener )
     {
         this.closeListener = closeListener;
@@ -45,11 +46,13 @@ public abstract class DefaultCloseListenable implements AutoCloseablePlus
         }
     }
 
+    @Override
     public final void setToken( int token )
     {
         this.token = token;
     }
 
+    @Override
     public final int getToken()
     {
         return token;

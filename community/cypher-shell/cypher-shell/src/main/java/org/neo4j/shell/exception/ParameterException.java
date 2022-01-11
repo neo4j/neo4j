@@ -20,7 +20,6 @@
 package org.neo4j.shell.exception;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 
@@ -28,11 +27,13 @@ public class ParameterException extends IllegalArgumentException
 {
     public static final ASTExceptionFactory FACTORY = new ASTExceptionFactory()
     {
+        @Override
         public Exception syntaxException( String got, List<String> expected, Exception source, int offset, int line, int column )
         {
             return new ParameterException( source.getMessage() );
         }
 
+        @Override
         public Exception syntaxException( Exception source, int offset, int line, int column )
         {
             return new ParameterException( source.getMessage() );

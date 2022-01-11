@@ -33,6 +33,7 @@ public abstract class BaseRoutingTableProcedureValidator implements RoutingTable
     }
 
     @Override
+    @SuppressWarnings( "ReturnValueIgnored" )
     public void assertDatabaseExists( NamedDatabaseId namedDatabaseId ) throws ProcedureException
     {
         databaseManager.databaseIdRepository().getById( namedDatabaseId.databaseId() )

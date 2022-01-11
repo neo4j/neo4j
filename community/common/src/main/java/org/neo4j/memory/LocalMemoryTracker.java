@@ -232,6 +232,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
         return new ScopedMemoryTracker( this );
     }
 
+    @Override
     public void setLimit( long localBytesLimit )
     {
         this.localBytesLimit = validateLimit( localBytesLimit );

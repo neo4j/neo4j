@@ -34,8 +34,8 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -1262,6 +1262,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return namedDatabaseId.name();
     }
 
+    @Override
     public UUID getDatabaseId()
     {
         return namedDatabaseId.databaseId().uuid();

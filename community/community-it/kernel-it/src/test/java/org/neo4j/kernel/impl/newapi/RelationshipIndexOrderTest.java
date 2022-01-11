@@ -42,6 +42,7 @@ class RelationshipIndexOrderTest
     {
         private static final String DEFAULT_REl_TYPE = "Rel";
 
+        @Override
         protected Pair<Long,Value> entityWithProp( KernelTransaction tx, Object value ) throws Exception
         {
             Write write = tx.dataWrite();

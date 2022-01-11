@@ -19,9 +19,6 @@
  */
 package org.neo4j.internal.helpers;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.FieldPosition;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -154,13 +151,13 @@ public final class Format
 
     private static String shortName( TimeUnit unit )
     {
-        switch ( unit )
-        {
-        case NANOSECONDS: return "ns";
-        case MICROSECONDS: return "μs";
-        case MILLISECONDS: return "ms";
-        default: return unit.name().substring( 0, 1 ).toLowerCase();
-        }
+        return switch ( unit )
+                {
+                    case NANOSECONDS -> "ns";
+                    case MICROSECONDS -> "μs";
+                    case MILLISECONDS -> "ms";
+                    default -> unit.name().substring( 0, 1 ).toLowerCase();
+                };
     }
 
     private static long extractFromDuration( long durationMillis, TimeUnit unit, Function<TimeUnit,String> unitFormat, StringBuilder target )
@@ -177,23 +174,6 @@ public final class Format
             target.append( target.length() > 0 ? " " : "" ).append( count ).append( unitFormat.apply( unit ) );
         }
         return durationMillis;
-    }
-
-    public static String numberToStringWithGroups( long number )
-    {
-        return numberToStringWithGroups( number, '.' );
-    }
-
-    public static String numberToStringWithGroups( long number, char groupSeparatorChar )
-    {
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
-        symbols.setGroupingSeparator( groupSeparatorChar );
-        DecimalFormat df = new DecimalFormat();
-        df.setDecimalFormatSymbols( symbols );
-        df.setGroupingSize( 3 );
-        df.setMaximumFractionDigits( 0 );
-        StringBuffer buffer = df.format( number, new StringBuffer(), new FieldPosition( 0 ) );
-        return buffer.toString();
     }
 
     private Format()

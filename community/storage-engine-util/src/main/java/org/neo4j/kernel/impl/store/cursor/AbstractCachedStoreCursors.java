@@ -44,6 +44,7 @@ public abstract class AbstractCachedStoreCursors implements StoreCursors
         this.cursorsByType = createEmptyCursorArray();
     }
 
+    @Override
     public void reset( CursorContext cursorContext )
     {
         this.cursorContext = cursorContext;

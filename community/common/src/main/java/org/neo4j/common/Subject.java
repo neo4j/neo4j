@@ -32,6 +32,7 @@ public class Subject
      */
     public static final Subject SYSTEM = new Subject( null )
     {
+        @Override
         public String getUsername()
         {
             throw new IllegalStateException( "Getting a username is not supported for System subject" );
@@ -43,6 +44,7 @@ public class Subject
             return "SYSTEM";
         }
 
+        @Override
         public String describe()
         {
             return "";
@@ -55,6 +57,7 @@ public class Subject
      */
     public static final Subject AUTH_DISABLED = new Subject( null )
     {
+        @Override
         public String getUsername()
         {
             throw new IllegalStateException( "Getting a username is not supported when authentication is disabled" );
@@ -66,6 +69,7 @@ public class Subject
             return "AUTH_DISABLED";
         }
 
+        @Override
         public String describe()
         {
             return "";
@@ -74,6 +78,7 @@ public class Subject
 
     public static final Subject ANONYMOUS = new Subject( null )
     {
+        @Override
         public String getUsername()
         {
             throw new IllegalStateException( "Getting a username is not supported for anonymous subject" );
@@ -85,6 +90,7 @@ public class Subject
             return "ANONYMOUS";
         }
 
+        @Override
         public String describe()
         {
             return "";

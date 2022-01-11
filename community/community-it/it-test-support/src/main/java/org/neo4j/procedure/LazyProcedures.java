@@ -271,6 +271,7 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         return globalProcedures.createAggregationFunction( ctx, id );
     }
 
+    @Override
     public <T> ThrowingFunction<Context,T,ProcedureException> lookupComponentProvider( Class<T> cls, boolean safe )
     {
         init();

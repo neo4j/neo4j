@@ -49,6 +49,7 @@ public class TaskCoordinator implements Cancelable, CancellationRequest
         }
     }
 
+    @Override
     public boolean cancellationRequested()
     {
         return cancelled;

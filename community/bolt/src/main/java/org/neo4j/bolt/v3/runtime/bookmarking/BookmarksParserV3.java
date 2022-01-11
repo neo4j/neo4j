@@ -47,7 +47,7 @@ public final class BookmarksParserV3 implements BookmarksParser
     @Override
     public List<Bookmark> parseBookmarks( AnyValue anyValue ) throws BoltIOException
     {
-        return parseBookmarks( anyValue );
+        return parseBookmarks( (MapValue) anyValue );
     }
 
     @Override

@@ -74,7 +74,6 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.server.configuration.ServerSettings.http_log_format;
@@ -464,10 +463,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
 
     private static List<Pattern> parseAuthWhitelist( Config config )
     {
-        return config.get( ServerSettings.http_auth_allowlist )
-                .stream()
-                .map( Pattern::compile )
-                .collect( toUnmodifiableList() );
+        return config.get( ServerSettings.http_auth_allowlist ).stream().map( Pattern::compile ).toList();
     }
 
     private class ServerComponentsLifecycleAdapter extends LifecycleAdapter
@@ -507,7 +503,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         }
     }
 
-    private class MemoryPoolLifecycleAdapter extends LifecycleAdapter
+    private static class MemoryPoolLifecycleAdapter extends LifecycleAdapter
     {
         private final MemoryPool memoryPool;
 

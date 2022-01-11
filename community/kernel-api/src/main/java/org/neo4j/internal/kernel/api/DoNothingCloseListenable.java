@@ -23,6 +23,7 @@ public abstract class DoNothingCloseListenable implements AutoCloseablePlus
 {
     private int token;
 
+    @Override
     public final void setCloseListener( CloseListener closeListener )
     {
     }
@@ -33,11 +34,13 @@ public abstract class DoNothingCloseListenable implements AutoCloseablePlus
         closeInternal();
     }
 
+    @Override
     public final void setToken( int token )
     {
         this.token = token;
     }
 
+    @Override
     public final int getToken()
     {
         return token;

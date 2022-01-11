@@ -143,6 +143,7 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
+    @Override
     @AfterEach
     void tearDown()
     {

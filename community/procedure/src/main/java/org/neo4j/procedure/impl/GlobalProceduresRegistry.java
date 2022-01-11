@@ -285,6 +285,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param safe set to false if desired component can bypass security, true if it respects security
      * @return registered provider function if registered, null otherwise
      */
+    @Override
     public <T> ThrowingFunction<Context,T,ProcedureException> lookupComponentProvider( Class<T> cls, boolean safe )
     {
         var registry = safe ? safeComponents : allComponents;

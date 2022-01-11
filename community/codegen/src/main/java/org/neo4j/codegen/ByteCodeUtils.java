@@ -241,6 +241,7 @@ public final class ByteCodeUtils
         return builder;
     }
 
+    @SuppressWarnings( "ReturnValueIgnored" )
     public static void assertMethodExists( MethodReference methodReference )
     {
         Class<?> clazz;

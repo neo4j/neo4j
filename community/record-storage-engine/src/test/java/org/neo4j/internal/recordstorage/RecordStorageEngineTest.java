@@ -351,6 +351,7 @@ class RecordStorageEngineTest
                     return transactionApplier.visitGroupDegreeCommand( command );
                 }
 
+                @Override
                 public void close() throws Exception
                 {
                     applierCloseCall.accept( true );

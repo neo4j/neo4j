@@ -77,6 +77,7 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
         address = server.lookupDefaultConnector();
     }
 
+    @Override
     protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
         return settings -> {

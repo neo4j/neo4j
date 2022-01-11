@@ -246,6 +246,7 @@ public class NettyMemoryManagerWrapper implements ByteBufAllocator
             // has ever been used during the lifetime of this ByteBuf instance.
             private boolean slicingUsed;
 
+            @Override
             protected ByteBuffer allocateDirect( int initialCapacity )
             {
                 var buffer = pooledBufferManger.acquire( initialCapacity );
@@ -258,6 +259,7 @@ public class NettyMemoryManagerWrapper implements ByteBufAllocator
                 return buffer;
             }
 
+            @Override
             protected void freeDirect( ByteBuffer buffer )
             {
                 if ( slicingUsed )

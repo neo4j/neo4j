@@ -63,11 +63,13 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record>
         private boolean cachedCompleted;
         private boolean errorReceived;
 
+        @Override
         public void setQueryExecution( QueryExecution queryExecution )
         {
             this.queryExecution = queryExecution;
         }
 
+        @Override
         public Mono<Summary> getSummary()
         {
             return Mono.fromFuture( summaryFuture );

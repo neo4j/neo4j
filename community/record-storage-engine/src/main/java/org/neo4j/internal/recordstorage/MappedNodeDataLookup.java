@@ -85,6 +85,7 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
     /**
      * Reads group from recordChanges, but also caches the group in the internal context.
      */
+    @Override
     public RecordProxy<RelationshipGroupRecord,Integer> group( long groupId )
     {
         RecordProxy<RelationshipGroupRecord,Integer> groupProxy = recordChanges.getRelGroupRecords().getOrLoad( groupId, null );

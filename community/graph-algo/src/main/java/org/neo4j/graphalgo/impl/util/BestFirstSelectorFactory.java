@@ -50,20 +50,20 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
 
     protected abstract P getStartData();
 
-    private static class Visit<P extends Comparable<P>> implements Comparable<P>
+    private static class Visit<T extends Comparable<T>> implements Comparable<Visit<T>>
     {
-        private P cost;
+        private T cost;
         private int visitCount;
 
-        Visit( P cost )
+        Visit( T cost )
         {
             this.cost = cost;
         }
 
         @Override
-        public int compareTo( P o )
+        public int compareTo( Visit<T> o )
         {
-            return cost.compareTo( o );
+            return cost.compareTo( o.cost );
         }
     }
 

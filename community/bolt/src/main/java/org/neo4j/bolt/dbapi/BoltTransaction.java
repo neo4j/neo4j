@@ -33,6 +33,7 @@ public interface BoltTransaction extends BoltQueryExecutor, AutoCloseable
 
     void rollback() throws TransactionFailureException;
 
+    @Override
     void close() throws TransactionFailureException;
 
     /**

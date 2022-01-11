@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * This interface and it's embedded implementation is there to track database operation in Enterprise Editions via Global Metrics.
@@ -40,71 +40,77 @@ public interface DatabaseOperationCounts
 
     class Counter implements  DatabaseOperationCounts
     {
-        private AtomicLong createCount = new AtomicLong( 0 );
-        private AtomicLong startCount = new AtomicLong( 0 );
-        private AtomicLong stopCount = new AtomicLong( 0 );
-        private AtomicLong dropCount = new AtomicLong( 0 );
-        private AtomicLong failedCount = new AtomicLong( 0 );
-        private AtomicLong recoveredCount = new AtomicLong( 0 );
+        private final LongAdder createCount = new LongAdder();
+        private final LongAdder startCount = new LongAdder();
+        private final LongAdder stopCount = new LongAdder();
+        private final LongAdder dropCount = new LongAdder();
+        private final LongAdder failedCount = new LongAdder();
+        private final LongAdder recoveredCount = new LongAdder();
 
+        @Override
         public long startCount()
         {
-            return startCount.get();
+            return startCount.sum();
         }
 
+        @Override
         public long createCount()
         {
-            return createCount.get();
+            return createCount.sum();
         }
 
+        @Override
         public long stopCount()
         {
-            return stopCount.get();
+            return stopCount.sum();
         }
 
+        @Override
         public long dropCount()
         {
-            return dropCount.get();
+            return dropCount.sum();
         }
 
+        @Override
         public long failedCount()
         {
-            return failedCount.get();
+            return failedCount.sum();
         }
 
+        @Override
         public long recoveredCount()
         {
-            return recoveredCount.get();
+            return recoveredCount.sum();
         }
 
         public void increaseCreateCount()
         {
-            createCount.incrementAndGet();
+            createCount.increment();
         }
 
         public void increaseStartCount()
         {
-            startCount.incrementAndGet();
+            startCount.increment();
         }
 
         public void increaseStopCount()
         {
-            stopCount.incrementAndGet();
+            stopCount.increment();
         }
 
         public void increaseDropCount()
         {
-            dropCount.incrementAndGet();
+            dropCount.increment();
         }
 
         public void increaseFailedCount()
         {
-            failedCount.incrementAndGet();
+            failedCount.increment();
         }
 
         public void increaseRecoveredCount()
         {
-            recoveredCount.incrementAndGet();
+            recoveredCount.increment();
         }
     }
 }

@@ -87,6 +87,7 @@ abstract class Neo4jCommandTestBase extends BootloaderCommandTestBase
         }
     }
 
+    @Override
     @AfterEach
     void tearDown()
     {

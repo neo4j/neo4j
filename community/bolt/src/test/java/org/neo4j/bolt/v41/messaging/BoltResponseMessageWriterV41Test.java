@@ -147,6 +147,7 @@ class BoltResponseMessageWriterV41Test extends BoltResponseMessageWriterV3Test
         verify( timer ).reset();
     }
 
+    @Override
     protected BoltResponseMessageWriter newWriter( PackOutput output, Neo4jPack.Packer packer )
     {
         var timer = mock( MessageWriterTimer.class );

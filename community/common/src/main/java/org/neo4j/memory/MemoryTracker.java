@@ -54,6 +54,7 @@ public interface MemoryTracker extends AutoCloseable, HeapMemoryTracker
      * @param bytes the number of bytes about to be allocated.
      * @throws MemoryLimitExceededException if the current quota would be exceeded by allocating the provided number of bytes.
      */
+    @Override
     void allocateHeap( long bytes );
 
     /**
@@ -61,11 +62,13 @@ public interface MemoryTracker extends AutoCloseable, HeapMemoryTracker
      *
      * @param bytes number of released bytes
      */
+    @Override
     void releaseHeap( long bytes );
 
     /**
      * @return The high water mark, i.e. the maximum observed value, of allocated heap in bytes.
      */
+    @Override
     long heapHighWaterMark();
 
     void reset();

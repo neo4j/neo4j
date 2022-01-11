@@ -34,6 +34,7 @@ import static com.sun.jna.Platform.is64Bit;
 /**
  * The ugly part of {@link HeapEstimator} is hidden here.
  */
+@SuppressWarnings( "IdentityBinaryExpression" )
 final class RuntimeInternals
 {
     static final boolean DEBUG_ESTIMATIONS = FeatureToggles.flag( HeapEstimator.class, "DEBUG", false );

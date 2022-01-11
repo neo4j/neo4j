@@ -30,14 +30,11 @@ import java.util.Iterator;
 import java.util.Random;
 
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
@@ -45,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
@@ -65,16 +61,19 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         valueUtil = new NativeValueIndexUtility<>( valueCreatorUtil, layout );
     }
 
+    @Override
     byte failureByte()
     {
         return BYTE_FAILED;
     }
 
+    @Override
     byte populatingByte()
     {
         return BYTE_POPULATING;
     }
 
+    @Override
     byte onlineByte()
     {
         return BYTE_ONLINE;

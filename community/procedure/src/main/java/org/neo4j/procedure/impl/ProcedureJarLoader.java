@@ -138,6 +138,7 @@ class ProcedureJarLoader
         }
     }
 
+    @SuppressWarnings( "ReturnValueIgnored" )
     private RawIterator<Class<?>,IOException> listClassesIn( URL jar, ClassLoader loader ) throws IOException
     {
         ZipInputStream zip = new ZipInputStream( jar.openStream() );

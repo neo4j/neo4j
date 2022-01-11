@@ -62,16 +62,19 @@ abstract class Log4jLogTestBase
     {
         LogMethod debug = new LogMethod()
         {
+            @Override
             public void log( Log4jLog logger, String msg )
             {
                 logger.debug( msg );
             }
 
+            @Override
             public void log( Log4jLog logger, String msg, Throwable cause )
             {
                 logger.debug( msg, cause );
             }
 
+            @Override
             public void log( Log4jLog logger, String format, Object... arguments )
             {
                 logger.debug( format, arguments );
@@ -85,16 +88,19 @@ abstract class Log4jLogTestBase
         };
         LogMethod info = new LogMethod()
         {
+            @Override
             public void log( Log4jLog logger, String msg )
             {
                 logger.info( msg );
             }
 
+            @Override
             public void log( Log4jLog logger, String msg, Throwable cause )
             {
                 logger.info( msg, cause );
             }
 
+            @Override
             public void log( Log4jLog logger, String format, Object... arguments )
             {
                 logger.info( format, arguments );
@@ -108,16 +114,19 @@ abstract class Log4jLogTestBase
         };
         LogMethod warn = new LogMethod()
         {
+            @Override
             public void log( Log4jLog logger, String msg )
             {
                 logger.warn( msg );
             }
 
+            @Override
             public void log( Log4jLog logger, String msg, Throwable cause )
             {
                 logger.warn( msg, cause );
             }
 
+            @Override
             public void log( Log4jLog logger, String format, Object... arguments )
             {
                 logger.warn( format, arguments );
@@ -131,16 +140,19 @@ abstract class Log4jLogTestBase
         };
         LogMethod error = new LogMethod()
         {
+            @Override
             public void log( Log4jLog logger, String msg )
             {
                 logger.error( msg );
             }
 
+            @Override
             public void log( Log4jLog logger, String msg, Throwable cause )
             {
                 logger.error( msg, cause );
             }
 
+            @Override
             public void log( Log4jLog logger, String format, Object... arguments )
             {
                 logger.error( format, arguments );

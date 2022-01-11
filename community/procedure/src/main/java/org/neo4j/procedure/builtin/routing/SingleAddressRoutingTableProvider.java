@@ -99,6 +99,7 @@ public class SingleAddressRoutingTableProvider implements ClientSideRoutingTable
         return addressToUse;
     }
 
+    @Override
     public RoutingResult getServerSideRoutingTable( Optional<SocketAddress> clientProvidedAddress )
     {
         SocketAddress address = ensureBoltAddressIsUsable( clientProvidedAddress );

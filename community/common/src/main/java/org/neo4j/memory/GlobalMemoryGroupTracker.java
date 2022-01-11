@@ -69,6 +69,7 @@ public class GlobalMemoryGroupTracker extends DelegatingMemoryPool implements Sc
         return subTracker;
     }
 
+    @Override
     public MemoryTracker getPoolMemoryTracker()
     {
         return memoryTracker;

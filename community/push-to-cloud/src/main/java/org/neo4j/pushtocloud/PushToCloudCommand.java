@@ -249,6 +249,7 @@ public class PushToCloudCommand extends AbstractCommand
             super( source );
         }
 
+        @Override
         void process( String consoleURL, String bearerToken )
         {
             // Check size of dump (reading actual database size from dump header)
@@ -268,6 +269,7 @@ public class PushToCloudCommand extends AbstractCommand
             super( source );
         }
 
+        @Override
         void process( String consoleURL, String bearerToken )
         {
             // Check size of full database
@@ -343,6 +345,7 @@ public class PushToCloudCommand extends AbstractCommand
             this.count = count;
         }
 
+        @Override
         public void accept( long size )
         {
             // After uploading a full database, the transaction logs were observed to be truncated to 10 files

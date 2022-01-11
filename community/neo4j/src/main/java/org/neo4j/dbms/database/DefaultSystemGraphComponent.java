@@ -26,19 +26,19 @@ import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
@@ -164,11 +164,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
                 defaultFound = unsetOldNode.apply( nodes );
             }
 
-            // If the current default is deleted, unset it, but do not record that we found a valid default
-            try ( ResourceIterator<Node> nodes = tx.findNodes( DELETED_DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) )
-            {
-                unsetOldNode.apply( nodes );
-            }
+            unsetAnyDeleted( tx, unsetOldNode );
 
             // If the old default was not the correct one, find the correct one and set the default flag
             if ( !defaultFound )
@@ -188,6 +184,18 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
         if ( !defaultFound )
         {
             newDb( system, defaultDbName, true, UUID.randomUUID() );
+        }
+    }
+
+    /**
+     * If the current default is deleted, unset it, but do not record that we found a valid default
+     */
+    @SuppressWarnings( "ReturnValueIgnored" )
+    private void unsetAnyDeleted( Transaction tx, Function<ResourceIterator<Node>,Boolean> unsetOldNode )
+    {
+        try ( ResourceIterator<Node> nodes = tx.findNodes( DELETED_DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) )
+        {
+            unsetOldNode.apply( nodes );
         }
     }
 

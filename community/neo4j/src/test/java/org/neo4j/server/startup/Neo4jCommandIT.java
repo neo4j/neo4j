@@ -137,6 +137,7 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
         return "Community";
     }
 
+    @Override
     protected Class<? extends EntryPoint> entrypoint()
     {
         return EntryPoint.serviceloadEntryPoint();

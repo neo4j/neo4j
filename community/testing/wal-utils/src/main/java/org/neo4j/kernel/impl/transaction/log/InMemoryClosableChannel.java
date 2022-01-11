@@ -458,7 +458,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
         }
     }
 
-    public class Writer extends ByteBufferBase implements FlushablePositionAwareChecksumChannel
+    public static class Writer extends ByteBufferBase implements FlushablePositionAwareChecksumChannel
     {
         private final Checksum checksum = CHECKSUM_FACTORY.get();
 

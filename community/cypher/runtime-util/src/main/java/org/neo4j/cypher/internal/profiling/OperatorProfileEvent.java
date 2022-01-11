@@ -23,6 +23,7 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 
 public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadTracer
 {
+    @Override
     public abstract void dbHit();
 
     public abstract void dbHits( long hits );

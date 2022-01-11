@@ -33,6 +33,7 @@ public class DatabasePanicEventGenerator implements PanicEventGenerator
         this.databaseId = databaseId;
     }
 
+    @Override
     public void panic( Throwable causeOfPanic )
     {
         databaseEventListeners.databasePanic( databaseId, causeOfPanic );
