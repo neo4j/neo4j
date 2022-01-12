@@ -62,6 +62,8 @@ class KernelStatementTest
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.isSuccess() ).thenReturn( true );
         KernelStatement statement = createStatement( transaction );
+        var cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
+        statement.initialize( mock( Locks.Client.class ), cursorContext, 1 );
         statement.acquire();
 
         // when
@@ -90,6 +92,8 @@ class KernelStatementTest
         when( transaction.executingQuery() ).thenReturn( Optional.empty() );
 
         KernelStatement statement = createStatement( transaction );
+        var cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
+        statement.initialize( mock( Locks.Client.class ), cursorContext, 1 );
         statement.acquire();
 
         ExecutingQuery query = getQueryWithWaitingTime();

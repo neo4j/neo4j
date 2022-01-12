@@ -26,6 +26,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 
@@ -75,8 +79,11 @@ class StatementLifecycleTest
 
     private static KernelStatement createStatement( KernelTransactionImplementation transaction )
     {
-        return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(),
+        var statement = new KernelStatement( transaction, LockTracer.NONE, new ClockContext(),
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
                 Config.defaults( GraphDatabaseInternalSettings.track_tx_statement_close, true ) );
+        var cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
+        statement.initialize( mock( Locks.Client.class ), cursorContext, 1 );
+        return statement;
     }
 }

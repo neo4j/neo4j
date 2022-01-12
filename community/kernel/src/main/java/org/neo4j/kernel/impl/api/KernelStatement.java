@@ -80,7 +80,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
     private final boolean traceStatements;
     private final boolean trackStatementClose;
     private Locks.Client lockClient;
-    private CursorContext cursorContext = CursorContext.NULL;
+    private CursorContext cursorContext;
     private int referenceCount;
     private volatile ExecutingQuery executingQuery;
     private final LockTracer systemLockTracer;
