@@ -821,6 +821,42 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
+    test(s"directed exact seek should cache properties (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
+      val lookFor = randomAmong(relationships).getProperty("prop")
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r", "prop")
+        .projection("cacheR[r.prop] AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(toExpression(lookFor)), getValue = _ => GetValue)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Any](_ == lookFor)).map(r =>  Array(r, lookFor))
+      runtimeResult should beColumns("r", "prop").withRows(inAnyOrder(expected))
+    }
+
+    test(s"undirected exact seek should cache properties (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
+      val lookFor = randomAmong(relationships).getProperty("prop")
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r", "prop")
+        .projection("cacheR[r.prop] AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(toExpression(lookFor)), getValue = _ => GetValue)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.flatMap(r => Seq(r,r)).filter(propFilter[Any](_ == lookFor)).map(r =>  Array(r, lookFor))
+      runtimeResult should beColumns("r", "prop").withRows(inAnyOrder(expected))
+    }
+
     test(s"directed seek should cache properties (${indexProvider.providerName()})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 

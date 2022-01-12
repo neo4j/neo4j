@@ -801,6 +801,24 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withSingleRow(nodes(10 / 10))
     }
 
+    test(s"should cache properties with exact seek (${indexProvider.providerName()})") {
+      val nodes = given(defaultRandomIndexedNodePropertyGraph())
+      val lookFor = randomAmong(nodes).getProperty("prop")
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "prop")
+        .projection("cache[x.prop] AS prop")
+        .nodeIndexOperator("x:Honey(prop = ???)", paramExpr = Some(toExpression(lookFor)))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = nodes.filter(propFilter[Any](_ == lookFor)).map(n => Array(n, lookFor))
+      runtimeResult should beColumns("x", "prop").withRows(expected)
+    }
+
     test(s"should cache properties (${indexProvider.providerName()})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
 
