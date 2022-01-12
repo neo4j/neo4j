@@ -50,8 +50,8 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
       case Some(existingTable) =>
       // We might already have a SemanticTable from a previous run, and that might already have tokens.
       // We don't want to lose these
-        existingTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes.mapValues(_.scope))
-      case None => SemanticTable(types = state.typeTable, recordedScopes = state.recordedScopes.mapValues(_.scope))
+        existingTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes.view.mapValues(_.scope).toMap)
+      case None => SemanticTable(types = state.typeTable, recordedScopes = state.recordedScopes.view.mapValues(_.scope).toMap)
     }
 
     val rewrittenStatement = if (errors.isEmpty) {
