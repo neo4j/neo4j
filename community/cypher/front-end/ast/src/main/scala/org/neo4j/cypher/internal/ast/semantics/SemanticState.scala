@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable

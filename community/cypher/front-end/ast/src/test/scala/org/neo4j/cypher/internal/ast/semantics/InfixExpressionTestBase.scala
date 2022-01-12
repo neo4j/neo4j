@@ -30,8 +30,9 @@ abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expressi
 
     val result = SemanticExpressionCheck.simple(ctr(exp1, exp2))(SemanticState.clean)
     result.errors should be(empty)
-    result.state.typeTable.keys should contain(exp1)
-    result.state.typeTable.keys should contain(exp2)
+    val astNodes = result.state.typeTable.keys.map(_.node)
+    astNodes should contain(exp1)
+    astNodes should contain(exp2)
   }
 
   protected def testValidTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(expected: TypeSpec): Assertion = {

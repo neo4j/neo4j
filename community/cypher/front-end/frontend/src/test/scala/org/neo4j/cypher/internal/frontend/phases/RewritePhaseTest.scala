@@ -72,7 +72,7 @@ trait RewritePhaseTest {
     fromOutState.statement() should equal(toOutState.statement())
     if (astRewriteAndAnalyze) {
       semanticTableExpressions.foreach { e =>
-        fromOutState.semanticTable().types.keys should contain(e)
+        fromOutState.semanticTable().types.keys.map(_.node) should contain(e)
       }
     }
   }
@@ -83,7 +83,7 @@ trait RewritePhaseTest {
     fromOutState.statement() should equal(to)
     if (astRewriteAndAnalyze) {
       semanticTableExpressions.foreach { e =>
-        fromOutState.semanticTable().types.keys should contain(e)
+        fromOutState.semanticTable().types.keys.map(_.node) should contain(e)
       }
     }
   }

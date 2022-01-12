@@ -30,6 +30,6 @@ class OrsTest extends SemanticFunSuite {
     val result = SemanticExpressionCheck.simple(ors)(SemanticState.clean)
 
     result.errors shouldBe empty
-    result.state.typeTable.keySet should contain allOf(dummyExpr1, dummyExpr2, dummyExpr3, ors)
+    result.state.typeTable.keySet.map(_.node) should contain allOf(dummyExpr1, dummyExpr2, dummyExpr3, ors)
   }
 }

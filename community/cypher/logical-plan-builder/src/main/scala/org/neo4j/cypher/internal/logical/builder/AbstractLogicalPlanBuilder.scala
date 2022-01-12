@@ -1265,7 +1265,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   private def findTypeIgnoringPosition(expr: Expression) =
-    semanticTable.types.iterator.collectFirst { case (`expr`, t) => t }
+    semanticTable.types.iterator
+      .map{ case (k, v) => (k.node, v) } //unwrap nodes to discard position
+      .collectFirst { case (`expr`, t) => t }
 
   protected def newNodes(nodes: Seq[String]): Seq[String] = {
     nodes.map(varFor).foreach(newNode)

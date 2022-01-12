@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap.PositionedNode
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -51,7 +53,7 @@ class SemanticTable(
 
   def getTypeFor(s: String): TypeSpec = try {
     val reducedType = types.collect {
-      case (Variable(name), typ) if name == s => typ.specified
+      case (PositionedNode(Variable(name)), typ) if name == s => typ.specified
     }.reduce(_ & _)
 
     if (reducedType.isEmpty)
@@ -71,7 +73,7 @@ class SemanticTable(
    */
   def getOptionalActualTypeFor(variableName: String): Option[TypeSpec] = {
     val matchedTypes = types.collect {
-      case (Variable(name), typ) if name == variableName => typ.actual
+      case (PositionedNode(Variable(name)), typ) if name == variableName => typ.actual
     }
 
     if (matchedTypes.nonEmpty) {
@@ -83,7 +85,7 @@ class SemanticTable(
   }
 
   def containsNode(expr: String): Boolean = types.exists {
-    case (v@Variable(name), _) => name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
+    case (PositionedNode(v@Variable(name)), _) => name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
     case _ => false
   }
 
@@ -145,9 +147,6 @@ class SemanticTable(
     }
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
   }
-
-  def replaceNodes(replacements: (ASTNode, ASTNode)*): SemanticTable =
-    copy(recordedScopes = recordedScopes.replaceKeys(replacements: _*))
 
   def symbolDefinition(variable: Variable): SymbolUse =
     recordedScopes(variable).symbolTable(variable.name).definition

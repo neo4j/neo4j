@@ -144,7 +144,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
-    val types = ASTAnnotationMap[Expression, ExpressionTypeInfo]()
+    val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
       .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
       .updated(expr2, ExpressionTypeInfo(TypeSpec.exact(CTInteger)))
 
@@ -156,7 +156,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   test("PropertySeekable propertyValueType with equals") {
     when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
 
-    val types = ASTAnnotationMap[Expression, ExpressionTypeInfo]()
+    val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
       .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
 
     val AsPropertySeekable(seekable) = equals(prop("a", "id"), expr1)
@@ -166,7 +166,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("PropertySeekable propertyValueType with Parameter") {
     val rightExpr = parameter("foo", CTString)
-    val types = ASTAnnotationMap[Expression, ExpressionTypeInfo]()
+    val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
       .updated(rightExpr, ExpressionTypeInfo(TypeSpec.exact(CTList(CTString))))
 
     val AsPropertySeekable(seekable) = in(prop("a", "id"), rightExpr)
