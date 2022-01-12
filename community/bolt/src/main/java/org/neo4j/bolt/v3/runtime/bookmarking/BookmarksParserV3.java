@@ -47,7 +47,7 @@ public final class BookmarksParserV3 implements BookmarksParser
     @Override
     public List<Bookmark> parseBookmarks( AnyValue anyValue ) throws BoltIOException
     {
-        return parseBookmarks( (MapValue) anyValue );
+        throw new UnsupportedOperationException( "This version does not support parsing of AnyValue." );
     }
 
     @Override
