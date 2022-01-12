@@ -87,14 +87,14 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
     }
 
     def checkForReturnPattern: SemanticCheck = state => {
-      val maybePatternExpression = state.typeTable.collectFirst { case (expression, _) if expression.isInstanceOf[PatternExpression] => expression }
-      val maybePatternComprehension = state.typeTable.collectFirst { case (expression, _) if expression.isInstanceOf[PatternComprehension] => expression }
+      val maybePatternExpression = state.typeTable.collectFirst { case (expression, _) if expression.node.isInstanceOf[PatternExpression] => expression }
+      val maybePatternComprehension = state.typeTable.collectFirst { case (expression, _) if expression.node.isInstanceOf[PatternComprehension] => expression }
 
       (maybePatternExpression, maybePatternComprehension) match {
         case (Some(patternExpression), _) =>
-          error("You cannot include a pattern expression in the RETURN of administration SHOW commands", patternExpression.position)(state)
+          error("You cannot include a pattern expression in the RETURN of administration SHOW commands", patternExpression.node.position)(state)
         case (_, Some(patternComprehension)) =>
-          error("You cannot include a pattern comprehension in the RETURN of administration SHOW commands", patternComprehension.position)(state)
+          error("You cannot include a pattern comprehension in the RETURN of administration SHOW commands", patternComprehension.node.position)(state)
         case _ =>
           SemanticCheckResult.success(state)
       }
