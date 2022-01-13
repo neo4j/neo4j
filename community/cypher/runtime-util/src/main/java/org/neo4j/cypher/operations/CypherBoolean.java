@@ -87,17 +87,12 @@ public final class CypherBoolean
     {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         Equality compare = lhs.ternaryEquals( rhs );
-        switch ( compare )
-        {
-        case TRUE:
-            return Values.TRUE;
-        case FALSE:
-            return Values.FALSE;
-        case UNDEFINED:
-            return NO_VALUE;
-        default:
-            throw new IllegalArgumentException( format("%s is not a valid result for %s=%s", compare, lhs, rhs )  );
-        }
+        return switch ( compare )
+                {
+                    case TRUE -> Values.TRUE;
+                    case FALSE -> Values.FALSE;
+                    case UNDEFINED -> NO_VALUE;
+                };
     }
 
     @CalledFromGeneratedCode
@@ -105,17 +100,12 @@ public final class CypherBoolean
     {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         Equality compare = lhs.ternaryEquals( rhs );
-        switch ( compare )
-        {
-        case TRUE:
-            return Values.FALSE;
-        case FALSE:
-            return Values.TRUE;
-        case UNDEFINED:
-            return NO_VALUE;
-        default:
-            throw new IllegalArgumentException( format("%s is not a valid result for %s<>%s", compare, lhs, rhs )  );
-        }
+        return switch ( compare )
+                {
+                    case TRUE -> Values.FALSE;
+                    case FALSE -> Values.TRUE;
+                    case UNDEFINED -> NO_VALUE;
+                };
     }
 
     @CalledFromGeneratedCode
@@ -153,10 +143,19 @@ public final class CypherBoolean
         Comparison comparison = AnyValues.TERNARY_COMPARATOR.ternaryCompare( lhs, rhs );
         return switch ( comparison )
                 {
-                    case GREATER_THAN, EQUAL -> FALSE;
+                    case EQUAL -> {
+                        if ( lhs.isIncomparableType() )
+                        {
+                            yield NO_VALUE;
+                        }
+                        else
+                        {
+                            yield FALSE;
+                        }
+                    }
+                    case GREATER_THAN -> FALSE;
                     case SMALLER_THAN -> TRUE;
                     case UNDEFINED -> NO_VALUE;
-                    default -> throw new InternalException( comparison + " is not a known comparison", null );
                 };
     }
 
@@ -188,9 +187,18 @@ public final class CypherBoolean
         return switch ( comparison )
                 {
                     case GREATER_THAN -> TRUE;
-                    case EQUAL, SMALLER_THAN -> FALSE;
+                    case EQUAL -> {
+                        if ( lhs.isIncomparableType() )
+                        {
+                            yield NO_VALUE;
+                        }
+                        else
+                        {
+                            yield FALSE;
+                        }
+                    }
+                    case SMALLER_THAN -> FALSE;
                     case UNDEFINED -> NO_VALUE;
-                    default -> throw new InternalException( comparison + " is not a known comparison", null );
                 };
     }
 

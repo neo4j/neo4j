@@ -51,6 +51,11 @@ public abstract class AnyValue implements Measurable
         return false; // per default Values are no SequenceValues
     }
 
+    public boolean isIncomparableType()
+    {
+        return false;
+    }
+
     public abstract Equality ternaryEquals( AnyValue other );
 
     public abstract <T> T map( ValueMapper<T> mapper );

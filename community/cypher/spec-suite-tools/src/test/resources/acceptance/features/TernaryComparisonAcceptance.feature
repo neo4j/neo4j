@@ -77,13 +77,13 @@ Feature: TernaryComparisonAcceptance
     And no side effects
 
     Examples:
-      | map1         | map2                        | lt    | lte   | gt    | gte   |
-      | {x: 1, y: 2} | {x: 1, y: 2}                | false | true  | false | true  |
-      | {x: 1, y: 2} | {x: 2, y: 3}                | true  | true  | false | false |
-      | {x: 1, y: 2} | {x: 2, y: 2}                | false | true  | false | false |
-      | {x: 1, y: 2} | {x: 1, y: 2, crs: 'wgs-84'} | null  | null  | null  | null  |
-      | {x: 1, y: 2} | null                        | null  | null  | null  | null  |
-      | {x: 1, y: 2} | {x: 1, y: null}             | null  | null  | null  | null  |
+      | map1         | map2                        | lt   | lte  | gt   | gte  |
+      | {x: 1, y: 2} | {x: 1, y: 2}                | null | true | null | true |
+      | {x: 1, y: 2} | {x: 2, y: 3}                | null | null | null | null |
+      | {x: 1, y: 2} | {x: 2, y: 2}                | null | null | null | null |
+      | {x: 1, y: 2} | {x: 1, y: 2, crs: 'wgs-84'} | null | null | null | null |
+      | {x: 1, y: 2} | null                        | null | null | null | null |
+      | {x: 1, y: 2} | {x: 1, y: null}             | null | null | null | null |
 
   Scenario: Duration comparison test of equal durations
     Given an empty graph
@@ -98,7 +98,7 @@ Feature: TernaryComparisonAcceptance
       """
     Then the result should be, in any order:
       | lt   | lte   | gt    | gte  |
-      | false | true | false | true |
+      | null | true | null | true |
     And no side effects
 
   Scenario: Duration comparison test of different durations
