@@ -441,7 +441,7 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     val pageCacheMissesArg = pageCacheMisses.map(m => PageCacheMisses(m.expectedValue)).toSeq
     val orderArg = order.map(m => asPrettyString.order(m.expected)).toSeq
     val otherArgs = other
-      .map(_.expected.toSeq.map(str => Details(asPrettyString(JustForToStringExpression(str)))))
+      .map(arg => Seq(Details(arg.expected.toSeq.map(str => asPrettyString(JustForToStringExpression(str))))))
       .getOrElse(Seq.empty)
 
     val children = (lhsDesc, rhsDesc) match {
