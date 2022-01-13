@@ -24,6 +24,7 @@ import java.util.Optional
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.planner.v3_5.spi._
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundPlanContext.typeToValueCategory
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.exceptions.KernelException
@@ -44,6 +45,28 @@ object TransactionBoundPlanContext {
     new TransactionBoundPlanContext(tc, logger, InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.dataRead,
                                                                                                             tc.schemaRead),
       new MutableGraphStatisticsSnapshot()))
+
+  /**
+    * Translate a Cypher Type to a ValueCategory that IndexReference can handle
+    */
+  private def typeToValueCategory(in: CypherType): ValueCategory = in match {
+    case _: types.IntegerType |
+         _: types.FloatType =>
+      ValueCategory.NUMBER
+
+    case _: types.StringType =>
+      ValueCategory.TEXT
+
+    case _: types.GeometryType | _: types.PointType =>
+      ValueCategory.GEOMETRY
+
+    case _: types.DateTimeType | _: types.LocalDateTimeType | _: types.DateType | _: types.TimeType | _: types.LocalTimeType | _: types.DurationType =>
+      ValueCategory.TEMPORAL
+
+    // For everything else, we don't know
+    case _ =>
+      ValueCategory.UNKNOWN
+  }
 }
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: InstrumentedGraphStatistics)
@@ -117,28 +140,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         }
       case _ => None
     }
-
-  /**
-    * Translate a Cypher Type to a ValueCategory that IndexReference can handle
-    */
-  private def typeToValueCategory(in: CypherType): ValueCategory = in match {
-    case _: types.IntegerType |
-         _: types.FloatType =>
-      ValueCategory.NUMBER
-
-    case _: types.StringType =>
-      ValueCategory.TEXT
-
-    case _: types.GeometryType | _: types.PointType =>
-      ValueCategory.GEOMETRY
-
-    case _: types.DateTimeType | _: types.LocalDateTimeType | _: types.DateType | _: types.TimeType | _: types.LocalTimeType | _: types.DurationType =>
-      ValueCategory.TEMPORAL
-
-    // For everything else, we don't know
-    case _ =>
-      ValueCategory.UNKNOWN
-  }
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
    try {
