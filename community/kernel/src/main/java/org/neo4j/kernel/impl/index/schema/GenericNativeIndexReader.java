@@ -264,20 +264,11 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
 
     private static PropertyIndexQuery.BoundingBoxPredicate getBoundingBoxPredicateIfAny( PropertyIndexQuery... predicates )
     {
-        for ( int i = 0; i < predicates.length; i++ )
+        for ( final PropertyIndexQuery predicate : predicates )
         {
-            final var predicate = predicates[i];
-            final var type = predicate.type();
-            if ( type == IndexQueryType.BOUNDING_BOX )
+            if ( predicate.type() == IndexQueryType.BOUNDING_BOX )
             {
                 return (PropertyIndexQuery.BoundingBoxPredicate) predicate;
-            }
-            // replace geometry range with bounding box
-            else if ( type == IndexQueryType.RANGE && predicate.valueGroup() == ValueGroup.GEOMETRY )
-            {
-                final var boundingBox = ((PropertyIndexQuery.BoundingBoxRangeWrapper) predicate).boundingBox();
-                predicates[i] = boundingBox;
-                return boundingBox;
             }
         }
         return null;

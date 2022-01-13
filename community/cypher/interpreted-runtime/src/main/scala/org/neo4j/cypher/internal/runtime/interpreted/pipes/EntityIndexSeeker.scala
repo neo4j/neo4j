@@ -234,12 +234,7 @@ trait EntityIndexSeeker {
             val calculator = lowerLeft.getCoordinateReferenceSystem.getCalculator
 
             val bboxes = calculator.computeBBoxes(lowerLeft, upperRight).asScala
-            bboxes.map(bbox => PropertyIndexQuery.range(propertyId,
-              bbox.first(),
-              true,
-              bbox.other(),
-              true
-            ))
+            bboxes.map(bbox => PropertyIndexQuery.boundingBox(propertyId, bbox.first(), bbox.other()))
           case _ => Nil
         }
     }
