@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.helpers;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.FieldPosition;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -174,6 +177,24 @@ public final class Format
             target.append( target.length() > 0 ? " " : "" ).append( count ).append( unitFormat.apply( unit ) );
         }
         return durationMillis;
+    }
+
+    /**
+     * Converts a number into a string with the number grouped by three digits, like 10,000 or 1,234,567 for a more readable display of a number.
+     * @param number the number to convert to a string.
+     * @param groupSeparatorChar the character to separate the groups with.
+     * @return the number as a string, grouped three and three.
+     */
+    public static String numberToStringWithGroups( long number, char groupSeparatorChar )
+    {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator( groupSeparatorChar );
+        DecimalFormat df = new DecimalFormat();
+        df.setDecimalFormatSymbols( symbols );
+        df.setGroupingSize( 3 );
+        df.setMaximumFractionDigits( 0 );
+        StringBuffer buffer = df.format( number, new StringBuffer(), new FieldPosition( 0 ) );
+        return buffer.toString();
     }
 
     private Format()

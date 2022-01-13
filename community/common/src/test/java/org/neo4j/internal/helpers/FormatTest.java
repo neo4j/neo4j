@@ -123,6 +123,22 @@ class FormatTest
         assertEquals( "2017-04-05 06:07:08.000+0000", date( LocalDateTime.of( 2017, 4, 5, 6, 7, 8, 9 ).toInstant( UTC ) ) );
     }
 
+    @Test
+    void numberToStringWithGroups()
+    {
+        // given
+        long number1 = 123_456_789;
+        long number2 = 10_000;
+
+        // when
+        String number1AsString = Format.numberToStringWithGroups( number1, ',' );
+        String number2AsString = Format.numberToStringWithGroups( number2, '.' );
+
+        // then
+        assertThat( number1AsString ).isEqualTo( "123,456,789" );
+        assertThat( number2AsString ).isEqualTo( "10.000" );
+    }
+
     private static long translateToDate( long timeWithDate, long time, TimeZone timeIsGivenInThisTimeZone )
     {
         Calendar calendar = Calendar.getInstance( timeIsGivenInThisTimeZone );
