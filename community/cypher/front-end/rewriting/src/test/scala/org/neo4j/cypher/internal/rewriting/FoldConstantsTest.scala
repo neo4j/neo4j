@@ -86,4 +86,10 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
   test("doesn't fail on / by zero") {
     assertRewrite("RETURN 1/0 AS r", "RETURN 1/0 AS r")
   }
+
+  test("does fold as far as possible on / by zero") {
+    assertRewrite("RETURN (1+1)/0 AS r", "RETURN 2/0 AS r")
+    assertRewrite("RETURN (1+1)/(1-1) AS r", "RETURN 2/0 AS r")
+    assertRewrite("RETURN (1/0) + (1+1) AS r", "RETURN (1/0) + 2 AS r")
+  }
 }
