@@ -125,14 +125,25 @@ public abstract class PropertyIndexQuery implements IndexQuery
                                                  (TextValue) from, fromInclusive,
                                                  (TextValue) to, toInclusive );
 
-            case GEOMETRY -> new BoundingBoxRangeWrapper( propertyKeyId,
-                    (PointValue) from, fromInclusive,
-                    (PointValue) to, toInclusive );
-
             case DURATION,
                     DURATION_ARRAY,
-                    // TODO: GEOMETRY,
-                    GEOMETRY_ARRAY -> new IncomparableRangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
+                    GEOMETRY,
+                    GEOMETRY_ARRAY -> {
+                //TODO: the special behaviour for x <= PROP and x >= PROP can be moved
+                //      into IncomparableRangePredicate
+                if ( fromInclusive && to == null )
+                {
+                    yield new RangePredicate<>( propertyKeyId, valueGroup, from, true, from, true );
+                }
+                else if ( toInclusive && from == null )
+                {
+                    yield new RangePredicate<>( propertyKeyId, valueGroup, to, true, to, true );
+                }
+                else
+                {
+                    yield new IncomparableRangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
+                }
+            }
 
             default -> new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
         };
@@ -540,13 +551,13 @@ public abstract class PropertyIndexQuery implements IndexQuery
                 return false;
             }
 
-            if ( !point.getCoordinateReferenceSystem().equals( crs ) )
+            CoordinateReferenceSystem crs = point.getCoordinateReferenceSystem();
+            if ( !crs.equals( this.crs ) )
             {
                 return false;
             }
 
-            final var within = point.withinRange( from, fromInclusive, to, toInclusive );
-            return within != null && within;
+            return crs.getCalculator().withinBBox( point, from, to );
         }
 
         @Override
