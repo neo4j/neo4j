@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4
 
-import java.lang.reflect.Constructor
-
 import org.neo4j.cypher.internal.compatibility.v3_4.SemanticTableConverter.ExpressionMapping4To5
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.PredicateHelper
 import org.neo4j.cypher.internal.frontend.{v3_4 => frontendV3_4}
@@ -43,6 +41,7 @@ import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 import org.neo4j.cypher.internal.v3_5.util.{symbols => symbolsv3_5, _}
 import org.neo4j.cypher.internal.v3_5.{expressions => expressionsv3_5, util => utilv3_5}
 
+import java.lang.reflect.Constructor
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
 import scala.util.{Failure, Success, Try}
@@ -222,7 +221,9 @@ object LogicalPlanConverter {
         case (item: frontendV3_4.ast.ProcedureResultItem, children: Seq[AnyRef]) =>
           convertVersion(oldASTPackage, newASTPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])
 
-        case (funcV3_4@expressionsv3_4.FunctionInvocation(_, expressionsv3_4.FunctionName("timestamp"), _, _), _: Seq[AnyRef]) => {
+        case (funcV3_4@expressionsv3_4.FunctionInvocation(expressionsv3_4.Namespace(Nil), expressionsv3_4.FunctionName(name), _, _), _: Seq[AnyRef])
+          if name.equalsIgnoreCase("timestamp") => {
+
           val datetimeSignature = UserFunctionSignature(
             QualifiedName(Seq(), "datetime"),
             inputSignature = IndexedSeq.empty,
