@@ -171,8 +171,8 @@ abstract class SupportPartitionedScanTestSuite
             PropertyIndexQuery.range( id, Values.of( new boolean[]{false, true} ), true, Values.of( new boolean[]{true, true} ), true ) ),
 
         BOUNDING_BOX( id ->
-            PropertyIndexQuery.boundingBox( id, Values.pointValue( CoordinateReferenceSystem.WGS_84, 0, 0 ), true,
-                                                Values.pointValue( CoordinateReferenceSystem.WGS_84, 0, 90 ), true ) ),
+            PropertyIndexQuery.boundingBox( id, Values.pointValue( CoordinateReferenceSystem.WGS_84, 0, 0 ),
+                                                Values.pointValue( CoordinateReferenceSystem.WGS_84, 0, 90 ) ) ),
 
         STRING_PREFIX( id -> PropertyIndexQuery.stringPrefix( id, Values.utf8Value( "prefix" ) ) ),
         STRING_SUFFIX( id -> PropertyIndexQuery.stringSuffix( id, Values.utf8Value( "suffix" ) ) ),

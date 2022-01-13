@@ -318,7 +318,7 @@ class IndexQueryTest
     @Test
     void testBoundingBox_FalseForIrrelevant()
     {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, true, gps5, true );
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, gps5 );
 
         assertFalseForOtherThings( p );
     }
@@ -326,7 +326,7 @@ class IndexQueryTest
     @Test
     void testBoundingBox_InclusiveLowerInclusiveUpper()
     {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, true, gps5, true );
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, gps5 );
 
         assertFalse( test( p, gps1 ) );
         assertTrue( test( p, gps2 ) );
@@ -340,98 +340,9 @@ class IndexQueryTest
     }
 
     @Test
-    void testBoundingBox_ExclusiveLowerInclusiveUpper()
-    {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, false, gps5, true );
-
-        assertFalse( test( p, gps2 ) );
-        assertTrue( test( p, gps3 ) );
-        assertTrue( test( p, gps5 ) );
-        assertFalse( test( p, gps6 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testBoundingBox_InclusiveLowerExclusiveUpper()
-    {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, true, gps5, false );
-
-        assertFalse( test( p, gps1 ) );
-        assertTrue( test( p, gps2 ) );
-        assertTrue( test( p, gps3 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testBoundingBox_ExclusiveLowerExclusiveUpper()
-    {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, false, gps5, false );
-
-        assertFalse( test( p, gps2 ) );
-        assertTrue( test( p, gps3 ) );
-        assertTrue( test( p, gps4 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testBoundingBox_UpperUnbounded()
-    {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps2, false, null, false );
-
-        assertFalse( test( p, gps2 ) );
-        assertTrue( test( p, gps3 ) );
-        assertTrue( test( p, gps7 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testBoundingBox_LowerUnbounded()
-    {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, null, false, gps5, false );
-
-        assertTrue( test( p, gps1 ) );
-        assertTrue( test( p, gps3 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, gps1_3d ) );
-    }
-
-    @Test
-    void testBoundingBox_Cartesian()
-    {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, car1, false, car2, true );
-
-        assertFalse( test( p, gps1 ) );
-        assertFalse( test( p, gps3 ) );
-        assertFalse( test( p, gps5 ) );
-        assertFalse( test( p, car1 ) );
-        assertTrue( test( p, car2 ) );
-        assertFalse( test( p, car3 ) );
-        assertFalse( test( p, car4 ) );
-        assertFalse( test( p, gps1_3d ) );
-        assertFalse( test( p, gps2_3d ) );
-    }
-
-    @Test
     void testBoundingBox_Cartesian3D()
     {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, car3, true, car4, true );
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, car3, car4 );
 
         assertFalse( test( p, gps1 ) );
         assertFalse( test( p, gps3 ) );
@@ -447,7 +358,7 @@ class IndexQueryTest
     @Test
     void testBoundingBox_WGS84_3D()
     {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps1_3d, true, gps2_3d, true );
+        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, gps1_3d, gps2_3d );
 
         assertFalse( test( p, gps1 ) );
         assertFalse( test( p, gps3 ) );

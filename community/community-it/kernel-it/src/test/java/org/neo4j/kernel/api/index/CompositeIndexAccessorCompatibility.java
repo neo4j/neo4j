@@ -373,22 +373,18 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 9L, descriptor.schema(), base2, obj4 ),
                 add( 10L, descriptor.schema(), base2, obj5 ) ) );
 
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj2, true, obj4, false ) ) ).containsExactly( 2L, 3L );
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj4, true, null, false ) ) ).containsExactly( 4L, 5L );
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj4, false, null, true ) ) ).containsExactly( 5L );
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj5, false, obj2, true ) ) ).isEmpty();
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, null, false, obj3, false ) ) ).containsExactly( 1L, 2L );
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, null, true, obj3, true ) ) ).containsExactly( 1L, 2L, 3L );
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj1, false, obj2, true ) ) ).containsExactly( 2L );
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj1, false, obj3, false ) ) ).containsExactly( 2L );
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj2, true, obj4, false ) ) ).containsExactly( 7L, 8L );
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj4, true, null, false ) ) ).containsExactly( 9L, 10L );
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj4, false, null, true ) ) ).containsExactly( 10L );
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj5, false, obj2, true ) ) ).isEmpty();
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, null, false, obj3, false ) ) ).containsExactly( 6L, 7L );
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, null, true, obj3, true ) ) ).containsExactly( 6L, 7L, 8L );
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj1, false, obj2, true ) ) ).containsExactly( 7L );
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj1, false, obj3, false ) ) ).containsExactly( 7L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj2, obj4 ) ) ).containsExactly( 2L, 3L, 4L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj4, null ) ) ).containsExactly( 4L, 5L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj5, obj2 ) ) ).isEmpty();
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, null, obj3 ) ) ).containsExactly( 1L, 2L, 3L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj1, obj2 ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj1, obj3 ) ) ).containsExactly( 1L, 2L, 3L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj2, obj4 ) ) ).containsExactly( 7L, 8L, 9L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj4, null ) ) ).containsExactly( 9L, 10L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj5, obj2 ) ) ).isEmpty();
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, null, obj3 ) ) ).containsExactly( 6L, 7L, 8L );
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj1, obj2 ) ) ).containsExactly( 6L, 7L);
+        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj1, obj3 ) ) ).containsExactly( 6L, 7L, 8L );
 
         CoordinateReferenceSystem crs = getCrs( obj1 );
         assertThat( query( exact( 0, base1 ), boundingBox( 1, crs ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
@@ -751,14 +747,12 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 4L, descriptor.schema(), obj4, Values.of( true ) ),
                 add( 5L, descriptor.schema(), obj5, Values.of( 42 ) ) ) );
 
-        assertThat( query( boundingBox( 0, obj2, true, obj4, false ), exists( 1 ) ) ).containsExactly( 2L, 3L );
-        assertThat( query( boundingBox( 0, obj4, true, null, false ), exists( 1 ) ) ).containsExactly( 4L, 5L );
-        assertThat( query( boundingBox( 0, obj4, false, null, true ), exists( 1 ) ) ).containsExactly( 5L );
-        assertThat( query( boundingBox( 0, obj5, false, obj2, true ), exists( 1 ) ) ).isEmpty();
-        assertThat( query( boundingBox( 0, null, false, obj3, false ), exists( 1 ) ) ).containsExactly( 1L, 2L );
-        assertThat( query( boundingBox( 0, null, true, obj3, true ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
-        assertThat( query( boundingBox( 0, obj1, false, obj2, true ), exists( 1 ) ) ).containsExactly( 2L );
-        assertThat( query( boundingBox( 0, obj1, false, obj3, false ), exists( 1 ) ) ).containsExactly( 2L );
+        assertThat( query( boundingBox( 0, obj2, obj4 ), exists( 1 ) ) ).containsExactly( 2L, 3L, 4L );
+        assertThat( query( boundingBox( 0, obj4, null ), exists( 1 ) ) ).containsExactly( 4L, 5L );
+        assertThat( query( boundingBox( 0, obj5, obj2 ), exists( 1 ) ) ).isEmpty();
+        assertThat( query( boundingBox( 0, null, obj3 ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
+        assertThat( query( boundingBox( 0, obj1, obj2 ), exists( 1 ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( boundingBox( 0, obj1, obj3 ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
 
         assertThat( query( boundingBox( 0, obj1.getCoordinateReferenceSystem() ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
     }

@@ -211,8 +211,8 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
             SimpleEntityValueClient client = new SimpleEntityValueClient();
 
             var boundingBox = PropertyIndexQuery.boundingBox( descriptor.schema().getPropertyId(),
-                                                              Values.pointValue( WGS_84, searchStart ), true,
-                                                              limitPoint, true );
+                                                              Values.pointValue( WGS_84, searchStart ),
+                                                              limitPoint );
             indexReader.query( client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), boundingBox );
 
             List<Value> queryResult = new ArrayList<>();

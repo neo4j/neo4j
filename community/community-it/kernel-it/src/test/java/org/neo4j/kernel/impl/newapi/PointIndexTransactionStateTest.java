@@ -166,7 +166,7 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
 
             int prop = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
             ops.assertEntityAndValueForSeek( expected, tx, index, point( 1, 1 ),
-                                             PropertyIndexQuery.boundingBox( prop, point( 0, 0 ), true, point( 3, 3 ), true ) );
+                                             PropertyIndexQuery.boundingBox( prop, point( 0, 0 ), point( 3, 3 ) ) );
         }
     }
 

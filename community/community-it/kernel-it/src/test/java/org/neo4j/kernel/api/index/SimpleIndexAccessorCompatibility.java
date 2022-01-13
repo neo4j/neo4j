@@ -175,7 +175,7 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
                 add( 3L, descriptor, p3 )
             ) );
 
-        assertThat( query( boundingBox( 1, p1, true, p2, true ) ) ).containsExactly( 1L, 2L );
+        assertThat( query( boundingBox( 1, p1, p2 ) ) ).containsExactly( 1L, 2L );
     }
 
     @Test

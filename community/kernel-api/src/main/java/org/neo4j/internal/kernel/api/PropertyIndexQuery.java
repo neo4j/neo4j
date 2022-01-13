@@ -149,13 +149,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
         };
     }
 
-    public static BoundingBoxPredicate boundingBox( int propertyKeyId,
-                                                    PointValue from, boolean fromInclusive,
-                                                    PointValue to, boolean toInclusive )
-    {
-        return new BoundingBoxPredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
-    }
-
     public static BoundingBoxPredicate boundingBox( int propertyKeyId, PointValue from, PointValue to )
     {
         return new BoundingBoxPredicate( propertyKeyId, from, to );
@@ -509,38 +502,28 @@ public abstract class PropertyIndexQuery implements IndexQuery
     {
         private final CoordinateReferenceSystem crs;
         private final PointValue from;
-        private final boolean fromInclusive;
         private final PointValue to;
-        private final boolean toInclusive;
 
         private BoundingBoxPredicate( int propertyKeyId, CoordinateReferenceSystem crs,
-                                      PointValue from, boolean fromInclusive,
-                                      PointValue to, boolean toInclusive )
+                                      PointValue from,
+                                      PointValue to )
         {
             super( propertyKeyId );
             this.crs = crs;
             this.from = from;
-            this.fromInclusive = fromInclusive;
             this.to = to;
-            this.toInclusive = toInclusive;
         }
 
         private BoundingBoxPredicate( int propertyKeyId,
-                                      PointValue from, boolean fromInclusive,
-                                      PointValue to, boolean toInclusive )
+                                      PointValue from,
+                                      PointValue to )
         {
-            this( propertyKeyId, requireNonNullElse( from, to ).getCoordinateReferenceSystem(),
-                  from, fromInclusive, to, toInclusive );
-        }
-
-        private BoundingBoxPredicate( int propertyKeyId, PointValue from, PointValue to )
-        {
-            this( propertyKeyId, from, true, to, true );
+            this( propertyKeyId, requireNonNullElse( from, to ).getCoordinateReferenceSystem(), from, to );
         }
 
         private BoundingBoxPredicate( int propertyKeyId, CoordinateReferenceSystem crs )
         {
-            this( propertyKeyId, crs, null, true, null, true );
+            this( propertyKeyId, crs, null, null );
         }
 
         @Override
@@ -581,11 +564,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
             return from == null ? NO_VALUE : from;
         }
 
-        public boolean fromInclusive()
-        {
-            return fromInclusive;
-        }
-
         public PointValue to()
         {
             return to;
@@ -594,11 +572,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
         public Value toValue()
         {
             return to == null ? NO_VALUE : to;
-        }
-
-        public boolean toInclusive()
-        {
-            return toInclusive;
         }
 
         @Override
@@ -632,24 +605,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
         public boolean acceptsValue( Value value )
         {
             return false;
-        }
-    }
-
-    public static final class BoundingBoxRangeWrapper extends RangePredicate<PointValue>
-    {
-        private final BoundingBoxPredicate predicate;
-
-        private BoundingBoxRangeWrapper( int propertyKeyId,
-                                         PointValue from, boolean fromInclusive,
-                                         PointValue to, boolean toInclusive )
-        {
-            super( propertyKeyId, ValueGroup.GEOMETRY, from, fromInclusive, to, toInclusive );
-            predicate = new BoundingBoxPredicate( propertyKeyId, from, fromInclusive, to, toInclusive );
-        }
-
-        public BoundingBoxPredicate boundingBox()
-        {
-            return predicate;
         }
     }
 

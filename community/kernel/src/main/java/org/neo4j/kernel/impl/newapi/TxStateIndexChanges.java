@@ -537,10 +537,7 @@ class TxStateIndexChanges
             }
 
             ValueTuple selectedLower;
-            var selectedIncludeLower = true;
-
             ValueTuple selectedUpper;
-            var selectedIncludeUpper = true;
 
             if ( from == NO_VALUE )
             {
@@ -550,7 +547,6 @@ class TxStateIndexChanges
             else
             {
                 selectedLower = getCompositeValueTuple( size, equalityValues, from, true );
-                selectedIncludeLower = predicate.fromInclusive();
             }
 
             if ( to == NO_VALUE )
@@ -561,10 +557,9 @@ class TxStateIndexChanges
             else
             {
                 selectedUpper = getCompositeValueTuple( size, equalityValues, to, false );
-                selectedIncludeUpper = predicate.toInclusive();
             }
 
-            return new RangeFilterValues( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+            return new RangeFilterValues( selectedLower, true, selectedUpper, true );
         }
 
         private static RangeFilterValues fromExists( int size, Value[] equalityValues )
