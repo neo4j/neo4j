@@ -181,7 +181,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     graph.createUniqueConstraint("Person", "id")
     expectError(
       "MATCH (n:Person) USING INDEX n:Person(id) WHERE n.name = 'Andres' RETURN n",
-      "Cannot use index hint in this context. Must use the property 'id' that the hint is referring to in a supported predicate in WHERE (either directly or as part of a top-level AND or OR), but only 'name' was found. Supported predicates are: equality comparison, inequality (range) comparison, STARTS WITH, IN condition or checking property existence. The comparison cannot be performed between two property values. Note that the label and property comparison must be specified on a non-optional node. (line 1, column 18 (offset: 17))"
+      "Cannot use index hint `USING INDEX n:Person(id)` in this context: Must use the property `id`, that the hint is referring to, on the node `n` either in the pattern or in supported predicates in `WHERE` (either directly or as part of a top-level `AND` or `OR`), but only `name` was found. Supported predicates are: equality comparison, inequality (range) comparison, `STARTS WITH`, `IN` condition or checking property existence. The comparison cannot be performed between two property values. Note that the property `id` must be specified on a non-optional node. (line 1, column 18 (offset: 17))"
     )
   }
 

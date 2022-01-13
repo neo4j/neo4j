@@ -20,7 +20,9 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.scalatest.mockito.MockitoSugar.mock
 
@@ -33,4 +35,6 @@ case class TestContext(override val notificationLogger: InternalNotificationLogg
   override def monitors = mock[Monitors]
 
   override def errorHandler = _ => ()
+
+  override def errorMessageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
 }

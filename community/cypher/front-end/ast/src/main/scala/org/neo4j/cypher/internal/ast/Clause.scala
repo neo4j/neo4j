@@ -17,7 +17,10 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.ASTSlicingPhrase.checkExpressionIsStaticInt
+import org.neo4j.cypher.internal.ast.Match.hintPrettifier
 import org.neo4j.cypher.internal.ast.connectedComponents.RichConnectedComponent
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
@@ -251,6 +254,10 @@ trait SingleRelTypeCheck {
   }
 }
 
+object Match {
+  protected val hintPrettifier: Prettifier = Prettifier(ExpressionStringifier())
+}
+
 case class Match(
                   optional: Boolean,
                   pattern: Pattern,
@@ -294,54 +301,102 @@ case class Match(
   private def checkHints: SemanticCheck = { semanticState =>
     def getMissingEntityKindError(variable: String,
                                   labelOrRelTypeName: String,
-                                  index: Boolean): String = {
+                                  hint: Hint): String = {
       val isNode = semanticState.isNode(variable)
       val typeName = if (isNode) "label" else "relationship type"
-      val entityName = if (isNode) "node" else "relationship"
-      val operatorDescription = if (index) "index" else s"$typeName scan"
+      val functionName = if (isNode) "labels" else "type"
+      val operatorDescription = hint match {
+        case _: UsingIndexHint => "index"
+        case _: UsingScanHint => s"$typeName scan"
+      }
       val typePredicates = getLabelAndRelTypePredicates(variable).distinct
       val foundTypePredicatesDescription = typePredicates match {
         case Seq() => s"no $typeName was"
-        case Seq(typePredicate) => s"only the $typeName '$typePredicate' was"
-        case typePredicates => s"only the ${typeName}s '${typePredicates.mkString("', '")}' were"
+        case Seq(typePredicate) => s"only the $typeName `$typePredicate` was"
+        case typePredicates => s"only the ${typeName}s `${typePredicates.mkString("`, `")}` were"
       }
-      s"""|Cannot use $operatorDescription hint in this context.
-          | Must use $typeName '$labelOrRelTypeName' on the $entityName
-          | that this hint is referring to, but $foundTypePredicatesDescription found for $entityName '$variable'.
-          | Note that the $typeName${if (index) " and property comparison" else ""} must be specified on a non-optional $entityName.""".stripLinesAndMargins
+
+      getHintErrorForVariable(operatorDescription,
+        hint,
+        s"$typeName `$labelOrRelTypeName`",
+        foundTypePredicatesDescription,
+        variable,
+        s"""Predicates must include the $typeName literal `$labelOrRelTypeName`.
+            | That is, the function `$functionName()` is not compatible with indexes.""".stripLinesAndMargins)
     }
 
-    def getMissingPropertyError(variable: String, propertiesInHint: Seq[PropertyKeyName]): String = {
+    def getMissingPropertyError(hint: UsingIndexHint): String = {
+      val variable = hint.variable.name
+      val propertiesInHint = hint.properties
       val plural = propertiesInHint.size > 1
-      val isNodeHint = semanticState.isNode(variable)
-      val propertiesInPredicates = getPropertyPredicates(variable)
-      val foundPropertiesDescription = propertiesInPredicates match {
+      val foundPropertiesDescription = getPropertyPredicates(variable) match {
         case Seq() => "none was"
-        case Seq(property) => s"only '$property' was"
-        case properties => s"only '${properties.mkString("', '")}' were"
+        case Seq(property) => s"only `$property` was"
+        case properties => s"only `${properties.mkString("`, `")}` were"
       }
-      s"""|Cannot use index hint in this context.
-          | Must use the ${if (plural) "properties" else "property"} ${propertiesInHint.map(prop => s"'${prop.name}'").mkString(", ")} that the hint is referring to in
-          | ${if (plural) "supported predicates" else "a supported predicate"} in WHERE
-          | (either directly or as part of a top-level AND or OR), but $foundPropertiesDescription found.
-          | Supported predicates are:
-          | equality comparison, inequality (range) comparison, STARTS WITH,
-          | IN condition or checking property existence.
-          | The comparison cannot be performed between two property values.
-          | Note that the ${if (isNodeHint) "label" else "relationship type"} and property comparison must be specified on a
-          | non-optional ${if (isNodeHint) "node" else "relationship"}.""".stripLinesAndMargins
+      val missingPropertiesNames = propertiesInHint.map(prop => s"`${prop.name}`").mkString(", ")
+      val missingPropertiesDescription = s"the ${if (plural) "properties" else "property"} $missingPropertiesNames"
+
+      getHintErrorForVariable("index",
+        hint,
+        missingPropertiesDescription,
+        foundPropertiesDescription,
+        variable,
+        """Supported predicates are:
+          | equality comparison, inequality (range) comparison, `STARTS WITH`,
+          | `IN` condition or checking property existence.
+          | The comparison cannot be performed between two property values.""".stripLinesAndMargins)
+    }
+
+    def getHintErrorForVariable(operatorDescription: String,
+                                hint: Hint,
+                                missingThingDescription: String,
+                                foundThingsDescription: String,
+                                variable: String,
+                                additionalInfo: String,
+                               ): String = {
+      val isNode = semanticState.isNode(variable)
+      val entityName = if (isNode) "node" else "relationship"
+
+      getHintError(operatorDescription,
+        hint,
+        missingThingDescription,
+        foundThingsDescription,
+        s"the $entityName `$variable`",
+        entityName,
+        additionalInfo,
+      )
+    }
+
+    def getHintError(operatorDescription: String,
+                     hint: Hint,
+                     missingThingDescription: String,
+                     foundThingsDescription: String,
+                     entityDescription: String,
+                     entityName: String,
+                     additionalInfo: String,
+                    ): String = {
+      semanticState.errorMessageProvider.createMissingPropertyLabelHintError(
+        operatorDescription,
+        hintPrettifier.asString(hint),
+        missingThingDescription,
+        foundThingsDescription,
+        entityDescription,
+        entityName,
+        additionalInfo,
+      )
     }
 
     val error: Option[SemanticCheck] = hints.collectFirst {
       case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(labelOrRelTypeName), _, _, _)
         if !containsLabelOrRelTypePredicate(variable, labelOrRelTypeName) =>
-        SemanticError(getMissingEntityKindError(variable, labelOrRelTypeName, index = true), hint.position)
+        SemanticError(getMissingEntityKindError(variable, labelOrRelTypeName, hint), hint.position)
       case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(_), properties, _, _)
         if !containsPropertyPredicates(variable, properties) =>
-        SemanticError(getMissingPropertyError(variable, properties), hint.position)
+        SemanticError(getMissingPropertyError(hint), hint.position)
       case hint@UsingScanHint(Variable(variable), LabelOrRelTypeName(labelOrRelTypeName))
         if !containsLabelOrRelTypePredicate(variable, labelOrRelTypeName) =>
-        SemanticError(getMissingEntityKindError(variable, labelOrRelTypeName, index = false), hint.position)
+        SemanticError(getMissingEntityKindError(variable, labelOrRelTypeName, hint), hint.position)
       case hint@UsingJoinHint(_)
         if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)

@@ -43,8 +43,10 @@ import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -248,4 +250,6 @@ class TestContext(override val monitors: Monitors) extends BaseContext {
   override def cypherExceptionFactory: CypherExceptionFactory = ???
 
   override def errorHandler: Seq[SemanticErrorDef] => Unit = _ => ()
+
+  override def errorMessageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
 }

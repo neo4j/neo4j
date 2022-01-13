@@ -35,9 +35,11 @@ import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.values.virtual.MapValue
 
 import java.time.Clock
@@ -49,6 +51,8 @@ class BaseContextImpl(val cypherExceptionFactory: CypherExceptionFactory,
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
     SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
+
+  override val errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
 }
 
 object BaseContextImpl {

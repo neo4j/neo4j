@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.devNullLogger
@@ -50,6 +51,7 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.monitoring.Monitors
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
@@ -106,6 +108,7 @@ class FabricParsingPropertyTest extends CypherFunSuite
           override def monitors: phases.Monitors = WrappedMonitors(mock[Monitors])
           // Ignore semantic errors
           override def errorHandler: Seq[SemanticErrorDef] => Unit = _ => ()
+          override val errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
         }
 
         try {

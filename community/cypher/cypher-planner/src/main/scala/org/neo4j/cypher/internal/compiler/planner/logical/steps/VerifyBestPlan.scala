@@ -55,6 +55,8 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidHintException
 import org.neo4j.exceptions.JoinHintException
 import org.neo4j.exceptions.Neo4jException
+import org.neo4j.messages.MessageUtil
+import org.neo4j.messages.MessageUtil.Numerus
 
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
@@ -168,21 +170,11 @@ object VerifyBestPlan {
    * @param hint the offending hint
    */
   case class WrongPropertyTypeHint(hint: UsingIndexHint, foundPredicates: Set[IndexCompatiblePredicate]) {
-    def toException: Neo4jException = {
-      val predicatesString = {
-        if (foundPredicates.isEmpty) {
-          // this should be caught semantic checking but let's provide a meaningful error message anyways
-          s"no matching predicate was found"
-        } else if (foundPredicates.size == 1) {
-          s"the predicate found cannot be used by a text index"
-        } else {
-          s"none of the predicates found can be used by a text index"
-        }
-      }
-      new InvalidHintException(
-        s"""Cannot use hint `${prettifier.asString(hint)}` in this context.
-           | The hint specifies using a text index but $predicatesString.""".stripLinesAndMargins)
-    }
+    def toException: Neo4jException =
+      new InvalidHintException(MessageUtil.createTextIndexHintError(
+        prettifier.asString(hint),
+        Numerus.of(foundPredicates.size)
+      ))
   }
 
   private case class UnfulfillableIndexHints(missingIndexHints: Set[MissingIndexHint], wrongPropertyTypeHints: Seq[WrongPropertyTypeHint]) {

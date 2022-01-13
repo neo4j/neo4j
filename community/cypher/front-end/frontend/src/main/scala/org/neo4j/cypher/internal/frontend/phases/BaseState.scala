@@ -39,7 +39,6 @@ trait BaseState {
 
   def accumulatedConditions: Set[StepSequencer.Condition]
 
-
   def statement(): Statement = maybeStatement getOrElse fail("Statement")
   def returnColumns(): Seq[String] = maybeReturnColumns getOrElse fail("Return columns")
   def semantics(): SemanticState = maybeSemantics getOrElse fail("Semantics")
