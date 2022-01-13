@@ -40,6 +40,7 @@ import org.neo4j.shell.ShellRunner;
 import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.log.AnsiLogger;
+import org.neo4j.shell.parameter.ParameterService;
 
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -158,6 +159,7 @@ public class AssertableMain
         public final ByteArrayOutputStream out = new ByteArrayOutputStream();
         public final ByteArrayOutputStream err = new ByteArrayOutputStream();
         public File historyFile;
+        public ParameterService parameters;
 
         public AssertableMainBuilder shell( CypherShell shell )
         {
@@ -207,6 +209,12 @@ public class AssertableMain
             return this;
         }
 
+        public AssertableMainBuilder parameters( ParameterService parameters )
+        {
+            this.parameters = parameters;
+            return this;
+        }
+
         public AssertableMain run() throws ArgumentParserException, IOException
         {
             var outPrintStream = new PrintStream( out );
@@ -214,7 +222,7 @@ public class AssertableMain
             var args = parseArgs();
             var logger = new AnsiLogger( false, Format.VERBOSE, outPrintStream, errPrintStream );
             var terminal = terminalBuilder().dumb().streams( in, outPrintStream ).interactive( !args.getNonInteractive() ).logger( logger ).build();
-            var main = new Main( args, logger, shell, isOutputInteractive, runnerFactory, terminal );
+            var main = new Main( args, logger, shell, parameters, isOutputInteractive, runnerFactory, terminal );
             var exitCode = main.startShell();
             return new AssertableMain( exitCode, out, err, shell );
         }

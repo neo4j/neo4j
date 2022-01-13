@@ -24,21 +24,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.prettyprint.TablePlanFormatter;
+import org.neo4j.shell.state.BoltStateHandler;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.shell.util.Versions.majorVersion;
 
 class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
@@ -49,7 +51,10 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     void setUp() throws Exception
     {
         linePrinter.clear();
-        shell = new CypherShell( linePrinter, new PrettyConfig( Format.VERBOSE, true, 1000 ), false, new ShellParameterMap() );
+        var printer = new PrettyPrinter( new PrettyConfig( Format.VERBOSE, true, 1000 ) );
+        var boltHandler = new BoltStateHandler( true );
+        var parameters = mock( ParameterService.class );
+        shell = new CypherShell( linePrinter, boltHandler, printer, parameters );
 
         connect( "neo" );
     }
@@ -123,43 +128,6 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
         assertThat( result, containsString(
                 "| (:TestPerson {name: \"Jane Smith\"}) |\n" +
                 "| (:TestPerson {name: \"Jane Smith\"}) |" ) );
-    }
-
-    @Test
-    void paramsAndListVariables() throws CommandException
-    {
-        assertTrue( shell.getParameterMap().allParameterValues().isEmpty() );
-
-        long randomLong = System.currentTimeMillis();
-        String stringInput = "\"randomString\"";
-        shell.getParameterMap().setParameter( "string", stringInput );
-        Object paramValue = shell.getParameterMap().setParameter( "bob", String.valueOf( randomLong ) );
-        assertEquals( randomLong, paramValue );
-
-        shell.execute( new CypherStatement( "RETURN $bob, $string" ) );
-
-        String result = linePrinter.output();
-        assertThat( result, containsString( "| $bob" ) );
-        assertThat( result, containsString( "| " + randomLong + " | " + stringInput + " |" ) );
-        assertEquals( randomLong, shell.getParameterMap().allParameterValues().get( "bob" ) );
-        assertEquals( "randomString", shell.getParameterMap().allParameterValues().get( "string" ) );
-    }
-
-    @Test
-    void paramsAndListVariablesWithSpecialCharacters() throws CommandException
-    {
-        assertTrue( shell.getParameterMap().allParameterValues().isEmpty() );
-
-        long randomLong = System.currentTimeMillis();
-        Object paramValue = shell.getParameterMap().setParameter( "`bob`", String.valueOf( randomLong ) );
-        assertEquals( randomLong, paramValue );
-
-        shell.execute( new CypherStatement( "RETURN $`bob`" ) );
-
-        String result = linePrinter.output();
-        assertThat( result, containsString( "| $`bob`" ) );
-        assertThat( result, containsString( "\n| " + randomLong + " |\n" ) );
-        assertEquals( randomLong, shell.getParameterMap().allParameterValues().get( "bob" ) );
     }
 
     @Test

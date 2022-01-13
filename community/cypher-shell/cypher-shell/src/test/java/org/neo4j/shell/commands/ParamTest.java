@@ -19,24 +19,49 @@
  */
 package org.neo4j.shell.commands;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import org.neo4j.shell.ParameterMap;
+import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.ParameterException;
+import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.parameter.ParameterService.Parameter;
 
+import static java.util.Arrays.stream;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 class ParamTest
 {
-    private final ParameterMap mockShell = mock( ParameterMap.class );
-    private final Command cmd = new Param( mockShell );
+    private TransactionHandler db = mock( TransactionHandler.class );
+    private ParameterService parameters = ParameterService.create( db );
+    private Command cmd = new Param( parameters );
+
+    @BeforeEach
+    void setup()
+    {
+        db = mock( TransactionHandler.class );
+        parameters = ParameterService.create( db );
+        cmd = new Param( parameters );
+    }
+
+    @Test
+    void setParams() throws CommandException
+    {
+        var param1 = new Parameter( "myParam", "'here I am'", "here I am" );
+        var param2 = new Parameter( "myParam2", "2", 2L );
+        var param3 = new Parameter( "myParam", "'again'", "again" );
+        assertExecute( "myParam => 'here I am'", param1 );
+        assertExecute( "myParam2 => 2", param1, param2 );
+        assertExecute( "myParam => 'again'", param2, param3 );
+    }
 
     @Test
     void shouldFailIfNoArgs()
@@ -49,70 +74,14 @@ class ParamTest
     void shouldFailIfOneArg()
     {
         CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob" ) ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
-    }
-
-    @Test
-    void setParam() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "bob   9") );
-
-        verify( mockShell ).setParameter( "bob", "9" );
-    }
-
-    @Test
-    void setLambdasAsParam() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "bob => 9" ) );
-
-        verify( mockShell ).setParameter( "bob", "9" );
-    }
-
-    @Test
-    void setLambdasAsParamWithBackticks() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "`bob` => 9" ) );
-
-        verify( mockShell ).setParameter( "`bob`", "9" );
-    }
-
-    @Test
-    void setSpecialCharacterParameter() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "bØb   9" ) );
-
-        verify( mockShell ).setParameter( "bØb", "9" );
-    }
-
-    @Test
-    void setSpecialCharacterParameterForLambdaExpressions() throws ParameterException, CommandException
-    {
-        cmd.execute(  List.of( "`first=>Name` => \"Bruce\"" ) );
-
-        verify( mockShell ).setParameter( "`first=>Name`", "\"Bruce\"" );
-    }
-
-    @Test
-    void setParamWithSpecialCharacters() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "`bob#`   9" ) );
-
-        verify( mockShell ).setParameter( "`bob#`", "9" );
-    }
-
-    @Test
-    void setParamWithOddNoOfBackTicks() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( " `bo `` sömething ```   9" ) );
-
-        verify( mockShell ).setParameter( "`bo `` sömething ```", "9" );
+        assertThat( exception.getMessage(), containsString( "Incorrect usage.\nusage: :param name => <Cypher Expression>" ) );
     }
 
     @Test
     void shouldFailForVariablesWithoutEscaping()
     {
         CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob#   9" ) ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect usage.\nusage: :param name => <Cypher Expression>" ) );
     }
 
     @Test
@@ -126,59 +95,21 @@ class ParamTest
     void shouldFailForEmptyVariables()
     {
         CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "``   9" ) ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect usage.\nusage: :param name => <Cypher Expression>" ) );
     }
 
     @Test
     void shouldFailForInvalidVariables()
     {
         CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "`   9" ) ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect usage.\nusage: :param name => <Cypher Expression>" ) );
     }
 
     @Test
     void shouldFailForVariablesWithoutText()
     {
         CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "```   9" ) ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
-    }
-
-    @Test
-    void shouldNotSplitOnSpace() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "bob 'one two'" ) );
-        verify( mockShell ).setParameter( "bob", "'one two'" );
-    }
-
-    @Test
-    void shouldAcceptUnicodeAlphaNumeric() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "böb 'one two'" ) );
-        verify( mockShell ).setParameter( "böb", "'one two'" );
-    }
-
-    @Test
-    void shouldAcceptColonFormOfParams() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "bob: one" ) );
-        verify( mockShell ).setParameter( "bob", "one" );
-    }
-
-    @Test
-    void shouldAcceptForTwoColonsFormOfParams() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "`bob:`: one" ) );
-        verify( mockShell ).setParameter( "`bob:`", "one" );
-
-        cmd.execute( List.of( "`t:om` two" ) );
-        verify( mockShell ).setParameter( "`t:om`", "two" );
-    }
-
-    @Test
-    void shouldNotExecuteEscapedCypher() throws ParameterException, CommandException
-    {
-        cmd.execute( List.of( "bob \"RETURN 5 as bob\"" ) );
-        verify( mockShell ).setParameter( "bob", "\"RETURN 5 as bob\"" );
+        assertThat( exception.getMessage(), containsString( "Incorrect usage.\nusage: :param name => <Cypher Expression>" ) );
     }
 
     @Test
@@ -186,5 +117,14 @@ class ParamTest
     {
         String usage = cmd.metadata().usage();
         assertThat( usage, containsString( "name => <Cypher Expression>" ) );
+    }
+
+    private void assertExecute( String args, Parameter... expected ) throws CommandException
+    {
+        cmd.execute( List.of( args ) );
+        var expectedMap = stream( expected ).collect( toMap( Parameter::name, identity() ) );
+        assertThat( parameters.parameters(), is( expectedMap ) );
+        var expectedValues = stream( expected ).collect( toMap( Parameter::name, Parameter::value ) );
+        assertThat( parameters.parameterValues(), is( expectedValues ) );
     }
 }

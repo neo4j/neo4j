@@ -30,13 +30,16 @@ import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.NoMoreInputException;
-import org.neo4j.shell.exception.ThrowingAction;
 import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.ShellStatementParser;
+import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.util.VisibleForTesting;
 
@@ -55,6 +58,8 @@ public class Main
     private final boolean isOutputInteractive;
     private final ShellRunner.Factory runnerFactory;
     private final CypherShellTerminal terminal;
+    private final StatementParser statementParser = new ShellStatementParser();
+    private final ParameterService parameters;
 
     public Main( CliArgs args )
     {
@@ -62,7 +67,9 @@ public class Main
         this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, System.out, System.err );
         this.terminal = terminalBuilder().interactive( isInteractive ).logger( logger ).build();
         this.args = args;
-        this.shell = new CypherShell( logger, new PrettyConfig( args ), shouldBeInteractive( args, terminal.isInteractive() ), args.getParameters() );
+        var boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, terminal.isInteractive() ) );
+        this.parameters = ParameterService.create( boltStateHandler );
+        this.shell = new CypherShell( logger, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
         this.isOutputInteractive = !args.getNonInteractive() && ShellRunner.isOutputInteractive();
         this.runnerFactory = new ShellRunner.Factory();
     }
@@ -73,13 +80,15 @@ public class Main
         this.terminal = terminal;
         this.args = args;
         this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, out, err );
-        this.shell = new CypherShell( logger, new PrettyConfig( args ), shouldBeInteractive( args, terminal.isInteractive() ), args.getParameters() );
+        var boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, terminal.isInteractive() ) );
+        this.parameters = ParameterService.create( boltStateHandler );
+        this.shell = new CypherShell( logger, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = new ShellRunner.Factory();
     }
 
     @VisibleForTesting
-    public Main( CliArgs args, AnsiLogger logger, CypherShell shell,
+    public Main( CliArgs args, AnsiLogger logger, CypherShell shell, ParameterService parameters,
                  boolean outputInteractive, ShellRunner.Factory runnerFactory, CypherShellTerminal terminal )
     {
         this.terminal = terminal;
@@ -88,6 +97,7 @@ public class Main
         this.shell = shell;
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = runnerFactory;
+        this.parameters = parameters;
     }
 
     public static void main( String[] args )
@@ -147,14 +157,14 @@ public class Main
             if ( args.getCypher().isPresent() )
             {
                 // Can only prompt for password if input has not been redirected
-                var parsed = new ShellStatementParser().parse( args.getCypher().get() );
-                connectMaybeInteractively( connectionConfig, () -> shell.execute( parsed.statements() ) );
+                connectMaybeInteractively( connectionConfig );
+                shell.execute( statementParser.parse( args.getCypher().get() ).statements() );
                 return EXIT_SUCCESS;
             }
             else
             {
                 // Can only prompt for password if input has not been redirected
-                var newConnectionConfig = connectMaybeInteractively( connectionConfig, null );
+                var newConnectionConfig = connectMaybeInteractively( connectionConfig );
 
                 if ( !newConnectionConfig.driverUrl().equals( connectionConfig.driverUrl() ) )
                 {
@@ -164,7 +174,7 @@ public class Main
 
                 // Construct shellrunner after connecting, due to interrupt handling
                 ShellRunner shellRunner = runnerFactory.create( args, shell, logger, newConnectionConfig, terminal );
-                CommandHelper commandHelper = new CommandHelper( logger, shellRunner.getHistorian(), shell, newConnectionConfig, terminal );
+                CommandHelper commandHelper = new CommandHelper( logger, shellRunner.getHistorian(), shell, newConnectionConfig, terminal, parameters );
 
                 shell.setCommandHelper( commandHelper );
 
@@ -183,7 +193,7 @@ public class Main
      *
      * @return connection configuration used to connect (can be different from the supplied)
      */
-    private ConnectionConfig connectMaybeInteractively( ConnectionConfig connectionConfig, ThrowingAction<CommandException> command ) throws Exception
+    private ConnectionConfig connectMaybeInteractively( ConnectionConfig connectionConfig ) throws Exception
     {
         boolean didPrompt = false;
 
@@ -199,7 +209,9 @@ public class Main
             try
             {
                 // Try to connect
-                return shell.connect( connectionConfig, command );
+                var newConfig = shell.connect( connectionConfig );
+                setArgumentParameters();
+                return newConfig;
             }
             catch ( AuthenticationException e )
             {
@@ -227,6 +239,14 @@ public class Main
                     throw e;
                 }
             }
+        }
+    }
+
+    private void setArgumentParameters() throws CommandException
+    {
+        for ( var parameter : args.getParameters() )
+        {
+            parameters.setParameter( parameters.evaluate( parameter ) );
         }
     }
 

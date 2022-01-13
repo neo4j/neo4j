@@ -41,7 +41,6 @@ import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.OfflineTestShell;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StatementExecuter;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.UserMessagesHandler;
@@ -52,6 +51,7 @@ import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
@@ -101,6 +101,7 @@ class InteractiveShellRunnerTest
     private UserMessagesHandler userMessagesHandler;
     private ConnectionConfig connectionConfig;
     private ByteArrayOutputStream out;
+    private ParameterService parameters;
 
     @BeforeEach
     void setup() throws Exception
@@ -119,6 +120,7 @@ class InteractiveShellRunnerTest
         when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( "mydb" );
         when( userMessagesHandler.getWelcomeMessage() ).thenReturn( "Welcome to cypher-shell!" );
         when( connectionConfig.username() ).thenReturn( "myusername" );
+        parameters = mock( ParameterService.class );
 
         doThrow( badLineError ).when( cmdExecuter ).execute( statementContains( "bad" ) );
         doReturn( System.out ).when( logger ).getOutputStream();
@@ -542,7 +544,7 @@ class InteractiveShellRunnerTest
         var in = new ByteArrayInputStream( input.getBytes( UTF_8 ) );
         var terminal = terminalBuilder().dumb().streams( in, output ).interactive( true ).logger( logger ).build();
         OfflineTestShell offlineTestShell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
-        CommandHelper commandHelper = new CommandHelper( logger, Historian.empty, offlineTestShell, connectionConfig, terminal );
+        CommandHelper commandHelper = new CommandHelper( logger, Historian.empty, offlineTestShell, connectionConfig, terminal, parameters );
         offlineTestShell.setCommandHelper( commandHelper );
         var runner = new InteractiveShellRunner( offlineTestShell, offlineTestShell, offlineTestShell, offlineTestShell, logger,
                                                  terminal, userMessagesHandler, connectionConfig, historyFile );
@@ -654,7 +656,7 @@ class InteractiveShellRunnerTest
         FakeInterruptableShell( Logger logger,
                                 BoltStateHandler boltStateHandler )
         {
-            super( logger, boltStateHandler, mock( PrettyPrinter.class ), new ShellParameterMap() );
+            super( logger, boltStateHandler, mock( PrettyPrinter.class ), null );
         }
 
         @Override

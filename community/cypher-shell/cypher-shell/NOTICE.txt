@@ -26,20 +26,11 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  Apache Commons IO
   Apache Commons Lang
+  Caffeine cache
   jansi
-  Java Concurrency Tools Core Library
   Java Native Access
-  magnolia
-  mercator
   Neo4j Java Driver
-  parboiled-core
-  parboiled-scala
-  Scala Compiler
-
-BSD - Scala License
-  Scala Library
 
 BSD License
   JLine JANSI Terminal

@@ -19,10 +19,10 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,9 +58,10 @@ import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.ListBoltResult;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -76,7 +77,7 @@ class TableOutputFormatterTest
     private final PrettyPrinter verbosePrinter = new PrettyPrinter( new PrettyConfig( Format.VERBOSE, true, 100 ) );
 
     @Test
-    void prettyPrintPlanInformation() throws IOException
+    void prettyPrintPlanInformation()
     {
         // given
         ResultSummary resultSummary = mock( ResultSummary.class );
@@ -116,8 +117,8 @@ class TableOutputFormatterTest
         String actual = verbosePrinter.format( result );
 
         // then
-        String expected = IOUtils.toString( getClass().getResource( "/org/neo4j/shell/prettyprint/expected-pretty-print-plan-information.txt" ), UTF_8 )
-                                 .replace( "\n", NEWLINE );
+        var resourceStream = getClass().getResourceAsStream( "/org/neo4j/shell/prettyprint/expected-pretty-print-plan-information.txt" );
+        var expected = new BufferedReader( new InputStreamReader( requireNonNull( resourceStream ) ) ).lines().collect( joining( NEWLINE ) );
         assertThat( actual, startsWith( expected ) );
     }
 

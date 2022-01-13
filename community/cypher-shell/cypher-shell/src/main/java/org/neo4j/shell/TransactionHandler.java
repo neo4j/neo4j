@@ -19,7 +19,11 @@
  */
 package org.neo4j.shell;
 
+import java.util.Map;
+import java.util.Optional;
+
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.state.BoltResult;
 
 /**
  * An object capable of starting, committing, and rolling back transactions.
@@ -46,4 +50,6 @@ public interface TransactionHandler
      * @return true if a transaction is currently open, false otherwise
      */
     boolean isTransactionOpen();
+
+    Optional<BoltResult> runCypher( String cypher, Map<String,Object> queryParams ) throws CommandException;
 }

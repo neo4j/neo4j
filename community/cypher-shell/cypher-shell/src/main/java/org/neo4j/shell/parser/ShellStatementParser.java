@@ -127,7 +127,8 @@ public class ShellStatementParser implements StatementParser
         if ( SINGLE_ARGUMENT_COMMANDS.contains( name ) )
         {
             // We don't fully parse the commands (yet), but need some special handling for these cases
-            return new CommandStatement( name, List.of( line.substring( name.length() ).trim() ) );
+            var arg = line.substring( name.length() ).trim();
+            return new CommandStatement( name, arg.isEmpty() ? List.of() : List.of( arg ) );
         }
 
         return new CommandStatement( name, Arrays.stream( parts ).skip( 1 ).toList() );

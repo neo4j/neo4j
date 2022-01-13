@@ -26,10 +26,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+
+import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -263,52 +267,31 @@ class CliArgHelperTest
     }
 
     @Test
-    void shouldParseSingleIntegerArgWithAddition()
-    {
-        CliArgs cliArgs = CliArgHelper.parse( "-P", "foo=>3+5" );
-        assertNotNull( cliArgs );
-        assertEquals( 8L, cliArgs.getParameters().allParameterValues().get( "foo" ) );
-    }
-
-    @Test
-    void shouldParseSingleIntegerArgWithAdditionAndWhitespace()
-    {
-        CliArgs cliArgs = CliArgHelper.parse( "-P", "foo => 3 + 5" );
-        assertNotNull( cliArgs );
-        assertEquals( 8L, cliArgs.getParameters().allParameterValues().get( "foo" ) );
-    }
-
-    @Test
-    void shouldParseWithSpaceSyntax()
-    {
-        CliArgs cliArgs = CliArgHelper.parse( "-P", "foo 3+5" );
-        assertNotNull( cliArgs );
-        assertEquals( 8L, cliArgs.getParameters().allParameterValues().get( "foo" ) );
-    }
-
-    @Test
     void shouldParseSingleStringArg()
     {
         CliArgs cliArgs = CliArgHelper.parse( "-P", "foo=>'nanana'" );
         assertNotNull( cliArgs );
-        assertEquals( "nanana", cliArgs.getParameters().allParameterValues().get( "foo" ) );
+        assertEquals( List.of( new RawParameter( "foo", "'nanana'" ) ), cliArgs.getParameters() );
     }
 
     @Test
     void shouldParseTwoArgs()
     {
-        CliArgs cliArgs = CliArgHelper.parse( "-P", "foo=>'nanana'", "-P", "bar=>3+5" );
+        CliArgs cliArgs = CliArgHelper.parse( "-P", "foo=>'nanana'", "-P", "bar=>35" );
         assertNotNull( cliArgs );
-        assertEquals( "nanana", cliArgs.getParameters().allParameterValues().get( "foo" ) );
-        assertEquals( 8L, cliArgs.getParameters().allParameterValues().get( "bar" ) );
+        var expected = List.of(
+            new RawParameter( "foo", "'nanana'" ),
+            new RawParameter( "bar", "35" )
+        );
+        assertThat( cliArgs.getParameters(), is( expected ) );
     }
 
     @Test
     void shouldFailForInvalidSyntaxForArg()
     {
-        var exception = assertThrows( ArgumentParserException.class, () -> CliArgHelper.parseAndThrow( "-P", "foo: => 'nanana'" ) );
+        var exception = assertThrows( IllegalArgumentException.class, () -> CliArgHelper.parseAndThrow( "-P", "foo: => 'nanana'" ) );
         assertThat( exception.getMessage(), containsString( "Incorrect usage" ) );
-        assertThat( exception.getMessage(), containsString( "usage: --param  \"name => value\"" ) );
+        assertThat( exception.getMessage(), containsString( "usage: --param  'name => value'" ) );
     }
 
     @Test

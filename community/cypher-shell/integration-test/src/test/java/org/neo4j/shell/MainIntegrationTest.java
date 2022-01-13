@@ -37,8 +37,11 @@ import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.AnsiLogger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.test.AssertableMain;
 import org.neo4j.shell.util.Version;
 import org.neo4j.shell.util.Versions;
@@ -777,7 +780,6 @@ class MainIntegrationTest
     void shouldDisconnectAndFailToReconnectInteractively() throws Exception
     {
         testWithUser( "new_user", "new_password", false )
-                .outputInteractive( true )
                 .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
                 .userInputLines(
                         ":disconnect",
@@ -839,6 +841,75 @@ class MainIntegrationTest
                 ) );
     }
 
+    @Test
+    void evaluatesParameterArguments() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .addArgs( "--param", "purple => 'rain'" )
+                .addArgs( "--param", "advice => ['talk', 'less', 'smile', 'more']" )
+                .addArgs( "--param", "when => date('2021-01-12')" )
+                .addArgs( "--param", "repeatAfterMe => 'A' + 'B' + 'C'" )
+                .addArgs( "--param", "easyAs => 1 + 2 + 3" )
+                .userInputLines( ":params", "return $purple, $advice, $when, $repeatAfterMe, $easyAs;" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString(
+                                 """
+                                 > :params
+                                 :param advice        => ['talk', 'less', 'smile', 'more']
+                                 :param easyAs        => 1 + 2 + 3
+                                 :param purple        => 'rain'
+                                 :param repeatAfterMe => 'A' + 'B' + 'C'
+                                 :param when          => date('2021-01-12')"""
+                        ),
+                        containsString(
+                                """
+                                 > return $purple, $advice, $when, $repeatAfterMe, $easyAs;
+                                 $purple, $advice, $when, $repeatAfterMe, $easyAs
+                                 "rain", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6
+                                 """
+                        )
+                );
+    }
+
+    @Test
+    void evaluatesArgumentsInteractive() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines(
+                        ":param purple => 'rain'",
+                        ":param advice => ['talk', 'less', 'smile', 'more']",
+                        ":param when => date('2021-01-12')",
+                        ":param repeatAfterMe => 'A' + 'B' + 'C'",
+                        ":param easyAs => 1 + 2 + 3",
+                        ":params",
+                        "return $purple, $advice, $when, $repeatAfterMe, $easyAs;"
+                )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString(
+                                """
+                                > :params
+                                :param advice        => ['talk', 'less', 'smile', 'more']
+                                :param easyAs        => 1 + 2 + 3
+                                :param purple        => 'rain'
+                                :param repeatAfterMe => 'A' + 'B' + 'C'
+                                :param when          => date('2021-01-12')"""
+                        ),
+                        containsString(
+                                """
+                                 > return $purple, $advice, $when, $repeatAfterMe, $easyAs;
+                                 $purple, $advice, $when, $repeatAfterMe, $easyAs
+                                 "rain", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6
+                                 """
+                        )
+                );
+    }
+
     private void assertUserCanConnectAndRunQuery( String user, String password ) throws Exception
     {
         buildTest().addArgs( "-u", user, "-p", password, "--format", "plain", "return 42 as x;" ).run().assertSuccess();
@@ -868,7 +939,10 @@ class MainIntegrationTest
         CypherShell shell = null;
         try
         {
-            shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, false, 100 ), true, new ShellParameterMap() );
+            var boltHandler = new BoltStateHandler( false );
+            var printer = new PrettyPrinter( new PrettyConfig( Format.PLAIN, false, 100 ) );
+            var parameters = ParameterService.create( boltHandler );
+            shell = new CypherShell( new StringLinePrinter(), boltHandler, printer, parameters );
             shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, database, new Environment() ) );
             return systemDbConsumer.apply( shell );
         }

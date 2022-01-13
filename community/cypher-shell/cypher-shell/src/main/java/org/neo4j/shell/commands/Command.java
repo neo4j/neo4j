@@ -28,6 +28,7 @@ import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
 import static org.neo4j.shell.log.AnsiFormattedText.from;
@@ -72,7 +73,14 @@ public interface Command
 
     interface Factory
     {
-        record Arguments( Logger logger, Historian historian, CypherShell cypherShell, ConnectionConfig connectionConfig, CypherShellTerminal terminal )
+        record Arguments(
+                Logger logger,
+                Historian historian,
+                CypherShell cypherShell,
+                ConnectionConfig connectionConfig,
+                CypherShellTerminal terminal,
+                ParameterService parameters
+        )
         { }
 
         Metadata metadata();

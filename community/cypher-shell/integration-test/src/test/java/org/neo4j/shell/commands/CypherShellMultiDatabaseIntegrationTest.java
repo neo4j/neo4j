@@ -29,13 +29,15 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Environment;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -60,7 +62,10 @@ class CypherShellMultiDatabaseIntegrationTest
     void setUp() throws Exception
     {
         linePrinter.clear();
-        shell = new CypherShell( linePrinter, new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
+        var printer = new PrettyPrinter( new PrettyConfig( Format.PLAIN, true, 1000 ) );
+        var boltHandler = new BoltStateHandler( false );
+        var parameters = ParameterService.create( boltHandler );
+        shell = new CypherShell( linePrinter, boltHandler, printer, parameters );
         useCommand = new Use( shell );
         beginCommand = new Begin( shell );
         rollbackCommand = new Rollback( shell );
@@ -154,7 +159,10 @@ class CypherShellMultiDatabaseIntegrationTest
     @Test
     void switchingToNonExistingDatabaseShouldGiveErrorResponseFromServerInteractive() throws CommandException
     {
-        shell = new CypherShell( linePrinter, new PrettyConfig( Format.PLAIN, true, 1000 ), true, new ShellParameterMap() );
+        var boltHandler = new BoltStateHandler( true );
+        var parameters = ParameterService.create( boltHandler );
+        var printer = new PrettyPrinter( new PrettyConfig( Format.PLAIN, true, 1000 ) );
+        shell = new CypherShell( linePrinter, boltHandler, printer, parameters );
         useCommand = new Use( shell );
         shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
 

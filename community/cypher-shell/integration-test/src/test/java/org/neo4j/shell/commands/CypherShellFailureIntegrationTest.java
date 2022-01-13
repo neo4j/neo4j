@@ -25,14 +25,17 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Format;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 class CypherShellFailureIntegrationTest extends CypherShellIntegrationTest
 {
@@ -42,7 +45,10 @@ class CypherShellFailureIntegrationTest extends CypherShellIntegrationTest
     void setUp()
     {
         linePrinter.clear();
-        shell = new CypherShell( linePrinter, new PrettyConfig( Format.VERBOSE, true, 1000 ), false, new ShellParameterMap() );
+        var printer = new PrettyPrinter( new PrettyConfig( Format.VERBOSE, true, 1000 ) );
+        var boltHandler = new BoltStateHandler( true );
+        var parameters = mock( ParameterService.class );
+        shell = new CypherShell( linePrinter, boltHandler, printer, parameters );
     }
 
     @AfterEach

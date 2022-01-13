@@ -26,18 +26,21 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.state.ErrorWhileInTransactionException;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
 {
@@ -49,7 +52,10 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
     @BeforeEach
     void setUp() throws Exception
     {
-        shell = new CypherShell( linePrinter, new PrettyConfig( Format.VERBOSE, true, 1000 ), false, new ShellParameterMap() );
+        var printer = new PrettyPrinter( new PrettyConfig( Format.VERBOSE, true, 1000 ) );
+        var boltHandler = new BoltStateHandler( true );
+        var parameters = mock( ParameterService.class );
+        shell = new CypherShell( linePrinter, boltHandler, printer, parameters );
         rollbackCommand = new Rollback( shell );
         commitCommand = new Commit( shell );
         beginCommand = new Begin( shell );

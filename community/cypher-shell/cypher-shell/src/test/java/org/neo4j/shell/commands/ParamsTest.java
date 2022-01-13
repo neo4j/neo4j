@@ -25,10 +25,10 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 
-import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.Logger;
-import org.neo4j.shell.state.ParamValue;
+import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.parameter.ParameterService.Parameter;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 
 class ParamsTest
 {
-    private HashMap<String, ParamValue> vars;
+    private HashMap<String, Parameter> vars;
     private Logger logger;
     private Params cmd;
 
@@ -50,9 +50,9 @@ class ParamsTest
     {
         vars = new HashMap<>();
         logger = mock( Logger.class );
-        ParameterMap shell = mock( ParameterMap.class );
-        when( shell.getAllAsUserInput() ).thenReturn( vars );
-        cmd = new Params( logger, shell );
+        ParameterService parameters = mock( ParameterService.class );
+        when( parameters.parameters() ).thenReturn( vars );
+        cmd = new Params( logger, parameters );
     }
 
     @Test
@@ -79,7 +79,7 @@ class ParamsTest
         // given
         String var = "var";
         int value = 9;
-        vars.put( var, new ParamValue( String.valueOf( value ), value ) );
+        addParam( "var", 9 );
         // when
         cmd.execute( List.of() );
         // then
@@ -91,8 +91,8 @@ class ParamsTest
     void runCommandAlignment() throws CommandException
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 99999 ), 99999 ) );
+        addParam( "var", 9 );
+        addParam( "param", 99999 );
         // when
         cmd.execute( List.of() );
         // then
@@ -105,8 +105,8 @@ class ParamsTest
     void runCommandWithArg() throws CommandException
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
+        addParam( "var", 9 );
+        addParam( "param", 9999 );
         // when
         cmd.execute( List.of( "var" ) );
         // then
@@ -118,8 +118,8 @@ class ParamsTest
     void runCommandWithArgWithExtraSpace() throws CommandException
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
+        addParam( "var", 9 );
+        addParam( "param", 9999 );
         // when
         cmd.execute( List.of( " var" ) );
         // then
@@ -131,8 +131,8 @@ class ParamsTest
     void runCommandWithArgWithBackticks() throws CommandException
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
+        addParam( "var", 9 );
+        addParam( "param", 9999 );
         // when
         cmd.execute( List.of( "`var`" ) );
         // then
@@ -144,8 +144,8 @@ class ParamsTest
     void runCommandWithSpecialCharacters() throws CommandException
     {
         // given
-        vars.put( "var `", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
+        addParam( "var `", 9 );
+        addParam( "param", 9999 );
         // when
         cmd.execute( List.of( "`var ```" ) );
         // then
@@ -157,7 +157,7 @@ class ParamsTest
     void runCommandWithUnknownArg()
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
+        addParam( "var", 9 );
 
         // when
         CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob" ) ) );
@@ -169,5 +169,10 @@ class ParamsTest
     {
         CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( List.of( "bob", "sob" ) ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+    }
+
+    private void addParam( String name, int value )
+    {
+        vars.put( name, new Parameter( name, String.valueOf( value ), value ) );
     }
 }

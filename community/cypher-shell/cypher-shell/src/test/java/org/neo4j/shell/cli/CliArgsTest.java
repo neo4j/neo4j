@@ -19,10 +19,11 @@
  */
 package org.neo4j.shell.cli;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
+import java.util.List;
+
+import org.neo4j.shell.parameter.ParameterService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -125,9 +126,9 @@ class CliArgsTest
     @Test
     void getParameters()
     {
-        // Parameters are set only through the Action from the CliArgHelper, bypassing CliArgs
-        // so setting them cannot be tested here.
-        assertEquals( Collections.EMPTY_MAP, cliArgs.getParameters().allParameterValues() );
+        var list = List.of( new ParameterService.RawParameter( "bla", "bla" ) );
+        cliArgs.setParameters( list );
+        assertEquals( list, cliArgs.getParameters() );
     }
 
     @Test

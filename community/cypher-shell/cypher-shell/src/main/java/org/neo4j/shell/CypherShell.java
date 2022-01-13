@@ -20,6 +20,7 @@
 package org.neo4j.shell;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.driver.exceptions.DiscoveryException;
@@ -28,11 +29,10 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
-import org.neo4j.shell.exception.ThrowingAction;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.prettyprint.LinePrinter;
-import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.BoltStateHandler;
@@ -42,7 +42,7 @@ import org.neo4j.shell.state.BoltStateHandler;
  */
 public class CypherShell implements StatementExecuter, Connector, TransactionHandler, DatabaseManager
 {
-    private final ParameterMap parameterMap;
+    private final ParameterService parameters;
     private final LinePrinter linePrinter;
     private final BoltStateHandler boltStateHandler;
     private final PrettyPrinter prettyPrinter;
@@ -50,22 +50,14 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     private String lastNeo4jErrorCode;
 
     public CypherShell( LinePrinter linePrinter,
-                        PrettyConfig prettyConfig,
-                        boolean isInteractive,
-                        ParameterMap parameterMap )
-    {
-        this( linePrinter, new BoltStateHandler( isInteractive ), new PrettyPrinter( prettyConfig ), parameterMap );
-    }
-
-    protected CypherShell( LinePrinter linePrinter,
-                           BoltStateHandler boltStateHandler,
-                           PrettyPrinter prettyPrinter,
-                           ParameterMap parameterMap )
+                        BoltStateHandler boltStateHandler,
+                        PrettyPrinter prettyPrinter,
+                        ParameterService parameters )
     {
         this.linePrinter = linePrinter;
         this.boltStateHandler = boltStateHandler;
         this.prettyPrinter = prettyPrinter;
-        this.parameterMap = parameterMap;
+        this.parameters = parameters;
         addRuntimeHookToResetShell();
     }
 
@@ -111,7 +103,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
 
         try
         {
-            final Optional<BoltResult> result = boltStateHandler.runCypher( cypher, parameterMap.allParameterValues() );
+            final Optional<BoltResult> result = boltStateHandler.runCypher( cypher, parameters.parameterValues() );
             result.ifPresent( boltResult ->
                               {
                                   prettyPrinter.format( boltResult, linePrinter );
@@ -145,15 +137,12 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     /**
      * Open a session to Neo4j
      *
-     * @param connectionConfig
-     * @param command
      * @return connection configuration used to connect (can be different from the supplied)
      */
     @Override
-    public ConnectionConfig connect( ConnectionConfig connectionConfig,
-                                     ThrowingAction<CommandException> command ) throws CommandException
+    public ConnectionConfig connect( ConnectionConfig connectionConfig ) throws CommandException
     {
-        return boltStateHandler.connect( connectionConfig, command );
+        return boltStateHandler.connect( connectionConfig );
     }
 
     @Override
@@ -201,6 +190,12 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         return boltStateHandler.isTransactionOpen();
     }
 
+    @Override
+    public Optional<BoltResult> runCypher( String cypher, Map<String,Object> queryParams ) throws CommandException
+    {
+        return boltStateHandler.runCypher( cypher, queryParams );
+    }
+
     public void setCommandHelper( CommandHelper commandHelper )
     {
         this.commandHelper = commandHelper;
@@ -242,14 +237,6 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     public String getActualDatabaseAsReportedByServer()
     {
         return boltStateHandler.getActualDatabaseAsReportedByServer();
-    }
-
-    /**
-     * @return the parameter map.
-     */
-    public ParameterMap getParameterMap()
-    {
-        return parameterMap;
     }
 
     public void changePassword( ConnectionConfig connectionConfig, String newPassword )

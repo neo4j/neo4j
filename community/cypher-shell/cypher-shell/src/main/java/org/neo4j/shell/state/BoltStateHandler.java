@@ -99,7 +99,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         {
             if ( isConnected() )
             {
-                reconnect( databaseName, previousDatabaseName );
+                reconnectAndPing( databaseName, previousDatabaseName );
             }
         }
         catch ( ClientException e )
@@ -110,7 +110,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 activeDatabaseNameAsSetByUser = previousDatabaseName;
                 try
                 {
-                    reconnect( previousDatabaseName, previousDatabaseName );
+                    reconnectAndPing( previousDatabaseName, previousDatabaseName );
                 }
                 catch ( Exception e2 )
                 {
@@ -228,7 +228,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public ConnectionConfig connect( ConnectionConfig connectionConfig, ThrowingAction<CommandException> command ) throws CommandException
+    public ConnectionConfig connect( ConnectionConfig connectionConfig ) throws CommandException
     {
         if ( isConnected() )
         {
@@ -242,7 +242,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             {
                 activeDatabaseNameAsSetByUser = connectionConfig.database();
                 driver = getDriver( connectionConfig, authToken );
-                reconnect( activeDatabaseNameAsSetByUser, previousDatabaseName, command );
+                reconnectAndPing( activeDatabaseNameAsSetByUser, previousDatabaseName );
             }
             catch ( ServiceUnavailableException | SessionExpiredException e )
             {
@@ -259,7 +259,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 try
                 {
                     driver = getDriver( connectionConfig, authToken );
-                    reconnect( activeDatabaseNameAsSetByUser, previousDatabaseName, command );
+                    reconnectAndPing( activeDatabaseNameAsSetByUser, previousDatabaseName );
                 }
                 catch ( Throwable fallbackThrowable )
                 {
@@ -283,14 +283,13 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         return connectionConfig;
     }
 
-    private void reconnect( String databaseToConnectTo, String previousDatabase ) throws CommandException
+    private void reconnectAndPing( String databaseToConnectTo, String previousDatabase ) throws CommandException
     {
-        reconnect( databaseToConnectTo, previousDatabase, null );
+        reconnect( databaseToConnectTo, previousDatabase );
+        getPing().apply();
     }
 
-    private void reconnect( String databaseToConnectTo,
-                            String previousDatabase,
-                            ThrowingAction<CommandException> command ) throws CommandException
+    private void reconnect( String databaseToConnectTo, String previousDatabase )
     {
         SessionConfig.Builder builder = SessionConfig.builder();
         builder.withDefaultAccessMode( AccessMode.WRITE );
@@ -308,7 +307,6 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         session = driver.session( builder.build() );
 
         resetActualDbName(); // Set this to null first in case run throws an exception
-        connect( command );
     }
 
     /**
@@ -325,30 +323,6 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             session.close();
             bookmarks.put( databaseName, bookmarkForPreviousDB );
         }
-    }
-
-    private void connect( ThrowingAction<CommandException> command ) throws CommandException
-    {
-        ThrowingAction<CommandException> toCall = command == null ? getPing() : () ->
-        {
-            try
-            {
-                command.apply();
-            }
-            catch ( Neo4jException e )
-            {
-                //If we need to update password we need to call the apply
-                //to set the server version and such.
-                if ( isPasswordChangeRequiredException( e ) )
-                {
-                    getPing().apply();
-                }
-                throw e;
-            }
-        };
-
-        //execute
-        toCall.apply();
     }
 
     private ThrowingAction<CommandException> getPing()
@@ -415,8 +389,8 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         return "";
     }
 
-    public Optional<BoltResult> runCypher( String cypher,
-                                           Map<String, Object> queryParams ) throws CommandException
+    @Override
+    public Optional<BoltResult> runCypher( String cypher, Map<String, Object> queryParams ) throws CommandException
     {
         if ( !isConnected() )
         {
@@ -439,7 +413,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             {
                 // Server is no longer accepting writes, reconnect and try again.
                 // If it still fails, leave it up to the user
-                reconnect( activeDatabaseNameAsSetByUser, activeDatabaseNameAsSetByUser );
+                reconnectAndPing( activeDatabaseNameAsSetByUser, activeDatabaseNameAsSetByUser );
                 return getBoltResult( cypher, queryParams );
             }
         }
@@ -464,10 +438,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             driver = getDriver( connectionConfig, authToken );
 
             activeDatabaseNameAsSetByUser = SYSTEM_DB_NAME;
-            // Supply empty command, so that we do not run ping.
-            reconnect( SYSTEM_DB_NAME, SYSTEM_DB_NAME, () ->
-            {
-            } );
+            reconnect( SYSTEM_DB_NAME, SYSTEM_DB_NAME );
 
             try
             {

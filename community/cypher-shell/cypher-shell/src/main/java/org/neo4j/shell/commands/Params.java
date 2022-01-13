@@ -24,10 +24,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.CypherVariablesFormatter;
 
 import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.escape;
@@ -39,12 +39,12 @@ public class Params implements Command
 {
     private static final Pattern backtickPattern = Pattern.compile( "^\\s*(?<key>(`([^`])*`)+?)\\s*" );
     private final Logger logger;
-    private final ParameterMap parameterMap;
+    private final ParameterService parameters;
 
-    public Params( Logger logger, ParameterMap parameterMap )
+    public Params( Logger logger, ParameterService parameters )
     {
         this.logger = logger;
-        this.parameterMap = parameterMap;
+        this.parameters = parameters;
     }
 
     @Override
@@ -82,11 +82,11 @@ public class Params implements Command
     private void listParam( String name ) throws CommandException
     {
         String parameterName = CypherVariablesFormatter.unescapedCypherVariable( name );
-        if ( !this.parameterMap.getAllAsUserInput().containsKey( parameterName ) )
+        if ( !parameters.parameters().containsKey( parameterName ) )
         {
             throw new CommandException( "Unknown parameter: " + name );
         }
-        listParam( name.length(), name, this.parameterMap.getAllAsUserInput().get( parameterName ).getValueAsString() );
+        listParam( name.length(), name, parameters.parameters().get( parameterName ).expressionString() );
     }
 
     private void listParam( int leftColWidth, String key, Object value )
@@ -96,11 +96,11 @@ public class Params implements Command
 
     private void listAllParams()
     {
-        List<String> keys = parameterMap.getAllAsUserInput().keySet().stream().sorted().collect( Collectors.toList() );
+        List<String> keys = parameters.parameters().keySet().stream().sorted().collect( Collectors.toList() );
 
         int leftColWidth = keys.stream().map( s -> escape( s ).length() ).reduce( 0, Math::max );
 
-        keys.forEach( key -> listParam( leftColWidth, escape( key ), parameterMap.getAllAsUserInput().get( key ).getValueAsString() ) );
+        keys.forEach( key -> listParam( leftColWidth, escape( key ), parameters.parameters().get( key ).expressionString() ) );
     }
 
     public static class Factory implements Command.Factory
@@ -116,7 +116,7 @@ public class Params implements Command
         @Override
         public Command executor( Arguments args )
         {
-            return new Params( args.logger(), args.cypherShell().getParameterMap() );
+            return new Params( args.logger(), args.parameters() );
         }
     }
 }

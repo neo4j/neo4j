@@ -23,15 +23,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.test.AssertableMain;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -45,6 +51,7 @@ class MainTest
 {
     private CypherShell mockShell;
     private ShellRunner.Factory mockRunnerFactory;
+    private ParameterService parameters;
 
     private AuthenticationException authException = new AuthenticationException( Main.NEO_CLIENT_ERROR_SECURITY_UNAUTHORIZED, "BOOM" );
     private Neo4jException passwordChangeRequiredException = new SecurityException( "Neo.ClientError.Security.CredentialsExpired", "BLAM" );
@@ -54,6 +61,7 @@ class MainTest
     {
         mockShell = mock( CypherShell.class );
         mockRunnerFactory = mock( ShellRunner.Factory.class );
+        parameters = ParameterService.create( mockShell );
         var runnerMock = mock( ShellRunner.class );
         when( runnerMock.runUntilEnd() ).thenReturn( EXIT_SUCCESS );
         when( mockRunnerFactory.create( any(), any(), any(), any(), any() ) ).thenReturn( runnerMock );
@@ -72,11 +80,11 @@ class MainTest
     @Test
     void unrelatedErrorDoesNotPrompt() throws Exception
     {
-        doThrow( new RuntimeException( "bla" ) ).when( mockShell ).connect( any(), any() );
+        doThrow( new RuntimeException( "bla" ) ).when( mockShell ).connect( any() );
 
         testWithMocks().run().assertFailure( "bla" ).assertThatOutput( equalTo( "" ) );
 
-        verify( mockShell, times( 1 ) ).connect( any(), any() );
+        verify( mockShell, times( 1 ) ).connect( any() );
     }
 
     @Test
@@ -121,7 +129,7 @@ class MainTest
             .assertSuccess()
             .assertOutputLines( "username: bob" );
 
-        verify( mockShell, times( 2 ) ).connect( any(), any() );
+        verify( mockShell, times( 2 ) ).connect( any() );
     }
 
     @Test
@@ -135,7 +143,7 @@ class MainTest
             .assertSuccess()
             .assertOutputLines( "username: bob" );
 
-        verify( mockShell, times( 2 ) ).connect( any(), any() );
+        verify( mockShell, times( 2 ) ).connect( any() );
     }
 
     @Test
@@ -148,7 +156,7 @@ class MainTest
             .assertSuccess()
             .assertOutputLines( "password: ******" );
 
-        verify( mockShell, times( 1 ) ).connect( any(), any() );
+        verify( mockShell, times( 1 ) ).connect( any() );
     }
 
     @Test
@@ -162,7 +170,7 @@ class MainTest
             .assertSuccess()
             .assertOutputLines( "password: ******" );
 
-        verify( mockShell, times( 1 ) ).connect( any(), any() );
+        verify( mockShell, times( 1 ) ).connect( any() );
     }
 
     @Test
@@ -177,7 +185,7 @@ class MainTest
                 "new password cannot be empty", "","new password: ***********", "confirm password: ***********"
             );
 
-        verify( mockShell, times( 3 ) ).connect( any(), any() );
+        verify( mockShell, times( 3 ) ).connect( any() );
     }
 
     @Test
@@ -191,7 +199,7 @@ class MainTest
                         "username: expired_bob", "password: ***********", "Password change required", "new password: ***********", "confirm password: "
                 );
 
-        verify( mockShell, times( 2 ) ).connect( any(), any() );
+        verify( mockShell, times( 2 ) ).connect( any() );
     }
 
     @Test
@@ -203,7 +211,7 @@ class MainTest
             .assertSuccess()
             .assertOutputLines( "username: bo!b", "password: *******" );
 
-        verify( mockShell, times( 2 ) ).connect( any(), any() );
+        verify( mockShell, times( 2 ) ).connect( any() );
     }
 
     @Test
@@ -215,7 +223,7 @@ class MainTest
             .assertFailure( authException.getMessage() )
             .assertOutputLines();
 
-        verify( mockShell, times( 1 ) ).connect( any(), any() );
+        verify( mockShell, times( 1 ) ).connect( any() );
     }
 
     @Test
@@ -227,7 +235,7 @@ class MainTest
             .assertSuccess()
             .assertOutputLines( "username: ", "username cannot be empty", "", "username: bob", "password: ******" );
 
-        verify( mockShell, times( 2 ) ).connect( any(), any() );
+        verify( mockShell, times( 2 ) ).connect( any() );
     }
 
     @Test
@@ -240,7 +248,7 @@ class MainTest
             .assertFailure( authException.getMessage() )
             .assertOutputLines( "username: ", "password: ******" );
 
-        verify( mockShell, times( 2 ) ).connect( any(), any() );
+        verify( mockShell, times( 2 ) ).connect( any() );
     }
 
     @Test
@@ -261,9 +269,32 @@ class MainTest
         assertTrue( result.getOutput().toString( UTF_8 ).matches( "Neo4j Driver \\d+\\.\\d+\\.\\d+.*\\R" ) );
     }
 
+    @Test
+    void evaluatesLiteralParameterArgumentsOffline() throws Exception
+    {
+        testWithMockUser( "bob", "secret" )
+                .args( "-u bob -p secret" )
+                .addArgs( "--param", "purple => 'rain'" )
+                .addArgs( "--param", "advice => ['talk', 'less', 'smile', 'more']" )
+                .addArgs( "--param", "when => date('2021-01-12')" )
+                .run()
+                .assertSuccess();
+
+        var expectedParams = Map.of(
+                "purple", "rain",
+                "advice", List.of( "talk", "less", "smile", "more" ),
+                "when", LocalDate.of( 2021, 1, 12 )
+        );
+        assertThat( parameters.parameterValues(), is( expectedParams ) );
+    }
+
     private AssertableMain.AssertableMainBuilder testWithMocks()
     {
-        return new AssertableMain.AssertableMainBuilder().outputInteractive( true ).shell( mockShell ).runnerFactory( mockRunnerFactory );
+        return new AssertableMain.AssertableMainBuilder()
+                .outputInteractive( true )
+                .shell( mockShell )
+                .runnerFactory( mockRunnerFactory )
+                .parameters( parameters );
     }
 
     private AssertableMain.AssertableMainBuilder testWithMockUser( String name, String password ) throws CommandException
@@ -273,7 +304,7 @@ class MainTest
 
     private AssertableMain.AssertableMainBuilder testWithMockUser( String name, String password, String expiredPassword ) throws CommandException
     {
-        when( mockShell.connect( any(), any() )).thenAnswer( invocation -> {
+        when( mockShell.connect( any() )).thenAnswer( invocation -> {
             var in = (ConnectionConfig) invocation.getArgument( 0 );
             if ( name.equals( in.username() ) && password.equals( in.password() ) )
             {

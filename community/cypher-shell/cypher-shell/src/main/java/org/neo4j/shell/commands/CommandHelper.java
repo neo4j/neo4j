@@ -28,6 +28,7 @@ import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.util.VisibleForTesting;
 
@@ -40,9 +41,16 @@ public class CommandHelper
 {
     private final TreeMap<String, Command> commands = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
 
-    public CommandHelper( Logger logger, Historian historian, CypherShell cypherShell, ConnectionConfig connectionConfig, CypherShellTerminal terminal )
+    public CommandHelper(
+            Logger logger,
+            Historian historian,
+            CypherShell cypherShell,
+            ConnectionConfig connectionConfig,
+            CypherShellTerminal terminal,
+            ParameterService parameters
+    )
     {
-        var args = new Command.Factory.Arguments( logger, historian, cypherShell, connectionConfig, terminal );
+        var args = new Command.Factory.Arguments( logger, historian, cypherShell, connectionConfig, terminal, parameters );
         new CommandFactoryHelper().factoryByName.forEach( ( key, value ) -> commands.put( key, value.executor( args ) ) );
     }
 

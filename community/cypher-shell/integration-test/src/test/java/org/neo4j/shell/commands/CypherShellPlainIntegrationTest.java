@@ -24,12 +24,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +45,10 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     void setUp() throws Exception
     {
         linePrinter.clear();
-        shell = new CypherShell( linePrinter, new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
+        var printer = new PrettyPrinter( new PrettyConfig( Format.PLAIN, true, 1000 ) );
+        var boltHandler = new BoltStateHandler( true );
+        var parameters = ParameterService.create( boltHandler );
+        shell = new CypherShell( linePrinter, boltHandler, printer, parameters );
         connect( "neo" );
     }
 
@@ -108,23 +113,5 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
         assertThat( actual, containsString( "Statement: \"READ_ONLY\"" ) );
         assertThat( actual, containsString( "Planner: \"COST\"" ) );
         assertThat( actual, containsString( "Runtime: \"INTERPRETED\"" ) );
-    }
-
-    @Test
-    void shouldUseParamFromCLIArgs() throws CommandException
-    {
-        // given a CLI arg
-        ShellParameterMap parameterMap = new ShellParameterMap();
-        parameterMap.setParameter( "foo", "'bar'" );
-        shell = new CypherShell( linePrinter, new PrettyConfig( Format.PLAIN, true, 1000 ), false, parameterMap );
-        connect( "neo" );
-
-        //when
-        shell.execute( new CypherStatement( "CYPHER RETURN $foo" ) );
-
-        //then
-        String actual = linePrinter.output();
-        assertThat( actual, containsString( "$foo" ) );
-        assertThat( actual, containsString( "bar" ) );
     }
 }

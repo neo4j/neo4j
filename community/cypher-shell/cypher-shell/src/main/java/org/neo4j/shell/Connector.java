@@ -19,9 +19,7 @@
  */
 package org.neo4j.shell;
 
-
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.ThrowingAction;
 
 /**
  * An object with the ability to connect and disconnect.
@@ -35,20 +33,12 @@ public interface Connector
     boolean isConnected();
 
     /**
-     * @throws CommandException if connection failed
-     */
-    default void connect( ConnectionConfig connectionConfig ) throws CommandException
-    {
-        connect( connectionConfig, null );
-    }
-
-    /**
      * Tries to connect to database.
      *
      * @throws CommandException if connection failed
      * @return connection configuration used to connect (can be different from the supplied)
      */
-    ConnectionConfig connect( ConnectionConfig connectionConfig, ThrowingAction<CommandException> action ) throws CommandException;
+    ConnectionConfig connect( ConnectionConfig connectionConfig ) throws CommandException;
 
     void disconnect();
 

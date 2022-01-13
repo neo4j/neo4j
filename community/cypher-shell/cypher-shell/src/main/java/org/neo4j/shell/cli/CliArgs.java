@@ -20,13 +20,13 @@
 package org.neo4j.shell.cli;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.Historian;
-import org.neo4j.shell.ParameterMap;
-import org.neo4j.shell.ShellParameterMap;
+import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
@@ -55,7 +55,7 @@ public class CliArgs
     private int numSampleRows = DEFAULT_NUM_SAMPLE_ROWS;
     private boolean wrap = true;
     private String inputFilename;
-    private ParameterMap parameters = new ShellParameterMap();
+    private List<RawParameter> parameters;
     private boolean changePassword;
     private File historyFile = Historian.defaultHistoryFile();
 
@@ -176,6 +176,11 @@ public class CliArgs
         this.format = format;
     }
 
+    public void setParameters( List<RawParameter> parameters )
+    {
+        this.parameters = parameters;
+    }
+
     public Encryption getEncryption()
     {
         return encryption;
@@ -276,7 +281,7 @@ public class CliArgs
         }
     }
 
-    public ParameterMap getParameters()
+    public List<RawParameter> getParameters()
     {
         return parameters;
     }

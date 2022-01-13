@@ -24,35 +24,51 @@ import net.sourceforge.argparse4j.inf.ArgumentAction;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-import org.neo4j.shell.ParameterMap;
-import org.neo4j.shell.exception.ParameterException;
-import org.neo4j.shell.util.ParameterSetter;
+import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.parameter.ParameterService.ParameterParser;
+import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
 /**
- * Action that adds arguments to a ParameterMap. This action always consumes an argument.
+ * Action that parses and appends query parameters.
  */
-public class AddParamArgumentAction extends ParameterSetter<ArgumentParserException> implements ArgumentAction
+public class AddParamArgumentAction implements ArgumentAction
 {
-    /**
-     * @param parameterMap the ParameterMap to add parameters to.
-     */
-    AddParamArgumentAction( ParameterMap parameterMap )
+    private final ParameterParser queryParameterParser;
+
+    AddParamArgumentAction( ParameterParser queryParameterParser )
     {
-        super( parameterMap );
+        this.queryParameterParser = queryParameterParser;
     }
 
     @Override
+    @SuppressWarnings( "unchecked" )
     public void run( ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value ) throws ArgumentParserException
+    {
+        if ( attrs.get( arg.getDest() ) instanceof List queryParams )
+        {
+            queryParams.add( parse( value.toString() ) );
+        }
+        else
+        {
+            var queryParams = new ArrayList<RawParameter>();
+            queryParams.add( parse( value.toString() ) );
+            attrs.put( arg.getDest(), queryParams );
+        }
+    }
+
+    private RawParameter parse( String input )
     {
         try
         {
-            execute( value.toString() );
+            return queryParameterParser.parse( input );
         }
-        catch ( Exception e )
+        catch ( ParameterService.ParameterParsingException e )
         {
-            throw new ArgumentParserException( e.getMessage(), e, parser );
+            throw new IllegalArgumentException( "Incorrect usage.\nusage: --param  'name => value'" );
         }
     }
 
@@ -66,23 +82,5 @@ public class AddParamArgumentAction extends ParameterSetter<ArgumentParserExcept
     public boolean consumeArgument()
     {
         return true;
-    }
-
-    @Override
-    protected void onWrongUsage()
-    {
-        throw new IllegalArgumentException( "Incorrect usage.\nusage: --param  \"name => value\"" );
-    }
-
-    @Override
-    protected void onWrongNumberOfArguments()
-    {
-        throw new IllegalArgumentException( "Incorrect number of arguments.\nusage: --param  \"name => value\"" );
-    }
-
-    @Override
-    protected void onParameterException( ParameterException e )
-    {
-        throw new RuntimeException( e.getMessage(), e );
     }
 }
