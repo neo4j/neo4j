@@ -21,6 +21,8 @@ package org.neo4j.codegen.api
 
 import org.neo4j.codegen.TypeReference
 
+import scala.annotation.nowarn
+
 object PrettyIR {
   val indentSize = 2
 
@@ -64,6 +66,7 @@ object PrettyIR {
     def result: String = sb.result()
 
     //noinspection NameBooleanParameters
+    @nowarn("msg=(Exhaustivity analysis)|(match may not be exhaustive)")
     def pretty(ir: IntermediateRepresentation): PrettyBuilder = {
       ir match {
         case Block(Seq(d@DeclareLocalVariable(_, name), AssignToLocalVariable(name2, value))) if name == name2 =>

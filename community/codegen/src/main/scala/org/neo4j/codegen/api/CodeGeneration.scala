@@ -51,6 +51,7 @@ import org.neo4j.exceptions.CantCompileQueryException
 
 import java.nio.file.Path
 import java.nio.file.Paths
+import scala.annotation.nowarn
 import scala.collection.mutable.ArrayBuffer
 import scala.language.existentials
 
@@ -131,6 +132,7 @@ object CodeGeneration {
     }
     val declaredFields = clazz.getDeclaredFields
 
+    @nowarn("msg=return statement")
     def findField(fields: Array[java.lang.reflect.Field], name: String) : java.lang.reflect.Field = {
       for (field <- fields) {
         if (field.getName == name) return field
