@@ -378,6 +378,11 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
   }
 
+  test("Should not allow empty label in label expression") {
+    val query = "MATCH (n:``&Valid) RETURN n AS invalid"
+    expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))
+  }
+
   test("Should not allow empty label in SET clause") {
     val query = "MATCH (n) SET n:``"
     expectErrorMessagesFrom(query, List(emptyTokenErrorMessage))

@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.InvalidNodePattern
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
@@ -238,7 +239,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case x: NodePattern =>
         checkNodeProperties(ctx, x.properties) chain
-          checkValidLabels(x.labels, x.position)
+          checkValidLabels(x.labels, x.position) chain
+          checkValidLabelOrRelTypes(x.labelExpression.findAllByClass[LabelOrRelTypeName], x.position)
 
     }
 
@@ -370,6 +372,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def checkValidRelTypes(relTypeNames: Seq[RelTypeName], pos: InputPosition): SemanticCheck = {
     val errorMessage = relTypeNames.collectFirst { case relType if checkValidTokenName(relType.name).nonEmpty =>
       checkValidTokenName(relType.name).get
+    }
+    if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
+  }
+
+  def checkValidLabelOrRelTypes(names: Seq[LabelOrRelTypeName], pos: InputPosition): SemanticCheck = {
+    val errorMessage = names.collectFirst { case name if checkValidTokenName(name.name).nonEmpty =>
+      checkValidTokenName(name.name).get
     }
     if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
   }
