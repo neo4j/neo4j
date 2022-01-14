@@ -59,7 +59,7 @@ public class SimpleReconciledTransactionTracker implements ReconciledTransaction
         try
         {
             var systemDb = (GraphDatabaseAPI) dbService.database( SYSTEM_DATABASE_NAME );
-            if ( systemDb.isAvailable( 0 ) )
+            if ( systemDb.isAvailable() )
             {
                 var txIdStore = systemDb.getDependencyResolver().resolveDependency( TransactionIdStore.class );
                 return txIdStore.getLastClosedTransactionId();

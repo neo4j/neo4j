@@ -103,6 +103,6 @@ class DefaultDatabaseManagerIT
     void shutdownDatabaseOnStop() throws Throwable
     {
         databaseManager.stop();
-        assertFalse( database.isAvailable( 0 ) );
+        assertFalse( database.isAvailable() );
     }
 }

@@ -86,6 +86,7 @@ org.neo4j.graphdb.GraphDatabaseService::beginTx(long, java.util.concurrent.TimeU
 org.neo4j.graphdb.GraphDatabaseService::databaseName() java.lang.String public abstract
 org.neo4j.graphdb.GraphDatabaseService::executeTransactionally(java.lang.String) void public abstract throws org.neo4j.graphdb.QueryExecutionException
 org.neo4j.graphdb.GraphDatabaseService::executeTransactionally(java.lang.String, java.util.Map<java.lang.String,java.lang.Object>) void public abstract throws org.neo4j.graphdb.QueryExecutionException
+org.neo4j.graphdb.GraphDatabaseService::isAvailable() boolean public abstract
 org.neo4j.graphdb.GraphDatabaseService::isAvailable(long) boolean public abstract
 org.neo4j.graphdb.InputPosition public final class extends java.lang.Object
 org.neo4j.graphdb.InputPosition::InputPosition(int, int, int) void public

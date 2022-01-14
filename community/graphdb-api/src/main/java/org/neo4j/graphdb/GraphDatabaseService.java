@@ -34,13 +34,21 @@ import org.neo4j.annotations.api.PublicApi;
 public interface GraphDatabaseService
 {
     /**
-     * Use this method to check if the database is currently in a usable state.
+     * Check if the database is currently in a usable state.
+     * This method is equivalent to calling {@link #isAvailable(long)} with 0 as the requested timeout.
+     * @return the state of the database: {@code true} if it is available, otherwise {@code false}
+     * @see #isAvailable(long)
+     */
+    boolean isAvailable();
+
+    /**
+     * Check if the database is currently in a usable state.
      *
-     * @param timeout timeout (in milliseconds) to wait for the database to become available.
+     * @param timeoutMillis timeoutMillis (in milliseconds) to wait for the database to become available.
      *   If the database has been shut down {@code false} is returned immediately.
      * @return the state of the database: {@code true} if it is available, otherwise {@code false}
      */
-    boolean isAvailable( long timeout );
+    boolean isAvailable( long timeoutMillis );
 
     /**
      * Starts a new {@link Transaction transaction} and associates it with the current thread.

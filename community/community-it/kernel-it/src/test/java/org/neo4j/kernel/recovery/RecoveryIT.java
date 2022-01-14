@@ -1053,7 +1053,7 @@ class RecoveryIT
             assertTrue( recoveryMonitor.isReverseCompleted() );
             assertFalse( recoveryMonitor.isRecoveryCompleted() );
             assertFalse( guardExtensionFactory.getProvidedGuardConsumer().globalGuard.isAvailable() );
-            assertFalse( database.isAvailable( 0 ) );
+            assertFalse( database.isAvailable() );
             var e = assertThrows( Exception.class, database::beginTx );
             assertThat( getRootCause( e ) ).isInstanceOf( DatabaseStartAbortedException.class );
         }

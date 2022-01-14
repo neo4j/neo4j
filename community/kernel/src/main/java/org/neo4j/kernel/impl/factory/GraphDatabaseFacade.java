@@ -88,6 +88,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
+    public boolean isAvailable()
+    {
+        return database.getDatabaseAvailabilityGuard().isAvailable();
+    }
+
+    @Override
     public boolean isAvailable( long timeoutMillis )
     {
         return database.getDatabaseAvailabilityGuard().isAvailable( timeoutMillis );

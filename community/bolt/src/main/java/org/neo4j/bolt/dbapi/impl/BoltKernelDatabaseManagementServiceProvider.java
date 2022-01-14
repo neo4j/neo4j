@@ -55,7 +55,7 @@ public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDat
 
         var databaseAPI = (GraphDatabaseAPI) managementService.database( databaseName );
 
-        if ( !databaseAPI.isAvailable( 0 ) )
+        if ( !databaseAPI.isAvailable() )
         {
             throw new UnavailableException( format( "Database '%s' is unavailable.", databaseName ) );
         }

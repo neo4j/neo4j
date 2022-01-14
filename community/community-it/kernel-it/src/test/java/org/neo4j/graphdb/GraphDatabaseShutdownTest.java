@@ -26,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
@@ -83,7 +82,7 @@ public class GraphDatabaseShutdownTest
             }
         } );
 
-        assertFalse( db.isAvailable( 1 ) );
+        assertFalse( db.isAvailable() );
         assertEquals( 0, lockCount( locks ) );
     }
 

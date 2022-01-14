@@ -235,7 +235,7 @@ public abstract class AbstractCypherResource
 
     private static boolean isDatabaseNotAvailable( GraphDatabaseAPI databaseAPI )
     {
-        return !databaseAPI.isAvailable( 0 );
+        return !databaseAPI.isAvailable();
     }
 
     private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpServletRequest request, HttpHeaders headers,

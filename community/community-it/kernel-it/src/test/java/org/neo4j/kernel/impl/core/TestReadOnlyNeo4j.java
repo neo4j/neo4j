@@ -104,7 +104,7 @@ class TestReadOnlyNeo4j
         managementService = dbmsReadOnly( logProvider );
         final var db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         var namedDatabaseId = db.databaseId();
-        assertFalse( db.isAvailable( 1L ), "Did not expect db to start" );
+        assertFalse( db.isAvailable(), "Did not expect db to start" );
         assertThat( logProvider )
                 .assertExceptionForLogMessage(
                         "[" + namedDatabaseId.logPrefix() +

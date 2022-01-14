@@ -50,7 +50,7 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
     private Optional<GraphDatabaseFacade> systemDatabase()
     {
         var systemDb = databaseManager.getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID );
-        var started = systemDb.map( db -> db.databaseFacade().isAvailable( 0 ) ).orElse( false );
+        var started = systemDb.map( db -> db.databaseFacade().isAvailable() ).orElse( false );
 
         if ( started )
         {

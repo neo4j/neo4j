@@ -234,9 +234,15 @@ class DbmsRuntimeSystemGraphComponentTest
         }
 
         @Override
-        public boolean isAvailable( long timeout )
+        public boolean isAvailable()
         {
-            return wrappedDb.isAvailable( timeout );
+            return wrappedDb.isAvailable();
+        }
+
+        @Override
+        public boolean isAvailable( long timeoutMillis )
+        {
+            return wrappedDb.isAvailable( timeoutMillis );
         }
 
         @Override
