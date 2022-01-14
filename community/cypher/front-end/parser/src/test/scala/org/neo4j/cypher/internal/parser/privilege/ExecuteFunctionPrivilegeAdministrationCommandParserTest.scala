@@ -47,6 +47,8 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
             yields(func(action, List(functionQualifier("*")), Seq(literalRole)))
           }
 
+          // The following two tests check that the plural form EXECUTE ... FUNCTIONS is valid
+
           test(s"$verb ${execute}S * ON DBMS $preposition role") {
             yields(func(action, List(functionQualifier("*")), Seq(literalRole)))
           }
@@ -115,6 +117,10 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
             yields(func(action, List(functionQualifier("mat?.a.\n.*n")), Seq(literalRole)))
           }
 
+          test(s"$verb $execute `a b` ON DBMS $preposition role") {
+            yields(func(action, List(functionQualifier("a b")), Seq(literalRole)))
+          }
+
           test(s"$verb $execute math.sin, math.cos ON DBMS $preposition role") {
             yields(func(action, List(functionQualifier("math.sin"), functionQualifier("math.cos")), Seq(literalRole)))
           }
@@ -128,6 +134,10 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
           }
 
           test(s"$verb $execute * ON DATABASE * $preposition role") {
+            failsToParse
+          }
+
+          test(s"$verb $execute a b ON DBMS $preposition role") {
             failsToParse
           }
       }

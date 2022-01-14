@@ -70,6 +70,8 @@ public enum ActionType
     PRIVILEGE_SHOW,
     PRIVILEGE_ASSIGN,
     PRIVILEGE_REMOVE,
+    EXECUTE_FUNCTION,
+    EXECUTE_BOOSTED_FUNCTION,
 
     // Graph actions
     GRAPH_ALL,

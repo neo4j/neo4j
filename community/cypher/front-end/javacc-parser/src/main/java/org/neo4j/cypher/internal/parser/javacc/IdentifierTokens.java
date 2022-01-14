@@ -35,6 +35,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSIGN;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOSTED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BRIEF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BTREE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BUILT;
@@ -76,6 +77,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.END;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENDS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ESCAPED_SYMBOLIC_NAME;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXECUTABLE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXECUTE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXIST;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTENCE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTS;
@@ -214,6 +216,7 @@ public class IdentifierTokens
             ASC,
             ASSERT,
             ASSIGN,
+            BOOSTED,
             BRIEF,
             BTREE,
             BUILT,
@@ -254,6 +257,7 @@ public class IdentifierTokens
             END,
             ENDS,
             EXECUTABLE,
+            EXECUTE,
             EXIST,
             EXISTENCE,
             EXISTS,

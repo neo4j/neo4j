@@ -120,9 +120,12 @@ import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.ExecuteBoostedFunctionAction
+import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FulltextIndexes
+import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphAction
@@ -1540,6 +1543,8 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     case ActionType.PRIVILEGE_ASSIGN => AssignPrivilegeAction
     case ActionType.PRIVILEGE_REMOVE => RemovePrivilegeAction
     case ActionType.PRIVILEGE_SHOW => ShowPrivilegeAction
+    case ActionType.EXECUTE_FUNCTION => ExecuteFunctionAction
+    case ActionType.EXECUTE_BOOSTED_FUNCTION => ExecuteBoostedFunctionAction
 
     case ActionType.GRAPH_ALL => AllGraphAction
     case ActionType.GRAPH_WRITE => WriteAction
@@ -1601,6 +1606,12 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
   override def allUsersQualifier(): util.List[PrivilegeQualifier] = {
     val list = new util.ArrayList[PrivilegeQualifier]()
     list.add(UserAllQualifier()(InputPosition.NONE))
+    list
+  }
+
+  override def functionQualifier(p: InputPosition, functions: util.List[String]): util.List[PrivilegeQualifier] = {
+    val list = new util.ArrayList[PrivilegeQualifier]()
+    functions.forEach(f => list.add(FunctionQualifier(f)(p)))
     list
   }
 
