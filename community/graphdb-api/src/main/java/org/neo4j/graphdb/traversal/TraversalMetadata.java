@@ -19,12 +19,12 @@
  */
 package org.neo4j.graphdb.traversal;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Provides metadata about a traversal.
  */
-@IgnoreApiCheck
+@PublicApi
 public interface TraversalMetadata
 {
     /**

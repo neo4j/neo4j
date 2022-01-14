@@ -21,7 +21,6 @@ package org.neo4j.graphdb.factory.module.edition;
 
 import java.util.function.Supplier;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -35,7 +34,6 @@ import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -77,7 +75,6 @@ import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTempora
  * Edition module for {@link DatabaseManagementServiceFactory}. Implementations of this class
  * need to create all the services that would be specific for a particular edition of the database.
  */
-@IgnoreApiCheck
 public abstract class AbstractEditionModule
 {
     protected NetworkConnectionTracker connectionTracker;

@@ -82,6 +82,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.GroupSettingHelper.getBuilder;
 import static org.neo4j.configuration.SettingConstraints.dependency;
 import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.max;
@@ -595,9 +596,10 @@ class ConfigTest
         assertThrows( IllegalArgumentException.class, builder::build );
     }
 
-    private static final class SingleSettingGroup extends GroupSetting
+    private static final class SingleSettingGroup implements GroupSetting
     {
-        final Setting<String> singleSetting = getBuilder( STRING, null ).build();
+        final Setting<String> singleSetting = getBuilder( getPrefix(), name(), STRING, null ).build();
+        private final String name;
 
         static SingleSettingGroup group( String name )
         {
@@ -606,7 +608,13 @@ class ConfigTest
 
         private SingleSettingGroup( String name )
         {
-            super( name );
+            this.name = name;
+        }
+
+        @Override
+        public String name()
+        {
+            return name;
         }
 
         @Override
@@ -1402,12 +1410,19 @@ class ConfigTest
                 .build();
     }
 
-    public static class TestConnectionGroupSetting extends GroupSetting
+    public static class TestConnectionGroupSetting implements GroupSetting
     {
+        private final String id;
 
         public static TestConnectionGroupSetting group( String name )
         {
             return new TestConnectionGroupSetting( name );
+        }
+
+        @Override
+        public String name()
+        {
+            return id;
         }
 
         @Override
@@ -1416,22 +1431,29 @@ class ConfigTest
             return "test.connection.http";
         }
 
-        public final Setting<Integer> port = getBuilder( "port", INT, 1 ).build();
+        public final Setting<Integer> port = getBuilder( getPrefix(), name(), "port", INT, 1 ).build();
+        public final Setting<String> hostname = getBuilder( getPrefix(), name(), "hostname", STRING, "0.0.0.0" ).build();
+        public final Setting<Boolean> secure = getBuilder( getPrefix(), name(), "secure", BOOL, true ).build();
 
-        public final Setting<String> hostname = getBuilder( "hostname" , STRING, "0.0.0.0" ).build();
-        public final Setting<Boolean> secure = getBuilder( "secure", BOOL, true ).build();
         TestConnectionGroupSetting( String id )
         {
-            super( id );
+            this.id = id;
         }
     }
 
-    public static class TestDynamicGroupSetting extends GroupSetting
+    public static class TestDynamicGroupSetting implements GroupSetting
     {
+        private final String id;
 
         public static TestDynamicGroupSetting group( String name )
         {
             return new TestDynamicGroupSetting( name );
+        }
+
+        @Override
+        public String name()
+        {
+            return id;
         }
 
         @Override
@@ -1440,32 +1462,38 @@ class ConfigTest
             return "test.dynamic";
         }
 
-        public final Setting<String> value = getBuilder( "value", STRING, "hello" ).dynamic().build();
+        public final Setting<String> value = getBuilder( getPrefix(), name(), "value", STRING, "hello" ).dynamic().build();
 
-        public final Setting<String> constrainedValue = getBuilder( "constrainedValue", STRING, "aDefaultValue" )
+        public final Setting<String> constrainedValue = getBuilder( getPrefix(), name(), "constrainedValue", STRING, "aDefaultValue" )
                 .addConstraint( SettingConstraints.matches( "a.*" )  )
                 .dynamic().build();
 
         TestDynamicGroupSetting( String id )
         {
-            super( id );
+            this.id = id;
         }
     }
 
-    abstract static class ParentGroup extends GroupSetting
+    abstract static class ParentGroup implements GroupSetting
     {
-
-        final Setting<String> parentSetting = getBuilder( "parent" , STRING, "parent" ).build();
+        final Setting<String> parentSetting = getBuilder( getPrefix(), name(), "parent", STRING, "parent" ).build();
+        private final String name;
 
         ParentGroup( String name )
         {
-            super( name );
+            this.name = name;
         }
 
+        @Override
+        public String name()
+        {
+            return name;
+        }
     }
     static class ChildGroup extends ParentGroup
     {
-        final Setting<String> childSetting = getBuilder( "child" , STRING, null ).build();
+        final Setting<String> childSetting = getBuilder( getPrefix(), name(), "child", STRING, null ).build();
+
         private ChildGroup( String name )
         {
             super( name );
@@ -1478,20 +1506,26 @@ class ConfigTest
 
     }
 
-    abstract static class ParentDynamicGroup extends GroupSetting
+    abstract static class ParentDynamicGroup implements GroupSetting
     {
-
-        final Setting<String> parentSetting = getBuilder( "parent" , STRING, "parent" ).dynamic().build();
+        final Setting<String> parentSetting = getBuilder( getPrefix(), name(), "parent", STRING, "parent" ).dynamic().build();
+        private final String name;
 
         ParentDynamicGroup( String name )
         {
-            super( name );
+            this.name = name;
         }
 
+        @Override
+        public String name()
+        {
+            return name;
+        }
     }
     static class ChildDynamicGroup extends ParentDynamicGroup
     {
-        final Setting<String> childSetting = getBuilder( "child" , STRING, null ).dynamic().build();
+        final Setting<String> childSetting = getBuilder( getPrefix(), name(), "child", STRING, null ).dynamic().build();
+
         private ChildDynamicGroup( String name )
         {
             super( name );
@@ -1501,7 +1535,6 @@ class ConfigTest
         {
             return "test.dynamic.inheritance";
         }
-
     }
 
     private static final class DependencySettings implements SettingsDeclaration

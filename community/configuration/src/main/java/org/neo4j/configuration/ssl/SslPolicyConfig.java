@@ -21,11 +21,15 @@ package org.neo4j.configuration.ssl;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.GroupSetting;
+import org.neo4j.configuration.GroupSettingHelper;
+import org.neo4j.configuration.SettingBuilder;
+import org.neo4j.configuration.SettingValueParser;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.string.SecureString;
 
@@ -39,7 +43,7 @@ import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 
 @ServiceProvider
 @PublicApi
-public class SslPolicyConfig extends GroupSetting
+public class SslPolicyConfig implements GroupSetting
 {
     public final Setting<Boolean> enabled = getBuilder( "enabled", BOOL, Boolean.FALSE ).build();
 
@@ -81,7 +85,7 @@ public class SslPolicyConfig extends GroupSetting
     @Description( "Path to directory of X.509 certificates in PEM format for trusted parties." )
     public final Setting<Path> trusted_dir;
 
-    private SslPolicyScope scope;
+    private final SslPolicyScope scope;
 
     public static SslPolicyConfig forScope( SslPolicyScope scope )
     {
@@ -90,7 +94,6 @@ public class SslPolicyConfig extends GroupSetting
 
     private SslPolicyConfig( String scopeString )
     {
-        super( scopeString.toLowerCase() );
         scope = SslPolicyScope.fromName( scopeString );
         if ( scope == null )
         {
@@ -105,9 +108,15 @@ public class SslPolicyConfig extends GroupSetting
         trusted_dir = getBuilder( "trusted_dir", PATH, Path.of( "trusted" ) ).setDependency( base_directory ).build();
     }
 
-    public SslPolicyConfig() //For serviceloading
+    public SslPolicyConfig() // For service loading
     {
         this( "testing" );
+    }
+
+    @Override
+    public String name()
+    {
+        return scope.name().toLowerCase( Locale.ROOT );
     }
 
     @Override
@@ -119,5 +128,10 @@ public class SslPolicyConfig extends GroupSetting
     public SslPolicyScope getScope()
     {
         return scope;
+    }
+
+    private <T> SettingBuilder<T> getBuilder( String suffix, SettingValueParser<T> parser, T defaultValue )
+    {
+        return GroupSettingHelper.getBuilder( getPrefix(), name(), suffix , parser, defaultValue );
     }
 }

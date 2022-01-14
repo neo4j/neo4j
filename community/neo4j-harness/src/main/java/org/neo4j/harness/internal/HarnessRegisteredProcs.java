@@ -46,7 +46,6 @@ class HarnessRegisteredProcs
         this.aggregationFunctions.add( functionClass );
     }
 
-    @SuppressWarnings( "deprecation" )
     void applyTo( GlobalProcedures globalProcedures ) throws KernelException
     {
         for ( Class<?> cls : procs )

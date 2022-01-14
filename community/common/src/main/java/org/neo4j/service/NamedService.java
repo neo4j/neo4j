@@ -19,12 +19,12 @@
  */
 package org.neo4j.service;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Helper interface to be implemented by services if there's a need to load a particular service provider by name.
  */
-@IgnoreApiCheck
+@PublicApi
 public interface NamedService
 {
     String getName();

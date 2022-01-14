@@ -22,7 +22,6 @@ package org.neo4j.common;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
 import static org.neo4j.common.DependencyResolver.SelectionStrategy.SINGLE;
@@ -30,7 +29,6 @@ import static org.neo4j.common.DependencyResolver.SelectionStrategy.SINGLE;
 /**
  * Find a dependency given a type.
  */
-@IgnoreApiCheck
 public interface DependencyResolver
 {
     /**

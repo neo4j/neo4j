@@ -32,7 +32,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilderImplementation;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
@@ -61,7 +61,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_pag
  * Please be aware that since it's a database it will close filesystem as part of its lifecycle.
  * If you expect your file system to be open after database is closed, use {@link UncloseableDelegatingFileSystemAbstraction}
  */
-public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilder
+public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilderImplementation implements TestDBMSBuilder
 {
     private static final Path EPHEMERAL_PATH = Path.of( "/target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     public static final String FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME = "fabric_in_embedded_test_transactions";
@@ -180,6 +180,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return homeDirectory;
     }
 
+    @Override
     public TestDatabaseManagementServiceBuilder setFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
@@ -252,7 +253,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     }
 
     @Override
-    public DatabaseManagementServiceBuilder setConfigRaw( Map<String, String> raw )
+    public TestDatabaseManagementServiceBuilder setConfigRaw( Map<String, String> raw )
     {
         config.setRaw( raw );
         return this;

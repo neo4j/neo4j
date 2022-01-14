@@ -793,7 +793,7 @@ class SettingTest
         assertEquals( expectedDescription, child.description() );
     }
 
-    private static <T> SettingImpl.Builder<T> settingBuilder( String name, SettingValueParser<T> parser )
+    private static <T> SettingBuilder<T> settingBuilder( String name, SettingValueParser<T> parser )
     {
         return SettingImpl.newBuilder( name, parser, null );
     }

@@ -32,8 +32,8 @@ import org.neo4j.internal.helpers.TimeUtil;
 @PublicApi
 public class DurationRange
 {
-    private Duration min;
-    private Duration max;
+    private final Duration min;
+    private final Duration max;
 
     public DurationRange( Duration min, Duration max )
     {

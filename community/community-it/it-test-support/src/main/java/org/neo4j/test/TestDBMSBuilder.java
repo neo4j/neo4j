@@ -17,26 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.annotations.service;
+package org.neo4j.test;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.neo4j.dbms.api.DBMSBuilder;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
-import org.neo4j.annotations.api.PublicApi;
-
-import static java.lang.annotation.ElementType.TYPE;
-
-/**
- * Used to mark a type as a service as defined in {@link java.util.ServiceLoader}.
- * Subtypes of such service type, which are service providers loaded via service loading mechanism,
- * should be annotated with {@link ServiceProvider}.
- * <p/>
- * Processed by {@link ServiceAnnotationProcessor}.
- */
-@Target( TYPE )
-@Retention( RetentionPolicy.CLASS )
-@PublicApi
-public @interface Service
+public interface TestDBMSBuilder extends DBMSBuilder
 {
+    TestDBMSBuilder setFileSystem( FileSystemAbstraction fileSystem );
 }

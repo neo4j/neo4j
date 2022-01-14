@@ -25,7 +25,6 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -46,7 +45,7 @@ public final class AdversarialPageCacheGraphDatabaseFactory
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static DatabaseManagementServiceBuilder create( Path homeDir, FileSystemAbstraction fs, Adversary adversary )
+    public static TestDatabaseManagementServiceBuilder create( Path homeDir, FileSystemAbstraction fs, Adversary adversary )
     {
         return new TestDatabaseManagementServiceBuilder( homeDir )
         {

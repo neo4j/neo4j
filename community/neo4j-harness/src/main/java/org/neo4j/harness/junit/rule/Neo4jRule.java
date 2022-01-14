@@ -37,7 +37,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.Neo4jBuilder;
 import org.neo4j.harness.Neo4jBuilders;
-import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserFunction;
@@ -140,18 +139,6 @@ public class Neo4jRule implements TestRule
     public Neo4jRule withUnmanagedExtension( String mountPath, String packageName )
     {
         builder = builder.withUnmanagedExtension( mountPath, packageName );
-        return this;
-    }
-
-    /**
-     * Enhance Neo4j instance with provided extensions.
-     * Please refer to the Neo4j Manual for details on extensions, how to write and use them.
-     * @param extensionFactories extension factories
-     * @return this configurator instance
-     */
-    public Neo4jRule withExtensionFactories( Iterable<ExtensionFactory<?>> extensionFactories )
-    {
-        builder = builder.withExtensionFactories( extensionFactories );
         return this;
     }
 

@@ -55,6 +55,7 @@ public interface Setting<T>
      * Internal settings may be changed or removed between versions without notice
      *
      * @return true if the setting is internal, false otherwise
+     * // TODO : remove from API
      */
     boolean internal();
 

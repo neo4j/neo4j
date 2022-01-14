@@ -25,6 +25,9 @@ import java.util.List;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.GroupSetting;
+import org.neo4j.configuration.GroupSettingHelper;
+import org.neo4j.configuration.SettingBuilder;
+import org.neo4j.configuration.SettingValueParser;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -33,13 +36,14 @@ import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 
 @ServiceProvider
-public class CrsConfig extends GroupSetting
+public class CrsConfig implements GroupSetting
 {
     private static final String PREFIX = "unsupported.dbms.db.spatial.crs";
 
     public final Setting<List<Double>> min;
     public final Setting<List<Double>> max;
     public final CoordinateReferenceSystem crs;
+    private final String name;
 
     public static CrsConfig group( CoordinateReferenceSystem crs )
     {
@@ -48,7 +52,7 @@ public class CrsConfig extends GroupSetting
 
     private CrsConfig( String name )
     {
-        super( name );
+        this.name = name;
         crs = CoordinateReferenceSystem.byName( name );
         List<Double> defaultValue = new ArrayList<>( Collections.nCopies( crs.getDimension(), Double.NaN ) );
         min = getBuilder( "min", listOf( DOUBLE ), defaultValue ).addConstraint( size( crs.getDimension() ) ).build();
@@ -57,15 +61,26 @@ public class CrsConfig extends GroupSetting
 
     public CrsConfig()
     {
-        super( null );  // For ServiceLoader
+        name = null;
         min = null;
         max = null;
         crs = null;
     }
 
     @Override
+    public String name()
+    {
+        return name;
+    }
+
+    @Override
     public String getPrefix()
     {
         return PREFIX;
+    }
+
+    private <T> SettingBuilder<T> getBuilder( String suffix, SettingValueParser<T> parser, T defaultValue )
+    {
+        return GroupSettingHelper.getBuilder( getPrefix(), name(), suffix , parser, defaultValue );
     }
 }

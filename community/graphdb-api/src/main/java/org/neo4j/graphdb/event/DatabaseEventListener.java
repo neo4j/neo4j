@@ -50,21 +50,13 @@ public interface DatabaseEventListener
      * This method is invoked when a new database is created. This is called before {@link #databaseStart(DatabaseEventContext)} and before any database
      * components are available.
      * @param eventContext context of the event, can be used to get metadata.
-     *
-     * @since 4.3
      */
-    default void databaseCreate( DatabaseEventContext eventContext )
-    {
-    }
+    void databaseCreate( DatabaseEventContext eventContext );
 
     /**
      * This method is invoked after the database is dropped. This is intended to be used when cleaning up database specific files after the database
      * is deleted by the user.
      * @param eventContext context of the event, can be used to get metadata.
-     *
-     * @since 4.3
      */
-    default void databaseDrop( DatabaseEventContext eventContext )
-    {
-    }
+    void databaseDrop( DatabaseEventContext eventContext );
 }

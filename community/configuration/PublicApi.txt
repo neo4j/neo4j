@@ -205,12 +205,9 @@ org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_block_cache_siz
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_max_cacheable_block_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::upgrade_processors org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::writable_databases org.neo4j.graphdb.config.Setting<java.util.Set<java.lang.String>> public static final
-org.neo4j.configuration.GroupSetting public abstract class extends java.lang.Object
-org.neo4j.configuration.GroupSetting::<T extends java.lang.Object>getBuilder(java.lang.String, org.neo4j.configuration.SettingValueParser<T>, #T) org.neo4j.configuration.SettingImpl.Builder<T> protected
-org.neo4j.configuration.GroupSetting::<T extends java.lang.Object>getBuilder(org.neo4j.configuration.SettingValueParser<T>, #T) org.neo4j.configuration.SettingImpl.Builder<T> protected
-org.neo4j.configuration.GroupSetting::GroupSetting(java.lang.String) void protected
+org.neo4j.configuration.GroupSetting public abstract interface
 org.neo4j.configuration.GroupSetting::getPrefix() java.lang.String public abstract
-org.neo4j.configuration.GroupSetting::name() java.lang.String public final
+org.neo4j.configuration.GroupSetting::name() java.lang.String public abstract
 org.neo4j.configuration.SettingsDeclaration public abstract interface
 org.neo4j.configuration.connectors.BoltConnector public final class extends java.lang.Object implements org.neo4j.configuration.SettingsDeclaration
 org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel public static final enum extends java.lang.Enum<org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel>
@@ -303,7 +300,7 @@ org.neo4j.configuration.ssl.ClientAuth::OPTIONAL org.neo4j.configuration.ssl.Cli
 org.neo4j.configuration.ssl.ClientAuth::REQUIRE org.neo4j.configuration.ssl.ClientAuth public static final
 org.neo4j.configuration.ssl.ClientAuth::valueOf(java.lang.String) org.neo4j.configuration.ssl.ClientAuth public static
 org.neo4j.configuration.ssl.ClientAuth::values() org.neo4j.configuration.ssl.ClientAuth[] public static
-org.neo4j.configuration.ssl.SslPolicyConfig public class extends org.neo4j.configuration.GroupSetting
+org.neo4j.configuration.ssl.SslPolicyConfig public class extends java.lang.Object implements org.neo4j.configuration.GroupSetting
 org.neo4j.configuration.ssl.SslPolicyConfig::SslPolicyConfig() void public
 org.neo4j.configuration.ssl.SslPolicyConfig::base_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public final
 org.neo4j.configuration.ssl.SslPolicyConfig::ciphers org.neo4j.graphdb.config.Setting<java.util.List<java.lang.String>> public final
@@ -312,6 +309,7 @@ org.neo4j.configuration.ssl.SslPolicyConfig::enabled org.neo4j.graphdb.config.Se
 org.neo4j.configuration.ssl.SslPolicyConfig::forScope(org.neo4j.configuration.ssl.SslPolicyScope) org.neo4j.configuration.ssl.SslPolicyConfig public static
 org.neo4j.configuration.ssl.SslPolicyConfig::getPrefix() java.lang.String public
 org.neo4j.configuration.ssl.SslPolicyConfig::getScope() org.neo4j.configuration.ssl.SslPolicyScope public
+org.neo4j.configuration.ssl.SslPolicyConfig::name() java.lang.String public
 org.neo4j.configuration.ssl.SslPolicyConfig::private_key org.neo4j.graphdb.config.Setting<java.nio.file.Path> public final
 org.neo4j.configuration.ssl.SslPolicyConfig::private_key_password org.neo4j.graphdb.config.Setting<org.neo4j.string.SecureString> public final
 org.neo4j.configuration.ssl.SslPolicyConfig::public_certificate org.neo4j.graphdb.config.Setting<java.nio.file.Path> public final

@@ -26,7 +26,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.Kernel;
@@ -57,7 +56,7 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     @Override
     public void setup( Path storeDir, Consumer<GraphDatabaseService> create, Consumer<GraphDatabaseService> sysCreate )
     {
-        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = newManagementServiceBuilder( storeDir );
+        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = newManagementServiceBuilder( storeDir );
         databaseManagementServiceBuilder.setConfig( settings );
         databaseManagementServiceBuilder.setMonitors( monitors );
         managementService = databaseManagementServiceBuilder.build();

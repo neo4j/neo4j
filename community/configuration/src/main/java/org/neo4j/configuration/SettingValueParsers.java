@@ -690,7 +690,7 @@ public final class SettingValueParsers
         public Long parse( String value )
         {
             long bytes = ByteUnit.parse( value );
-            validate(bytes);
+            validate( bytes );
             return bytes;
         }
 

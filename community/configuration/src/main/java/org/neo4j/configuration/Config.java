@@ -60,7 +60,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Exceptions;
@@ -75,7 +74,6 @@ import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_command_evaluation_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 
-@IgnoreApiCheck
 public class Config implements Configuration
 {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
@@ -570,7 +568,7 @@ public class Config implements Configuration
         {
             //fromConfig.log is ignored, until different behaviour is expected
             fromConfig.allGroupInstances.forEach( ( cls, fromGroupMap ) -> {
-                Map<String, GroupSetting> groupMap = allGroupInstances.computeIfAbsent( cls, k -> new HashMap<>() );
+                Map<String,GroupSetting> groupMap = allGroupInstances.computeIfAbsent( cls, k -> new HashMap<>() );
                 groupMap.putAll( fromGroupMap );
             } );
             for ( Map.Entry<String,Entry<?>> entry : fromConfig.settings.entrySet() )
@@ -656,7 +654,7 @@ public class Config implements Configuration
         }
     }
 
-    private Collection<SettingImpl<?>> getActiveSettings( Set<String> settingNames, Map<String,Class<? extends GroupSetting>> definedGroups,
+    private Collection<SettingImpl<?>> getActiveSettings( Set<String> settingNames, Map<String, Class<? extends GroupSetting>> definedGroups,
             Map<String,SettingImpl<?>> declaredSettings, boolean strict )
     {
         List<SettingImpl<?>> newSettings = new ArrayList<>();
@@ -699,7 +697,7 @@ public class Config implements Configuration
                     continue;
                 }
 
-                Map<String, GroupSetting> groupInstances = allGroupInstances.computeIfAbsent( groupEntry.getValue(), k -> new HashMap<>() );
+                Map<String,GroupSetting> groupInstances = allGroupInstances.computeIfAbsent( groupEntry.getValue(), k -> new HashMap<>() );
                 if ( !groupInstances.containsKey( id ) )
                 {
 

@@ -19,66 +19,67 @@
  */
 package org.neo4j.configuration;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Setting;
 
 /**
- * Handling the values associated with a {@link Setting} object
+ * Handling the values associated with a {@link Setting} object.
  *
- * @param <T> the type of the object handled by a specific parser
+ * @param <T> the type of the object handled by a specific parser.
  */
-@IgnoreApiCheck
 public interface SettingValueParser<T>
 {
     /**
-     * Parsing a textual representation of an object into a typed object
+     * Parse a textual representation of a value into a typed object.
      *
-     * @param value The String representation the object to be parsed
-     * @throws IllegalArgumentException if the text representation can not be parsed into an object of type T
-     * @return the parsed value
+     * @param value The textual representation of the value.
+     * @throws IllegalArgumentException if the text representation can not be parsed into an object of type {@code T}.
+     * @return The parsed value.
      */
     T parse( String value );
 
     /**
-     * Validates if an object is accepted by the parser
-     * @param value The object to be validated
-     * @throws IllegalArgumentException if the object is not accepted by the parser
+     * Validate a value.
+     *
+     * @param value The value to be validated.
+     * @throws IllegalArgumentException if the value is not accepted by the parser.
      */
     default void validate( T value )
     {
     }
+
     /**
-     * The description describing the parser
+     * The description describing the parser.
      *
-     * @return the description
+     * @return The description.
      */
     String getDescription();
 
     /**
      *  The type of the object this parser is working on.
-     * @return the type of T
+     * @return the type of {@code T}.
      */
     Class<T> getType();
 
     /**
-     * Solving a value against the default value
+     * Solving a value against the default value.
      *
-     * @param value the value associated with the Setting using this parser
-     * @param defaultValue the value associated with the Setting using this parser
-     * @return the solved value
+     * @param value The configured value for the given setting.
+     * @param defaultValue The default value for the given setting.
+     * @return The solved value.
      */
-
     default T solveDefault( T value, T defaultValue )
     {
         return value;
     }
 
     /**
-     * Solving a value against a value the Setting using this parser is depending on.
+     * Callback for settings with a dependency, also referred to as a parent setting.
+     * The default behaviour is that when the value for the setting is {@code null}, the final value is taken from the parent.
+     * If the default behaviour is changed, the {@link #getSolverDescription()} must be changed as well.
      *
-     * @param value the value associated with the Setting using this parser
-     * @param dependencyValue  the value associated with the Setting that the Setting using this parser is depending on
-     * @return
+     * @param value The configured value for the given setting.
+     * @param dependencyValue The configured value from the parent setting.
+     * @return The solved value.
      */
     default T solveDependency( T value, T dependencyValue )
     {
@@ -89,6 +90,11 @@ public interface SettingValueParser<T>
         return dependencyValue;
     }
 
+    /**
+     * Description of the behaviour in {@link #solveDependency(Object, Object)}. Used to generate documentation.
+     *
+     * @return A natural language description of the dependency
+     */
     default String getSolverDescription()
     {
         return "If unset the value is inherited";
@@ -96,8 +102,9 @@ public interface SettingValueParser<T>
 
     /**
      * Converting an object to a textual representation of that object.
-     * @param value the object to be turned in to an textual representation
-     * @return the textual representation
+     *
+     * @param value The object to be turned in to a textual representation.
+     * @return The textual representation.
      */
     default String valueToString( T value )
     {

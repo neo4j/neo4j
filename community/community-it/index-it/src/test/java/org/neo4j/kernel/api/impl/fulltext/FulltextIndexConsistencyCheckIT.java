@@ -40,7 +40,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -99,7 +98,7 @@ class FulltextIndexConsistencyCheckIT
     @Inject
     private RandomSupport random;
 
-    private DatabaseManagementServiceBuilder builder;
+    private TestDatabaseManagementServiceBuilder builder;
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
 

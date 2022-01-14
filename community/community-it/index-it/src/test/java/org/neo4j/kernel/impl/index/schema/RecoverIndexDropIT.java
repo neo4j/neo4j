@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -89,7 +88,7 @@ class RecoverIndexDropIT
     @Inject
     private DatabaseLayout databaseLayout;
 
-    DatabaseManagementServiceBuilder configure( DatabaseManagementServiceBuilder builder )
+    TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
     {
         return builder;
     }

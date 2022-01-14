@@ -308,8 +308,8 @@ org.neo4j.graphdb.config.Setting<T>::name() java.lang.String public abstract
 org.neo4j.graphdb.event.DatabaseEventContext public abstract interface
 org.neo4j.graphdb.event.DatabaseEventContext::getDatabaseName() java.lang.String public abstract
 org.neo4j.graphdb.event.DatabaseEventListener public abstract interface
-org.neo4j.graphdb.event.DatabaseEventListener::databaseCreate(org.neo4j.graphdb.event.DatabaseEventContext) void public default
-org.neo4j.graphdb.event.DatabaseEventListener::databaseDrop(org.neo4j.graphdb.event.DatabaseEventContext) void public default
+org.neo4j.graphdb.event.DatabaseEventListener::databaseCreate(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
+org.neo4j.graphdb.event.DatabaseEventListener::databaseDrop(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
 org.neo4j.graphdb.event.DatabaseEventListener::databasePanic(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
 org.neo4j.graphdb.event.DatabaseEventListener::databaseShutdown(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
 org.neo4j.graphdb.event.DatabaseEventListener::databaseStart(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
@@ -461,3 +461,6 @@ org.neo4j.graphdb.spatial.Geometry::getGeometryType() java.lang.String public ab
 org.neo4j.graphdb.spatial.Point public abstract interface implements org.neo4j.graphdb.spatial.Geometry
 org.neo4j.graphdb.spatial.Point::getCoordinate() org.neo4j.graphdb.spatial.Coordinate public default
 org.neo4j.graphdb.spatial.Point::getGeometryType() java.lang.String public default
+org.neo4j.graphdb.traversal.TraversalMetadata public abstract interface
+org.neo4j.graphdb.traversal.TraversalMetadata::getNumberOfPathsReturned() int public abstract
+org.neo4j.graphdb.traversal.TraversalMetadata::getNumberOfRelationshipsTraversed() int public abstract

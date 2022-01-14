@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -28,7 +27,6 @@ import org.neo4j.service.NamedService;
 import static java.lang.String.format;
 
 @Service
-@IgnoreApiCheck
 public abstract class ExtensionFactory<DEPENDENCIES> implements NamedService
 {
     private final ExtensionType extensionType;

@@ -189,6 +189,8 @@ org.neo4j.kernel.api.exceptions.Status.Transaction::valueOf(java.lang.String) or
 org.neo4j.kernel.api.exceptions.Status.Transaction::values() org.neo4j.kernel.api.exceptions.Status.Transaction[] public static
 org.neo4j.kernel.api.exceptions.Status::code() org.neo4j.kernel.api.exceptions.Status.Code public abstract
 org.neo4j.kernel.api.exceptions.Status::statusCodeOf(java.lang.Throwable) org.neo4j.kernel.api.exceptions.Status public static
+org.neo4j.service.NamedService public abstract interface
+org.neo4j.service.NamedService::getName() java.lang.String public abstract
 org.neo4j.string.SecureString public class extends java.lang.Object
 org.neo4j.string.SecureString::SecureString(java.lang.String) void public
 org.neo4j.string.SecureString::getString() java.lang.String public

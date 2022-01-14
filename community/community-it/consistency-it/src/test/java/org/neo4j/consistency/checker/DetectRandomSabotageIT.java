@@ -52,7 +52,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
@@ -106,6 +105,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.TestDBMSBuilder;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -159,7 +159,7 @@ public class DetectRandomSabotageIT
         return addConfig( createBuilder( home ) ).build();
     }
 
-    protected TestDatabaseManagementServiceBuilder createBuilder( Path home )
+    protected TestDBMSBuilder createBuilder( Path home )
     {
         return new TestDatabaseManagementServiceBuilder( home );
     }
@@ -471,9 +471,9 @@ public class DetectRandomSabotageIT
         return t;
     }
 
-    private DatabaseManagementServiceBuilder addConfig( DatabaseManagementServiceBuilder builder )
+    private TestDBMSBuilder addConfig( TestDBMSBuilder builder )
     {
-        return addConfig( builder, DatabaseManagementServiceBuilder::setConfig );
+        return addConfig( builder, TestDBMSBuilder::setConfig );
     }
 
     private Config.Builder addConfig( Config.Builder builder )

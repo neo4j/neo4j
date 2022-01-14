@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -64,7 +63,7 @@ class CheckPointerIntegrationTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private DatabaseManagementServiceBuilder builder;
+    private TestDatabaseManagementServiceBuilder builder;
 
     @BeforeEach
     void setup()
@@ -227,7 +226,7 @@ class CheckPointerIntegrationTest
     void shouldBeAbleToStartAndShutdownMultipleTimesTheDBWithoutCommittingTransactions() throws Throwable
     {
         // given
-        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = builder
+        TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder = builder
                 .setConfig( check_point_interval_time, Duration.ofMinutes( 300 ) )
                 .setConfig( check_point_interval_tx, 10000 )
                 .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) );

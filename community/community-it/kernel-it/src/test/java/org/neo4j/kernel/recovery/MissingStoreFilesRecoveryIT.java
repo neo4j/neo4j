@@ -27,7 +27,6 @@ import java.io.IOException;
 
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -61,7 +60,7 @@ class MissingStoreFilesRecoveryIT
     private FileSystemAbstraction fileSystem;
     private DatabaseManagementService managementService;
     private RecordDatabaseLayout databaseLayout;
-    private DatabaseManagementServiceBuilder serviceBuilder;
+    private TestDatabaseManagementServiceBuilder serviceBuilder;
     private NamedDatabaseId defaultNamedDatabaseId;
     private static final Label testNodes = Label.label( "testNodes" );
 

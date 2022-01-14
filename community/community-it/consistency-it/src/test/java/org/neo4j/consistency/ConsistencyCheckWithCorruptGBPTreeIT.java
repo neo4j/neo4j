@@ -41,7 +41,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -75,6 +74,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.TestDBMSBuilder;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.lang.String.format;
@@ -737,9 +737,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
      * Open dbms with schemaIndex as default index provider on provided file system abstraction and apply dbSetup to DEFAULT_DATABASE.
      */
     private static void dbmsAction( Path neo4jHome, FileSystemAbstraction fs,
-            Consumer<GraphDatabaseService> dbSetup, Consumer<DatabaseManagementServiceBuilder> dbConfiguration )
+            Consumer<GraphDatabaseService> dbSetup, Consumer<TestDBMSBuilder> dbConfiguration )
     {
-        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jHome )
+        TestDBMSBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jHome )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
         dbConfiguration.accept( builder );
         final DatabaseManagementService dbms = builder.build();

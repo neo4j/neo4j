@@ -21,7 +21,6 @@ package org.neo4j.graphdb.factory.module;
 
 import java.util.function.Supplier;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.buffer.CentralBufferMangerHolder;
@@ -119,7 +118,6 @@ import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 /**
  * Global module for {@link DatabaseManagementServiceFactory}. This creates all global services and components from DBMS.
  */
-@IgnoreApiCheck
 public class GlobalModule
 {
 

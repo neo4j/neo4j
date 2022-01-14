@@ -30,7 +30,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilderImplementation;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -249,7 +249,7 @@ class DatabaseStartupTest
     {
         Path directory = Path.of( "target/notAbsoluteDirectory" );
         EphemeralCommunityManagementServiceFactory factory = new EphemeralCommunityManagementServiceFactory();
-        DatabaseManagementServiceBuilder databaseFactory = new EphemeralDatabaseManagementServiceBuilder( directory, factory );
+        EphemeralDatabaseManagementServiceBuilder databaseFactory = new EphemeralDatabaseManagementServiceBuilder( directory, factory );
         DatabaseManagementService managementService = databaseFactory.build();
         managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
@@ -305,7 +305,7 @@ class DatabaseStartupTest
         }
     }
 
-    private static class EphemeralDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilder
+    private static class EphemeralDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilderImplementation
     {
         private final EphemeralCommunityManagementServiceFactory factory;
 

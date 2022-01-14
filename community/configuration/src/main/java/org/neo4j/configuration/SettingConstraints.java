@@ -164,8 +164,8 @@ public final class SettingConstraints
     {
         return new SettingConstraint<>()
         {
-            private SettingConstraint<T> max = max( maxValue );
-            private SettingConstraint<T> min = min( minValue );
+            private final SettingConstraint<T> max = max( maxValue );
+            private final SettingConstraint<T> min = min( minValue );
 
             @Override
             public void validate( T value, Configuration config )
@@ -441,24 +441,22 @@ public final class SettingConstraints
                 var otherAsLong = converter.apply( otherValue );
                 if ( thisAsLong == null )
                 {
-                    throw new IllegalStateException( "Result of " + converter.toString() + " on " + value.toString() + " can not be null" );
+                    throw new IllegalStateException( "Result of " + converter + " on " + value + " can not be null" );
                 }
                 if ( otherAsLong == null )
                 {
-                    throw new IllegalStateException(
-                            "Result of " + converter.toString() + " on " + other.name() + " (" + otherValue.toString() + ") can not be null"
-                    );
+                    throw new IllegalStateException( "Result of " + converter + " on " + other.name() + " (" + otherValue + ") can not be null" );
                 }
 
                 var modifiedOther = otherModifier.apply( otherAsLong );
                 if ( modifiedOther == null )
                 {
-                    throw new IllegalStateException( "Result of " + otherModifier.toString() + " on " + other.name() + " (" + otherAsLong + ") was null" );
+                    throw new IllegalStateException( "Result of " + otherModifier + " on " + other.name() + " (" + otherAsLong + ") was null" );
                 }
 
                 if ( thisAsLong > modifiedOther )
                 {
-                    throw new IllegalArgumentException( getDescription() + format( "was %d, which is not less than or equal to %d from %s",
+                    throw new IllegalArgumentException( getDescription() + format( ". was %d, which is not less than or equal to %d from %s",
                                                                                    thisAsLong, modifiedOther, other.name() ) );
                 }
             }

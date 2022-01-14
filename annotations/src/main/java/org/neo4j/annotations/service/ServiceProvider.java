@@ -23,6 +23,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.neo4j.annotations.api.PublicApi;
+
 import static java.lang.annotation.ElementType.TYPE;
 
 /**
@@ -34,6 +36,7 @@ import static java.lang.annotation.ElementType.TYPE;
  */
 @Target( TYPE )
 @Retention( RetentionPolicy.SOURCE )
+@PublicApi
 public @interface ServiceProvider
 {
 }

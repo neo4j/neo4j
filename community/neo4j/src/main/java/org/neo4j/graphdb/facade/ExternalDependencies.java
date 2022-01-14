@@ -21,7 +21,6 @@ package org.neo4j.graphdb.facade;
 
 import java.util.Map;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -29,7 +28,6 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
 
-@IgnoreApiCheck
 public interface ExternalDependencies
 {
     /**

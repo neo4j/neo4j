@@ -25,7 +25,6 @@ import java.util.function.Function;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserFunction;
@@ -61,14 +60,6 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @return this configurator instance
      */
     T withUnmanagedExtension( String mountPath, String packageName );
-
-    /**
-     * Enhance Neo4j instance with provided extensions.
-     * Please refer to the Neo4j Manual for details on extensions, how to write and use them.
-     * @param extensionFactories extension factories
-     * @return this configurator instance
-     */
-    T withExtensionFactories( Iterable<ExtensionFactory<?>> extensionFactories );
 
     /**
      * Disable web server on configured Neo4j instance.

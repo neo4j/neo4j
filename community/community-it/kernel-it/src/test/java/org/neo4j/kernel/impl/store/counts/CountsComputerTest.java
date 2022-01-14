@@ -37,7 +37,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -102,7 +101,7 @@ class CountsComputerTest
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
-    private DatabaseManagementServiceBuilder dbBuilder;
+    private TestDatabaseManagementServiceBuilder dbBuilder;
 
     @InjectSoftAssertions
     private SoftAssertions softly;
@@ -110,14 +109,9 @@ class CountsComputerTest
     @BeforeEach
     void setup()
     {
-        dbBuilder = configure( new TestDatabaseManagementServiceBuilder( databaseLayout )
-                                       .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
-                                       .impermanent() );
-    }
-
-    DatabaseManagementServiceBuilder configure( DatabaseManagementServiceBuilder builder )
-    {
-        return builder;
+        dbBuilder = new TestDatabaseManagementServiceBuilder( databaseLayout )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
+                .impermanent();
     }
 
     @Test

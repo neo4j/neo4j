@@ -25,30 +25,35 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
 /**
- * A constraint limiting the set of accepted values of the associated {@link Setting}
- * @param <T> the type of the objects this constraint is working on
+ * A constraint limiting the set of accepted values of the associated {@link Setting}.
+ * @param <T> the type of the objects this constraint is working on.
  */
-
 public abstract class SettingConstraint<T>
 {
     private Function<T,String> valueToString = T::toString;
 
     /**
-     * Validates if an object is satisfying the constraint
+     * Validates if an object is satisfying the constraint.
      *
-     * @param value the object to be checked if it satisfies the constraint
-     * @param config the config the value belongs to
-     * @throws IllegalArgumentException if the constraint is not satisfied
+     * @param value The object to be checked if it satisfies the constraint.
+     * @param config The config the value belongs to.
+     * @throws IllegalArgumentException if the constraint is not satisfied.
      */
     public abstract void validate( T value, Configuration config );
 
     /**
      * A textual representation of the constraint, including information about valid/invalid values
      *
-     * @return the description
+     * @return The description
      */
     public abstract String getDescription();
 
+    /**
+     * Get a string representation of the provided value. Used to generate documentation.
+     *
+     * @param value A value of type {@code T}.
+     * @return String representation of the provided value.
+     */
     protected String valueToString( T value )
     {
         return valueToString.apply( value );

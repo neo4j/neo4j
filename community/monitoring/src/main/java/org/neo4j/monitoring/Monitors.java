@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -51,7 +50,6 @@ import static org.apache.commons.lang3.ArrayUtils.isEmpty;
  *
  * This class is thread-safe.
  */
-@IgnoreApiCheck
 public class Monitors
 {
     private static final FailureHandler IGNORE = ( f, m ) -> {};

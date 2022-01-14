@@ -185,7 +185,6 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         return this;
     }
 
-    @Override
     public Neo4jBuilder withExtensionFactories( Iterable<ExtensionFactory<?>> extensionFactories )
     {
         addAll(this.extensionFactories, extensionFactories);

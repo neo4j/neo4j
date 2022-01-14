@@ -26,13 +26,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.lang.String.format;
 
-@IgnoreApiCheck
 public final class SettingImpl<T> implements Setting<T>
 {
     private final String name;
@@ -67,9 +65,9 @@ public final class SettingImpl<T> implements Setting<T>
         this.suffix = StringUtils.isNotEmpty( name ) ? name.substring( name.lastIndexOf( '.' ) + 1 ) : name;
     }
 
-    public static <T> Builder<T> newBuilder( String name, SettingValueParser<T> parser, T defaultValue )
+    public static <T> SettingBuilder<T> newBuilder( String name, SettingValueParser<T> parser, T defaultValue )
     {
-        return new Builder<>( name, parser, defaultValue );
+        return SettingBuilder.newBuilder( name, parser, defaultValue );
     }
 
     @Override
@@ -246,7 +244,7 @@ public final class SettingImpl<T> implements Setting<T>
         return parser;
     }
 
-    public static class Builder<T>
+    public static class Builder<T> implements SettingBuilder<T>
     {
         private final String name;
         private final SettingValueParser<T> parser;
@@ -256,25 +254,28 @@ public final class SettingImpl<T> implements Setting<T>
         private boolean immutable;
         private SettingImpl<T> dependency;
 
-        private Builder( String name, SettingValueParser<T> parser, T defaultValue )
+        Builder( String name, SettingValueParser<T> parser, T defaultValue )
         {
             this.name = name;
             this.parser = parser;
             this.defaultValue = defaultValue;
         }
 
+        @Override
         public Builder<T> dynamic()
         {
             this.dynamic = true;
             return this;
         }
 
+        @Override
         public Builder<T> immutable()
         {
             this.immutable = true;
             return this;
         }
 
+        @Override
         public Builder<T> addConstraint( SettingConstraint<T> constraint )
         {
             constraint.setParser( parser );
@@ -282,12 +283,14 @@ public final class SettingImpl<T> implements Setting<T>
             return this;
         }
 
+        @Override
         public Builder<T> setDependency( Setting<T> setting )
         {
             dependency = (SettingImpl<T>) setting;
             return this;
         }
 
+        @Override
         public Setting<T> build()
         {
             if ( immutable && dynamic )

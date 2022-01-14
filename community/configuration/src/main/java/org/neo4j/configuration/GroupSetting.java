@@ -28,61 +28,19 @@ import org.neo4j.annotations.service.Service;
  */
 @Service
 @PublicApi
-public abstract class GroupSetting
+public interface GroupSetting
 {
-    private final String name;
-
-    /**
-     * @param name The name of this group, this name can not contain dots (.)
-     */
-    protected GroupSetting( String name )
-    {
-        this.name = name;
-    }
-
     /**
      * The name is unique to one instance of a group
      *
      * @return the name of this group
      */
-    public final String name()
-    {
-        return name;
-    }
+    String name();
 
     /**
      * The prefix is the same for all the settings in this group
      *
      * @return the prefix for this group
      */
-    public abstract String getPrefix();
-
-    /**
-     * Helper method when creating settings for this group.
-     * This is the preferred method if the group contains multiple settings.
-     *
-     * @param suffix The unique name of the setting to be created
-     * @param parser The parser to be used in the setting
-     * @param defaultValue The default value to be associated with the setting
-     * @param <T> the type of the objects represented by the setting
-     * @return the builder of the setting
-     */
-    protected <T> SettingImpl.Builder<T> getBuilder( String suffix, SettingValueParser<T> parser, T defaultValue )
-    {
-        return SettingImpl.newBuilder( String.format( "%s.%s.%s", getPrefix(), name, suffix ), parser, defaultValue );
-    }
-
-    /**
-     * Helper method when creating settings for this group.
-     * This is the preferred method if the group contains only a single setting.
-     *
-     * @param parser The parser to be used in the setting
-     * @param defaultValue The default value to be associated with the setting
-     * @param <T> the type of the objects represented by the setting
-     * @return the builder of the setting
-     */
-    protected <T> SettingImpl.Builder<T> getBuilder( SettingValueParser<T> parser, T defaultValue )
-    {
-        return SettingImpl.newBuilder( String.format( "%s.%s", getPrefix(), name ), parser, defaultValue );
-    }
+    String getPrefix();
 }

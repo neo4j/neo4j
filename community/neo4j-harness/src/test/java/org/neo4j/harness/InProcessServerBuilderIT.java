@@ -61,18 +61,15 @@ import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -82,7 +79,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
-import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
 
@@ -179,17 +175,6 @@ class InProcessServerBuilderIT
         {
             // Then
             assertThat( HTTP.GET( neo4j.httpURI() + "path/to/my/extension/myExtension" ).status() ).isEqualTo( 234 );
-        }
-    }
-
-    @Test
-    void startWithCustomExtension()
-    {
-        try ( Neo4j neo4j = getTestBuilder( directory.homePath() )
-                .withExtensionFactories( asIterable( new TestExtensionFactory() ) ).build() )
-        {
-            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status() ).isEqualTo( 200 );
-            assertEquals( 1, TestExtension.getStartCounter() );
         }
     }
 
@@ -426,24 +411,6 @@ class InProcessServerBuilderIT
     private static Neo4jBuilder getTestBuilder( Path workDir )
     {
         return Neo4jBuilders.newInProcessBuilder( workDir );
-    }
-
-    private static class TestExtensionFactory extends ExtensionFactory<TestExtensionFactory.Dependencies>
-    {
-        interface Dependencies
-        {
-        }
-
-        TestExtensionFactory()
-        {
-            super( "testExtension" );
-        }
-
-        @Override
-        public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
-        {
-            return new TestExtension();
-        }
     }
 
     private static class TestExtension extends LifecycleAdapter

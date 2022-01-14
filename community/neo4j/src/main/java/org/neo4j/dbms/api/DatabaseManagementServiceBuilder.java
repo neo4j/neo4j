@@ -20,186 +20,64 @@
 package org.neo4j.dbms.api;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.neo4j.annotations.api.PublicApi;
-import org.neo4j.collection.Dependencies;
-import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.Edition;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.DatabaseEventListener;
-import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
-import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.logging.ExternalLogProviderWrapper;
-import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.monitoring.Monitors;
-import org.neo4j.service.Services;
-
-import static java.lang.Boolean.FALSE;
-import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 
 /**
  * Creates a {@link DatabaseManagementService} with Community Edition features.
  */
 @PublicApi
-public class DatabaseManagementServiceBuilder
+public final class DatabaseManagementServiceBuilder implements DBMSBuilder
 {
-    protected final List<ExtensionFactory<?>> extensions = new ArrayList<>();
-    protected final List<DatabaseEventListener> databaseEventListeners = new ArrayList<>();
-    protected Monitors monitors;
-    private InternalLogProvider userLogProvider = NullLogProvider.getInstance();
-    protected DependencyResolver dependencies = new Dependencies();
-    protected final Map<String,URLAccessRule> urlAccessRules = new HashMap<>();
-    protected Path homeDirectory;
-    protected Config.Builder config = Config.newBuilder();
-
-    public DatabaseManagementServiceBuilder( Path homeDirectory, Predicate<Class<? extends ExtensionFactory>> extensionFilter )
-    {
-        this.homeDirectory = homeDirectory;
-        Services.loadAll( ExtensionFactory.class ).stream().filter( e -> extensionFilter.test( e.getClass() ) ).forEach( extensions::add );
-    }
+    private final DBMSBuilder implementation;
 
     public DatabaseManagementServiceBuilder( Path homeDirectory )
     {
-        this( homeDirectory, extension -> true );
+        implementation = new DatabaseManagementServiceBuilderImplementation( homeDirectory, extension -> true  );
     }
 
+    @Override
     public DatabaseManagementService build()
     {
-        config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toAbsolutePath() );
-        return newDatabaseManagementService( config.build(), databaseDependencies() );
+        return implementation.build();
     }
 
-    protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
-    {
-        config.set( GraphDatabaseInternalSettings.ephemeral_lucene, FALSE );
-        return new DatabaseManagementServiceFactory( getDbmsInfo( config ), getEditionFactory( config ) )
-                .build( augmentConfig( config ), dependencies );
-    }
-
-    protected DbmsInfo getDbmsInfo( Config config )
-    {
-        return DbmsInfo.COMMUNITY;
-    }
-
-    protected Function<GlobalModule,AbstractEditionModule> getEditionFactory( Config config )
-    {
-        return CommunityEditionModule::new;
-    }
-
-    /**
-     * Override to augment config values
-     * @param config
-     */
-    protected Config augmentConfig( Config config )
-    {
-        return config;
-    }
-
+    @Override
     public DatabaseManagementServiceBuilder addDatabaseListener( DatabaseEventListener databaseEventListener )
     {
-        databaseEventListeners.add( databaseEventListener );
+        implementation.addDatabaseListener( databaseEventListener );
         return this;
     }
 
-    public DatabaseManagementServiceBuilder addURLAccessRule( String protocol, URLAccessRule rule )
-    {
-        urlAccessRules.put( protocol, rule );
-        return this;
-    }
-
+    @Override
     public DatabaseManagementServiceBuilder setUserLogProvider( LogProvider userLogProvider )
     {
-        if ( userLogProvider instanceof InternalLogProvider internalLogProvider )
-        {
-            this.userLogProvider = internalLogProvider;
-        }
-        else
-        {
-            this.userLogProvider = new ExternalLogProviderWrapper( userLogProvider );
-        }
+        implementation.setUserLogProvider( userLogProvider );
         return this;
     }
 
-    public DatabaseManagementServiceBuilder setMonitors( Monitors monitors )
-    {
-        this.monitors = monitors;
-        return this;
-    }
-
-    public DatabaseManagementServiceBuilder setExternalDependencies( DependencyResolver dependencies )
-    {
-        this.dependencies = dependencies;
-        return this;
-    }
-
-    public String getEdition()
-    {
-        return Edition.COMMUNITY.toString();
-    }
-
-    protected ExternalDependencies databaseDependencies()
-    {
-        return newDependencies()
-                .monitors( monitors )
-                .userLogProvider( userLogProvider )
-                .dependencies( dependencies )
-                .urlAccessRules( urlAccessRules )
-                .extensions( extensions )
-                .databaseEventListeners( databaseEventListeners );
-    }
-
+    @Override
     public <T> DatabaseManagementServiceBuilder setConfig( Setting<T> setting, T value )
     {
-        if ( value == null )
-        {
-            config.remove( setting );
-        }
-        else
-        {
-            config.set( setting, value );
-        }
+        implementation.setConfig( setting, value );
         return this;
     }
 
+    @Override
     public DatabaseManagementServiceBuilder setConfig( Map<Setting<?>, Object> config )
     {
-        this.config.set( config );
+        implementation.setConfig( config );
         return this;
     }
 
-    public DatabaseManagementServiceBuilder setConfigRaw( Map<String, String> raw )
-    {
-        config.setRaw( raw );
-        return this;
-    }
-
+    @Override
     public DatabaseManagementServiceBuilder loadPropertiesFromFile( Path path )
     {
-        try
-        {
-            config.fromFileNoThrow( path );
-        }
-        catch ( Exception e )
-        {
-            throw new IllegalArgumentException( "Unable to load " + path, e );
-        }
+        implementation.loadPropertiesFromFile( path );
         return this;
     }
 }
