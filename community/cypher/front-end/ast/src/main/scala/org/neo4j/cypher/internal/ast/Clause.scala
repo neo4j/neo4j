@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -491,6 +492,20 @@ case class Match(
       case RelationshipPattern(Some(Variable(id)), types, _, _, _, _, _) if variable == id =>
         list => list ++ types.map(_.name)
     }
+
+    val labelExpressionLabels: Seq[String] = pattern.fold(Seq.empty[String]) {
+      case NodePattern(Some(Variable(id)), _, Some(labelExpression), _, _) if variable == id =>
+        list => list ++
+          labelExpression.treeFold(Seq.empty[String]) {
+            case l: LabelExpression.Label =>
+              acc => SkipChildren(acc :+ l.label.name)
+            case _: LabelExpression.Conjunction | _: LabelExpression.Disjunction =>
+              acc => TraverseChildren(acc)
+            case _ =>
+              acc => SkipChildren(acc)
+          }
+    }
+
     val (predicateLabels, predicateRelTypes) = where match {
       case Some(innerWhere) => innerWhere.treeFold((Seq.empty[String], Seq.empty[String])) {
         case HasLabels(Variable(id), predicateLabels) if id == variable => {
@@ -509,7 +524,7 @@ case class Match(
       }
       case None => (inlinedLabels, inlinedRelTypes)
     }
-    val allLabels = inlinedLabels ++ predicateLabels
+    val allLabels = inlinedLabels ++ labelExpressionLabels ++ predicateLabels
     val allRelTypes = inlinedRelTypes ++ predicateRelTypes
     allLabels ++ allRelTypes
   }
