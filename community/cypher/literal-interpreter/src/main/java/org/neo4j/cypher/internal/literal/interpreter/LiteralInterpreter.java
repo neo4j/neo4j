@@ -756,6 +756,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public List<NULL> procedureQualifier( NULL p, List<String> procedures )
+    {
+        throw new UnsupportedOperationException( "procedureQualifier is not a literal" );
+    }
+
+    @Override
     public List<NULL> graphScopes( NULL p, List<SimpleEither<String,Object>> graphNames, ScopeType scopeType )
     {
         throw new UnsupportedOperationException( "graphScopes is not a literal" );

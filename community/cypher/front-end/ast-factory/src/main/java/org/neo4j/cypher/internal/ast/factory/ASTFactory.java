@@ -400,6 +400,8 @@ public interface ASTFactory<STATEMENT,
 
     List<PRIVILEGE_QUALIFIER> functionQualifier( POS p, List<String> functions );
 
+    List<PRIVILEGE_QUALIFIER> procedureQualifier( POS p, List<String> procedures );
+
     List<GRAPH_SCOPE> graphScopes( POS p, List<SimpleEither<String,PARAMETER>> graphNames, ScopeType scopeType );
 
     List<DATABASE_SCOPE> databaseScopes( POS p, List<SimpleEither<String,PARAMETER>> databaseNames, ScopeType scopeType );

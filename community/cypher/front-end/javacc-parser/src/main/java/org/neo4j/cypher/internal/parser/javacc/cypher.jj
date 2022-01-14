@@ -307,6 +307,8 @@ TOKEN [IGNORE_CASE] :
 {
     < ACCESS: "ACCESS" >
     | < ACTIVE: "ACTIVE" >
+    | < ADMIN: "ADMIN" >
+    | < ADMINISTRATOR: "ADMINISTRATOR">
     | < ALIAS: "ALIAS" >
     | < ALL_SHORTEST_PATH: "allShortestPaths" >
     | < ALL: "ALL" >
@@ -4754,16 +4756,15 @@ PRIVILEGE_TYPE dbmsPrivilege(Token start):
             | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_ASSIGN ); }
         )
         | <DATABASE> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.DATABASE_MANAGEMENT ); }
-        | LOOKAHEAD(<EXECUTE> <BOOSTED>) <EXECUTE> <BOOSTED> ( <USER> ( <DEFINED> )? )? ( <FUNCTION> | <FUNCTIONS> )
-          qualifier = executeFunctionQualifier(start)
-           {
-                action = astFactory.privilegeAction( ActionType.EXECUTE_BOOSTED_FUNCTION );
-            }
-        | <EXECUTE> ( <USER> ( <DEFINED> )? )? ( <FUNCTION> | <FUNCTIONS> ) qualifier = executeFunctionQualifier(start)
-           {
-                action = astFactory.privilegeAction( ActionType.EXECUTE_FUNCTION );
-            }
-
+        | <EXECUTE> (
+            ( <ADMIN> | <ADMINISTRATOR> ) <PROCEDURES> { action = astFactory.privilegeAction( ActionType.EXECUTE_ADMIN_PROCEDURE ); }
+            | <BOOSTED> (
+                ( <PROCEDURE> | <PROCEDURES> ) qualifier = executeProcedureQualifier(start) { action = astFactory.privilegeAction( ActionType.EXECUTE_BOOSTED_PROCEDURE ); }
+                | ( <USER> ( <DEFINED> )? )? ( <FUNCTION> | <FUNCTIONS> ) qualifier = executeFunctionQualifier(start) { action = astFactory.privilegeAction( ActionType.EXECUTE_BOOSTED_FUNCTION ); }
+            )
+            | ( <PROCEDURE> | <PROCEDURES> ) qualifier = executeProcedureQualifier(start) { action = astFactory.privilegeAction( ActionType.EXECUTE_PROCEDURE ); }
+            | ( <USER> ( <DEFINED> )? )? ( <FUNCTION> | <FUNCTIONS> ) qualifier = executeFunctionQualifier(start) { action = astFactory.privilegeAction( ActionType.EXECUTE_FUNCTION ); }
+        )
         | <PRIVILEGE> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_ALL ); }
         | <RENAME> (
             <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_RENAME ); }
@@ -4781,23 +4782,39 @@ PRIVILEGE_TYPE dbmsPrivilege(Token start):
 }
 
 List<PRIVILEGE_QUALIFIER> executeFunctionQualifier(Token start):
+{}
 {
-    List<String> functionList = new ArrayList<>();
-    String functionName = null;
+    {
+        return astFactory.functionQualifier(pos(start), executables());
+    }
+}
+
+List<PRIVILEGE_QUALIFIER> executeProcedureQualifier(Token start):
+{}
+{
+    {
+        return astFactory.procedureQualifier(pos(start), executables());
+    }
+}
+
+List<String> executables():
+{
+    List<String> executableList = new ArrayList<>();
+    String executableName = null;
 }
 {
-    functionName=Glob()
+    executableName=Glob()
     {
-        functionList.add(functionName);
+        executableList.add(executableName);
     }
     (
-        "," functionName=Glob()
+        "," executableName=Glob()
         {
-            functionList.add(functionName);
+            executableList.add(executableName);
         }
     )*
     {
-        return astFactory.functionQualifier(pos(start), functionList);
+        return executableList;
     }
 }
 
@@ -5276,6 +5293,8 @@ Token SymbolicNameString() :
         //list of allowed keywords
         | t=<ACCESS>
         | t=<ACTIVE>
+        | t=<ADMIN>
+        | t=<ADMINISTRATOR>
         | t=<ALIAS>
         | t=<ALL_SHORTEST_PATH>
         | t=<ALL>

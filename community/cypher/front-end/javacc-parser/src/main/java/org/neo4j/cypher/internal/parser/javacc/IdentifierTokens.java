@@ -25,6 +25,8 @@ import java.util.Set;
 
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ACCESS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ACTIVE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ADMIN;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ADMINISTRATOR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALIAS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL_SHORTEST_PATH;
@@ -206,6 +208,8 @@ public class IdentifierTokens
             //keywords
             ACCESS,
             ACTIVE,
+            ADMIN,
+            ADMINISTRATOR,
             ALIAS,
             ALL_SHORTEST_PATH,
             ALL,

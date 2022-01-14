@@ -176,7 +176,15 @@ class ExecuteFunctionPrivilegeAdministrationCommandJavaccParserTest extends Pars
       test(s"$verb EXECUTE DEFINED FUNCTION * ON DATABASE * $preposition role") {
         val offset = s"$verb EXECUTE ".length
         assertJavaCCException(testName,
-          s"""Invalid input 'DEFINED': expected "FUNCTION", "FUNCTIONS" or "USER" (line 1, column ${offset + 1} (offset: $offset))""")
+          s"""Invalid input 'DEFINED': expected
+             |  "ADMIN"
+             |  "ADMINISTRATOR"
+             |  "BOOSTED"
+             |  "FUNCTION"
+             |  "FUNCTIONS"
+             |  "PROCEDURE"
+             |  "PROCEDURES"
+             |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
       }
   }
 
