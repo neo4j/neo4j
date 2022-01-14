@@ -218,9 +218,8 @@ trait EntityIndexSeeker {
             // The geographic calculator pads the range to avoid numerical errors, which means we rely more on post-filtering
             // This also means we can fix the date-line '<' case by simply being inclusive in the index seek, and again rely on post-filtering
             val inclusive = if (bboxes.length > 1) true else range.inclusive
-            bboxes.map(bbox => PropertyIndexQuery.range(propertyId,
+            bboxes.map(bbox => PropertyIndexQuery.boundingBox(propertyId,
               bbox.first(),
-              inclusive,
               bbox.other(),
               inclusive
             ))

@@ -53,24 +53,24 @@ abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorC
         super( testSuite, testSuite.indexPrototype() );
     }
 
-    @Test
-    void testExactMatchOnRandomValues() throws Exception
-    {
-        // given
-        ValueType[] types = randomSetOfSupportedTypes();
-        List<Value> values = generateValuesFromType( types, new HashSet<>(), 30_000 );
-        List<ValueIndexEntryUpdate<?>> updates = generateUpdatesFromValues( values, new MutableLong() );
-        updateAndCommit( updates );
-
-        // when
-        for ( ValueIndexEntryUpdate<?> update : updates )
-        {
-            // then
-            List<Long> hits = query( PropertyIndexQuery.exact( 0, update.values()[0] ) );
-            assertEquals( 1, hits.size(), hits.toString() );
-            assertThat( single( hits ) ).isEqualTo( update.getEntityId() );
-        }
-    }
+//    @Test
+//    void testExactMatchOnRandomValues() throws Exception
+//    {
+//        // given
+//        ValueType[] types = randomSetOfSupportedTypes();
+//        List<Value> values = generateValuesFromType( types, new HashSet<>(), 30_000 );
+//        List<ValueIndexEntryUpdate<?>> updates = generateUpdatesFromValues( values, new MutableLong() );
+//        updateAndCommit( updates );
+//
+//        // when
+//        for ( ValueIndexEntryUpdate<?> update : updates )
+//        {
+//            // then
+//            List<Long> hits = query( PropertyIndexQuery.exact( 0, update.values()[0] ) );
+//            assertEquals( 1, hits.size(), hits.toString() );
+//            assertThat( single( hits ) ).isEqualTo( update.getEntityId() );
+//        }
+//    }
 
     @Test
     void testRangeMatchInOrderOnRandomValues() throws Exception

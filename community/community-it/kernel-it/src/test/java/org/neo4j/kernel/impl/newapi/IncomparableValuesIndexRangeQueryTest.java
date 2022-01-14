@@ -47,7 +47,10 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
+import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT;
+import static org.neo4j.values.storable.ValueType.GEOGRAPHIC_POINT_ARRAY;
 
 @ExtendWith( RandomExtension.class )
 @ImpermanentDbmsExtension
@@ -106,6 +109,8 @@ class IncomparableValuesIndexRangeQueryTest
     @ParameterizedTest
     void testPartitionedScan( ValueType valueType ) throws KernelException
     {
+        //We don't support partitioned scans for geographic values
+        assumeTrue( valueType != GEOGRAPHIC_POINT && valueType != GEOGRAPHIC_POINT_ARRAY );
         Range range = prepareData( valueType );
 
         try ( var tx = db.beginTx() )
@@ -173,7 +178,7 @@ class IncomparableValuesIndexRangeQueryTest
 
     private static Stream<ValueType> incomparableValueTypes()
     {
-        return Stream.of( ValueType.DURATION, ValueType.DURATION_ARRAY, /* TODO: ValueType.GEOGRAPHIC_POINT, */ ValueType.GEOGRAPHIC_POINT_ARRAY );
+        return Stream.of( ValueType.DURATION, ValueType.DURATION_ARRAY, GEOGRAPHIC_POINT, GEOGRAPHIC_POINT_ARRAY );
     }
 
     record Range(Value from, Value to)

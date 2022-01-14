@@ -154,6 +154,11 @@ public abstract class PropertyIndexQuery implements IndexQuery
         return new BoundingBoxPredicate( propertyKeyId, from, to );
     }
 
+    public static BoundingBoxPredicate boundingBox( int propertyKeyId, PointValue from, PointValue to, boolean inclusive )
+    {
+        return new BoundingBoxPredicate( propertyKeyId, from, to, inclusive );
+    }
+
     /**
      * Create IndexQuery for retrieving all indexed entries with spatial value of the given
      * coordinate reference system.
@@ -494,36 +499,42 @@ public abstract class PropertyIndexQuery implements IndexQuery
         }
     }
 
-    /* Todo: remove fromInclusive and toInclusive when BTREE is removed or when new point comparisons have already been introduced;as they are currently kept
-             to keep consistent BTREE behaviour. The corresponding PropertyIndexQuery::boundingBox methods should be removed at the same time
-             (fromInclusive and toInclusive are effectively always 'true' for bounding box)
-     */
     public static final class BoundingBoxPredicate extends PropertyIndexQuery
     {
         private final CoordinateReferenceSystem crs;
         private final PointValue from;
         private final PointValue to;
+        private final boolean inclusive;
 
         private BoundingBoxPredicate( int propertyKeyId, CoordinateReferenceSystem crs,
                                       PointValue from,
-                                      PointValue to )
+                                      PointValue to,
+                                      boolean inclusive )
         {
             super( propertyKeyId );
             this.crs = crs;
             this.from = from;
             this.to = to;
+            this.inclusive = inclusive;
         }
 
         private BoundingBoxPredicate( int propertyKeyId,
                                       PointValue from,
-                                      PointValue to )
+                                      PointValue to,
+                                      boolean inclusive )
         {
-            this( propertyKeyId, requireNonNullElse( from, to ).getCoordinateReferenceSystem(), from, to );
+            this( propertyKeyId, requireNonNullElse( from, to ).getCoordinateReferenceSystem(),
+                  from, to, inclusive );
+        }
+
+        private BoundingBoxPredicate( int propertyKeyId, PointValue from, PointValue to )
+        {
+            this( propertyKeyId, from, to, true );
         }
 
         private BoundingBoxPredicate( int propertyKeyId, CoordinateReferenceSystem crs )
         {
-            this( propertyKeyId, crs, null, null );
+            this( propertyKeyId, crs, null, null, true );
         }
 
         @Override
@@ -540,7 +551,7 @@ public abstract class PropertyIndexQuery implements IndexQuery
                 return false;
             }
 
-            return crs.getCalculator().withinBBox( point, from, to );
+            return crs.getCalculator().withinBBox( point, from, to, inclusive );
         }
 
         @Override

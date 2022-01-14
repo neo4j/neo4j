@@ -113,7 +113,11 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
                 ValueType.CARTESIAN_POINT,
                 ValueType.CARTESIAN_POINT_ARRAY,
                 ValueType.CARTESIAN_POINT_3D,
-                ValueType.CARTESIAN_POINT_3D_ARRAY
+                ValueType.CARTESIAN_POINT_3D_ARRAY,
+                ValueType.DURATION,
+                ValueType.DURATION_ARRAY,
+                ValueType.PERIOD,
+                ValueType.PERIOD_ARRAY
         );
         targetedTypes = randomValues.selection( allExceptNonOrderable, 1, allExceptNonOrderable.length, false );
         targetedTypes = ensureHighEnoughCardinality( targetedTypes );

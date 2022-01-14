@@ -40,7 +40,12 @@ public abstract class CRSCalculator
 
     public abstract List<Pair<PointValue,PointValue>> boundingBox( PointValue center, double distance );
 
-    public abstract boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight );
+    public boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight )
+    {
+        return withinBBox( point, lowerLeft, upperRight, true );
+    }
+
+    public abstract boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight, boolean inclusive );
 
     public abstract List<Pair<PointValue, PointValue>> computeBBoxes( PointValue lowerLeft, PointValue upperRight );
 
@@ -89,22 +94,53 @@ public abstract class CRSCalculator
         }
 
         @Override
-        public boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight )
+        public boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight, boolean inclusive )
         {
-            assert point.getCoordinateReferenceSystem().equals( lowerLeft.getCoordinateReferenceSystem() ) &&
-                   point.getCoordinateReferenceSystem().equals( upperRight.getCoordinateReferenceSystem() );
+            if ( lowerLeft == null && upperRight == null )
+            {
+                return true;
+            }
 
             var check = point.coordinate();
-            var ll = lowerLeft.coordinate();
-            var ur = upperRight.coordinate();
-            for ( int i = 0; i < check.length; i++ )
+
+            if ( upperRight == null )
             {
-                if ( check[i] < ll[i] || check[i] > ur[i] )
+                var ll = lowerLeft.coordinate();
+                for ( int i = 0; i < check.length; i++ )
                 {
-                    return false;
+                    if ( (inclusive && check[i] < ll[i]) || (!inclusive && check[i] <= ll[i]) )
+                    {
+                        return false;
+                    }
                 }
+                return true;
             }
-            return true;
+            else if ( lowerLeft == null )
+            {
+                var ur = upperRight.coordinate();
+                for ( int i = 0; i < check.length; i++ )
+                {
+                    if ( (inclusive && check[i] > ur[i]) || (!inclusive && check[i] >= ur[i]) )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                var ll = lowerLeft.coordinate();
+                var ur = upperRight.coordinate();
+                for ( int i = 0; i < check.length; i++ )
+                {
+                    if ( (inclusive && (check[i] < ll[i] || check[i] > ur[i])) ||
+                         (!inclusive && (check[i] <= ll[i] || check[i] >= ur[i])) )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         @Override
@@ -264,49 +300,105 @@ public abstract class CRSCalculator
         }
 
         @Override
-        public boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight )
+        public boolean withinBBox( PointValue point, PointValue lowerLeft, PointValue upperRight, boolean inclusive )
         {
-            assert point.getCoordinateReferenceSystem().equals( lowerLeft.getCoordinateReferenceSystem() ) &&
-                   point.getCoordinateReferenceSystem().equals( upperRight.getCoordinateReferenceSystem() );
+
+            if ( lowerLeft == null && upperRight == null )
+            {
+                return true;
+            }
             double[] check = point.coordinate();
 
-            double[] ll = lowerLeft.coordinate();
-            double[] ur = upperRight.coordinate();
-            //If lowerLeft is north of upperRight the bbox will always be empty
-            if ( isNorthOf( ll, ur ) )
+            if ( upperRight == null )
             {
-                return false;
-            }
+                double[] ll = lowerLeft.coordinate();
 
-            int i = 0;
-            //first check latitude and longitude
-            for ( ; i < 2; i++ )
-            {
-                if ( ll[i] <= ur[i] )
+                int i = 0;
+                //first check latitude and longitude
+                for ( ; i < 2; i++ )
                 {
-                    if ( check[i] < ll[i] || check[i] > ur[i] )
+                    if ( (inclusive && check[i] < ll[i]) || (!inclusive && check[i] <= ll[i]) )
                     {
                         return false;
                     }
                 }
-                else
+
+                //check potential extra dimensions
+                for ( ; i < check.length; i++ )
                 {
-                    if ( check[i] > ur[i] && check[i] < ll[i] )
+                    if ( (inclusive && check[i] < ll[i]) || (!inclusive && check[i] <= ll[i]) )
                     {
                         return false;
                     }
                 }
+                return true;
             }
-
-            //check potential extra dimensions
-            for ( ; i < check.length; i++ )
+            else if ( lowerLeft == null )
             {
-                if ( check[i] < ll[i] || check[i] > ur[i] )
+                double[] ur = upperRight.coordinate();
+                int i = 0;
+                //first check latitude and longitude
+                for ( ; i < 2; i++ )
+                {
+                    if ( (inclusive && check[i] > ur[i]) || (!inclusive && check[i] >= ur[i]) )
+                    {
+                        return false;
+                    }
+                }
+
+                //check potential extra dimensions
+                for ( ; i < check.length; i++ )
+                {
+                    if ( (inclusive && check[i] > ur[i]) || (!inclusive && check[i] >= ur[i]) )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                double[] ll = lowerLeft.coordinate();
+                double[] ur = upperRight.coordinate();
+                //If lowerLeft is north of upperRight the bbox will always be empty
+                if ( isNorthOf( ll, ur ) )
                 {
                     return false;
                 }
+
+                int i = 0;
+                //first check latitude and longitude
+                for ( ; i < 2; i++ )
+                {
+                    if ( ll[i] <= ur[i] )
+                    {
+                        if ( (inclusive && (check[i] < ll[i] || check[i] > ur[i])) ||
+                             (!inclusive && (check[i] <= ll[i] || check[i] >= ur[i])) )
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        if ( (inclusive && (check[i] > ur[i] && check[i] < ll[i])) ||
+                             (!inclusive && (check[i] >= ur[i] && check[i] <= ll[i])) )
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                //check potential extra dimensions
+                for ( ; i < check.length; i++ )
+                {
+                    if ( (inclusive && (check[i] < ll[i] || check[i] > ur[i])) ||
+                         (!inclusive && (check[i] <= ll[i] || check[i] >= ur[i])) )
+                    {
+                        return false;
+                    }
+                }
+                return true;
             }
-            return true;
         }
 
         private static Pair<PointValue,PointValue> boundingBoxOf( double minLon, double maxLon, double minLat, double maxLat, PointValue center,

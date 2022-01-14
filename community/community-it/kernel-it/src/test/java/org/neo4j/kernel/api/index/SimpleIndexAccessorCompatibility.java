@@ -269,18 +269,8 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
         testIndexRangeSeek( () -> random.randomValues().nextLocalTimeValue() );
     }
 
-    @Test
-    void testIndexRangeSeekByDuration() throws Exception
-    {
-        testIndexRangeSeek( () -> random.randomValues().nextDuration() );
-    }
-
-    @Test
-    void testIndexRangeSeekByPeriod() throws Exception
-    {
-        testIndexRangeSeek( () -> random.randomValues().nextPeriod() );
-    }
-
+    // testIndexRangeSeekByDuration not present because duration is not orderable
+    // testIndexRangeSeekByPeriod not present because period is not orderable
     // testIndexRangeSeekGeometry not present because geometry is not orderable
     // testIndexRangeSeekBoolean not present because test needs more than two possible values
 
@@ -312,12 +302,6 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
     void testIndexRangeSeekByLocalTimeArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextLocalTimeArray() );
-    }
-
-    @Test
-    void testIndexRangeSeekByDurationArray() throws Exception
-    {
-        testIndexRangeSeekArray( () -> random.randomValues().nextDurationArray() );
     }
 
     @Test
@@ -603,30 +587,6 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
     }
 
     @Test
-    void shouldRangeSeekInOrderAscendingDuration() throws Exception
-    {
-        Object o0 = Duration.ofMillis( 0 );
-        Object o1 = Duration.ofMillis( 1 );
-        Object o2 = Duration.ofMillis( 2 );
-        Object o3 = Duration.ofMillis( 3 );
-        Object o4 = Duration.ofMillis( 4 );
-        Object o5 = Duration.ofMillis( 5 );
-        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
-    }
-
-    @Test
-    void shouldRangeSeekInOrderDescendingDuration() throws Exception
-    {
-        Object o0 = Duration.ofMillis( 0 );
-        Object o1 = Duration.ofMillis( 1 );
-        Object o2 = Duration.ofMillis( 2 );
-        Object o3 = Duration.ofMillis( 3 );
-        Object o4 = Duration.ofMillis( 4 );
-        Object o5 = Duration.ofMillis( 5 );
-        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
-    }
-
-    @Test
     void shouldRangeSeekInOrderAscendingNumberArray() throws Exception
     {
         Object o0 = new int[]{0};
@@ -815,30 +775,6 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
         Object o3 = new LocalTime[]{LocalTime.of( 10, 3 )};
         Object o4 = new LocalTime[]{LocalTime.of( 10, 4 )};
         Object o5 = new LocalTime[]{LocalTime.of( 10, 5 )};
-        shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
-    }
-
-    @Test
-    void shouldRangeSeekInOrderAscendingDurationArray() throws Exception
-    {
-        Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
-        Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
-        Object o2 = new Duration[]{Duration.of( 2, ChronoUnit.SECONDS )};
-        Object o3 = new Duration[]{Duration.of( 3, ChronoUnit.SECONDS )};
-        Object o4 = new Duration[]{Duration.of( 4, ChronoUnit.SECONDS )};
-        Object o5 = new Duration[]{Duration.of( 5, ChronoUnit.SECONDS )};
-        shouldRangeSeekInOrder( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
-    }
-
-    @Test
-    void shouldRangeSeekInOrderDescendingDurationArray() throws Exception
-    {
-        Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
-        Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
-        Object o2 = new Duration[]{Duration.of( 2, ChronoUnit.SECONDS )};
-        Object o3 = new Duration[]{Duration.of( 3, ChronoUnit.SECONDS )};
-        Object o4 = new Duration[]{Duration.of( 4, ChronoUnit.SECONDS )};
-        Object o5 = new Duration[]{Duration.of( 5, ChronoUnit.SECONDS )};
         shouldRangeSeekInOrder( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
     }
 
@@ -1105,15 +1041,6 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
                                               time( 20, 31, 54, 3, ZoneOffset.of( "+17:02" ) ),
                                               time( 19, 31, 54, 2, UTC ),
                                               time( 18, 23, 27, 1, ZoneOffset.of( "-18:00" ) ) );
-        }
-
-        @Test
-        void testIndexRangeSeekByDurationWithDuplicates() throws Exception
-        {
-            testIndexRangeSeekWithDuplicates( duration( 1, 1, 1, 1 ),
-                                              duration( 1, 1, 1, 2 ),
-                                              duration( 2, 1, 1, 1 ),
-                                              duration( 3, 1, 1, 1 ) );
         }
 
         /**

@@ -666,17 +666,6 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     }
 
     @Test
-    void testIndexSeekRangeWithExistsBySpatialArray() throws Exception
-    {
-        testIndexSeekRangeWithExists(
-                pointArray( new PointValue[]{pointValue( CARTESIAN, 0D, 0D ), pointValue( CARTESIAN, 0D, 1D )} ),
-                pointArray( new PointValue[]{pointValue( CARTESIAN, 10D, 1D ), pointValue( CARTESIAN, 10D, 2D )} ),
-                pointArray( new PointValue[]{pointValue( CARTESIAN, 20D, 2D ), pointValue( CARTESIAN, 20D, 3D )} ),
-                pointArray( new PointValue[]{pointValue( CARTESIAN, 30D, 3D ), pointValue( CARTESIAN, 30D, 4D )} ),
-                pointArray( new PointValue[]{pointValue( CARTESIAN, 40D, 4D ), pointValue( CARTESIAN, 40D, 5D )} ) );
-    }
-
-    @Test
     void testExactMatchOnRandomCompositeValues() throws Exception
     {
         // given
@@ -928,30 +917,6 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
     }
 
     @Test
-    void shouldRangeSeekInOrderAscendingDuration() throws Exception
-    {
-        Object o0 = Duration.ofMillis( 0 );
-        Object o1 = Duration.ofMillis( 1 );
-        Object o2 = Duration.ofMillis( 2 );
-        Object o3 = Duration.ofMillis( 3 );
-        Object o4 = Duration.ofMillis( 4 );
-        Object o5 = Duration.ofMillis( 5 );
-        shouldSeekInOrderExactWithRange( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
-    }
-
-    @Test
-    void shouldRangeSeekInOrderDescendingDuration() throws Exception
-    {
-        Object o0 = Duration.ofMillis( 0 );
-        Object o1 = Duration.ofMillis( 1 );
-        Object o2 = Duration.ofMillis( 2 );
-        Object o3 = Duration.ofMillis( 3 );
-        Object o4 = Duration.ofMillis( 4 );
-        Object o5 = Duration.ofMillis( 5 );
-        shouldSeekInOrderExactWithRange( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
-    }
-
-    @Test
     void shouldRangeSeekInOrderAscendingNumberArray() throws Exception
     {
         Object o0 = new int[]{0};
@@ -1140,30 +1105,6 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
         Object o3 = new LocalTime[]{LocalTime.of( 10, 3 )};
         Object o4 = new LocalTime[]{LocalTime.of( 10, 4 )};
         Object o5 = new LocalTime[]{LocalTime.of( 10, 5 )};
-        shouldSeekInOrderExactWithRange( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
-    }
-
-    @Test
-    void shouldRangeSeekInOrderAscendingDurationArray() throws Exception
-    {
-        Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
-        Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
-        Object o2 = new Duration[]{Duration.of( 2, ChronoUnit.SECONDS )};
-        Object o3 = new Duration[]{Duration.of( 3, ChronoUnit.SECONDS )};
-        Object o4 = new Duration[]{Duration.of( 4, ChronoUnit.SECONDS )};
-        Object o5 = new Duration[]{Duration.of( 5, ChronoUnit.SECONDS )};
-        shouldSeekInOrderExactWithRange( IndexOrder.ASCENDING, o0, o1, o2, o3, o4, o5 );
-    }
-
-    @Test
-    void shouldRangeSeekInOrderDescendingDurationArray() throws Exception
-    {
-        Object o0 = new Duration[]{Duration.of( 0, ChronoUnit.SECONDS )};
-        Object o1 = new Duration[]{Duration.of( 1, ChronoUnit.SECONDS )};
-        Object o2 = new Duration[]{Duration.of( 2, ChronoUnit.SECONDS )};
-        Object o3 = new Duration[]{Duration.of( 3, ChronoUnit.SECONDS )};
-        Object o4 = new Duration[]{Duration.of( 4, ChronoUnit.SECONDS )};
-        Object o5 = new Duration[]{Duration.of( 5, ChronoUnit.SECONDS )};
         shouldSeekInOrderExactWithRange( IndexOrder.DESCENDING, o0, o1, o2, o3, o4, o5 );
     }
 

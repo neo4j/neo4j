@@ -324,9 +324,9 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
                                        type -> switch ( type )
         {
             case STRING, STRING_ARRAY -> true;  // exclude strings outside the Basic Multilingual Plane
-            default -> switch ( type.valueGroup.category() )
+            default -> switch ( type.valueGroup )
             {
-                case GEOMETRY, GEOMETRY_ARRAY -> true;  // exclude spacial types
+                case GEOMETRY, GEOMETRY_ARRAY, DURATION, DURATION_ARRAY -> true;  // exclude spacial types and durations
                 default -> false;
             };
         });

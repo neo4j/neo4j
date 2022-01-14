@@ -54,6 +54,7 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.PERIOD;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -107,9 +108,9 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
                                                     type -> switch ( type )
         {
             case STRING, STRING_ARRAY -> true;  // exclude strings outside the Basic Multilingual Plane
-            default -> switch ( type.valueGroup.category() )
+            default -> switch ( type.valueGroup )
             {
-                case GEOMETRY, GEOMETRY_ARRAY -> true;  // exclude spacial types
+                case GEOMETRY, GEOMETRY_ARRAY, DURATION, DURATION_ARRAY -> true;  // exclude spacial types
                 default -> false;
             };
         });

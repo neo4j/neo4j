@@ -130,7 +130,7 @@ class NativeIndexAccessorTest extends GenericNativeIndexAccessorTests<BtreeKey>
                                                                        valueOf( updates[toExclusive] ), false ) ) )
         {
             // then
-            assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, fromInclusive, toExclusive ), alwaysTrue() ), result );
+            assertEntityIdHits( new long[0], result );
         }
     }
 }
