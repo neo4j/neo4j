@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
@@ -220,6 +221,14 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
         {
             return ""; //Service did not exist
         }
+    }
+
+    // For debugging flaky behaviour on WindowsServer2019
+    @VisibleForTesting
+    String[] getServiceStatusResult() throws BootProcessFailureException
+    {
+        String serviceName = serviceName();
+        return resultFromPowerShellCommand( "Get-Service", serviceName, "|", "Format-Table", "-AutoSize" );
     }
 
     private String[] resultFromPowerShellCommand( String... command )

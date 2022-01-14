@@ -26,6 +26,7 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.parallel.Isolated;
 
+import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +40,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.neo4j.internal.helpers.Exceptions.stringify;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -95,7 +97,7 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
 
     @EnabledOnOs( OS.WINDOWS )
     @Test
-    void shouldBeAbleToUpdateRealServerOnWindows()
+    void shouldBeAbleToUpdateRealServerOnWindows() throws InterruptedException
     {
         assumeThat( isCurrentlyRunningAsWindowsAdmin() ).isTrue();
         addConf( BootloaderSettings.windows_service_name, "neo4j-" + currentTimeMillis() );
@@ -105,7 +107,26 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
 
             int updatedSetting = 2 * INITIAL_HEAP_MB;
             addConf( BootloaderSettings.initial_heap_size, String.format( "%dm", updatedSetting ) );
-            assertThat( execute( "update-service" ) ).withFailMessage( () -> "Out:" + out.toString() + ", err: " + err.toString() ).isEqualTo( 0 );
+
+            // Try a couple of times to issue the update-service call. There's an idea that on WindowsServer2019 there may be
+            // a delay between installing the service and it being available for being updated... so consider this temporary.
+            int updateServiceResult = 0;
+            for ( int i = 0; i < 3; i++ )
+            {
+                updateServiceResult = execute( "update-service" );
+                if ( updateServiceResult != 0 )
+                {
+                    System.out.println( "failed, print" );
+                    printVerboseWindowsDebugInformation();
+                    Thread.sleep( 2_000 );
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            assertThat( updateServiceResult ).withFailMessage( () -> "Out:" + out.toString() + ", err: " + err.toString() ).isEqualTo( 0 );
 
             shouldBeAbleToStartAndStopRealServer( updatedSetting );
         }
@@ -114,6 +135,28 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
             assertThat( execute( "uninstall-service" ) ).isEqualTo( 0 );
         }
         assertThat( err.toString() ).isEmpty();
+    }
+
+    private void printVerboseWindowsDebugInformation()
+    {
+        PrintStream err = new PrintStream( this.err );
+        Neo4jCommand.Neo4jBootloaderContext bootloaderContext =
+                new Neo4jCommand.Neo4jBootloaderContext( new PrintStream( out ), err, System::getenv, System::getProperty, entrypoint(),
+                        Runtime.version() );
+        bootloaderContext.init( false, false );
+        WindowsBootloaderOs windows = (WindowsBootloaderOs) BootloaderOsAbstraction.getOsAbstraction( bootloaderContext );
+        try
+        {
+            err.println( "Printing results from Get-Service call:" );
+            for ( String resultRow : windows.getServiceStatusResult() )
+            {
+                err.println( resultRow );
+            }
+        }
+        catch ( BootProcessFailureException e )
+        {
+            err.println( stringify( e ) );
+        }
     }
 
     private void shouldBeAbleToStartAndStopRealServer()
