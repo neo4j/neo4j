@@ -1662,7 +1662,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(GrantDbmsAction(privLhsLP, ExecuteProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1")), 1.0), adminPlanDescription)
 
     assertGood(attach(
-      DenyDbmsAction(privLhsLP, ExecuteBoostedProcedureAction, ProcedureQualifier(Namespace(List("apoc"))(pos), ProcedureName("sin")(pos))(pos), util.Left("role1")),
+      DenyDbmsAction(privLhsLP, ExecuteBoostedProcedureAction, ProcedureQualifier("apoc.sin")(pos), util.Left("role1")),
       1.0), adminPlanDescription)
 
     assertGood(attach(

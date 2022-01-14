@@ -130,6 +130,14 @@ trait Base extends Parser {
     group(GlobbedIdentifierStart ~ zeroOrMore(GlobbedIdentifierPart)) ~> (_.toString) ~ !GlobbedIdentifierPart
   }
 
+  def GlobWithoutNamespace: Rule1[String] = rule("a glob") {
+    GlobbedSymbolicNameString ~~>> (funcName => _ => funcName)
+  }
+
+  def Glob: Rule1[String] = rule("a glob") {
+    oneOrMore(GlobbedSymbolicNameString ~ ".") ~~ GlobbedSymbolicNameString ~~>> ((nameSpace, funcName) => _ => nameSpace.mkString("",".",".") ++ funcName)
+  }
+
   def EscapedSymbolicNameString: Rule1[String] = rule("an identifier") {
     (oneOrMore(
       ch('`') ~ zeroOrMore(!ch('`') ~ ANY) ~> (_.toString) ~ ch('`')
@@ -143,10 +151,6 @@ trait Base extends Parser {
 
   def Namespace: Rule1[expressions.Namespace] = rule("namespace of a procedure") {
     zeroOrMore(SymbolicNameString ~ ".") ~~>> (expressions.Namespace(_))
-  }
-
-  def GlobbedNamespace: Rule1[expressions.Namespace] = rule("globbed namespace of a procedure") {
-    zeroOrMore(GlobbedSymbolicNameString ~ ".") ~~>> (expressions.Namespace(_))
   }
 
   def parseOrThrow[T](input: String, cypherExceptionFactory: CypherExceptionFactory, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]]): T = {

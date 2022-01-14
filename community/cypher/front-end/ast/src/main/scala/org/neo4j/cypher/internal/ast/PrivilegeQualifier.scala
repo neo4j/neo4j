@@ -16,10 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
 
@@ -76,9 +73,9 @@ sealed trait ProcedurePrivilegeQualifier extends ExecutePrivilegeQualifier {
   override def dup(children: Seq[AnyRef]): ProcedurePrivilegeQualifier.this.type = this
 }
 
-final case class ProcedureQualifier(nameSpace: Namespace, procedureName: ProcedureName)(val position: InputPosition) extends ProcedurePrivilegeQualifier {
-  override def simplify: Seq[ProcedurePrivilegeQualifier] = (nameSpace, procedureName) match {
-    case (Namespace(Nil), ProcedureName("*")) => Seq(ProcedureAllQualifier()(position))
+final case class ProcedureQualifier(glob: String)(val position: InputPosition) extends ProcedurePrivilegeQualifier {
+  override def simplify: Seq[ProcedurePrivilegeQualifier] = glob match {
+    case "*" => Seq(ProcedureAllQualifier()(position))
     case _ => Seq(this)
   }
 }
@@ -89,9 +86,9 @@ sealed trait FunctionPrivilegeQualifier extends ExecutePrivilegeQualifier {
   override def dup(children: Seq[AnyRef]): FunctionPrivilegeQualifier.this.type = this
 }
 
-final case class FunctionQualifier(nameSpace: Namespace, functionName: FunctionName)(val position: InputPosition) extends FunctionPrivilegeQualifier {
-  override def simplify: Seq[FunctionPrivilegeQualifier] = (nameSpace, functionName) match {
-    case (Namespace(Nil), FunctionName("*")) => Seq(FunctionAllQualifier()(position))
+final case class FunctionQualifier(glob: String)(val position: InputPosition) extends FunctionPrivilegeQualifier {
+  override def simplify: Seq[FunctionPrivilegeQualifier] = glob match {
+    case "*" => Seq(FunctionAllQualifier()(position))
     case _ => Seq(this)
   }
 }

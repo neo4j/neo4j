@@ -391,16 +391,16 @@ trait AdministrationCommand extends Parser
   private def Procedure: Rule1[List[ast.PrivilegeQualifier]] = ProcedureKeyword ~~ ProcedureIdentifier
 
   private def ProcedureIdentifier: Rule1[List[ast.PrivilegeQualifier]] = rule("procedure identifier") {
-    oneOrMore(group(GlobbedNamespace ~ GlobbedProcedureName), separator = CommaSep) ~~>>
-      { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p._1, p._2)(pos)) }
+    oneOrMore(Glob | GlobWithoutNamespace, separator = CommaSep) ~~>>
+      { procedures => pos => procedures.map(p => ast.ProcedureQualifier(p)(pos)) }
   }
 
   private def Function: Rule1[List[ast.PrivilegeQualifier]] =
     group(optional(keyword("USER") ~~ optional(keyword("DEFINED"))) ~~ FunctionKeyword) ~~ FunctionIdentifier
 
   private def FunctionIdentifier: Rule1[List[ast.PrivilegeQualifier]] = rule("function identifier") {
-    oneOrMore(group(GlobbedNamespace ~ GlobbedFunctionName), separator = CommaSep) ~~>>
-      { functions => pos => functions.map(p => ast.FunctionQualifier(p._1, p._2)(pos)) }
+    oneOrMore(Glob | GlobWithoutNamespace, separator = CommaSep) ~~>>
+      { functions => pos => functions.map(p => ast.FunctionQualifier(p)(pos)) }
   }
 
   // Database specific

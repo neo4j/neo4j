@@ -764,6 +764,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     args <- zeroOrMore(_expression)
   } yield FunctionInvocation(namespace, functionName, distinct, args.toIndexedSeq)(pos)
 
+  def _glob: Gen[String] = for {
+    parts <- zeroOrMore(_identifier)
+    name <- _identifier
+  } yield parts.mkString(".") ++ name
+
   def _countStar: Gen[CountStar] =
     const(CountStar()(pos))
 
@@ -1580,18 +1585,16 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     if (dbmsAction == ExecuteProcedureAction || dbmsAction == ExecuteBoostedProcedureAction) {
       // Procedures
       for {
-        procedureNamespace <- _namespace
-        procedureName <- _procedureName
-        procedures <- oneOrMore(ProcedureQualifier(procedureNamespace, procedureName)(pos))
-        qualifier <- frequency(7 -> procedures, 3 -> List(ProcedureQualifier(Namespace()(pos), ProcedureName("*")(pos))(pos)))
+        glob <- _glob
+        procedures <- oneOrMore(ProcedureQualifier(glob)(pos))
+        qualifier <- frequency(7 -> procedures, 3 -> List(ProcedureQualifier("*")(pos)))
       } yield qualifier
     } else if (dbmsAction == ExecuteFunctionAction || dbmsAction == ExecuteBoostedFunctionAction) {
       // Functions
       for {
-        functionNamespace <- _namespace
-        functionName <- _functionName
-        functions <- oneOrMore(FunctionQualifier(functionNamespace, functionName)(pos))
-        qualifier <- frequency(7 -> functions, 3 -> List(FunctionQualifier(Namespace()(pos), FunctionName("*")(pos))(pos)))
+        glob <- _glob
+        functions <- oneOrMore(FunctionQualifier(glob)(pos))
+        qualifier <- frequency(7 -> functions, 3 -> List(FunctionQualifier("*")(pos)))
       } yield qualifier
     } else if (dbmsAction == ImpersonateUserAction) {
       // impersonation

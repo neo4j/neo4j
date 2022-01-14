@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.parser.AdministrationCommandParserTestBase
 import org.neo4j.cypher.internal.util.InputPosition
 
 class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
-  private val apocString = "apoc"
-  private val mathString = "math"
 
   Seq(
     ("GRANT", "TO", grantExecuteProcedurePrivilege: executeProcedurePrivilegeFunc),
@@ -56,15 +54,15 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
           }
 
           test(s"$verb $execute apoc.procedure ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List(apocString), "procedure")), Seq(literalRole)))
+            yields(func(action, List(procedureQualifier("apoc.procedure")), Seq(literalRole)))
           }
 
           test(s"$verb ${execute}S apoc.procedure ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List(apocString), "procedure")), Seq(literalRole)))
+            yields(func(action, List(procedureQualifier("apoc.procedure")), Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc.math.sin ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List(apocString, mathString), "sin")), Seq(literalRole)))
+            yields(func(action, List(procedureQualifier("apoc.math.sin")), Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc* ON DBMS $preposition role") {
@@ -75,32 +73,56 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
             yields(func(action, List(procedureQualifier("*apoc")), Seq(literalRole)))
           }
 
-          test(s"$verb $execute apoc.*.math.* ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List(apocString, "*", mathString), "*")), Seq(literalRole)))
+          test(s"$verb $execute *apoc, *.sin ON DBMS $preposition role") {
+            yields(func(action, List(procedureQualifier("*apoc"), procedureQualifier("*.sin")), Seq(literalRole)))
           }
 
-          test(s"$verb $execute math.*n ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List(mathString), "*n")), Seq(literalRole)))
-          }
-
-          test(s"$verb $execute mat?.`a.\n`.*n ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List("mat?", "a.\n"), "*n")), Seq(literalRole)))
+          test(s"$verb $execute *.sin, apoc* ON DBMS $preposition role") {
+            yields(func(action, List(procedureQualifier("*.sin"), procedureQualifier("apoc*")), Seq(literalRole)))
           }
 
           test(s"$verb $execute *.sin ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List("*"), "sin")), Seq(literalRole)))
+            yields(func(action, List(procedureQualifier("*.sin")), Seq(literalRole)))
+          }
+
+          test(s"$verb $execute apoc.*.math.* ON DBMS $preposition role") {
+            yields(func(action, List(procedureQualifier("apoc.*.math.*")), Seq(literalRole)))
+          }
+
+          test(s"$verb $execute math.*n ON DBMS $preposition role") {
+            yields(func(action, List(procedureQualifier("math.*n")), Seq(literalRole)))
+          }
+
+          test(s"$verb $execute math.si? ON DBMS $preposition role") {
+            yields(func(action, List(procedureQualifier("math.si?")), Seq(literalRole)))
+          }
+
+          test(s"$verb $execute mat*.sin ON DBMS $preposition role") {
+            yields(func(action, List(procedureQualifier("mat*.sin")), Seq(literalRole)))
+          }
+
+          test(s"$verb $execute mat?.sin ON DBMS $preposition role") {
+            yields(func(action, List(procedureQualifier("mat?.sin")), Seq(literalRole)))
+          }
+
+          test(s"$verb $execute ?ath.sin ON DBMS $preposition role") {
+            yields(func(action, List(procedureQualifier("?ath.sin")), Seq(literalRole)))
+          }
+
+          test(s"$verb $execute mat?.`a.\n`.*n ON DBMS $preposition role") {
+            yields(func(action, List(procedureQualifier("mat?.a.\n.*n")), Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc.math.* ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List(apocString, mathString), "*")), Seq(literalRole)))
+            yields(func(action, List(procedureQualifier("apoc.math.*")), Seq(literalRole)))
           }
 
           test(s"$verb $execute math.sin, math.cos ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List(mathString), "sin"), procedureQualifier(List(mathString), "cos")), Seq(literalRole)))
+            yields(func(action, List(procedureQualifier("math.sin"), procedureQualifier("math.cos")), Seq(literalRole)))
           }
 
           test(s"$verb $execute apoc.math.sin, math.* ON DBMS $preposition role") {
-            yields(func(action, List(procedureQualifier(List(apocString, mathString), "sin"), procedureQualifier(List(mathString), "*")), Seq(literalRole)))
+            yields(func(action, List(procedureQualifier("apoc.math.sin"), procedureQualifier("math.*")), Seq(literalRole)))
           }
 
           test(s"$verb $execute * $preposition role") {
@@ -146,8 +168,5 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
       }
   }
 
-  private def procedureQualifier(procName: String): InputPosition => ProcedureQualifier = procedureQualifier(List.empty, procName)
-
-  private def procedureQualifier(nameSpace: List[String], procName: String): InputPosition => ProcedureQualifier =
-    ProcedureQualifier(expressions.Namespace(nameSpace)(_), expressions.ProcedureName(procName)(_))(_)
+  private def procedureQualifier(procName: String): InputPosition => ProcedureQualifier = ProcedureQualifier(procName)(_)
 }
