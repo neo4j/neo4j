@@ -205,7 +205,7 @@ public class RecordPropertyCursorTest
         PropertyRecord propertyRecord = getRecord( store, firstProp, NORMAL );
         store.ensureHeavy( propertyRecord, new CachedStoreCursors( neoStores, NULL ) );
         PropertyBlock block = propertyRecord.iterator().next();
-        int cycleEndRecordIndex = random.nextInt( 1, block.getValueRecords().size() - 1 );
+        int cycleEndRecordIndex = random.nextInt( 1, block.getValueRecords().size() );
         DynamicRecord cycle = block.getValueRecords().get( cycleEndRecordIndex );
         int cycleStartIndex = random.nextInt( cycleEndRecordIndex );
         cycle.setNextBlock( block.getValueRecords().get( cycleStartIndex ).getId() );
@@ -288,7 +288,7 @@ public class RecordPropertyCursorTest
 
     protected Value[] createValues( int minNumProps, int maxNumProps )
     {
-        int numberOfProperties = random.nextInt( minNumProps, maxNumProps );
+        int numberOfProperties = random.nextInt( minNumProps, maxNumProps + 1 );
         Value[] values = new Value[numberOfProperties];
         for ( int key = 0; key < numberOfProperties; key++ )
         {

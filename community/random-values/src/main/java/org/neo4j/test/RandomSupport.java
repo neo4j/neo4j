@@ -109,14 +109,21 @@ public class RandomSupport
         return random.nextInt();
     }
 
-    public int nextInt( int n )
+    /**
+     * @param bound – the upper bound (exclusive)
+     */
+    public int nextInt( int bound )
     {
-        return random.nextInt( n );
+        return random.nextInt( bound );
     }
 
+    /**
+     * @param origin - the origin (inclusive)
+     * @param bound – the upper bound (exclusive)
+     */
     public int nextInt( int origin, int bound )
     {
-        return random.nextInt( (bound - origin) + 1 ) + origin;
+        return random.nextInt( bound - origin ) + origin;
     }
 
     public IntStream ints( long streamSize )
@@ -139,14 +146,26 @@ public class RandomSupport
         return random.nextLong();
     }
 
-    public long nextLong( long n )
+    /**
+     * @param bound – the upper bound (exclusive)
+     */
+    public long nextLong( long bound )
     {
-        return Math.abs( nextLong() ) % n;
+        var randomLong = nextLong();
+        if ( randomLong == Long.MIN_VALUE )
+        {
+            randomLong = 66;
+        }
+        return Math.abs( randomLong ) % bound;
     }
 
+    /**
+     * @param origin - the origin (inclusive)
+     * @param bound – the upper bound (exclusive)
+     */
     public long nextLong( long origin, long bound )
     {
-        return nextLong( (bound - origin) + 1L ) + origin;
+        return nextLong( bound - origin ) + origin;
     }
 
     // ============================

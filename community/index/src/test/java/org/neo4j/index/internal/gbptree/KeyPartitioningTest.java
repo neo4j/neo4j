@@ -60,8 +60,8 @@ class KeyPartitioningTest
 
         // when
         final var from = random.nextInt( numberOfKeys - 1 );
-        final var to = random.nextInt( from, numberOfKeys );
-        final var desiredNumberOfPartitions = from == to ? 1 : random.nextInt( 1, to - from );
+        final var to = random.nextInt( from + 1, numberOfKeys );
+        final var desiredNumberOfPartitions = random.nextInt( 1, to - from + 1 );
 
         final var partitionEdges = partitioning.partition( allKeys, new PartitionKey( from ), new PartitionKey( to ), desiredNumberOfPartitions );
 

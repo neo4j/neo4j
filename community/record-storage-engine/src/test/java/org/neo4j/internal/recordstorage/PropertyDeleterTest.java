@@ -394,7 +394,7 @@ class PropertyDeleterTest
     private void createCycleIn( PropertyBlock dynamicBlock )
     {
         propertyStore.ensureHeavy( dynamicBlock, storeCursors );
-        int cycleEndIndex = random.nextInt( 1, dynamicBlock.getValueRecords().size() - 1 );
+        int cycleEndIndex = random.nextInt( 1, dynamicBlock.getValueRecords().size() );
         int cycleStartIndex = random.nextInt( cycleEndIndex );
         DynamicRecord cycleEndRecord = dynamicBlock.getValueRecords().get( cycleEndIndex );
         PropertyType type = cycleEndRecord.getType();

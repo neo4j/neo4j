@@ -222,7 +222,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
             for ( int i = 0; i < 1_000; i++ )
             {
                 // value, based on i
-                RawBytes value = new RawBytes( new byte[random.nextInt( minValueSize, maxValueSize )] );
+                RawBytes value = new RawBytes( new byte[random.nextInt( minValueSize, maxValueSize + 1 )] );
                 random.nextBytes( value.bytes );
 
                 // key, randomly generated

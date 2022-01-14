@@ -126,7 +126,7 @@ class FulltextPartitionedIndexSkipAndLimitTest extends FulltextProceduresTestSup
 
         try ( Transaction tx = db.beginTx() )
         {
-            var limit = random.nextInt( 1, totalEntities );
+            var limit = random.nextInt( 1, totalEntities + 1 );
             try ( ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions( tx, "zebra", "{limit: " + limit + "}" ) )
             {
                 var list = iterator.stream().collect( toList() );

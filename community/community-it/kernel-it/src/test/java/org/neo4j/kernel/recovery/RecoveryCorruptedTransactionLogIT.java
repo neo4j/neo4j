@@ -329,7 +329,7 @@ class RecoveryCorruptedTransactionLogIT
         managementService.shutdown();
 
         removeLastCheckpointRecordFromLastLogFile();
-        Supplier<Byte> randomBytesSupplier = this::randomNonZeroByte;
+        Supplier<Byte> randomBytesSupplier = this::randomInvalidVersionsBytes;
         BytesCaptureSupplier capturingSupplier = new BytesCaptureSupplier( randomBytesSupplier );
         addRandomBytesToLastLogFile( capturingSupplier );
         assertFalse( recoveryMonitor.wasRecoveryRequired() );
@@ -1041,7 +1041,7 @@ class RecoveryCorruptedTransactionLogIT
     private byte randomInvalidVersionsBytes()
     {
         int highestVersionByte = Arrays.stream( KernelVersion.values() ).mapToInt( KernelVersion::version ).max().getAsInt();
-        return (byte) random.nextInt( highestVersionByte + 1, Byte.MAX_VALUE );
+        return (byte) random.nextInt( highestVersionByte + 1, Byte.MAX_VALUE + 1 );
     }
 
     /**
@@ -1050,7 +1050,7 @@ class RecoveryCorruptedTransactionLogIT
      */
     private byte randomNonZeroByte()
     {
-        var b = (byte) random.nextInt( Byte.MIN_VALUE, Byte.MAX_VALUE - 1 );
+        var b = (byte) random.nextInt( Byte.MIN_VALUE, Byte.MAX_VALUE );
         if ( b != 0 )
         {
             return b;

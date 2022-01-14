@@ -118,7 +118,7 @@ class IndexStatisticsTest
         builder.setConfig( GraphDatabaseSettings.index_background_sampling_enabled, false );
         builder.setConfig( GraphDatabaseInternalSettings.index_population_print_debug, true );
 
-        int batchSize = random.nextInt( 1, 5 );
+        int batchSize = random.nextInt( 1, 6 );
         builder.setConfig(  GraphDatabaseInternalSettings.index_population_queue_threshold, batchSize );
 
         Monitors monitors = new Monitors();

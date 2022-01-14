@@ -146,8 +146,8 @@ class PartitionedSeekTest
             int numberOfDesiredLevels = numberOfRootChildren == 0 ? 1 : random.nextInt( 2, 4 );
             int numberOfDesiredPartitions = random.nextInt( 1, 10 );
             int high = insertEntriesUntil( tree, numberOfDesiredLevels, numberOfRootChildren );
-            long from = random.nextLong( 0, high - 1 );
-            long to = random.nextLong( from, high );
+            long from = random.nextLong( 0, high );
+            long to = random.nextLong( from + 1, high );
 
             // when
             List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
@@ -170,7 +170,7 @@ class PartitionedSeekTest
             int high = insertEntriesUntil( tree, numberOfDesiredLevels, numberOfRootChildren );
 
             List<MutableLong> rootKeys = getKeysOnLevel( tree, 0 );
-            int numberOfDesiredPartitions = random.nextInt( 1, rootKeys.size() );
+            int numberOfDesiredPartitions = random.nextInt( 1, rootKeys.size() + 1 );
             long from = layout.keySeed( rootKeys.get( 0 ) );
             long to = random.nextLong( from, high );
 
@@ -195,7 +195,7 @@ class PartitionedSeekTest
             insertEntriesUntil( tree, numberOfDesiredLevels, numberOfRootChildren );
 
             List<MutableLong> rootKeys = getKeysOnLevel( tree, 0 );
-            int numberOfDesiredPartitions = random.nextInt( 1, rootKeys.size() );
+            int numberOfDesiredPartitions = random.nextInt( 1, rootKeys.size() + 1 );
             long to = layout.keySeed( rootKeys.get( rootKeys.size() - 1 ) );
             long from = random.nextLong( 0, to );
 
