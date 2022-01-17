@@ -172,7 +172,6 @@ public final class CypherBoolean
                     case GREATER_THAN -> FALSE;
                     case EQUAL, SMALLER_THAN -> TRUE;
                     case UNDEFINED -> NO_VALUE;
-                    default -> throw new InternalException( comparison + " is not a known comparison", null );
                 };
     }
 
@@ -215,7 +214,6 @@ public final class CypherBoolean
                     case GREATER_THAN, EQUAL -> TRUE;
                     case SMALLER_THAN -> FALSE;
                     case UNDEFINED -> NO_VALUE;
-                    default -> throw new InternalException( comparison + " is not a known comparison", null );
                 };
     }
 
