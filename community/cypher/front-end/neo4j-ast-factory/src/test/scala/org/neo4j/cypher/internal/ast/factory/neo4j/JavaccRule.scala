@@ -63,6 +63,7 @@ object JavaccRule {
   def PatternComprehension: JavaccRule[Expression] = fromParser(_.PatternComprehension())
   def RelationshipPattern: JavaccRule[RelationshipPattern] = fromParser(_.RelationshipPattern())
   def Statement: JavaccRule[Statement] = fromParser(_.Statement())
+  def StringLiteral: JavaccRule[Expression] = fromParser(_.StringLiteral())
   def SubqueryClause: JavaccRule[Clause] = fromParser(_.SubqueryClause())
   def Variable: JavaccRule[Variable] = fromParser(_.Variable())
 

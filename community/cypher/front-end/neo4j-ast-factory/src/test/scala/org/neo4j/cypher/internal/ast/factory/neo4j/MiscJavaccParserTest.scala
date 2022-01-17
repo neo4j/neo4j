@@ -118,4 +118,9 @@ class MiscJavaccParserTest extends JavaccParserAstTestBase[Any] {
     implicit val parser: JavaccRule[Expression] = JavaccRule.PatternComprehension
     assertFails("[p = (x) | p]")
   }
+
+  test("should handle escaping in string literals") {
+    implicit val parser: JavaccRule[Expression] = JavaccRule.StringLiteral
+    parsing("""'\\\''""") shouldGive literalString("""\'""")
+  }
 }
