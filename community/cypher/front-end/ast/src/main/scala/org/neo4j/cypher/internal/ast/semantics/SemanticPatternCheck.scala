@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.InvalidNodePattern
+import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -240,7 +241,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case x: NodePattern =>
         checkNodeProperties(ctx, x.properties) chain
           checkValidLabels(x.labels, x.position) chain
-          checkValidLabelOrRelTypes(x.labelExpression.findAllByClass[LabelOrRelTypeName], x.position)
+          checkLabelExpressions(ctx, x.labelExpression, x.position)
 
     }
 
@@ -349,6 +350,16 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       checkValidPropertyKeyNamesInPattern(properties) chain
       SemanticExpressionCheck.simple(properties) chain
       expectType(CTMap.covariant, properties)
+
+
+
+  def checkLabelExpressions(ctx: SemanticContext, labelExpression: Option[LabelExpression], inputPosition: InputPosition): SemanticCheck =
+  labelExpression.foldSemanticCheck { predicate =>
+    when (ctx != SemanticContext.Match) {
+      error(s"Label expressions are not allowed in ${ctx.name}, but only in MATCH clause", predicate.position)
+    } chain
+    checkValidLabelOrRelTypes(labelExpression.findAllByClass[LabelOrRelTypeName], inputPosition)
+  }
 
   def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems, position: InputPosition): SemanticCheck = {
     val propertyKeys = returnItems.items.collect { case item => item.expression.findAllByClass[Property]map(prop => prop.propertyKey) }.flatten

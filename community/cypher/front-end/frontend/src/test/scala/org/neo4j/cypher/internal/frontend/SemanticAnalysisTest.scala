@@ -513,6 +513,30 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
+  test("should not allow label expression in CREATE") {
+    val query = "CREATE (n:A&B)"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Label expressions are not allowed in CREATE, but only in MATCH clause"
+    )
+  }
+
+  test("should not allow label expression in MERGE") {
+    val query = "MERGE (n:A&B)"
+
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) shouldBe Seq(
+      "Label expressions are not allowed in MERGE, but only in MATCH clause"
+    )
+  }
+
   test("should allow node pattern predicates in pattern comprehension") {
     val query = "WITH 123 AS minValue RETURN [(n {prop: 42} WHERE n.otherProp > minValue)-->(m:Label WHERE m.prop = 42) | n] AS result"
 
