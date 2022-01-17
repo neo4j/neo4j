@@ -324,35 +324,45 @@ case class RegularSinglePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     theHashCode
   }
 
+  /**
+   * Make sure that tags are of the same length, so that the differences nicely align.
+   * @param tag tag to print
+   * @param length desired length of the output
+   */
+  def formatTag(tag: String, length: Int): String =
+    s"$tag:".padTo(length, ' ')
+
   def pointOutDifference(other: RegularSinglePlannerQuery, thisTag: String, otherTag: String): String = {
+    val tagLength = Math.max(thisTag.length, otherTag.length) + 1
+
     // Make sure it corresponds with equals
     val builder = StringBuilder.newBuilder
     builder.append("Differences:\n")
     if (queryInput != other.queryInput) {
       builder.append(" - QueryInput\n")
-      builder.append(s"    $thisTag: $queryInput\n")
-      builder.append(s"    $otherTag: ${other.queryInput}\n")
+      builder.append(s"    ${formatTag(thisTag, tagLength)} $queryInput\n")
+      builder.append(s"    ${formatTag(otherTag, tagLength)} ${other.queryInput}\n")
     }
     if (queryGraph != other.queryGraph) {
       builder.append(" - QueryGraph\n")
-      builder.append(s"    $thisTag: $queryGraph\n")
-      builder.append(s"    $otherTag: ${other.queryGraph}\n")
+      builder.append(s"    ${formatTag(thisTag, tagLength)} $queryGraph\n")
+      builder.append(s"    ${formatTag(otherTag, tagLength)} ${other.queryGraph}\n")
 
     }
     if (horizon != other.horizon) {
       builder.append(" - Horizon\n")
-      builder.append(s"    $thisTag: $horizon\n")
-      builder.append(s"    $otherTag: ${other.horizon}\n")
+      builder.append(s"    ${formatTag(thisTag, tagLength)} $horizon\n")
+      builder.append(s"    ${formatTag(otherTag, tagLength)} ${other.horizon}\n")
     }
     if (tail != other.tail) {
       builder.append(" - Tail\n")
-      builder.append(s"    $thisTag: $tail\n")
-      builder.append(s"    $otherTag: ${other.tail}\n")
+      builder.append(s"    ${formatTag(thisTag, tagLength)} $tail\n")
+      builder.append(s"    ${formatTag(otherTag, tagLength)} ${other.tail}\n")
     }
     if (interestingOrder.requiredOrderCandidate.order != other.interestingOrder.requiredOrderCandidate.order) {
       builder.append(" - interestingOrder.requiredOrderCandidate.order\n")
-      builder.append(s"    $thisTag: ${interestingOrder.requiredOrderCandidate.order}\n")
-      builder.append(s"    $otherTag: ${other.interestingOrder.requiredOrderCandidate.order}\n")
+      builder.append(s"    ${formatTag(thisTag, tagLength)} ${interestingOrder.requiredOrderCandidate.order}\n")
+      builder.append(s"    ${formatTag(otherTag, tagLength)} ${other.interestingOrder.requiredOrderCandidate.order}\n")
     }
     builder.toString()
   }
