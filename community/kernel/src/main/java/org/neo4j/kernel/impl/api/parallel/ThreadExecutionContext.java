@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -41,11 +42,11 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable
     private final ThreadExecutionContextRead contextRead;
     private final StoreCursors storageCursors;
 
-    public ThreadExecutionContext( KernelTransactionImplementation ktx, PageCacheTracer pageCacheTracer, StorageEngine storageEngine, Config config )
+    public ThreadExecutionContext( KernelTransactionImplementation ktx, CursorContextFactory contextFactory, StorageEngine storageEngine, Config config )
     {
-        this.cursorTracer = new ExecutionContextCursorTracer( pageCacheTracer, TRANSACTION_EXECUTION_TAG );
+        this.cursorTracer = new ExecutionContextCursorTracer( PageCacheTracer.NULL, TRANSACTION_EXECUTION_TAG );
         this.ktxContext = ktx.cursorContext();
-        this.context = new CursorContext( cursorTracer, ktxContext.getVersionContext() );
+        this.context = contextFactory.create( cursorTracer );
         this.accessMode = ktx.securityContext().mode();
         this.storageCursors = storageEngine.createStorageCursors( context );
         this.contextRead = new ThreadExecutionContextRead( this, ktx.dataRead(), ktx.newStorageReader(), storageCursors, config );

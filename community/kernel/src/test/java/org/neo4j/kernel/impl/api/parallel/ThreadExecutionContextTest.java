@@ -23,10 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.EmptyVersionContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -43,7 +42,8 @@ class ThreadExecutionContextTest
     void closeResourcesOnContextClose()
     {
         var pageCacheTracer = PageCacheTracer.NULL;
-        var cursorContext = new CursorContext( new DefaultPageCursorTracer( pageCacheTracer, "tag" ), EmptyVersionContext.EMPTY );
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
+        var cursorContext = contextFactory.create(  "tag" );
         var ktx = mock( KernelTransactionImplementation.class );
         var storageReader = mock( StorageReader.class );
 
@@ -55,7 +55,7 @@ class ThreadExecutionContextTest
         var storeCursors = mock( StoreCursors.class );
         when( storageEngine.createStorageCursors( any() ) ).thenReturn( storeCursors );
 
-        try ( var executionContext = new ThreadExecutionContext( ktx, pageCacheTracer, storageEngine, Config.defaults() ) )
+        try ( var executionContext = new ThreadExecutionContext( ktx, contextFactory, storageEngine, Config.defaults() ) )
         {
             executionContext.complete();
         }

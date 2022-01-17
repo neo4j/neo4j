@@ -30,9 +30,10 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Race;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -67,18 +67,16 @@ class IndexStatisticsStoreTest
     private PageCache pageCache;
     @Inject
     private TestDirectory testDirectory;
-    @Inject
-    private FileSystemAbstraction fs;
-    @Inject
-    private RandomSupport randomRule;
 
     private IndexStatisticsStore store;
-    private final PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
+    private final PageCacheTracer pageCacheTracer =  new DefaultPageCacheTracer();
+    private CursorContextFactory cursorContextFactory;
 
     @BeforeEach
     void start() throws IOException
     {
-        store = openStore( pageCacheTracer, "stats" );
+        cursorContextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
+        store = openStore( "stats" );
         lifeSupport.start();
     }
 
@@ -88,20 +86,21 @@ class IndexStatisticsStoreTest
         lifeSupport.shutdown();
     }
 
-    private IndexStatisticsStore openStore( PageCacheTracer pageCacheTracer, String fileName ) throws IOException
+    private IndexStatisticsStore openStore( String fileName ) throws IOException
     {
-        var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), writable(), DEFAULT_DATABASE_NAME,
-                pageCacheTracer, CursorContext.NULL_CONTEXT );
-        return lifeSupport.add( statisticsStore );
+        try ( var context = cursorContextFactory.create( "openStore" ) )
+        {
+            var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), writable(), DEFAULT_DATABASE_NAME,
+                    pageCacheTracer, context );
+            return lifeSupport.add( statisticsStore );
+        }
     }
 
     @Test
     void tracePageCacheAccessOnConsistencyCheck() throws IOException
     {
-        var cacheTracer = new DefaultPageCacheTracer();
-
-        var store = openStore( cacheTracer, "consistencyCheck" );
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) ) )
+        var store = openStore("consistencyCheck" );
+        try ( var cursorContext = cursorContextFactory.create( "tracePageCacheAccessOnConsistencyCheck" ) )
         {
             for ( int i = 0; i < 100; i++ )
             {
@@ -120,29 +119,25 @@ class IndexStatisticsStoreTest
     @Test
     void tracePageCacheAccessOnStatisticStoreInitialisation() throws IOException
     {
-        var cacheTracer = new DefaultPageCacheTracer();
+        long initialPins = pageCacheTracer.pins();
+        long initialUnpins = pageCacheTracer.unpins();
+        long initialHits = pageCacheTracer.hits();
+        long initialFaults = pageCacheTracer.faults();
 
-        assertThat( cacheTracer.pins() ).isZero();
-        assertThat( cacheTracer.unpins() ).isZero();
-        assertThat( cacheTracer.hits() ).isZero();
-        assertThat( cacheTracer.faults() ).isZero();
+        openStore( "tracedStats" );
 
-        openStore( cacheTracer, "tracedStats" );
-
-        assertThat( cacheTracer.faults() ).isEqualTo( 5 );
-        assertThat( cacheTracer.pins() ).isEqualTo( 14 );
-        assertThat( cacheTracer.unpins() ).isEqualTo( 14 );
-        assertThat( cacheTracer.hits() ).isEqualTo( 9 );
+        assertThat( pageCacheTracer.faults() - initialFaults ).isEqualTo( 5 );
+        assertThat( pageCacheTracer.pins() - initialPins ).isEqualTo( 14 );
+        assertThat( pageCacheTracer.unpins() - initialUnpins ).isEqualTo( 14 );
+        assertThat( pageCacheTracer.hits() - initialHits ).isEqualTo( 9 );
     }
 
     @Test
     void tracePageCacheAccessOnCheckpoint() throws IOException
     {
-        var cacheTracer = new DefaultPageCacheTracer();
+        var store = openStore( "checkpoint" );
 
-        var store = openStore( cacheTracer, "checkpoint" );
-
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCheckpoint" ) ) )
+        try ( var cursorContext = cursorContextFactory.create( "tracePageCacheAccessOnCheckpoint" ) )
         {
             for ( int i = 0; i < 100; i++ )
             {
@@ -210,7 +205,7 @@ class IndexStatisticsStoreTest
         store.checkpoint( CursorContext.NULL_CONTEXT );
         lifeSupport.shutdown();
         lifeSupport = new LifeSupport();
-        store = openStore( pageCacheTracer, "stats" );
+        store = openStore( "stats" );
         lifeSupport.start();
     }
 
@@ -281,11 +276,11 @@ class IndexStatisticsStoreTest
     }
 
     @Test
-    void shouldNotStartWithoutFileIfReadOnly() throws IOException
+    void shouldNotStartWithoutFileIfReadOnly()
     {
-        var indexStatisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(),
-                DEFAULT_DATABASE_NAME, PageCacheTracer.NULL, CursorContext.NULL_CONTEXT );
-        final Exception e = assertThrows( Exception.class, indexStatisticsStore::init );
+        final Exception e = assertThrows( Exception.class,
+                () -> new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(), DEFAULT_DATABASE_NAME,
+                        PageCacheTracer.NULL, CursorContext.NULL_CONTEXT ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );

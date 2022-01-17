@@ -462,7 +462,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public ExecutionContext createExecutionContext()
     {
-        return new ThreadExecutionContext( this, pageCacheTracer, storageEngine, config );
+        return new ThreadExecutionContext( this, contextFactory, storageEngine, config );
     }
 
     @Override
