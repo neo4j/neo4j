@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
 
 class MapLiteralTest extends JavaccParserTestBase[internal.expressions.Expression, commands.expressions.Expression] {
-  implicit val parserToTest: JavaccRule[internal.expressions.Expression] = JavaccRule.fromParser(_.MapLiteral())
+  implicit val parserToTest: JavaccRule[internal.expressions.Expression] = JavaccRule.MapLiteral
 
   test("literal_maps") {
     parsing("{ name: 'Andres' }") shouldGive

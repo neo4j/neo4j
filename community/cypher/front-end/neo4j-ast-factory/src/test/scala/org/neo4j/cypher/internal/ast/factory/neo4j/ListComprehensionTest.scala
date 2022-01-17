@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.DummyPosition
 class ListComprehensionTest extends JavaccParserTestBase[Expression, Any] {
   private val t = DummyPosition(0)
 
-  implicit private val parser: JavaccRule[Expression] = JavaccRule.fromParser(_.ListComprehension())
+  implicit private val parser: JavaccRule[Expression] = JavaccRule.ListComprehension
 
   test("tests") {
 

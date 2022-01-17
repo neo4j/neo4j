@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 
 class FunctionInvocationParserTest extends JavaccParserAstTestBase[Expression] {
 
-  implicit private val parser: JavaccRule[Expression] = JavaccRule.fromParser(_.FunctionInvocation())
+  implicit private val parser: JavaccRule[Expression] = JavaccRule.FunctionInvocation
 
   test("foo()") {
     gives(function("foo"))

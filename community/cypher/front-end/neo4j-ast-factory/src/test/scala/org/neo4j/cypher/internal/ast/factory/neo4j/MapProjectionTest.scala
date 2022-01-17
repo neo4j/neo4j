@@ -29,7 +29,7 @@ class MapProjectionTest extends JavaccParserTestBase[Any, Any] {
   private val t = DummyPosition(0)
 
   test("testIdentifierCanContainASCII") {
-    implicit val parser: JavaccRule[Expression] = JavaccRule.fromParser(_.MapProjection())
+    implicit val parser: JavaccRule[Expression] = JavaccRule.MapProjection
 
     parsing("abc{}") shouldGive expressions.MapProjection(expressions.Variable("abc")(t), Seq.empty)(t)
 

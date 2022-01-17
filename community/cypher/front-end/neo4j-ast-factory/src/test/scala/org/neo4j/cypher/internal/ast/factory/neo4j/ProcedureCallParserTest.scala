@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast.Clause
 
 class ProcedureCallParserTest extends JavaccParserAstTestBase[Clause] {
 
-  implicit private val parser: JavaccRule[Clause] = JavaccRule.fromParser(_.CallClause())
+  implicit private val parser: JavaccRule[Clause] = JavaccRule.CallClause
 
   test("CALL foo") {
     gives(call(Seq.empty, "foo", None))

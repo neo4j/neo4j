@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
@@ -35,7 +34,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 class LiteralsTest extends JavaccParserTestBase[Any, Any] with AstConstructionTestSupport {
 
   private val Variable = JavaccRule.Variable
-  private val NumberLiteral = JavaccRule.fromParser(_.NumberLiteral())
+  private val NumberLiteral = JavaccRule.NumberLiteral
 
   private val t = DummyPosition(0)
 
@@ -98,7 +97,7 @@ class LiteralsTest extends JavaccParserTestBase[Any, Any] with AstConstructionTe
   }
 
   test("can parse parameter syntax") {
-    implicit val parserToTest: JavaccRule[Parameter] = JavaccRule.fromParser(_.Parameter(ParameterType.ANY))
+    implicit val parserToTest: JavaccRule[Parameter] = JavaccRule.Parameter
 
     parsing("$p") shouldGive expressions.Parameter("p", CTAny)(t)
     parsing("$`the funny horse`") shouldGive expressions.Parameter("the funny horse", CTAny)(t)
