@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class LiteralsTest extends JavaccParserTestBase[Any, Any] with AstConstructionTestSupport {
+class LiteralsJavaccParserTest extends JavaccParserTestBase[Any, Any] with AstConstructionTestSupport {
 
   private val Variable = JavaccRule.Variable
   private val NumberLiteral = JavaccRule.NumberLiteral

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
 
-class UseTest extends JavaccParserAstTestBase[Statement] {
+class UseJavaccParserTest extends JavaccParserAstTestBase[Statement] {
 
   implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
 

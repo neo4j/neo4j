@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 
-class MiscParserTest extends JavaccParserAstTestBase[Any] {
+class MiscJavaccParserTest extends JavaccParserAstTestBase[Any] {
 
   test("RETURN 1 AS x //l33t comment") {
     implicit val parser: JavaccRule[Statement] = JavaccRule.Statement

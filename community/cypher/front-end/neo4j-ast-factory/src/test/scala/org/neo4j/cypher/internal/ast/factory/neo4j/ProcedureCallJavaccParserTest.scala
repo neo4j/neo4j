@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 
-class ProcedureCallParserTest extends JavaccParserAstTestBase[Clause] {
+class ProcedureCallJavaccParserTest extends JavaccParserAstTestBase[Clause] {
 
   implicit private val parser: JavaccRule[Clause] = JavaccRule.CallClause
 

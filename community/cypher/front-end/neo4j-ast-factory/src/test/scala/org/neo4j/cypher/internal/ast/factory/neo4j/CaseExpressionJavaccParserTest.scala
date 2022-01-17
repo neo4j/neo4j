@@ -19,44 +19,31 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.Expression
 
-class ExpressionTest extends JavaccParserAstTestBase[Expression] {
-  implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
+class CaseExpressionJavaccParserTest extends JavaccParserAstTestBase[Expression] {
+  implicit private val parser: JavaccRule[Expression] = JavaccRule.CaseExpression
 
-  test("2*(2.0-1.5)") {
-    gives {
-      multiply(literal(2), subtract(literal(2.0), literal(1.5)))
+  test("CASE WHEN (e) THEN e ELSE null END") {
+    yields {
+      CaseExpression(
+        None,
+        List(varFor("e") -> varFor("e")),
+        Some(nullLiteral))
     }
   }
 
-  test("+1.5") {
-    gives {
-      unaryAdd(literal(1.5))
+  test("CASE when(e) WHEN (e) THEN e ELSE null END") {
+    yields {
+      CaseExpression(
+        Some(function("when", varFor("e"))),
+        List(varFor("e") -> varFor("e")),
+        Some(nullLiteral))
     }
   }
 
-  test("+1") {
-    gives {
-      unaryAdd(literal(1))
-    }
-  }
-
-  test("2*(2.0 - +1.5)") {
-    gives {
-      multiply(literal(2), subtract(literal(2.0), unaryAdd(literal(1.5))))
-    }
-  }
-
-  test("0-1") {
-    gives {
-      subtract(literal(0), literal(1))
-    }
-  }
-
-  test("0-0.1") {
-    gives {
-      subtract(literal(0), literal(0.1))
-    }
+  test("CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
+    failsToParse
   }
 }

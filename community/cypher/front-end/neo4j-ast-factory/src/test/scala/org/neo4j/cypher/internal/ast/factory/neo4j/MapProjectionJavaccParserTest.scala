@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
 
-class MapProjectionTest extends JavaccParserTestBase[Any, Any] {
+class MapProjectionJavaccParserTest extends JavaccParserTestBase[Any, Any] {
 
   private val t = DummyPosition(0)
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.expressions.Expression
 
-class ExpressionParserTest extends JavaccParserAstTestBase[Expression] {
+class ExpressionJavaccParserTest extends JavaccParserAstTestBase[Expression] {
 
   implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
 
@@ -35,5 +35,41 @@ class ExpressionParserTest extends JavaccParserAstTestBase[Expression] {
 
   test("thing ENDS WITH 'a' + 'b'") {
     gives(endsWith(varFor("thing"), add(literalString("a"), literalString("b"))))
+  }
+
+  test("2*(2.0-1.5)") {
+    gives {
+      multiply(literal(2), subtract(literal(2.0), literal(1.5)))
+    }
+  }
+
+  test("+1.5") {
+    gives {
+      unaryAdd(literal(1.5))
+    }
+  }
+
+  test("+1") {
+    gives {
+      unaryAdd(literal(1))
+    }
+  }
+
+  test("2*(2.0 - +1.5)") {
+    gives {
+      multiply(literal(2), subtract(literal(2.0), unaryAdd(literal(1.5))))
+    }
+  }
+
+  test("0-1") {
+    gives {
+      subtract(literal(0), literal(1))
+    }
+  }
+
+  test("0-0.1") {
+    gives {
+      subtract(literal(0), literal(0.1))
+    }
   }
 }

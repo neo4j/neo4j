@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class StatementReturnColumnsTest extends CypherFunSuite with JavaccParserTestBase[Statement, List[String]] {
+class StatementReturnColumnsJavaccParserTest extends JavaccParserTestBase[Statement, List[String]] {
 
   override def convert(statement: Statement): List[String] = statement.returnColumns.map(_.name)
 

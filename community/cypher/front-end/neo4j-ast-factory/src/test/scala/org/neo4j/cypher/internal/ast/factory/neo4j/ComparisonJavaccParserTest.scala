@@ -19,25 +19,33 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.Expression
 
-class EscapedSymbolicNameTest extends JavaccParserAstTestBase[Any] {
+class ComparisonJavaccParserTest extends JavaccParserAstTestBase[Expression] {
 
-  test("escaped variable name") {
-    implicit val parser: JavaccRule[Variable] = JavaccRule.Variable
+  implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
 
-    parsing("`This isn\\'t a common variable`") shouldGive varFor("This isn\\'t a common variable")
-    parsing("`a``b`") shouldGive varFor("a`b")
+  test("a < b") {
+    gives(lt(id("a"), id("b")))
   }
 
-  test("escaped label name") {
-    implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
+  test("a > b") {
+    gives(gt(id("a"), id("b")))
+  }
 
-    parsing("(n:`Label`)") shouldGive nodePat("n", "Label")
-    parsing("(n:`Label``123`)") shouldGive nodePat("n", "Label`123")
-    parsing("(n:`````Label```)") shouldGive nodePat("n", "``Label`")
+  test("a > b AND b > c") {
+    gives(and(gt(id("a"), id("b")), gt(id("b"), id("c"))))
+  }
 
-    assertFails("(n:`L`abel`)")
+  test("a > b > c") {
+    gives(ands(gt(id("a"), id("b")), gt(id("b"), id("c"))))
+  }
+
+  test("a > b > c > d") {
+    gives(ands(gt(id("a"), id("b")), gt(id("b"), id("c")), gt(id("c"), id("d"))))
+  }
+
+  test("a < b > c = d <= e >= f") {
+    gives(ands(lt(id("a"), id("b")), gt(id("b"), id("c")), eq(id("c"), id("d")), lte(id("d"), id("e")), gte(id("e"), id("f"))))
   }
 }
