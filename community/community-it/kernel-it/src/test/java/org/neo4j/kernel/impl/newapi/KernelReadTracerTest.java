@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.hasLabelEvent;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.indexSeekEvent;
@@ -157,7 +157,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         List<TraceEvent> expectedEvents = new ArrayList<>();
         expectedEvents.add( ON_ALL_NODES_SCAN );
 
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             nodes.setTracer( tracer );
@@ -178,7 +178,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor cursor = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor cursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -202,7 +202,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor cursor = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor cursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -232,12 +232,12 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         List<TraceEvent> expectedEvents = new ArrayList<>();
         expectedEvents.add( labelScanEvent( barId ) );
 
-        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor( NULL ) )
+        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor( NULL_CONTEXT ) )
         {
             // when
             cursor.setTracer( tracer );
             read.nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
-                                IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ), NULL );
+                                IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ), NULL_CONTEXT );
             while ( cursor.next() )
             {
                 expectedEvents.add( nodeEvent( cursor.nodeReference() ) );
@@ -254,7 +254,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
         {
             int p1 = token.propertyKey( "p1" );
             IndexReadSession session = read.indexReadSession( index );
@@ -289,7 +289,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( RelationshipScanCursor cursor = cursors.allocateRelationshipScanCursor( NULL ) )
+        try ( RelationshipScanCursor cursor = cursors.allocateRelationshipScanCursor( NULL_CONTEXT ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -318,8 +318,8 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
-              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor( NULL ) )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT );
+              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor( NULL_CONTEXT ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -354,8 +354,8 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
-              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor( NULL ) )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT );
+              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor( NULL_CONTEXT ) )
         {
             // when
             cursor.setTracer( tracer );
@@ -390,8 +390,8 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT );
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor( NULL_CONTEXT, INSTANCE ) )
         {
             // when
             propertyCursor.setTracer( tracer );
@@ -426,7 +426,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         int label = 42;
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             nodeCursor.setTracer( tracer );
@@ -458,12 +458,12 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         List<TraceEvent> expectedEvents = new ArrayList<>();
         expectedEvents.add( relationshipTypeScanEvent( hasId ) );
 
-        try ( RelationshipTypeIndexCursor cursor = cursors.allocateRelationshipTypeIndexCursor( NULL ) )
+        try ( RelationshipTypeIndexCursor cursor = cursors.allocateRelationshipTypeIndexCursor( NULL_CONTEXT ) )
         {
             // when
             cursor.setTracer( tracer );
             read.relationshipTypeScan( getTokenReadSession( tx, EntityType.RELATIONSHIP ), cursor,
-                                       IndexQueryConstraints.unconstrained(), new TokenPredicate( hasId ), NULL );
+                                       IndexQueryConstraints.unconstrained(), new TokenPredicate( hasId ), NULL_CONTEXT );
             while ( cursor.next() )
             {
                 expectedEvents.add( relationshipEvent( cursor.relationshipReference() ) );
@@ -480,7 +480,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, INSTANCE ) )
+        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL_CONTEXT, INSTANCE ) )
         {
             int p1 = token.propertyKey( "p1" );
             IndexReadSession session = read.indexReadSession( relIndex );

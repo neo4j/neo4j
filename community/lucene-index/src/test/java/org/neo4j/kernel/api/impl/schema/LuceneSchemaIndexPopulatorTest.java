@@ -67,7 +67,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -147,7 +147,7 @@ class LuceneSchemaIndexPopulatorTest
 
         // when   updates of unsupported value types (longs in this case) are processed
         final var updates = Arrays.stream( ids ).mapToObj( id -> add( id, id ) ).collect( Collectors.toUnmodifiableList() );
-        indexPopulator.add( updates, NULL );
+        indexPopulator.add( updates, NULL_CONTEXT );
 
         // then   should not be indexed
         final var hits = Arrays.stream( ids ).mapToObj( Hit::new ).toArray( Hit[]::new );
@@ -317,15 +317,15 @@ class LuceneSchemaIndexPopulatorTest
 
     private void switchToVerification() throws IOException
     {
-        indexPopulator.close( true, NULL );
-        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( index, NULL ) );
+        indexPopulator.close( true, NULL_CONTEXT );
+        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( index, NULL_CONTEXT ) );
         reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
     }
 
     private void addUpdate( IndexPopulator populator, long nodeId, Object value ) throws IndexEntryConflictException
     {
-        populator.add( singletonList( IndexQueryHelper.add( nodeId, index, value ) ), NULL );
+        populator.add( singletonList( IndexQueryHelper.add( nodeId, index, value ) ), NULL_CONTEXT );
     }
 
     private static void updatePopulator(
@@ -333,7 +333,7 @@ class LuceneSchemaIndexPopulatorTest
             Iterable<IndexEntryUpdate<?>> updates,
             NodePropertyAccessor accessor ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor, NULL ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor, NULL_CONTEXT ) )
         {
             for ( IndexEntryUpdate<?> update :  updates )
             {

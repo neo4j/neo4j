@@ -34,11 +34,13 @@ import java.util.Map;
 
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -55,9 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
@@ -77,7 +77,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
-        populator.close( true, NULL );
+        populator.close( true, CursorContext.NULL_CONTEXT );
         accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup );
     }
 
@@ -86,7 +86,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     {
         try
         {
-            accessor.consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
+            accessor.consistencyCheck( ReporterFactories.throwingReporterFactory(), CursorContext.NULL_CONTEXT );
         }
         finally
         {
@@ -122,7 +122,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
         try ( ValueIndexReader reader = accessor.newValueReader() )
         {
             SimpleEntityValueClient nodeValueClient = new SimpleEntityValueClient();
-            reader.query( nodeValueClient, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), predicates );
+            reader.query( nodeValueClient, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), predicates );
             List<Long> list = new LinkedList<>();
             while ( nodeValueClient.next() )
             {
@@ -140,7 +140,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     protected AutoCloseable query( SimpleEntityValueClient client, IndexOrder order, PropertyIndexQuery... predicates ) throws Exception
     {
         ValueIndexReader reader = accessor.newValueReader();
-        reader.query( client, NULL_CONTEXT, AccessMode.Static.READ, constrained( order, false ), predicates );
+        reader.query( client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, constrained( order, false ), predicates );
         return reader;
     }
 
@@ -254,7 +254,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
      */
     void updateAndCommit( Collection<ValueIndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
         {
             for ( ValueIndexEntryUpdate<?> update : updates )
             {

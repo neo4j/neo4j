@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -52,7 +51,6 @@ import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -72,7 +70,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.TOKENS;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.generateRandomTokens;
@@ -105,7 +103,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
     void processMustThrowAfterClose() throws Exception
     {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false );
+        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false );
         updater.close();
 
         assertThrows( IllegalStateException.class, () -> updater.process( simpleUpdate() ) );
@@ -119,7 +117,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         List<TokenIndexEntryUpdate<?>> updates = generateSomeRandomUpdates( entityTokens, random );
 
         // When
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
         {
             for ( TokenIndexEntryUpdate<?> update : updates )
             {
@@ -311,14 +309,14 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         int labelId2 = 2;
         long nodeId1 = 10;
         long nodeId2 = 11;
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL, false ) )
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.change( nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );
             indexUpdater.process( IndexEntryUpdate.change( nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
         }
 
         // WHEN
-        BoundedIterable<EntityTokenRange> reader = accessor.newAllEntriesTokenReader( Long.MIN_VALUE, Long.MAX_VALUE, NULL );
+        BoundedIterable<EntityTokenRange> reader = accessor.newAllEntriesTokenReader( Long.MIN_VALUE, Long.MAX_VALUE, NULL_CONTEXT );
         EntityTokenRange range = single( reader.iterator() );
 
         // THEN
@@ -335,14 +333,14 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         int labelId2 = 2;
         long nodeId1 = 10;
         long nodeId2 = 1280;
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL, false ) )
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.change( nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );
             indexUpdater.process( IndexEntryUpdate.change( nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
         }
 
         // WHEN
-        BoundedIterable<EntityTokenRange> reader = accessor.newAllEntriesTokenReader( Long.MIN_VALUE, Long.MAX_VALUE, NULL );
+        BoundedIterable<EntityTokenRange> reader = accessor.newAllEntriesTokenReader( Long.MIN_VALUE, Long.MAX_VALUE, NULL_CONTEXT );
         Iterator<EntityTokenRange> iterator = reader.iterator();
         EntityTokenRange range1 = iterator.next();
         EntityTokenRange range2 = iterator.next();
@@ -391,7 +389,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
 
         while ( currentMaxEntityId < numberOfEntities )
         {
-            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
+            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
             {
                 // Simply add random token ids to a new batch of 100 entities
                 for ( int i = 0; i < 100; i++ )
@@ -407,7 +405,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
             }
             additionalOperation.execute();
             // Interleave updates in id range lower than currentMaxEntityId
-            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
+            try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
             {
                 for ( int i = 0; i < 100; i++ )
                 {
@@ -442,7 +440,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
 
     private void addToIndex( int tokenId, long... entityIds ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
         {
             for ( long entityId : entityIds )
             {
@@ -485,7 +483,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         {
             IndexQueryConstraints constraint = IndexQueryConstraints.constrained( indexOrder, false );
             TokenPredicate query = new TokenPredicate( (int) tokenId );
-            reader.query( collectingEntityTokenClient, constraint, query, NULL );
+            reader.query( collectingEntityTokenClient, constraint, query, NULL_CONTEXT );
 
             // Then
             int count = 0;
@@ -512,13 +510,13 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
     {
         if ( random.nextBoolean() )
         {
-            accessor.force( NULL );
+            accessor.force( NULL_CONTEXT );
         }
     }
 
     private void forceAndCloseAccessor()
     {
-        accessor.force( NULL );
+        accessor.force( NULL_CONTEXT );
         accessor.close();
     }
 

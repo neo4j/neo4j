@@ -50,7 +50,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.count;
 import static org.neo4j.kernel.impl.newapi.TestUtils.createContexts;
@@ -69,10 +69,10 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     {
         try ( KernelTransaction tx = beginTransaction() )
         {
-            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL ) )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL_CONTEXT ) )
             {
                 Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
-                while ( scan.reserveBatch( cursor, 23, NULL, tx.securityContext().mode() ) )
+                while ( scan.reserveBatch( cursor, 23, NULL_CONTEXT, tx.securityContext().mode() ) )
                 {
                     assertFalse( cursor.next() );
                 }
@@ -108,11 +108,11 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
                 }
             } );
 
-            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL ) )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL_CONTEXT ) )
             {
                 Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
                 MutableLongSet seen =  LongSets.mutable.empty();
-                while ( scan.reserveBatch( cursor, 17, NULL, tx.securityContext().mode() ) )
+                while ( scan.reserveBatch( cursor, 17, NULL_CONTEXT, tx.securityContext().mode() ) )
                 {
                     while ( cursor.next() )
                     {
@@ -141,11 +141,11 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
                 added.add( tx.dataWrite().nodeCreate() );
             }
 
-            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL ) )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL_CONTEXT ) )
             {
                 Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
                 MutableLongSet seen = LongSets.mutable.empty();
-                while ( scan.reserveBatch( cursor, 17, NULL, tx.securityContext().mode() ) )
+                while ( scan.reserveBatch( cursor, 17, NULL_CONTEXT, tx.securityContext().mode() ) )
                 {
                     while ( cursor.next() )
                     {
@@ -182,10 +182,10 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
                 assertEquals( 5, count( cursor ) );
                 assertTrue( scan.reserveBatch( cursor, 4, cursorContext, accessMode ) );
                 assertEquals( 4, count( cursor ) );
-                assertTrue( scan.reserveBatch( cursor, 6, NULL, accessMode ) );
+                assertTrue( scan.reserveBatch( cursor, 6, NULL_CONTEXT, accessMode ) );
                 assertEquals( 2, count( cursor ) );
                 //now we should have fetched all nodes
-                while ( scan.reserveBatch( cursor, 3, NULL, accessMode ) )
+                while ( scan.reserveBatch( cursor, 3, NULL_CONTEXT, accessMode ) )
                 {
                     assertFalse( cursor.next() );
                 }

@@ -42,7 +42,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @ResourceLock( SHARED_RESOURCE )
@@ -115,7 +115,7 @@ public abstract class AbstractNeo4jTestCase
     private static <RECORD extends AbstractBaseRecord> int numberOfRecordsInUse( RecordStore<RECORD> store )
     {
         int inUse = 0;
-        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        try ( var cursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
         {
             for ( long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++ )
             {
@@ -131,7 +131,7 @@ public abstract class AbstractNeo4jTestCase
 
     protected static <RECORD extends AbstractBaseRecord> long lastUsedRecordId( RecordStore<RECORD> store )
     {
-        try ( var cursor = store.openPageCursorForReading( store.getHighId(), NULL ) )
+        try ( var cursor = store.openPageCursorForReading( store.getHighId(), NULL_CONTEXT ) )
         {
             for ( long id = store.getHighId(); id > store.getNumberOfReservedLowIds(); id-- )
             {
@@ -158,7 +158,7 @@ public abstract class AbstractNeo4jTestCase
     protected static StoreCursors createStoreCursors()
     {
         var storageEngine = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        return storageEngine.createStorageCursors( NULL );
+        return storageEngine.createStorageCursors( NULL_CONTEXT );
     }
 
     protected static PropertyStore propertyStore()

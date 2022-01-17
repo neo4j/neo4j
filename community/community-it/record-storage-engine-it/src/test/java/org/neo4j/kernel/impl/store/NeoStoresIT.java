@@ -53,7 +53,7 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @DbmsExtension( configurationCallback = "configure" )
 class NeoStoresIT
@@ -183,7 +183,7 @@ class NeoStoresIT
     {
         var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         var neoStores = storageEngine.testAccessNeoStores();
-        var storeCursors = storageEngine.createStorageCursors( NULL );
+        var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT );
         var nodeStore = neoStores.getNodeStore();
 
         long nodeId;

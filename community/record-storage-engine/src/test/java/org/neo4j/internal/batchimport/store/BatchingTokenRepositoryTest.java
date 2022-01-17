@@ -57,7 +57,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -125,7 +125,7 @@ class BatchingTokenRepositoryTest
     {
         // given
         try ( NeoStores stores = newNeoStores( StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME );
-              var storeCursors = new CachedStoreCursors( stores, NULL ) )
+              var storeCursors = new CachedStoreCursors( stores, NULL_CONTEXT ) )
         {
             TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();
             int rounds = 3;
@@ -144,14 +144,14 @@ class BatchingTokenRepositoryTest
                 assertEquals( expectedId, tokenStore.getHighId() );
                 try ( PageCursor pageCursor = storeCursors.writeCursor( RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR ) )
                 {
-                    repo.flush( NULL, pageCursor, storeCursors );
+                    repo.flush( NULL_CONTEXT, pageCursor, storeCursors );
                 }
                 assertEquals( expectedId + tokensPerRound, tokenStore.getHighId() );
                 expectedId += tokensPerRound;
             }
             try ( PageCursor pageCursor = storeCursors.writeCursor( RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR ) )
             {
-                repo.flush( NULL, pageCursor, storeCursors );
+                repo.flush( NULL_CONTEXT, pageCursor, storeCursors );
             }
 
             List<NamedToken> tokens = tokenStore.getTokens( storeCursors );

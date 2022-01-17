@@ -285,7 +285,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 new DelegatingTokenHolder( ( key, internal ) -> propertyKeyRepository.getOrCreateId( key, internal ), TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( ( key, internal ) -> labelRepository.getOrCreateId( key, internal ), TYPE_LABEL ),
                 new DelegatingTokenHolder( ( key, internal ) -> relationshipTypeRepository.getOrCreateId( key, internal ), TYPE_RELATIONSHIP_TYPE ) );
-        try ( var cachedCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+        try ( var cachedCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens( cachedCursors ) );
         }

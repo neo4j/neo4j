@@ -39,7 +39,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Stream;
 
 import org.neo4j.internal.nativeimpl.ErrorTranslator;
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -71,7 +70,6 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.Futures;
 
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,7 +81,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -141,9 +139,9 @@ class TransactionLogFileTest
         life.start();
 
         // simulate new file without header presence
-        logVersionRepository.incrementAndGetVersion( NULL );
+        logVersionRepository.incrementAndGetVersion( NULL_CONTEXT );
         fileSystem.write( logFiles.getLogFile().getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ) ).close();
-        transactionIdStore.transactionCommitted( 5L, 5, 5L, NULL );
+        transactionIdStore.transactionCommitted( 5L, 5, 5L, NULL_CONTEXT );
 
         PhysicalLogicalTransactionStore.LogVersionLocator versionLocator = new PhysicalLogicalTransactionStore.LogVersionLocator( 4L );
         logFiles.getLogFile().accept( versionLocator );

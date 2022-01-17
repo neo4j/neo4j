@@ -23,7 +23,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -57,7 +56,7 @@ public interface QueryContext
         @Override
         public CursorContext cursorContext()
         {
-            return NULL;
+            return CursorContext.NULL_CONTEXT;
         }
 
         @Override

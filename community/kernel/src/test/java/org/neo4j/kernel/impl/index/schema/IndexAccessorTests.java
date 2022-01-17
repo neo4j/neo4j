@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> extends IndexTestUtil<KEY, VALUE, LAYOUT>
@@ -65,7 +65,7 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
     void shouldHandleCloseWithoutCallsToProcess() throws Exception
     {
         // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL, false );
+        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL_CONTEXT, false );
 
         // when
         updater.close();
@@ -78,9 +78,9 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
     void requestForSecondUpdaterMustThrow() throws Exception
     {
         // given
-        try ( IndexUpdater ignored = accessor.newUpdater( ONLINE, NULL, false ) )
+        try ( IndexUpdater ignored = accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) )
         {
-            assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL, false ) );
+            assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) );
         }
     }
 
@@ -107,7 +107,7 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
         {
             accessor = createAccessor( pageCache );
             long baseline = tracer.flushes();
-            accessor.force( NULL );
+            accessor.force( NULL_CONTEXT );
             long preDrop = tracer.flushes();
             assertThat( preDrop ).isGreaterThan( baseline );
 
@@ -138,7 +138,7 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
         // given
         accessor.drop();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL, false ) );
+        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) );
     }
 
     @Test
@@ -147,7 +147,7 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
         // given
         accessor.close();
 
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL, false ) );
+        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL_CONTEXT, false ) );
     }
 
 }

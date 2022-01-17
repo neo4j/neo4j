@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @ExtendWith( RandomExtension.class )
 public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
@@ -149,14 +149,14 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
         List<Long> initialKeys = initialKeys();
         try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
-            try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = tree.writer( NULL_CONTEXT ) )
             {
                 for ( Long key : initialKeys )
                 {
                     put( writer, key );
                 }
             }
-            tree.checkpoint( NULL );
+            tree.checkpoint( NULL_CONTEXT );
         }
     }
 
@@ -184,8 +184,8 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
             {
                 // WHEN reading from the tree
                 // THEN initial keys should be there
-                tree.consistencyCheck( NULL );
-                try ( Seeker<KEY,VALUE> cursor = tree.seek( layout.key( 0 ), layout.key( Long.MAX_VALUE ), NULL ) )
+                tree.consistencyCheck( NULL_CONTEXT );
+                try ( Seeker<KEY,VALUE> cursor = tree.seek( layout.key( 0 ), layout.key( Long.MAX_VALUE ), NULL_CONTEXT ) )
                 {
                     for ( Long expectedKey : initialKeys )
                     {
@@ -198,7 +198,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
             {
                 // WHEN writing more to the tree
                 // THEN we should not see any format conflicts
-                try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
+                try ( Writer<KEY,VALUE> writer = tree.writer( NULL_CONTEXT ) )
                 {
                     while ( keysToAdd.size() > 0 )
                     {
@@ -213,8 +213,8 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
             {
                 // WHEN reading from the tree again
                 // THEN all keys including newly added should be there
-                tree.consistencyCheck( NULL );
-                try ( Seeker<KEY,VALUE> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL ) )
+                tree.consistencyCheck( NULL_CONTEXT );
+                try ( Seeker<KEY,VALUE> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL_CONTEXT ) )
                 {
                     for ( Long expectedKey : allKeys )
                     {
@@ -227,7 +227,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
             {
                 // WHEN randomly removing half of tree content
                 // THEN we should not see any format conflicts
-                try ( Writer<KEY,VALUE> writer = tree.writer( NULL ) )
+                try ( Writer<KEY,VALUE> writer = tree.writer( NULL_CONTEXT ) )
                 {
                     int size = allKeys.size();
                     while ( allKeys.size() > size / 2 )
@@ -243,8 +243,8 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
             {
                 // WHEN reading from the tree after remove
                 // THEN we should see everything that is left in the tree
-                tree.consistencyCheck( NULL );
-                try ( Seeker<KEY,VALUE> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL ) )
+                tree.consistencyCheck( NULL_CONTEXT );
+                try ( Seeker<KEY,VALUE> cursor = tree.seek( layout.key( 0 ), layout.key( 2 * INITIAL_KEY_COUNT ), NULL_CONTEXT ) )
                 {
                     for ( Long expectedKey : allKeys )
                     {

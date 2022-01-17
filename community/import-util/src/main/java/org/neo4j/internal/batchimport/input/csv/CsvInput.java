@@ -55,7 +55,7 @@ import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.extractHeader;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
@@ -305,7 +305,7 @@ public class CsvInput implements Input
                                 for ( ; chunk.next( entity ); entities++ )
                                 {
                                     properties += entity.propertyCount();
-                                    propertySize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL, memoryTracker );
+                                    propertySize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL_CONTEXT, memoryTracker );
                                     additional += additionalCalculator.applyAsInt( entity );
                                 }
                             }

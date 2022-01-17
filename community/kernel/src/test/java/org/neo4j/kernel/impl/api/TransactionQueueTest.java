@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class TransactionQueueTest
 {
@@ -78,7 +78,7 @@ class TransactionQueueTest
         TransactionToApply[] txs = new TransactionToApply[batchSize];
         for ( int i = 0; i < batchSize; i++ )
         {
-            queue.queue( txs[i] = new TransactionToApply( mock( TransactionRepresentation.class ), NULL, StoreCursors.NULL ) );
+            queue.queue( txs[i] = new TransactionToApply( mock( TransactionRepresentation.class ), NULL_CONTEXT, StoreCursors.NULL ) );
         }
 
         // THEN

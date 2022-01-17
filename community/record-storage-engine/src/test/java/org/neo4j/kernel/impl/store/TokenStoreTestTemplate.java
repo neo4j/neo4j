@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -95,10 +95,10 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         nameStore = new DynamicStringStore( namesFile, namesIdFile, config, RecordIdType.LABEL_TOKEN_NAME, generatorFactory, pageCache, logProvider,
                 TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion(), writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         store = instantiateStore( file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config );
-        nameStore.initialise( true, NULL );
-        store.initialise( true, NULL );
-        nameStore.start( NULL );
-        store.start( NULL );
+        nameStore.initialise( true, NULL_CONTEXT );
+        store.initialise( true, NULL_CONTEXT );
+        nameStore.start( NULL_CONTEXT );
+        store.start( NULL_CONTEXT );
         storeCursors = createCursors( store, nameStore );
     }
 
@@ -222,7 +222,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     private R createInUseRecord( List<DynamicRecord> nameRecords )
     {
         R tokenRecord = store.newRecord();
-        tokenRecord.setId( store.nextId( NULL ) );
+        tokenRecord.setId( store.nextId( NULL_CONTEXT ) );
         tokenRecord.initialize( true, nameRecords.get( 0 ).getIntId() );
         tokenRecord.addNameRecords( nameRecords );
         tokenRecord.setCreated();
@@ -231,7 +231,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
 
     private void createEmptyPageZero() throws IOException
     {
-        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
         {
             // Create an empty page in the file. All records in here will look like they are unused.
             assertTrue( cursor.next() );
@@ -241,20 +241,20 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     private List<DynamicRecord> allocateNameRecords( String tokenName )
     {
         List<DynamicRecord> nameRecords = new ArrayList<>();
-        nameStore.allocateRecordsFromBytes( nameRecords, tokenName.getBytes( StandardCharsets.UTF_8 ), NULL, INSTANCE );
+        nameStore.allocateRecordsFromBytes( nameRecords, tokenName.getBytes( StandardCharsets.UTF_8 ), NULL_CONTEXT, INSTANCE );
         return nameRecords;
     }
 
     private void storeToken( R tokenRecord )
     {
-        try ( var pageCursor = nameStore.openPageCursorForWriting( 0, NULL );
-              var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        try ( var pageCursor = nameStore.openPageCursorForWriting( 0, NULL_CONTEXT );
+              var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
         {
             for ( DynamicRecord nameRecord : tokenRecord.getNameRecords() )
             {
-                nameStore.updateRecord( nameRecord, pageCursor, NULL, storeCursors );
+                nameStore.updateRecord( nameRecord, pageCursor, NULL_CONTEXT, storeCursors );
             }
-            store.updateRecord( tokenRecord, storeCursor, NULL, storeCursors );
+            store.updateRecord( tokenRecord, storeCursor, NULL_CONTEXT, storeCursors );
         }
     }
 }

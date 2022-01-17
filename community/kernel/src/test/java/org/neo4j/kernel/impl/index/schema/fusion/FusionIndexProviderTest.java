@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.CATEGORY_OF;
@@ -199,7 +199,7 @@ abstract class FusionIndexProviderTest
             when( provider.getPopulationFailure( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( StringUtils.EMPTY );
         }
 
-        assertEquals( StringUtils.EMPTY, fusionIndexProvider.getPopulationFailure( AN_INDEX, NULL ) );
+        assertEquals( StringUtils.EMPTY, fusionIndexProvider.getPopulationFailure( AN_INDEX, NULL_CONTEXT ) );
     }
 
     @Test
@@ -222,7 +222,7 @@ abstract class FusionIndexProviderTest
             }
 
             // then
-            assertThat( fusionIndexProvider.getPopulationFailure( AN_INDEX, NULL ) ).contains( failure );
+            assertThat( fusionIndexProvider.getPopulationFailure( AN_INDEX, NULL_CONTEXT ) ).contains( failure );
         }
     }
 
@@ -239,7 +239,7 @@ abstract class FusionIndexProviderTest
         }
 
         // then
-        String populationFailure = fusionIndexProvider.getPopulationFailure( AN_INDEX, NULL );
+        String populationFailure = fusionIndexProvider.getPopulationFailure( AN_INDEX, NULL_CONTEXT );
         for ( String failureMessage : failureMessages )
         {
             assertThat( populationFailure ).contains( failureMessage );
@@ -261,7 +261,7 @@ abstract class FusionIndexProviderTest
                 {
                     setInitialState( aliveProvider, failedProvider == aliveProvider ? InternalIndexState.FAILED : state );
                 }
-                InternalIndexState initialState = provider.getInitialState( AN_INDEX, NULL );
+                InternalIndexState initialState = provider.getInitialState( AN_INDEX, NULL_CONTEXT );
 
                 // then
                 assertEquals( InternalIndexState.FAILED, initialState );
@@ -282,7 +282,7 @@ abstract class FusionIndexProviderTest
                 {
                     setInitialState( aliveProvider, populatingProvider == aliveProvider ? InternalIndexState.POPULATING : state );
                 }
-                InternalIndexState initialState = fusionIndexProvider.getInitialState( AN_INDEX, NULL );
+                InternalIndexState initialState = fusionIndexProvider.getInitialState( AN_INDEX, NULL_CONTEXT );
 
                 // then
                 assertEquals( InternalIndexState.POPULATING, initialState );

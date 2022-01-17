@@ -58,7 +58,7 @@ import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combin
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.applyLogicalChanges;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.openSimpleStorageEngine;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @ExtendWith( RandomExtension.class )
 @EphemeralPageCacheExtension
@@ -89,11 +89,11 @@ class DegreesRebuildFromStoreTest
             life.add( storageEngine );
             generateData( storageEngine, denseThreshold, relationshipTypes );
             storageEngine.relationshipGroupDegreesStore().accept(
-                    ( groupId, direction, degree ) -> expectedDegrees.put( combinedKeyOnGroupAndDirection( groupId, direction ), degree ), NULL );
+                    ( groupId, direction, degree ) -> expectedDegrees.put( combinedKeyOnGroupAndDirection( groupId, direction ), degree ), NULL_CONTEXT );
             assertThat( expectedDegrees.isEmpty() ).isFalse();
 
             RelationshipGroupStore groupStore = storageEngine.testAccessNeoStores().getRelationshipGroupStore();
-            try ( StoreCursors storageCursors = storageEngine.createStorageCursors( NULL ) )
+            try ( StoreCursors storageCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
             {
                 long highId = groupStore.getHighId();
                 assertThat( highId ).isGreaterThan( 1 );
@@ -104,11 +104,11 @@ class DegreesRebuildFromStoreTest
                     record.setInUse( false );
                     try ( var groupStoreCursor = storageCursors.writeCursor( GROUP_CURSOR ) )
                     {
-                        groupStore.updateRecord( record, groupStoreCursor, NULL, storageCursors );
+                        groupStore.updateRecord( record, groupStoreCursor, NULL_CONTEXT, storageCursors );
                     }
                 }
             }
-            storageEngine.flushAndForce( NULL );
+            storageEngine.flushAndForce( NULL_CONTEXT );
         }
 
         // when
@@ -125,7 +125,7 @@ class DegreesRebuildFromStoreTest
                 long expectedDegree = expectedDegrees.get( key );
                 expectedDegrees.remove( key );
                 assertThat( degree ).isEqualTo( expectedDegree );
-            }, NULL );
+            }, NULL_CONTEXT );
             assertThat( expectedDegrees.size() ).isGreaterThan( 0 );
         }
     }
@@ -146,9 +146,9 @@ class DegreesRebuildFromStoreTest
             life.add( storageEngine );
             generateData( storageEngine, denseThreshold, relationshipTypes );
             storageEngine.relationshipGroupDegreesStore().accept(
-                    ( groupId, direction, degree ) -> expectedDegrees.put( combinedKeyOnGroupAndDirection( groupId, direction ), degree ), NULL );
+                    ( groupId, direction, degree ) -> expectedDegrees.put( combinedKeyOnGroupAndDirection( groupId, direction ), degree ), NULL_CONTEXT );
             assertThat( expectedDegrees.isEmpty() ).isFalse();
-            storageEngine.flushAndForce( NULL );
+            storageEngine.flushAndForce( NULL_CONTEXT );
         }
 
         // when
@@ -165,7 +165,7 @@ class DegreesRebuildFromStoreTest
                 long expectedDegree = expectedDegrees.get( key );
                 expectedDegrees.remove( key );
                 assertThat( degree ).isEqualTo( expectedDegree );
-            }, NULL );
+            }, NULL_CONTEXT );
         }
         assertThat( expectedDegrees.size() ).isEqualTo( 0 );
     }
@@ -175,7 +175,7 @@ class DegreesRebuildFromStoreTest
         int[] types = new int[3];
         for ( int i = 0; i < types.length; i++ )
         {
-            types[i] = (int) storageEngine.testAccessNeoStores().getRelationshipTypeTokenStore().nextId( NULL );
+            types[i] = (int) storageEngine.testAccessNeoStores().getRelationshipTypeTokenStore().nextId( NULL_CONTEXT );
         }
         return types;
     }
@@ -189,7 +189,7 @@ class DegreesRebuildFromStoreTest
             NodeStore nodeStore = storageEngine.testAccessNeoStores().getNodeStore();
             for ( int i = 0; i < numNodes; i++ )
             {
-                nodes[i] = nodeStore.nextId( NULL );
+                nodes[i] = nodeStore.nextId( NULL_CONTEXT );
                 tx.visitCreatedNode( nodes[i] );
             }
         } );
@@ -199,8 +199,8 @@ class DegreesRebuildFromStoreTest
         int numRelationships = numNodes * denseThreshold;
         for ( int i = 0; i < numRelationships; i++ )
         {
-            relationships.add(
-                    new RelationshipData( relationshipStore.nextId( NULL ), random.among( relationshipTypes ), random.among( nodes ), random.among( nodes ) ) );
+            relationships.add( new RelationshipData( relationshipStore.nextId( NULL_CONTEXT ), random.among( relationshipTypes ), random.among( nodes ),
+                    random.among( nodes ) ) );
         }
         applyLogicalChanges( storageEngine,
                 ( state, tx ) ->

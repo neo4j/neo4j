@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.recovery.CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME;
@@ -274,7 +274,7 @@ class CorruptedLogsTruncatorTest
         life.start();
 
         // 6 transaction log files and a checkpoint file
-        logVersionRepository.setCheckpointLogVersion( 0, NULL );
+        logVersionRepository.setCheckpointLogVersion( 0, NULL_CONTEXT );
         assertEquals( 7, logFiles.logFiles().length );
         assertEquals( byteOffset, Files.size( highestCorrectLogFile ) );
         assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 1 );

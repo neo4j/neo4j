@@ -82,13 +82,13 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
             case REL_TYPE_TOKEN_CURSOR:
                 if ( storeCursor == null )
                 {
-                    storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL );
+                    storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT );
                 }
                 return storeCursor;
             case DYNAMIC_REL_TYPE_TOKEN_CURSOR:
                 if ( dynamicCursor == null )
                 {
-                    dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL );
+                    dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT );
                 }
                 return dynamicCursor;
             default:
@@ -102,9 +102,9 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
             switch ( (RecordCursorTypes) type )
             {
             case REL_TYPE_TOKEN_CURSOR:
-                return store.openPageCursorForWriting( 0, CursorContext.NULL );
+                return store.openPageCursorForWriting( 0, CursorContext.NULL_CONTEXT );
             case DYNAMIC_REL_TYPE_TOKEN_CURSOR:
-                return nameStore.openPageCursorForWriting( 0, CursorContext.NULL );
+                return nameStore.openPageCursorForWriting( 0, CursorContext.NULL_CONTEXT );
             default:
                 return super.writeCursor( type );
             }

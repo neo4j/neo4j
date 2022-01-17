@@ -200,7 +200,7 @@ class RelationshipCreatorTest
     private void createRelationshipBetween( long fromNode, long toNode )
     {
         RelationshipModifier logic = new RelationshipModifier( newRelGroupGetter( givenState ), null, denseNodeThreshold, true,
-                CursorContext.NULL,
+                CursorContext.NULL_CONTEXT,
                 EmptyMemoryTracker.INSTANCE );
 
         FlatRelationshipModifications

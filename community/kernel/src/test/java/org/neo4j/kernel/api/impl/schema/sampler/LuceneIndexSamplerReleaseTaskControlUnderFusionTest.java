@@ -140,7 +140,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
     private static void makeSureIndexHasSomeData( IndexProvider provider ) throws IOException, IndexEntryConflictException
     {
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
-              IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
+              IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
         {
             updater.process( IndexEntryUpdate.add( 1, descriptor, Values.of( "some string" ) ) );
         }

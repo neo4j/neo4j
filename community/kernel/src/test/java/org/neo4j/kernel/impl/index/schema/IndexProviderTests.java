@@ -57,7 +57,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -173,12 +173,12 @@ abstract class IndexProviderTests
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
 
         // when
         // ... no failure on populator
 
-        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor(), NULL ) );
+        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor(), NULL_CONTEXT ) );
     }
 
     @Test
@@ -190,7 +190,7 @@ abstract class IndexProviderTests
         IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor(), samplingConfig(),
                 heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         nonFailedPopulator.create();
-        nonFailedPopulator.close( true, NULL );
+        nonFailedPopulator.close( true, NULL_CONTEXT );
 
         IndexPopulator failedPopulator = provider.getPopulator( otherDescriptor(), samplingConfig(),
                 heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
@@ -198,9 +198,9 @@ abstract class IndexProviderTests
 
         // when
         failedPopulator.markAsFailed( "failure" );
-        failedPopulator.close( false, NULL );
+        failedPopulator.close( false, NULL_CONTEXT );
 
-        var populationFailure = provider.getPopulationFailure( descriptor(), NULL );
+        var populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT );
         assertEquals( StringUtils.EMPTY, populationFailure );
     }
 
@@ -216,10 +216,10 @@ abstract class IndexProviderTests
         // when
         String failureMessage = "fail";
         populator.markAsFailed( failureMessage );
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
 
         // then
-        String populationFailure = provider.getPopulationFailure( descriptor(), NULL );
+        String populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT );
         assertThat( populationFailure ).isEqualTo( failureMessage );
     }
 
@@ -238,14 +238,14 @@ abstract class IndexProviderTests
         // when
         String firstFailure = "first failure";
         firstPopulator.markAsFailed( firstFailure );
-        firstPopulator.close( false, NULL );
+        firstPopulator.close( false, NULL_CONTEXT );
         String secondFailure = "second failure";
         secondPopulator.markAsFailed( secondFailure );
-        secondPopulator.close( false, NULL );
+        secondPopulator.close( false, NULL_CONTEXT );
 
         // then
-        assertThat( provider.getPopulationFailure( descriptor(), NULL ) ).isEqualTo( firstFailure );
-        assertThat( provider.getPopulationFailure( otherDescriptor(), NULL ) ).isEqualTo( secondFailure );
+        assertThat( provider.getPopulationFailure( descriptor(), NULL_CONTEXT ) ).isEqualTo( firstFailure );
+        assertThat( provider.getPopulationFailure( otherDescriptor(), NULL_CONTEXT ) ).isEqualTo( secondFailure );
     }
 
     @Test
@@ -260,11 +260,11 @@ abstract class IndexProviderTests
         // when
         String failureMessage = "fail";
         populator.markAsFailed( failureMessage );
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
 
         // then
         provider = newProvider();
-        String populationFailure = provider.getPopulationFailure( descriptor(), NULL );
+        String populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT );
         assertThat( populationFailure ).isEqualTo( failureMessage );
     }
 
@@ -278,7 +278,7 @@ abstract class IndexProviderTests
         provider = newProvider();
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT );
 
         // then
         assertEquals( InternalIndexState.POPULATING, state );
@@ -295,11 +295,11 @@ abstract class IndexProviderTests
         populator.create();
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT );
 
         // then
         assertEquals( InternalIndexState.POPULATING, state );
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
     }
 
     @Test
@@ -310,10 +310,10 @@ abstract class IndexProviderTests
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
         populator.markAsFailed( "Just some failure" );
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT );
 
         // then
         assertEquals( InternalIndexState.FAILED, state );
@@ -326,10 +326,10 @@ abstract class IndexProviderTests
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         populator.create();
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT );
 
         // then
         assertEquals( InternalIndexState.ONLINE, state );

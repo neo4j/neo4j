@@ -31,7 +31,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public class GroupOfCommands implements CommandsToApply
 {
@@ -67,7 +67,7 @@ public class GroupOfCommands implements CommandsToApply
     @Override
     public CursorContext cursorContext()
     {
-        return NULL;
+        return NULL_CONTEXT;
     }
 
     @Override

@@ -53,7 +53,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -113,7 +113,7 @@ class LuceneIndexProviderTest
                 new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
 
         assertThrows( UnsupportedOperationException.class,
-                () -> getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).newUpdater( IndexUpdateMode.ONLINE, NULL, false ) );
+                () -> getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) );
     }
 
     @Test
@@ -126,7 +126,7 @@ class LuceneIndexProviderTest
                 new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
 
         // We assert that 'force' does not throw an exception
-        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force( NULL );
+        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force( NULL_CONTEXT );
     }
 
     @Test
@@ -147,14 +147,14 @@ class LuceneIndexProviderTest
         race.addContestants(2, throwing( () -> {
             for ( int value = 0; value < 3000; value++ )
             {
-                populator.add( List.of( add( value, descriptor, stringValue( String.valueOf( value ) ) ) ), NULL );
+                populator.add( List.of( add( value, descriptor, stringValue( String.valueOf( value ) ) ) ), NULL_CONTEXT );
             }
         } ) );
 
         // And updated concurrently
         race.addContestant(throwing( () ->
         {
-            try ( var updater = populator.newPopulatingUpdater( NodePropertyAccessor.EMPTY, NULL ) )
+            try ( var updater = populator.newPopulatingUpdater( NodePropertyAccessor.EMPTY, NULL_CONTEXT ) )
             {
                 for ( int value = 0; value < 1000; value++ )
                 {
@@ -166,11 +166,11 @@ class LuceneIndexProviderTest
 
         // Then the index population completes
         assertThat( populator.progress( DONE ).getCompleted() ).isEqualTo( 1 );
-        var sample = populator.sample( NULL );
+        var sample = populator.sample( NULL_CONTEXT );
         assertThat( sample.sampleSize() ).isEqualTo( 7000 );
         assertThat( sample.uniqueValues() ).isEqualTo( 3000L );
         assertThat( sample.indexSize() ).isGreaterThanOrEqualTo( 5000L );
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
     }
 
     private LuceneIndexProvider createIndexProvider( Config config )

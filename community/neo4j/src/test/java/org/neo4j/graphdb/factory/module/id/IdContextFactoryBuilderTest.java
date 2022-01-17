@@ -53,7 +53,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 @PageCacheExtension
@@ -95,9 +95,9 @@ class IdContextFactoryBuilderTest
         LongSupplier highIdSupplier = () -> 0;
         int maxId = 100;
 
-        idGeneratorFactory.open( pageCache, file, idType, highIdSupplier, maxId, writable(), config, NULL, immutable.empty(), SINGLE_IDS );
+        idGeneratorFactory.open( pageCache, file, idType, highIdSupplier, maxId, writable(), config, NULL_CONTEXT, immutable.empty(), SINGLE_IDS );
 
-        verify( idGeneratorFactory ).open( pageCache, file, idType, highIdSupplier, maxId, writable(), config, NULL, immutable.empty(), SINGLE_IDS );
+        verify( idGeneratorFactory ).open( pageCache, file, idType, highIdSupplier, maxId, writable(), config, NULL_CONTEXT, immutable.empty(), SINGLE_IDS );
     }
 
     @Test
@@ -129,11 +129,11 @@ class IdContextFactoryBuilderTest
         Path file = testDirectory.file( "b" );
         RecordIdType idType = RecordIdType.NODE;
 
-        try ( IdGenerator idGenerator = idGeneratorFactory.create( pageCache, file, idType, 1, false, 100, writable(), config, NULL, immutable.empty(),
+        try ( IdGenerator idGenerator = idGeneratorFactory.create( pageCache, file, idType, 1, false, 100, writable(), config, NULL_CONTEXT, immutable.empty(),
                 SINGLE_IDS ) )
         {
-            idGenerator.marker( NULL ).markDeleted( 1 );
-            idGeneratorFactory.clearCache( NULL );
+            idGenerator.marker( NULL_CONTEXT ).markDeleted( 1 );
+            idGeneratorFactory.clearCache( NULL_CONTEXT );
 
             assertThat( cacheTracer.pins() ).isZero();
             assertThat( cacheTracer.unpins() ).isZero();

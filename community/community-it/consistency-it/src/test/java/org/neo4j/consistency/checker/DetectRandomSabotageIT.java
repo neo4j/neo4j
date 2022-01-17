@@ -129,7 +129,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.internal.schema.IndexType.BTREE;
 import static org.neo4j.internal.schema.IndexType.RANGE;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -204,7 +204,7 @@ public class DetectRandomSabotageIT
 
         RecordStorageEngine recordStorageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         neoStores = recordStorageEngine.testAccessNeoStores();
-        storageCursors = recordStorageEngine.createStorageCursors( NULL );
+        storageCursors = recordStorageEngine.createStorageCursors( NULL_CONTEXT );
         resolver = db.getDependencyResolver();
     }
 
@@ -257,11 +257,11 @@ public class DetectRandomSabotageIT
         PropertyBlock block = indexConfigPropertyRecord.iterator().next();
         indexConfigPropertyRecord.removePropertyBlock( block.getKeyIndexId() );
         PropertyBlock newBlock = new PropertyBlock();
-        propertyStore.encodeValue( newBlock, tokenId[0], intValue( 11 ), NULL, INSTANCE );
+        propertyStore.encodeValue( newBlock, tokenId[0], intValue( 11 ), NULL_CONTEXT, INSTANCE );
         indexConfigPropertyRecord.addPropertyBlock( newBlock );
         try ( var storeCursor = storageCursors.writeCursor( PROPERTY_CURSOR ) )
         {
-            propertyStore.updateRecord( indexConfigPropertyRecord, storeCursor, NULL, storageCursors );
+            propertyStore.updateRecord( indexConfigPropertyRecord, storeCursor, NULL_CONTEXT, storageCursors );
         }
 
         // then
@@ -555,7 +555,7 @@ public class DetectRandomSabotageIT
                         }
                         try ( var storeCursor = storageCursors.writeCursor( NODE_CURSOR ) )
                         {
-                            store.updateRecord( node, storeCursor, NULL, storageCursors );
+                            store.updateRecord( node, storeCursor, NULL_CONTEXT, storageCursors );
                         }
                         return recordSabotage( before, node );
                     }
@@ -606,7 +606,7 @@ public class DetectRandomSabotageIT
                         }
                         try ( var storeCursor = storageCursors.writeCursor( RELATIONSHIP_CURSOR ) )
                         {
-                            store.updateRecord( relationship, storeCursor, NULL, storageCursors );
+                            store.updateRecord( relationship, storeCursor, NULL_CONTEXT, storageCursors );
                         }
                         return recordSabotage( before, relationship );
                     }
@@ -842,7 +842,7 @@ public class DetectRandomSabotageIT
                         IndexAccessor accessor = ((OnlineIndexProxy) indexProxy).accessor();
                         long selectedEntityId = -1;
                         Value[] selectedValues = null;
-                        try ( IndexEntriesReader reader = accessor.newAllEntriesValueReader( 1, NULL )[0] )
+                        try ( IndexEntriesReader reader = accessor.newAllEntriesValueReader( 1, NULL_CONTEXT )[0] )
                         {
                             long entityId = -1;
                             Value[] values = null;
@@ -875,7 +875,7 @@ public class DetectRandomSabotageIT
                             // For now just test the remove case for relationship indexes
                             add = false;
                         }
-                        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT, NULL, false ) )
+                        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT, NULL_CONTEXT, false ) )
                         {
                             if ( add )
                             {
@@ -926,7 +926,7 @@ public class DetectRandomSabotageIT
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
                         Set<String> labelNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
                         int labelId;
-                        try ( IndexUpdater writer = nliProxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                        try ( IndexUpdater writer = nliProxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                         {
                             if ( nodeRecord.inUse() )
                             {
@@ -999,7 +999,7 @@ public class DetectRandomSabotageIT
                         int typeId;
                         long[] typesAfter;
                         String operation;
-                        try ( IndexUpdater writer = rtiProxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                        try ( IndexUpdater writer = rtiProxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                         {
                             if ( relationshipRecord.inUse() )
                             {
@@ -1056,11 +1056,11 @@ public class DetectRandomSabotageIT
                             tokenHolders.labelTokens().getOrCreateInternalIds( new String[]{tokenName}, tokenId );
                             NodeStore nodeStore = stores.getNodeStore();
                             NodeRecord node = randomRecord( random, nodeStore, usedRecord(), storageCursors.readCursor( NODE_CURSOR ) );
-                            NodeLabelsField.parseLabelsField( node ).add( tokenId[0], nodeStore, nodeStore.getDynamicLabelStore(), NULL, storageCursors,
+                            NodeLabelsField.parseLabelsField( node ).add( tokenId[0], nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, storageCursors,
                                     INSTANCE );
                             try ( var storeCursor = storageCursors.writeCursor( NODE_CURSOR ) )
                             {
-                                nodeStore.updateRecord( node, storeCursor, NULL, storageCursors );
+                                nodeStore.updateRecord( node, storeCursor, NULL_CONTEXT, storageCursors );
                             }
                             return new Sabotage( "Node has label token which is internal", node.toString() );
                         }
@@ -1072,11 +1072,11 @@ public class DetectRandomSabotageIT
                             PropertyBlock block = property.iterator().next();
                             property.removePropertyBlock( block.getKeyIndexId() );
                             PropertyBlock newBlock = new PropertyBlock();
-                            propertyStore.encodeValue( newBlock, tokenId[0], intValue( 11 ), NULL, INSTANCE );
+                            propertyStore.encodeValue( newBlock, tokenId[0], intValue( 11 ), NULL_CONTEXT, INSTANCE );
                             property.addPropertyBlock( newBlock );
                             try ( var storeCursor = storageCursors.writeCursor( PROPERTY_CURSOR ) )
                             {
-                                propertyStore.updateRecord( property, storeCursor, NULL, storageCursors );
+                                propertyStore.updateRecord( property, storeCursor, NULL_CONTEXT, storageCursors );
                             }
                             return new Sabotage( "Property has key which is internal", property.toString() );
                         }
@@ -1089,7 +1089,7 @@ public class DetectRandomSabotageIT
                             relationship.setType( tokenId[0] );
                             try ( var storeCursor = storageCursors.writeCursor( RELATIONSHIP_CURSOR ) )
                             {
-                                relationshipStore.updateRecord( relationship, storeCursor, NULL, storageCursors );
+                                relationshipStore.updateRecord( relationship, storeCursor, NULL_CONTEXT, storageCursors );
                             }
                             return new Sabotage( "Relationship has type which is internal", relationship.toString() );
                         }
@@ -1107,7 +1107,7 @@ public class DetectRandomSabotageIT
             record.setInUse( false );
             try ( var storeCursor = storeCursors.writeCursor( cursorType ) )
             {
-                store.updateRecord( record, storeCursor, NULL, storeCursors );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
             }
             return recordSabotage( before, record );
         }
@@ -1134,7 +1134,7 @@ public class DetectRandomSabotageIT
             guaranteedChangedId( () -> idGetter.applyAsLong( record ), changedId -> idSetter.accept( record, changedId ), rng );
             try ( var storeCursor = storeCursors.writeCursor( cursorType ) )
             {
-                store.updateRecord( record, storeCursor, NULL, storeCursors );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
             }
             return recordSabotage( before, record );
         }
@@ -1177,7 +1177,7 @@ public class DetectRandomSabotageIT
                                     dynamicStore.getRecordByCursor( dynamicRecord.getId(), before, RecordLoad.NORMAL,
                                             storeCursors.readCursor( dynamicCursorType ) );
                                     vandal.accept( dynamicRecord );
-                                    dynamicStore.updateRecord( dynamicRecord, dynamicCursor, NULL, storeCursors );
+                                    dynamicStore.updateRecord( dynamicRecord, dynamicCursor, NULL_CONTEXT, storeCursors );
                                     return recordSabotage( before, dynamicRecord );
                                 }
                             }

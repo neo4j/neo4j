@@ -53,7 +53,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class WriteTransactionCommandOrderingTest
@@ -159,7 +159,8 @@ class WriteTransactionCommandOrderingTest
         RelationshipStore relationshipStore = mock( RelationshipStore.class );
         when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
 
-        return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet, 0, null, LockTracer.NONE, null, null, null, NULL,
+        return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet, 0, null, LockTracer.NONE, null, null, null,
+                NULL_CONTEXT,
                 StoreCursors.NULL, INSTANCE, LATEST_LOG_SERIALIZATION );
     }
 

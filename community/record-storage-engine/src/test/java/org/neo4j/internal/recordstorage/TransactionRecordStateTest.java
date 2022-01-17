@@ -136,7 +136,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -202,7 +202,7 @@ class TransactionRecordStateTest
         var storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs,
                 formats, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable(), immutable.empty() );
         neoStores = storeFactory.openAllNeoStores( true );
-        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
 
     private static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node, int type )
@@ -824,8 +824,8 @@ class TransactionRecordStateTest
         // GIVEN
         TransactionRecordState recordState = newTransactionRecordState();
 
-        final long indexId = neoStores.getSchemaStore().nextId( NULL );
-        final long constraintId = neoStores.getSchemaStore().nextId( NULL );
+        final long indexId = neoStores.getSchemaStore().nextId( NULL_CONTEXT );
+        final long constraintId = neoStores.getSchemaStore().nextId( NULL_CONTEXT );
 
         recordState.schemaRuleCreate( constraintId, true, uniqueForLabel( 1, 1 ).withId( constraintId ).withOwnedIndexId( indexId ) );
 
@@ -896,8 +896,8 @@ class TransactionRecordStateTest
         LockService locks = mock( LockService.class, RETURNS_MOCKS );
         NodeStore nodeStore = neoStores.getNodeStore();
         long[] nodes = { // allocate ids
-                nodeStore.nextId( NULL ), nodeStore.nextId( NULL ), nodeStore.nextId( NULL ), nodeStore.nextId( NULL ),
-                nodeStore.nextId( NULL ), nodeStore.nextId( NULL ), nodeStore.nextId( NULL ) };
+                nodeStore.nextId( NULL_CONTEXT ), nodeStore.nextId( NULL_CONTEXT ), nodeStore.nextId( NULL_CONTEXT ), nodeStore.nextId( NULL_CONTEXT ),
+                nodeStore.nextId( NULL_CONTEXT ), nodeStore.nextId( NULL_CONTEXT ), nodeStore.nextId( NULL_CONTEXT ) };
         {
             // create the node records that we will modify in our main tx.
             TransactionRecordState tx = newTransactionRecordState();
@@ -951,11 +951,11 @@ class TransactionRecordStateTest
     {
         createStores( Config.defaults( dense_node_threshold, 10 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId( NULL );
+        long nodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
 
         tx.nodeCreate( nodeId );
 
-        int typeA = (int) neoStores.getRelationshipTypeTokenStore().nextId( NULL );
+        int typeA = (int) neoStores.getRelationshipTypeTokenStore().nextId( NULL_CONTEXT );
         tx.createRelationshipTypeToken( "A", typeA, false );
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 20 );
 
@@ -1008,7 +1008,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         createStores( Config.defaults( dense_node_threshold, 50 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId( NULL );
+        long nodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
         int typeA = 0;
         int typeB = 1;
         int typeC = 2;
@@ -1043,7 +1043,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         createStores( Config.defaults( dense_node_threshold, 49 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId( NULL );
+        long nodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
         int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA, false );
@@ -1067,7 +1067,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         createStores( Config.defaults( dense_node_threshold, 8 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId( NULL );
+        long nodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
         int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA, false );
@@ -1090,7 +1090,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         createStores( Config.defaults( dense_node_threshold, 13 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        int nodeId = (int) neoStores.getNodeStore().nextId( NULL );
+        int nodeId = (int) neoStores.getNodeStore().nextId( NULL_CONTEXT );
         int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( "A", typeA, false );
@@ -1109,7 +1109,7 @@ class TransactionRecordStateTest
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         createStores( Config.defaults( dense_node_threshold, 1 ) );
         TransactionRecordState tx = newTransactionRecordState();
-        long nodeId = neoStores.getNodeStore().nextId( NULL );
+        long nodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
         int typeA = 0;
         int typeB = 12;
         int typeC = 600;
@@ -1192,17 +1192,17 @@ class TransactionRecordStateTest
             apply( transaction( storeCursors, recordState ) );
         }
 
-        long nodeId = neoStores.getNodeStore().nextId( NULL );
+        long nodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
         {
-            long otherNode1Id = neoStores.getNodeStore().nextId( NULL );
-            long otherNode2Id = neoStores.getNodeStore().nextId( NULL );
+            long otherNode1Id = neoStores.getNodeStore().nextId( NULL_CONTEXT );
+            long otherNode2Id = neoStores.getNodeStore().nextId( NULL_CONTEXT );
             TransactionRecordState recordState = newTransactionRecordState();
             recordState.nodeCreate( nodeId );
             recordState.nodeCreate( otherNode1Id );
             recordState.nodeCreate( otherNode2Id );
-            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type10, nodeId, otherNode1Id ) );
+            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL_CONTEXT ), type10, nodeId, otherNode1Id ) );
             // This relationship will cause the switch to dense
-            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type10, nodeId, otherNode2Id ) );
+            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL_CONTEXT ), type10, nodeId, otherNode2Id ) );
 
             apply( transaction( storeCursors, recordState ) );
 
@@ -1213,9 +1213,9 @@ class TransactionRecordStateTest
         // WHEN inserting a relationship of type 5
         {
             TransactionRecordState recordState = newTransactionRecordState();
-            long otherNodeId = neoStores.getNodeStore().nextId( NULL );
+            long otherNodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
             recordState.nodeCreate( otherNodeId );
-            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type5, nodeId, otherNodeId ) );
+            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL_CONTEXT ), type5, nodeId, otherNodeId ) );
             apply( transaction( storeCursors, recordState ) );
 
             // THEN that group should end up first in the chain
@@ -1225,9 +1225,9 @@ class TransactionRecordStateTest
         // WHEN inserting a relationship of type 15
         {
             TransactionRecordState recordState = newTransactionRecordState();
-            long otherNodeId = neoStores.getNodeStore().nextId( NULL );
+            long otherNodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
             recordState.nodeCreate( otherNodeId );
-            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type15, nodeId, otherNodeId ) );
+            recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL_CONTEXT ), type15, nodeId, otherNodeId ) );
             apply( transaction( storeCursors, recordState ) );
 
             // THEN that group should end up last in the chain
@@ -1281,7 +1281,7 @@ class TransactionRecordStateTest
     {
         createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId( NULL );
+        long ruleId = neoStores.getSchemaStore().nextId( NULL_CONTEXT );
         IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
@@ -1305,7 +1305,7 @@ class TransactionRecordStateTest
     {
         createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId( NULL );
+        long ruleId = neoStores.getSchemaStore().nextId( NULL_CONTEXT );
         ConstraintDescriptor rule = ConstraintDescriptorFactory.existsForLabel( 0, 1 ).withId( ruleId );
         state.schemaRuleCreate( ruleId, true, rule );
 
@@ -1329,7 +1329,7 @@ class TransactionRecordStateTest
     {
         createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId( NULL );
+        long ruleId = neoStores.getSchemaStore().nextId( NULL_CONTEXT );
         IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
@@ -1378,7 +1378,7 @@ class TransactionRecordStateTest
     {
         createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId( NULL );
+        long ruleId = neoStores.getSchemaStore().nextId( NULL_CONTEXT );
         IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
@@ -1408,7 +1408,7 @@ class TransactionRecordStateTest
     {
         createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId( NULL );
+        long ruleId = neoStores.getSchemaStore().nextId( NULL_CONTEXT );
         IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
@@ -1447,7 +1447,7 @@ class TransactionRecordStateTest
     {
         createStores();
         TransactionRecordState state = newTransactionRecordState();
-        long ruleId = neoStores.getSchemaStore().nextId( NULL );
+        long ruleId = neoStores.getSchemaStore().nextId( NULL_CONTEXT );
         IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).withName( "constraint_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
@@ -1489,29 +1489,29 @@ class TransactionRecordStateTest
         NodeStore nodeStore = neoStores.getNodeStore();
         RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        long nodeId = nodeStore.nextId( NULL );
-        long relationshipId = relationshipStore.nextId( NULL );
-        long groupA = groupStore.nextId( NULL );
-        long groupB = groupStore.nextId( NULL );
-        long groupC = groupStore.nextId( NULL );
+        long nodeId = nodeStore.nextId( NULL_CONTEXT );
+        long relationshipId = relationshipStore.nextId( NULL_CONTEXT );
+        long groupA = groupStore.nextId( NULL_CONTEXT );
+        long groupB = groupStore.nextId( NULL_CONTEXT );
+        long groupC = groupStore.nextId( NULL_CONTEXT );
         try ( var groupCursor = storeCursors.writeCursor( GROUP_CURSOR );
               var relCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR );
               var nodeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
             groupStore.updateRecord( new RelationshipGroupRecord( groupA ).initialize( true, 0, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                    NULL_REFERENCE.longValue(), nodeId, groupB ), groupCursor, NULL, storeCursors );
+                    NULL_REFERENCE.longValue(), nodeId, groupB ), groupCursor, NULL_CONTEXT, storeCursors );
             groupStore.updateRecord(
                     new RelationshipGroupRecord( groupB ).initialize( true, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), relationshipId, nodeId,
-                            groupC ), groupCursor, NULL, storeCursors );
+                            groupC ), groupCursor, NULL_CONTEXT, storeCursors );
             groupStore.updateRecord( new RelationshipGroupRecord( groupC ).initialize( true, 2, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                    NULL_REFERENCE.longValue(), nodeId, NULL_REFERENCE.longValue() ), groupCursor, NULL, storeCursors );
+                    NULL_REFERENCE.longValue(), nodeId, NULL_REFERENCE.longValue() ), groupCursor, NULL_CONTEXT, storeCursors );
 
             relationshipStore.updateRecord(
                     new RelationshipRecord( relationshipId ).initialize( true, NO_NEXT_PROPERTY.longValue(), nodeId, nodeId, 1, 1, NULL_REFERENCE.longValue(),
-                            1, NULL_REFERENCE.longValue(), true, true ), relCursor, NULL, storeCursors );
+                            1, NULL_REFERENCE.longValue(), true, true ), relCursor, NULL_CONTEXT, storeCursors );
 
             nodeStore.updateRecord( new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.longValue(), true, groupA, NO_LABELS_FIELD.longValue() ),
-                    nodeCursor, NULL, storeCursors );
+                    nodeCursor, NULL_CONTEXT, storeCursors );
         }
 
         // when
@@ -1536,21 +1536,21 @@ class TransactionRecordStateTest
         createStores();
         NodeStore nodeStore = neoStores.getNodeStore();
         RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
-        long nodeId = nodeStore.nextId( NULL );
-        long groupA = groupStore.nextId( NULL );
-        long groupB = groupStore.nextId( NULL );
-        long groupC = groupStore.nextId( NULL );
+        long nodeId = nodeStore.nextId( NULL_CONTEXT );
+        long groupA = groupStore.nextId( NULL_CONTEXT );
+        long groupB = groupStore.nextId( NULL_CONTEXT );
+        long groupC = groupStore.nextId( NULL_CONTEXT );
         try ( var groupCursor = storeCursors.writeCursor( GROUP_CURSOR );
               var nodeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
             groupStore.updateRecord( new RelationshipGroupRecord( groupA ).initialize( true, 0, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                    NULL_REFERENCE.longValue(), nodeId, groupB ), groupCursor, NULL, storeCursors );
+                    NULL_REFERENCE.longValue(), nodeId, groupB ), groupCursor, NULL_CONTEXT, storeCursors );
             groupStore.updateRecord( new RelationshipGroupRecord( groupB ).initialize( true, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                    NULL_REFERENCE.longValue(), nodeId, groupC ), groupCursor, NULL, storeCursors );
+                    NULL_REFERENCE.longValue(), nodeId, groupC ), groupCursor, NULL_CONTEXT, storeCursors );
             groupStore.updateRecord( new RelationshipGroupRecord( groupC ).initialize( true, 2, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                    NULL_REFERENCE.longValue(), nodeId, NULL_REFERENCE.longValue() ), groupCursor, NULL, storeCursors );
+                    NULL_REFERENCE.longValue(), nodeId, NULL_REFERENCE.longValue() ), groupCursor, NULL_CONTEXT, storeCursors );
             nodeStore.updateRecord( new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.longValue(), true, groupA, NO_LABELS_FIELD.longValue() ),
-                    nodeCursor, NULL, storeCursors );
+                    nodeCursor, NULL_CONTEXT, storeCursors );
         }
 
         // when
@@ -1587,11 +1587,11 @@ class TransactionRecordStateTest
         RelationshipData[] result = new RelationshipData[count];
         for ( int i = 0; i < count; i++ )
         {
-            long otherNodeId = neoStores.getNodeStore().nextId( NULL );
+            long otherNodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
             tx.nodeCreate( otherNodeId );
             long first = direction == OUTGOING ? nodeId : otherNodeId;
             long other = direction == INCOMING ? nodeId : otherNodeId;
-            long relId = neoStores.getRelationshipStore().nextId( NULL );
+            long relId = neoStores.getRelationshipStore().nextId( NULL_CONTEXT );
             result[i] = relationship( relId, type, first, other );
             tx.relModify( singleCreate( relId, type, first, other ) );
         }
@@ -1634,7 +1634,7 @@ class TransactionRecordStateTest
         List<Iterable<IndexEntryUpdate<IndexDescriptor>>> updates = new ArrayList<>();
         OnlineIndexUpdates onlineIndexUpdates =
                 new OnlineIndexUpdates( neoStores.getNodeStore(), schemaCache,
-                        new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), storeCursors ), reader, NULL, INSTANCE, storeCursors );
+                        new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), storeCursors ), reader, NULL_CONTEXT, INSTANCE, storeCursors );
         onlineIndexUpdates.feed( extractor.getNodeCommands(), extractor.getRelationshipCommands(), transaction.transactionId() );
         updates.add( onlineIndexUpdates );
         reader.close();
@@ -1683,11 +1683,11 @@ class TransactionRecordStateTest
     {
         TransactionRecordState recordState = newTransactionRecordState();
 
-        nodeId.set( store.getNodeStore().nextId( NULL ) );
+        nodeId.set( store.getNodeStore().nextId( NULL_CONTEXT ) );
         int[] labelIds = new int[20];
         for ( int i = 0; i < labelIds.length; i++ )
         {
-            int labelId = (int) store.getLabelTokenStore().nextId( NULL );
+            int labelId = (int) store.getLabelTokenStore().nextId( NULL_CONTEXT );
             recordState.createLabelToken( "Label" + i, labelId, false );
             labelIds[i] = labelId;
         }
@@ -1740,14 +1740,15 @@ class TransactionRecordStateTest
         Loaders loaders = new Loaders( neoStores, storeCursors );
         recordChangeSet = new RecordChangeSet( loaders, INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, storeCursors );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
-        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), NULL );
+        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), NULL_CONTEXT );
         PropertyDeleter propertyDeleter =
-                new PropertyDeleter( propertyTraverser, neoStores, null, NullLogProvider.getInstance(), Config.defaults(), NULL, INSTANCE, storeCursors );
+                new PropertyDeleter( propertyTraverser, neoStores, null, NullLogProvider.getInstance(), Config.defaults(), NULL_CONTEXT, INSTANCE,
+                        storeCursors );
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0, ResourceLocker.IGNORE, LockTracer.NONE,
                 new RelationshipModifier( relationshipGroupGetter, propertyDeleter, neoStores.getRelationshipGroupStore().getStoreHeaderInt(),
-                        true, NULL, EmptyMemoryTracker.INSTANCE ),
-                new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser, NULL, INSTANCE ),
-                propertyDeleter, NULL, storeCursors, INSTANCE, RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION );
+                        true, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ),
+                new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser, NULL_CONTEXT, INSTANCE ),
+                propertyDeleter, NULL_CONTEXT, storeCursors, INSTANCE, RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION );
     }
 
     private static CommandsToApply transaction( StoreCursors storeCursors, TransactionRecordState recordState ) throws TransactionFailureException
@@ -1760,7 +1761,7 @@ class TransactionRecordStateTest
     private static void assertDynamicLabelRecordInUse( NeoStores store, long id, boolean inUse, StoreCursors storeCursors )
     {
         DynamicArrayStore dynamicLabelStore = store.getNodeStore().getDynamicLabelStore();
-        DynamicRecord record = dynamicLabelStore.getRecordByCursor( id, dynamicLabelStore.nextRecord( NULL ), FORCE,
+        DynamicRecord record = dynamicLabelStore.getRecordByCursor( id, dynamicLabelStore.nextRecord( NULL_CONTEXT ), FORCE,
                 storeCursors.readCursor( DYNAMIC_LABEL_STORE_CURSOR ) );
         assertEquals( inUse, record.inUse() );
     }

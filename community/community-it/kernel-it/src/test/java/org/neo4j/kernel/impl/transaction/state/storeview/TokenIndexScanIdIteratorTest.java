@@ -67,7 +67,7 @@ class TokenIndexScanIdIteratorTest
 
         IndexProxy indexProxy = indexingService.getIndexProxy( index );
 
-        try ( IndexUpdater indexUpdater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
+        try ( IndexUpdater indexUpdater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.change( 2, index, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
             indexUpdater.process( IndexEntryUpdate.change( 1, index, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );
@@ -91,7 +91,7 @@ class TokenIndexScanIdIteratorTest
 
     private static long[] findAllWithTokens( TokenIndexReader indexReader, int[] tokens )
     {
-        TokenIndexScanIdIterator iter = new TokenIndexScanIdIterator( indexReader, tokens, CursorContext.NULL );
+        TokenIndexScanIdIterator iter = new TokenIndexScanIdIterator( indexReader, tokens, CursorContext.NULL_CONTEXT );
         MutableLongList found = LongLists.mutable.empty();
         while ( iter.hasNext() )
         {

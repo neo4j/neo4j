@@ -123,7 +123,7 @@ class FullScanStoreViewTest
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
         storeView = new FullScanStoreView( locks, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
-        propertyAccessor = storeView.newPropertyAccessor( CursorContext.NULL, INSTANCE );
+        propertyAccessor = storeView.newPropertyAccessor( CursorContext.NULL_CONTEXT, INSTANCE );
         reader = storageEngine.newReader();
     }
 
@@ -254,7 +254,7 @@ class FullScanStoreViewTest
     @Test
     void shouldReadProperties() throws EntityNotFoundException
     {
-        Value value = propertyAccessor.getNodePropertyValue( alistair.getId(), propertyKeyId, CursorContext.NULL );
+        Value value = propertyAccessor.getNodePropertyValue( alistair.getId(), propertyKeyId, CursorContext.NULL_CONTEXT );
         assertTrue( value.equals( Values.of( "Alistair" ) ) );
     }
 

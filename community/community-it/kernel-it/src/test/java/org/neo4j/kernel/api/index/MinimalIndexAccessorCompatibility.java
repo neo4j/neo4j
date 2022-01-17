@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -63,7 +63,7 @@ class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBa
             fs.mkdir( homePath );
             IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
             populator.create();
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
             minimalIndexAccessor = indexProvider.getMinimalIndexAccessor( descriptor );
         }
 

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public class FakeCommitment implements Commitment
 {
@@ -48,7 +48,7 @@ public class FakeCommitment implements Commitment
     public void publishAsCommitted( CursorContext cursorContext )
     {
         committed = true;
-        transactionIdStore.transactionCommitted( id, CHECKSUM, TIMESTAMP, NULL );
+        transactionIdStore.transactionCommitted( id, CHECKSUM, TIMESTAMP, NULL_CONTEXT );
     }
 
     @Override

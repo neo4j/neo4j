@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
 
@@ -58,7 +58,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     {
         assert previouslyCommittedTxId >= BASE_TX_ID : "cannot start from a tx id less than BASE_TX_ID";
         setLastCommittedAndClosedTransactionId( previouslyCommittedTxId, checksum, previouslyCommittedTxCommitTimestamp,
-                previouslyCommittedTxLogByteOffset, previouslyCommittedTxLogVersion, NULL );
+                previouslyCommittedTxLogByteOffset, previouslyCommittedTxLogVersion, NULL_CONTEXT );
         this.previouslyCommittedTxId = previouslyCommittedTxId;
         this.initialTransactionChecksum = checksum;
         this.previouslyCommittedTxCommitTimestamp = previouslyCommittedTxCommitTimestamp;

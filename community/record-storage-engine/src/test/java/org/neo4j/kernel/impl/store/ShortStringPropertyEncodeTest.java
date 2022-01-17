@@ -200,7 +200,7 @@ class ShortStringPropertyEncodeTest
     {
         PropertyBlock block = new PropertyBlock();
         TextValue expectedValue = Values.stringValue( string );
-        propertyStore.encodeValue( block, KEY_ID, expectedValue, CursorContext.NULL, INSTANCE );
+        propertyStore.encodeValue( block, KEY_ID, expectedValue, CursorContext.NULL_CONTEXT, INSTANCE );
         assertEquals( 0, block.getValueRecords().size() );
         Value readValue = block.getType().value( block, propertyStore, StoreCursors.NULL );
         assertEquals( expectedValue, readValue );

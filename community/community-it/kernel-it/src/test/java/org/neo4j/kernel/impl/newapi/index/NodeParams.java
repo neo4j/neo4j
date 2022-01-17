@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -77,7 +77,7 @@ public class NodeParams implements EntityParams<NodeValueIndexCursor>
     @Override
     public NodeValueIndexCursor allocateEntityValueIndexCursor( KernelTransaction tx, CursorFactory cursorFactory )
     {
-        return cursorFactory.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() );
+        return cursorFactory.allocateNodeValueIndexCursor( NULL_CONTEXT, tx.memoryTracker() );
     }
 
     @Override
@@ -140,8 +140,8 @@ public class NodeParams implements EntityParams<NodeValueIndexCursor>
     @Override
     public Value getPropertyValueFromStore( KernelTransaction tx, CursorFactory cursorFactory, long reference )
     {
-        try ( NodeCursor storeCursor = cursorFactory.allocateNodeCursor( NULL );
-              PropertyCursor propertyCursor = cursorFactory.allocatePropertyCursor( NULL, INSTANCE ) )
+        try ( NodeCursor storeCursor = cursorFactory.allocateNodeCursor( NULL_CONTEXT );
+              PropertyCursor propertyCursor = cursorFactory.allocatePropertyCursor( NULL_CONTEXT, INSTANCE ) )
         {
             tx.dataRead().singleNode( reference, storeCursor );
             storeCursor.next();

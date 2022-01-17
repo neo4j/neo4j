@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class CommandPrimer
 {
@@ -273,7 +273,7 @@ class CommandPrimer
             PagedFile pagedFile = fileMap.get( file );
             if ( pagedFile != null )
             {
-                try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK, NULL ) )
+                try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
                 {
                     if ( cursor.next() )
                     {
@@ -317,7 +317,7 @@ class CommandPrimer
                 {
                     try
                     {
-                        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+                        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
                         {
                             if ( cursor.next() )
                             {
@@ -335,7 +335,7 @@ class CommandPrimer
                     // check that we wrote everything correctly
                     try
                     {
-                        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+                        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
                         {
                             if ( cursor.next() )
                             {

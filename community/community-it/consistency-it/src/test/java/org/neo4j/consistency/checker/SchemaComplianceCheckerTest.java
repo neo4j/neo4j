@@ -102,7 +102,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
         // when
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), mandatoryProperties, context().indexAccessors.onlineRules( NODE ),
-                CursorContext.NULL, storeCursors, INSTANCE ) )
+                CursorContext.NULL_CONTEXT, storeCursors, INSTANCE ) )
         {
             checker.checkContainsMandatoryProperties( new NodeRecord( nodeId ), labels, propertyValues, reporter::forNode );
         }
@@ -123,15 +123,15 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
             TextValue value = stringValue( "a" );
             // (N1) indexed w/ property A
             {
-                long propId = propertyStore.nextId( CursorContext.NULL );
-                nodeId = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
+                long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
+                nodeId = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId, value );
             }
             // (N2) indexed w/ property A
             {
-                long propId = propertyStore.nextId( CursorContext.NULL );
-                long nodeId2 = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
+                long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
+                long nodeId2 = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId2, value );
             }
@@ -154,8 +154,8 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // (N1) w/ property A (NOT indexed)
-            long propId = propertyStore.nextId( CursorContext.NULL );
-            nodeId = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
+            long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
+            nodeId = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
             property( propId, NULL, NULL, propertyValue( propertyKey1, stringValue( "a" ) ) );
         }
 
@@ -176,9 +176,9 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // Rel w/ property (NOT indexed)
-            long propId = propertyStore.nextId( CursorContext.NULL );
-            relId = relationshipStore.nextId( CursorContext.NULL );
-            long nodeId = node( nodeStore.nextId( CursorContext.NULL ), NULL, relId );
+            long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
+            relId = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long nodeId = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relId );
             relationship( relId, nodeId, nodeId, relType1, propId, NULL, NULL, NULL, NULL, true, true );
             property( propId, NULL, NULL, propertyValue( propertyKey1, stringValue( "a" ) ) );
         }
@@ -203,16 +203,16 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
             // (N1) w/ property
             {
-                long propId = propertyStore.nextId( CursorContext.NULL );
-                nodeId = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
+                long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
+                nodeId = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId, value );
             }
 
             // (N2) w/ property
             {
-                long propId = propertyStore.nextId( CursorContext.NULL );
-                long nodeId2 = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
+                long propId = propertyStore.nextId( CursorContext.NULL_CONTEXT );
+                long nodeId2 = node( nodeStore.nextId( CursorContext.NULL_CONTEXT ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId2, value );
             }
@@ -229,7 +229,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
             throws IndexNotFoundKernelException, IndexEntryConflictException
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
-        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE, CursorContext.NULL, false ) )
+        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE, CursorContext.NULL_CONTEXT, false ) )
         {
             indexUpdater.process( add( nodeId, () -> descriptor, value ) );
         }
@@ -238,7 +238,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private void checkIndexed( long nodeId ) throws Exception
     {
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( NODE ), CursorContext.NULL, storeCursors, INSTANCE ) )
+                context().indexAccessors.onlineRules( NODE ), CursorContext.NULL_CONTEXT, storeCursors, INSTANCE ) )
         {
             NodeRecord node = loadNode( nodeId );
             checker.checkCorrectlyIndexed( node, nodeLabels( node ), readPropertyValues( node, reporter::forNode ), reporter::forNode );
@@ -247,13 +247,13 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
     private void checkRelationshipIndexed( long relId ) throws Exception
     {
-        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
+        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT );
                 SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL, storeCursors, INSTANCE ) )
+                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL_CONTEXT, storeCursors, INSTANCE ) )
         {
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             RelationshipRecord record;
-            try ( var cursor = relationshipStore.openPageCursorForReading( relId, CursorContext.NULL ) )
+            try ( var cursor = relationshipStore.openPageCursorForReading( relId, CursorContext.NULL_CONTEXT ) )
             {
                 record = relationshipStore.getRecordByCursor( relId, relationshipStore.newRecord(), RecordLoad.NORMAL, cursor );
             }
@@ -266,7 +266,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private <PRIMITIVE extends PrimitiveRecord> MutableIntObjectMap<Value> readPropertyValues( PRIMITIVE entity,
             Function<PRIMITIVE,ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter ) throws Exception
     {
-        try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting(), CursorContext.NULL ) )
+        try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting(), CursorContext.NULL_CONTEXT ) )
         {
             MutableIntObjectMap<Value> values = new IntObjectHashMap<>();
             reader.read( values, entity, primitiveReporter, storeCursors );

@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 public abstract class RandomRelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
@@ -79,8 +79,8 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
     void shouldManageRandomTraversals()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor( NULL );
-              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor( NULL ) )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL_CONTEXT );
+              RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor( NULL_CONTEXT ) )
         {
             for ( int i = 0; i < N_TRAVERSALS; i++ )
             {

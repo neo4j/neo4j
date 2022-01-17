@@ -68,7 +68,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -242,7 +242,7 @@ public class ConsistencyCheckService
             {
                 IndexStatisticsStore statisticsStore = getStatisticStore( pageCache, recoveryCleanupWorkCollector );
                 life.add( statisticsStore );
-                consistencyCheckSingleCheckable( log, summary, statisticsStore, "INDEX_STATISTICS", NULL );
+                consistencyCheckSingleCheckable( log, summary, statisticsStore, "INDEX_STATISTICS", NULL_CONTEXT );
             }
 
             try
@@ -273,7 +273,7 @@ public class ConsistencyCheckService
     {
         try
         {
-            return new IndexStatisticsStore( pageCache, layout, recoveryCleanupWorkCollector, readOnly(), pageCacheTracer, NULL );
+            return new IndexStatisticsStore( pageCache, layout, recoveryCleanupWorkCollector, readOnly(), pageCacheTracer, NULL_CONTEXT );
         }
         catch ( IOException e )
         {

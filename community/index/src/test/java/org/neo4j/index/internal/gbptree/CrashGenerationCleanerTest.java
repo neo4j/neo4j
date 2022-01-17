@@ -310,7 +310,7 @@ class CrashGenerationCleanerTest
 
     private void initializeFile( PagedFile pagedFile, Page... pages ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT ) )
         {
             for ( Page page : pages )
             {

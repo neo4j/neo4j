@@ -314,7 +314,7 @@ class SchemaChecker
             String result = record.toString();
             if ( record instanceof SchemaRecord )
             {
-                try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+                try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
                 {
                     SchemaRule schemaRule =
                             SchemaStore.readSchemaRule( (SchemaRecord) record, neoStores.getPropertyStore(), tokenHolders, storeCursors );

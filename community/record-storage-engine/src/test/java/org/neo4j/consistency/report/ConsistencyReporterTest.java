@@ -66,7 +66,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class ConsistencyReporterTest
 {
@@ -215,7 +215,7 @@ class ConsistencyReporterTest
             }
             if ( type == CursorContext.class )
             {
-                return NULL;
+                return NULL_CONTEXT;
             }
             if ( type == Object.class )
             {

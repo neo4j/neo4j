@@ -22,7 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.io.IOException;
 
 import static org.neo4j.index.internal.gbptree.InternalTreeLogic.DEFAULT_SPLIT_RATIO;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public enum WriterFactory
 {
@@ -31,7 +31,7 @@ public enum WriterFactory
                 @Override
                 <KEY, VALUE> Writer<KEY,VALUE> create( GBPTree<KEY,VALUE> index, double ratioToKeepInLeftOnSplit ) throws IOException
                 {
-                    return index.writer( ratioToKeepInLeftOnSplit, NULL );
+                    return index.writer( ratioToKeepInLeftOnSplit, NULL_CONTEXT );
                 }
             },
     PARALLEL
@@ -39,7 +39,7 @@ public enum WriterFactory
                 @Override
                 <KEY, VALUE> Writer<KEY,VALUE> create( GBPTree<KEY,VALUE> index, double ratioToKeepInLeftOnSplit ) throws IOException
                 {
-                    return index.parallelWriter( ratioToKeepInLeftOnSplit, NULL );
+                    return index.parallelWriter( ratioToKeepInLeftOnSplit, NULL_CONTEXT );
                 }
             };
 

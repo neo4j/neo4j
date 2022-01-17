@@ -119,7 +119,7 @@ class IndexStatisticsIT
 
     private IndexDescriptor[] loadIndexes( IndexDescriptor index, SchemaRuleAccess schemaRuleAccess )
     {
-        try ( var storeCursors = storageEngine().createStorageCursors( CursorContext.NULL ) )
+        try ( var storeCursors = storageEngine().createStorageCursors( CursorContext.NULL_CONTEXT ) )
         {
             return schemaRuleAccess.indexGetForSchema( index, storeCursors );
         }

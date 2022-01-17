@@ -44,7 +44,7 @@ import org.neo4j.test.utils.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @EphemeralTestDirectoryExtension
 class SchemaRecoveryIT
@@ -131,7 +131,7 @@ class SchemaRecoveryIT
 
         // Flush the property token store, but NOT the property token ~name~ store. This means tokens will refer to unused dynamic records for their names.
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        storageEngine.testAccessNeoStores().getPropertyKeyTokenStore().flush( NULL );
+        storageEngine.testAccessNeoStores().getPropertyKeyTokenStore().flush( NULL_CONTEXT );
 
         killDb();
 

@@ -46,9 +46,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
-            relationship( relationship, nodeStore.nextId( CursorContext.NULL ), node, type, NULL, NULL, NULL, NULL, true, true );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
+            relationship( relationship, nodeStore.nextId( CursorContext.NULL_CONTEXT ), node, type, NULL, NULL, NULL, NULL, true, true );
         }
 
         // when
@@ -64,9 +64,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
-            relationship( relationship, node, nodeStore.nextId( CursorContext.NULL ), type, NULL, NULL, NULL, NULL, true, true );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
+            relationship( relationship, node, nodeStore.nextId( CursorContext.NULL_CONTEXT ), type, NULL, NULL, NULL, NULL, true, true );
         }
 
         // when
@@ -82,8 +82,8 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
             relationship( relationship, node + 10, node, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -100,8 +100,8 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
             relationship( relationship, node, node + 10, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -118,9 +118,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationshipStore.nextId( CursorContext.NULL ) );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationshipStore.nextId( CursorContext.NULL_CONTEXT ) );
+            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -137,9 +137,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationshipStore.nextId( CursorContext.NULL ) );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationshipStore.nextId( CursorContext.NULL_CONTEXT ) );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -156,9 +156,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, false, true );
         }
 
@@ -175,9 +175,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, false );
         }
 
@@ -194,9 +194,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, NULL );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, NULL );
+            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -213,9 +213,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, NULL );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, NULL );
             relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         }
 
@@ -232,9 +232,9 @@ class RelationshipCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long relationship = relationshipStore.nextId( CursorContext.NULL );
-            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
+            long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+            long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
+            long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
             relationship( relationship, node1, node2, type + 1, NULL, NULL, NULL, NULL, true, true );
         }
 

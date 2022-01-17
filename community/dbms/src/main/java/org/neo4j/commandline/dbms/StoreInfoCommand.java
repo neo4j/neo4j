@@ -152,12 +152,12 @@ public class StoreInfoCommand extends AbstractCommand
             var storageEngineFactory = storageEngineSelector.selectStorageEngine( fs, databaseLayout, pageCache ).orElseThrow();
             var storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, Config.defaults(), pageCache,
                     NullLogService.getInstance(), PageCacheTracer.NULL );
-            var storeVersion = storeVersionCheck.storeVersion( CursorContext.NULL )
+            var storeVersion = storeVersionCheck.storeVersion( CursorContext.NULL_CONTEXT )
                     .orElseThrow( () ->
                             new CommandFailedException( format( "Could not find version metadata in store '%s'", databaseLayout.databaseDirectory() ) ) );
             var versionInformation = storageEngineFactory.versionInformation( storeVersion );
             var recoveryRequired = checkRecoveryState( fs, pageCache, databaseLayout, config, memoryTracker, storageEngineFactory );
-            var txIdStore = storageEngineFactory.readOnlyTransactionIdStore( fs, databaseLayout, pageCache, CursorContext.NULL );
+            var txIdStore = storageEngineFactory.readOnlyTransactionIdStore( fs, databaseLayout, pageCache, CursorContext.NULL_CONTEXT );
             var lastTxId = txIdStore.getLastCommittedTransactionId(); // Latest committed tx id found in metadata store. May be behind if recovery is required.
             var successorString = versionInformation.successorStoreVersion().map(
                     successor -> storageEngineFactory.versionInformation( successor ).introductionNeo4jVersion() ).orElse( null );

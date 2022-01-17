@@ -166,7 +166,7 @@ import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
@@ -275,7 +275,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node() ).initialize( false, -1, false, -1, 0 );
-                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null, NULL, StoreCursors.NULL, INSTANCE );
+                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null, NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
                 tx.create( nodeRecord );
             }
         } );
@@ -302,7 +302,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 List<DynamicRecord> newRecords = new ArrayList<>();
                 allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getId(), new long[]{42L} ),
-                        new ReusableRecordsAllocator( 60, record ), NULL, INSTANCE );
+                        new ReusableRecordsAllocator( 60, record ), NULL_CONTEXT, INSTANCE );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
                 tx.create( nodeRecord );
@@ -360,7 +360,7 @@ public class FullCheckIntegrationTest
 
         IndexDescriptor rtiDescriptor = findTokenIndex( fixture, EntityType.RELATIONSHIP );
         IndexAccessor accessor = fixture.indexAccessorLookup().apply( rtiDescriptor );
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.change( relationshipId, rtiDescriptor, new long[]{}, new long[]{relationshipTypeId} ) );
         }
@@ -382,7 +382,7 @@ public class FullCheckIntegrationTest
         RelationshipRecord relationshipRecord = new RelationshipRecord( 0 );
 
         long relationshipId = relationshipOfTypeT;
-        try ( var cursor = relationshipStore.openPageCursorForReading( relationshipId, NULL ) )
+        try ( var cursor = relationshipStore.openPageCursorForReading( relationshipId, NULL_CONTEXT ) )
         {
             relationshipStore.getRecordByCursor( relationshipId, relationshipRecord, RecordLoad.NORMAL, cursor );
         }
@@ -390,7 +390,7 @@ public class FullCheckIntegrationTest
         StoreCursors storeCursors = fixture.getStoreCursors();
         try ( PageCursor pageCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( relationshipRecord, pageCursor, NULL, storeCursors );
+            relationshipStore.updateRecord( relationshipRecord, pageCursor, NULL_CONTEXT, storeCursors );
         }
 
         // when
@@ -420,7 +420,7 @@ public class FullCheckIntegrationTest
     {
         IndexDescriptor tokenIndex = findTokenIndex( fixture, EntityType.NODE );
         IndexAccessor accessor = fixture.indexAccessorLookup().apply( tokenIndex );
-        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             for ( EntityTokenUpdate entityTokenUpdate : entityTokenUpdates )
             {
@@ -443,7 +443,7 @@ public class FullCheckIntegrationTest
         {
             for ( Long indexedNodeId : indexedNodes )
             {
-                nodeStore.updateRecord( notInUse( new NodeRecord( indexedNodeId ).initialize( false, -1, false, -1, 0 ) ), cursor, NULL, storeCursors );
+                nodeStore.updateRecord( notInUse( new NodeRecord( indexedNodeId ).initialize( false, -1, false, -1, 0 ) ), cursor, NULL_CONTEXT, storeCursors );
             }
         }
 
@@ -475,7 +475,7 @@ public class FullCheckIntegrationTest
             IndexPopulator populator = storeAccess.indexes().lookup( rule.getIndexProvider() )
                     .getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
-            populator.close( false, NULL );
+            populator.close( false, NULL_CONTEXT );
         }
 
         NodeStore nodeStore = storeAccess.nativeStores().getNodeStore();
@@ -484,7 +484,7 @@ public class FullCheckIntegrationTest
         {
             for ( Long indexedNodeId : indexedNodes )
             {
-                nodeStore.updateRecord( notInUse( new NodeRecord( indexedNodeId ).initialize( false, -1, false, -1, 0 ) ), cursor, NULL, storeCursors );
+                nodeStore.updateRecord( notInUse( new NodeRecord( indexedNodeId ).initialize( false, -1, false, -1, 0 ) ), cursor, NULL_CONTEXT, storeCursors );
             }
         }
 
@@ -587,7 +587,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.NODE )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                 {
                     for ( long nodeId : indexedNodes )
                     {
@@ -623,7 +623,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                 {
                     for ( long relId : indexedRelationships )
                     {
@@ -662,7 +662,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique() )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                 {
                     updater.process( IndexEntryUpdate.add( newNode, indexDescriptor, values( indexDescriptor ) ) );
                 }
@@ -694,7 +694,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP && !indexDescriptor.isUnique() )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                 {
                     updater.process( IndexEntryUpdate.add( newRel, indexDescriptor, values( indexDescriptor ) ) );
                 }
@@ -730,7 +730,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique() )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                 {
                     updater.process( IndexEntryUpdate.change( id.get(), indexDescriptor, values( indexDescriptor ), otherValues( indexDescriptor ) ) );
                 }
@@ -768,7 +768,7 @@ public class FullCheckIntegrationTest
             if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP )
             {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                 {
                     updater.process( IndexEntryUpdate.change( id.get(), indexDescriptor, values( indexDescriptor ), otherValues( indexDescriptor ) ) );
                 }
@@ -816,12 +816,12 @@ public class FullCheckIntegrationTest
                 // Don't close this accessor. It will be done when shutting down db.
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
 
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                 {
                     // There is already another node (created in generateInitialData()) that has this value
                     updater.process( IndexEntryUpdate.add( nodeId, indexRule, values( indexRule ) ) );
                 }
-                accessor.force( NULL );
+                accessor.force( NULL_CONTEXT );
             }
         }
 
@@ -1029,7 +1029,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record3 = inUse( new DynamicRecord( next.nodeLabel() ) );
                 labels[0] = nodeRecord.getId(); // the first id should not be a label id, but the id of the node
                 ReusableRecordsAllocator allocator = new ReusableRecordsAllocator( 60, record1, record2, record3 );
-                allocateFromNumbers( chain, labels, allocator, NULL, INSTANCE );
+                allocateFromNumbers( chain, labels, allocator, NULL_CONTEXT, INSTANCE );
 
                 nodeRecord.setLabelField( dynamicPointer( chain ), chain );
 
@@ -1061,14 +1061,15 @@ public class FullCheckIntegrationTest
 
                 Integer labelId = labels.other().get( 0 );
                 DynamicRecord record = inUse( new DynamicRecord( labelId ) );
-                allocateFromNumbers( duplicatedLabel, new long[]{nodeId, labelId, labelId}, new ReusableRecordsAllocator( 60, record ), NULL, INSTANCE );
+                allocateFromNumbers( duplicatedLabel, new long[]{nodeId, labelId, labelId}, new ReusableRecordsAllocator( 60, record ), NULL_CONTEXT,
+                        INSTANCE );
             }
         } );
 
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
         NodeRecord nodeRecord = new NodeRecord( nodeId );
         NodeStore nodeStore = neoStores.getNodeStore();
-        try ( var cursor = nodeStore.openPageCursorForReading( 0, CursorContext.NULL ) )
+        try ( var cursor = nodeStore.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT ) )
         {
             nodeStore.getRecordByCursor( nodeId, nodeRecord, FORCE, cursor );
         }
@@ -1077,7 +1078,7 @@ public class FullCheckIntegrationTest
         StoreCursors storeCursors = fixture.getStoreCursors();
         try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            nodeStore.updateRecord( nodeRecord, storeCursor, NULL, storeCursors );
+            nodeStore.updateRecord( nodeRecord, storeCursor, NULL_CONTEXT, storeCursors );
         }
 
         // when
@@ -1433,7 +1434,7 @@ public class FullCheckIntegrationTest
                     {
                         return StandardDynamicRecordAllocator.allocateRecord( next.arrayProperty() );
                     }
-                }, NULL, INSTANCE );
+                }, NULL_CONTEXT, INSTANCE );
                 assertThat( allocatedRecords.size() ).isGreaterThan( 1 );
                 DynamicRecord array = allocatedRecords.get( 0 );
                 array.setType( ARRAY.intValue() );
@@ -1490,7 +1491,7 @@ public class FullCheckIntegrationTest
         record.setNextBlock( record.getId() );
         try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_REL_TYPE_TOKEN_CURSOR ) )
         {
-            nameStore.updateRecord( record, storeCursor, NULL, storeCursors );
+            nameStore.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
         }
 
         // when
@@ -1524,7 +1525,7 @@ public class FullCheckIntegrationTest
         record.setNextBlock( record.getId() );
         try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR ) )
         {
-            nameStore.updateRecord( record, storeCursor, NULL, storeCursors );
+            nameStore.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
         }
 
         // when
@@ -1543,12 +1544,12 @@ public class FullCheckIntegrationTest
         StoreCursors storeCursors = fixture.getStoreCursors();
         RecordStore<RelationshipTypeTokenRecord> relTypeStore = neoStores.getRelationshipTypeTokenStore();
         RelationshipTypeTokenRecord record = relTypeStore.newRecord();
-        relTypeStore.getRecordByCursor( (int) relTypeStore.nextId( NULL ), record, FORCE, storeCursors.readCursor( REL_TYPE_TOKEN_CURSOR ) );
+        relTypeStore.getRecordByCursor( (int) relTypeStore.nextId( NULL_CONTEXT ), record, FORCE, storeCursors.readCursor( REL_TYPE_TOKEN_CURSOR ) );
         record.setNameId( 20 );
         record.setInUse( true );
         try ( var storeCursor = storeCursors.writeCursor( REL_TYPE_TOKEN_CURSOR ) )
         {
-            relTypeStore.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+            relTypeStore.updateRecord( record, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
         }
 
         // when
@@ -1573,7 +1574,7 @@ public class FullCheckIntegrationTest
         record.setInUse( true );
         try ( var storeCursor = storeCursors.writeCursor( LABEL_TOKEN_CURSOR ) )
         {
-            labelTokenStore.updateRecord( record, storeCursor, NULL, storeCursors );
+            labelTokenStore.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
         }
 
         // when
@@ -1607,7 +1608,7 @@ public class FullCheckIntegrationTest
         record.setInUse( false );
         try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR ) )
         {
-            nameStore.updateRecord( record, storeCursor, NULL, storeCursors );
+            nameStore.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
         }
 
         // when
@@ -2950,7 +2951,7 @@ public class FullCheckIntegrationTest
             {
                 PropertyRecord record = new PropertyRecord( id ).initialize( true, prev, next );
                 PropertyBlock block = new PropertyBlock();
-                PropertyStore.encodeValue( block, propertyKeyId, Values.intValue( 10 ), null, null, NULL, INSTANCE );
+                PropertyStore.encodeValue( block, propertyKeyId, Values.intValue( 10 ), null, null, NULL_CONTEXT, INSTANCE );
                 record.addPropertyBlock( block );
                 return record;
             }
@@ -3193,8 +3194,8 @@ public class FullCheckIntegrationTest
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
-        long ruleId1 = schemaStore.nextId( NULL );
-        long ruleId2 = schemaStore.nextId( NULL );
+        long ruleId1 = schemaStore.nextId( NULL_CONTEXT );
+        long ruleId2 = schemaStore.nextId( NULL_CONTEXT );
 
         String name = "constraint_" + ruleId2;
         IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
@@ -3215,8 +3216,8 @@ public class FullCheckIntegrationTest
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
-        long ruleId1 = schemaStore.nextId( NULL );
-        long ruleId2 = schemaStore.nextId( NULL );
+        long ruleId1 = schemaStore.nextId( NULL_CONTEXT );
+        long ruleId2 = schemaStore.nextId( NULL_CONTEXT );
 
         String name = "constraint_" + ruleId2;
         IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
@@ -3231,7 +3232,7 @@ public class FullCheckIntegrationTest
     private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-        long ruleId = schemaStore.nextId( NULL );
+        long ruleId = schemaStore.nextId( NULL_CONTEXT );
         ConstraintDescriptor rule = nodePropertyExistenceConstraintRule( ruleId, labelId, propertyKeyId ).withName( "constraint_" + ruleId );
         writeToSchemaStore( schemaStore, rule );
     }
@@ -3239,7 +3240,7 @@ public class FullCheckIntegrationTest
     private void createRelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-        ConstraintDescriptor rule = relPropertyExistenceConstraintRule( schemaStore.nextId( NULL ), relTypeId, propertyKeyId );
+        ConstraintDescriptor rule = relPropertyExistenceConstraintRule( schemaStore.nextId( NULL_CONTEXT ), relTypeId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 
@@ -3247,7 +3248,7 @@ public class FullCheckIntegrationTest
     {
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders(),
                 () -> KernelVersion.LATEST );
-        schemaRuleAccess.writeSchemaRule( rule, NULL, INSTANCE, fixture.getStoreCursors() );
+        schemaRuleAccess.writeSchemaRule( rule, NULL_CONTEXT, INSTANCE, fixture.getStoreCursors() );
     }
 
     protected Iterator<IndexDescriptor> getValueIndexDescriptors()
@@ -3319,7 +3320,7 @@ public class FullCheckIntegrationTest
         protoProperties.forEachKeyValue( ( keyId, value ) ->
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator, NULL, INSTANCE );
+            PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator, NULL_CONTEXT, INSTANCE );
             blocks.add( block );
         } );
 

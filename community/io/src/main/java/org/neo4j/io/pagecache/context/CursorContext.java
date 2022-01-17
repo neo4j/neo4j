@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 public class CursorContext implements AutoCloseable
 {
-    public static final CursorContext NULL = new CursorContext( PageCursorTracer.NULL, EmptyVersionContext.EMPTY );
+    public static final CursorContext NULL_CONTEXT = new CursorContext( PageCursorTracer.NULL, EmptyVersionContext.EMPTY );
 
     private final PageCursorTracer cursorTracer;
     private final VersionContext versionContext;

@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 /** Test utility DSL for creating store records */
 public class RecordBuilders
@@ -228,7 +228,7 @@ public class RecordBuilders
             {
                 return nextId++;
             }
-        }, NULL );
+        }, NULL_CONTEXT );
     }
 
     private static class Loader<T extends AbstractBaseRecord, E> implements RecordAccess.Loader<T,E>
@@ -271,7 +271,7 @@ public class RecordBuilders
     public static long createPropertyChain( PropertyStore propertyStore, PrimitiveRecord owner, List<PropertyBlock> properties,
                                      RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
     {
-        PropertyRecord currentRecord = propertyRecords.create( propertyStore.nextId( NULL ), owner, NULL ).forChangingData();
+        PropertyRecord currentRecord = propertyRecords.create( propertyStore.nextId( NULL_CONTEXT ), owner, NULL_CONTEXT ).forChangingData();
         currentRecord.setInUse( true );
         PropertyRecord firstRecord = currentRecord;
         for ( var block : properties )
@@ -281,8 +281,8 @@ public class RecordBuilders
                 // Here it means the current block is done for
                 PropertyRecord prevRecord = currentRecord;
                 // Create new record
-                long propertyId = propertyStore.nextId( NULL );
-                currentRecord = propertyRecords.create( propertyId, owner, NULL ).forChangingData();
+                long propertyId = propertyStore.nextId( NULL_CONTEXT );
+                currentRecord = propertyRecords.create( propertyId, owner, NULL_CONTEXT ).forChangingData();
                 currentRecord.setInUse( true );
                 // Set up links
                 prevRecord.setNextProp( propertyId );

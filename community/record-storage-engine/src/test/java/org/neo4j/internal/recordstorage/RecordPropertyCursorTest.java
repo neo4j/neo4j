@@ -41,7 +41,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -71,7 +70,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -104,7 +103,7 @@ public class RecordPropertyCursorTest
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, getRecordFormats(), NullLogProvider.getInstance(),
                 PageCacheTracer.NULL, writable(), Sets.immutable.empty() ).openAllNeoStores( true );
         owner = neoStores.getNodeStore().newRecord();
-        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
 
     protected RecordFormats getRecordFormats()
@@ -173,7 +172,7 @@ public class RecordPropertyCursorTest
         secondRecord.setNextProp( firstProp );
         try ( var cursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
         {
-            store.updateRecord( secondRecord, cursor, NULL, storeCursors );
+            store.updateRecord( secondRecord, cursor, NULL_CONTEXT, storeCursors );
         }
         owner.setId( 99 );
 
@@ -203,7 +202,7 @@ public class RecordPropertyCursorTest
         // and a cycle on the second record
         PropertyStore store = neoStores.getPropertyStore();
         PropertyRecord propertyRecord = getRecord( store, firstProp, NORMAL );
-        store.ensureHeavy( propertyRecord, new CachedStoreCursors( neoStores, NULL ) );
+        store.ensureHeavy( propertyRecord, new CachedStoreCursors( neoStores, NULL_CONTEXT ) );
         PropertyBlock block = propertyRecord.iterator().next();
         int cycleEndRecordIndex = random.nextInt( 1, block.getValueRecords().size() );
         DynamicRecord cycle = block.getValueRecords().get( cycleEndRecordIndex );
@@ -211,7 +210,7 @@ public class RecordPropertyCursorTest
         cycle.setNextBlock( block.getValueRecords().get( cycleStartIndex ).getId() );
         try ( var cursor = storeCursors.writeCursor( DYNAMIC_STRING_STORE_CURSOR ) )
         {
-            store.getStringStore().updateRecord( cycle, cursor, NULL, storeCursors );
+            store.getStringStore().updateRecord( cycle, cursor, NULL_CONTEXT, storeCursors );
         }
         owner.setId( 99 );
 
@@ -265,7 +264,7 @@ public class RecordPropertyCursorTest
 
     protected RecordPropertyCursor createCursor()
     {
-        return new RecordPropertyCursor( neoStores.getPropertyStore(), NULL, INSTANCE );
+        return new RecordPropertyCursor( neoStores.getPropertyStore(), NULL_CONTEXT, INSTANCE );
     }
 
     protected void assertPropertyChain( Value[] values, long firstPropertyId, RecordPropertyCursor cursor )
@@ -299,7 +298,7 @@ public class RecordPropertyCursorTest
 
     protected long storeValuesAsPropertyChain( NodeRecord owner, Value[] values )
     {
-        DirectRecordAccessSet access = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
+        DirectRecordAccessSet access = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL_CONTEXT );
         long firstPropertyId = createPropertyChain( owner, blocksOf( neoStores.getPropertyStore(), values ), access.getPropertyRecords() );
         access.commit();
         return firstPropertyId;
@@ -327,7 +326,7 @@ public class RecordPropertyCursorTest
         for ( int i = 0; i < values.length; i++ )
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, i, values[i], NULL, INSTANCE );
+            propertyStore.encodeValue( block, i, values[i], NULL_CONTEXT, INSTANCE );
             list.add( block );
         }
         return list;
@@ -335,7 +334,7 @@ public class RecordPropertyCursorTest
 
     private PropertyRecord getRecord( PropertyStore propertyStore, long id, RecordLoad load )
     {
-        try ( PageCursor cursor = propertyStore.openPageCursorForReading( id, NULL ) )
+        try ( PageCursor cursor = propertyStore.openPageCursorForReading( id, NULL_CONTEXT ) )
         {
             return propertyStore.getRecordByCursor( id, propertyStore.newRecord(), load, cursor );
         }

@@ -715,8 +715,8 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor( CursorContext.NULL );
-                  PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( CursorContext.NULL, INSTANCE ) )
+            try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor( CursorContext.NULL_CONTEXT );
+                  PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( CursorContext.NULL_CONTEXT, INSTANCE ) )
             {
                 ktx.dataRead().singleNode( node.getId(), nodes );
                 while ( nodes.next() )

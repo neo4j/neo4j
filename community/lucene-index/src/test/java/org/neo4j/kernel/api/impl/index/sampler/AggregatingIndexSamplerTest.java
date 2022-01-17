@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class AggregatingIndexSamplerTest
 {
@@ -39,7 +39,7 @@ class AggregatingIndexSamplerTest
         List<IndexSampler> samplers = Arrays.asList( createSampler( 1 ), createSampler( 2 ) );
         AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler( samplers );
 
-        IndexSample sample = partitionedSampler.sampleIndex( NULL );
+        IndexSample sample = partitionedSampler.sampleIndex( NULL_CONTEXT );
 
         assertEquals( new IndexSample( 3, 3, 6 ), sample );
     }

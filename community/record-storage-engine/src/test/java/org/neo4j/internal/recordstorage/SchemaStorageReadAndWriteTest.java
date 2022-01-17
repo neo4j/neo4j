@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
@@ -74,7 +74,7 @@ class SchemaStorageReadAndWriteTest
         @Override
         public int nextRuleId()
         {
-            return (int) storage.newRuleId( NULL );
+            return (int) storage.newRuleId( NULL_CONTEXT );
         }
     };
 
@@ -96,7 +96,7 @@ class SchemaStorageReadAndWriteTest
         TokenHolders tokens = new TokenHolders( new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
         tokens.setInitialTokens( StoreTokens.allTokens( neoStores ), storeCursors );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.propertyKeyTokens().size() ) );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.labelTokens().size() ) );
@@ -114,7 +114,7 @@ class SchemaStorageReadAndWriteTest
     void shouldPerfectlyPreserveSchemaRules() throws Exception
     {
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
-        storage.writeSchemaRule( schemaRule, NULL, INSTANCE, storeCursors );
+        storage.writeSchemaRule( schemaRule, NULL_CONTEXT, INSTANCE, storeCursors );
         SchemaRule returnedRule = storage.loadSingleSchemaRule( schemaRule.getId(), storeCursors );
         assertTrue( RandomSchema.schemaDeepEquals( returnedRule, schemaRule ),
                 () -> "\n" + returnedRule + "\nwas not equal to\n" + schemaRule );

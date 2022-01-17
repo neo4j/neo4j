@@ -33,7 +33,7 @@ import org.neo4j.string.UTF8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.LABEL_TOKEN_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<LabelTokenRecord, LabelTokenStore>
 {
@@ -64,7 +64,7 @@ class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<La
         record.addNameRecord( nameRecord );
         try ( var storeCursor = storeCursors.writeCursor( LABEL_TOKEN_CURSOR ) )
         {
-            store.updateRecord( record, storeCursor, NULL, storeCursors );
+            store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
         }
         return store;
     }

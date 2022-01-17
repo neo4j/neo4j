@@ -94,7 +94,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.logging.SecurityLogHelper.line;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -151,9 +151,9 @@ abstract class OperationsTest
         nodeCursor = mock( FullAccessNodeCursor.class );
         propertyCursor = mock( FullAccessPropertyCursor.class );
         relationshipCursor = mock( DefaultRelationshipScanCursor.class );
-        when( cursors.allocateFullAccessNodeCursor( NULL ) ).thenReturn( nodeCursor );
-        when( cursors.allocateFullAccessPropertyCursor( NULL, INSTANCE ) ).thenReturn( propertyCursor );
-        when( cursors.allocateRelationshipScanCursor( NULL ) ).thenReturn( relationshipCursor );
+        when( cursors.allocateFullAccessNodeCursor( NULL_CONTEXT ) ).thenReturn( nodeCursor );
+        when( cursors.allocateFullAccessPropertyCursor( NULL_CONTEXT, INSTANCE ) ).thenReturn( propertyCursor );
+        when( cursors.allocateRelationshipScanCursor( NULL_CONTEXT ) ).thenReturn( relationshipCursor );
         StorageEngine engine = mock( StorageEngine.class );
         storageReader = mock( StorageReader.class );
         storageReaderSnapshot = mock( StorageSchemaReader.class );
@@ -184,7 +184,7 @@ abstract class OperationsTest
                 transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
                 constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE,
                 () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
-        operations.initialize( NULL );
+        operations.initialize( NULL_CONTEXT );
 
         this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot, creationContext, storageLocks );
     }

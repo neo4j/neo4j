@@ -42,6 +42,7 @@ import java.util.function.Function;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -86,12 +87,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
@@ -170,7 +169,7 @@ abstract class IndexPopulationStressTest
         UnsafeUtil.exchangeNativeAccessCheckEnabled( prevAccessCheck );
         if ( populator != null )
         {
-            populator.close( true, NULL );
+            populator.close( true, CursorContext.NULL_CONTEXT );
         }
 
         scheduler.shutdown();
@@ -194,8 +193,8 @@ abstract class IndexPopulationStressTest
         race.addContestant( updater( lastBatches, insertersDone, updateLock, updates ) );
 
         race.go();
-        populator.scanCompleted( nullInstance, scheduler, NULL);
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, scheduler, CursorContext.NULL_CONTEXT );
+        populator.close( true, CursorContext.NULL_CONTEXT );
         populator = null; // to let the after-method know that we've closed it ourselves
 
         // then assert that a tree built by a single thread ends up exactly the same
@@ -207,8 +206,8 @@ abstract class IndexPopulationStressTest
         {
             RecordingClient entries = new RecordingClient();
             RecordingClient referenceEntries = new RecordingClient();
-            reader.query( entries, NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), allEntries() );
-            referenceReader.query( referenceEntries, NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), allEntries() );
+            reader.query( entries, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), allEntries() );
+            referenceReader.query( referenceEntries, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unordered( hasValues ), allEntries() );
 
             exhaustAndSort( referenceEntries );
             exhaustAndSort( entries );
@@ -243,7 +242,7 @@ abstract class IndexPopulationStressTest
                 // Do updates now and then
                 Thread.sleep( 10 );
                 updateLock.writeLock().lock();
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, NULL ) )
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, CursorContext.NULL_CONTEXT ) )
                 {
                     for ( int i = 0; i < THREADS; i++ )
                     {
@@ -303,7 +302,7 @@ abstract class IndexPopulationStressTest
                     updateLock.readLock().lock();
                     try
                     {
-                        populator.add( batch, NULL );
+                        populator.add( batch, CursorContext.NULL_CONTEXT );
                     }
                     finally
                     {
@@ -334,10 +333,10 @@ abstract class IndexPopulationStressTest
                 generator.reset();
                 for ( int i = 0; i < BATCHES_PER_THREAD; i++ )
                 {
-                    referencePopulator.add( generator.batch( descriptor2 ), NULL );
+                    referencePopulator.add( generator.batch( descriptor2 ), CursorContext.NULL_CONTEXT );
                 }
             }
-            try ( IndexUpdater updater = referencePopulator.newPopulatingUpdater( nodePropertyAccessor, NULL ) )
+            try ( IndexUpdater updater = referencePopulator.newPopulatingUpdater( nodePropertyAccessor, CursorContext.NULL_CONTEXT ) )
             {
                 for ( ValueIndexEntryUpdate<?> update : updates )
                 {
@@ -345,11 +344,11 @@ abstract class IndexPopulationStressTest
                 }
             }
             referenceSuccess = true;
-            referencePopulator.scanCompleted( nullInstance, scheduler, NULL );
+            referencePopulator.scanCompleted( nullInstance, scheduler, CursorContext.NULL_CONTEXT );
         }
         finally
         {
-            referencePopulator.close( referenceSuccess, NULL );
+            referencePopulator.close( referenceSuccess, CursorContext.NULL_CONTEXT );
         }
     }
 

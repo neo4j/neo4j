@@ -51,7 +51,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @EphemeralTestDirectoryExtension
 class KernelRecoveryTest
@@ -109,11 +109,12 @@ class KernelRecoveryTest
         DependencyResolver dependencyResolver = rebuilt.getDependencyResolver();
         StorageEngine storageEngine = dependencyResolver.resolveDependency( StorageEngine.class );
         TransactionCommitProcess commitProcess = dependencyResolver.resolveDependency( TransactionCommitProcess.class );
-        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
         {
             for ( TransactionRepresentation transaction : transactions )
             {
-                commitProcess.commit( new TransactionToApply( transaction, NULL, storeCursors ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+                commitProcess.commit( new TransactionToApply( transaction, NULL_CONTEXT, storeCursors ), CommitEvent.NULL,
+                        TransactionApplicationMode.EXTERNAL );
             }
         }
     }

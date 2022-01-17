@@ -141,7 +141,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
@@ -747,7 +747,7 @@ class RecoveryIT
 
         assertEquals( -1,
                 getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, databaseLayout.getDatabaseName(),
-                        NULL ) );
+                        NULL_CONTEXT ) );
 
         managementService.shutdown();
 
@@ -1075,10 +1075,10 @@ class RecoveryIT
         // Make an ID generator, say for the node store, dirty
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
         try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, layout.idNodeStore(), RecordIdType.NODE, () -> 0L /*will not be used*/, 10_000,
-                writable(), Config.defaults(), NULL, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
+                writable(), Config.defaults(), NULL_CONTEXT, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
         {
             // Merely opening a marker will make the backing GBPTree dirty
-            idGenerator.marker( NULL ).close();
+            idGenerator.marker( NULL_CONTEXT ).close();
         }
         assertFalse( isRecoveryRequired( layout ) );
         assertTrue( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE ) );
@@ -1125,12 +1125,12 @@ class RecoveryIT
 
         assertTrue( isRecoveryRequired( layout ) );
 
-        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, 18, layout.getDatabaseName(), NULL );
+        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, 18, layout.getDatabaseName(), NULL_CONTEXT );
 
         recoverDatabase();
         assertFalse( isRecoveryRequired( layout ) );
 
-        assertEquals( 18, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL ) );
+        assertEquals( 18, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL_CONTEXT ) );
     }
 
     @Test
@@ -1145,12 +1145,12 @@ class RecoveryIT
 
         assertTrue( isRecoveryRequired( layout ) );
 
-        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -42, layout.getDatabaseName(), NULL );
+        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -42, layout.getDatabaseName(), NULL_CONTEXT );
 
         recoverDatabase();
         assertFalse( isRecoveryRequired( layout ) );
 
-        assertEquals( 0, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL ) );
+        assertEquals( 0, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL_CONTEXT ) );
     }
 
     @Test
@@ -1165,12 +1165,12 @@ class RecoveryIT
 
         assertTrue( isRecoveryRequired( layout ) );
 
-        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -5, layout.getDatabaseName(), NULL );
+        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -5, layout.getDatabaseName(), NULL_CONTEXT );
 
         recoverDatabase();
         assertFalse( isRecoveryRequired( layout ) );
 
-        assertEquals( 0, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL ) );
+        assertEquals( 0, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL_CONTEXT ) );
     }
 
     @Test
@@ -1195,12 +1195,12 @@ class RecoveryIT
 
         assertTrue( isRecoveryRequired( layout ) );
 
-        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -5, layout.getDatabaseName(), NULL );
+        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -5, layout.getDatabaseName(), NULL_CONTEXT );
 
         recoverDatabase();
         assertFalse( isRecoveryRequired( layout ) );
 
-        assertEquals( 2, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL ) );
+        assertEquals( 2, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL_CONTEXT ) );
     }
 
     @Test
@@ -1452,7 +1452,7 @@ class RecoveryIT
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
         try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, path, idType, () -> 0L /*will not be used*/, 10_000, readOnly(),
-                Config.defaults(), NULL, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
+                Config.defaults(), NULL_CONTEXT, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
         {
             MutableBoolean dirtyOnStartup = new MutableBoolean();
             InvocationHandler invocationHandler = ( proxy, method, args ) ->
@@ -1464,7 +1464,7 @@ class RecoveryIT
                 return null;
             };
             ReporterFactory reporterFactory = new ReporterFactory( invocationHandler );
-            idGenerator.consistencyCheck( reporterFactory, NULL );
+            idGenerator.consistencyCheck( reporterFactory, NULL_CONTEXT );
             return dirtyOnStartup.booleanValue();
         }
     }
@@ -1673,7 +1673,7 @@ class RecoveryIT
         {
             PageCache restartedCache = getDatabasePageCache( restartedDatabase );
             final long record = getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP,
-                    databaseLayout.getDatabaseName(), NULL );
+                    databaseLayout.getDatabaseName(), NULL_CONTEXT );
             assertThat( record ).isGreaterThan( 0L );
         }
         finally

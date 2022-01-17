@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
@@ -76,11 +76,11 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     @Test
     void shouldScanASubsetOfNodes()
     {
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
-            assertTrue( scan.reserveBatch( nodes, 3, NULL, tx.securityContext().mode() ) );
+            assertTrue( scan.reserveBatch( nodes, 3, NULL_CONTEXT, tx.securityContext().mode() ) );
 
             assertTrue( nodes.next() );
             assertEquals( NODE_IDS.get( 0 ), nodes.nodeReference() );
@@ -95,11 +95,11 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     @Test
     void shouldHandleSizeHintOverflow()
     {
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
-            assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2, NULL, tx.securityContext().mode() ) );
+            assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2, NULL_CONTEXT, tx.securityContext().mode() ) );
 
             LongArrayList ids = new LongArrayList();
             while ( nodes.next() )
@@ -114,13 +114,13 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     @Test
     void shouldFailForSizeHintZero()
     {
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // given
             Scan<NodeCursor> scan = read.allNodesScan();
 
             // when
-            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( nodes, 0, NULL, tx.securityContext().mode() ) );
+            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( nodes, 0, NULL_CONTEXT, tx.securityContext().mode() ) );
         }
     }
 
@@ -129,11 +129,11 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     {
         // given
         LongArrayList ids = new LongArrayList();
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             Scan<NodeCursor> scan = read.allNodesScan();
-            while ( scan.reserveBatch( nodes, 3, NULL, tx.securityContext().mode() ) )
+            while ( scan.reserveBatch( nodes, 3, NULL_CONTEXT, tx.securityContext().mode() ) )
             {
                 while ( nodes.next() )
                 {

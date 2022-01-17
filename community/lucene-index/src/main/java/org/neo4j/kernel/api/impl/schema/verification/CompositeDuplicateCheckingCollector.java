@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollector
 {
@@ -49,7 +49,7 @@ public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollec
         Value[] values = new Value[propertyKeyIds.length];
         for ( int i = 0; i < values.length; i++ )
         {
-            values[i] = accessor.getNodePropertyValue( nodeId, propertyKeyIds[i], NULL );
+            values[i] = accessor.getNodePropertyValue( nodeId, propertyKeyIds[i], NULL_CONTEXT );
         }
         duplicateCheckStrategy.checkForDuplicate( values, nodeId );
     }

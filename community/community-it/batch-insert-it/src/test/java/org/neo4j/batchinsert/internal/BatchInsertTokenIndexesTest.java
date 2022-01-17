@@ -26,13 +26,11 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 
-import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
@@ -151,7 +149,7 @@ public class BatchInsertTokenIndexesTest
     private static void assertTokenIndexContains( TokenIndexReader reader, int tokenId, Long... intityIds )
     {
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-        reader.query( tokenClient, unconstrained(), new TokenPredicate( tokenId ), CursorContext.NULL );
+        reader.query( tokenClient, unconstrained(), new TokenPredicate( tokenId ), CursorContext.NULL_CONTEXT );
 
         var found = new ArrayList<Long>();
         while ( tokenClient.next() )

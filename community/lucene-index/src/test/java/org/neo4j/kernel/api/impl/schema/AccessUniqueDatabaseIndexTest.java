@@ -50,7 +50,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -188,7 +188,7 @@ class AccessUniqueDatabaseIndexTest
 
     private static void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {

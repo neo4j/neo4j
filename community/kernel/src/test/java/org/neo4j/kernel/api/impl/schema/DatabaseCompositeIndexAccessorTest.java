@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -53,6 +54,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -97,10 +99,8 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.extension.Threading.waitingWhileIn;
@@ -302,7 +302,7 @@ public class DatabaseCompositeIndexAccessorTest
                         {
                             LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
                         }
-                        sampler.sampleIndex( NULL );
+                        sampler.sampleIndex( CursorContext.NULL_CONTEXT );
                     }
                     finally
                     {
@@ -332,7 +332,7 @@ public class DatabaseCompositeIndexAccessorTest
     {
         IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
         populator.create();
-        populator.close( true, NULL );
+        populator.close( true, CursorContext.NULL_CONTEXT );
 
         return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP );
     }
@@ -341,7 +341,7 @@ public class DatabaseCompositeIndexAccessorTest
     {
         try ( NodeValueIterator results = new NodeValueIterator() )
         {
-            reader.query( results, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), queries );
+            reader.query( results, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), queries );
             return toSet( results );
         }
     }
@@ -363,7 +363,7 @@ public class DatabaseCompositeIndexAccessorTest
 
     private static void updateAndCommit( IndexAccessor accessor, List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
         {
             for ( IndexEntryUpdate<?> update : nodePropertyUpdates )
             {

@@ -45,7 +45,7 @@ import org.neo4j.time.Clocks;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -103,10 +103,10 @@ class PropertyStoreTraceIT
 
     private static void prepareIdGenerator( IdGenerator idGenerator )
     {
-        try ( var marker = idGenerator.marker( NULL ) )
+        try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
         {
             marker.markFree( 1L );
         }
-        idGenerator.clearCache( NULL );
+        idGenerator.clearCache( NULL_CONTEXT );
     }
 }

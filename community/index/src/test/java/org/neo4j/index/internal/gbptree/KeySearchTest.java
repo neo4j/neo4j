@@ -41,7 +41,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @ExtendWith( RandomExtension.class )
 class KeySearchTest
@@ -70,7 +70,7 @@ class KeySearchTest
         int keyCount = TreeNode.keyCount( cursor );
 
         // then
-        int result = search( cursor, node, LEAF, searchKey, readKey, keyCount, NULL );
+        int result = search( cursor, node, LEAF, searchKey, readKey, keyCount, NULL_CONTEXT );
         assertSearchResult( false, 0, result );
     }
 
@@ -82,7 +82,7 @@ class KeySearchTest
         int keyCount = TreeNode.keyCount( cursor );
 
         // then
-        final int result = search( cursor, node, INTERNAL, searchKey, readKey, keyCount, NULL );
+        final int result = search( cursor, node, INTERNAL, searchKey, readKey, keyCount, NULL_CONTEXT );
         assertSearchResult( false, 0, result );
     }
 
@@ -431,7 +431,7 @@ class KeySearchTest
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT, NULL );
+            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT, NULL_CONTEXT );
 
             // THEN
             assertSearchResult( true, i, result );
@@ -449,7 +449,7 @@ class KeySearchTest
         for ( int i = 1; i < KEY_COUNT - 1; i++ )
         {
             key.setValue( key( i ) - 1 );
-            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT, NULL );
+            int result = search( cursor, node, LEAF, key, readKey, KEY_COUNT, NULL_CONTEXT );
 
             // THEN
             assertSearchResult( false, i, result );
@@ -476,7 +476,7 @@ class KeySearchTest
             }
             layout.copyKey( key, expectedKey );
             keys.add( keyCount, expectedKey );
-            node.insertKeyValueAt( cursor, key, dummyValue, keyCount, keyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+            node.insertKeyValueAt( cursor, key, dummyValue, keyCount, keyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT );
             currentKey += random.nextInt( 100 ) + 10;
             keyCount++;
         }
@@ -487,7 +487,7 @@ class KeySearchTest
         for ( int i = 0; i < 1_000; i++ )
         {
             searchKey.setValue( random.nextInt( currentKey + 10 ) );
-            int searchResult = search( cursor, node, LEAF, searchKey, readKey, keyCount, NULL );
+            int searchResult = search( cursor, node, LEAF, searchKey, readKey, keyCount, NULL_CONTEXT );
 
             // THEN position should be as expected
             boolean exists = contains( keys, searchKey, layout );
@@ -522,7 +522,7 @@ class KeySearchTest
         int keyCount = TreeNode.keyCount( cursor );
         TreeNode.Type type = TreeNode.isInternal( cursor ) ? INTERNAL : LEAF;
         searchKey.setValue( key );
-        return search( cursor, node, type, searchKey, readKey, keyCount, NULL );
+        return search( cursor, node, type, searchKey, readKey, keyCount, NULL_CONTEXT );
     }
 
     private void appendKey( long key ) throws IOException
@@ -532,11 +532,11 @@ class KeySearchTest
         if ( TreeNode.isInternal( cursor ) )
         {
             long dummyChild = 10;
-            node.insertKeyAndRightChildAt( cursor, insertKey, dummyChild, keyCount, keyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+            node.insertKeyAndRightChildAt( cursor, insertKey, dummyChild, keyCount, keyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT );
         }
         else
         {
-            node.insertKeyValueAt( cursor, insertKey, dummyValue, keyCount, keyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+            node.insertKeyValueAt( cursor, insertKey, dummyValue, keyCount, keyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT );
         }
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
@@ -555,7 +555,7 @@ class KeySearchTest
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            node.insertKeyValueAt( cursor, key, dummyValue, i, i, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+            node.insertKeyValueAt( cursor, key, dummyValue, i, i, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT );
         }
         TreeNode.setKeyCount( cursor, KEY_COUNT );
     }

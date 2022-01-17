@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class RelationshipParams implements EntityParams<RelationshipValueIndexCursor>
@@ -82,7 +82,7 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
     @Override
     public RelationshipValueIndexCursor allocateEntityValueIndexCursor( KernelTransaction tx, CursorFactory cursorFactory )
     {
-        return cursorFactory.allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() );
+        return cursorFactory.allocateRelationshipValueIndexCursor( NULL_CONTEXT, tx.memoryTracker() );
     }
 
     @Override
@@ -146,8 +146,8 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
     @Override
     public Value getPropertyValueFromStore( KernelTransaction tx, CursorFactory cursorFactory, long reference )
     {
-        try ( var storeCursor = cursorFactory.allocateRelationshipScanCursor( NULL );
-              var propertyCursor = cursorFactory.allocatePropertyCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+        try ( var storeCursor = cursorFactory.allocateRelationshipScanCursor( NULL_CONTEXT );
+              var propertyCursor = cursorFactory.allocatePropertyCursor( NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
         {
             tx.dataRead().singleRelationship( reference, storeCursor );
             storeCursor.next();

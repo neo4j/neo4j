@@ -504,7 +504,7 @@ class IndexPopulationJobTest
         }
         finally
         {
-            populator.close( true, CursorContext.NULL );
+            populator.close( true, CursorContext.NULL_CONTEXT );
         }
     }
 
@@ -532,7 +532,7 @@ class IndexPopulationJobTest
         }
         finally
         {
-            populator.close( true, CursorContext.NULL );
+            populator.close( true, CursorContext.NULL_CONTEXT );
         }
     }
 

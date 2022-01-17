@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
 {
@@ -90,7 +90,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
         {
             // Try and read initial state, if we succeed then we know this file is a native index file
             // and we overwrite initial state with target.
-            NativeIndexes.readState( pageCache, fileOrDir, DEFAULT_DATABASE_NAME, NULL );
+            NativeIndexes.readState( pageCache, fileOrDir, DEFAULT_DATABASE_NAME, NULL_CONTEXT );
             return true;
         }
         catch ( Throwable t )
@@ -102,6 +102,6 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
     private static void overwriteState( PageCache pageCache, Path indexFile, byte state ) throws IOException
     {
         NativeIndexHeaderWriter stateWriter = new NativeIndexHeaderWriter( state );
-        GBPTree.overwriteHeader( pageCache, indexFile, stateWriter, DEFAULT_DATABASE_NAME, NULL );
+        GBPTree.overwriteHeader( pageCache, indexFile, stateWriter, DEFAULT_DATABASE_NAME, NULL_CONTEXT );
     }
 }

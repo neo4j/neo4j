@@ -49,7 +49,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @EphemeralTestDirectoryExtension
 class ConfiguringPageCacheFactoryTest
@@ -104,7 +104,7 @@ class ConfiguringPageCacheFactoryTest
         Path testFile = testDirectory.createFile( "a" );
         try ( var cache = factory.getOrCreatePageCache();
               var file = cache.map( testFile, PAGE_SIZE, "foo" );
-              var io = file.io( 1024, PF_SHARED_WRITE_LOCK, NULL ) )
+              var io = file.io( 1024, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
         {
             int bigPageToExpand = 20021;
             assertDoesNotThrow( () -> io.next( bigPageToExpand ) );

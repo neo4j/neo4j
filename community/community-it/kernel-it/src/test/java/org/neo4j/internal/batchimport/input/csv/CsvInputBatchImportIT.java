@@ -112,7 +112,7 @@ import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
@@ -392,7 +392,7 @@ class CsvInputBatchImportIT
                     translationTable( neoStores.getLabelTokenStore(), ANY_LABEL, storageEngine );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
-                assertEquals( count.other().longValue(), counts.nodeCount( count.first(), NULL ), "Label count mismatch for label " + count.first() );
+                assertEquals( count.other().longValue(), counts.nodeCount( count.first(), NULL_CONTEXT ), "Label count mismatch for label " + count.first() );
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
@@ -401,7 +401,7 @@ class CsvInputBatchImportIT
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
                 RelationshipCountKey key = count.first();
-                assertEquals( count.other().longValue(), counts.relationshipCount( key.startLabel, key.type, key.endLabel, NULL ),
+                assertEquals( count.other().longValue(), counts.relationshipCount( key.startLabel, key.type, key.endLabel, NULL_CONTEXT ),
                         "Label count mismatch for label " + key );
             }
 
@@ -471,7 +471,7 @@ class CsvInputBatchImportIT
     private static Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue, RecordStorageEngine storageEngine )
     {
         final Map<String, Integer> translationTable = new HashMap<>();
-        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
         {
             for ( NamedToken token : tokenStore.getTokens( storeCursors ) )
             {

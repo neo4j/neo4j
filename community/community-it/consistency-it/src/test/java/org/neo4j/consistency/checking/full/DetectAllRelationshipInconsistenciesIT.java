@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -108,7 +108,7 @@ public class DetectAllRelationshipInconsistenciesIT
             NeoStores neoStores = recordStorageEngine.testAccessNeoStores();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             Relationship sabotagedRelationships = random.among( relationships );
-            try ( var storeCursors = recordStorageEngine.createStorageCursors( NULL ) )
+            try ( var storeCursors = recordStorageEngine.createStorageCursors( NULL_CONTEXT ) )
             {
                 sabotage = sabotage( relationshipStore, sabotagedRelationships.getId(), additionalNodeId, storeCursors );
             }
@@ -181,7 +181,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private Sabotage sabotage( RelationshipStore store, long id, long lonelyNodeId, StoreCursors storeCursors )
     {
         RelationshipRecord before = store.newRecord();
-        try ( var cursor = store.openPageCursorForReading( id, NULL ) )
+        try ( var cursor = store.openPageCursorForReading( id, NULL_CONTEXT ) )
         {
             store.getRecordByCursor( id, before, RecordLoad.NORMAL, cursor );
         }
@@ -228,10 +228,10 @@ public class DetectAllRelationshipInconsistenciesIT
             }
         }
 
-        store.prepareForCommit( after, NULL );
+        store.prepareForCommit( after, NULL_CONTEXT );
         try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            store.updateRecord( after, storeCursor, NULL, storeCursors );
+            store.updateRecord( after, storeCursor, NULL_CONTEXT, storeCursors );
         }
 
         RelationshipRecord other = NULL_REFERENCE.is( otherReference ) ? null : loadRecord( store, otherReference );
@@ -240,7 +240,7 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private RelationshipRecord loadRecord( RelationshipStore store, long otherReference )
     {
-        try ( var cursor = store.openPageCursorForReading( otherReference, NULL ) )
+        try ( var cursor = store.openPageCursorForReading( otherReference, NULL_CONTEXT ) )
         {
             return store.getRecordByCursor( otherReference, store.newRecord(), RecordLoad.FORCE, cursor );
         }

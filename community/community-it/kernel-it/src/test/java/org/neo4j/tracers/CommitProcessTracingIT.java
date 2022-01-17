@@ -91,7 +91,7 @@ public class CommitProcessTracingIT
         {
             assertZeroCursor( cursorContext );
             try ( CommandCreationContext context = storageEngine.newCommandCreationContext( INSTANCE );
-                  var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL ) )
+                  var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL_CONTEXT ) )
             {
                 context.initialize( cursorContext, storeCursors );
                 List<StorageCommand> commands = new ArrayList<>();

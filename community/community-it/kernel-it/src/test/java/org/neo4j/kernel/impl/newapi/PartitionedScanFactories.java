@@ -109,7 +109,7 @@ class PartitionedScanFactories
                                                                TokenReadSession session, int desiredNumberOfPartitions )
                 throws KernelException
         {
-            return tx.dataRead().nodeLabelScan( session, desiredNumberOfPartitions, CursorContext.NULL, tokenScanQuery.get() );
+            return tx.dataRead().nodeLabelScan( session, desiredNumberOfPartitions, CursorContext.NULL_CONTEXT, tokenScanQuery.get() );
         }
 
         @Override
@@ -144,7 +144,7 @@ class PartitionedScanFactories
                                                                       TokenReadSession session, int desiredNumberOfPartitions )
                 throws KernelException
         {
-            return tx.dataRead().relationshipTypeScan( session, desiredNumberOfPartitions, CursorContext.NULL, tokenScanQuery.get() );
+            return tx.dataRead().relationshipTypeScan( session, desiredNumberOfPartitions, CursorContext.NULL_CONTEXT, tokenScanQuery.get() );
         }
 
         @Override

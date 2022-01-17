@@ -46,7 +46,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import static org.neo4j.consistency.checking.cache.CacheSlots.CACHE_LINE_SIZE_BYTES;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class LimitedFullCheckIT extends FullCheckIntegrationTest
 {
@@ -79,12 +79,12 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
                 // Don't close this accessor. It will be done when shutting down db.
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
 
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                 {
                     // There is already another node (created in generateInitialData()) that has this value
                     updater.process( IndexEntryUpdate.add( nodeId, indexRule, values( indexRule ) ) );
                 }
-                accessor.force( NULL );
+                accessor.force( NULL_CONTEXT );
             }
         }
 
@@ -163,7 +163,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
             // Don't close this accessor. It will be done when shutting down db.
             IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
 
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
             {
                 long idToRemove = relToRemoveFromIndex;
                 if ( indexRule.schema().entityType() == EntityType.NODE )
@@ -172,7 +172,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
                 }
                 updater.process( IndexEntryUpdate.remove( idToRemove, indexRule, values( indexRule ) ) );
             }
-            accessor.force( NULL );
+            accessor.force( NULL_CONTEXT );
         }
     }
 }

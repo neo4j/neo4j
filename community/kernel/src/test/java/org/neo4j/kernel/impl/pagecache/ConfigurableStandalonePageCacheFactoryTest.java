@@ -56,7 +56,7 @@ class ConfigurableStandalonePageCacheFactoryTest
 
             try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, jobScheduler, PageCacheTracer.NULL );
                     PagedFile pf = cache.map( file, 4096, DEFAULT_DATABASE_NAME );
-                    PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL ) )
+                    PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT ) )
             {
                 // The default size is currently 8MBs.
                 // It should be possible to write more than that.

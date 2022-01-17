@@ -274,7 +274,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = emptyMap();
         this.statusDetails = EMPTY;
         this.constraintSemantics = constraintSemantics;
-        this.transactionalCursors = storageEngine.createStorageCursors( CursorContext.NULL );
+        this.transactionalCursors = storageEngine.createStorageCursors( CursorContext.NULL_CONTEXT );
         this.storageLocks = storageEngine.createStorageLocks( lockClient );
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, transactionalCursors, config );
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler( securityLog );
@@ -1300,7 +1300,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         private volatile long heapAllocatedBytesWhenQueryStarted;
         private volatile long waitingTimeNanos;
         private volatile long transactionThreadId;
-        private volatile CursorContext cursorContext = CursorContext.NULL;
+        private volatile CursorContext cursorContext = CursorContext.NULL_CONTEXT;
         private final KernelTransactionImplementation transaction;
         private final AtomicReference<CpuClock> cpuClockRef;
         private CpuClock cpuClock;
@@ -1405,7 +1405,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         void reset()
         {
-            cursorContext = CursorContext.NULL;
+            cursorContext = CursorContext.NULL_CONTEXT;
             cpuTimeNanosWhenQueryStarted = 0;
             heapAllocatedBytesWhenQueryStarted = 0;
             waitingTimeNanos = 0;

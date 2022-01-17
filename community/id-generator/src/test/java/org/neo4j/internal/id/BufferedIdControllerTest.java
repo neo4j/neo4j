@@ -42,7 +42,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @EphemeralPageCacheExtension
 class BufferedIdControllerTest
@@ -77,10 +77,10 @@ class BufferedIdControllerTest
         var pageCacheTracer = new DefaultPageCacheTracer();
 
         try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), TestIdType.TEST, 100L, true, 1000L, writable(),
-                Config.defaults() , NULL, immutable.empty(), SINGLE_IDS ) )
+                Config.defaults() , NULL_CONTEXT, immutable.empty(), SINGLE_IDS ) )
         {
-            idGenerator.marker( NULL ).markDeleted( 1L );
-            idGenerator.clearCache( NULL );
+            idGenerator.marker( NULL_CONTEXT ).markDeleted( 1L );
+            idGenerator.clearCache( NULL_CONTEXT );
 
             assertThat( pageCacheTracer.pins() ).isZero();
             assertThat( pageCacheTracer.unpins() ).isZero();

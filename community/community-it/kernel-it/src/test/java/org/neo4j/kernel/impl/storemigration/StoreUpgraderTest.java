@@ -218,7 +218,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         String versionToMigrateTo = check.configuredVersion();
-        StoreVersionCheck.Result upgradeResult = check.checkUpgrade( check.configuredVersion(), CursorContext.NULL );
+        StoreVersionCheck.Result upgradeResult = check.checkUpgrade( check.configuredVersion(), CursorContext.NULL_CONTEXT );
         assertTrue( upgradeResult.outcome().isSuccessful() );
         String versionToMigrateFrom = upgradeResult.actualVersion();
 

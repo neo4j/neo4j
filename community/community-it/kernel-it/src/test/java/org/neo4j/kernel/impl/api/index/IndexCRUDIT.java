@@ -69,7 +69,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
@@ -226,7 +226,7 @@ class IndexCRUDIT
         @Override
         public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
         {
-            return newUpdater( IndexUpdateMode.ONLINE, NULL, false );
+            return newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false );
         }
 
         @Override

@@ -54,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
@@ -148,7 +148,7 @@ class NodeCommandTest
         NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, false, 2, 0 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
-        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL, StoreCursors.NULL, INSTANCE );
+        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );
     }
@@ -182,7 +182,7 @@ class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
         {
-            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), NULL, StoreCursors.NULL, INSTANCE );
+            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
         }
         // When
         assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );

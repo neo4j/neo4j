@@ -44,7 +44,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
@@ -55,7 +55,7 @@ class RecordNodeCursorTest
     {
         // given
         NodeStore nodeStore = mock( NodeStore.class );
-        when( nodeStore.getHighestPossibleIdInUse( NULL ) ).thenReturn( 200L );
+        when( nodeStore.getHighestPossibleIdInUse( NULL_CONTEXT ) ).thenReturn( 200L );
         when( nodeStore.getHighId() ).thenReturn( 20L );
         doAnswer( invocationOnMock ->
         {
@@ -72,7 +72,7 @@ class RecordNodeCursorTest
             record.initialize( record.getId() == 200, 1L, false, 1L, 0L );
             return null;
         } ).when( nodeStore ).nextRecordByCursor( any(), any(), any() );
-        RecordNodeCursor cursor = new RecordNodeCursor( nodeStore, null, null, null, NULL, StoreCursors.NULL );
+        RecordNodeCursor cursor = new RecordNodeCursor( nodeStore, null, null, null, NULL_CONTEXT, StoreCursors.NULL );
 
         // when
         cursor.scan();
@@ -92,7 +92,7 @@ class RecordNodeCursorTest
         long nextRelationshipId = relationshipId + 1;
         long nodeId = 5;
         int degree = 123;
-        when( nodeStore.getHighestPossibleIdInUse( NULL ) ).thenReturn( nodeId + 1 );
+        when( nodeStore.getHighestPossibleIdInUse( NULL_CONTEXT ) ).thenReturn( nodeId + 1 );
         doAnswer( invocationOnMock ->
         {
             long id = invocationOnMock.getArgument( 0 );
@@ -112,7 +112,7 @@ class RecordNodeCursorTest
         } ).when( relationshipStore ).getRecordByCursor( eq( relationshipId ), any(), any(), any() );
         RelationshipGroupStore groupStore = mock( RelationshipGroupStore.class );
         RelationshipGroupDegreesStore groupDegreesStore = mock( RelationshipGroupDegreesStore.class );
-        RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, relationshipStore, groupStore, groupDegreesStore, NULL, StoreCursors.NULL );
+        RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, relationshipStore, groupStore, groupDegreesStore, NULL_CONTEXT, StoreCursors.NULL );
 
         // when
         nodeCursor.single( nodeId );

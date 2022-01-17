@@ -101,7 +101,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(kernelTransaction.acquireStatement()).thenReturn(statement)
     statement = new KernelStatement(kernelTransaction, LockTracer.NONE, new ClockContext(),
       new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE), new Caching().defaultDatabase, Config.defaults() )
-    statement.initialize(null, CursorContext.NULL, 7)
+    statement.initialize(null, CursorContext.NULL_CONTEXT, 7)
     statement.acquire()
   }
 

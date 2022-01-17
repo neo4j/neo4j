@@ -253,7 +253,7 @@ class CsvInputEstimateCalculationIT
     {
         long count = 0;
         PropertyRecord record = stores.getPropertyStore().newRecord();
-        try ( PageCursor cursor = stores.getPropertyStore().openPageCursorForReading( 0, CursorContext.NULL ) )
+        try ( PageCursor cursor = stores.getPropertyStore().openPageCursorForReading( 0, CursorContext.NULL_CONTEXT ) )
         {
             long highId = stores.getPropertyStore().getHighId();
             for ( long id = 0; id < highId; id++ )

@@ -82,7 +82,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -419,7 +419,7 @@ class BatchInsertTest
         NeoStores neoStores = getFlushedNeoStores( inserter );
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord record = nodeStore.newRecord();
-        try ( var cursor = nodeStore.openPageCursorForReading( 0, NULL ) )
+        try ( var cursor = nodeStore.openPageCursorForReading( 0, NULL_CONTEXT ) )
         {
             nodeStore.getRecordByCursor( node1, record, NORMAL, cursor );
         }
@@ -444,7 +444,7 @@ class BatchInsertTest
             }
 
             // then
-            CursorContext cursorContext = NULL;
+            CursorContext cursorContext = NULL_CONTEXT;
             try ( var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fs, RecoveryCleanupWorkCollector.immediate(),
                     new CountsBuilder()
                     {

@@ -36,7 +36,7 @@ import org.neo4j.values.storable.Values;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<PropertyRecord, PropertyStore>
@@ -73,7 +73,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
         PropertyBlock block = new PropertyBlock();
         DynamicRecordAllocator stringAllocator = new ReusableRecordsAllocator( 64, new DynamicRecord( 7 ) );
         Value value = Values.of( "a string too large to fit in the property block itself" );
-        PropertyStore.encodeValue( block, 6, value, stringAllocator, null, NULL, INSTANCE );
+        PropertyStore.encodeValue( block, 6, value, stringAllocator, null, NULL_CONTEXT, INSTANCE );
         if ( light )
         {
             block.getValueRecords().clear();

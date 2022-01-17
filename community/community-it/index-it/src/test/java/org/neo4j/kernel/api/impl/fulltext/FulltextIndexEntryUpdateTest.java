@@ -182,12 +182,12 @@ class FulltextIndexEntryUpdateTest
         final var populator = getPopulator();
         try
         {
-            populator.add( updates, CursorContext.NULL );
+            populator.add( updates, CursorContext.NULL_CONTEXT );
             completePopulation( populator );
         }
         finally
         {
-            populator.close( true, CursorContext.NULL );
+            populator.close( true, CursorContext.NULL_CONTEXT );
         }
         assertIndexed( expectedIds );
     }
@@ -295,7 +295,7 @@ class FulltextIndexEntryUpdateTest
         }
         finally
         {
-            populator.close( true, CursorContext.NULL );
+            populator.close( true, CursorContext.NULL_CONTEXT );
         }
         assertIndexed( expectedIds );
     }
@@ -434,12 +434,12 @@ class FulltextIndexEntryUpdateTest
 
     private void completePopulation( IndexPopulator populator ) throws IndexEntryConflictException
     {
-        populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL );
+        populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
     }
 
     private IndexUpdater getPopulatingUpdater( IndexPopulator populator )
     {
-        return populator.newPopulatingUpdater( NodePropertyAccessor.EMPTY, CursorContext.NULL );
+        return populator.newPopulatingUpdater( NodePropertyAccessor.EMPTY, CursorContext.NULL_CONTEXT );
     }
 
     private IndexAccessor getAccessor() throws IOException
@@ -449,12 +449,12 @@ class FulltextIndexEntryUpdateTest
 
     private IndexUpdater getUpdater( IndexAccessor accessor )
     {
-        return accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false );
+        return accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false );
     }
 
     private BoundedIterable<Long> getReader( IndexAccessor accessor )
     {
-        return accessor.newAllEntriesValueReader( CursorContext.NULL );
+        return accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT );
     }
 
     private void assertIndexed( Iterable<Long> expectedIds ) throws Exception

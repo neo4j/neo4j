@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -67,7 +67,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
             int keySize = Math.min( tree.keyValueSizeCap(), tree.inlineKeyValueSizeCap() + 1 );
             RawBytes key = key( keySize );
             RawBytes value = value( 0 );
-            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL ) )
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL_CONTEXT ) )
             {
                 writer.put( key, value );
             }
@@ -83,7 +83,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
             int keySize = Math.min( tree.keyValueSizeCap(), tree.inlineKeyValueSizeCap() + 1 );
             RawBytes key = key( keySize );
             RawBytes value = value( 0 );
-            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL ) )
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL_CONTEXT ) )
             {
                 writer.put( key, value );
                 writer.remove( key );
@@ -100,7 +100,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
             int keySize = tree.keyValueSizeCap();
             RawBytes key = key( keySize );
             RawBytes value = value( 0 );
-            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL ) )
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL_CONTEXT ) )
             {
                 writer.put( key, value );
             }
@@ -116,7 +116,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
             int keySize = tree.keyValueSizeCap() + 1;
             RawBytes key = key( keySize );
             RawBytes value = value( 0 );
-            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL ) )
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL_CONTEXT ) )
             {
                 assertThrows( IllegalArgumentException.class, () -> writer.put( key, value ) );
             }
@@ -139,9 +139,9 @@ abstract class GBPTreeLargeDynamicKeysITBase
             }
             Collections.shuffle( entries, random.random() );
             insertAndValidate( tree, entries );
-            tree.consistencyCheck( NULL );
+            tree.consistencyCheck( NULL_CONTEXT );
             removeAndValidate( tree, entries );
-            tree.consistencyCheck( NULL );
+            tree.consistencyCheck( NULL_CONTEXT );
         }
     }
 
@@ -174,7 +174,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
             }
 
             insertAndValidate( index, entries );
-            index.consistencyCheck( NULL );
+            index.consistencyCheck( NULL_CONTEXT );
         }
     }
 
@@ -237,7 +237,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
             }
 
             insertAndValidate( tree, entries );
-            tree.consistencyCheck( NULL );
+            tree.consistencyCheck( NULL_CONTEXT );
         }
     }
 
@@ -273,7 +273,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
         Iterator<Pair<RawBytes,RawBytes>> iterator = entries.iterator();
         while ( iterator.hasNext() )
         {
-            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL ) )
+            try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL_CONTEXT ) )
             {
                 while ( iterator.hasNext() )
                 {
@@ -285,13 +285,13 @@ abstract class GBPTreeLargeDynamicKeysITBase
                     }
                 }
             }
-            tree.checkpoint( NULL );
+            tree.checkpoint( NULL_CONTEXT );
         }
     }
 
     private static void assertDontFind( GBPTree<RawBytes,RawBytes> tree, RawBytes key ) throws IOException
     {
-        try ( Seeker<RawBytes,RawBytes> seek = tree.seek( key, key, NULL ) )
+        try ( Seeker<RawBytes,RawBytes> seek = tree.seek( key, key, NULL_CONTEXT ) )
         {
             assertFalse( seek.next() );
         }
@@ -299,7 +299,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
 
     private static void assertFindExact( GBPTree<RawBytes,RawBytes> tree, RawBytes key, RawBytes value ) throws IOException
     {
-        try ( Seeker<RawBytes,RawBytes> seek = tree.seek( key, key, NULL ) )
+        try ( Seeker<RawBytes,RawBytes> seek = tree.seek( key, key, NULL_CONTEXT ) )
         {
             assertTrue( seek.next() );
             assertEquals( 0, layout.compare( key, seek.key() ) );

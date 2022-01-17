@@ -61,7 +61,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class TxStateTransactionDataViewTest
 {
@@ -79,7 +79,7 @@ class TxStateTransactionDataViewTest
         when( transaction.internalTransaction() ).thenReturn( internalTransaction );
         var kernelTransaction = mock( KernelTransaction.class );
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
-        when( kernelTransaction.cursorContext() ).thenReturn( NULL );
+        when( kernelTransaction.cursorContext() ).thenReturn( NULL_CONTEXT );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( tokenRead.propertyKeyName( anyInt() ) ).thenAnswer( invocationOnMock ->
         {

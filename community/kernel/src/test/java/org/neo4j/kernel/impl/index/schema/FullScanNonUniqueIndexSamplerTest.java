@@ -28,14 +28,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -45,8 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
@@ -81,7 +77,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
         try ( GBPTree<BtreeKey,NullValue> gbpTree = getTree() )
         {
             FullScanNonUniqueIndexSampler<BtreeKey> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
-            sample = sampler.sample( NULL );
+            sample = sampler.sample( NULL_CONTEXT );
         }
 
         // THEN
@@ -137,7 +133,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
     {
         try ( GBPTree<BtreeKey,NullValue> gbpTree = getTree() )
         {
-            try ( Writer<BtreeKey,NullValue> writer = gbpTree.writer( NULL ) )
+            try ( Writer<BtreeKey,NullValue> writer = gbpTree.writer( NULL_CONTEXT ) )
             {
                 BtreeKey key = layout.newKey();
                 long nodeId = 0;
@@ -149,7 +145,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
                     nodeId++;
                 }
             }
-            gbpTree.checkpoint( NULL );
+            gbpTree.checkpoint( NULL_CONTEXT );
         }
     }
 

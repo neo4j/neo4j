@@ -45,7 +45,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.Race.throwing;
 
 /**
@@ -80,10 +80,10 @@ class LargeFreelistCreationDeletionIT
         {
             // Create
             try ( var freelist = new IndexedIdGenerator( pageCache, directory.file( "file.id" ), immediate(), TestIdType.TEST, false, () -> 0, Long.MAX_VALUE,
-                    writable(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, Sets.immutable.empty(), SINGLE_IDS ) )
+                    writable(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, Sets.immutable.empty(), SINGLE_IDS ) )
             {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.
-                freelist.maintenance( NULL );
+                freelist.maintenance( NULL_CONTEXT );
 
                 Race race = new Race();
                 WorkSync<IndexedIdGenerator,Ids> workSync = new WorkSync<>( freelist );
@@ -98,7 +98,7 @@ class LargeFreelistCreationDeletionIT
                             long[] txIds = new long[ALLOCATIONS_PER_TRANSACTION];
                             for ( int a = 0; a < txIds.length; a++ )
                             {
-                                long id = freelist.nextId( NULL );
+                                long id = freelist.nextId( NULL_CONTEXT );
                                 allocatedIds[thread][cursor++] = id;
                                 txIds[a] = id;
                             }
@@ -111,7 +111,7 @@ class LargeFreelistCreationDeletionIT
                 assertAllUnique( allocatedIds );
 
                 // Delete
-                try ( Marker marker = freelist.marker( NULL ) )
+                try ( Marker marker = freelist.marker( NULL_CONTEXT ) )
                 {
                     for ( long[] perThread : allocatedIds )
                     {
@@ -123,7 +123,7 @@ class LargeFreelistCreationDeletionIT
                 }
 
                 // Checkpoint
-                freelist.checkpoint( NULL );
+                freelist.checkpoint( NULL_CONTEXT );
                 System.out.println( freelist.getHighId() );
             }
         }
@@ -160,7 +160,7 @@ class LargeFreelistCreationDeletionIT
         @Override
         public void apply( IndexedIdGenerator freelist )
         {
-            try ( Marker commitMarker = freelist.marker( NULL ) )
+            try ( Marker commitMarker = freelist.marker( NULL_CONTEXT ) )
             {
                 for ( long[] ids : idLists )
                 {

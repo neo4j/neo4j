@@ -51,7 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -89,9 +89,9 @@ class PropertyStoreTest
                     pageCache, NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
                     RecordFormatSelector.defaultFormat(), writable(), databaseLayout.getDatabaseName(), immutable.empty() ) )
             {
-                store.initialise( true, NULL );
-                store.start( NULL );
-                final long propertyRecordId = store.nextId( NULL );
+                store.initialise( true, NULL_CONTEXT );
+                store.start( NULL_CONTEXT );
+                final long propertyRecordId = store.nextId( NULL_CONTEXT );
 
                 PropertyRecord record = new PropertyRecord( propertyRecordId );
                 record.setInUse( true );
@@ -102,7 +102,7 @@ class PropertyStoreTest
 
                 doAnswer( invocation ->
                 {
-                    try ( var cursor = store.openPageCursorForReading( propertyRecordId, NULL ) )
+                    try ( var cursor = store.openPageCursorForReading( propertyRecordId, NULL_CONTEXT ) )
                     {
                         PropertyRecord recordBeforeWrite = store.getRecordByCursor( propertyRecordId, store.newRecord(), FORCE, cursor );
                         assertFalse( recordBeforeWrite.inUse() );
@@ -111,9 +111,9 @@ class PropertyStoreTest
                 } ).when( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any(), any() );
 
                 // when
-                try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+                try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
                 {
-                    store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+                    store.updateRecord( record, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
                 }
 
                 // then verify that our mocked method above, with the assert, was actually called

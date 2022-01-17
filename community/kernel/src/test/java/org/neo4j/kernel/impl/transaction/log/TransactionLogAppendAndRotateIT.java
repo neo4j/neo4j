@@ -79,6 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -143,7 +144,7 @@ class TransactionLogAppendAndRotateIT
                 {
                     try
                     {
-                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ), CursorContext.NULL, StoreCursors.NULL ), LogAppendEvent.NULL );
+                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ), NULL_CONTEXT, StoreCursors.NULL ), LogAppendEvent.NULL );
                     }
                     catch ( Exception e )
                     {

@@ -481,7 +481,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 assertThat( nodeCursor.next() ).isTrue();
@@ -509,7 +509,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 assertThat( nodeCursor.next() ).isTrue();
@@ -537,7 +537,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 assertThat( nodeCursor.next() ).isTrue();
@@ -566,7 +566,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 assertThat( nodeCursor.next() ).isTrue();
@@ -595,7 +595,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 assertThat( nodeCursor.next() ).isTrue();
@@ -629,7 +629,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 assertThat( nodeCursor.next() ).isTrue();
@@ -674,7 +674,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         stream( removedLabels ).forEach( expectedLabels::remove );
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 assertThat( nodeCursor.next() ).isTrue();
@@ -703,8 +703,8 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL );
-                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 nodeCursor.next();
@@ -733,8 +733,8 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL );
-                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 nodeCursor.next();
@@ -762,8 +762,8 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // Then
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL );
-                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 nodeCursor.next();
@@ -827,8 +827,8 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         } );
         transaction( ktx ->
         {
-            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL );
-                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            try ( var nodeCursor = cursorFactory( ktx ).allocateNodeCursor( CursorContext.NULL_CONTEXT );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
             {
                 ktx.dataRead().singleNode( node, nodeCursor );
                 assertThat( nodeCursor.next() ).isTrue();
@@ -920,8 +920,8 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             // A bit cheesy cast to get the cursor factory
             CursorFactory cursorFactory = cursorFactory( tx );
-            try ( NodeCursor nodeCursor = cursorFactory.allocateNodeCursor( CursorContext.NULL );
-                    PropertyCursor propertyCursor = cursorFactory.allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            try ( NodeCursor nodeCursor = cursorFactory.allocateNodeCursor( CursorContext.NULL_CONTEXT );
+                    PropertyCursor propertyCursor = cursorFactory.allocatePropertyCursor( CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
             {
                 tx.dataRead().singleNode( nodeId, nodeCursor );
                 assertThat( nodeCursor.next() ).isTrue();

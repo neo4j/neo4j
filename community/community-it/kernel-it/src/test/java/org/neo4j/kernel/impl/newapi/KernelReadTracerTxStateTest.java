@@ -57,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.indexSeekEvent;
@@ -105,7 +105,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( NULL ) )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( NULL_CONTEXT ) )
         {
             int barId = tx.tokenWrite().labelGetOrCreateForName( "Bar" );
             long n = tx.dataWrite().nodeCreate();
@@ -134,7 +134,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         String indexName = createIndex( "User", "name" );
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
+              NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( NULL_CONTEXT, tx.memoryTracker() ) )
         {
             int name = tx.token().propertyKey( "name" );
             int user = tx.token().nodeLabel( "User" );
@@ -297,7 +297,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() ) )
+              RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( NULL_CONTEXT, tx.memoryTracker() ) )
         {
             cursor.setTracer( tracer );
             IndexReadSession indexReadSession = tx.dataRead().indexReadSession( index );
@@ -319,7 +319,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor( NULL ) )
+              RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor( NULL_CONTEXT ) )
         {
             int rType = tx.token().relationshipTypeGetOrCreateForName( "R" );
 

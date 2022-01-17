@@ -70,7 +70,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
@@ -138,7 +138,7 @@ class TransactionAppenderRotationIT
         List<StorageCommand> commands = createCommands();
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation( commands );
         transactionRepresentation.setHeader( new byte[0], 0, 0, 0, 0, ANONYMOUS );
-        return new TransactionToApply( transactionRepresentation, NULL, StoreCursors.NULL );
+        return new TransactionToApply( transactionRepresentation, NULL_CONTEXT, StoreCursors.NULL );
     }
 
     private static List<StorageCommand> createCommands()

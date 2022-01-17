@@ -49,10 +49,10 @@ class IdGeneratorUpdatesWorkSyncTest
 
         // when
         IdGeneratorUpdatesWorkSync.Batch batch = workSync.newBatch( PageCacheTracer.NULL );
-        batch.markIdAsUsed( idGenerator, 10, 1, CursorContext.NULL );
-        batch.markIdAsUnused( idGenerator, 11, 1, CursorContext.NULL );
-        batch.markIdAsUsed( idGenerator, 270, 4, CursorContext.NULL );
-        batch.markIdAsUnused( idGenerator, 513, 7, CursorContext.NULL );
+        batch.markIdAsUsed( idGenerator, 10, 1, CursorContext.NULL_CONTEXT );
+        batch.markIdAsUnused( idGenerator, 11, 1, CursorContext.NULL_CONTEXT );
+        batch.markIdAsUsed( idGenerator, 270, 4, CursorContext.NULL_CONTEXT );
+        batch.markIdAsUnused( idGenerator, 513, 7, CursorContext.NULL_CONTEXT );
         batch.apply( PageCacheTracer.NULL );
 
         // then

@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
@@ -130,14 +130,14 @@ class StoreMigratorTest
 
         // when
         // ... data in record
-        setRecord( pageCache, neoStore, LAST_TRANSACTION_ID, txId, databaseLayout.getDatabaseName(), NULL );
-        setRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, checksum, databaseLayout.getDatabaseName(), NULL );
-        setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp, databaseLayout.getDatabaseName(), NULL );
+        setRecord( pageCache, neoStore, LAST_TRANSACTION_ID, txId, databaseLayout.getDatabaseName(), NULL_CONTEXT );
+        setRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, checksum, databaseLayout.getDatabaseName(), NULL_CONTEXT );
+        setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp, databaseLayout.getDatabaseName(), NULL_CONTEXT );
 
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL_CONTEXT );
 
         // then
         assertEquals( expected, actual );
@@ -156,13 +156,13 @@ class StoreMigratorTest
 
         // when
         // ... transaction info not in neo store
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, databaseLayout.getDatabaseName(), NULL ) );
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseLayout.getDatabaseName(), NULL ) );
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseLayout.getDatabaseName(), NULL ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL_CONTEXT );
 
         // then
         assertEquals( txId, actual.transactionId() );
@@ -190,13 +190,13 @@ class StoreMigratorTest
 
         // when
         // ... transaction info not in neo store
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, databaseLayout.getDatabaseName(), NULL ) );
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseLayout.getDatabaseName(), NULL ) );
-        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseLayout.getDatabaseName(), NULL ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
         // ... and with migrator
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL_CONTEXT );
 
         // then
         assertEquals( txId, actual.transactionId() );
@@ -273,10 +273,10 @@ class StoreMigratorTest
         managementService.shutdown();
 
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
-                MetaDataRecordFormat.FIELD_NOT_PRESENT, databaseLayout.getDatabaseName(), NULL );
+                MetaDataRecordFormat.FIELD_NOT_PRESENT, databaseLayout.getDatabaseName(), NULL_CONTEXT );
         RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
-        LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100, NULL );
+        LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100, NULL_CONTEXT );
 
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache )
                 .withConfig( config )

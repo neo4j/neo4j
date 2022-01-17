@@ -56,7 +56,7 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringSuffix;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
@@ -233,7 +233,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     {
         MONITOR.reset();
         IndexReadSession index = read.indexReadSession( getIndex( NODE_INDEX_NAME ) );
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
         {
             read.nodeIndexSeek( tx.queryContext(), index, cursor, constraints, query );
             assertThat( MONITOR.accessed( IndexType.TEXT ) ).isEqualTo( 1 );
@@ -250,7 +250,7 @@ public class TextIndexQueryTest extends KernelAPIReadTestBase<ReadTestSupport>
     {
         MONITOR.reset();
         IndexReadSession index = read.indexReadSession( getIndex( REL_INDEX_NAME ) );
-        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
         {
             read.relationshipIndexSeek( tx.queryContext(), index, cursor, constraints, query );
             assertThat( MONITOR.accessed( IndexType.TEXT ) ).isEqualTo( 1 );

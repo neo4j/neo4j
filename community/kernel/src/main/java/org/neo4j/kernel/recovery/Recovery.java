@@ -487,7 +487,7 @@ public final class Recovery
     private static NamedDatabaseId createRecoveryDatabaseId( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout,
             StorageEngineFactory storageEngineFactory )
     {
-        UUID uuid = storageEngineFactory.databaseIdUuid( fs, databaseLayout, pageCache, CursorContext.NULL ).orElse( new UUID( 0, 0 ) );
+        UUID uuid = storageEngineFactory.databaseIdUuid( fs, databaseLayout, pageCache, CursorContext.NULL_CONTEXT ).orElse( new UUID( 0, 0 ) );
         return DatabaseIdFactory.from( databaseLayout.getDatabaseName(), uuid );
     }
 

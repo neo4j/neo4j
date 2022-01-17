@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class SecondaryUnitPrepareIdSequenceTest
 {
@@ -41,7 +41,7 @@ class SecondaryUnitPrepareIdSequenceTest
         // when
         long recordId = 10;
         IdSequence prepared = idSequence.apply( actual ).apply( recordId );
-        long nextRecordId = prepared.nextId( NULL );
+        long nextRecordId = prepared.nextId( NULL_CONTEXT );
 
         // then
         assertEquals( 10 + 1, nextRecordId );
@@ -58,12 +58,12 @@ class SecondaryUnitPrepareIdSequenceTest
         // when
         long recordId = 10;
         IdSequence prepared = idSequence.apply( actual ).apply( recordId );
-        long nextRecordId = prepared.nextId( NULL );
+        long nextRecordId = prepared.nextId( NULL_CONTEXT );
         assertEquals( 10 + 1, nextRecordId );
         verifyNoMoreInteractions( actual );
         try
         {
-            prepared.nextId( NULL );
+            prepared.nextId( NULL_CONTEXT );
             fail( "Should've failed" );
         }
         catch ( IllegalStateException e )
@@ -73,7 +73,7 @@ class SecondaryUnitPrepareIdSequenceTest
         // and when
         recordId = 20;
         prepared = idSequence.apply( actual ).apply( recordId );
-        nextRecordId = prepared.nextId( NULL );
+        nextRecordId = prepared.nextId( NULL_CONTEXT );
 
         // then
         assertEquals( 20 + 1, nextRecordId );

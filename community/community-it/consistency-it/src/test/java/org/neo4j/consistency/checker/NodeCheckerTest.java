@@ -50,6 +50,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NodeCheckerTest extends CheckerTestBase
@@ -83,7 +84,7 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // (N) w/ some labels
-            node( nodeStore.nextId( CursorContext.NULL ), NULL, NULL, labels );
+            node( nodeStore.nextId( NULL_CONTEXT ), NULL, NULL, labels );
         }
 
         // when
@@ -120,7 +121,7 @@ class NodeCheckerTest extends CheckerTestBase
             // Label index having (N) which is not in use in the store
             try ( IndexUpdater writer = labelIndexWriter() )
             {
-                writer.process( IndexEntryUpdate.change( nodeStore.nextId( CursorContext.NULL ), IndexDescriptor.NO_INDEX,
+                writer.process( IndexEntryUpdate.change( nodeStore.nextId( NULL_CONTEXT ), IndexDescriptor.NO_INDEX,
                         EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
         }
@@ -143,7 +144,7 @@ class NodeCheckerTest extends CheckerTestBase
             {
                 for ( int i = 0; i < 10; i++ )
                 {
-                    long nodeId = node( nodeStore.nextId( CursorContext.NULL ), NULL, NULL, label1 );
+                    long nodeId = node( nodeStore.nextId( NULL_CONTEXT ), NULL, NULL, label1 );
                     writer.process( IndexEntryUpdate.change( nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[]{label1} ) );
                 }
             }
@@ -151,8 +152,7 @@ class NodeCheckerTest extends CheckerTestBase
             // Label index having (N) which is not in use in the store
             try ( IndexUpdater writer = labelIndexWriter() )
             {
-                writer.process(
-                        IndexEntryUpdate.change( nodeStore.nextId( CursorContext.NULL ), IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[]{label1} ) );
+                writer.process( IndexEntryUpdate.change( nodeStore.nextId( NULL_CONTEXT ), IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
         }
 
@@ -225,19 +225,19 @@ class NodeCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            long nodeId = nodeStore.nextId( CursorContext.NULL );
+            long nodeId = nodeStore.nextId( NULL_CONTEXT );
             NodeRecord node = new NodeRecord( nodeId ).initialize( true, NULL, false, NULL, 0 );
-            new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore(), CursorContext.NULL, StoreCursors.NULL,
+            new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, StoreCursors.NULL,
                     INSTANCE );
             assertThat( node.getDynamicLabelRecords().size() ).isGreaterThanOrEqualTo( 2 );
             try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
             {
-                nodeStore.updateRecord( node, storeCursor, CursorContext.NULL, storeCursors );
+                nodeStore.updateRecord( node, storeCursor, NULL_CONTEXT, storeCursors );
             }
             vandal.accept( node );
             try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
             {
-                nodeStore.updateRecord( node, storeCursor, CursorContext.NULL, storeCursors );
+                nodeStore.updateRecord( node, storeCursor, NULL_CONTEXT, storeCursors );
             }
         }
 
@@ -256,7 +256,7 @@ class NodeCheckerTest extends CheckerTestBase
         {
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
-            long nodeId = node( nodeStore.nextId( CursorContext.NULL ), NULL, NULL );
+            long nodeId = node( nodeStore.nextId( NULL_CONTEXT ), NULL, NULL );
             try ( IndexUpdater writer = labelIndexWriter() )
             {
                 writer.process( IndexEntryUpdate.change( nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[]{label1} ) );
@@ -278,7 +278,7 @@ class NodeCheckerTest extends CheckerTestBase
         {
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
-            node( nodeStore.nextId( CursorContext.NULL ), NULL, NULL, label1 );
+            node( nodeStore.nextId( NULL_CONTEXT ), NULL, NULL, label1 );
         }
 
         // when
@@ -298,7 +298,7 @@ class NodeCheckerTest extends CheckerTestBase
             {
                 for ( int i = 0; i < 20; i++ )
                 {
-                    long nodeId = node( nodeStore.nextId( CursorContext.NULL ), NULL, NULL, label1, label2 );
+                    long nodeId = node( nodeStore.nextId( NULL_CONTEXT ), NULL, NULL, label1, label2 );
                     // node 10 missing label2 in index
                     writer.process( IndexEntryUpdate.change( nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY,
                             i == 10 ? new long[]{label1} : new long[]{label1, label2} ) );
@@ -319,10 +319,10 @@ class NodeCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            NodeRecord node = new NodeRecord( nodeStore.nextId( CursorContext.NULL ) ).initialize( true, NULL, false, NULL, 0x171f5bd081L );
+            NodeRecord node = new NodeRecord( nodeStore.nextId( NULL_CONTEXT ) ).initialize( true, NULL, false, NULL, 0x171f5bd081L );
             try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
             {
-                nodeStore.updateRecord( node, storeCursor, CursorContext.NULL, storeCursors );
+                nodeStore.updateRecord( node, storeCursor, NULL_CONTEXT, storeCursors );
             }
         }
 

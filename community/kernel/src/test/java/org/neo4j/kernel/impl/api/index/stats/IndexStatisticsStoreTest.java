@@ -91,7 +91,7 @@ class IndexStatisticsStoreTest
     private IndexStatisticsStore openStore( PageCacheTracer pageCacheTracer, String fileName ) throws IOException
     {
         var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), writable(), DEFAULT_DATABASE_NAME,
-                pageCacheTracer, CursorContext.NULL );
+                pageCacheTracer, CursorContext.NULL_CONTEXT );
         return lifeSupport.add( statisticsStore );
     }
 
@@ -107,7 +107,7 @@ class IndexStatisticsStoreTest
             {
                 store.replaceStats( i, new IndexSample() );
             }
-            store.checkpoint( CursorContext.NULL );
+            store.checkpoint( CursorContext.NULL_CONTEXT );
             store.consistencyCheck( noopReporterFactory(), cursorContext );
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
@@ -207,7 +207,7 @@ class IndexStatisticsStoreTest
 
     private void restartStore() throws IOException
     {
-        store.checkpoint( CursorContext.NULL );
+        store.checkpoint( CursorContext.NULL_CONTEXT );
         lifeSupport.shutdown();
         lifeSupport = new LifeSupport();
         store = openStore( pageCacheTracer, "stats" );
@@ -247,7 +247,7 @@ class IndexStatisticsStoreTest
             for ( int i = 0; i < 20; i++ )
             {
                 Thread.sleep( 5 );
-                store.checkpoint( CursorContext.NULL );
+                store.checkpoint( CursorContext.NULL_CONTEXT );
             }
             checkpointDone.set( true );
         } ) );
@@ -284,7 +284,7 @@ class IndexStatisticsStoreTest
     void shouldNotStartWithoutFileIfReadOnly() throws IOException
     {
         var indexStatisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(),
-                DEFAULT_DATABASE_NAME, PageCacheTracer.NULL, CursorContext.NULL );
+                DEFAULT_DATABASE_NAME, PageCacheTracer.NULL, CursorContext.NULL_CONTEXT );
         final Exception e = assertThrows( Exception.class, indexStatisticsStore::init );
         assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );

@@ -34,7 +34,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
 public class NativeValueIndexUtility<KEY extends NativeIndexKey<KEY>>
@@ -85,7 +85,7 @@ public class NativeValueIndexUtility<KEY extends NativeIndexKey<KEY>>
         KEY highest = layout.newKey();
         highest.initialize( Long.MAX_VALUE );
         highest.initValueAsHighest( 0, ValueGroup.UNKNOWN );
-        return tree.seek( lowest, highest, NULL );
+        return tree.seek( lowest, highest, NULL_CONTEXT );
     }
 
     private void assertSameHits( List<KEY> expectedHits, List<KEY> actualHits,

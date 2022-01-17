@@ -108,7 +108,7 @@ import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -287,10 +287,10 @@ class BatchingNeoStoresTest
         // given
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
-                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), NULL ) )
+                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), NULL_CONTEXT ) )
         {
-            countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
-            countsStore.checkpoint( NULL );
+            countsStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
+            countsStore.checkpoint( NULL_CONTEXT );
         }
 
         // when
@@ -315,18 +315,18 @@ class BatchingNeoStoresTest
                 {
                     return BASE_TX_ID + 1;
                 }
-            }, PageCacheTracer.NULL, NULL, StoreCursors.NULL, INSTANCE );
+            }, PageCacheTracer.NULL, NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
         }
 
         // then
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
-                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), NULL ) )
+                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), NULL_CONTEXT ) )
         {
-            assertEquals( 10, countsStore.nodeCount( 1, NULL ) );
-            assertEquals( 20, countsStore.nodeCount( 2, NULL ) );
-            assertEquals( 30, countsStore.relationshipCount( ANY_LABEL, 1, 2, NULL ) );
-            assertEquals( 50, countsStore.relationshipCount( 1, 2, ANY_LABEL, NULL ) );
+            assertEquals( 10, countsStore.nodeCount( 1, NULL_CONTEXT ) );
+            assertEquals( 20, countsStore.nodeCount( 2, NULL_CONTEXT ) );
+            assertEquals( 30, countsStore.relationshipCount( ANY_LABEL, 1, 2, NULL_CONTEXT ) );
+            assertEquals( 50, countsStore.relationshipCount( 1, 2, ANY_LABEL, NULL_CONTEXT ) );
         }
     }
 
@@ -339,18 +339,18 @@ class BatchingNeoStoresTest
     private static <RECORD extends AbstractBaseRecord> void createRecordIn( RecordStore<RECORD> store )
     {
         RECORD record = store.newRecord();
-        record.setId( store.nextId( NULL ) );
+        record.setId( store.nextId( NULL_CONTEXT ) );
         record.setInUse( true );
         if ( record instanceof PropertyRecord )
         {
             // Special hack for property store, since it's not enough to simply set a record as in use there
             PropertyBlock block = new PropertyBlock();
-            ((PropertyStore)store).encodeValue( block, 0, Values.of( 10 ), NULL, INSTANCE );
+            ((PropertyStore)store).encodeValue( block, 0, Values.of( 10 ), NULL_CONTEXT, INSTANCE );
             ((PropertyRecord) record).addPropertyBlock( block );
         }
-        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
         {
-            store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+            store.updateRecord( record, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
         }
     }
 
@@ -400,14 +400,14 @@ class BatchingNeoStoresTest
                             new DatabaseHealth( PanicEventGenerator.NO_OP, nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(),
                             recoveryCleanupWorkCollector, PageCacheTracer.NULL, true, INSTANCE, writable(), CommandLockVerification.Factory.IGNORE,
-                            LockVerificationMonitor.Factory.IGNORE, NULL ) );
+                            LockVerificationMonitor.Factory.IGNORE, NULL_CONTEXT ) );
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
             try ( CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE );
-                  var storeCursors = storageEngine.createStorageCursors( NULL ) )
+                  var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
             {
-                commandCreationContext.initialize( NULL, storeCursors );
+                commandCreationContext.initialize( NULL_CONTEXT, storeCursors );
                 propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
                 labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
                 relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
@@ -422,7 +422,7 @@ class BatchingNeoStoresTest
                 txState.nodeDoCreate( node2 );
                 txState.relationshipDoCreate( commandCreationContext.reserveRelationship( node1 ), relTypeId, node1, node2 );
                 apply( txState, commandCreationContext, storageEngine, storeCursors );
-                neoStores.flush( NULL );
+                neoStores.flush( NULL_CONTEXT );
             }
         }
     }
@@ -434,9 +434,9 @@ class BatchingNeoStoresTest
         try ( RecordStorageReader storageReader = storageEngine.newReader() )
         {
             storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.IGNORE, LockTracer.NONE,
-                    BASE_TX_ID, v -> v, NULL, storeCursors, INSTANCE );
+                    BASE_TX_ID, v -> v, NULL_CONTEXT, storeCursors, INSTANCE );
             CommandsToApply apply =
-                    new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, ANONYMOUS ), NULL, storeCursors );
+                    new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, ANONYMOUS ), NULL_CONTEXT, storeCursors );
             storageEngine.apply( apply, TransactionApplicationMode.INTERNAL );
         }
     }
@@ -455,7 +455,7 @@ class BatchingNeoStoresTest
         @Override
         public int createToken( String name, boolean internal )
         {
-            int id = (int) store.nextId( NULL );
+            int id = (int) store.nextId( NULL_CONTEXT );
             create( name, internal, id );
             return id;
         }

@@ -54,7 +54,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -86,7 +86,7 @@ class RecordRelationshipScanCursorTest
     {
         StoreFactory storeFactory = getStoreFactory();
         neoStores = storeFactory.openAllNeoStores( true );
-        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
 
     @Test
@@ -164,7 +164,7 @@ class RecordRelationshipScanCursorTest
 
     private static void createRelationshipRecord( long id, int type, RelationshipStore relationshipStore, PageCursor pageCursor, boolean used )
     {
-        relationshipStore.updateRecord( new RelationshipRecord( id ).initialize( used, -1, 1, 2, type, -1, -1, -1, -1, true, true ), pageCursor, NULL,
+        relationshipStore.updateRecord( new RelationshipRecord( id ).initialize( used, -1, 1, 2, type, -1, -1, -1, -1, true, true ), pageCursor, NULL_CONTEXT,
                 StoreCursors.NULL );
     }
 
@@ -176,6 +176,6 @@ class RecordRelationshipScanCursorTest
 
     private RecordRelationshipScanCursor createRelationshipCursor()
     {
-        return new RecordRelationshipScanCursor( neoStores.getRelationshipStore(), NULL );
+        return new RecordRelationshipScanCursor( neoStores.getRelationshipStore(), NULL_CONTEXT );
     }
 }

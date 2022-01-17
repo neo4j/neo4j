@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
@@ -49,7 +49,7 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         int labelId2 = labelId( label2 );
 
         // THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL );
         nodeCursor.single( nodeId );
         assertTrue( nodeCursor.next() );
         assertEquals( newSetWith( labelId1, labelId2 ), newSetWith( nodeCursor.labels() ) );
@@ -63,8 +63,8 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         int namePropertyKeyId = propertyKeyId( "name" );
 
         // WHEN THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL );
-        StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, StoreCursors.NULL, INSTANCE );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL );
+        StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
         nodeCursor.single( nodeId );
         assertTrue( nodeCursor.next() );
         nodeCursor.properties( propertyCursor, ALL_PROPERTIES );
@@ -90,7 +90,7 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         }
 
         // when
-        long count = storageReader.nodesGetCount( NULL );
+        long count = storageReader.nodesGetCount( NULL_CONTEXT );
 
         // then
         assertEquals( nodeCountPerLabel, count );

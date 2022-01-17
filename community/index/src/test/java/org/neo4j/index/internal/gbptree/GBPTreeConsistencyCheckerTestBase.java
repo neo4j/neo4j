@@ -52,7 +52,7 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectorySupportExtension.class, RandomExtension.class} )
@@ -109,7 +109,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long rootNode = inspection.rootNode();
 
-            index.unsafe( page( rootNode, GBPTreeCorruption.notATreeNode() ), NULL );
+            index.unsafe( page( rootNode, GBPTreeCorruption.notATreeNode() ), NULL_CONTEXT );
 
             assertReportNotATreeNode( index, rootNode );
         }
@@ -126,7 +126,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             final ImmutableLongList internalNodes = inspection.internalNodes();
             long internalNode = randomAmong( internalNodes );
 
-            index.unsafe( page( internalNode, GBPTreeCorruption.notATreeNode() ), NULL );
+            index.unsafe( page( internalNode, GBPTreeCorruption.notATreeNode() ), NULL_CONTEXT );
 
             assertReportNotATreeNode( index, internalNode );
         }
@@ -142,7 +142,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long leafNode = randomAmong( inspection.leafNodes() );
 
-            index.unsafe( page( leafNode, GBPTreeCorruption.notATreeNode() ), NULL );
+            index.unsafe( page( leafNode, GBPTreeCorruption.notATreeNode() ), NULL_CONTEXT );
 
             assertReportNotATreeNode( index, leafNode );
         }
@@ -158,7 +158,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long rootNode = inspection.rootNode();
 
-            index.unsafe( page( rootNode, GBPTreeCorruption.unknownTreeNodeType() ), NULL );
+            index.unsafe( page( rootNode, GBPTreeCorruption.unknownTreeNodeType() ), NULL_CONTEXT );
 
             assertReportUnknownTreeNodeType( index, rootNode );
         }
@@ -174,7 +174,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long internalNode = randomAmong( inspection.internalNodes() );
 
-            index.unsafe( page( internalNode, GBPTreeCorruption.unknownTreeNodeType() ), NULL );
+            index.unsafe( page( internalNode, GBPTreeCorruption.unknownTreeNodeType() ), NULL_CONTEXT );
 
             assertReportUnknownTreeNodeType( index, internalNode );
         }
@@ -190,7 +190,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long leafNode = randomAmong( inspection.leafNodes() );
 
-            index.unsafe( page( leafNode, GBPTreeCorruption.unknownTreeNodeType() ), NULL );
+            index.unsafe( page( leafNode, GBPTreeCorruption.unknownTreeNodeType() ), NULL_CONTEXT );
 
             assertReportUnknownTreeNodeType( index, leafNode );
         }
@@ -206,7 +206,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long targetNode = randomAmong( inspection.leafNodes() );
 
-            index.unsafe( page( targetNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ), NULL );
+            index.unsafe( page( targetNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ), NULL_CONTEXT );
 
             assertReportMisalignedSiblingPointers( index );
         }
@@ -222,7 +222,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long targetNode = randomAmong( inspection.leafNodes() );
 
-            index.unsafe( page( targetNode, GBPTreeCorruption.leftSiblingPointToNonExisting() ), NULL );
+            index.unsafe( page( targetNode, GBPTreeCorruption.leftSiblingPointToNonExisting() ), NULL_CONTEXT );
 
             assertReportMisalignedSiblingPointers( index );
         }
@@ -238,7 +238,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long targetNode = randomAmong( inspection.allNodes() );
 
-            index.unsafe( page( targetNode, GBPTreeCorruption.hasSuccessor() ), NULL );
+            index.unsafe( page( targetNode, GBPTreeCorruption.hasSuccessor() ), NULL_CONTEXT );
 
             assertReportPointerToOldVersionOfTreeNode( index, targetNode );
         }
@@ -254,8 +254,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long targetNode = nodeWithRightSibling( inspection );
 
-            index.unsafe( page( targetNode, GBPTreeCorruption.rightSiblingPointerHasTooLowGeneration() ),
-                    NULL );
+            index.unsafe( page( targetNode, GBPTreeCorruption.rightSiblingPointerHasTooLowGeneration() ), NULL_CONTEXT );
 
             assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.rightSibling() );
         }
@@ -271,7 +270,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeInspection inspection = inspect( index );
             long targetNode = nodeWithLeftSibling( inspection );
 
-            index.unsafe( page( targetNode, GBPTreeCorruption.leftSiblingPointerHasTooLowGeneration() ), NULL );
+            index.unsafe( page( targetNode, GBPTreeCorruption.leftSiblingPointerHasTooLowGeneration() ), NULL_CONTEXT );
 
             assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.leftSibling() );
         }
@@ -289,8 +288,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             int keyCount = inspection.keyCounts().get( targetNode );
             int childPos = randomValues.nextInt( keyCount + 1 );
 
-            index.unsafe( page( targetNode, GBPTreeCorruption.childPointerHasTooLowGeneration( childPos ) ),
-                    NULL );
+            index.unsafe( page( targetNode, GBPTreeCorruption.childPointerHasTooLowGeneration( childPos ) ), NULL_CONTEXT );
 
             assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.child( childPos ) );
         }
@@ -313,7 +311,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeCorruption.PageCorruption<KEY,VALUE> swapKeyOrder = isLeaf ?
                                                                        GBPTreeCorruption.swapKeyOrderLeaf( firstKey, secondKey, keyCount ) :
                                                                        GBPTreeCorruption.swapKeyOrderInternal( firstKey, secondKey, keyCount );
-            index.unsafe( page( targetNode, swapKeyOrder ), NULL );
+            index.unsafe( page( targetNode, swapKeyOrder ), NULL_CONTEXT );
 
             assertReportKeysOutOfOrderInNode( index, targetNode );
         }
@@ -336,7 +334,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeCorruption.PageCorruption<KEY,VALUE> swapKeyOrder = isLeaf ?
                                                                        GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
                                                                        GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
-            index.unsafe( page( targetNode, swapKeyOrder ), NULL );
+            index.unsafe( page( targetNode, swapKeyOrder ), NULL_CONTEXT );
 
             assertReportKeysLocatedInWrongNode( index, targetNode );
         }
@@ -359,7 +357,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreeCorruption.PageCorruption<KEY,VALUE> swapKeyOrder = isLeaf ?
                                                                        GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
                                                                        GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
-            index.unsafe( page( targetNode, swapKeyOrder ), NULL );
+            index.unsafe( page( targetNode, swapKeyOrder ), NULL_CONTEXT );
 
             assertReportKeysLocatedInWrongNode( index, targetNode );
         }
@@ -377,7 +375,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             long targetNode = randomAmong( inspection.allNodes() );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.maximizeAllocOffsetInDynamicNode();
-            index.unsafe( page( targetNode, corruption ), NULL );
+            index.unsafe( page( targetNode, corruption ), NULL_CONTEXT );
 
             assertReportAllocSpaceOverlapActiveKeys( index, targetNode );
         }
@@ -395,7 +393,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             long targetNode = randomAmong( inspection.allNodes() );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.minimizeAllocOffsetInDynamicNode();
-            index.unsafe( page( targetNode, corruption ), NULL );
+            index.unsafe( page( targetNode, corruption ), NULL_CONTEXT );
 
             assertReportAllocSpaceOverlapOffsetArray( index, targetNode );
         }
@@ -413,7 +411,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             long targetNode = randomAmong( inspection.allNodes() );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.incrementDeadSpaceInDynamicNode();
-            index.unsafe( page( targetNode, corruption ), NULL );
+            index.unsafe( page( targetNode, corruption ), NULL_CONTEXT );
 
             assertReportSpaceAreasNotSummingToTotalSpace( index, targetNode );
         }
@@ -431,7 +429,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             long targetNode = randomAmong( inspection.allNodes() );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.decrementAllocOffsetInDynamicNode();
-            index.unsafe( page( targetNode, corruption ), NULL );
+            index.unsafe( page( targetNode, corruption ), NULL_CONTEXT );
 
             assertReportAllocOffsetMisplaced( index, targetNode );
         }
@@ -444,7 +442,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             // Add and remove a bunch of keys to fill freelist
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 int keyCount = 0;
                 while ( getHeight( index ) < 2 )
@@ -458,7 +456,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                     writer.remove( layout.key( i ) );
                 }
             }
-            index.checkpoint( NULL );
+            index.checkpoint( NULL_CONTEXT );
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode for our state corruption to persist.
@@ -470,7 +468,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             targetMissingId = lastFreelistEntry.id;
 
             GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.decrementFreelistWritePos();
-            index.unsafe( corruption, NULL );
+            index.unsafe( corruption, NULL_CONTEXT );
         }
 
         // Need to restart tree to reload corrupted freelist
@@ -487,7 +485,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             // Add and remove a bunch of keys to fill freelist
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 int keyCount = 0;
                 while ( getHeight( index ) < 2 )
@@ -496,7 +494,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                     keyCount++;
                 }
             }
-            index.checkpoint( NULL );
+            index.checkpoint( NULL_CONTEXT );
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode for our state corruption to persist.
@@ -506,7 +504,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             targetNode = randomAmong( inspection.allNodes() );
 
             GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.addFreelistEntry( targetNode );
-            index.unsafe( corruption, NULL );
+            index.unsafe( corruption, NULL_CONTEXT );
         }
 
         // Need to restart tree to reload corrupted freelist
@@ -523,7 +521,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             // Add and remove a bunch of keys to fill freelist
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 int keyCount = 0;
                 while ( getHeight( index ) < 2 )
@@ -532,7 +530,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                     keyCount++;
                 }
             }
-            index.checkpoint( NULL );
+            index.checkpoint( NULL_CONTEXT );
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode for our state corruption to persist.
@@ -544,7 +542,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             TreeState newTreeState = treeStateWithLastId( lastId, treeState );
 
             GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setTreeState( newTreeState );
-            index.unsafe( corruption, NULL );
+            index.unsafe( corruption, NULL_CONTEXT );
         }
 
         // Need to restart tree to reload corrupted freelist
@@ -562,7 +560,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
             // Add and remove a bunch of keys to fill freelist
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 int keyCount = 0;
                 while ( getHeight( index ) < 2 )
@@ -571,7 +569,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                     keyCount++;
                 }
             }
-            index.checkpoint( NULL );
+            index.checkpoint( NULL_CONTEXT );
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode for our state corruption to persist.
@@ -584,7 +582,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             TreeState newTreeState = treeStateWithLastId( targetLastId, treeState );
 
             GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setTreeState( newTreeState );
-            index.unsafe( corruption, NULL );
+            index.unsafe( corruption, NULL_CONTEXT );
         }
 
         // Need to restart tree to reload corrupted freelist
@@ -615,7 +613,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreePointerType pointerType = randomPointerType( keyCount, isLeaf );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.crashed( pointerType );
-            index.unsafe( page( targetNode, corruption ), NULL );
+            index.unsafe( page( targetNode, corruption ), NULL_CONTEXT );
 
             assertReportCrashedGSPP( index, targetNode, pointerType );
         }
@@ -635,7 +633,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreePointerType pointerType = randomPointerType( keyCount, isLeaf );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.broken( pointerType );
-            index.unsafe( page( targetNode, corruption ), NULL );
+            index.unsafe( page( targetNode, corruption ), NULL_CONTEXT );
 
             assertReportBrokenGSPP( index, targetNode, pointerType );
         }
@@ -653,7 +651,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             int unreasonableKeyCount = PAGE_SIZE;
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setKeyCount( unreasonableKeyCount );
-            index.unsafe( page( targetNode, corruption ), NULL );
+            index.unsafe( page( targetNode, corruption ), NULL_CONTEXT );
 
             assertReportUnreasonableKeyCount( index, targetNode, unreasonableKeyCount );
         }
@@ -672,7 +670,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             long targetChildNode = randomAmong( inspection.leafNodes() );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, targetChildNode );
-            index.unsafe( page( rootNode, corruption ), NULL );
+            index.unsafe( page( rootNode, corruption ), NULL_CONTEXT );
 
             assertReportAnyStructuralInconsistency( index );
         }
@@ -691,7 +689,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             int childPos = randomChildPos( inspection, internalNode );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, rootNode );
-            index.unsafe( page( internalNode, corruption ), NULL );
+            index.unsafe( page( internalNode, corruption ), NULL_CONTEXT );
 
             assertReportCircularChildPointer( index, rootNode );
         }
@@ -711,7 +709,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             int childPos = randomChildPos( inspection, internalNode );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, otherInternalNode );
-            index.unsafe( page( internalNode, corruption ), NULL );
+            index.unsafe( page( internalNode, corruption ), NULL_CONTEXT );
 
             assertReportAnyStructuralInconsistency( index );
         }
@@ -730,7 +728,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             int childPos = randomChildPos( inspection, lowerInternalNode );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setChild( childPos, upperInternalNode );
-            index.unsafe( page( lowerInternalNode, corruption ), NULL );
+            index.unsafe( page( lowerInternalNode, corruption ), NULL_CONTEXT );
 
             assertReportAnyStructuralInconsistency( index );
         }
@@ -752,7 +750,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 
             GBPTreeCorruption.IndexCorruption<KEY,VALUE> corruption =
                     GBPTreeCorruption.copyChildPointerFromOther( targetInternalNode, otherInternalNode, targetChildPos, otherChildPos );
-            index.unsafe( corruption, NULL );
+            index.unsafe( corruption, NULL_CONTEXT );
 
             assertReportAnyStructuralInconsistency( index );
         }
@@ -770,7 +768,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             final long leaf = randomAmong( inspection.leafNodes() );
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setHighestReasonableKeyCount();
-            index.unsafe( page( leaf, corruption ), NULL );
+            index.unsafe( page( leaf, corruption ), NULL_CONTEXT );
 
             assertReportException( index );
         }
@@ -789,7 +787,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreePointerType siblingPointer = randomSiblingPointerType();
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setPointer( siblingPointer, leafNode );
-            index.unsafe( page( internalNode, corruption ), NULL );
+            index.unsafe( page( internalNode, corruption ), NULL_CONTEXT );
 
             assertReportAnyStructuralInconsistency( index );
         }
@@ -808,7 +806,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             GBPTreePointerType siblingPointer = randomSiblingPointerType();
 
             GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption = GBPTreeCorruption.setPointer( siblingPointer, internalNode );
-            index.unsafe( page( leafNode, corruption ), NULL );
+            index.unsafe( page( leafNode, corruption ), NULL_CONTEXT );
 
             assertReportAnyStructuralInconsistency( index );
         }
@@ -819,7 +817,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
     {
         try ( GBPTree<KEY,VALUE> index = index().build() )
         {
-            index.writer( NULL ).close();
+            index.writer( NULL_CONTEXT ).close();
             // No checkpoint
         }
 
@@ -956,7 +954,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 
     private static <KEY, VALUE> void treeWithHeight( GBPTree<KEY,VALUE> index, TestLayout<KEY,VALUE> layout, int height ) throws IOException
     {
-        try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+        try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
         {
             int keyCount = 0;
             while ( getHeight( index ) < height )
@@ -975,7 +973,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 
     static <KEY, VALUE> GBPTreeInspection inspect( GBPTree<KEY,VALUE> index ) throws IOException
     {
-        return index.visit( new InspectingVisitor<>(), NULL ).get();
+        return index.visit( new InspectingVisitor<>(), NULL_CONTEXT ).get();
     }
 
     private static <KEY,VALUE> void assertReportNotATreeNode( GBPTree<KEY,VALUE> index, long targetNode ) throws IOException
@@ -989,7 +987,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 called.setTrue();
                 assertEquals( pageId, targetNode );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1004,7 +1002,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 called.setTrue();
                 assertEquals( targetNode, pageId );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1027,7 +1025,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 rightmostNodeHasRightSiblingCalled.setTrue();
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertTrue( corruptedSiblingPointerCalled.getValue() || rightmostNodeHasRightSiblingCalled.getValue() );
     }
 
@@ -1043,7 +1041,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetNode, pageId );
                 assertEquals( GenerationSafePointer.MAX_POINTER, successorPointer );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1061,7 +1059,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetNode, sourceNode );
                 assertEquals( expectedPointerType, pointerType );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1076,7 +1074,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 called.setTrue();
                 assertEquals( targetNode, pageId );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1092,7 +1090,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 called.setTrue();
                 allNodesWithKeysLocatedInWrongNode.add( pageId );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
         assertTrue( allNodesWithKeysLocatedInWrongNode.contains( targetNode ) );
     }
@@ -1109,7 +1107,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetNode, pageId );
                 assertThat( message ).contains( "Overlap between allocSpace and active keys" );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1125,7 +1123,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetNode, pageId );
                 assertThat( message ).contains( "Overlap between offsetArray and allocSpace" );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1141,7 +1139,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetNode, pageId );
                 assertThat( message ).contains( "Space areas did not sum to total space" );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1157,7 +1155,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetNode, pageId );
                 assertThat( message ).contains( "Pointer to allocSpace is misplaced, it should point to start of key" );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1172,7 +1170,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 called.setTrue();
                 assertEquals( targetNode, pageId );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1187,7 +1185,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 called.setTrue();
                 assertEquals( targetNode, pageId );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1203,7 +1201,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetLastId, lastId );
                 assertEquals( targetPageId, pageId );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1221,7 +1219,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetNode, pageId );
                 assertEquals( targetPointerType, pointerType );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1239,7 +1237,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetNode, pageId );
                 assertEquals( targetPointerType, pointerType );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1255,7 +1253,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 assertEquals( targetNode, pageId );
                 assertEquals( targetKeyCount, keyCount );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1295,7 +1293,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1310,7 +1308,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                 called.setTrue();
                 assertEquals( targetNode, pageId );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1324,7 +1322,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 
@@ -1338,7 +1336,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             {
                 called.setTrue();
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 

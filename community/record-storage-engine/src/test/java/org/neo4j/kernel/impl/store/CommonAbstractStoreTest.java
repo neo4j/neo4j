@@ -76,7 +76,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 @PageCacheExtension
@@ -156,7 +156,8 @@ class CommonAbstractStoreTest
                 NullLogProvider.getInstance(), GraphDatabaseInternalSettings.label_block_size.defaultValue(), recordFormats, writable(),
                 databaseLayout.getDatabaseName(), immutable.empty() ) )
         {
-            StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false, NULL ) );
+            StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false,
+                    NULL_CONTEXT ) );
             assertEquals( "Fail to read header record of store file: " + storeFile.toAbsolutePath(), storeNotFoundException.getMessage() );
         }
     }
@@ -169,9 +170,9 @@ class CommonAbstractStoreTest
 
         assertThrows( NegativeIdException.class, () ->
         {
-            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
             {
-                store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
             }
         } );
     }
@@ -187,9 +188,9 @@ class CommonAbstractStoreTest
 
         assertThrows( IdCapacityExceededException.class, () ->
         {
-            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
             {
-                store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
             }
         } );
     }
@@ -202,9 +203,9 @@ class CommonAbstractStoreTest
 
         assertThrows( ReservedIdException.class, () ->
         {
-            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
             {
-                store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
             }
         } );
     }
@@ -219,8 +220,8 @@ class CommonAbstractStoreTest
         TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType,
                 new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, NullLogProvider.getInstance(), recordFormat,
                 immutable.with( DELETE_ON_CLOSE ) );
-        store.initialise( true, NULL );
-        store.start( NULL );
+        store.initialise( true, NULL_CONTEXT );
+        store.start( NULL_CONTEXT );
         assertTrue( fs.fileExists( nodeStore ) );
         assertTrue( fs.fileExists( idFile ) );
 
@@ -240,7 +241,7 @@ class CommonAbstractStoreTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        store.logIdUsage( logProvider.getLog( TheStore.class )::info, NULL );
+        store.logIdUsage( logProvider.getLog( TheStore.class )::info, NULL_CONTEXT );
 
         // then
         LogAssertions.assertThat( logProvider ).containsMessages( format( "%s[%s]: used=0 high=0", TheStore.TYPE_DESCRIPTOR, storeFile.getFileName() ) );
@@ -265,7 +266,7 @@ class CommonAbstractStoreTest
     {
         LogProvider log = NullLogProvider.getInstance();
         TheStore store = new TheStore( storeFile, idStoreFile, config, idType, idGeneratorFactory, mockedPageCache, log, recordFormat, immutable.empty() );
-        store.initialise( false, NULL );
+        store.initialise( false, NULL_CONTEXT );
         return store;
     }
 

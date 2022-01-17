@@ -296,7 +296,7 @@ class RelationshipTypeIndexIT
         try ( TokenIndexReader reader = indexProxy.newTokenReader() )
         {
             SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-            reader.query( tokenClient, unconstrained(), new TokenPredicate( relationshipTypeId ), CursorContext.NULL );
+            reader.query( tokenClient, unconstrained(), new TokenPredicate( relationshipTypeId ), CursorContext.NULL_CONTEXT );
             while ( tokenClient.next() )
             {
                 actualIds.add( tokenClient.reference );

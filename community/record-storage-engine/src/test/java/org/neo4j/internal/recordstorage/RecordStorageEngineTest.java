@@ -71,7 +71,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 @EphemeralPageCacheExtension
@@ -187,10 +187,10 @@ class RecordStorageEngineTest
                 .lockService( lockService )
                 .transactionApplierTransformer( applier::wrapAroundActualApplier )
                 .build();
-        try ( StoreCursors storageCursors = engine.createStorageCursors( NULL ) )
+        try ( StoreCursors storageCursors = engine.createStorageCursors( NULL_CONTEXT ) )
         {
             CommandsToApply commandsToApply = mock( CommandsToApply.class );
-            when( commandsToApply.cursorContext() ).thenReturn( NULL );
+            when( commandsToApply.cursorContext() ).thenReturn( NULL_CONTEXT );
             when( commandsToApply.storeCursors() ).thenReturn( storageCursors );
             when( commandsToApply.accept( any() ) ).thenAnswer( invocationOnMock ->
             {

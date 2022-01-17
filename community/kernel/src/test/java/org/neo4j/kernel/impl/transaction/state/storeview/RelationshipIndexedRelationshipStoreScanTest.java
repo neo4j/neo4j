@@ -76,7 +76,7 @@ class RelationshipIndexedRelationshipStoreScanTest
         mockIdsReturnedFromTokenQueries();
 
         RelationshipIndexedRelationshipStoreScan storeScan = getRelationshipTypeScanViewStoreScan( types );
-        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( CursorContext.NULL, StoreCursors.NULL );
+        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( CursorContext.NULL_CONTEXT, StoreCursors.NULL );
 
         // See that the idIterator asked about both types and was able to merge the results correctly.
         assertThat( idIterator.next() ).isEqualTo( 1L );

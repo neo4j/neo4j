@@ -60,7 +60,7 @@ import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 @ExtendWith( RandomExtension.class )
@@ -111,18 +111,18 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
             UNSUPPORTED_TYPES.forEach( unsupportedType ->
             {
                 IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, random.nextValue( unsupportedType ) );
-                populator.add( singleton( update ), NULL );
+                populator.add( singleton( update ), NULL_CONTEXT );
             } );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
         }
         finally
         {
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
         }
 
         // then
         try ( var accessor = pointAccessor();
-              var reader = accessor.newAllEntriesValueReader( NULL ) )
+              var reader = accessor.newAllEntriesValueReader( NULL_CONTEXT ) )
         {
             assertThat( reader.iterator() ).isExhausted();
         }
@@ -190,14 +190,14 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
             Collection<IndexEntryUpdate<?>> updates, long expectedUpdateCount ) throws Exception
     {
         try ( var accessor = pointAccessor();
-              var reader = accessor.newAllEntriesValueReader( NULL ) )
+              var reader = accessor.newAllEntriesValueReader( NULL_CONTEXT ) )
         {
             assertThat( reader.iterator() ).isExhausted();
         }
 
         final var populator = instantiatePopulator( INDEX_DESCRIPTOR );
         scanUpdateOrder.beforeUpdates( populator, populationWorkScheduler );
-        try ( var updater = populator.newPopulatingUpdater( CursorContext.NULL ) )
+        try ( var updater = populator.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
         {
             for ( final var update : updates )
             {
@@ -207,10 +207,10 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
         }
         finally
         {
-            populator.close( true, CursorContext.NULL );
+            populator.close( true, CursorContext.NULL_CONTEXT );
         }
 
-        final var sample = populator.sample( CursorContext.NULL );
+        final var sample = populator.sample( CursorContext.NULL_CONTEXT );
         assertThat( sample.indexSize() ).isEqualTo( 0L );
         assertThat( sample.updates() ).isEqualTo( expectedUpdateCount );
     }
@@ -249,7 +249,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
                     void afterUpdates( IndexPopulator populator, IndexPopulator.PopulationWorkScheduler populationWorkScheduler )
                             throws IndexEntryConflictException
                     {
-                        populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL );
+                        populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
                     }
                 },
         UPDATES_AFTER_SCAN_COMPLETE
@@ -258,7 +258,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
                     void beforeUpdates( IndexPopulator populator, IndexPopulator.PopulationWorkScheduler populationWorkScheduler )
                             throws IndexEntryConflictException
                     {
-                        populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL );
+                        populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
                     }
 
                     @Override

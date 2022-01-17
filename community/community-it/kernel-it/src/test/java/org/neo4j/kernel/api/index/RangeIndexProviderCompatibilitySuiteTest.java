@@ -42,7 +42,7 @@ import org.neo4j.monitoring.Monitors;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
 {
@@ -101,6 +101,6 @@ class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderComp
     @Override
     void consistencyCheck( IndexPopulator populator )
     {
-        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
+        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL_CONTEXT );
     }
 }

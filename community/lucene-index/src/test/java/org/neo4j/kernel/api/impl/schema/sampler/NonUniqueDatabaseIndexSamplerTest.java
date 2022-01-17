@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class NonUniqueDatabaseIndexSamplerTest
 {
@@ -61,7 +61,8 @@ class NonUniqueDatabaseIndexSamplerTest
 
         NonUniqueLuceneIndexSampler luceneIndexSampler = createSampler();
         taskControl.cancel();
-        IndexNotFoundKernelException notFoundKernelException = assertThrows( IndexNotFoundKernelException.class, () -> luceneIndexSampler.sampleIndex( NULL ) );
+        IndexNotFoundKernelException notFoundKernelException = assertThrows( IndexNotFoundKernelException.class, () -> luceneIndexSampler.sampleIndex(
+                NULL_CONTEXT ) );
         assertEquals( "Index dropped while sampling.", notFoundKernelException.getMessage() );
     }
 
@@ -76,7 +77,7 @@ class NonUniqueDatabaseIndexSamplerTest
         indexReader.setElements( new String[4] );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
 
-        assertEquals( new IndexSample( 4, 2, 4 ), createSampler().sampleIndex( NULL ) );
+        assertEquals( new IndexSample( 4, 2, 4 ), createSampler().sampleIndex( NULL_CONTEXT ) );
     }
 
     private NonUniqueLuceneIndexSampler createSampler()

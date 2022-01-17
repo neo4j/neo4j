@@ -399,7 +399,7 @@ class DatabaseUpgradeTransactionIT
     private void setKernelVersion( KernelVersion version )
     {
         MetaDataStore metaDataStore = db.getDependencyResolver().resolveDependency( MetaDataStore.class );
-        metaDataStore.setKernelVersion( version, CursorContext.NULL );
+        metaDataStore.setKernelVersion( version, CursorContext.NULL_CONTEXT );
     }
 
     private KernelVersion getKernelVersion()

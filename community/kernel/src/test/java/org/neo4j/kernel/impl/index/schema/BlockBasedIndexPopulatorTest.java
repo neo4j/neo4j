@@ -84,7 +84,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
@@ -164,14 +164,14 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         boolean closed = false;
         try
         {
-            populator.add( batchOfUpdates(), NULL );
+            populator.add( batchOfUpdates(), NULL_CONTEXT );
 
             // when starting to merge (in a separate thread)
             Future<Object> mergeFuture = merger.submit( scanCompletedTask( populator ) );
             // and waiting for merge to get going
             monitor.barrier.awaitUninterruptibly();
             // calling close here should wait for the merge future, so that checking the merge future for "done" immediately afterwards must say true
-            Future<Void> closeFuture = closer.submit( () -> populator.close( false, NULL ) );
+            Future<Void> closeFuture = closer.submit( () -> populator.close( false, NULL_CONTEXT ) );
             closer.untilWaiting();
             monitor.barrier.release();
             closeFuture.get();
@@ -184,7 +184,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             if ( !closed )
             {
-                populator.close( true, NULL );
+                populator.close( true, NULL_CONTEXT );
             }
         }
     }
@@ -193,7 +193,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
     {
         return () ->
         {
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
             return null;
         };
     }
@@ -207,7 +207,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         boolean closed = false;
         try
         {
-            populator.add( batchOfUpdates(), NULL );
+            populator.add( batchOfUpdates(), NULL_CONTEXT );
 
             // when starting to merge (in a separate thread)
             Future<Object> mergeFuture = merger.submit( scanCompletedTask( populator ) );
@@ -216,7 +216,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
             monitor.barrier.release();
             monitor.mergeFinishedBarrier.awaitUninterruptibly();
             // calling close here should wait for the merge future, so that checking the merge future for "done" immediately afterwards must say true
-            Future<Void> closeFuture = closer.submit( () -> populator.close( false, NULL ) );
+            Future<Void> closeFuture = closer.submit( () -> populator.close( false, NULL_CONTEXT ) );
             closer.untilWaiting();
             monitor.mergeFinishedBarrier.release();
             closeFuture.get();
@@ -229,7 +229,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             if ( !closed )
             {
-                populator.close( false, NULL );
+                populator.close( false, NULL_CONTEXT );
             }
         }
     }
@@ -242,7 +242,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( monitor );
         try
         {
-            populator.add( batchOfUpdates(), NULL );
+            populator.add( batchOfUpdates(), NULL_CONTEXT );
 
             // when starting to merge (in a separate thread)
             Future<Object> mergeFuture = merger.submit( scanCompletedTask( populator ) );
@@ -259,7 +259,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         }
         finally
         {
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
         }
     }
 
@@ -271,12 +271,12 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         boolean closed = false;
         try
         {
-            populator.add( batchOfUpdates(), NULL );
+            populator.add( batchOfUpdates(), NULL_CONTEXT );
 
             // when
             Race race = new Race();
-            race.addContestant( throwing( () -> populator.scanCompleted( nullInstance, populationWorkScheduler, NULL ) ) );
-            race.addContestant( throwing( () -> populator.close( false, NULL ) ) );
+            race.addContestant( throwing( () -> populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT ) ) );
+            race.addContestant( throwing( () -> populator.close( false, NULL_CONTEXT ) ) );
             race.go();
             closed = true;
 
@@ -288,7 +288,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             if ( !closed )
             {
-                populator.close( true, NULL );
+                populator.close( true, NULL_CONTEXT );
             }
         }
     }
@@ -302,7 +302,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         boolean closed = false;
         try
         {
-            populator.add( batchOfUpdates(), NULL );
+            populator.add( batchOfUpdates(), NULL_CONTEXT );
 
             // when starting to merge (in a separate thread)
             Future<Object> mergeFuture = merger.submit( scanCompletedTask( populator ) );
@@ -327,7 +327,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             if ( !closed )
             {
-                populator.close( true, NULL );
+                populator.close( true, NULL_CONTEXT );
             }
         }
     }
@@ -344,18 +344,18 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             // when
             Collection<IndexEntryUpdate<?>> updates = batchOfUpdates();
-            populator.add( updates, NULL );
+            populator.add( updates, NULL_CONTEXT );
             int nextId = updates.size();
             externalUpdates( populator, nextId, nextId + 10 );
             nextId = nextId + 10;
             long memoryBeforeScanCompleted = memoryTracker.usedNativeMemory();
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
             externalUpdates( populator, nextId, nextId + 10 );
 
             // then
             assertTrue( memoryTracker.peakMemoryUsage() > memoryBeforeScanCompleted,
                     "expected some memory to have been temporarily allocated in scanCompleted" );
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
             closed = true;
 
             bufferFactory.close();
@@ -365,7 +365,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             if ( !closed )
             {
-                populator.close( true, NULL );
+                populator.close( true, NULL_CONTEXT );
             }
         }
     }
@@ -382,12 +382,12 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             // when
             Collection<IndexEntryUpdate<?>> updates = batchOfUpdates();
-            populator.add( updates, NULL );
+            populator.add( updates, NULL_CONTEXT );
             int nextId = updates.size();
             externalUpdates( populator, nextId, nextId + 10 );
             nextId = nextId + 10;
             long memoryBeforeScanCompleted = memoryTracker.usedNativeMemory();
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
             externalUpdates( populator, nextId, nextId + 10 );
 
             // then
@@ -402,7 +402,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             if ( !closed )
             {
-                populator.close( true, NULL );
+                populator.close( true, NULL_CONTEXT );
             }
         }
     }
@@ -415,23 +415,23 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
         BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         Collection<IndexEntryUpdate<?>> populationUpdates = batchOfUpdates();
-        populator.add( populationUpdates, NULL );
+        populator.add( populationUpdates, NULL_CONTEXT );
 
         // when
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
         // Also a couple of updates afterwards
         int numberOfUpdatesAfterCompleted = 4;
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             for ( int i = 0; i < numberOfUpdatesAfterCompleted; i++ )
             {
                 updater.process( IndexEntryUpdate.add( 10_000 + i, INDEX_DESCRIPTOR, supportedValue( i ) ) );
             }
         }
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
 
         // then
-        IndexSample sample = populator.sample( NULL );
+        IndexSample sample = populator.sample( NULL_CONTEXT );
         assertEquals( populationUpdates.size(), sample.indexSize() );
         assertEquals( populationUpdates.size(), sample.sampleSize() );
         assertEquals( populationUpdates.size(), sample.uniqueValues() );
@@ -463,14 +463,14 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             // when
             int numberOfCheckPointsBeforeScanCompleted = checkpoints.get();
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
 
             // then
             assertEquals( numberOfCheckPointsBeforeScanCompleted + 1, checkpoints.get() );
         }
         finally
         {
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
         }
     }
 
@@ -482,7 +482,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         boolean closed = false;
         try
         {
-            populator.add( batchOfUpdates(), NULL );
+            populator.add( batchOfUpdates(), NULL_CONTEXT );
 
             // when
             MutableBoolean called = new MutableBoolean();
@@ -496,16 +496,16 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
                     return jobScheduler.schedule( group, jobMonitoringParams, job );
                 }
             };
-            populator.scanCompleted( nullInstance, wrapScheduler( trackingJobScheduler ), NULL );
+            populator.scanCompleted( nullInstance, wrapScheduler( trackingJobScheduler ), NULL_CONTEXT );
             assertTrue( called.booleanValue() );
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
             closed = true;
         }
         finally
         {
             if ( !closed )
             {
-                populator.close( true, NULL );
+                populator.close( true, NULL_CONTEXT );
             }
         }
     }
@@ -520,11 +520,11 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         {
             int size = populator.tree.keyValueSizeCap() + 1;
             assertThrows( IllegalArgumentException.class, () -> populator.add( singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR,
-                    generateStringValueResultingInIndexEntrySize( layout(), size ) ) ), NULL ) );
+                    generateStringValueResultingInIndexEntrySize( layout(), size ) ) ), NULL_CONTEXT ) );
         }
         finally
         {
-            populator.close( false, NULL );
+            populator.close( false, NULL_CONTEXT );
         }
     }
 
@@ -540,11 +540,11 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
             int size = populator.tree.keyValueSizeCap() + 1;
             if ( !updateBeforeScanCompleted )
             {
-                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
             }
             assertThrows( IllegalArgumentException.class, () ->
             {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
                 {
                     updater.process( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( layout(), size ) ) );
                 }
@@ -552,7 +552,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         }
         finally
         {
-            populator.close( false, NULL );
+            populator.close( false, NULL_CONTEXT );
         }
     }
 
@@ -563,8 +563,8 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         BlockBasedIndexPopulator<KEY> populator = instantiatePopulator( NO_MONITOR );
         try
         {
-            populator.add( List.of( add( 0 ), add( 1 ) ), NULL );
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
+            populator.add( List.of( add( 0 ), add( 1 ) ), NULL_CONTEXT );
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
             {
                 updater.process( add( 10 ) );
                 updater.process( add( 11 ) );
@@ -572,20 +572,20 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
             }
 
             // when
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
 
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
             {
                 updater.process( remove( 10 ) );
             }
 
             // then
-            IndexSample sample = populator.sample( NULL );
+            IndexSample sample = populator.sample( NULL_CONTEXT );
             assertThat( sample.updates() ).isEqualTo( 4 );
         }
         finally
         {
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
         }
     }
 
@@ -598,13 +598,13 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>>
         KEY high = layout.newKey();
         high.initialize( Long.MAX_VALUE );
         high.initValuesAsHighest();
-        return tree.seek( low, high, NULL );
+        return tree.seek( low, high, NULL_CONTEXT );
     }
 
     private void externalUpdates( BlockBasedIndexPopulator<KEY> populator, int firstId, int lastId )
             throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             for ( int i = firstId; i < lastId; i++ )
             {

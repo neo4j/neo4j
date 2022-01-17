@@ -61,7 +61,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -140,7 +140,7 @@ class ManyPropertyKeysIT
                 NullLogProvider.getInstance(), cacheTracer, writable() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
-        try ( var storeCursors = new CachedStoreCursors( neoStores, NULL );
+        try ( var storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
               var cursor = storeCursors.writeCursor( PROPERTY_KEY_TOKEN_CURSOR ) )
         {
             for ( int i = 0; i < propertyKeyCount; i++ )
@@ -150,7 +150,7 @@ class ManyPropertyKeysIT
                 Collection<DynamicRecord> nameRecords = store.allocateNameRecords( PropertyStore.encodeString( key( i ) ), cursorContext, INSTANCE );
                 record.addNameRecords( nameRecords );
                 record.setNameId( (int) Iterables.first( nameRecords ).getId() );
-                store.updateRecord( record, cursor, NULL, storeCursors );
+                store.updateRecord( record, cursor, NULL_CONTEXT, storeCursors );
             }
         }
 

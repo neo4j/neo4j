@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -87,7 +87,7 @@ class PropertyCreatorTest
                 pageCache, fileSystem, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();
-        StoreCursors storeCursors = new CachedStoreCursors( neoStores, NULL );
+        StoreCursors storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
         var pageCacheTracer = new DefaultPageCacheTracer();
         cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "propertyStore" ) );
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore, storeCursors ), cursorContext, PROPERTY_CURSOR,
@@ -359,9 +359,9 @@ class PropertyCreatorTest
     private static void prepareDirtyGenerator( PropertyStore store )
     {
         var idGenerator = store.getIdGenerator();
-        var marker = idGenerator.marker( NULL );
+        var marker = idGenerator.marker( NULL_CONTEXT );
         marker.markDeleted( 1L );
-        idGenerator.clearCache( NULL );
+        idGenerator.clearCache( NULL_CONTEXT );
     }
 
     private void assertZeroCursor()
@@ -383,7 +383,7 @@ class PropertyCreatorTest
         PropertyRecord prev = null;
         for ( ExpectedRecord initialRecord : initialRecords )
         {
-            PropertyRecord record = this.records.create( propertyStore.nextId( cursorContext ), primitive.record, NULL ).forChangingData();
+            PropertyRecord record = this.records.create( propertyStore.nextId( cursorContext ), primitive.record, NULL_CONTEXT ).forChangingData();
             record.setInUse( true );
             existingRecord( record, initialRecord );
 

@@ -201,7 +201,7 @@ class QueueTransactionAppenderConcurrencyIT
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( List.of( new TestCommand() ) );
         tx.setHeader( ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, AuthSubject.ANONYMOUS );
-        return new TransactionToApply( tx, CursorContext.NULL, StoreCursors.NULL );
+        return new TransactionToApply( tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL );
     }
 
     private LogFiles buildLogFiles( SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore ) throws IOException

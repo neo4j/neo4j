@@ -372,9 +372,9 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
 
     private long createStoreEntry( int type )
     {
-        long relationship = relationshipStore.nextId( CursorContext.NULL );
-        long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
-        long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
+        long relationship = relationshipStore.nextId( CursorContext.NULL_CONTEXT );
+        long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
+        long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL_CONTEXT ), NULL, relationship );
         relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         return relationship;
     }
@@ -386,7 +386,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
         relationshipRecord.setInUse( false );
         try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( relationshipRecord, storeCursor, CursorContext.NULL, storeCursors );
+            relationshipStore.updateRecord( relationshipRecord, storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
         }
     }
 
@@ -402,7 +402,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
 
     private IndexUpdater relationshipTypeIndexWriter()
     {
-        return rtiProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false );
+        return rtiProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false );
     }
 
     private enum Density

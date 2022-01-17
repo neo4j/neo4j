@@ -48,7 +48,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Integer.min;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -106,7 +106,7 @@ abstract class GBPTreeParallelWritesIT<KEY,VALUE>
                     {
                         var random = new Random( threadSeed );
                         var data = dataPerThread[id];
-                        try ( var writer = index.parallelWriter( NULL ) )
+                        try ( var writer = index.parallelWriter( NULL_CONTEXT ) )
                         {
                             for ( int j = 0; j < 2_000; j++ )
                             {
@@ -131,7 +131,7 @@ abstract class GBPTreeParallelWritesIT<KEY,VALUE>
                     } ), 1 );
                 }
                 race.goUnchecked();
-                index.checkpoint( NULL );
+                index.checkpoint( NULL_CONTEXT );
             }
 
             // then
@@ -195,7 +195,7 @@ abstract class GBPTreeParallelWritesIT<KEY,VALUE>
                             }
                         }
                     }
-                    try ( var writer = tree.parallelWriter( NULL ) )
+                    try ( var writer = tree.parallelWriter( NULL_CONTEXT ) )
                     {
                         for ( var id : ids )
                         {
@@ -218,7 +218,7 @@ abstract class GBPTreeParallelWritesIT<KEY,VALUE>
                             ids[i] = committedIds.created.removeAtIndex( random.nextInt( committedIds.created.size() ) );
                         }
                     }
-                    try ( var writer = tree.parallelWriter( NULL ) )
+                    try ( var writer = tree.parallelWriter( NULL_CONTEXT ) )
                     {
                         for ( long id : ids )
                         {
@@ -235,12 +235,12 @@ abstract class GBPTreeParallelWritesIT<KEY,VALUE>
             race.addContestant( throwing( () ->
             {
                 Thread.sleep( ThreadLocalRandom.current().nextInt( maxCheckpointDelay ) );
-                tree.checkpoint( NULL );
+                tree.checkpoint( NULL_CONTEXT );
             } ) );
             race.goUnchecked();
 
             // then
-            tree.consistencyCheck( NULL );
+            tree.consistencyCheck( NULL_CONTEXT );
             try ( var seek = allEntriesSeek( tree, layout ) )
             {
                 for ( long id : committedIds.created.toSortedArray() )
@@ -259,7 +259,7 @@ abstract class GBPTreeParallelWritesIT<KEY,VALUE>
         KEY high = layout.newKey();
         layout.initializeAsLowest( low );
         layout.initializeAsHighest( high );
-        return index.seek( low, high, NULL );
+        return index.seek( low, high, NULL_CONTEXT );
     }
 
     private static class Ids

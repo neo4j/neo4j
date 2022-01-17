@@ -107,7 +107,7 @@ import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -190,13 +190,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Integer colorLabelId = labelsNameIdMap.get( COLOR_LABEL );
             try ( var indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
-                assertThat( indexReader.countIndexedEntities( 0, NULL, new int[]{propertyId}, Values.of( "Sweden" ) ) )
+                assertThat( indexReader.countIndexedEntities( 0, NULL_CONTEXT, new int[]{propertyId}, Values.of( "Sweden" ) ) )
                         .as( "Should be removed by concurrent remove." ).isEqualTo( 0 );
             }
 
             try ( var indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertThat( indexReader.countIndexedEntities( 3, NULL, new int[]{propertyId}, Values.of( "green" ) ) )
+                assertThat( indexReader.countIndexedEntities( 3, NULL_CONTEXT, new int[]{propertyId}, Values.of( "green" ) ) )
                         .as( "Should be removed by concurrent remove." ).isEqualTo( 0 );
             }
         }
@@ -221,13 +221,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
             try ( var indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
-                assertThat( indexReader.countIndexedEntities( otherNodes[0].getId(), NULL, new int[]{propertyId}, Values.of( "Denmark" ) ) )
+                assertThat( indexReader.countIndexedEntities( otherNodes[0].getId(), NULL_CONTEXT, new int[]{propertyId}, Values.of( "Denmark" ) ) )
                         .as( "Should be added by concurrent add." ).isEqualTo( 1 );
             }
 
             try ( var indexReader = getIndexReader( propertyId, carLabelId ) )
             {
-                assertThat( indexReader.countIndexedEntities( otherNodes[1].getId(), NULL, new int[]{propertyId}, Values.of( "BMW" ) ) )
+                assertThat( indexReader.countIndexedEntities( otherNodes[1].getId(), NULL_CONTEXT, new int[]{propertyId}, Values.of( "BMW" ) ) )
                         .as( "Should be added by concurrent add." ).isEqualTo( 1 );
             }
         }
@@ -252,18 +252,18 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
             try ( var indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertThat( indexReader.countIndexedEntities( color2.getId(), NULL, new int[]{propertyId}, Values.of( "green" ) ) )
+                assertThat( indexReader.countIndexedEntities( color2.getId(), NULL_CONTEXT, new int[]{propertyId}, Values.of( "green" ) ) )
                         .as( format( "Should be deleted by concurrent change. Reader is: %s, ", indexReader ) ).isEqualTo( 0 );
             }
             try ( var indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
-                assertThat( indexReader.countIndexedEntities( color2.getId(), NULL, new int[]{propertyId}, Values.of( "pink" ) ) )
+                assertThat( indexReader.countIndexedEntities( color2.getId(), NULL_CONTEXT, new int[]{propertyId}, Values.of( "pink" ) ) )
                         .as( "Should be updated by concurrent change." ).isEqualTo( 1 );
             }
 
             try ( var indexReader = getIndexReader( propertyId, carLabelId ) )
             {
-                assertThat( indexReader.countIndexedEntities( car2.getId(), NULL, new int[]{propertyId}, Values.of( "SAAB" ) ) )
+                assertThat( indexReader.countIndexedEntities( car2.getId(), NULL_CONTEXT, new int[]{propertyId}, Values.of( "SAAB" ) ) )
                         .as( "Should be added by concurrent change." ).isEqualTo( 1 );
             }
         }
@@ -648,8 +648,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                             update.entityTokensUnchanged(),
                             update.propertiesChanged(), false, EntityType.NODE );
                     Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates =
-                            update.valueUpdatesForIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL, StoreCursors.NULL, INSTANCE );
-                    indexService.applyUpdates( entryUpdates, NULL, false );
+                            update.valueUpdatesForIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
+                    indexService.applyUpdates( entryUpdates, NULL_CONTEXT, false );
                 }
             }
             catch ( UncheckedIOException | KernelException e )

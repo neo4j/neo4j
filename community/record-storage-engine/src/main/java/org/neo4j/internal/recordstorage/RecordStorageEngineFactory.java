@@ -445,7 +445,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(), new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fs,
                 NullLogProvider.getInstance(), PageCacheTracer.NULL, DatabaseReadOnlyChecker.readOnly() ).openAllNeoStores();
-                CachedStoreCursors storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+                CachedStoreCursors storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             // Injected NLI will be included if the store we're copying from is older than when token indexes were introduced.
             IndexConfig config = IndexConfig.create();
@@ -512,7 +512,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 idGeneratorFactory, pageCache, fileSystem,
                 NullLogProvider.getInstance(), pageCacheTracer, readOnly() ).openAllNeoStores() )
         {
-            neoStores.start( CursorContext.NULL );
+            neoStores.start( CursorContext.NULL_CONTEXT );
             ProgressMonitorFactory progressMonitorFactory =
                     progressOutput != null ? ProgressMonitorFactory.textual( progressOutput ) : ProgressMonitorFactory.NONE;
             try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( fileSystem, RecordDatabaseLayout.convert( layout ), pageCache,

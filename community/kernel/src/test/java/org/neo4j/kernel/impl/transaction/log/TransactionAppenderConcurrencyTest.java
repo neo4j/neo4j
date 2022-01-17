@@ -84,7 +84,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralNeo4jLayoutExtension
@@ -274,7 +274,7 @@ public class TransactionAppenderConcurrencyTest
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( singletonList( new TestCommand() ) );
         tx.setHeader( new byte[0], 0, 0, 0, 0, ANONYMOUS );
-        return new TransactionToApply( tx, NULL, StoreCursors.NULL );
+        return new TransactionToApply( tx, NULL_CONTEXT, StoreCursors.NULL );
     }
 
     private static Predicate<StackFrame> failMethod( final Class<?> klass, final String methodName )

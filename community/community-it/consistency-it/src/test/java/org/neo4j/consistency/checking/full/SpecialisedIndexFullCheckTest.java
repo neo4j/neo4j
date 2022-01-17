@@ -74,7 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -140,7 +140,7 @@ class SpecialisedIndexFullCheckTest
                 {
                     NodeRecord nodeRecord = new NodeRecord( id );
                     nodeRecord.clear();
-                    nodeStore.updateRecord( nodeRecord, cursor, NULL, storeCursors );
+                    nodeStore.updateRecord( nodeRecord, cursor, NULL_CONTEXT, storeCursors );
                 }
             }
 
@@ -164,7 +164,7 @@ class SpecialisedIndexFullCheckTest
                 if ( indexDescriptor.schema().entityType() == EntityType.NODE )
                 {
                     IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                     {
                         for ( long nodeId : indexedNodes )
                         {
@@ -200,7 +200,7 @@ class SpecialisedIndexFullCheckTest
                 if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP )
                 {
                     IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                     {
                         for ( long relId : indexedRelationships )
                         {
@@ -237,7 +237,7 @@ class SpecialisedIndexFullCheckTest
                 if ( indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique() )
                 {
                     IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                    try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                     {
                         updater.process( IndexEntryUpdate.add( newNode, indexDescriptor, values( indexDescriptor ) ) );
                     }

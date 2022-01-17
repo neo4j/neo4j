@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> extends IndexTestUtil<KEY, VALUE, LAYOUT>
@@ -90,7 +90,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
 
         // then
         assertFilePresent();
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
     }
 
     @Test
@@ -110,7 +110,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
             assertNotEquals(
                 someBytes, firstBytes, "Expected previous file content to have been cleared but was still there" );
         }
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
     }
 
     @Test
@@ -147,11 +147,11 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         List<IndexEntryUpdate<?>> updates = Collections.emptyList();
 
         // when
-        populator.add( updates, NULL );
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+        populator.add( updates, NULL_CONTEXT );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
 
         // then
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
     }
 
     @Test
@@ -170,7 +170,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         }
 
         // when
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
 
         // then
         existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
@@ -184,7 +184,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         populator.create();
 
         // when
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
 
         // then
         assertHeader( ONLINE, null, false );
@@ -197,7 +197,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         populator.create();
 
         // then
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
     }
 
     @Test
@@ -216,7 +216,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         }
 
         // when
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
 
         // then
         existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
@@ -230,7 +230,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         populator.create();
 
         // when
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
 
         // then
         assertHeader( POPULATING, null, false );
@@ -245,7 +245,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         // when
         String failureMessage = "Fly, you fools!";
         populator.markAsFailed( failureMessage );
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
 
         // then
         assertHeader( FAILED, failureMessage, false );
@@ -260,7 +260,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         // when
         String failureMessage = longString( pageCache.pageSize() );
         populator.markAsFailed( failureMessage );
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
 
         // then
         assertHeader( FAILED, failureMessage, true );
@@ -276,9 +276,9 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         populator.markAsFailed( "" );
 
         // then
-        var e = assertThrows( RuntimeException.class, () -> populator.close( true, NULL ) );
+        var e = assertThrows( RuntimeException.class, () -> populator.close( true, NULL_CONTEXT ) );
         assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
     }
 
     @Test
@@ -286,7 +286,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     {
         // given
         populator.create();
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
 
         // when
         populator.drop();
@@ -300,7 +300,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     {
         // given
         populator.create();
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
 
         // when
         populator.drop();
@@ -336,7 +336,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         assertFileNotPresent();
 
         // when
-        var e = assertThrows( RuntimeException.class, () -> populator.close( true, NULL ) );
+        var e = assertThrows( RuntimeException.class, () -> populator.close( true, NULL_CONTEXT ) );
         assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
     }
 
@@ -349,7 +349,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         populator.markAsFailed( failureMessage );
 
         // when
-        populator.close( false, NULL );
+        populator.close( false, NULL_CONTEXT );
 
         // then
         assertHeader( FAILED, failureMessage, false );
@@ -365,7 +365,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         populator.drop();
 
         // then
-        var e = assertThrows( RuntimeException.class, () -> populator.close( true, NULL ) );
+        var e = assertThrows( RuntimeException.class, () -> populator.close( true, NULL_CONTEXT ) );
         assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
     }
 
@@ -379,7 +379,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
         populator.drop();
 
         // then
-        var e = assertThrows( RuntimeException.class, () -> populator.close( false, NULL ) );
+        var e = assertThrows( RuntimeException.class, () -> populator.close( false, NULL_CONTEXT ) );
         assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
     }
 

@@ -303,7 +303,7 @@ class TransactionStatusResultTest
                 public Statistics getStatistics()
                 {
                     TestStatistics statistics = new TestStatistics( this, new AtomicReference<>( new CountingCpuClock() ) );
-                    statistics.init( Thread.currentThread().getId(), CursorContext.NULL );
+                    statistics.init( Thread.currentThread().getId(), CursorContext.NULL_CONTEXT );
                     return statistics;
                 }
             };

@@ -105,10 +105,10 @@ public final class MigrationTestUtils
     public static boolean checkNeoStoreHasFormatVersion( StoreVersionCheck check, RecordFormats expectedFormat )
     {
         String expectedVersion = expectedFormat.storeVersion();
-        boolean successful = check.checkUpgrade( expectedVersion, CursorContext.NULL ).outcome().isSuccessful();
+        boolean successful = check.checkUpgrade( expectedVersion, CursorContext.NULL_CONTEXT ).outcome().isSuccessful();
         if ( successful )
         {
-            String storeVersion = check.storeVersion( CursorContext.NULL )
+            String storeVersion = check.storeVersion( CursorContext.NULL_CONTEXT )
                     .orElseThrow( () -> new RuntimeException( "Expected store to have a store version." ) );
             return expectedVersion.equals( storeVersion );
         }

@@ -86,7 +86,7 @@ class IndexIteratorIT
         }
 
         var neoStores = storageEngine.testAccessNeoStores();
-        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             var tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, storeCursors );
             indexAccessors = new IndexAccessors( providerMap,

@@ -50,7 +50,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 class InternalTransactionCommitProcessTest
@@ -123,15 +123,15 @@ class InternalTransactionCommitProcessTest
 
         // WHEN
 
-        commitProcess.commit( new TransactionToApply( noCommandTx, NULL, StoreCursors.NULL ), commitEvent, INTERNAL );
+        commitProcess.commit( new TransactionToApply( noCommandTx, NULL_CONTEXT, StoreCursors.NULL ), commitEvent, INTERNAL );
 
-        verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP, NULL );
+        verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP, NULL_CONTEXT );
     }
 
     private static TransactionToApply mockedTransaction()
     {
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
-        return new TransactionToApply( transaction, NULL, StoreCursors.NULL );
+        return new TransactionToApply( transaction, NULL_CONTEXT, StoreCursors.NULL );
     }
 }

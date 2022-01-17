@@ -51,7 +51,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.keyToString;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
@@ -91,27 +91,27 @@ class GBPTreeCountsStoreTest
     {
         // given
         long txId = BASE_TX_ID;
-        try ( CountsAccessor.Updater updater = countsStore.apply( ++txId, NULL ) )
+        try ( CountsAccessor.Updater updater = countsStore.apply( ++txId, NULL_CONTEXT ) )
         {
             updater.incrementNodeCount( LABEL_ID_1, 10 );
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3 );
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7 );
         }
-        try ( CountsAccessor.Updater updater = countsStore.apply( ++txId, NULL ) )
+        try ( CountsAccessor.Updater updater = countsStore.apply( ++txId, NULL_CONTEXT ) )
         {
             updater.incrementNodeCount( LABEL_ID_1, 5 ); // now at 15
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 2 ); // now at 5
         }
 
-        countsStore.checkpoint( NULL );
+        countsStore.checkpoint( NULL_CONTEXT );
 
         // when/then
-        assertEquals( 15, countsStore.nodeCount( LABEL_ID_1, NULL ) );
-        assertEquals( 5, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, NULL ) );
-        assertEquals( 7, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, NULL ) );
+        assertEquals( 15, countsStore.nodeCount( LABEL_ID_1, NULL_CONTEXT ) );
+        assertEquals( 5, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, NULL_CONTEXT ) );
+        assertEquals( 7, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, NULL_CONTEXT ) );
 
         // and when
-        try ( CountsAccessor.Updater updater = countsStore.apply( ++txId, NULL ) )
+        try ( CountsAccessor.Updater updater = countsStore.apply( ++txId, NULL_CONTEXT ) )
         {
             updater.incrementNodeCount( LABEL_ID_1, -7 );
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, -5 );
@@ -119,9 +119,9 @@ class GBPTreeCountsStoreTest
         }
 
         // then
-        assertEquals( 8, countsStore.nodeCount( LABEL_ID_1, NULL ) );
-        assertEquals( 0, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, NULL ) );
-        assertEquals( 5, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, NULL ) );
+        assertEquals( 8, countsStore.nodeCount( LABEL_ID_1, NULL_CONTEXT ) );
+        assertEquals( 0, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, NULL_CONTEXT ) );
+        assertEquals( 5, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, NULL_CONTEXT ) );
     }
 
     @Test
@@ -149,21 +149,21 @@ class GBPTreeCountsStoreTest
         openCountsStore( builder );
         assertTrue( builder.lastCommittedTxIdCalled );
         assertTrue( builder.initializeCalled );
-        assertEquals( 10, countsStore.nodeCount( labelId, NULL ) );
-        assertEquals( 0, countsStore.nodeCount( labelId2, NULL ) );
-        assertEquals( 14, countsStore.relationshipCount( labelId, relationshipTypeId, labelId2, NULL ) );
+        assertEquals( 10, countsStore.nodeCount( labelId, NULL_CONTEXT ) );
+        assertEquals( 0, countsStore.nodeCount( labelId2, NULL_CONTEXT ) );
+        assertEquals( 14, countsStore.relationshipCount( labelId, relationshipTypeId, labelId2, NULL_CONTEXT ) );
 
         // and when
         checkpointAndRestartCountsStore();
         // Re-applying a txId below or equal to the "rebuild transaction id" should not apply it
         incrementNodeCount( rebuiltAtTransactionId - 1, labelId, 100 );
-        assertEquals( 10, countsStore.nodeCount( labelId, NULL ) );
+        assertEquals( 10, countsStore.nodeCount( labelId, NULL_CONTEXT ) );
         incrementNodeCount( rebuiltAtTransactionId, labelId, 100 );
-        assertEquals( 10, countsStore.nodeCount( labelId, NULL ) );
+        assertEquals( 10, countsStore.nodeCount( labelId, NULL_CONTEXT ) );
 
         // then
         incrementNodeCount( rebuiltAtTransactionId + 1, labelId, 100 );
-        assertEquals( 110, countsStore.nodeCount( labelId, NULL ) );
+        assertEquals( 110, countsStore.nodeCount( labelId, NULL_CONTEXT ) );
     }
 
     @Test
@@ -171,18 +171,18 @@ class GBPTreeCountsStoreTest
     {
         // given
         long txId = BASE_TX_ID + 1;
-        try ( CountsAccessor.Updater updater = countsStore.apply( txId, NULL ) )
+        try ( CountsAccessor.Updater updater = countsStore.apply( txId, NULL_CONTEXT ) )
         {
             updater.incrementNodeCount( LABEL_ID_1, 10 );
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3 );
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7 );
         }
-        countsStore.checkpoint( NULL );
+        countsStore.checkpoint( NULL_CONTEXT );
         closeCountsStore();
 
         // when
         ByteArrayOutputStream out = new ByteArrayOutputStream( 1024 );
-        GBPTreeCountsStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), NULL );
+        GBPTreeCountsStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), NULL_CONTEXT );
 
         // then
         String dump = out.toString();
@@ -194,7 +194,7 @@ class GBPTreeCountsStoreTest
 
     private void incrementNodeCount( long txId, int labelId, int delta )
     {
-        try ( CountsAccessor.Updater updater = countsStore.apply( txId, NULL ) )
+        try ( CountsAccessor.Updater updater = countsStore.apply( txId, NULL_CONTEXT ) )
         {
             updater.incrementNodeCount( labelId, delta );
         }
@@ -202,7 +202,7 @@ class GBPTreeCountsStoreTest
 
     private void checkpointAndRestartCountsStore() throws Exception
     {
-        countsStore.checkpoint( NULL );
+        countsStore.checkpoint( NULL_CONTEXT );
         closeCountsStore();
         openCountsStore();
     }
@@ -220,13 +220,13 @@ class GBPTreeCountsStoreTest
     private void openCountsStore( CountsBuilder builder ) throws IOException
     {
         instantiateCountsStore( builder, writable(), NO_MONITOR );
-        countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
+        countsStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
     }
 
     private void instantiateCountsStore( CountsBuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor ) throws IOException
     {
         countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, PageCacheTracer.NULL, monitor,
-                DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), NULL );
+                DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), NULL_CONTEXT );
     }
 
     private static class TestableCountsBuilder implements CountsBuilder

@@ -177,7 +177,7 @@ class CheckerTestBase
                                               Counts.NONE, NUMBER_OF_THREADS );
         cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
         pageCache = dependencies.resolveDependency( PageCache.class );
-        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
+        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT );
     }
 
     @AfterEach
@@ -204,7 +204,7 @@ class CheckerTestBase
         {
             throw new RuntimeException( e );
         }
-        return indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false );
+        return indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false );
     }
 
     void initialData( KernelTransaction tx ) throws KernelException
@@ -265,7 +265,7 @@ class CheckerTestBase
 
     private Iterable<IndexDescriptor> allIndexes( NeoStores neoStores, TokenHolders tokenHolders )
     {
-        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             return Iterators.asCollection(
                     SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).indexesGetAllIgnoreMalformed(
@@ -384,7 +384,7 @@ class CheckerTestBase
     PropertyBlock propertyValue( int propertyKey, Value value )
     {
         PropertyBlock propertyBlock = new PropertyBlock();
-        neoStores.getPropertyStore().encodeValue( propertyBlock, propertyKey, value, CursorContext.NULL, INSTANCE );
+        neoStores.getPropertyStore().encodeValue( propertyBlock, propertyKey, value, CursorContext.NULL_CONTEXT, INSTANCE );
         return propertyBlock;
     }
 
@@ -404,11 +404,11 @@ class CheckerTestBase
     {
         NodeRecord node = new NodeRecord( id ).initialize( true, nextProp, false, NULL, 0 );
         long[] labelIds = toLongs( labels );
-        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, CursorContext.NULL, storeCursors,
+        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, CursorContext.NULL_CONTEXT, storeCursors,
                 INSTANCE );
         try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            nodeStore.updateRecord( node, storeCursor, CursorContext.NULL, storeCursors );
+            nodeStore.updateRecord( node, storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
         }
         return id;
     }
@@ -426,7 +426,7 @@ class CheckerTestBase
                 endPrev, endNext, firstInStart, firstInEnd );
         try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( relationship, storeCursor, CursorContext.NULL, storeCursors );
+            relationshipStore.updateRecord( relationship, storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
         }
         return id;
     }
@@ -436,7 +436,7 @@ class CheckerTestBase
         RelationshipGroupRecord group = new RelationshipGroupRecord( id ).initialize( true, type, firstOut, firstIn, firstLoop, owningNode, next );
         try ( var storeCursor = storeCursors.writeCursor( GROUP_CURSOR ) )
         {
-            relationshipGroupStore.updateRecord( group, storeCursor, CursorContext.NULL, storeCursors );
+            relationshipGroupStore.updateRecord( group, storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
         }
         return id;
     }
@@ -469,7 +469,7 @@ class CheckerTestBase
         }
         try ( var storeCursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
         {
-            propertyStore.updateRecord( prop, storeCursor, CursorContext.NULL, storeCursors );
+            propertyStore.updateRecord( prop, storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
         }
     }
 }

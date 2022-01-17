@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @EphemeralTestDirectoryExtension
@@ -139,7 +139,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
                     to = first;
                 }
                 Map<KEY,VALUE> expectedHits = expectedHits( data, from, to, keyComparator );
-                try ( Seeker<KEY,VALUE> result = index.seek( from, to, NULL ) )
+                try ( Seeker<KEY,VALUE> result = index.seek( from, to, NULL_CONTEXT ) )
                 {
                     while ( result.next() )
                     {
@@ -163,12 +163,12 @@ abstract class GBPTreeITBase<KEY,VALUE>
                 }
             }
 
-            index.checkpoint( NULL );
+            index.checkpoint( NULL_CONTEXT );
             randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds, writerFactory );
         }
 
         // and finally
-        index.consistencyCheck( NULL );
+        index.consistencyCheck( NULL_CONTEXT );
     }
 
     @EnumSource( WriterFactory.class )
@@ -215,13 +215,13 @@ abstract class GBPTreeITBase<KEY,VALUE>
         }
 
         // then
-        try ( Seeker<KEY,VALUE> seek = index.seek( key( 0 ), key( numberOfNodes ), NULL ) )
+        try ( Seeker<KEY,VALUE> seek = index.seek( key( 0 ), key( numberOfNodes ), NULL_CONTEXT ) )
         {
             assertFalse( seek.next() );
         }
 
         // and finally
-        index.consistencyCheck( NULL );
+        index.consistencyCheck( NULL_CONTEXT );
     }
 
     @EnumSource( WriterFactory.class )
@@ -242,11 +242,11 @@ abstract class GBPTreeITBase<KEY,VALUE>
 
         KEY from = layout.key( 3 );
         KEY to = layout.key( 1 );
-        try ( Seeker<KEY,VALUE> seek = index.seek( from, to, NULL ) )
+        try ( Seeker<KEY,VALUE> seek = index.seek( from, to, NULL_CONTEXT ) )
         {
             assertFalse( seek.next() );
         }
-        index.checkpoint( NULL );
+        index.checkpoint( NULL_CONTEXT );
     }
 
     private void randomlyModifyIndex( GBPTree<KEY,VALUE> index, Map<KEY,VALUE> data, Random random, double removeProbability,
@@ -329,12 +329,12 @@ abstract class GBPTreeITBase<KEY,VALUE>
     @SuppressWarnings( "unused" )
     private void printTree() throws IOException
     {
-        index.printTree( PrintConfig.defaults(), NULL );
+        index.printTree( PrintConfig.defaults(), NULL_CONTEXT );
     }
 
     @SuppressWarnings( "unused" )
     private void printNode( @SuppressWarnings( "SameParameterValue" ) int id ) throws IOException
     {
-        index.printNode( id, NULL );
+        index.printNode( id, NULL_CONTEXT );
     }
 }

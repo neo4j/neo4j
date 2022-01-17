@@ -119,7 +119,7 @@ class IndexUpdatesWorkSyncTest
             ValueIndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( i, index, intValue( 10 + i ) );
             sentUpdates.add( update );
             batch.add( update );
-            batch.apply( CursorContext.NULL );
+            batch.apply( CursorContext.NULL_CONTEXT );
         } ), 1 );
         race.goUnchecked();
         return sentUpdates;

@@ -48,7 +48,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
@@ -99,7 +99,7 @@ class CountsStoreRecoveryTest
         NeoStores neoStores = ((GraphDatabaseAPI) db).getDependencyResolver()
                 .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        metaDataStore.flush( NULL );
+        metaDataStore.flush( NULL_CONTEXT );
     }
 
     private void checkPoint() throws IOException

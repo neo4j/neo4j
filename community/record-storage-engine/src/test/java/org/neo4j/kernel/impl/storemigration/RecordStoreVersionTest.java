@@ -36,7 +36,6 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
@@ -51,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 
@@ -89,7 +88,7 @@ class RecordStoreVersionTest
 
         boolean storeFilesUpgradable( RecordStoreVersionCheck check )
         {
-            return check.checkUpgrade( check.configuredVersion(), NULL ).outcome().isSuccessful();
+            return check.checkUpgrade( check.configuredVersion(), NULL_CONTEXT ).outcome().isSuccessful();
         }
 
         @Test
@@ -111,7 +110,7 @@ class RecordStoreVersionTest
             // given
             final RecordStoreVersionCheck check = getVersionCheck();
             // when
-            Optional<String> version = check.storeVersion( NULL );
+            Optional<String> version = check.storeVersion( NULL_CONTEXT );
             assertTrue( version.isPresent() );
             assertNotEquals( version.get(), check.configuredVersion() );
         }
@@ -134,7 +133,7 @@ class RecordStoreVersionTest
         changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore(), version );
         Path metadataStore = databaseLayout.metadataStore();
         MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, org.neo4j.storageengine.api.StoreVersion.versionStringToLong( version ),
-                databaseLayout.getDatabaseName(), NULL );
+                databaseLayout.getDatabaseName(), NULL_CONTEXT );
     }
 
     @ParameterizedTest
@@ -146,7 +145,7 @@ class RecordStoreVersionTest
             final RecordStoreVersionCheck check = getVersionCheck();
 
             // when
-            Optional<String> storeVersion = check.storeVersion( NULL );
+            Optional<String> storeVersion = check.storeVersion( NULL_CONTEXT );
             assertTrue( storeVersion.isPresent() );
             boolean currentVersion = storeVersion.get().equals( check.configuredVersion() );
 
@@ -164,7 +163,7 @@ class RecordStoreVersionTest
         final RecordStoreVersionCheck check = getVersionCheck();
 
         // when
-        StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion(), NULL );
+        StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion(), NULL_CONTEXT );
         assertFalse( result.outcome().isSuccessful() );
         assertSame( StoreVersionCheck.Outcome.unexpectedStoreVersion, result.outcome() );
     }

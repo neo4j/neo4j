@@ -39,6 +39,7 @@ import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @EphemeralPageCacheExtension
 @ExtendWith( RandomExtension.class )
@@ -61,7 +62,7 @@ class GBPTreeManySmallEntriesIT
         {
             // given
             int count = 10_000;
-            try ( Writer<MutableShort, Void> writer = tree.writer( CursorContext.NULL ) )
+            try ( Writer<MutableShort, Void> writer = tree.writer( NULL_CONTEXT ) )
             {
                 for ( int i = 0; i < count; i++ )
                 {
@@ -81,7 +82,7 @@ class GBPTreeManySmallEntriesIT
             }
 
             // when/then
-            try ( Seeker<MutableShort,Void> seeker = tree.seek( new MutableShort( Short.MIN_VALUE ), new MutableShort( Short.MAX_VALUE ), CursorContext.NULL ) )
+            try ( Seeker<MutableShort,Void> seeker = tree.seek( new MutableShort( Short.MIN_VALUE ), new MutableShort( Short.MAX_VALUE ), NULL_CONTEXT ) )
             {
                 expected.sort( Comparator.naturalOrder() );
                 for ( MutableShort key : expected )

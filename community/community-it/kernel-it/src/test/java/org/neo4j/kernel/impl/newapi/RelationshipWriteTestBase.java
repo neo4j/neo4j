@@ -438,8 +438,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // Then
         transaction( ktx ->
         {
-            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL );
-                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL_CONTEXT );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
             {
                 ktx.dataRead().singleRelationship( relationship, relationshipCursor );
                 relationshipCursor.next();
@@ -468,8 +468,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // Then
         transaction( ktx ->
         {
-            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL );
-                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL_CONTEXT );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
             {
                 ktx.dataRead().singleRelationship( relationship, relationshipCursor );
                 relationshipCursor.next();
@@ -497,8 +497,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // Then
         transaction( ktx ->
         {
-            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL );
-                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL_CONTEXT );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
             {
                 ktx.dataRead().singleRelationship( relationship, relationshipCursor );
                 relationshipCursor.next();
@@ -565,8 +565,8 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         } );
         transaction( ktx ->
         {
-            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL );
-                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ) )
+            try ( var relationshipCursor = cursorFactory( ktx ).allocateRelationshipScanCursor( CursorContext.NULL_CONTEXT );
+                  var propertyCursor = cursorFactory( ktx ).allocatePropertyCursor( CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
             {
                 ktx.dataRead().singleRelationship( relationship, relationshipCursor );
                 assertThat( relationshipCursor.next() ).isTrue();

@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.randomharness.Command.FlushCache;
 import static org.neo4j.io.pagecache.randomharness.Command.FlushFile;
 import static org.neo4j.io.pagecache.randomharness.Command.MapFile;
@@ -102,7 +102,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             {
                 Path file = filesTouched.iterator().next();
                 try ( PagedFile pf = cache.map( file, cache.pageSize(), DEFAULT_DATABASE_NAME );
-                      PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+                      PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
                 {
                     for ( int pageId = 0; pageId < filePageCount; pageId++ )
                     {
@@ -195,7 +195,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             for ( Path file : filesTouched )
             {
                 try ( PagedFile pf = cache.map( file, cache.pageSize(), DEFAULT_DATABASE_NAME );
-                      PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+                      PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
                 {
                     for ( int pageId = 0; pageId < filePageCount && cursor.next(); pageId++ )
                     {

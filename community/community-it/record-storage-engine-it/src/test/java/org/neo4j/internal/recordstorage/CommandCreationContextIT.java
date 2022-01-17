@@ -54,7 +54,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleCreate;
 import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -114,10 +114,10 @@ public class CommandCreationContextIT
     {
         var memoryTracker = new LocalMemoryTracker();
         try ( var commandCreationContext = storageEngine.newCommandCreationContext( memoryTracker );
-              var storeCursors = storageEngine.createStorageCursors( NULL ) )
+              var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
         {
             var integrityValidator = mock( IntegrityValidator.class );
-            commandCreationContext.initialize( NULL, storeCursors );
+            commandCreationContext.initialize( NULL_CONTEXT, storeCursors );
             var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE, LockTracer.NONE,
                     LATEST_LOG_SERIALIZATION, RecordAccess.LoadMonitor.NULL_MONITOR );
             long heapBefore = memoryTracker.estimatedHeapMemory();
@@ -175,11 +175,11 @@ public class CommandCreationContextIT
 
     private static void prepareIdGenerator( IdGenerator idGenerator )
     {
-        try ( var marker = idGenerator.marker( NULL ) )
+        try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
         {
             marker.markDeleted( 1L );
         }
-        idGenerator.clearCache( NULL );
+        idGenerator.clearCache( NULL_CONTEXT );
     }
 
     private static class ContextHolder

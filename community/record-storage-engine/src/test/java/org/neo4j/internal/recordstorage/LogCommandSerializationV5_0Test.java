@@ -43,7 +43,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
@@ -135,7 +135,7 @@ public class LogCommandSerializationV5_0Test extends LogCommandSerializationV4_3
         if ( record.inUse() )
         {
             PropertyBlock block = new PropertyBlock();
-            PropertyStore.encodeValue( block, random.nextInt( 1000 ), Values.of( 123 ), null, null, NULL, INSTANCE );
+            PropertyStore.encodeValue( block, random.nextInt( 1000 ), Values.of( 123 ), null, null, NULL_CONTEXT, INSTANCE );
             record.addPropertyBlock( block );
         }
         if ( random.nextBoolean() )

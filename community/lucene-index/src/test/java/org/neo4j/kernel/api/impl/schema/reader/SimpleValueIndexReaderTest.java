@@ -31,12 +31,14 @@ import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -57,8 +59,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class SimpleValueIndexReaderTest
@@ -141,7 +141,7 @@ class SimpleValueIndexReaderTest
     {
         var simpleIndexReader = getUniqueSimpleReader();
 
-        simpleIndexReader.countIndexedEntities( 2, NULL, new int[] {3}, Values.of( "testValue" ) );
+        simpleIndexReader.countIndexedEntities( 2, CursorContext.NULL_CONTEXT, new int[] {3}, Values.of( "testValue" ) );
 
         verify( indexSearcher ).search( any( BooleanQuery.class ), any( TotalHitCountCollector.class ) );
     }
@@ -162,7 +162,7 @@ class SimpleValueIndexReaderTest
 
     private static void doQuery( ValueIndexReader reader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
     {
-        reader.query( new NodeValueIterator(), NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query );
+        reader.query( new NodeValueIterator(), QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query );
     }
 
     private SimpleValueIndexReader getNonUniqueSimpleReader()

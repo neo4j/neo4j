@@ -28,11 +28,13 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
@@ -53,8 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 
@@ -89,7 +89,7 @@ class LuceneSchemaIndexPopulationIT
             try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex, descriptor, SIMPLE_TOKEN_LOOKUP, UPDATE_IGNORE_STRATEGY ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
-                indexAccessor.force( NULL );
+                indexAccessor.force( CursorContext.NULL_CONTEXT );
 
                 // now index is online and should contain updates data
                 assertTrue( uniqueIndex.isOnline() );
@@ -98,11 +98,11 @@ class LuceneSchemaIndexPopulationIT
                       NodeValueIterator results = new NodeValueIterator();
                       IndexSampler indexSampler = indexReader.createSampler() )
                 {
-                    indexReader.query( results, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exists( 1 ) );
+                    indexReader.query( results, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exists( 1 ) );
                     long[] nodes = PrimitiveLongCollections.asArray( results );
                     assertEquals( affectedNodes, nodes.length );
 
-                    IndexSample sample = indexSampler.sampleIndex( NULL );
+                    IndexSample sample = indexSampler.sampleIndex( CursorContext.NULL_CONTEXT );
                     assertEquals( affectedNodes, sample.indexSize() );
                     assertEquals( affectedNodes, sample.uniqueValues() );
                     assertEquals( affectedNodes, sample.sampleSize() );
@@ -113,7 +113,7 @@ class LuceneSchemaIndexPopulationIT
 
     private void generateUpdates( LuceneIndexAccessor indexAccessor, int nodesToUpdate ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = indexAccessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
         {
             for ( int nodeId = 0; nodeId < nodesToUpdate; nodeId++ )
             {

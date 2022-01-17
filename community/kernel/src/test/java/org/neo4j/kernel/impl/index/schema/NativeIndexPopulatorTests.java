@@ -41,7 +41,7 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
@@ -103,11 +103,11 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
 
         // when
-        populator.add( asList( updates ), NULL );
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+        populator.add( asList( updates ), NULL_CONTEXT );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
 
         // then
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
         valueUtil.verifyUpdates( updates, this::getTree );
     }
 
@@ -117,7 +117,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         // given
         populator.create();
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
         {
             // when
             for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
@@ -127,8 +127,8 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         }
 
         // then
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+        populator.close( true, NULL_CONTEXT );
         valueUtil.verifyUpdates( updates, this::getTree );
     }
 
@@ -137,13 +137,13 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
     {
         // given
         populator.create();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL );
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT );
 
         // when
         updater.close();
 
         assertThrows( IllegalStateException.class, () -> updater.process( valueCreatorUtil.add( 1, Values.of( Long.MAX_VALUE ) ) ) );
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
     }
 
     @Test
@@ -157,8 +157,8 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         applyInterleaved( updates, populator );
 
         // then
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+        populator.close( true, NULL_CONTEXT );
         valueUtil.verifyUpdates( updates, this::getTree );
     }
 
@@ -175,8 +175,8 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
 
         // then
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+        populator.close( true, NULL_CONTEXT );
         random.reset();
         verifyUpdates( valueCreatorUtil.randomUpdateGenerator( random ), count );
     }
@@ -198,7 +198,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
     {
         boolean useUpdater = true;
         Collection<IndexEntryUpdate<IndexDescriptor>> populatorBatch = new ArrayList<>();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL );
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT );
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             if ( random.nextInt( 100 ) < 20 )
@@ -210,8 +210,8 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
                 }
                 else
                 {
-                    populator.add( populatorBatch, NULL );
-                    updater = populator.newPopulatingUpdater( null_property_accessor, NULL );
+                    populator.add( populatorBatch, NULL_CONTEXT );
+                    updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT );
                 }
                 useUpdater = !useUpdater;
             }
@@ -230,7 +230,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         }
         else
         {
-            populator.add( populatorBatch, NULL );
+            populator.add( populatorBatch, NULL_CONTEXT );
         }
     }
 
@@ -242,7 +242,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         {
             if ( updaterRandom.nextFloat() < 0.1 )
             {
-                try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
+                try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
                 {
                     int numberOfUpdaterUpdates = updaterRandom.nextInt( 100 );
                     for ( int j = 0; j < numberOfUpdaterUpdates; j++ )
@@ -252,7 +252,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
                     }
                 }
             }
-            populator.add( Collections.singletonList( updates.next() ), NULL );
+            populator.add( Collections.singletonList( updates.next() ), NULL_CONTEXT );
             count++;
         }
         return count;

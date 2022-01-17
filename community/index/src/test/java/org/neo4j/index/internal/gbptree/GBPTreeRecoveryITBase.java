@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.PageCache.RESERVED_BYTES;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @EphemeralTestDirectoryExtension
@@ -104,7 +104,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         {
             try ( PageCache pageCache = createPageCache();
                   GBPTree<KEY,VALUE> index = createIndex( pageCache, file );
-                  Writer<KEY,VALUE> writer = index.writer( NULL ) )
+                  Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 writer.put( key, value );
                 pageCache.flushAndForce();
@@ -116,17 +116,17 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         try ( PageCache pageCache = createPageCache();
               GBPTree<KEY,VALUE> index = createIndex( pageCache, file ) )
         {
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 writer.put( key, value );
             }
 
             // THEN
             // we should end up with a consistent index
-            index.consistencyCheck( NULL );
+            index.consistencyCheck( NULL_CONTEXT );
 
             // ... containing all the stuff load says
-            try ( Seeker<KEY,VALUE> cursor = index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ), NULL ) )
+            try ( Seeker<KEY,VALUE> cursor = index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ), NULL_CONTEXT ) )
             {
                 assertTrue( cursor.next() );
                 assertEqualsKey( key, cursor.key() );
@@ -250,9 +250,9 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 
             // THEN
             // we should end up with a consistent index containing all the stuff load says
-            index.consistencyCheck( NULL );
+            index.consistencyCheck( NULL_CONTEXT );
             long[/*key,value,key,value...*/] aggregate = expectedSortedAggregatedDataFromGeneratedLoad( load );
-            try ( Seeker<KEY,VALUE> cursor = index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ), NULL ) )
+            try ( Seeker<KEY,VALUE> cursor = index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ), NULL_CONTEXT ) )
             {
                 for ( int i = 0; i < aggregate.length; )
                 {
@@ -537,7 +537,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         @Override
         public void execute( GBPTree<KEY,VALUE> index ) throws IOException
         {
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 for ( int i = 0; i < data.length; )
                 {
@@ -563,7 +563,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         @Override
         public void execute( GBPTree<KEY,VALUE> index ) throws IOException
         {
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 for ( int i = 0; i < data.length; )
                 {
@@ -591,7 +591,7 @@ abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         @Override
         public void execute( GBPTree<KEY,VALUE> index ) throws IOException
         {
-            index.checkpoint( NULL );
+            index.checkpoint( NULL_CONTEXT );
         }
 
         @Override

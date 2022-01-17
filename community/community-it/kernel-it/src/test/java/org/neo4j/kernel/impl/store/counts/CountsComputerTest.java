@@ -78,7 +78,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
@@ -153,9 +153,9 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore( matchingBuilder( lastCommittedTransactionId ) ) )
         {
-            store.start( NULL, StoreCursors.NULL, INSTANCE );
+            store.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
-            store.accept( new AssertEmptyCountStoreVisitor(), NULL );
+            store.accept( new AssertEmptyCountStoreVisitor(), NULL_CONTEXT );
         }
 
         softly.assertThat( progressReporter.isCompleteInvoked() ).as( "Complete" ).isTrue();
@@ -174,9 +174,9 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore( matchingBuilder( lastCommittedTransactionId ) ) )
         {
-            store.start( NULL, StoreCursors.NULL, INSTANCE );
+            store.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
-            store.accept( new AssertEmptyCountStoreVisitor(), NULL );
+            store.accept( new AssertEmptyCountStoreVisitor(), NULL_CONTEXT );
         }
     }
 
@@ -210,11 +210,11 @@ class CountsComputerTest
         {
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
 
-            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length );
-            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()" ).isEqualTo( nodes.length );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL_CONTEXT ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL_CONTEXT ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL_CONTEXT ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL_CONTEXT ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
         }
     }
 
@@ -249,11 +249,11 @@ class CountsComputerTest
         {
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
 
-            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length - 1 );
-            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 0 );
-            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()" ).isEqualTo( nodes.length - 1 );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL_CONTEXT ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL_CONTEXT ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL_CONTEXT ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 0 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL_CONTEXT ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
         }
     }
 
@@ -294,15 +294,18 @@ class CountsComputerTest
         {
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
 
-            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length );
-            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 0 );
-            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()" ).isEqualTo( nodes.length );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL_CONTEXT ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL_CONTEXT ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL_CONTEXT ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 0 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL_CONTEXT ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
 
-            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL ) ).as( "()-[]->()" ).isEqualTo( rels.length - 1 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[0] ).isEqualTo( 0 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[1] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL_CONTEXT ) ).as( "()-[]->()" ).isEqualTo(
+                    rels.length - 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[0] ).isEqualTo( 0 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[1] ).isEqualTo( 1 );
         }
     }
 
@@ -344,19 +347,23 @@ class CountsComputerTest
         {
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
 
-            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length );
-            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()" ).isEqualTo( nodes.length );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL_CONTEXT ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL_CONTEXT ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL_CONTEXT ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL_CONTEXT ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
 
-            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL ) ).as( "()-[]->()" ).isEqualTo( rels.length );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[0] ).isEqualTo( 1 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[1] ).isEqualTo( 1 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[2], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[2] ).isEqualTo( 0 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], labelIds[1], NULL ) )
+            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL_CONTEXT ) ).as( "()-[]->()" ).isEqualTo(
+                    rels.length );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[0] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[1] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[2], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[2] ).isEqualTo( 0 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], labelIds[1], NULL_CONTEXT ) )
                   .as( "count: ()-[:%s]->(:%s)", relTypes[1], labels[1] ).isEqualTo( 1 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], labelIds[1], NULL ) )
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], labelIds[1], NULL_CONTEXT ) )
                   .as( "count: ()-[:%s]->(:%s)", relTypes[0], labels[1] ).isEqualTo( 0 );
         }
     }
@@ -400,23 +407,29 @@ class CountsComputerTest
         {
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
 
-            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length );
-            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 1 );
-            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()" ).isEqualTo( nodes.length );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL_CONTEXT ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL_CONTEXT ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL_CONTEXT ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL_CONTEXT ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
 
-            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL ) ).as( "()-[]->()" ).isEqualTo( rels.length );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[0] ).isEqualTo( 1 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[1] ).isEqualTo( 1 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[2], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[2] ).isEqualTo( 1 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[3], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[3] ).isEqualTo( 1 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[4], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[4] ).isEqualTo( 0 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], labelIds[1], NULL ) )
+            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL_CONTEXT ) ).as( "()-[]->()" ).isEqualTo(
+                    rels.length );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[0] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[1] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[2], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[2] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[3], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[3] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[4], ANY_LABEL, NULL_CONTEXT ) ).as( "count: ()-[:%s]->()",
+                    relTypes[4] ).isEqualTo( 0 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], labelIds[1], NULL_CONTEXT ) )
                   .as( "count: ()-[:%s]->(:%s)", relTypes[1], labels[1] ).isEqualTo( 1 );
-            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, labelIds[1], NULL ) )
+            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, labelIds[1], NULL_CONTEXT ) )
                   .as( "count: ()-[]->(:%s)", labels[1] ).isEqualTo( 2 );
-            softly.assertThat( store.relationshipCount( labelIds[0], ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL ) )
+            softly.assertThat( store.relationshipCount( labelIds[0], ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL_CONTEXT ) )
                   .as( "count: (:%s)-[]->()", labels[0] ).isEqualTo( 3 );
         }
     }
@@ -489,7 +502,7 @@ class CountsComputerTest
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder ) throws IOException
     {
         return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(), builder, writable(), PageCacheTracer.NULL,
-                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000, NullLogProvider.getInstance(), NULL );
+                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000, NullLogProvider.getInstance(), NULL_CONTEXT );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
@@ -515,8 +528,8 @@ class CountsComputerTest
                     highRelationshipTypeId, NumberArrayFactories.AUTO_WITHOUT_PAGECACHE, databaseLayout, progressReporter, PageCacheTracer.NULL, INSTANCE );
             try ( GBPTreeCountsStore countsStore = createCountsStore( countsComputer ) )
             {
-                countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
-                countsStore.checkpoint( NULL );
+                countsStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
+                countsStore.checkpoint( NULL_CONTEXT );
             }
             catch ( IOException e )
             {

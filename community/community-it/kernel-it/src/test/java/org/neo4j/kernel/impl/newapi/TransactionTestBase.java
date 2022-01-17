@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
@@ -244,7 +244,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
     private static void assertNoNode( long nodeId ) throws TransactionFailureException
     {
         try ( KernelTransaction tx = beginTransaction();
-                NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL ) )
+                NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL_CONTEXT ) )
         {
             tx.dataRead().singleNode( nodeId, cursor );
             assertFalse( cursor.next() );
@@ -254,7 +254,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
     private static void assertNodeExists( long nodeId ) throws TransactionFailureException
     {
         try ( KernelTransaction tx = beginTransaction();
-                NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL ) )
+                NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL_CONTEXT ) )
         {
             tx.dataRead().singleNode( nodeId, cursor );
             assertTrue( cursor.next() );

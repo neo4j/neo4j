@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -67,7 +67,7 @@ class IndexTransactionApplierFactoryTest
         final SchemaCache mock = mock( SchemaCache.class );
         when( mock.indexForSchemaAndType( any(), any() ) ).thenReturn( IndexDescriptor.INJECTED_NLI );
         try ( var batchContext = new BatchContextImpl( indexUpdateListener, indexUpdatesSync,
-                mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock, NULL, INSTANCE,
+                mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock, NULL_CONTEXT, INSTANCE,
                 mock( IdUpdateListener.class ), StoreCursors.NULL ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( StoreCursors.NULL ), batchContext ) )
@@ -142,7 +142,7 @@ class IndexTransactionApplierFactoryTest
     private static NodeCommand node( long nodeId )
     {
         NodeRecord after = new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 0 );
-        NodeLabelsField.parseLabelsField( after ).add( 1, null, null, NULL, StoreCursors.NULL, INSTANCE );
+        NodeLabelsField.parseLabelsField( after ).add( 1, null, null, NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
 
         return new NodeCommand( new NodeRecord( nodeId ), after );
     }

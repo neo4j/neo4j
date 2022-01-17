@@ -223,7 +223,7 @@ public class RecordStorageEngineSupport
             super( databaseLayout, config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState, constraintSemantics,
                     indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(),
                     PageCacheTracer.NULL, true, EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(),
-                    CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, CursorContext.NULL );
+                    CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, CursorContext.NULL_CONTEXT );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

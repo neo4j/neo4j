@@ -80,7 +80,7 @@ class IndexPopulationTest
             multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL ).run( StoreScan.NO_EXTERNAL_UPDATES );
 
             // when
-            indexPopulation.flip( false, CursorContext.NULL );
+            indexPopulation.flip( false, CursorContext.NULL_CONTEXT );
 
             // then
             assertSame( InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy" );

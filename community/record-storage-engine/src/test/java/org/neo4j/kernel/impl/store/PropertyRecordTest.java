@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class PropertyRecordTest
@@ -133,7 +133,7 @@ class PropertyRecordTest
     private static void addBlock( PropertyRecord record, int key, int value )
     {
         PropertyBlock block = new PropertyBlock();
-        PropertyStore.encodeValue( block, key, Values.of( value ), null, null, NULL, INSTANCE );
+        PropertyStore.encodeValue( block, key, Values.of( value ), null, null, NULL_CONTEXT, INSTANCE );
         for ( long valueBlock : block.getValueBlocks() )
         {
             record.addLoadedBlock( valueBlock );

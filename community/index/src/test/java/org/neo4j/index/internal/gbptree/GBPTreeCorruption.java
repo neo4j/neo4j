@@ -32,7 +32,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
 import static org.neo4j.index.internal.gbptree.TreeNode.goTo;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 /**
  * Use together with {@link GBPTree#unsafe(GBPTreeUnsafe, CursorContext)}
@@ -150,15 +150,15 @@ public final class GBPTreeCorruption
             // Record key and value on higher position
             KEY key = layout.newKey();
             VALUE value = layout.newValue();
-            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.LEAF, NULL );
-            node.valueAt( cursor, value, higherKeyPos, NULL );
+            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.LEAF, NULL_CONTEXT );
+            node.valueAt( cursor, value, higherKeyPos, NULL_CONTEXT );
 
             // Remove key and value, may need to defragment node to make sure we have room for insert later
-            node.removeKeyValueAt( cursor, higherKeyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL );
+            node.removeKeyValueAt( cursor, higherKeyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL_CONTEXT );
             node.defragmentLeaf( cursor );
 
             // Insert key and value in lower position
-            node.insertKeyValueAt( cursor, key, value, lowerKeyPos, keyCount - 1, treeState.stableGeneration(), treeState.unstableGeneration(), NULL );
+            node.insertKeyValueAt( cursor, key, value, lowerKeyPos, keyCount - 1, treeState.stableGeneration(), treeState.unstableGeneration(), NULL_CONTEXT );
         };
     }
 
@@ -171,17 +171,17 @@ public final class GBPTreeCorruption
 
             // Record key and right child on higher position together with generation of child pointer
             KEY key = layout.newKey();
-            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.INTERNAL, NULL );
+            node.keyAt( cursor, key, higherKeyPos, TreeNode.Type.INTERNAL, NULL_CONTEXT );
             final GenerationKeeper childPointerGeneration = new GenerationKeeper();
             long rightChild = node.childAt( cursor, higherKeyPos + 1, treeState.stableGeneration(), treeState.unstableGeneration(), childPointerGeneration );
 
             // Remove key and right child, may need to defragment node to make sure we have room for insert later
-            node.removeKeyAndRightChildAt( cursor, higherKeyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL );
+            node.removeKeyAndRightChildAt( cursor, higherKeyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL_CONTEXT );
             node.defragmentLeaf( cursor );
 
             // Insert key and right child in lower position
             node.insertKeyAndRightChildAt( cursor, key, rightChild, lowerKeyPos, keyCount - 1, treeState.stableGeneration(),
-                    treeState.unstableGeneration(), NULL );
+                    treeState.unstableGeneration(), NULL_CONTEXT );
 
             // Overwrite the newly inserted child to reset the generation
             final int childOffset = node.childOffset( lowerKeyPos + 1 );
@@ -209,16 +209,16 @@ public final class GBPTreeCorruption
         return ( cursor, layout, node, treeState ) -> {
             // Record value so that we can reinsert it together with key later
             VALUE value = layout.newValue();
-            node.valueAt( cursor, value, keyPos, NULL );
+            node.valueAt( cursor, value, keyPos, NULL_CONTEXT );
 
             // Remove key and value, may need to defragment node to make sure we have room for insert later
-            node.removeKeyValueAt( cursor, keyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL );
+            node.removeKeyValueAt( cursor, keyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL_CONTEXT );
             TreeNode.setKeyCount( cursor, keyCount - 1 );
             node.defragmentLeaf( cursor );
 
             // Insert new key and value
             node.insertKeyValueAt( cursor, key, value, keyPos, keyCount - 1, treeState.stableGeneration(),
-                    treeState.unstableGeneration(), NULL );
+                    treeState.unstableGeneration(), NULL_CONTEXT );
             TreeNode.setKeyCount( cursor, keyCount );
         };
     }
@@ -230,13 +230,13 @@ public final class GBPTreeCorruption
             long rightChild = node.childAt( cursor, keyPos + 1, treeState.stableGeneration(), treeState.unstableGeneration() );
 
             // Remove key and right child, may need to defragment node to make sure we have room for insert later
-            node.removeKeyAndRightChildAt( cursor, keyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL );
+            node.removeKeyAndRightChildAt( cursor, keyPos, keyCount, treeState.stableGeneration(), treeState.unstableGeneration(), NULL_CONTEXT );
             TreeNode.setKeyCount( cursor, keyCount - 1 );
             node.defragmentInternal( cursor );
 
             // Insert key and right child
             node.insertKeyAndRightChildAt( cursor, key, rightChild, keyPos, keyCount - 1, treeState.stableGeneration(),
-                    treeState.unstableGeneration(), NULL );
+                    treeState.unstableGeneration(), NULL_CONTEXT );
             TreeNode.setKeyCount( cursor, keyCount );
         };
     }
@@ -278,7 +278,7 @@ public final class GBPTreeCorruption
     public static <KEY,VALUE> IndexCorruption<KEY,VALUE> decrementFreelistWritePos()
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 goTo( cursor, "", treeState.pageId() );
                 int decrementedWritePos = treeState.freeListWritePos() - 1;
@@ -293,9 +293,9 @@ public final class GBPTreeCorruption
     {
         return ( pagedFile, layout, node, treeState ) -> {
             FreeListIdProvider freelist = getFreelist( pagedFile, treeState );
-            freelist.releaseId( treeState.stableGeneration(), treeState.unstableGeneration(), releasedId, NULL );
-            freelist.flush( treeState.stableGeneration(), treeState.unstableGeneration(), NULL );
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+            freelist.releaseId( treeState.stableGeneration(), treeState.unstableGeneration(), releasedId, NULL_CONTEXT );
+            freelist.flush( treeState.stableGeneration(), treeState.unstableGeneration(), NULL_CONTEXT );
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 goTo( cursor, "", treeState.pageId() );
                 FreeListIdProvider.FreelistMetaData freelistMetaData = freelist.metaData();
@@ -309,7 +309,7 @@ public final class GBPTreeCorruption
     public static <KEY,VALUE> IndexCorruption<KEY,VALUE> setTreeState( TreeState target )
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 goTo( cursor, "", treeState.pageId() ); // Write new tree state to current tree states page
                 TreeState.write( cursor, target.stableGeneration(), target.unstableGeneration(), target.rootId(), target.rootGeneration(), target.lastId(),
@@ -322,7 +322,7 @@ public final class GBPTreeCorruption
             int otherChildPos )
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 goTo( cursor, "", otherInternalNode );
                 final GenerationKeeper generationKeeper = new GenerationKeeper();
@@ -356,7 +356,7 @@ public final class GBPTreeCorruption
     public static <KEY, VALUE> IndexCorruption<KEY,VALUE> pageSpecificCorruption( long targetPage, PageCorruption<KEY,VALUE> corruption )
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 goTo( cursor, "", targetPage );
                 corruption.corrupt( cursor, layout, node, treeState );
@@ -367,7 +367,7 @@ public final class GBPTreeCorruption
     public static <KEY,VALUE> IndexCorruption<KEY,VALUE> makeDirty()
     {
         return ( pagedFile, layout, node, treeState ) -> {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 goTo( cursor, "", treeState.pageId() );
                 // Need to also bump generations here otherwise both tree states will be identical which is an illegal state to be in.

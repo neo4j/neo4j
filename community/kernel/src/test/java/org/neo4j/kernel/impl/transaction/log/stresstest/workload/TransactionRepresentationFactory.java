@@ -31,7 +31,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class TransactionRepresentationFactory
 {
@@ -41,7 +41,7 @@ class TransactionRepresentationFactory
     {
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( createRandomCommands() );
         representation.setHeader( new byte[0], currentTimeMillis(), txId, currentTimeMillis(), 42, ANONYMOUS );
-        return new TransactionToApply( representation, NULL, StoreCursors.NULL );
+        return new TransactionToApply( representation, NULL_CONTEXT, StoreCursors.NULL );
     }
 
     private List<StorageCommand> createRandomCommands()

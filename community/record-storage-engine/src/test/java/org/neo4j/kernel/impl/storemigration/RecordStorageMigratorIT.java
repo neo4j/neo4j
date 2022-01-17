@@ -89,7 +89,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -202,7 +202,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         assertThat( testDirectory.getFileSystem().fileExists( databaseLayout.relationshipGroupDegreesStore() ) ).isTrue();
-        CursorContext cursorContext = NULL;
+        CursorContext cursorContext = NULL_CONTEXT;
         GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder noRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
         {
             @Override
@@ -362,7 +362,7 @@ class RecordStorageMigratorIT
                 new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, NullLogProvider.getInstance(),
                 PageCacheTracer.NULL, writable() ).openNeoStores( StoreType.META_DATA ) )
         {
-            neoStores.start( NULL );
+            neoStores.start( NULL_CONTEXT );
             assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( 0 );
         }
     }
@@ -382,7 +382,7 @@ class RecordStorageMigratorIT
         // explicitly set a checkpoint log version into the meta data store
         long checkpointLogVersion = 4;
         MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), CHECKPOINT_LOG_VERSION, checkpointLogVersion, databaseLayout.getDatabaseName(),
-                NULL );
+                NULL_CONTEXT );
 
         // when
         RecordStorageMigrator migrator =
@@ -399,7 +399,7 @@ class RecordStorageMigratorIT
                 new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, NullLogProvider.getInstance(),
                 PageCacheTracer.NULL, writable() ).openNeoStores( StoreType.META_DATA ) )
         {
-            neoStores.start( NULL );
+            neoStores.start( NULL_CONTEXT );
             assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( checkpointLogVersion );
         }
     }
@@ -415,33 +415,33 @@ class RecordStorageMigratorIT
         for ( int i = 1; i <= tokenCount; i++ )
         {
             String name = prefix + i;
-            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ), NULL, INSTANCE );
+            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ), NULL_CONTEXT, INSTANCE );
             record.setNameId( (int) Iterables.first( nameRecords ).getId() );
             record.addNameRecords( nameRecords );
-            record.setId( tokenStore.nextId( NULL ) );
+            record.setId( tokenStore.nextId( NULL_CONTEXT ) );
             long maxId = 0;
-            try ( var nameCursor = nameStore.openPageCursorForWriting( 0, NULL ) )
+            try ( var nameCursor = nameStore.openPageCursorForWriting( 0, NULL_CONTEXT ) )
             {
                 for ( DynamicRecord nameRecord : nameRecords )
                 {
-                    nameStore.updateRecord( nameRecord, nameCursor, NULL, storeCursors );
+                    nameStore.updateRecord( nameRecord, nameCursor, NULL_CONTEXT, storeCursors );
                     maxId = Math.max( nameRecord.getId(), maxId );
                 }
             }
-            nameStore.setHighestPossibleIdInUse( Math.max( maxId, nameStore.getHighestPossibleIdInUse( NULL ) ) );
-            try ( var tokenCursor = tokenStore.openPageCursorForWriting( 0, NULL ) )
+            nameStore.setHighestPossibleIdInUse( Math.max( maxId, nameStore.getHighestPossibleIdInUse( NULL_CONTEXT ) ) );
+            try ( var tokenCursor = tokenStore.openPageCursorForWriting( 0, NULL_CONTEXT ) )
             {
-                tokenStore.updateRecord( record, tokenCursor, NULL, storeCursors );
+                tokenStore.updateRecord( record, tokenCursor, NULL_CONTEXT, storeCursors );
             }
-            tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse( NULL ) ) );
+            tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse( NULL_CONTEXT ) ) );
         }
-        nameStore.flush( NULL );
-        tokenStore.flush( NULL );
+        nameStore.flush( NULL_CONTEXT );
+        tokenStore.flush( NULL_CONTEXT );
     }
 
     private static String getVersionToMigrateFrom( RecordStoreVersionCheck check )
     {
-        StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion(), NULL );
+        StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion(), NULL_CONTEXT );
         assertTrue( result.outcome().isSuccessful() );
         return result.actualVersion();
     }

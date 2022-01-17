@@ -49,7 +49,7 @@ import org.neo4j.test.utils.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
@@ -76,7 +76,7 @@ class RecordNodeCursorIT
                 new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), "db" ), pageCache, directory.getFileSystem(),
                 NullLogProvider.getInstance(), PageCacheTracer.NULL, DatabaseReadOnlyChecker.writable() ).openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
-        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
 
     @AfterEach
@@ -95,7 +95,7 @@ class RecordNodeCursorIT
 
         // then
         try ( RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null,
-                NULL, storeCursors ) )
+                NULL_CONTEXT, storeCursors ) )
         {
             nodeCursor.single( nodeId );
             assertThat( nodeCursor.next() ).isTrue();
@@ -112,13 +112,13 @@ class RecordNodeCursorIT
     {
         long[] labels = randomLabels( labelsSet );
         NodeRecord nodeRecord = nodeStore.newRecord();
-        nodeRecord.setId( nodeStore.nextId( NULL ) );
+        nodeRecord.setId( nodeStore.nextId( NULL_CONTEXT ) );
         nodeRecord.initialize( true, Record.NO_NEXT_PROPERTY.longValue(), false, Record.NO_NEXT_RELATIONSHIP.longValue(), Record.NO_LABELS_FIELD.longValue() );
         nodeRecord.setCreated();
-        NodeLabelsField.parseLabelsField( nodeRecord ).put( labels, nodeStore, nodeStore.getDynamicLabelStore(), NULL, storeCursors, INSTANCE );
+        NodeLabelsField.parseLabelsField( nodeRecord ).put( labels, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, storeCursors, INSTANCE );
         try ( var writeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            nodeStore.updateRecord( nodeRecord, writeCursor, NULL, storeCursors );
+            nodeStore.updateRecord( nodeRecord, writeCursor, NULL_CONTEXT, storeCursors );
         }
         return nodeRecord.getId();
     }

@@ -101,7 +101,7 @@ class GBPTreeBootstrapperTest
 
         try ( GBPTree<MutableLong,MutableLong> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
-            tree.checkpoint( CursorContext.NULL );
+            tree.checkpoint( CursorContext.NULL_CONTEXT );
         }
         ZipUtils.zip( dir.getFileSystem(), storeFile, zipFile );
         fail( String.format( "Zip file created with store. Copy to correct resource using:%nmv \"%s\" \"%s\"",
@@ -118,7 +118,7 @@ class GBPTreeBootstrapperTest
         ZipUtils.unzipResource( getClass(), zipName, storeFile );
 
         LayoutBootstrapper layoutBootstrapper = ( indexFile, pageCache, meta ) -> layout;
-        CursorContext cursorContext = CursorContext.NULL;
+        CursorContext cursorContext = CursorContext.NULL_CONTEXT;
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler();
               GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, scheduler, layoutBootstrapper, readOnly(), PageCacheTracer.NULL ) )
         {

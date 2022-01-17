@@ -42,7 +42,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @Execution( CONCURRENT )
 class DefaultTokenIndexReaderTest
@@ -66,7 +66,7 @@ class DefaultTokenIndexReaderTest
     {
         index = mock( GBPTree.class );
 
-        when( index.seek( any( TokenScanKey.class ), any( TokenScanKey.class ), eq( NULL ) ) )
+        when( index.seek( any( TokenScanKey.class ), any( TokenScanKey.class ), eq( NULL_CONTEXT ) ) )
                 .thenAnswer( innvocation ->
                         cursor( innvocation.getArgument( 0, TokenScanKey.class ).idRange <= innvocation.getArgument( 1, TokenScanKey.class ).idRange ) );
     }
@@ -93,7 +93,7 @@ class DefaultTokenIndexReaderTest
         // WHEN
         var reader = new DefaultTokenIndexReader( index );
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-        reader.query( tokenClient, unconstrained(), new TokenPredicate( LABEL_ID ), NULL );
+        reader.query( tokenClient, unconstrained(), new TokenPredicate( LABEL_ID ), NULL_CONTEXT );
 
         // THEN
         assertArrayEquals( expected, asArray( tokenClient ) );
@@ -105,7 +105,7 @@ class DefaultTokenIndexReaderTest
         // WHEN
         var reader = new DefaultTokenIndexReader( index );
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-        reader.query( tokenClient, IndexQueryConstraints.constrained( IndexOrder.ASCENDING, false ), new TokenPredicate( LABEL_ID ), NULL );
+        reader.query( tokenClient, IndexQueryConstraints.constrained( IndexOrder.ASCENDING, false ), new TokenPredicate( LABEL_ID ), NULL_CONTEXT );
 
         // THEN
         assertArrayEquals( expected, asArray( tokenClient ) );
@@ -117,7 +117,7 @@ class DefaultTokenIndexReaderTest
         // WHEN
         var reader = new DefaultTokenIndexReader( index );
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-        reader.query( tokenClient, IndexQueryConstraints.constrained( IndexOrder.DESCENDING, false ), new TokenPredicate( LABEL_ID ), NULL );
+        reader.query( tokenClient, IndexQueryConstraints.constrained( IndexOrder.DESCENDING, false ), new TokenPredicate( LABEL_ID ), NULL_CONTEXT );
 
         // THEN
         ArrayUtils.reverse( expected );

@@ -119,7 +119,7 @@ public class PageCacheStresser
         {
             stresser.verifyCounts();
         }
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, CursorContext.NULL ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, CursorContext.NULL_CONTEXT ) )
         {
             while ( cursor.next() )
             {

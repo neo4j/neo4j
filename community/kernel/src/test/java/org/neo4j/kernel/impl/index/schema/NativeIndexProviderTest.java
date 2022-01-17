@@ -44,7 +44,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 class NativeIndexProviderTest extends IndexProviderTests
@@ -71,7 +71,7 @@ class NativeIndexProviderTest extends IndexProviderTests
         // when
         IndexDescriptor descriptor = descriptorUnique();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig(), tokenNameLookup );
-              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.add( 1, descriptor, someValue ) );
 

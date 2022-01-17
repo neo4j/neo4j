@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -544,8 +544,8 @@ class DetachedLogTailScannerTest
             try
             {
                 AtomicLong lastTxId = new AtomicLong();
-                logVersionRepository.setCurrentLogVersion( logVersion, NULL );
-                logVersionRepository.setCheckpointLogVersion( logVersion, NULL );
+                logVersionRepository.setCurrentLogVersion( logVersion, NULL_CONTEXT );
+                logVersionRepository.setCheckpointLogVersion( logVersion, NULL_CONTEXT );
                 LifeSupport logFileLife = new LifeSupport();
                 logFileLife.start();
                 logFileLife.add( logFiles );

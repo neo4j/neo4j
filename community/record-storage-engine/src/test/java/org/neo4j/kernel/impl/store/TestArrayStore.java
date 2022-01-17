@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -138,7 +138,7 @@ class TestArrayStore
     {
         String[] array = new String[] { "first", "second" };
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );
+        arrayStore.allocateRecords( records, array, CursorContext.NULL_CONTEXT, INSTANCE );
         var loaded = loadArray( records );
         assertStringHeader( loaded.header(), array.length );
         ByteBuffer buffer = ByteBuffer.wrap( loaded.data() );
@@ -184,7 +184,7 @@ class TestArrayStore
                             Values.pointValue( CoordinateReferenceSystem.WGS_84, longBitsToDouble( 0x1L ), longBitsToDouble( 0x1L ) )};
 
             Collection<DynamicRecord> records = new ArrayList<>();
-            arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );
+            arrayStore.allocateRecords( records, array, CursorContext.NULL_CONTEXT, INSTANCE );
         } );
     }
 
@@ -199,14 +199,14 @@ class TestArrayStore
                                                longBitsToDouble( 0x4L ) )};
 
             Collection<DynamicRecord> records = new ArrayList<>();
-            arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );
+            arrayStore.allocateRecords( records, array, CursorContext.NULL_CONTEXT, INSTANCE );
         } );
     }
 
     private void assertPointArrayHasCorrectFormat( PointValue[] array, int numberOfBitsUsedForDoubles )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );
+        arrayStore.allocateRecords( records, array, CursorContext.NULL_CONTEXT, INSTANCE );
         var recordData = loadArray( records );
         assertGeometryHeader( recordData.header(),
                 GeometryType.GEOMETRY_POINT.getGtype(),
@@ -278,12 +278,12 @@ class TestArrayStore
     private Collection<DynamicRecord> storeArray( Object array )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );
-        try ( var storeCursor = arrayStore.openPageCursorForWriting( 0, NULL ) )
+        arrayStore.allocateRecords( records, array, CursorContext.NULL_CONTEXT, INSTANCE );
+        try ( var storeCursor = arrayStore.openPageCursorForWriting( 0, NULL_CONTEXT ) )
         {
             for ( DynamicRecord record : records )
             {
-                arrayStore.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+                arrayStore.updateRecord( record, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
             }
         }
         return records;

@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 class ContractCheckingIndexProxyTest
@@ -64,8 +64,8 @@ class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.close( NULL );
-        assertThrows( IllegalStateException.class, () -> outer.close( NULL ) );
+        outer.close( NULL_CONTEXT );
+        assertThrows( IllegalStateException.class, () -> outer.close( NULL_CONTEXT ) );
     }
 
     @Test
@@ -88,7 +88,7 @@ class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.close( NULL );
+        outer.close( NULL_CONTEXT );
         assertThrows( IllegalStateException.class, outer::drop );
     }
 
@@ -117,7 +117,7 @@ class ContractCheckingIndexProxyTest
         outer.start();
 
         // PASS
-        outer.close( NULL );
+        outer.close( NULL_CONTEXT );
     }
 
     @Test
@@ -130,7 +130,7 @@ class ContractCheckingIndexProxyTest
         // WHEN
         assertThrows( IllegalStateException.class, () ->
         {
-            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
             {
                 updater.process( null );
             }
@@ -146,11 +146,11 @@ class ContractCheckingIndexProxyTest
 
         // WHEN
         outer.start();
-        outer.close( NULL );
+        outer.close( NULL_CONTEXT );
 
         assertThrows( IllegalStateException.class, () ->
         {
-            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
             {
                 updater.process( null );
             }
@@ -165,7 +165,7 @@ class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.force( NULL );
+        outer.force( NULL_CONTEXT );
         verifyNoMoreInteractions( inner );
     }
 
@@ -178,9 +178,9 @@ class ContractCheckingIndexProxyTest
 
         // WHEN
         outer.start();
-        outer.close( NULL );
+        outer.close( NULL_CONTEXT );
 
-        outer.force( NULL );
+        outer.force( NULL_CONTEXT );
         verify( inner ).start();
         verify( inner ).close( any() );
         verifyNoMoreInteractions( inner );
@@ -207,7 +207,7 @@ class ContractCheckingIndexProxyTest
         try
         {
             latch.waitForAllToStart();
-            assertThrows( IllegalStateException.class, () -> outer.close( NULL ) );
+            assertThrows( IllegalStateException.class, () -> outer.close( NULL_CONTEXT ) );
         }
         finally
         {
@@ -253,13 +253,13 @@ class ContractCheckingIndexProxyTest
         {
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
-        Thread actionThread = createActionThread( () -> outer.close( NULL ) );
+        Thread actionThread = createActionThread( () -> outer.close( NULL_CONTEXT ) );
         outer.start();
 
         // WHEN
         Thread updaterThread = runInSeparateThread( () ->
         {
-            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+            try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
             {
                 updater.process( null );
                 try
@@ -307,11 +307,11 @@ class ContractCheckingIndexProxyTest
             }
         };
         IndexProxy outer = newContractCheckingIndexProxy( inner );
-        Thread actionThread = createActionThread( () -> outer.close( NULL ) );
+        Thread actionThread = createActionThread( () -> outer.close( NULL_CONTEXT ) );
         actionThreadReference.set( actionThread );
 
         outer.start();
-        Thread thread = runInSeparateThread( () -> outer.force( NULL ) );
+        Thread thread = runInSeparateThread( () -> outer.force( NULL_CONTEXT ) );
 
         ThreadTestUtils.awaitThreadState( actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING );
         latch.countDown();
@@ -335,7 +335,7 @@ class ContractCheckingIndexProxyTest
 
         assertThatThrownBy( () ->
                 {
-                    try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+                    try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
                     {
                         // nothing
                     }

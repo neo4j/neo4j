@@ -53,7 +53,7 @@ import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @ExtendWith( RandomExtension.class )
@@ -103,7 +103,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION );
         structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
 
-        long firstPage = id.acquireNewId( stableGeneration, unstableGeneration, NULL );
+        long firstPage = id.acquireNewId( stableGeneration, unstableGeneration, NULL_CONTEXT );
         goTo( cursor, firstPage );
         goTo( utilCursor, firstPage );
 
@@ -490,7 +490,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // given
         long lastSeed = rootWithTwoLeaves();
         KEY primKey = layout.newKey();
-        node.keyAt( cursor, primKey, 0, INTERNAL, NULL );
+        node.keyAt( cursor, primKey, 0, INTERNAL, NULL_CONTEXT );
         long expectedNext = getSeed( primKey );
         long rightChild = GenerationSafePointerPair.pointer( node.childAt( cursor, 1, stableGeneration,
                 unstableGeneration ) );
@@ -516,7 +516,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // given
         rootWithTwoLeaves();
         KEY primKey = layout.newKey();
-        node.keyAt( cursor, primKey, 0, INTERNAL, NULL );
+        node.keyAt( cursor, primKey, 0, INTERNAL, NULL_CONTEXT );
         long expectedNext = getSeed( primKey );
         long rightChild = GenerationSafePointerPair.pointer( node.childAt( cursor, 1, stableGeneration,
                 unstableGeneration ) );
@@ -1073,7 +1073,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         VALUE value = value( firstSeed + keyCount );
         while ( node.leafOverflow( cursor, keyCount, key, value ) == TreeNode.Overflow.NO )
         {
-            node.insertKeyValueAt( cursor, key, value, keyCount, keyCount, stableGeneration, unstableGeneration, NULL );
+            node.insertKeyValueAt( cursor, key, value, keyCount, keyCount, stableGeneration, unstableGeneration, NULL_CONTEXT );
             expectedSeeds.add( firstSeed + keyCount );
             keyCount++;
             key = key( firstSeed + keyCount );
@@ -1304,7 +1304,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // WHEN
         try ( SeekCursor<KEY,VALUE> cursor = new SeekCursor<>( this.cursor,
                 node, layout, generationSupplier, rootInitializer( unstableGeneration ), failingRootCatchup,
-                exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( from, to, 1, LEAF_LEVEL ) )
+                exceptionDecorator, SeekCursor.NO_MONITOR, NULL_CONTEXT ).initialize( from, to, 1, LEAF_LEVEL ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -1355,7 +1355,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
         KEY readKey = layout.newKey();
-        node.keyAt( readCursor, readKey, keyCount - 1, LEAF, NULL );
+        node.keyAt( readCursor, readKey, keyCount - 1, LEAF, NULL_CONTEXT );
         long fromInclusive = getSeed( readKey );
         long toExclusive = fromInclusive + 1;
 
@@ -1392,7 +1392,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         readCursor.next( pointer( leftChild ) );
         int keyCount = TreeNode.keyCount( readCursor );
         KEY from = layout.newKey();
-        node.keyAt( readCursor, from, keyCount - 1, LEAF, NULL );
+        node.keyAt( readCursor, from, keyCount - 1, LEAF, NULL_CONTEXT );
         long fromInclusive = getSeed( from );
         long toExclusive = fromInclusive - 1;
 
@@ -1430,8 +1430,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         int keyCount = TreeNode.keyCount( readCursor );
         KEY from = layout.newKey();
         KEY to = layout.newKey();
-        node.keyAt( readCursor, from, keyCount - 2, LEAF, NULL );
-        node.keyAt( readCursor, to, keyCount - 1, LEAF, NULL );
+        node.keyAt( readCursor, from, keyCount - 2, LEAF, NULL_CONTEXT );
+        node.keyAt( readCursor, to, keyCount - 1, LEAF, NULL_CONTEXT );
         long fromInclusive = getSeed( from );
         long toExclusive = getSeed( to ) + 1;
 
@@ -1469,8 +1469,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         int keyCount = TreeNode.keyCount( readCursor );
         KEY from = layout.newKey();
         KEY to = layout.newKey();
-        node.keyAt( readCursor, from, keyCount - 1, LEAF, NULL );
-        node.keyAt( readCursor, to, keyCount - 2, LEAF, NULL );
+        node.keyAt( readCursor, from, keyCount - 1, LEAF, NULL_CONTEXT );
+        node.keyAt( readCursor, to, keyCount - 2, LEAF, NULL_CONTEXT );
         long fromInclusive = getSeed( from );
         long toExclusive = getSeed( to ) - 1;
 
@@ -1504,7 +1504,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // from first key in left child
         readCursor.next( pointer( leftChild ) );
         KEY from = layout.newKey();
-        node.keyAt( readCursor, from, 0, LEAF, NULL );
+        node.keyAt( readCursor, from, 0, LEAF, NULL_CONTEXT );
         long fromInclusive = getSeed( from );
         long toExclusive = getSeed( from ) + 2;
 
@@ -1607,7 +1607,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // from first key in left child
         readCursor.next( pointer( leftChild ) );
         KEY from = layout.newKey();
-        node.keyAt( readCursor, from, 0, LEAF, NULL );
+        node.keyAt( readCursor, from, 0, LEAF, NULL_CONTEXT );
         long fromInclusive = getSeed( from ) + 2;
         long toExclusive = getSeed( from );
 
@@ -1949,7 +1949,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // when
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, layout, generationSupplier, rootInitializer( generation - 1 ), rootCatchup,
-                exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( key( 0 ), key( 1 ), 1, LEAF_LEVEL ) )
+                exceptionDecorator, SeekCursor.NO_MONITOR, NULL_CONTEXT ).initialize( key( 0 ), key( 1 ), 1, LEAF_LEVEL ) )
         {
             // do nothing
         }
@@ -1975,7 +1975,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         long rootId = cursor.getCurrentPageId();
         node.initializeInternal( cursor, stableGeneration, unstableGeneration );
         long keyInRoot = 10L;
-        node.insertKeyAndRightChildAt( cursor, key( keyInRoot ), rightChild, 0, 0, stableGeneration, unstableGeneration, NULL );
+        node.insertKeyAndRightChildAt( cursor, key( keyInRoot ), rightChild, 0, 0, stableGeneration, unstableGeneration, NULL_CONTEXT );
         TreeNode.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of child node)
         node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
@@ -1999,7 +1999,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         KEY to = key( 2L );
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, layout, generationSupplier, rootInitializer( unstableGeneration ), rootCatchup,
-                exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( from, to, 1, LEAF_LEVEL ) )
+                exceptionDecorator, SeekCursor.NO_MONITOR, NULL_CONTEXT ).initialize( from, to, 1, LEAF_LEVEL ) )
         {
             // do nothing
         }
@@ -2038,7 +2038,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         // a root
         node.initializeInternal( cursor, stableGeneration - 1, unstableGeneration - 1 );
         long keyInRoot = 10L;
-        node.insertKeyAndRightChildAt( cursor, key( keyInRoot ), oldRightChild, 0, 0, stableGeneration, unstableGeneration, NULL );
+        node.insertKeyAndRightChildAt( cursor, key( keyInRoot ), oldRightChild, 0, 0, stableGeneration, unstableGeneration, NULL_CONTEXT );
         TreeNode.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of internal node)
         node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
@@ -2048,7 +2048,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         KEY to = key( 20L );
         LongSupplier firstOlderThenCurrentGenerationSupplier = firstCustomThenCurrentGenerationSupplier( stableGeneration - 1, unstableGeneration - 1 );
         try ( SeekCursor<KEY,VALUE> seek = new SeekCursor<>( cursor, node, layout, firstOlderThenCurrentGenerationSupplier,
-                rootInitializer( unstableGeneration ), rootCatchup, exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( from, to, 1, LEAF_LEVEL ) )
+                rootInitializer( unstableGeneration ), rootCatchup, exceptionDecorator, SeekCursor.NO_MONITOR, NULL_CONTEXT ).initialize( from, to, 1,
+                LEAF_LEVEL ) )
         {
             while ( seek.next() )
             {
@@ -2268,7 +2269,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         for ( int pos = 0; pos < keyCount; pos++ )
         {
             KEY key = layout.newKey();
-            node.keyAt( cursor, key, pos, type, NULL );
+            node.keyAt( cursor, key, pos, type, NULL_CONTEXT );
             if ( layout.compare( fromInclusiveKey, key ) <= 0 && layout.compare( key, toExclusiveKey ) < 0 ||
                     exactMatch && layout.compare( key, fromInclusiveKey ) == 0 )
             {
@@ -2371,11 +2372,11 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     private void newRootFromSplit( StructurePropagation<KEY> split ) throws IOException
     {
         assertTrue( split.hasRightKeyInsert );
-        long rootId = id.acquireNewId( stableGeneration, unstableGeneration, NULL );
+        long rootId = id.acquireNewId( stableGeneration, unstableGeneration, NULL_CONTEXT );
         cursor.next( rootId );
         node.initializeInternal( cursor, stableGeneration, unstableGeneration );
         node.setChildAt( cursor, split.midChild, 0, stableGeneration, unstableGeneration );
-        node.insertKeyAndRightChildAt( cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration, NULL );
+        node.insertKeyAndRightChildAt( cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration, NULL_CONTEXT );
         TreeNode.setKeyCount( cursor, 1 );
         split.hasRightKeyInsert = false;
         numberOfRootSplits++;
@@ -2403,13 +2404,13 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     private void insert( long key, long value, PageCursor cursor ) throws IOException
     {
         treeLogic.insert( cursor, structurePropagation, key( key ), value( value ), overwrite(), true, stableGeneration,
-                unstableGeneration, NULL );
+                unstableGeneration, NULL_CONTEXT );
         handleAfterChange();
     }
 
     private void remove( long key ) throws IOException
     {
-        treeLogic.remove( cursor, structurePropagation, key( key ), layout.newValue(), stableGeneration, unstableGeneration, NULL );
+        treeLogic.remove( cursor, structurePropagation, key( key ), layout.newValue(), stableGeneration, unstableGeneration, NULL_CONTEXT );
         handleAfterChange();
     }
 
@@ -2429,7 +2430,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     private SeekCursor<KEY,VALUE> seekCursorOnLevel( int level, long fromInclusive, long toExclusive ) throws IOException
     {
         return new SeekCursor<>( cursor, node, layout, generationSupplier, rootInitializer( unstableGeneration ), failingRootCatchup, exceptionDecorator,
-                SeekCursor.NO_MONITOR, NULL ).initialize( key( fromInclusive ), key( toExclusive ), random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ), level );
+                SeekCursor.NO_MONITOR, NULL_CONTEXT ).initialize( key( fromInclusive ), key( toExclusive ), random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ),
+                level );
     }
 
     private SeekCursor<KEY,VALUE> seekCursor( long fromInclusive, long toExclusive ) throws IOException
@@ -2454,7 +2456,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     {
         LongSupplier generationSupplier = firstCustomThenCurrentGenerationSupplier( stableGeneration, unstableGeneration );
         return new SeekCursor<>( pageCursor, node, layout, generationSupplier, rootInitializer( unstableGeneration ), rootCatchup,
-                exceptionDecorator, SeekCursor.NO_MONITOR, NULL ).initialize( key( fromInclusive ), key( toExclusive ),
+                exceptionDecorator, SeekCursor.NO_MONITOR, NULL_CONTEXT ).initialize( key( fromInclusive ), key( toExclusive ),
                 random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ), LEAF_LEVEL );
     }
 
@@ -2528,7 +2530,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     private void append( long k ) throws IOException
     {
         int keyCount = TreeNode.keyCount( cursor );
-        node.insertKeyValueAt( cursor, key( k ), value( k ), keyCount, keyCount, stableGeneration, unstableGeneration, NULL );
+        node.insertKeyValueAt( cursor, key( k ), value( k ), keyCount, keyCount, stableGeneration, unstableGeneration, NULL_CONTEXT );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
@@ -2542,14 +2544,14 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         {
             throw new IllegalStateException( "Can not insert another key in current node" );
         }
-        node.insertKeyValueAt( cursor, key, value, pos, keyCount, stableGeneration, unstableGeneration, NULL );
+        node.insertKeyValueAt( cursor, key, value, pos, keyCount, stableGeneration, unstableGeneration, NULL_CONTEXT );
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void removeAtPos( int pos ) throws IOException
     {
         int keyCount = TreeNode.keyCount( cursor );
-        node.removeKeyValueAt( cursor, pos, keyCount, stableGeneration, unstableGeneration, NULL );
+        node.removeKeyValueAt( cursor, pos, keyCount, stableGeneration, unstableGeneration, NULL_CONTEXT );
         TreeNode.setKeyCount( cursor, keyCount - 1 );
     }
 
@@ -2592,7 +2594,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     private long keyAt( PageCursor cursor, int pos, TreeNode.Type type )
     {
         KEY readKey = layout.newKey();
-        node.keyAt( cursor, readKey, pos, type, NULL );
+        node.keyAt( cursor, readKey, pos, type, NULL_CONTEXT );
         return getSeed( readKey );
     }
 
@@ -2603,7 +2605,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( rootId );
         PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( PrintConfig.defaults() );
-        new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor, NULL );
+        new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor, NULL_CONTEXT );
         cursor.next( currentPageId );
     }
 

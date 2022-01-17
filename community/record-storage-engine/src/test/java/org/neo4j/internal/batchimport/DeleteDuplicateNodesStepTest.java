@@ -68,7 +68,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_S
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
@@ -95,7 +95,7 @@ class DeleteDuplicateNodesStepTest
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
         neoStores = storeFactory.openAllNeoStores( true );
-        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
 
     @AfterEach
@@ -252,9 +252,9 @@ class DeleteDuplicateNodesStepTest
         PropertyStore propertyStore = neoStores.getPropertyStore();
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.newRecord();
-        nodeRecord.setId( nodeStore.nextId( NULL ) );
+        nodeRecord.setId( nodeStore.nextId( NULL_CONTEXT ) );
         nodeRecord.setInUse( true );
-        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore(), NULL, storeCursors,
+        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, storeCursors,
                 INSTANCE );
         PropertyRecord[] propertyRecords = createPropertyChain( nodeRecord, propertyCount, propertyStore );
         if ( propertyRecords.length > 0 )
@@ -263,7 +263,7 @@ class DeleteDuplicateNodesStepTest
         }
         try ( var cursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            nodeStore.updateRecord( nodeRecord, cursor, NULL, storeCursors );
+            nodeStore.updateRecord( nodeRecord, cursor, NULL_CONTEXT, storeCursors );
         }
         monitor.nodesImported( 1 );
         monitor.propertiesImported( propertyCount );
@@ -279,12 +279,12 @@ class DeleteDuplicateNodesStepTest
         for ( int i = 0; i < numberOfProperties; i++ )
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, i, random.nextValue(), NULL, INSTANCE );
+            propertyStore.encodeValue( block, i, random.nextValue(), NULL_CONTEXT, INSTANCE );
             if ( current == null || block.getValueBlocks().length > space )
             {
                 PropertyRecord next = propertyStore.newRecord();
                 nodeRecord.setIdTo( next );
-                next.setId( propertyStore.nextId( NULL ) );
+                next.setId( propertyStore.nextId( NULL_CONTEXT ) );
                 if ( current != null )
                 {
                     next.setPrevProp( current.getId() );
@@ -300,7 +300,7 @@ class DeleteDuplicateNodesStepTest
         }
         try ( var cursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
         {
-            records.forEach( record -> propertyStore.updateRecord( record, cursor, NULL, storeCursors ) );
+            records.forEach( record -> propertyStore.updateRecord( record, cursor, NULL_CONTEXT, storeCursors ) );
         }
         return records.toArray( new PropertyRecord[0] );
     }

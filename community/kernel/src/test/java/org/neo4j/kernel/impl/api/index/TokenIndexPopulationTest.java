@@ -108,7 +108,7 @@ class TokenIndexPopulationTest
             batch.addRecord( 3, new long[]{111} );
         } );
 
-        multipleIndexPopulator.create( CursorContext.NULL );
+        multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
         multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
         verify( tokenIndexPopulator ).add( indexUpdates.capture(), any() );
@@ -143,7 +143,7 @@ class TokenIndexPopulationTest
         // is driven only by TokenIndexEntryUpdates and ignores EntityUpdates
         mockPropertyStore( batch -> batch.addRecord( 1, new long[]{1}, Map.of(1, Values.stringValue( "Hello" )) ) );
 
-        multipleIndexPopulator.create( CursorContext.NULL );
+        multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
         multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
         verify( tokenIndexPopulator, never() ).add( indexUpdates.capture(), any() );
@@ -157,7 +157,7 @@ class TokenIndexPopulationTest
 
         mockTokenStore( batch -> batch.addRecord( 1, new long[]{123} ) );
 
-        multipleIndexPopulator.create( CursorContext.NULL );
+        multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
         multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
         verify( storeView ).visitNodes( any(), any(), isNull(), any(), anyBoolean(), anyBoolean(), any(), any() );
@@ -170,7 +170,7 @@ class TokenIndexPopulationTest
 
         mockPropertyStore( batch -> batch.addRecord( 1, new long[]{1}, Map.of(1, Values.stringValue( "Hello" )) ) );
 
-        multipleIndexPopulator.create( CursorContext.NULL );
+        multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
         multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
         verify( storeView ).visitNodes( any(), any(), any(), isNull(), anyBoolean(), anyBoolean(), any(), any() );

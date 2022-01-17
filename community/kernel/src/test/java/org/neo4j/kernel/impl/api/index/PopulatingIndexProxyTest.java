@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class PopulatingIndexProxyTest
 {
@@ -51,9 +51,9 @@ class PopulatingIndexProxyTest
     @Test
     void stopPopulationJobOnClose()
     {
-        populatingIndexProxy.close( NULL );
+        populatingIndexProxy.close( NULL_CONTEXT );
 
-        verify( indexPopulationJob ).stop( indexPopulation, NULL );
+        verify( indexPopulationJob ).stop( indexPopulation, NULL_CONTEXT );
     }
 
     @Test

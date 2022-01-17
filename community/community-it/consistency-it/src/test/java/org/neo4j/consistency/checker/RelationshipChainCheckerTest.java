@@ -188,14 +188,14 @@ class RelationshipChainCheckerTest extends CheckerTestBase
 
         RelationshipStore relationshipStore = context( numberOfThreads() ).neoStores.getRelationshipStore();
         RelationshipRecord arbitraryRelationship = relationshipStore.newRecord();
-        try ( var cursor = relationshipStore.openPageCursorForReading( 0, CursorContext.NULL ) )
+        try ( var cursor = relationshipStore.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT ) )
         {
             relationshipStore.getRecordByCursor( relationshipIds[relationshipIds.length / 2], arbitraryRelationship, NORMAL, cursor );
         }
         vandal.accept( arbitraryRelationship );
         try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( arbitraryRelationship, storeCursor, CursorContext.NULL, storeCursors );
+            relationshipStore.updateRecord( arbitraryRelationship, storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
         }
 
         // when
@@ -231,7 +231,7 @@ class RelationshipChainCheckerTest extends CheckerTestBase
         {
             RelationshipRecord first = relationshipStore.newRecord();
             RelationshipRecord second = relationshipStore.newRecord();
-            try ( var cursor = relationshipStore.openPageCursorForReading( 0, CursorContext.NULL ) )
+            try ( var cursor = relationshipStore.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT ) )
             {
                 relationshipStore.getRecordByCursor( firstRelationshipId, first, NORMAL, cursor );
                 relationshipStore.getRecordByCursor( secondRelationshipId, second, NORMAL, cursor );
@@ -239,8 +239,8 @@ class RelationshipChainCheckerTest extends CheckerTestBase
             vandal.accept( first, second );
             try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
             {
-                relationshipStore.updateRecord( first, storeCursor, CursorContext.NULL, storeCursors );
-                relationshipStore.updateRecord( second, storeCursor, CursorContext.NULL, storeCursors );
+                relationshipStore.updateRecord( first, storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
+                relationshipStore.updateRecord( second, storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
             }
         }
 

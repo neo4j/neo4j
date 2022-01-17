@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class UpdateRecordsStepTest
 {
@@ -70,7 +70,7 @@ class UpdateRecordsStepTest
         NodeRecord[] batch = new NodeRecord[11];
         Arrays.fill( batch, record );
 
-        step.process( batch, mock( BatchSender.class ), NULL );
+        step.process( batch, mock( BatchSender.class ), NULL_CONTEXT );
 
         Stat stat = step.stat( Keys.io_throughput );
 
@@ -92,7 +92,7 @@ class UpdateRecordsStepTest
         NodeRecord nodeWithReservedId = new NodeRecord( INTEGER_MINUS_ONE );
         NodeRecord[] batch = {node1, node2, nodeWithReservedId};
 
-        step.process( batch, mock( BatchSender.class ), NULL );
+        step.process( batch, mock( BatchSender.class ), NULL_CONTEXT );
 
         verify( store ).prepareForCommit( eq( node1 ), any( IdSequence.class ), any( CursorContext.class ) );
         verify( store ).updateRecord( eq( node1 ), any(), any(), any(), any() );

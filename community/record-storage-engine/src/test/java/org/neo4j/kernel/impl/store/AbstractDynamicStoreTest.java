@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -164,14 +164,14 @@ class AbstractDynamicStoreTest
             store.setHighId( 3 );
 
             first.setNextBlock( second.getId() );
-            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
             {
-                store.updateRecord( first, storeCursor, NULL, StoreCursors.NULL );
+                store.updateRecord( first, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
                 second.setNextBlock( third.getId() );
-                store.updateRecord( second, storeCursor, NULL, StoreCursors.NULL );
+                store.updateRecord( second, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
             }
 
-            try ( var storeCursor = store.openPageCursorForReading( 0, NULL ) )
+            try ( var storeCursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
             {
                 Iterator<DynamicRecord> records = store.getRecords( 1, NORMAL, false, storeCursor ).iterator();
                 assertTrue( records.hasNext() );
@@ -195,17 +195,17 @@ class AbstractDynamicStoreTest
             DynamicRecord third = createDynamicRecord( 3, store, 10 );
             store.setHighId( 3 );
 
-            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
             {
                 first.setNextBlock( second.getId() );
-                store.updateRecord( first, storeCursor, NULL, StoreCursors.NULL );
+                store.updateRecord( first, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
                 second.setNextBlock( third.getId() );
-                store.updateRecord( second, storeCursor, NULL, StoreCursors.NULL );
+                store.updateRecord( second, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
                 second.setInUse( false );
-                store.updateRecord( second, storeCursor, NULL, StoreCursors.NULL );
+                store.updateRecord( second, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
             }
 
-            try ( var storeCursor = store.openPageCursorForReading( 0, NULL ) )
+            try ( var storeCursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
             {
                 Iterator<DynamicRecord> records = store.getRecords( 1, FORCE, false, storeCursor ).iterator();
                 assertTrue( records.hasNext() );
@@ -225,9 +225,9 @@ class AbstractDynamicStoreTest
     private static void prepareDirtyGenerator( AbstractDynamicStore store )
     {
         var idGenerator = store.getIdGenerator();
-        var marker = idGenerator.marker( NULL );
+        var marker = idGenerator.marker( NULL_CONTEXT );
         marker.markDeleted( 1L );
-        idGenerator.clearCache( NULL );
+        idGenerator.clearCache( NULL_CONTEXT );
     }
 
     private static void assertOneCursor( CursorContext cursorContext )
@@ -249,9 +249,9 @@ class AbstractDynamicStoreTest
         DynamicRecord first = new DynamicRecord( id );
         first.setInUse( true );
         first.setData( RandomUtils.nextBytes( dataSize == 0 ? BLOCK_SIZE - formats.dynamic().getRecordHeaderSize() : 10 ) );
-        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
         {
-            store.updateRecord( first, storeCursor, NULL, StoreCursors.NULL );
+            store.updateRecord( first, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
         }
         return first;
     }
@@ -269,7 +269,7 @@ class AbstractDynamicStoreTest
                 return "TestDynamicStore";
             }
         };
-        store.initialise( true, NULL );
+        store.initialise( true, NULL_CONTEXT );
         return store;
     }
 }

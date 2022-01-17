@@ -94,7 +94,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
@@ -158,7 +158,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
                 dependencyResolver.resolveDependency( TokenHolders.class ),
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ) );
         countsStore = storageEngine.countsAccessor();
-        storeCursors = storageEngine.createStorageCursors( NULL );
+        storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT );
         groupDegreesStore = storageEngine.relationshipGroupDegreesStore();
         pageCache = dependencyResolver.resolveDependency( PageCache.class );
 
@@ -174,9 +174,9 @@ public abstract class GraphStoreFixture implements AutoCloseable
     {
         TransactionRepresentation representation =
                 transaction.representation( idGenerator(), transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService );
-        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
         {
-            commitProcess.commit( new TransactionToApply( representation, NULL, storeCursors ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+            commitProcess.commit( new TransactionToApply( representation, NULL_CONTEXT, storeCursors ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
         }
     }
 
@@ -235,9 +235,9 @@ public abstract class GraphStoreFixture implements AutoCloseable
     public EntityUpdates nodeAsUpdates( long nodeId )
     {
         try ( StorageReader storeReader = storageEngine.newReader();
-              var storeCursors = storageEngine.createStorageCursors( NULL );
-              StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL, storeCursors );
-              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL, storeCursors, INSTANCE ) )
+              var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT );
+              StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL_CONTEXT, storeCursors );
+              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL_CONTEXT, storeCursors, INSTANCE ) )
         {
             nodeCursor.single( nodeId );
             long[] labels;
@@ -258,9 +258,9 @@ public abstract class GraphStoreFixture implements AutoCloseable
     public EntityUpdates relationshipAsUpdates( long relId )
     {
         try ( StorageReader storeReader = storageEngine.newReader();
-              var storeCursors = storageEngine.createStorageCursors( NULL );
-              StorageRelationshipScanCursor relCursor = storeReader.allocateRelationshipScanCursor( NULL, storeCursors );
-              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL, storeCursors, INSTANCE ) )
+              var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT );
+              StorageRelationshipScanCursor relCursor = storeReader.allocateRelationshipScanCursor( NULL_CONTEXT, storeCursors );
+              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL_CONTEXT, storeCursors, INSTANCE ) )
         {
             relCursor.single( relId );
             if ( !relCursor.next() || !relCursor.hasProperties() )
@@ -335,7 +335,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             return id;
         } ), TokenHolder.TYPE_RELATIONSHIP_TYPE );
         TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
-        try ( var storeCursors = new CachedStoreCursors( neoStores, NULL ) )
+        try ( var storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT ) )
         {
             tokenHolders.setInitialTokens( allReadableTokens( directStoreAccess().nativeStores() ), storeCursors );
         }
@@ -491,7 +491,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             }, TokenHolder.TYPE_RELATIONSHIP_TYPE );
 
             this.tokenHolders = new TokenHolders( propTokens, labelTokens, relTypeTokens );
-            try ( var storeCursors = new CachedStoreCursors( neoStores, NULL ) )
+            try ( var storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT ) )
             {
                 tokenHolders.setInitialTokens( allReadableTokens( neoStores ), storeCursors );
                 tokenHolders.propertyKeyTokens().getAllTokens().forEach( token -> propKeyDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );

@@ -33,7 +33,7 @@ import org.neo4j.internal.batchimport.input.csv.Type;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -183,7 +183,7 @@ public class DataGeneratorInput implements Input
         {
             if ( entity != null )
             {
-                propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL, INSTANCE );
+                propertiesSize += Inputs.calculatePropertySize( entity, valueSizeCalculator, NULL_CONTEXT, INSTANCE );
             }
         }
         double propertySizePerEntity = (double) propertiesSize / sample.length;

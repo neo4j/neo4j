@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -52,9 +53,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class PartitionedValueIndexReaderTest
@@ -156,11 +155,11 @@ class PartitionedValueIndexReaderTest
     void countNodesOverPartitions()
     {
         PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
-        when( indexReader1.countIndexedEntities( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 1L );
-        when( indexReader2.countIndexedEntities( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 2L );
-        when( indexReader3.countIndexedEntities( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 3L );
+        when( indexReader1.countIndexedEntities( 1, CursorContext.NULL_CONTEXT, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 1L );
+        when( indexReader2.countIndexedEntities( 1, CursorContext.NULL_CONTEXT, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 2L );
+        when( indexReader3.countIndexedEntities( 1, CursorContext.NULL_CONTEXT, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 3L );
 
-        assertEquals( 6, indexReader.countIndexedEntities( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) );
+        assertEquals( 6, indexReader.countIndexedEntities( 1, CursorContext.NULL_CONTEXT, new int[] {PROP_KEY}, Values.of( "a" ) ) );
     }
 
     @Test
@@ -172,14 +171,14 @@ class PartitionedValueIndexReaderTest
         when( indexReader3.createSampler() ).thenReturn( new SimpleSampler( 3 ) );
 
         IndexSampler sampler = indexReader.createSampler();
-        assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex( NULL ) );
+        assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex( CursorContext.NULL_CONTEXT ) );
     }
 
     private static LongSet queryResultAsSet( PartitionedValueIndexReader indexReader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
     {
         try ( NodeValueIterator iterator = new NodeValueIterator() )
         {
-            indexReader.query( iterator, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query );
+            indexReader.query( iterator, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query );
             return PrimitiveLongCollections.asSet( iterator );
         }
     }

@@ -56,6 +56,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 
 public class RecordStorageEngineTestUtils
@@ -69,7 +70,7 @@ public class RecordStorageEngineTestUtils
         return new RecordStorageEngine( layout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
                 mock( SchemaState.class ), new StandardConstraintRuleAccessor(), c -> c, NO_LOCK_SERVICE, mock( Health.class ),
                 new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(), immediate(), PageCacheTracer.NULL, true,
-                EmptyMemoryTracker.INSTANCE, writable(), CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, CursorContext.NULL );
+                EmptyMemoryTracker.INSTANCE, writable(), CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, NULL_CONTEXT );
     }
 
     public static void applyLogicalChanges( RecordStorageEngine storageEngine, ThrowingBiConsumer<ReadableTransactionState,TxStateVisitor,Exception> changes )
@@ -85,7 +86,7 @@ public class RecordStorageEngineTestUtils
         List<StorageCommand> commands = new ArrayList<>();
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        CursorContext cursorContext = CursorContext.NULL;
+        CursorContext cursorContext = NULL_CONTEXT;
         try ( RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( EmptyMemoryTracker.INSTANCE );
               StoreCursors storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {

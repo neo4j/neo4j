@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -82,7 +82,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     {
         // given
         List<Long> ids = new ArrayList<>();
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             read.allNodesScan( nodes );
@@ -100,7 +100,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     void shouldAccessNodesByReference()
     {
         // given
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             for ( long id : NODE_IDS )
             {
@@ -120,7 +120,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     void shouldNotAccessNegativeReferences()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor node = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             read.singleNode( -2L, node );
@@ -134,7 +134,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     void shouldNotFindDeletedNode()
     {
         // given
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             read.singleNode( gone, nodes );
@@ -148,7 +148,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     void shouldReadLabels()
     {
         // given
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             TokenSet labels;
 
@@ -234,7 +234,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
         // given a non-commited node created in transaction
         long nodeId = tx.dataWrite().nodeCreate();
 
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             read.singleNode( -1, nodes );

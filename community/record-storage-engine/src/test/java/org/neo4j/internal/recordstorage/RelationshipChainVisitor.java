@@ -76,7 +76,7 @@ public class RelationshipChainVisitor
     {
         return id ->
         {
-            try ( var cursor = store.openPageCursorForReading( id, CursorContext.NULL ) )
+            try ( var cursor = store.openPageCursorForReading( id, CursorContext.NULL_CONTEXT ) )
             {
                 return store.getRecordByCursor( id, store.newRecord(), RecordLoad.NORMAL, cursor );
             }

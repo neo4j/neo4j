@@ -66,7 +66,7 @@ class StoreVersionCheckIT
         //Then
         StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine( fs, databaseLayout, pc ).get();
         StoreVersionCheck storeVersionCheck = sef.versionCheck( fs, databaseLayout, config, pc, NullLogService.getInstance(), PageCacheTracer.NULL );
-        String storeVersionStr = storeVersionCheck.storeVersion( CursorContext.NULL ).get();
+        String storeVersionStr = storeVersionCheck.storeVersion( CursorContext.NULL_CONTEXT ).get();
         StoreVersion storeVersion = sef.versionInformation( storeVersionStr );
         assertThat( storeVersion ).isNotNull();
     }

@@ -56,7 +56,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 @EphemeralPageCacheExtension
@@ -82,7 +82,7 @@ class ApplyRecoveredTransactionsTest
                 new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL,
                         writable() );
         neoStores = storeFactory.openAllNeoStores( true );
-        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
 
     @AfterEach
@@ -95,8 +95,8 @@ class ApplyRecoveredTransactionsTest
     void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception
     {
         // WHEN recovering a transaction that creates some data
-        long nodeId = neoStores.getNodeStore().nextId( NULL );
-        long relationshipId = neoStores.getRelationshipStore().nextId( NULL );
+        long nodeId = neoStores.getNodeStore().nextId( NULL_CONTEXT );
+        long relationshipId = neoStores.getRelationshipStore().nextId( NULL_CONTEXT );
         int type = 1;
         applyExternalTransaction( 1,
                 new NodeCommand( new NodeRecord( nodeId ), inUse( created( new NodeRecord( nodeId ) ) ) ),

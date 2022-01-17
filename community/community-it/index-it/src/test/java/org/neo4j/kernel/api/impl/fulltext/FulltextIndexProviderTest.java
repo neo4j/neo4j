@@ -535,7 +535,7 @@ class FulltextIndexProviderTest
 
                 StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance(),
                         cacheTracer, writable() );
-                var cursorContext = CursorContext.NULL;
+                var cursorContext = CursorContext.NULL_CONTEXT;
                 try ( NeoStores neoStores = factory.openAllNeoStores( false );
                       var storeCursors = new CachedStoreCursors( neoStores, cursorContext )  )
                 {

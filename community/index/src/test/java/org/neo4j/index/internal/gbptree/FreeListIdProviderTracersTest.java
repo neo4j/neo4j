@@ -32,7 +32,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @PageCacheExtension
 public class FreeListIdProviderTracersTest
@@ -68,7 +68,7 @@ public class FreeListIdProviderTracersTest
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "newId" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
-            listIdProvider.initializeAfterCreation( NULL );
+            listIdProvider.initializeAfterCreation( NULL_CONTEXT );
             listIdProvider.acquireNewId( 1, 1, cursorContext );
         }
 
@@ -127,8 +127,8 @@ public class FreeListIdProviderTracersTest
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initialize( 100, 0, 1, listIdProvider.entriesPerPage() - 1, 0 );
-            listIdProvider.releaseId( 1, 1, 42, NULL );
-            listIdProvider.flush( 1, 1, NULL );
+            listIdProvider.releaseId( 1, 1, 42, NULL_CONTEXT );
+            listIdProvider.flush( 1, 1, NULL_CONTEXT );
             assertEquals( 0, listIdProvider.metaData().writePos() );
 
             listIdProvider.visitFreelist( new IdProvider.IdProviderVisitor.Adaptor(), cursorContext );

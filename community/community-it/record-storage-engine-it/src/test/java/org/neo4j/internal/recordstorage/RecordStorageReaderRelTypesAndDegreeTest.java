@@ -65,7 +65,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CU
 import static org.neo4j.internal.recordstorage.TestRelType.IN;
 import static org.neo4j.internal.recordstorage.TestRelType.LOOP;
 import static org.neo4j.internal.recordstorage.TestRelType.OUT;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
@@ -488,7 +488,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
 
     protected StorageNodeCursor newCursor( long nodeId )
     {
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, storageCursors );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL_CONTEXT, storageCursors );
         nodeCursor.single( nodeId );
         assertTrue( nodeCursor.next() );
         return nodeCursor;
@@ -637,7 +637,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         RelationshipGroupStore store = resolveNeoStores().getRelationshipGroupStore();
         try ( var storeCursor = storageCursors.writeCursor( GROUP_CURSOR ) )
         {
-            store.updateRecord( record, storeCursor, NULL, storageCursors );
+            store.updateRecord( record, storeCursor, NULL_CONTEXT, storageCursors );
         }
     }
 
@@ -646,7 +646,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         RelationshipStore relationshipStore = resolveNeoStores().getRelationshipStore();
         try ( var storeCursor = storageCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( record, storeCursor, NULL, storageCursors );
+            relationshipStore.updateRecord( record, storeCursor, NULL_CONTEXT, storageCursors );
         }
     }
 

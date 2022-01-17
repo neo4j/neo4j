@@ -69,7 +69,7 @@ public class RecordStresser implements Callable<Void>
         Random random = new Random();
         int recordsPerPage = format.getRecordsPerPage();
         int recordSize = format.getRecordSize();
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, CursorContext.NULL ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT ) )
         {
             while ( !condition.fulfilled() )
             {
@@ -101,7 +101,7 @@ public class RecordStresser implements Callable<Void>
     public void verifyCounts() throws IOException
     {
         long actualSum = 0;
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, CursorContext.NULL ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, CursorContext.NULL_CONTEXT ) )
         {
             while ( cursor.next() )
             {

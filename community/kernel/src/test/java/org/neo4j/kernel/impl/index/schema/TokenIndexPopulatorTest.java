@@ -49,7 +49,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScanValue,TokenScanLayout>
@@ -109,10 +109,10 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
 
         List<TokenIndexEntryUpdate<?>> updates = TokenIndexUtility.generateSomeRandomUpdates( entityTokens, random );
         // Add updates to populator
-        populator.add( updates, NULL );
+        populator.add( updates, NULL_CONTEXT );
 
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+        populator.close( true, NULL_CONTEXT );
 
         TokenIndexUtility.verifyUpdates( entityTokens, layout, this::getTree );
     }
@@ -127,7 +127,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
 
         List<TokenIndexEntryUpdate<?>> updates = TokenIndexUtility.generateSomeRandomUpdates( entityTokens, random );
 
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
         {
             for ( TokenIndexEntryUpdate<?> update : updates )
             {
@@ -136,8 +136,8 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
         }
 
         // then
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+        populator.close( true, NULL_CONTEXT );
         TokenIndexUtility.verifyUpdates( entityTokens, layout, this::getTree );
     }
 
@@ -146,7 +146,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     {
         // given
         populator.create();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL );
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT );
 
         // when
         updater.close();
@@ -155,7 +155,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
                 () -> updater
                         .process( IndexEntryUpdate.change( random.nextInt(), null, EMPTY_LONG_ARRAY, TokenIndexUtility.generateRandomTokens( random ) ) ) );
         assertThat( e ).hasMessageContaining( "Updater has been closed" );
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
     }
 
     @Test
@@ -180,10 +180,10 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
                 currentScanId++;
             }
             // Add updates to populator
-            populator.add( updates, NULL );
+            populator.add( updates, NULL_CONTEXT );
 
             // Interleave external updates in id range lower than currentScanId
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( NodePropertyAccessor.EMPTY, NULL ) )
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( NodePropertyAccessor.EMPTY, NULL_CONTEXT ) )
             {
                 for ( int i = 0; i < 100; i++ )
                 {
@@ -201,8 +201,8 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
             }
         }
 
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+        populator.close( true, NULL_CONTEXT );
 
         TokenIndexUtility.verifyUpdates( entityTokens, layout, this::getTree );
     }
@@ -218,7 +218,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
 
         // When
         populator.create();
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
 
         // Then
         assertTrue( checkpointCompletedCall.get() );
@@ -235,7 +235,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
 
         // When
         populator.create();
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
 
         // Then
         assertFalse( checkpointCompletedCall.get() );
@@ -252,7 +252,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
 
         // When
         populator.create();
-        populator.close( true, NULL );
+        populator.close( true, NULL_CONTEXT );
 
         // Then
         assertTrue( checkpointCompletedCall.get() );

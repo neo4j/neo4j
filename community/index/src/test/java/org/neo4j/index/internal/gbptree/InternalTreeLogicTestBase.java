@@ -55,7 +55,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @ExtendWith( RandomExtension.class )
 @ResourceLock( InternalTreeLogicTestBase.INDEX_RESOURCE )
@@ -103,7 +103,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         id = new SimpleIdProvider( cursor::duplicate );
 
         id.reset();
-        long newId = id.acquireNewId( stableGeneration, unstableGeneration, NULL );
+        long newId = id.acquireNewId( stableGeneration, unstableGeneration, NULL_CONTEXT );
         goTo( cursor, newId );
         readCursor.next( newId );
 
@@ -1177,7 +1177,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
         // THEN
         root.goTo( readCursor );
-        int searchResult = KeySearch.search( readCursor, node, LEAF, key, layout.newKey(), keyCount(), NULL );
+        int searchResult = KeySearch.search( readCursor, node, LEAF, key, layout.newKey(), keyCount(), NULL_CONTEXT );
         assertThat( KeySearch.isHit( searchResult ) ).isTrue();
         int pos = KeySearch.positionOf( searchResult );
         assertEquals( 0, pos );
@@ -1209,13 +1209,13 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         // then
         goTo( readCursor, root.id() );
         // key1 should exist
-        int searchResult = KeySearch.search( readCursor, node, LEAF, key1, layout.newKey(), keyCount(), NULL );
+        int searchResult = KeySearch.search( readCursor, node, LEAF, key1, layout.newKey(), keyCount(), NULL_CONTEXT );
         assertThat( KeySearch.isHit( searchResult ) ).isTrue();
         // key2 should not exist
-        searchResult = KeySearch.search( readCursor, node, LEAF, key2, layout.newKey(), keyCount(), NULL );
+        searchResult = KeySearch.search( readCursor, node, LEAF, key2, layout.newKey(), keyCount(), NULL_CONTEXT );
         assertThat( KeySearch.isHit( searchResult ) ).isFalse();
         // key3 should exist
-        searchResult = KeySearch.search( readCursor, node, LEAF, key3, layout.newKey(), keyCount(), NULL );
+        searchResult = KeySearch.search( readCursor, node, LEAF, key3, layout.newKey(), keyCount(), NULL_CONTEXT );
         assertThat( KeySearch.isHit( searchResult ) ).isTrue();
     }
 
@@ -1274,7 +1274,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
             for ( int i = 0; i < keyCount; i++ )
             {
                 KEY key = layout.newKey();
-                node.keyAt( readCursor, key, i, LEAF, NULL );
+                node.keyAt( readCursor, key, i, LEAF, NULL_CONTEXT );
                 assertThat( expectedKeys.remove( key ) ).isTrue();
             }
         }
@@ -1756,7 +1756,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         GBPTreeConsistencyChecker<KEY> consistencyChecker =
                 new GBPTreeConsistencyChecker<>( node, layout, id, stableGeneration, unstableGeneration, true );
         ThrowingConsistencyCheckVisitor<KEY> visitor = new ThrowingConsistencyCheckVisitor<>();
-        consistencyChecker.check( null, readCursor, root, visitor, NULL );
+        consistencyChecker.check( null, readCursor, root, visitor, NULL_CONTEXT );
         goTo( readCursor, currentPageId );
     }
 
@@ -1877,7 +1877,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         for ( int i = 0; i < keyCount; i++ )
         {
             KEY into = layout.newKey();
-            node.keyAt( cursor, into, i, type, NULL );
+            node.keyAt( cursor, into, i, type, NULL_CONTEXT );
             keys.add( into );
         }
         return keys;
@@ -1924,17 +1924,17 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     {
         KEY readKey = layout.newKey();
         VALUE readValue = layout.newValue();
-        int search = KeySearch.search( readCursor, node, LEAF, key, readKey, TreeNode.keyCount( readCursor ), NULL );
+        int search = KeySearch.search( readCursor, node, LEAF, key, readKey, TreeNode.keyCount( readCursor ), NULL_CONTEXT );
         assertThat( KeySearch.isHit( search ) ).isTrue();
         int keyPos = KeySearch.positionOf( search );
-        node.valueAt( readCursor, readValue, keyPos, NULL );
+        node.valueAt( readCursor, readValue, keyPos, NULL_CONTEXT );
         assertEqualsValue( expectedValue, readValue );
     }
 
     private void assertKeyNotFound( KEY key, TreeNode.Type type )
     {
         KEY readKey = layout.newKey();
-        int search = KeySearch.search( readCursor, node, type, key, readKey, TreeNode.keyCount( readCursor ), NULL );
+        int search = KeySearch.search( readCursor, node, type, key, readKey, TreeNode.keyCount( readCursor ), NULL_CONTEXT );
         assertThat( KeySearch.isHit( search ) ).isFalse();
     }
 
@@ -1963,7 +1963,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( root.id() );
         PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( PrintConfig.defaults() );
-        new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor, NULL );
+        new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor, NULL_CONTEXT );
         cursor.next( currentPageId );
     }
 
@@ -1985,11 +1985,11 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     private void newRootFromSplit( StructurePropagation<KEY> split ) throws IOException
     {
         assertThat( split.hasRightKeyInsert ).isTrue();
-        long rootId = id.acquireNewId( stableGeneration, unstableGeneration, NULL );
+        long rootId = id.acquireNewId( stableGeneration, unstableGeneration, NULL_CONTEXT );
         goTo( cursor, rootId );
         node.initializeInternal( cursor, stableGeneration, unstableGeneration );
         node.setChildAt( cursor, split.midChild, 0, stableGeneration, unstableGeneration );
-        node.insertKeyAndRightChildAt( cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration, NULL );
+        node.insertKeyAndRightChildAt( cursor, split.rightKey, split.rightChild, 0, 0, stableGeneration, unstableGeneration, NULL_CONTEXT );
         TreeNode.setKeyCount( cursor, 1 );
         split.hasRightKeyInsert = false;
         updateRoot();
@@ -2027,7 +2027,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         try
         {
             readCursor.next( nodeId );
-            return node.keyAt( readCursor, readKey, pos, type, NULL );
+            return node.keyAt( readCursor, readKey, pos, type, NULL_CONTEXT );
         }
         finally
         {
@@ -2037,7 +2037,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     private KEY keyAt( int pos, TreeNode.Type type )
     {
-        return node.keyAt( readCursor, layout.newKey(), pos, type, NULL );
+        return node.keyAt( readCursor, layout.newKey(), pos, type, NULL_CONTEXT );
     }
 
     private VALUE valueAt( long nodeId, int pos )
@@ -2047,7 +2047,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         try
         {
             readCursor.next( nodeId );
-            return node.valueAt( readCursor, readValue, pos, NULL );
+            return node.valueAt( readCursor, readValue, pos, NULL_CONTEXT );
         }
         finally
         {
@@ -2057,7 +2057,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     private VALUE valueAt( int pos )
     {
-        return node.valueAt( readCursor, layout.newValue(), pos, NULL );
+        return node.valueAt( readCursor, layout.newValue(), pos, NULL_CONTEXT );
     }
 
     void insert( KEY key, VALUE value ) throws IOException
@@ -2069,7 +2069,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
     {
         structurePropagation.hasRightKeyInsert = false;
         structurePropagation.hasMidChildUpdate = false;
-        treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, true, stableGeneration, unstableGeneration, NULL );
+        treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, true, stableGeneration, unstableGeneration, NULL_CONTEXT );
         handleAfterChange();
     }
 
@@ -2090,7 +2090,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
 
     private void remove( KEY key, VALUE into ) throws IOException
     {
-        treeLogic.remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration, NULL );
+        treeLogic.remove( cursor, structurePropagation, key, into, stableGeneration, unstableGeneration, NULL_CONTEXT );
         handleAfterChange();
     }
 

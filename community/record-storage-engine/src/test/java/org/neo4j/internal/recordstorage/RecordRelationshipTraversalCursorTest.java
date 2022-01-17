@@ -67,6 +67,7 @@ import static org.neo4j.internal.helpers.ArrayUtil.concatArrays;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordNodeCursor.relationshipsReferenceWithDenseMarker;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -121,7 +122,7 @@ public class RecordRelationshipTraversalCursorTest
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs,
                 getRecordFormats(), NullLogProvider.getInstance(), PageCacheTracer.NULL, writable(), Sets.immutable.empty() );
         neoStores = storeFactory.openAllNeoStores( true );
-        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
 
     protected RecordFormats getRecordFormats()
@@ -316,7 +317,7 @@ public class RecordRelationshipTraversalCursorTest
         relationshipRecord.setInUse( false );
         try ( var writeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( relationshipRecord, writeCursor, CursorContext.NULL, storeCursors );
+            relationshipStore.updateRecord( relationshipRecord, writeCursor, NULL_CONTEXT, storeCursors );
         }
     }
 
@@ -336,7 +337,7 @@ public class RecordRelationshipTraversalCursorTest
                 for ( int i = 0; i < relationshipSpecs.length; i++ )
                 {
                     long nextRelationshipId = i == relationshipSpecs.length - 1 ? NULL : i + 1;
-                    relationshipStore.updateRecord( createRelationship( i, nextRelationshipId, relationshipSpecs[i] ), cursor, CursorContext.NULL,
+                    relationshipStore.updateRecord( createRelationship( i, nextRelationshipId, relationshipSpecs[i] ), cursor, NULL_CONTEXT,
                             storeCursors );
                 }
             }
@@ -361,7 +362,7 @@ public class RecordRelationshipTraversalCursorTest
                         if ( currentGroup != null )
                         {
                             relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId++, currentType, currentGroup, nextGroupId ), groupCursor,
-                                    CursorContext.NULL, storeCursors );
+                                    NULL_CONTEXT, storeCursors );
                         }
                         currentType = spec.type;
                         currentGroup = new long[]{NULL, NULL, NULL};
@@ -371,13 +372,13 @@ public class RecordRelationshipTraversalCursorTest
                     long relationshipId = i;
                     long nextRelationshipId = i < relationshipSpecs.length - 1 && relationshipSpecs[i + 1].equals( spec ) ? i + 1 : NULL;
                     relationshipStore.updateRecord( createRelationship( relationshipId, nextRelationshipId, relationshipSpecs[i] ), relCursor,
-                            CursorContext.NULL, storeCursors );
+                            NULL_CONTEXT, storeCursors );
                     if ( currentGroup[relationshipOrdinal] == NULL )
                     {
                         currentGroup[relationshipOrdinal] = relationshipId;
                     }
                 }
-                relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId, currentType, currentGroup, NULL ), groupCursor, CursorContext.NULL,
+                relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId, currentType, currentGroup, NULL ), groupCursor, NULL_CONTEXT,
                         storeCursors );
             }
             return relationshipsReferenceWithDenseMarker( relationshipGroupStore.getNumberOfReservedLowIds(), true );
@@ -405,7 +406,7 @@ public class RecordRelationshipTraversalCursorTest
 
     protected RecordRelationshipTraversalCursor getNodeRelationshipCursor()
     {
-        return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null, CursorContext.NULL );
+        return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null, NULL_CONTEXT );
     }
 
     protected static RelationshipSpec[] homogenousRelationships( int count, int type, RelationshipDirection direction )

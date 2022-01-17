@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class ReusableRecordsCompositeAllocatorTest
 {
@@ -39,12 +39,12 @@ class ReusableRecordsCompositeAllocatorTest
         DynamicRecord dynamicRecord1 = new DynamicRecord( 1 );
         DynamicRecord dynamicRecord2 = new DynamicRecord( 2 );
         DynamicRecordAllocator recordAllocator = mock( DynamicRecordAllocator.class );
-        Mockito.when( recordAllocator.nextRecord( NULL ) ).thenReturn( dynamicRecord2 );
+        Mockito.when( recordAllocator.nextRecord( NULL_CONTEXT ) ).thenReturn( dynamicRecord2 );
         ReusableRecordsCompositeAllocator compositeAllocator =
                 new ReusableRecordsCompositeAllocator( singletonList( dynamicRecord1 ), recordAllocator );
 
-        assertSame( dynamicRecord1, compositeAllocator.nextRecord( NULL ), "Same as pre allocated record." );
-        assertSame( dynamicRecord2, compositeAllocator.nextRecord( NULL ), "Same as expected allocated record." );
+        assertSame( dynamicRecord1, compositeAllocator.nextRecord( NULL_CONTEXT ), "Same as pre allocated record." );
+        assertSame( dynamicRecord2, compositeAllocator.nextRecord( NULL_CONTEXT ), "Same as expected allocated record." );
 
     }
 }

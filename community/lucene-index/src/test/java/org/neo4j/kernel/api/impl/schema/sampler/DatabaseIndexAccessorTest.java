@@ -39,12 +39,14 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.IOFunction;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
@@ -81,10 +83,8 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.test.extension.Threading.waitingWhileIn;
@@ -398,7 +398,7 @@ public class DatabaseIndexAccessorTest
             {
                 try
                 {
-                    indexSampler.sampleIndex( NULL );
+                    indexSampler.sampleIndex( CursorContext.NULL_CONTEXT );
                     fail( "expected exception" );
                 }
                 catch ( IndexNotFoundKernelException e )
@@ -438,7 +438,7 @@ public class DatabaseIndexAccessorTest
     private static NodeValueIterator results( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator results = new NodeValueIterator();
-        reader.query( results, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), queries );
+        reader.query( results, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), queries );
         return results;
     }
 
@@ -467,7 +467,7 @@ public class DatabaseIndexAccessorTest
 
     private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
         {
             for ( IndexEntryUpdate<?> update : nodePropertyUpdates )
             {

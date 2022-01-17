@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -139,8 +139,8 @@ class CommonAbstractStoreBehaviourTest
     private void createStore()
     {
         store = new MyStore( config, pageCache, 8 );
-        store.initialise( true, NULL );
-        readCursor = store.openPageCursorForReading( 0, NULL );
+        store.initialise( true, NULL_CONTEXT );
+        readCursor = store.openPageCursorForReading( 0, NULL_CONTEXT );
     }
 
     @Test
@@ -148,25 +148,25 @@ class CommonAbstractStoreBehaviourTest
     {
         // 16-byte header will overflow an 8-byte page size
         MyStore store = new MyStore( config, pageCache, PAGE_SIZE + 1 );
-        assertThrowsUnderlyingStorageException( () -> store.initialise( true, NULL ) );
+        assertThrowsUnderlyingStorageException( () -> store.initialise( true, NULL_CONTEXT ) );
     }
 
     @Test
     void extractHeaderRecordDuringLoadStorageMustThrowOnPageOverflow()
     {
         MyStore first = new MyStore( config, pageCache, 8 );
-        first.initialise( true, NULL );
+        first.initialise( true, NULL_CONTEXT );
         first.close();
 
         MyStore second = new MyStore( config, pageCache, PAGE_SIZE + 1 );
-        assertThrowsUnderlyingStorageException( () -> second.initialise( false, NULL ) );
+        assertThrowsUnderlyingStorageException( () -> second.initialise( false, NULL_CONTEXT ) );
     }
 
     @Test
     void getRawRecordDataMustNotThrowOnPageOverflow() throws Exception
     {
         prepareStoreForOutOfBoundsAccess();
-        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        try ( var cursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
         {
             store.getRawRecordData( 5, cursor );
         }
@@ -188,7 +188,7 @@ class CommonAbstractStoreBehaviourTest
     void getRecordMustThrowOnPageOverflow()
     {
         verifyExceptionOnOutOfBoundsAccess( () -> {
-            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            try ( var cursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
             {
                 store.getRecordByCursor( 5, new IntRecord( 5 ), NORMAL, cursor );
             }
@@ -199,7 +199,7 @@ class CommonAbstractStoreBehaviourTest
     void getRecordMustThrowOnPageOverflowWithCheckLoadMode()
     {
         verifyExceptionOnOutOfBoundsAccess( () -> {
-            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            try ( var cursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
             {
                 store.getRecordByCursor( 5, new IntRecord( 5 ), CHECK, cursor );
             }
@@ -210,7 +210,7 @@ class CommonAbstractStoreBehaviourTest
     void getRecordMustNotThrowOnPageOverflowWithForceLoadMode()
     {
         prepareStoreForOutOfBoundsAccess();
-        try ( var cursor = store.openPageCursorForReading( 5, NULL ) )
+        try ( var cursor = store.openPageCursorForReading( 5, NULL_CONTEXT ) )
         {
             store.getRecordByCursor( 5, new IntRecord( 5 ), FORCE, cursor );
         }
@@ -221,9 +221,9 @@ class CommonAbstractStoreBehaviourTest
     {
         verifyExceptionOnOutOfBoundsAccess( () ->
         {
-            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
             {
-                store.updateRecord( new IntRecord( 5 ), storeCursor, NULL, StoreCursors.NULL );
+                store.updateRecord( new IntRecord( 5 ), storeCursor, NULL_CONTEXT, StoreCursors.NULL );
             }
         } );
     }
@@ -232,7 +232,7 @@ class CommonAbstractStoreBehaviourTest
     void getRecordMustThrowOnCursorError()
     {
         verifyExceptionOnCursorError( () -> {
-            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            try ( var cursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
             {
                 store.getRecordByCursor( 5, new IntRecord( 5 ), NORMAL, cursor );
             }
@@ -243,7 +243,7 @@ class CommonAbstractStoreBehaviourTest
     void getRecordMustThrowOnCursorErrorWithCheckLoadMode()
     {
         verifyExceptionOnCursorError( () -> {
-            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            try ( var cursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
             {
                 store.getRecordByCursor( 5, new IntRecord( 5 ), CHECK, cursor );
             }
@@ -254,7 +254,7 @@ class CommonAbstractStoreBehaviourTest
     void getRecordMustNotThrowOnCursorErrorWithForceLoadMode()
     {
         prepareStoreForCursorError();
-        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        try ( var cursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
         {
             store.getRecordByCursor( 5, new IntRecord( 5 ), FORCE, cursor );
         }
@@ -267,12 +267,12 @@ class CommonAbstractStoreBehaviourTest
         store.setStoreNotOk( new RuntimeException() );
         IntRecord record = new IntRecord( 200 );
         record.value = 0xCAFEBABE;
-        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
         {
-            store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+            store.updateRecord( record, storeCursor, NULL_CONTEXT, StoreCursors.NULL );
         }
         intsPerRecord = 8192;
-        assertThrowsUnderlyingStorageException( () -> store.start( NULL ) );
+        assertThrowsUnderlyingStorageException( () -> store.start( NULL_CONTEXT ) );
     }
 
     @Test
@@ -281,7 +281,7 @@ class CommonAbstractStoreBehaviourTest
         createStore();
         int headerSizeInRecords = store.getNumberOfReservedLowIds();
         int headerSizeInBytes = headerSizeInRecords * store.getRecordSize();
-        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+        try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
         {
             assertTrue( cursor.next() );
             for ( int i = 0; i < headerSizeInBytes; i++ )
@@ -300,28 +300,28 @@ class CommonAbstractStoreBehaviourTest
     {
         // given
         createStore();
-        store.start( NULL );
+        store.start( NULL_CONTEXT );
         MutableLongSet holes = LongSets.mutable.empty();
-        holes.add( store.nextId( NULL ) );
-        holes.add( store.nextId( NULL ) );
-        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        holes.add( store.nextId( NULL_CONTEXT ) );
+        holes.add( store.nextId( NULL_CONTEXT ) );
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
         {
-            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
-            holes.add( store.nextId( NULL ) );
-            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
+            store.updateRecord( new IntRecord( store.nextId( NULL_CONTEXT ), 1 ), storeCursor, NULL_CONTEXT, StoreCursors.NULL );
+            holes.add( store.nextId( NULL_CONTEXT ) );
+            store.updateRecord( new IntRecord( store.nextId( NULL_CONTEXT ), 1 ), storeCursor, NULL_CONTEXT, StoreCursors.NULL );
         }
 
         // when
         store.close();
         fs.deleteFile( Path.of( MyStore.ID_FILENAME ) );
         createStore();
-        store.start( NULL );
+        store.start( NULL_CONTEXT );
 
         // then
         int numberOfHoles = holes.size();
         for ( int i = 0; i < numberOfHoles; i++ )
         {
-            assertTrue( holes.remove( store.nextId( NULL ) ) );
+            assertTrue( holes.remove( store.nextId( NULL_CONTEXT ) ) );
         }
         assertTrue( holes.isEmpty() );
     }
@@ -331,29 +331,29 @@ class CommonAbstractStoreBehaviourTest
     {
         // given
         createStore();
-        store.start( NULL );
+        store.start( NULL_CONTEXT );
         MutableLongSet holes = LongSets.mutable.empty();
-        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL_CONTEXT ) )
         {
-            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
-            holes.add( store.nextId( NULL ) );
-            holes.add( store.nextId( NULL ) );
-            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
-            holes.add( store.nextId( NULL ) );
-            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
+            store.updateRecord( new IntRecord( store.nextId( NULL_CONTEXT ), 1 ), storeCursor, NULL_CONTEXT, StoreCursors.NULL );
+            holes.add( store.nextId( NULL_CONTEXT ) );
+            holes.add( store.nextId( NULL_CONTEXT ) );
+            store.updateRecord( new IntRecord( store.nextId( NULL_CONTEXT ), 1 ), storeCursor, NULL_CONTEXT, StoreCursors.NULL );
+            holes.add( store.nextId( NULL_CONTEXT ) );
+            store.updateRecord( new IntRecord( store.nextId( NULL_CONTEXT ), 1 ), storeCursor, NULL_CONTEXT, StoreCursors.NULL );
         }
 
         // when
         store.close();
         fs.deleteFile( Path.of( MyStore.STORE_FILENAME ) );
         createStore();
-        store.start( NULL );
+        store.start( NULL_CONTEXT );
 
         // then
         int numberOfReservedLowIds = store.getNumberOfReservedLowIds();
         for ( int i = 0; i < 10; i++ )
         {
-            assertEquals( numberOfReservedLowIds + i, store.nextId( NULL ) );
+            assertEquals( numberOfReservedLowIds + i, store.nextId( NULL_CONTEXT ) );
         }
     }
 

@@ -71,12 +71,12 @@ class TestGrowingFileMemoryMapping
                 testDirectory.getFileSystem(), NullLogProvider.getInstance(), NULL, writable() );
 
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true );
-               var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+               var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
             // when
             int iterations = 2 * NUMBER_OF_RECORDS;
-            long startingId = nodeStore.nextId( CursorContext.NULL );
+            long startingId = nodeStore.nextId( CursorContext.NULL_CONTEXT );
             long nodeId = startingId;
             try ( PageCursor pageCursor = storeCursors.writeCursor( NODE_CURSOR ) )
             {
@@ -84,8 +84,8 @@ class TestGrowingFileMemoryMapping
                 {
                     NodeRecord record = new NodeRecord( nodeId ).initialize( false, 0, false, i, 0 );
                     record.setInUse( true );
-                    nodeStore.updateRecord( record, pageCursor, CursorContext.NULL, StoreCursors.NULL );
-                    nodeId = nodeStore.nextId( CursorContext.NULL );
+                    nodeStore.updateRecord( record, pageCursor, CursorContext.NULL_CONTEXT, StoreCursors.NULL );
+                    nodeId = nodeStore.nextId( CursorContext.NULL_CONTEXT );
                 }
             }
 

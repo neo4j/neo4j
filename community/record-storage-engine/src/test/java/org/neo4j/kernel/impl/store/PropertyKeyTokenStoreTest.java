@@ -82,13 +82,13 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
             case PROPERTY_KEY_TOKEN_CURSOR:
                 if ( storeCursor == null )
                 {
-                    storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL );
+                    storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT );
                 }
                 return storeCursor;
             case DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR:
                 if ( dynamicCursor == null )
                 {
-                    dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL );
+                    dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT );
                 }
                 return dynamicCursor;
             default:
@@ -102,9 +102,9 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
             switch ( (RecordCursorTypes) type )
             {
             case PROPERTY_KEY_TOKEN_CURSOR:
-                return store.openPageCursorForWriting( 0, CursorContext.NULL );
+                return store.openPageCursorForWriting( 0, CursorContext.NULL_CONTEXT );
             case DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR:
-                return nameStore.openPageCursorForWriting( 0, CursorContext.NULL );
+                return nameStore.openPageCursorForWriting( 0, CursorContext.NULL_CONTEXT );
             default:
                 return super.writeCursor( type );
             }

@@ -103,7 +103,7 @@ class DefaultDatabaseManagerUpgradeIT
         DefaultDatabaseManager databaseManager = getDatabaseManager( db );
         RecordStoreVersionCheck check =
                 new RecordStoreVersionCheck( fs, getPageCache( db ), databaseLayout, NullLogProvider.getInstance(), Config.defaults(), NULL );
-        assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL ).orElseThrow() );
+        assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL_CONTEXT ).orElseThrow() );
 
         // When
         databaseManager.upgradeDatabase( db.databaseId() );
@@ -124,7 +124,7 @@ class DefaultDatabaseManagerUpgradeIT
         DefaultDatabaseManager databaseManager = getDatabaseManager( db );
         RecordStoreVersionCheck check =
                 new RecordStoreVersionCheck( fs, getPageCache( db ), databaseLayout, NullLogProvider.getInstance(), Config.defaults(), NULL );
-        assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL ).orElseThrow() );
+        assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL_CONTEXT ).orElseThrow() );
 
         // When
         NamedDatabaseId namedDatabaseId = db.databaseId();

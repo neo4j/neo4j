@@ -50,7 +50,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.IndexProviderDescriptor.UNDECIDED;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
@@ -221,13 +221,13 @@ abstract class FusionIndexPopulatorTest
             throws IndexEntryConflictException
     {
         var update = Collections.singletonList( add( numberValues ) );
-        fusionIndexPopulator.add( update, NULL );
-        verify( correctPopulator ).add( update, NULL );
+        fusionIndexPopulator.add( update, NULL_CONTEXT );
+        verify( correctPopulator ).add( update, NULL_CONTEXT );
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
             if ( alivePopulator != correctPopulator )
             {
-                verify( alivePopulator, never() ).add( update, NULL );
+                verify( alivePopulator, never() ).add( update, NULL_CONTEXT );
             }
         }
     }
@@ -270,12 +270,12 @@ abstract class FusionIndexPopulatorTest
 
     private void closeAndVerifyPropagation( boolean populationCompletedSuccessfully )
     {
-        fusionIndexPopulator.close( populationCompletedSuccessfully, NULL );
+        fusionIndexPopulator.close( populationCompletedSuccessfully, NULL_CONTEXT );
 
         // then
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            verify( alivePopulator ).close( populationCompletedSuccessfully, NULL );
+            verify( alivePopulator ).close( populationCompletedSuccessfully, NULL_CONTEXT );
         }
     }
 
@@ -304,12 +304,12 @@ abstract class FusionIndexPopulatorTest
         UncheckedIOException failure = new UncheckedIOException( new IOException( "fail" ) );
         doThrow( failure ).when( throwingPopulator ).close( anyBoolean(), any() );
 
-        assertThrows( UncheckedIOException.class, () -> fusionIndexPopulator.close( true, NULL ) );
+        assertThrows( UncheckedIOException.class, () -> fusionIndexPopulator.close( true, NULL_CONTEXT ) );
 
         // then
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            verify( alivePopulator ).close( true, NULL );
+            verify( alivePopulator ).close( true, NULL_CONTEXT );
         }
     }
 

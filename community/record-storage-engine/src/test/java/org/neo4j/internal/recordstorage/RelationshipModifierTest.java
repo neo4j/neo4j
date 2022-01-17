@@ -124,12 +124,12 @@ class RelationshipModifierTest
     @BeforeEach
     void setUp()
     {
-        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL );
+        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL_CONTEXT );
         PropertyDeleter propertyDeleter =
                 new PropertyDeleter( new PropertyTraverser(), null, null, NullLogProvider.getInstance(), Config.defaults(),
-                        CursorContext.NULL, EmptyMemoryTracker.INSTANCE, StoreCursors.NULL );
+                        CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, StoreCursors.NULL );
         modifier = new RelationshipModifier( relationshipGroupGetter, propertyDeleter, DENSE_THRESHOLD - 1/*because the trigger happens on > */,
-                true, CursorContext.NULL, EmptyMemoryTracker.INSTANCE );
+                true, CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE );
         monitors = new Monitors( null, ( t, m ) ->
         {
             Exceptions.throwIfUnchecked( t );

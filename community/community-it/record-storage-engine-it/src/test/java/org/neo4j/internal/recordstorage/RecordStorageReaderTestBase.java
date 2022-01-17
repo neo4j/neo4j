@@ -63,7 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -113,8 +113,8 @@ public abstract class RecordStorageReaderTestBase
         this.storageReader = storageEngine.newReader();
         this.commitReader = storageEngine.newReader();
         this.commitContext = storageEngine.newCommandCreationContext( INSTANCE );
-        storageCursors = storageEngine.createStorageCursors( NULL );
-        commitContext.initialize( NULL, storageCursors );
+        storageCursors = storageEngine.createStorageCursors( NULL_CONTEXT );
+        commitContext.initialize( NULL_CONTEXT, storageCursors );
         storageEngineRule.before();
     }
 
@@ -166,7 +166,7 @@ public abstract class RecordStorageReaderTestBase
     protected void deleteRelationship( long relationshipId ) throws Exception
     {
         TxState txState = new TxState();
-        try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor( NULL, StoreCursors.NULL ) )
+        try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor( NULL_CONTEXT, StoreCursors.NULL ) )
         {
             cursor.single( relationshipId );
             assertTrue( cursor.next() );
@@ -277,7 +277,7 @@ public abstract class RecordStorageReaderTestBase
     {
         List<StorageCommand> commands = new ArrayList<>();
         long txId = nextTxId.incrementAndGet();
-        storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, LockTracer.NONE, txId, state -> state, NULL,
+        storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, LockTracer.NONE, txId, state -> state, NULL_CONTEXT,
                 storageCursors, INSTANCE );
         storageEngine.apply( new GroupOfCommands( txId, storageCursors, commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
     }

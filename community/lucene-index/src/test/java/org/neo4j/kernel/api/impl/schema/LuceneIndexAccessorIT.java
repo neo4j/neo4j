@@ -86,7 +86,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.PERSISTENT;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
@@ -158,7 +158,7 @@ public class LuceneIndexAccessorIT
             removeSomeNodes( indexDescriptor, nodes / 2, accessor, expectedNodes );
 
             // then
-            try ( BoundedIterable<Long> reader = accessor.newAllEntriesValueReader( NULL ) )
+            try ( BoundedIterable<Long> reader = accessor.newAllEntriesValueReader( NULL_CONTEXT ) )
             {
                 MutableLongSet readIds = LongSets.mutable.empty();
                 reader.forEach( readIds::add );
@@ -177,7 +177,7 @@ public class LuceneIndexAccessorIT
         config.set( GraphDatabaseSettings.read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
         try ( IndexAccessor onlineAccessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
         {
-            assertThrows( UnsupportedOperationException.class, () -> onlineAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) );
+            assertThrows( UnsupportedOperationException.class, () -> onlineAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) );
         }
     }
 
@@ -195,7 +195,7 @@ public class LuceneIndexAccessorIT
             removeSomeNodes( indexDescriptor, 2, accessor, expectedNodes );
 
             // then
-            try ( BoundedIterable<Long> reader = accessor.newAllEntriesValueReader( NULL ) )
+            try ( BoundedIterable<Long> reader = accessor.newAllEntriesValueReader( NULL_CONTEXT ) )
             {
                 MutableLongSet readIds = LongSets.mutable.empty();
                 reader.forEach( readIds::add );
@@ -219,7 +219,7 @@ public class LuceneIndexAccessorIT
 
             // then
             int count = 0;
-            try ( BoundedIterable<Long> reader = accessor.newAllEntriesValueReader( NULL ) )
+            try ( BoundedIterable<Long> reader = accessor.newAllEntriesValueReader( NULL_CONTEXT ) )
             {
                 for ( Long entityId : reader )
                 {
@@ -243,7 +243,7 @@ public class LuceneIndexAccessorIT
         {
             // when
             MutableLongSet readNodes = new LongHashSet();
-            IndexEntriesReader[] partitionReaders = accessor.newAllEntriesValueReader( random.nextInt( 2, 16 ), NULL );
+            IndexEntriesReader[] partitionReaders = accessor.newAllEntriesValueReader( random.nextInt( 2, 16 ), NULL_CONTEXT );
             for ( IndexEntriesReader partitionReader : partitionReaders )
             {
                 while ( partitionReader.hasNext() )
@@ -266,14 +266,14 @@ public class LuceneIndexAccessorIT
         {
             // given  an empty index
             // when   an unsupported value type is added
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
             {
                 final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
                 updater.process( IndexEntryUpdate.add( idGenerator().getAsLong(), descriptor, unsupportedValue ) );
             }
 
             // then   it should not be indexed, and thus not visible
-            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
             {
                 assertThat( reader ).isEmpty();
             }
@@ -290,26 +290,26 @@ public class LuceneIndexAccessorIT
             // when   an unsupported value type is added
             final var entityId = idGenerator().getAsLong();
             final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
             {
                 updater.process( IndexEntryUpdate.add( entityId, descriptor, unsupportedValue ) );
             }
 
             // then   it should not be indexed, and thus not visible
-            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
             {
                 assertThat( reader ).isEmpty();
             }
 
             // when   the unsupported value type is changed to a supported value type
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
             {
                 final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
                 updater.process( IndexEntryUpdate.change( entityId, descriptor, unsupportedValue, supportedValue ) );
             }
 
             // then   it should be added to the index, and thus now visible
-            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
             {
                 assertThat( reader ).containsExactlyInAnyOrder( entityId );
             }
@@ -327,26 +327,26 @@ public class LuceneIndexAccessorIT
             // when   a supported value type is added
             final var entityId = idGenerator().getAsLong();
             final var supportedValue = random.randomValues().nextValueOfTypes( SUPPORTED_TYPES );
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
             {
                 updater.process( IndexEntryUpdate.add( entityId, descriptor, supportedValue ) );
             }
 
             // then   it should be added to the index, and thus visible
-            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
             {
                 assertThat( reader ).containsExactlyInAnyOrder( entityId );
             }
 
             // when   the supported value type is changed to an unsupported value type
-            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL, false ) )
+            try ( var updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
             {
                 final var unsupportedValue = random.randomValues().nextValueOfType( unsupportedType );
                 updater.process( IndexEntryUpdate.change( entityId, descriptor, supportedValue, unsupportedValue ) );
             }
 
             // then   it should be removed from the index, and thus no longer visible
-            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL ) )
+            try ( var reader = accessor.newAllEntriesValueReader( CursorContext.NULL_CONTEXT ) )
             {
                 assertThat( reader ).isEmpty();
             }
@@ -356,7 +356,7 @@ public class LuceneIndexAccessorIT
     private static void removeSomeNodes( IndexDescriptor indexDescriptor, int nodes, IndexAccessor accessor, MutableLongSet expectedNodes )
             throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             for ( long id = 0; id < nodes; id++ )
             {
@@ -380,16 +380,16 @@ public class LuceneIndexAccessorIT
             expectedNodes.add( id );
             if ( initialData.size() >= 100 )
             {
-                populator.add( initialData, NULL );
+                populator.add( initialData, NULL_CONTEXT );
                 initialData.clear();
             }
         }
         if ( !initialData.isEmpty() )
         {
-            populator.add( initialData, NULL );
+            populator.add( initialData, NULL_CONTEXT );
         }
-        populator.scanCompleted( nullInstance, mock( IndexPopulator.PopulationWorkScheduler.class ), NULL );
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, mock( IndexPopulator.PopulationWorkScheduler.class ), NULL_CONTEXT );
+        populator.close( true, NULL_CONTEXT );
     }
 
     private static Value[] values( IndexDescriptor properties, long id )
@@ -416,7 +416,7 @@ public class LuceneIndexAccessorIT
         MutableLong highEntityId = new MutableLong();
         for ( int i = 0; i < rounds; i++ )
         {
-            try ( IndexUpdater updater = index.newUpdater( IndexUpdateMode.RECOVERY, NULL, false ) )
+            try ( IndexUpdater updater = index.newUpdater( IndexUpdateMode.RECOVERY, NULL_CONTEXT, false ) )
             {
                 for ( int j = 0; j < updatesPerRound; j++ )
                 {
@@ -426,10 +426,10 @@ public class LuceneIndexAccessorIT
             }
             if ( random.nextInt( 100 ) == 0 )
             {
-                index.force( NULL );
+                index.force( NULL_CONTEXT );
             }
         }
-        index.force( NULL );
+        index.force( NULL_CONTEXT );
         return liveEntityIds;
     }
 

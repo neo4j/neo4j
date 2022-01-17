@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
 {
@@ -87,7 +87,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
         value.bytes = new byte[valueSize];
 
         int allocOffsetBefore = node.getAllocOffset( cursor );
-        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL );
+        node.insertKeyValueAt( cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT );
         int allocOffsetAfter = node.getAllocOffset( cursor );
         assertEquals( allocOffsetBefore - keySize - valueSize - expectedOverhead, allocOffsetAfter );
     }

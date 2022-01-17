@@ -26,7 +26,6 @@ import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
@@ -59,8 +58,6 @@ import org.neo4j.test.utils.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
@@ -107,7 +104,7 @@ class ReadEntityIdsStepUsingTokenIndexTest
                     add( new ReadEntityIdsStep( control(),
                                                 configuration,
                                                 ( cursorContext, storeCursors ) -> new TokenIndexScanIdIterator(
-                                                        indexAccessor.newTokenReader(), new int[]{TOKEN_ID}, CursorContext.NULL ),
+                                                        indexAccessor.newTokenReader(), new int[]{TOKEN_ID}, CursorContext.NULL_CONTEXT ),
                                                 any -> StoreCursors.NULL,
                                                 NULL,
                                                 new ControlledUpdatesCheck( indexAccessor, expectedEntityIds ),
@@ -126,7 +123,7 @@ class ReadEntityIdsStepUsingTokenIndexTest
 
     private void populateTokenIndex( TokenIndexAccessor indexAccessor, BitSet entityIds, long count ) throws Exception
     {
-        try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL, false ) )
+        try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL_CONTEXT, false ) )
         {
             long id = 0;
             for ( int i = 0; i < count; i++ )
@@ -160,7 +157,7 @@ class ReadEntityIdsStepUsingTokenIndexTest
         {
             // Apply some changes right in front of this point
             int numIds = random.nextInt( 5, 50 );
-            try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL, false ) )
+            try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL_CONTEXT, false ) )
             {
                 for ( int i = 0; i < numIds; i++ )
                 {

@@ -232,7 +232,7 @@ public abstract class AbstractRecordFormatTest
     {
         if ( prepare && record.inUse() )
         {
-            format.prepare( record, recordSize, idSequence, CursorContext.NULL );
+            format.prepare( record, recordSize, idSequence, CursorContext.NULL_CONTEXT );
         }
 
         cursor.setOffset( 0 );

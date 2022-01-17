@@ -50,7 +50,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @ExtendWith( RandomExtension.class )
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
@@ -154,7 +154,7 @@ abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBas
                     @Override
                     public List<Value> findValues( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException
                     {
-                        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+                        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
                         {
                             tx.dataRead().nodeIndexScan( index, cursor, unorderedValues() );
 
@@ -170,7 +170,7 @@ abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBas
                     @Override
                     public List<ValueTuple> findValuePairs( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException
                     {
-                        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+                        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL_CONTEXT, EmptyMemoryTracker.INSTANCE ) )
                         {
                             tx.dataRead().nodeIndexScan( index, cursor, unorderedValues() );
 
@@ -207,7 +207,7 @@ abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBas
                     @Override
                     public List<Value> findValues( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException
                     {
-                        try ( var cursor = cursors.allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() ) )
+                        try ( var cursor = cursors.allocateRelationshipValueIndexCursor( NULL_CONTEXT, tx.memoryTracker() ) )
                         {
                             tx.dataRead().relationshipIndexScan( index, cursor, unorderedValues() );
 
@@ -224,7 +224,7 @@ abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBas
                     @Override
                     public List<ValueTuple> findValuePairs( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException
                     {
-                        try ( var cursor = cursors.allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() ) )
+                        try ( var cursor = cursors.allocateRelationshipValueIndexCursor( NULL_CONTEXT, tx.memoryTracker() ) )
                         {
                             tx.dataRead().relationshipIndexScan( index, cursor, unorderedValues() );
 

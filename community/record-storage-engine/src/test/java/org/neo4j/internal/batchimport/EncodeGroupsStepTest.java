@@ -46,7 +46,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class EncodeGroupsStepTest
 {
@@ -57,7 +57,7 @@ class EncodeGroupsStepTest
     void shouldEncodeGroupChains() throws Throwable
     {
         final AtomicLong nextId = new AtomicLong();
-        when( store.nextId( NULL ) ).thenAnswer( invocation -> nextId.incrementAndGet() );
+        when( store.nextId( NULL_CONTEXT ) ).thenAnswer( invocation -> nextId.incrementAndGet() );
         doAnswer( invocation ->
         {
             // our own way of marking that this has record been prepared (firstOut=1)
@@ -70,10 +70,10 @@ class EncodeGroupsStepTest
         // WHEN
         encoder.start( Step.ORDER_SEND_DOWNSTREAM );
         Catcher catcher = new Catcher();
-        encoder.process( batch( new Group( 1, 3 ), new Group( 2, 3 ), new Group( 3, 4 ) ), catcher, NULL );
-        encoder.process( batch( new Group( 4, 2 ), new Group( 5, 10 ) ), catcher, NULL );
-        encoder.process( batch( new Group( 6, 35 ) ), catcher, NULL );
-        encoder.process( batch( new Group( 7, 2 ) ), catcher, NULL );
+        encoder.process( batch( new Group( 1, 3 ), new Group( 2, 3 ), new Group( 3, 4 ) ), catcher, NULL_CONTEXT );
+        encoder.process( batch( new Group( 4, 2 ), new Group( 5, 10 ) ), catcher, NULL_CONTEXT );
+        encoder.process( batch( new Group( 6, 35 ) ), catcher, NULL_CONTEXT );
+        encoder.process( batch( new Group( 7, 2 ) ), catcher, NULL_CONTEXT );
         encoder.endOfUpstream();
         encoder.awaitCompleted();
         encoder.close();

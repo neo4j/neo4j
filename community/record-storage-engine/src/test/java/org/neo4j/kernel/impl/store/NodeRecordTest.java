@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDynamicLabels;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -92,16 +92,16 @@ class NodeRecordTest
     {
         // GIVEN
         IdSequence ids = mock( IdSequence.class );
-        when( ids.nextId( NULL ) ).thenReturn( 1L, 2L );
+        when( ids.nextId( NULL_CONTEXT ) ).thenReturn( 1L, 2L );
         ReusableRecordsAllocator recordAllocator =
                 new ReusableRecordsAllocator( 30, new DynamicRecord( 1 ), new DynamicRecord( 2 ) );
         NodeRecord node = newUsedNodeRecord( 0 );
         long labelId = 10_123;
         // A dynamic label record
         List<DynamicRecord> existing = allocateRecordsForDynamicLabels( node.getId(), new long[]{labelId},
-                recordAllocator, NULL, INSTANCE );
+                recordAllocator, NULL_CONTEXT, INSTANCE );
         // and a deleted one as well (simulating some deleted labels)
-        DynamicRecord unused = newDeletedDynamicRecord( ids.nextId( NULL ) );
+        DynamicRecord unused = newDeletedDynamicRecord( ids.nextId( NULL_CONTEXT ) );
         unused.setInUse( false );
         existing.add( unused );
         node.setLabelField( dynamicPointer( existing ), existing );

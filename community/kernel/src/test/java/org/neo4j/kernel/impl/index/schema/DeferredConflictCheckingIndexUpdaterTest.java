@@ -43,7 +43,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
@@ -68,7 +68,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         updates.add( remove( nodeId++, descriptor, tuple( 1001L, 1002L ) ) );
         updates.add( change( nodeId++, descriptor, tuple( (byte) 2, (byte) 3 ), tuple( (byte) 4, (byte) 5 ) ) );
         updates.add( add( nodeId, descriptor, tuple( 5, "5" ) ) );
-        try ( DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL ) )
+        try ( DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL_CONTEXT ) )
         {
             // when
             for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
@@ -103,7 +103,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         IndexUpdater actual = mock( IndexUpdater.class );
         ValueIndexReader reader = mock( ValueIndexReader.class );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 101, 202 ) ).when( reader ).query( any(), any(), any(), any(), any() );
-        DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL );
+        DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL_CONTEXT );
 
         // when
         updater.process( add( 0, descriptor, tuple( 10, 11 ) ) );

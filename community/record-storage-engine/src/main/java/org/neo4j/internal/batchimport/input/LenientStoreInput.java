@@ -73,7 +73,7 @@ public class LenientStoreInput implements Input
             public InputChunk newChunk()
             {
                 return new LenientNodeReader( readBehaviour, nodeStore, propertyStore, tokenHolders, pageCacheTracer,
-                        new CachedStoreCursors( neoStores, CursorContext.NULL ), compactNodeIdSpace );
+                        new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ), compactNodeIdSpace );
             }
         };
     }
@@ -87,7 +87,7 @@ public class LenientStoreInput implements Input
             public InputChunk newChunk()
             {
                 return new LenientRelationshipReader( readBehaviour, relationshipStore, propertyStore, tokenHolders, pageCacheTracer,
-                        new CachedStoreCursors( neoStores, CursorContext.NULL ) );
+                        new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) );
             }
         };
     }

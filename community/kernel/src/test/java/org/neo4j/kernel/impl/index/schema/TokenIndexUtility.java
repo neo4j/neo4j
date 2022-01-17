@@ -37,7 +37,7 @@ import org.neo4j.test.RandomSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public class TokenIndexUtility
 {
@@ -92,7 +92,7 @@ public class TokenIndexUtility
         layout.initializeAsLowest( lowest );
         TokenScanKey highest = layout.newKey();
         layout.initializeAsHighest( highest );
-        return tree.seek( lowest, highest, NULL );
+        return tree.seek( lowest, highest, NULL_CONTEXT );
     }
 
     static List<TokenIndexEntryUpdate<?>> generateSomeRandomUpdates( MutableLongObjectMap<long[]> entityTokens, RandomSupport random )

@@ -46,7 +46,7 @@ class WorkSyncedIndexPopulatorTest
         var race = new Race();
         race.addContestants( 10, throwing( () ->
         {
-            populator.add( Collections.<IndexEntryUpdate<?>>singleton( Mockito.mock( IndexEntryUpdate.class ) ), CursorContext.NULL );
+            populator.add( Collections.<IndexEntryUpdate<?>>singleton( Mockito.mock( IndexEntryUpdate.class ) ), CursorContext.NULL_CONTEXT );
         } ) );
         race.go();
     }

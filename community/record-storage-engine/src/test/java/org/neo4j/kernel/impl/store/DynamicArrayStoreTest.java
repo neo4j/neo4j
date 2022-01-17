@@ -52,7 +52,7 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
@@ -110,11 +110,11 @@ class DynamicArrayStoreTest
     private static void prepareDirtyGenerator( DynamicArrayStore store )
     {
         var idGenerator = store.getIdGenerator();
-        try ( var marker = idGenerator.marker( NULL ) )
+        try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
         {
             marker.markDeleted( 1L );
         }
-        idGenerator.clearCache( NULL );
+        idGenerator.clearCache( NULL_CONTEXT );
     }
 
     private static void assertZeroCursor( CursorContext cursorContext )
@@ -130,8 +130,8 @@ class DynamicArrayStoreTest
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
         DynamicArrayStore store = new DynamicArrayStore( storeFile, idFile, Config.defaults(), RecordIdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
                 NullLogProvider.getInstance(), 1, defaultFormat(), writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
-        store.initialise( true, NULL );
-        store.start( NULL );
+        store.initialise( true, NULL_CONTEXT );
+        store.start( NULL_CONTEXT );
         return store;
     }
 }

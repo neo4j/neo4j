@@ -81,6 +81,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -124,18 +125,18 @@ class OnlineIndexUpdatesTest
         neoStores = storeFactory.openAllNeoStores( true );
         GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
                 new CountsComputer( neoStores, pageCache, NULL, databaseLayout, INSTANCE, NullLog.getInstance() ), writable(), NULL,
-                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000, NullLogProvider.getInstance(), CursorContext.NULL );
+                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000, NullLogProvider.getInstance(), NULL_CONTEXT );
         life.add( wrapInLifecycle( counts ) );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
 
         schemaCache = new SchemaCache( new StandardConstraintRuleAccessor(), index -> index );
-        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), storeCursors );
         life.start();
-        recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore, storeCursors ), CursorContext.NULL,
-                PROPERTY_CURSOR, storeCursors );
+        recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore, storeCursors ), NULL_CONTEXT,
+                        PROPERTY_CURSOR, storeCursors );
     }
 
     @AfterEach
@@ -149,7 +150,7 @@ class OnlineIndexUpdatesTest
     void shouldContainFedNodeUpdate()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, storeCursors );
+                new RecordStorageReader( neoStores ), NULL_CONTEXT, INSTANCE, storeCursors );
 
         int nodeId = 0;
         NodeRecord inUse = getNode( nodeId, true );
@@ -158,7 +159,7 @@ class OnlineIndexUpdatesTest
         NodeRecord notInUse = getNode( nodeId, false );
         try ( var nodeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            nodeStore.updateRecord( inUse, nodeCursor, CursorContext.NULL, storeCursors );
+            nodeStore.updateRecord( inUse, nodeCursor, NULL_CONTEXT, storeCursors );
         }
 
         NodeCommand nodeCommand = new NodeCommand( inUse, notInUse );
@@ -181,7 +182,7 @@ class OnlineIndexUpdatesTest
     void shouldContainFedRelationshipUpdate()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, storeCursors );
+                new RecordStorageReader( neoStores ), NULL_CONTEXT, INSTANCE, storeCursors );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -190,7 +191,7 @@ class OnlineIndexUpdatesTest
         RelationshipRecord notInUse = getRelationship( relId, false, ENTITY_TOKEN );
         try ( PageCursor pageCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( inUse, pageCursor, CursorContext.NULL, storeCursors );
+            relationshipStore.updateRecord( inUse, pageCursor, NULL_CONTEXT, storeCursors );
         }
 
         Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand( inUse, notInUse );
@@ -213,7 +214,7 @@ class OnlineIndexUpdatesTest
     void shouldDifferentiateNodesAndRelationships()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, storeCursors );
+                new RecordStorageReader( neoStores ), NULL_CONTEXT, INSTANCE, storeCursors );
 
         int nodeId = 0;
         NodeRecord inUseNode = getNode( nodeId, true );
@@ -222,7 +223,7 @@ class OnlineIndexUpdatesTest
         NodeRecord notInUseNode = getNode( nodeId, false );
         try ( PageCursor pageCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            nodeStore.updateRecord( inUseNode, pageCursor, CursorContext.NULL, storeCursors );
+            nodeStore.updateRecord( inUseNode, pageCursor, NULL_CONTEXT, storeCursors );
         }
 
         NodeCommand nodeCommand = new NodeCommand( inUseNode, notInUseNode );
@@ -242,7 +243,7 @@ class OnlineIndexUpdatesTest
         RelationshipRecord notInUse = getRelationship( relId, false, ENTITY_TOKEN );
         try ( PageCursor pageCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( inUse, pageCursor, CursorContext.NULL, storeCursors );
+            relationshipStore.updateRecord( inUse, pageCursor, NULL_CONTEXT, storeCursors );
         }
 
         Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand( inUse, notInUse );
@@ -265,7 +266,7 @@ class OnlineIndexUpdatesTest
     void shouldUpdateCorrectIndexes()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                                                                        new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, storeCursors );
+                                                                        new RecordStorageReader( neoStores ), NULL_CONTEXT, INSTANCE, storeCursors );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -276,7 +277,7 @@ class OnlineIndexUpdatesTest
         RelationshipRecord notInUse = getRelationship( relId, false, ENTITY_TOKEN );
         try ( PageCursor pageCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( inUse, pageCursor, CursorContext.NULL, storeCursors );
+            relationshipStore.updateRecord( inUse, pageCursor, NULL_CONTEXT, storeCursors );
         }
 
         Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand( inUse, notInUse );
@@ -341,14 +342,14 @@ class OnlineIndexUpdatesTest
     private long createProperty( PrimitiveRecord nodeRecord, Value value, int propertyKey )
     {
         var propertyStore = neoStores.getPropertyStore();
-        var propertyRecord = recordAccess.create( propertyStore.nextId( CursorContext.NULL ),
-                                                  nodeRecord, CursorContext.NULL ).forChangingData();
+        var propertyRecord = recordAccess.create( propertyStore.nextId( NULL_CONTEXT ),
+                                                  nodeRecord, NULL_CONTEXT ).forChangingData();
         propertyRecord.setInUse( true );
         propertyRecord.setCreated();
 
         PropertyBlock propertyBlock = new PropertyBlock();
         PropertyStore.encodeValue( propertyBlock, propertyKey, value, propertyStore.getStringStore(),
-                                   propertyStore.getArrayStore(), CursorContext.NULL, INSTANCE );
+                                   propertyStore.getArrayStore(), NULL_CONTEXT, INSTANCE );
         propertyRecord.addPropertyBlock( propertyBlock );
 
         return propertyRecord.getId();
@@ -361,7 +362,7 @@ class OnlineIndexUpdatesTest
         if ( inUse )
         {
             InlineNodeLabels labelFieldWriter = new InlineNodeLabels( nodeRecord );
-            labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null, CursorContext.NULL, StoreCursors.NULL, INSTANCE );
+            labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null, NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
         }
         return nodeRecord;
     }
@@ -383,7 +384,7 @@ class OnlineIndexUpdatesTest
             @Override
             public void start() throws IOException
             {
-                countsStore.start( CursorContext.NULL, StoreCursors.NULL, INSTANCE );
+                countsStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
             }
 
             @Override

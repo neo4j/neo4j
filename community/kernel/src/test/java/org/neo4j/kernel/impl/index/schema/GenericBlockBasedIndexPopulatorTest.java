@@ -40,7 +40,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
@@ -64,7 +64,7 @@ abstract class GenericBlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>> 
             IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value );
             Race.ThrowingRunnable updateAction = () ->
             {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
                 {
                     updater.process( update );
                 }
@@ -72,11 +72,11 @@ abstract class GenericBlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>> 
             if ( updateBeforeScanCompleted )
             {
                 updateAction.run();
-                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
             }
             else
             {
-                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
                 updateAction.run();
             }
 
@@ -91,7 +91,7 @@ abstract class GenericBlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>> 
         }
         finally
         {
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
         }
     }
 
@@ -107,8 +107,8 @@ abstract class GenericBlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>> 
             Layout<KEY,NullValue> layout = layout();
             Value value = generateStringValueResultingInIndexEntrySize( layout, size );
             Collection<? extends IndexEntryUpdate<?>> data = singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value ) );
-            populator.add( data, NULL );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            populator.add( data, NULL_CONTEXT );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
 
             // when
             try ( Seeker<KEY,NullValue> seek = seek( populator.tree, layout ) )
@@ -121,7 +121,7 @@ abstract class GenericBlockBasedIndexPopulatorTest<KEY extends GenericKey<KEY>> 
         }
         finally
         {
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
         }
     }
 

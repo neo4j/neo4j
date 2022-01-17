@@ -58,7 +58,7 @@ import org.neo4j.test.utils.TestDirectory;
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( {RandomExtension.class, DefaultFileSystemExtension.class, TestDirectorySupportExtension.class} )
@@ -99,7 +99,7 @@ class PartitionedSeekTest
             assertThat( visit.numberOfLevels ).as( "depth of tree" ).isEqualTo( 1 );
 
             // when
-            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4, NULL );
+            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), 4, NULL_CONTEXT );
 
             // then
             assertThat( partitionEdges.size() - 1 ).as( "number of partitions" ).isEqualTo( 1 );
@@ -150,7 +150,7 @@ class PartitionedSeekTest
             long to = random.nextLong( from + 1, high );
 
             // when
-            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
+            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL_CONTEXT );
 
             // then
             IntList entryCountPerPartition = assertEntries.of( partitionEdges, from, to, tree );
@@ -175,7 +175,7 @@ class PartitionedSeekTest
             long to = random.nextLong( from, high );
 
             // when
-            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
+            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL_CONTEXT );
 
             // then
             IntList entryCountPerPartition = assertEntries.of( partitionEdges, from, to, tree );
@@ -200,7 +200,7 @@ class PartitionedSeekTest
             long from = random.nextLong( 0, to );
 
             // when
-            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL );
+            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL_CONTEXT );
 
             // then
             IntList entryCountPerSeeker = assertEntries.of( partitionEdges, from, to, tree );
@@ -233,7 +233,7 @@ class PartitionedSeekTest
                 AtomicReference<List<MutableLong>> atomicPartitionEdges = new AtomicReference<>();
                 Race race = new Race();
                 race.addContestant( throwing( () -> insertEntries( tree, offset, count, stride ) ) );
-                race.addContestant( throwing( () -> atomicPartitionEdges.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ), NULL ) ) ) );
+                race.addContestant( throwing( () -> atomicPartitionEdges.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ), NULL_CONTEXT ) ) ) );
                 race.goUnchecked();
 
                 // then
@@ -241,7 +241,7 @@ class PartitionedSeekTest
                 List<MutableLong> partitionEdges = atomicPartitionEdges.get();
                 for ( int j = 0; j < partitionEdges.size() - 1; j++ )
                 {
-                    Seeker<MutableLong,MutableLong> seeker = tree.seek( partitionEdges.get( j ), partitionEdges.get( j + 1 ), NULL );
+                    Seeker<MutableLong,MutableLong> seeker = tree.seek( partitionEdges.get( j ), partitionEdges.get( j + 1 ), NULL_CONTEXT );
                     while ( seeker.next() )
                     {
                         assertThat( nextExpected++ ).as( "current key is next in the expected sequence" ).isEqualTo( seeker.key().longValue() );
@@ -266,7 +266,7 @@ class PartitionedSeekTest
                 AtomicReference<List<MutableLong>> atomicPartitionEdges = new AtomicReference<>();
                 Race race = new Race();
                 race.addContestant( throwing( () -> removeEntries( tree, offset, count, stride ) ) );
-                race.addContestant( throwing( () -> atomicPartitionEdges.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ), NULL ) ) ) );
+                race.addContestant( throwing( () -> atomicPartitionEdges.set( tree.partitionedSeek( min, max, random.nextInt( 2, 20 ), NULL_CONTEXT ) ) ) );
                 race.goUnchecked();
 
                 // then
@@ -274,7 +274,7 @@ class PartitionedSeekTest
                 List<MutableLong> partitionEdges = atomicPartitionEdges.get();
                 for ( int j = 0; j < partitionEdges.size() - 1; j++ )
                 {
-                    Seeker<MutableLong,MutableLong> seeker = tree.seek( partitionEdges.get( j ), partitionEdges.get( j + 1 ), NULL );
+                    Seeker<MutableLong,MutableLong> seeker = tree.seek( partitionEdges.get( j ), partitionEdges.get( j + 1 ), NULL_CONTEXT );
                     while ( seeker.next() )
                     {
                         assertThat( nextExpected++ ).as( "current key is next in the expected sequence" ).isEqualTo( seeker.key().longValue() );
@@ -294,7 +294,7 @@ class PartitionedSeekTest
     {
         try ( GBPTree<MutableLong,MutableLong> tree = instantiateTree() )
         {
-            assertThatThrownBy( () -> tree.partitionedSeek( layout.key( 10 ), layout.key( 0 ), 5, NULL ),
+            assertThatThrownBy( () -> tree.partitionedSeek( layout.key( 10 ), layout.key( 0 ), 5, NULL_CONTEXT ),
                                 "should only seek forward" )
                     .isInstanceOf( IllegalArgumentException.class )
                     .hasMessage( "Partitioned seek only supports forward seeking for the time being" );
@@ -316,7 +316,7 @@ class PartitionedSeekTest
             int to = insertEntriesUntil( tree, numberOfDesiredLevels, numberOfDesiredRootChildren );
 
             // when
-            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), numberOfDesiredPartitions, NULL );
+            List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( 0 ), layout.key( to ), numberOfDesiredPartitions, NULL_CONTEXT );
 
             // then
             assertThat( partitionEdges.size() - 1 ).as( "number of partitions" ).isEqualTo( expectedNumberOfPartitions );
@@ -362,7 +362,7 @@ class PartitionedSeekTest
     private static LongList collectAndCheckEntryKeysInPartition( MutableLong partitionFrom, MutableLong partitionTo, long from, long to,
                                                                  Seeker.Factory<MutableLong,MutableLong> factory )
     {
-        try ( Seeker<MutableLong,MutableLong> partition = factory.seek( partitionFrom, partitionTo, NULL ) )
+        try ( Seeker<MutableLong,MutableLong> partition = factory.seek( partitionFrom, partitionTo, NULL_CONTEXT ) )
         {
             LongList keys = collectEntryKeysInPartition( partition );
             assertAllExpectedKeysInOrderWithinAClosedRange( keys.primitiveStream(), keys.getFirst(), keys.getLast() );
@@ -442,7 +442,7 @@ class PartitionedSeekTest
     private int insertEntries( GBPTree<MutableLong,MutableLong> tree, int startId, int count, int stride ) throws IOException
     {
         int id = startId;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
         {
             MutableLong value = layout.value( 0 );
             for ( int i = 0; i < count; i++, id += stride )
@@ -457,7 +457,7 @@ class PartitionedSeekTest
     private void removeEntries( GBPTree<MutableLong,MutableLong> tree, int startId, int count, int stride ) throws IOException
     {
         int id = startId;
-        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL ) )
+        try ( Writer<MutableLong,MutableLong> writer = tree.writer( NULL_CONTEXT ) )
         {
             for ( int i = 0; i < count; i++, id += stride )
             {
@@ -491,14 +491,14 @@ class PartitionedSeekTest
                 }
             }
         };
-        tree.visit( visitor, NULL );
+        tree.visit( visitor, NULL_CONTEXT );
         return keysOnLevel;
     }
 
     private static DepthAndRootVisitor visit( GBPTree<MutableLong,MutableLong> tree ) throws IOException
     {
         DepthAndRootVisitor visitor = new DepthAndRootVisitor();
-        tree.visit( visitor, NULL );
+        tree.visit( visitor, NULL_CONTEXT );
         return visitor;
     }
 

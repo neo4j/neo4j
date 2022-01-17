@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexProviderCompatibilityTestSuite.Compatibility
@@ -47,7 +47,7 @@ abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexPr
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
                 p -> p.markAsFailed( failure ), false );
         // THEN
-        assertThat( indexProvider.getPopulationFailure( descriptor, NULL ) ).contains( failure );
+        assertThat( indexProvider.getPopulationFailure( descriptor, NULL_CONTEXT ) ).contains( failure );
     }
 
     @Test
@@ -61,10 +61,10 @@ abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexPr
 
             // WHEN
             p.markAsFailed( failure );
-            p.close( false, NULL );
+            p.close( false, NULL_CONTEXT );
 
             // THEN
-            assertEquals( FAILED, indexProvider.getInitialState( descriptor, NULL ) );
+            assertEquals( FAILED, indexProvider.getInitialState( descriptor, NULL_CONTEXT ) );
         }, false );
     }
 
@@ -74,7 +74,7 @@ abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexPr
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
-        p.close( false, NULL );
+        p.close( false, NULL_CONTEXT );
 
         // WHEN
         p.drop();

@@ -52,7 +52,7 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @ExtendWith( RandomExtension.class )
 public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorTest<PointKey>
@@ -102,7 +102,7 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
     {
         // given  the population of an empty index
         try ( var accessor = pointAccessor();
-              var reader = accessor.newAllEntriesValueReader( NULL ) )
+              var reader = accessor.newAllEntriesValueReader( NULL_CONTEXT ) )
         {
             assertThat( reader.iterator() ).isExhausted();
         }
@@ -119,16 +119,16 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
                                                  .map( value -> IndexEntryUpdate.add( idGen.getAsLong(), INDEX_DESCRIPTOR, value ) )
                                                  .collect( Collectors.toUnmodifiableList() );
 
-            populator.add( updates, CursorContext.NULL );
-            populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL );
+            populator.add( updates, CursorContext.NULL_CONTEXT );
+            populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
         }
         finally
         {
-            populator.close( true, CursorContext.NULL );
+            populator.close( true, CursorContext.NULL_CONTEXT );
         }
 
         try ( var accessor = pointAccessor();
-              var reader = accessor.newAllEntriesValueReader( NULL ) )
+              var reader = accessor.newAllEntriesValueReader( NULL_CONTEXT ) )
         {
             // then   updates should not have been indexed
             assertThat( reader.iterator() ).isExhausted();

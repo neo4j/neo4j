@@ -52,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @TestDirectoryExtension
 class MuninnPageCursorTest
@@ -104,7 +104,7 @@ class MuninnPageCursorTest
         try ( PageCache pageCache = startPageCache( customSwapper( defaultPageSwapperFactory(), onReadAction ) );
                 PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME, Sets.immutable.of( StandardOpenOption.CREATE ) ) )
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 cursorHolder.set( cursor ); // enabling the failing behaviour
                 assertThatThrownBy( cursor::next ).isInstanceOf( RuntimeException.class );
@@ -112,7 +112,7 @@ class MuninnPageCursorTest
             }
 
             // then hopefully the latch is not jammed. Assert that we can read normally from this new cursor.
-            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 for ( int i = 0; i < 100; i++ )
                 {
@@ -136,7 +136,7 @@ class MuninnPageCursorTest
     {
         try ( PageCache pageCache = startPageCache( defaultPageSwapperFactory() );
                 PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME, Sets.immutable.of( StandardOpenOption.CREATE ) );
-                PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
+                PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
         {
             for ( int i = 0; i < 100; i++ )
             {

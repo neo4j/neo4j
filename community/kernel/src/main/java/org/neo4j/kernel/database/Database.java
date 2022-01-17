@@ -587,10 +587,10 @@ public class Database extends LifecycleAdapter
             long time = clock.millis();
             transactionRepresentation.setHeader( EMPTY_BYTE_ARRAY, time, storageEngine.metadataProvider().getLastClosedTransactionId(), time,
                     leaseService.newClient().leaseId(), AuthSubject.AUTH_DISABLED );
-            try ( var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL ) )
+            try ( var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL_CONTEXT ) )
             {
                 TransactionToApply toApply =
-                        new TransactionToApply( transactionRepresentation, CursorContext.NULL, storeCursors );
+                        new TransactionToApply( transactionRepresentation, CursorContext.NULL_CONTEXT, storeCursors );
 
                 TransactionCommitProcess commitProcess = databaseDependencies.resolveDependency( TransactionCommitProcess.class );
                 commitProcess.commit( toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL );

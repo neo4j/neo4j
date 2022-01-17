@@ -32,6 +32,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -56,9 +57,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -82,7 +82,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
                 p -> p.markAsFailed( failure ), false );
         // THEN
-        assertThat( indexProvider.getPopulationFailure( descriptor, NULL ) ).contains( failure );
+        assertThat( indexProvider.getPopulationFailure( descriptor, CursorContext.NULL_CONTEXT ) ).contains( failure );
     }
 
     @Test
@@ -96,10 +96,10 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
 
             // WHEN
             p.markAsFailed( failure );
-            p.close( false, NULL );
+            p.close( false, CursorContext.NULL_CONTEXT );
 
             // THEN
-            assertEquals( FAILED, indexProvider.getInitialState( descriptor, NULL ) );
+            assertEquals( FAILED, indexProvider.getInitialState( descriptor, CursorContext.NULL_CONTEXT ) );
         }, false );
     }
 
@@ -109,7 +109,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
-        p.close( false, NULL );
+        p.close( false, CursorContext.NULL_CONTEXT );
 
         // WHEN
         p.drop();
@@ -129,9 +129,9 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
 
             // update using populator...
             var update = add( nodeId, descriptor, propertyValue );
-            p.add( singletonList( update ), NULL );
+            p.add( singletonList( update ), CursorContext.NULL_CONTEXT );
             // ...is the same as update using updater
-            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId, cursorContext ) -> propertyValue, NULL ) )
+            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId, cursorContext ) -> propertyValue, CursorContext.NULL_CONTEXT ) )
             {
                 updater.process( update );
             }
@@ -144,7 +144,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                   NodeValueIterator nodes = new NodeValueIterator() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
-                reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, propertyValue ) );
+                reader.query( nodes, QueryContext.NULL_CONTEXT, READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, propertyValue ) );
                 assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
             }
         }
@@ -155,7 +155,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     {
         // GIVEN
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
-                p -> p.add( updates( valueSet1 ), NULL ) );
+                p -> p.add( updates( valueSet1 ), CursorContext.NULL_CONTEXT ) );
 
         // THEN
         assertHasAllValues( valueSet1 );
@@ -167,7 +167,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         // GIVEN
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
         {
-            try ( IndexUpdater updater = p.newPopulatingUpdater( this::valueSet1Lookup, NULL ) )
+            try ( IndexUpdater updater = p.newPopulatingUpdater( this::valueSet1Lookup, CursorContext.NULL_CONTEXT ) )
             {
                 for ( NodeAndValue entry : valueSet1 )
                 {
@@ -185,12 +185,12 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     {
         // GIVEN
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
-                p -> p.add( updates( valueSet1 ), NULL ) );
+                p -> p.add( updates( valueSet1 ), CursorContext.NULL_CONTEXT ) );
 
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
         {
             // WHEN
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
             {
                 List<ValueIndexEntryUpdate<?>> updates = updates( valueSet2 );
                 for ( ValueIndexEntryUpdate<?> update : updates )
@@ -207,7 +207,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 {
                     try ( NodeValueIterator nodes = new NodeValueIterator() )
                     {
-                        reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
+                        reader.query( nodes, QueryContext.NULL_CONTEXT, READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
                         assertEquals( entry.nodeId, nodes.next() );
                         assertFalse( nodes.hasNext() );
                     }
@@ -259,8 +259,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
 
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
         {
-            p.add( updates( firstBatch ), NULL );
-            p.add( updates( secondBatch ), NULL );
+            p.add( updates( firstBatch ), CursorContext.NULL_CONTEXT );
+            p.add( updates( secondBatch ), CursorContext.NULL_CONTEXT );
 
             // Index should be consistent
         } );
@@ -274,7 +274,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
         {
             // WHEN
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
             {
                 for ( NodeAndValue nodeAndValue : toRemove )
                 {
@@ -289,7 +289,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 for ( NodeAndValue nodeAndValue : toRemove )
                 {
                     NodeValueIterator nodes = new NodeValueIterator();
-                    reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, nodeAndValue.value ) );
+                    reader.query( nodes, QueryContext.NULL_CONTEXT, READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, nodeAndValue.value ) );
                     boolean anyHits = false;
 
                     StringJoiner nodesStillLeft = new StringJoiner( ", ", "[", "]" );
@@ -327,7 +327,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 {
                     try ( NodeValueIterator nodes = new NodeValueIterator() )
                     {
-                        reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
+                        reader.query( nodes, QueryContext.NULL_CONTEXT, READ, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
                         assertEquals( entry.nodeId, nodes.next() );
                         assertFalse( nodes.hasNext() );
                     }
@@ -350,8 +350,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
             long offset = valueSet1.size();
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
             {
-                p.add( updates( valueSet1, 0 ), NULL );
-                p.add( updates( valueSet1, offset ), NULL );
+                p.add( updates( valueSet1, 0 ), CursorContext.NULL_CONTEXT );
+                p.add( updates( valueSet1, offset ), CursorContext.NULL_CONTEXT );
             } );
 
             // then
@@ -364,7 +364,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                     {
                         try ( NodeValueIterator nodes = new NodeValueIterator() )
                         {
-                            reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ,
+                            reader.query( nodes, QueryContext.NULL_CONTEXT, READ,
                                           unconstrained(), PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
                             assertEquals( asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ), entry.value.toString() );
                         }
@@ -398,11 +398,11 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 {
                     p.add( Arrays.asList(
                             add( nodeId1, descriptor, value ),
-                            add( nodeId2, descriptor, value ) ), NULL );
+                            add( nodeId2, descriptor, value ) ), CursorContext.NULL_CONTEXT );
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value );
-                    p.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, NULL );
+                    p.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
                     p.verifyDeferredConstraints( propertyAccessor );
 
                     fail( "expected exception" );

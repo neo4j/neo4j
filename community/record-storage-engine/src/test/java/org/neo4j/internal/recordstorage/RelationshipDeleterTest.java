@@ -57,10 +57,10 @@ class RelationshipDeleterTest
     @BeforeEach
     void setUp()
     {
-        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL );
+        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL_CONTEXT );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         PropertyDeleter propertyDeleter =
-                new PropertyDeleter( propertyTraverser, null, null, NullLogProvider.getInstance(), Config.defaults(), CursorContext.NULL,
+                new PropertyDeleter( propertyTraverser, null, null, NullLogProvider.getInstance(), Config.defaults(), CursorContext.NULL_CONTEXT,
                         EmptyMemoryTracker.INSTANCE, StoreCursors.NULL );
         deleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH );
         store = new MapRecordStore();

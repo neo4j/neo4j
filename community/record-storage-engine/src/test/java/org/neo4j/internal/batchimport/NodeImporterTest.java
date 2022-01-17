@@ -80,7 +80,7 @@ class NodeImporterTest
                       INSTANCE ) )
         {
             stores.createNew();
-            try ( var storeCursors = new CachedStoreCursors( stores.getNeoStores(), CursorContext.NULL ) )
+            try ( var storeCursors = new CachedStoreCursors( stores.getNeoStores(), CursorContext.NULL_CONTEXT ) )
             {
                 // when
                 int numberOfLabels = 50;
@@ -118,7 +118,7 @@ class NodeImporterTest
         {
             stores.createNew();
 
-            try ( var storeCursors = new CachedStoreCursors( stores.getNeoStores(), CursorContext.NULL ) )
+            try ( var storeCursors = new CachedStoreCursors( stores.getNeoStores(), CursorContext.NULL_CONTEXT ) )
             {
                 int numberOfLabels = 50;
                 long nodeId = 0;

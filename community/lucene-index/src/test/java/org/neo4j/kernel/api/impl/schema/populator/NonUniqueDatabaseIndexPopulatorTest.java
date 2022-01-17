@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -37,6 +38,7 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
@@ -53,8 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
@@ -86,7 +86,7 @@ class NonUniqueDatabaseIndexPopulatorTest
     {
         if ( populator != null )
         {
-            populator.close( false, NULL );
+            populator.close( false, CursorContext.NULL_CONTEXT );
         }
         IOUtils.closeAll( index, dirFactory );
     }
@@ -96,7 +96,7 @@ class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        IndexSample sample = populator.sample( NULL );
+        IndexSample sample = populator.sample( CursorContext.NULL_CONTEXT );
 
         assertEquals( new IndexSample(), sample );
     }
@@ -109,9 +109,9 @@ class NonUniqueDatabaseIndexPopulatorTest
                 add( 1, labelSchemaDescriptor, "aaa" ),
                 add( 2, labelSchemaDescriptor, "bbb" ),
                 add( 3, labelSchemaDescriptor, "ccc" ) );
-        populator.add( updates, NULL );
+        populator.add( updates, CursorContext.NULL_CONTEXT );
 
-        IndexSample sample = populator.sample( NULL );
+        IndexSample sample = populator.sample( CursorContext.NULL_CONTEXT );
 
         assertEquals( new IndexSample( 3, 3, 3 ), sample );
     }
@@ -124,9 +124,9 @@ class NonUniqueDatabaseIndexPopulatorTest
                 add( 1, labelSchemaDescriptor, "foo" ),
                 add( 2, labelSchemaDescriptor, "bar" ),
                 add( 3, labelSchemaDescriptor, "foo" ) );
-        populator.add( updates, NULL );
+        populator.add( updates, CursorContext.NULL_CONTEXT );
 
-        IndexSample sample = populator.sample( NULL );
+        IndexSample sample = populator.sample( CursorContext.NULL_CONTEXT );
 
         assertEquals( new IndexSample( 3, 2, 3 ), sample );
     }
@@ -141,14 +141,14 @@ class NonUniqueDatabaseIndexPopulatorTest
                 add( 2, labelSchemaDescriptor, "bar" ),
                 add( 42, labelSchemaDescriptor, "bar" ) );
 
-        populator.add( updates, NULL );
+        populator.add( updates, CursorContext.NULL_CONTEXT );
 
         index.maybeRefreshBlocking();
         try ( ValueIndexReader reader = index.getIndexReader();
               NodeValueIterator allEntities = new NodeValueIterator() )
         {
             int propertyKeyId = labelSchemaDescriptor.schema().getPropertyId();
-            reader.query( allEntities, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exists( propertyKeyId ) );
+            reader.query( allEntities, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), PropertyIndexQuery.exists( propertyKeyId ) );
             assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

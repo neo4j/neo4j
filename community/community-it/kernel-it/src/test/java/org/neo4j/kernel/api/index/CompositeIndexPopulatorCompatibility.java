@@ -25,8 +25,10 @@ import java.util.Arrays;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
@@ -39,10 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
@@ -68,7 +68,7 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
                     p -> p.add( Arrays.asList(
                     add( 1, descriptor, Values.of( "v1" ), Values.of( "v2" ) ),
-                    add( 2, descriptor, Values.of( "v1" ), Values.of( "v2" ) ) ), NULL ) );
+                    add( 2, descriptor, Values.of( "v1" ), Values.of( "v2" ) ) ), CursorContext.NULL_CONTEXT ) );
 
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
@@ -76,7 +76,7 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                 try ( ValueIndexReader reader = accessor.newValueReader();
                       NodeValueIterator nodes = new NodeValueIterator() )
                 {
-                    reader.query( nodes, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(),
+                    reader.query( nodes, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(),
                                   PropertyIndexQuery.exact( 1, "v1" ), PropertyIndexQuery.exact( 1, "v2" ) );
                     assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
                 }
@@ -108,11 +108,11 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                 {
                     p.add( Arrays.asList(
                             add( nodeId1, descriptor, value1, value2 ),
-                            add( nodeId2, descriptor, value1, value2 ) ), NULL );
+                            add( nodeId2, descriptor, value1, value2 ) ), CursorContext.NULL_CONTEXT );
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
-                    p.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, NULL );
+                    p.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
                     p.verifyDeferredConstraints( propertyAccessor );
 
                     fail( "expected exception" );
@@ -137,7 +137,7 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                 // when
                 p.add( Arrays.asList(
                         add( nodeId1, descriptor, value1, value2 ),
-                        add( nodeId2, descriptor, value1, value3 ) ), NULL );
+                        add( nodeId2, descriptor, value1, value3 ) ), CursorContext.NULL_CONTEXT );
 
                 TestNodePropertyAccessor propertyAccessor =
                         new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );

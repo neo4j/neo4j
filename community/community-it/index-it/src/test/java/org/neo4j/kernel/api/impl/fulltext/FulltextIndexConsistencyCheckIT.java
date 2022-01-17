@@ -83,7 +83,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
@@ -526,7 +526,7 @@ class FulltextIndexConsistencyCheckIT
         }
         IndexingService indexes = getIndexingService( db );
         IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
-        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, Values.stringValue( "value" ) ) );
         }
@@ -651,7 +651,7 @@ class FulltextIndexConsistencyCheckIT
         }
         IndexingService indexes = getIndexingService( db );
         IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
-        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             updater.process( IndexEntryUpdate.remove( relId, indexDescriptor, Values.stringValue( "value" ) ) );
         }
@@ -684,7 +684,7 @@ class FulltextIndexConsistencyCheckIT
             tx.commit();
         }
         NeoStores stores = getNeoStores( db );
-        try ( CachedStoreCursors storeCursors = new CachedStoreCursors( stores, NULL ) )
+        try ( CachedStoreCursors storeCursors = new CachedStoreCursors( stores, NULL_CONTEXT ) )
         {
             RelationshipStore relationshipStore = stores.getRelationshipStore();
             RelationshipRecord record = relationshipStore.newRecord();
@@ -694,14 +694,14 @@ class FulltextIndexConsistencyCheckIT
             record.setNextProp( AbstractBaseRecord.NO_ID );
             try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
             {
-                relationshipStore.updateRecord( record, storeCursor, NULL, storeCursors );
+                relationshipStore.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
             }
             PropertyRecord propRecord = propertyStore.newRecord();
             propertyStore.getRecordByCursor( propId, propertyStore.newRecord(), RecordLoad.NORMAL, storeCursors.readCursor( PROPERTY_CURSOR ) );
             propRecord.setInUse( false );
             try ( var cursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
             {
-                propertyStore.updateRecord( propRecord, cursor, NULL, storeCursors );
+                propertyStore.updateRecord( propRecord, cursor, NULL_CONTEXT, storeCursors );
             }
         }
         managementService.shutdown();

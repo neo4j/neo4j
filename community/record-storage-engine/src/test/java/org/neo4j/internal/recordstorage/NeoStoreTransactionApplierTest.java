@@ -92,7 +92,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -143,7 +143,7 @@ class NeoStoreTransactionApplierTest
         when( lockService.acquireRelationshipLock( anyLong(), any() ) )
                 .thenReturn( LockService.NO_LOCK );
         when( transactionToApply.transactionId() ).thenReturn( transactionId );
-        when( transactionToApply.cursorContext() ).thenReturn( NULL );
+        when( transactionToApply.cursorContext() ).thenReturn( NULL_CONTEXT );
         when( transactionToApply.storeCursors() ).thenReturn( StoreCursors.NULL );
         when( transactionToApply.subject() ).thenReturn( AUTH_DISABLED );
     }
@@ -631,7 +631,7 @@ class NeoStoreTransactionApplierTest
     {
         // given
         var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore,
-                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
+                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL_CONTEXT, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
         TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
@@ -655,7 +655,7 @@ class NeoStoreTransactionApplierTest
     {
         // given
         var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore,
-                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
+                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL_CONTEXT, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
         TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
@@ -681,7 +681,7 @@ class NeoStoreTransactionApplierTest
         RecordStorageReader storageReader = mock( RecordStorageReader.class );
         when( storageEngine.newReader() ).thenReturn( storageReader );
         var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore, storageEngine,
-                                                 mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
+                                                 mock( SchemaCache.class ), NULL_CONTEXT, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
 
         IndexUpdates indexEntryUpdates = batchContext.indexUpdates();
         ((OnlineIndexUpdates) indexEntryUpdates).getUpdates().add( IndexEntryUpdate.add( 1, IndexDescriptor.NO_INDEX ) );
@@ -701,7 +701,7 @@ class NeoStoreTransactionApplierTest
         RecordStorageReader storageReader = mock( RecordStorageReader.class );
         when( storageEngine.newReader() ).thenReturn( storageReader );
         var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore, storageEngine,
-                                                 mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
+                                                 mock( SchemaCache.class ), NULL_CONTEXT, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
 
         IndexUpdates indexEntryUpdates = batchContext.indexUpdates();
         ((OnlineIndexUpdates) indexEntryUpdates).getUpdates().add( IndexEntryUpdate.add( 1, IndexDescriptor.NO_INDEX ) );
@@ -911,7 +911,7 @@ class NeoStoreTransactionApplierTest
 
         verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
         verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
-        verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId, NULL );
+        verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId, NULL_CONTEXT );
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
 
@@ -928,7 +928,7 @@ class NeoStoreTransactionApplierTest
 
         //then
         assertFalse( result );
-        verify( metaDataStore ).setKernelVersion( KernelVersion.LATEST, NULL );
+        verify( metaDataStore ).setKernelVersion( KernelVersion.LATEST, NULL_CONTEXT );
     }
 
     @Test

@@ -42,7 +42,7 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incom
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @DbmsExtension
 public class RelationshipSelectionsIT
@@ -61,7 +61,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -86,7 +86,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -112,7 +112,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -138,7 +138,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -165,7 +165,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -192,7 +192,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -218,7 +218,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -243,7 +243,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -269,7 +269,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -295,7 +295,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -322,7 +322,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();
@@ -349,7 +349,7 @@ public class RelationshipSelectionsIT
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var cursors = kernelTransaction.cursors();
             var typeId = kernelTransaction.tokenRead().relationshipType( relationshipType.name() );
-            try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
+            try ( var nodeCursor = cursors.allocateNodeCursor( NULL_CONTEXT ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
                 var cursorContext = kernelTransaction.cursorContext();

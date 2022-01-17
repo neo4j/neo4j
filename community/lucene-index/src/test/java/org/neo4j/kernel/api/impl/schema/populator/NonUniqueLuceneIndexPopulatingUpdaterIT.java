@@ -52,7 +52,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
@@ -78,7 +78,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         var populator = getPopulator( provider, SCHEMA_DESCRIPTOR );
 
         // When
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL ) )
+        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
         {
             updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
             updater.process( add( 2, SCHEMA_DESCRIPTOR, "bar" ) );
@@ -87,7 +87,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         }
 
         // Then
-        assertThat( populator.sample( NULL ) ).isEqualTo( new IndexSample( 4, 3, 4 ) );
+        assertThat( populator.sample( NULL_CONTEXT ) ).isEqualTo( new IndexSample( 4, 3, 4 ) );
     }
 
     @Test
@@ -98,7 +98,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         var populator = getPopulator( provider, SCHEMA_DESCRIPTOR );
 
         // When
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL ) )
+        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
         {
             updater.process( add( 1, SCHEMA_DESCRIPTOR, "initial1" ) );
             updater.process( add( 2, SCHEMA_DESCRIPTOR, "initial2" ) );
@@ -108,7 +108,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         }
 
         // Then samples calculated with documents pending merge
-        assertThat( populator.sample( NULL ) ).isEqualTo( new IndexSample( 3, 4, 5 ) );
+        assertThat( populator.sample( NULL_CONTEXT ) ).isEqualTo( new IndexSample( 3, 4, 5 ) );
     }
 
     @Test
@@ -119,7 +119,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         var populator = getPopulator( provider, SCHEMA_DESCRIPTOR );
 
         // When
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL ) )
+        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
         {
             updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
             updater.process( add( 2, SCHEMA_DESCRIPTOR, "bar" ) );
@@ -131,7 +131,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         }
 
         // Then samples calculated with documents pending merge
-        assertThat( populator.sample( NULL ) ).isEqualTo( new IndexSample( 1, 4, 4 ) );
+        assertThat( populator.sample( NULL_CONTEXT ) ).isEqualTo( new IndexSample( 1, 4, 4 ) );
     }
 
     @Test
@@ -142,7 +142,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         var populator = getPopulator( provider, COMPOSITE_SCHEMA_DESCRIPTOR );
 
         // When
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL ) )
+        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
         {
             updater.process( add( 1, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "foo" ) );
             updater.process( add( 2, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
@@ -156,7 +156,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         }
 
         // Then samples calculated with documents pending merge
-        assertThat( populator.sample( NULL ) ).isEqualTo( new IndexSample( 2, 5, 10 ) );
+        assertThat( populator.sample( NULL_CONTEXT ) ).isEqualTo( new IndexSample( 2, 5, 10 ) );
     }
 
     @Test
@@ -217,9 +217,9 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
 
         final var provider = createIndexProvider();
         final var populator = getPopulator( provider, SCHEMA_DESCRIPTOR );
-        populator.add( internalUpdates, NULL );
+        populator.add( internalUpdates, NULL_CONTEXT );
 
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL ) )
+        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
         {
             for ( final var update : externalUpdates )
             {
@@ -227,7 +227,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
             }
         }
 
-        final var sample = populator.sample( NULL );
+        final var sample = populator.sample( NULL_CONTEXT );
         assertThat( sample.indexSize() ).isEqualTo( expectedIndexSize );
     }
 

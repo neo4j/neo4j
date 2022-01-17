@@ -46,7 +46,7 @@ import static java.lang.String.format;
 import static org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeValue;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -137,7 +137,7 @@ class AbstractBaseRecordCopyTest
             // Dynamic records will not be written and read by the property record format,
             // that happens in the store where it delegates to a "sub" store.
             encodeValue( block, random.nextInt( 16 ), random.nextValue(),
-                    stringAllocator, arrayAllocator, NULL, INSTANCE );
+                    stringAllocator, arrayAllocator, NULL_CONTEXT, INSTANCE );
             int tentativeBlocksWithThisOne = blocksOccupied + block.getValueBlocks().length;
             if ( tentativeBlocksWithThisOne <= 4 )
             {

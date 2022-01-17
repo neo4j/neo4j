@@ -37,7 +37,7 @@ import org.neo4j.values.storable.ValueType;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 
@@ -91,11 +91,11 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
 
         // when
-        populator.add( asList( updates ), NULL );
+        populator.add( asList( updates ), NULL_CONTEXT );
 
         // then
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+        populator.close( true, NULL_CONTEXT );
         valueUtil.verifyUpdates( updates, this::getTree );
     }
 
@@ -105,7 +105,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         // given
         populator.create();
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
         {
             // when
             for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
@@ -115,8 +115,8 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         }
 
         // then
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-        populator.close( true, NULL );
+        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+        populator.close( true, NULL_CONTEXT );
         valueUtil.verifyUpdates( updates, this::getTree );
     }
 
@@ -128,7 +128,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         {
             populator.create();
             ValueIndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates( random );
-            populator.add( asList( scanUpdates ), NULL );
+            populator.add( asList( scanUpdates ), NULL_CONTEXT );
             Iterator<ValueIndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator( random );
             Value[] updates = new Value[5];
             updates[0] = generator.next().values()[0];
@@ -136,7 +136,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
             updates[2] = updates[1];
             updates[3] = generator.next().values()[0];
             updates[4] = updates[3];
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
             {
                 long nodeId = 1000;
                 for ( Value value : updates )
@@ -147,8 +147,8 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
             }
 
             // WHEN
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-            IndexSample sample = populator.sample( NULL );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
+            IndexSample sample = populator.sample( NULL_CONTEXT );
 
             // THEN
             assertEquals( scanUpdates.length, sample.sampleSize() );
@@ -158,7 +158,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         }
         finally
         {
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
         }
     }
 }

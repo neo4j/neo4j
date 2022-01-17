@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
@@ -85,7 +85,7 @@ class TokenIndexReaderTest
         int labelId = 1;
         try ( TokenIndexUpdater writer = new TokenIndexUpdater( expectedNodes ) )
         {
-            writer.initialize( tree.writer( NULL ) );
+            writer.initialize( tree.writer( NULL_CONTEXT ) );
             for ( int i = 0; i < expectedNodes; i++ )
             {
                 writer.process( TokenIndexEntryUpdate.change( i, null, EMPTY_LONG_ARRAY, new long[]{labelId} ) );
@@ -139,7 +139,7 @@ class TokenIndexReaderTest
         BitSet expected = new BitSet( highNodeId );
         try ( TokenIndexUpdater writer = new TokenIndexUpdater( highNodeId ) )
         {
-            writer.initialize( tree.writer( NULL ) );
+            writer.initialize( tree.writer( NULL_CONTEXT ) );
             int updates = highNodeId / sparsity;
             for ( int i = 0; i < updates; i++ )
             {
@@ -155,7 +155,7 @@ class TokenIndexReaderTest
 
         var reader = new DefaultTokenIndexReader( tree );
         var tokenClient = new SimpleEntityTokenClient();
-        reader.query( tokenClient, unconstrained(), new TokenPredicate( labelId ), EntityRange.from( fromId ), NULL );
+        reader.query( tokenClient, unconstrained(), new TokenPredicate( labelId ), EntityRange.from( fromId ), NULL_CONTEXT );
         while ( nextExpectedId != -1 )
         {
             assertTrue( tokenClient.next() );

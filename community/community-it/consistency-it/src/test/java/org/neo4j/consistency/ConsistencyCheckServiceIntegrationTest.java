@@ -80,7 +80,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -337,7 +337,7 @@ public class ConsistencyCheckServiceIntegrationTest
         relationshipRecord.setInUse( false );
         try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
         {
-            relationshipStore.updateRecord( relationshipRecord, storeCursor, NULL, storeCursors );
+            relationshipStore.updateRecord( relationshipRecord, storeCursor, NULL_CONTEXT, storeCursors );
         }
     }
 

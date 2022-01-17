@@ -492,8 +492,8 @@ class DatabaseRecoveryIT
         long maxHighId = max( highId1, highId2 );
         RECORD record1 = store1.newRecord();
         RECORD record2 = store2.newRecord();
-        try ( var cursor1 = store1.openPageCursorForReading( 0, CursorContext.NULL );
-             var cursor2 = store2.openPageCursorForReading( 0, CursorContext.NULL ) )
+        try ( var cursor1 = store1.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT );
+             var cursor2 = store2.openPageCursorForReading( 0, CursorContext.NULL_CONTEXT ) )
         {
             for ( long id = store1.getNumberOfReservedLowIds(); id < maxHighId; id++ )
             {
@@ -513,7 +513,7 @@ class DatabaseRecoveryIT
     private static void flush( GraphDatabaseService db ) throws IOException
     {
         var forceOperation = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class );
-        forceOperation.flushAndForce( CursorContext.NULL );
+        forceOperation.flushAndForce( CursorContext.NULL_CONTEXT );
     }
 
     private static void checkPoint( GraphDatabaseService db ) throws IOException

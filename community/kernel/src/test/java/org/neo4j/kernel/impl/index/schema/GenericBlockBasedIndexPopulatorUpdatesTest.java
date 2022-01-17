@@ -33,7 +33,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -53,15 +53,15 @@ abstract class GenericBlockBasedIndexPopulatorUpdatesTest<KEY extends GenericKey
 
             // when
             Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
-            populator.add( updates, NULL );
-            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+            populator.add( updates, NULL_CONTEXT );
+            populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
 
             // then
             assertHasEntry( populator, update.values()[0], 1 );
         }
         finally
         {
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
         }
     }
 
@@ -78,8 +78,8 @@ abstract class GenericBlockBasedIndexPopulatorUpdatesTest<KEY extends GenericKey
             IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
             {
                 Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
-                populator.add( updates, NULL );
-                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
+                populator.add( updates, NULL_CONTEXT );
+                populator.scanCompleted( nullInstance, populationWorkScheduler, NULL_CONTEXT );
             } );
             // then
             assertThat( e )
@@ -93,7 +93,7 @@ abstract class GenericBlockBasedIndexPopulatorUpdatesTest<KEY extends GenericKey
         }
         finally
         {
-            populator.close( true, NULL );
+            populator.close( true, NULL_CONTEXT );
         }
     }
 

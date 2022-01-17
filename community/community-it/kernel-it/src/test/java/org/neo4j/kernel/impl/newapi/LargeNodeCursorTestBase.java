@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -78,7 +78,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     {
         // given
         List<Long> ids = new ArrayList<>();
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             // when
             read.allNodesScan( nodes );
@@ -96,7 +96,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     void shouldAccessNodesByReference()
     {
         // given
-        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL_CONTEXT ) )
         {
             for ( long id : NODE_IDS )
             {

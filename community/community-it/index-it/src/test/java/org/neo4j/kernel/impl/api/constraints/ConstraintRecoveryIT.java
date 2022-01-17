@@ -48,7 +48,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @EphemeralTestDirectoryExtension
 class ConstraintRecoveryIT
@@ -82,7 +82,7 @@ class ConstraintRecoveryIT
             public void indexPopulationScanComplete()
             {
                 monitorCalled.set( true );
-                db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore().flush( NULL );
+                db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore().flush( NULL_CONTEXT );
                 storeInNeedOfRecovery[0] = fs.snapshot();
             }
         } );

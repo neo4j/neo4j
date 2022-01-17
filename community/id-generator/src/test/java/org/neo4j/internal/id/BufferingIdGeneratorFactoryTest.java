@@ -65,7 +65,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
@@ -93,14 +93,14 @@ class BufferingIdGeneratorFactoryTest
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries, dbMemoryPool.getPoolMemoryTracker() );
         idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), TestIdType.TEST, () -> 0L, Integer.MAX_VALUE, writable(),
-                Config.defaults(), NULL, immutable.empty(), SINGLE_IDS );
+                Config.defaults(), NULL_CONTEXT, immutable.empty(), SINGLE_IDS );
     }
 
     @Test
     void shouldDelayFreeingOfDeletedIds()
     {
         // WHEN
-        try ( Marker marker = idGenerator.marker( NULL ) )
+        try ( Marker marker = idGenerator.marker( NULL_CONTEXT ) )
         {
             marker.markDeleted( 7, 2 );
         }
@@ -109,12 +109,12 @@ class BufferingIdGeneratorFactoryTest
         actual.markers.get( TestIdType.TEST ).verifyNoMoreMarks();
 
         // after some maintenance and transaction still not closed
-        bufferingIdGeneratorFactory.maintenance( NULL );
+        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
         actual.markers.get( TestIdType.TEST ).verifyNoMoreMarks();
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance( NULL );
+        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
 
         // THEN
         actual.markers.get( TestIdType.TEST ).verifyFreed( 7, 2 );
@@ -130,7 +130,7 @@ class BufferingIdGeneratorFactoryTest
         race.addContestants( 4, () ->
         {
             int numIds = ThreadLocalRandom.current().nextInt( 1, 5 );
-            try ( Marker marker = idGenerator.marker( NULL ) )
+            try ( Marker marker = idGenerator.marker( NULL_CONTEXT ) )
             {
                 for ( int i = 0; i < numIds; i++ )
                 {
@@ -141,7 +141,7 @@ class BufferingIdGeneratorFactoryTest
         List<ControllableIdFreeCondition> conditions = new ArrayList<>();
         race.addContestant( throwing( () ->
         {
-            bufferingIdGeneratorFactory.maintenance( NULL );
+            bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
             if ( boundaries.mostRecentlyReturned == null )
             {
                 return;
@@ -177,10 +177,10 @@ class BufferingIdGeneratorFactoryTest
             condition.enable();
         }
         boundaries.automaticallyEnableConditions = true;
-        bufferingIdGeneratorFactory.maintenance( NULL );
+        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
         // the second maintenance call is because the first call will guarantee that the queued buffers will be freed,
         // making room to queue the last deleted IDs from the ID generator in the second call.
-        bufferingIdGeneratorFactory.maintenance( NULL );
+        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
         for ( long id = 0; id < nextId.get(); id++ )
         {
             actual.markers.get( TestIdType.TEST ).verifyFreed( id, 1 );
@@ -194,7 +194,7 @@ class BufferingIdGeneratorFactoryTest
         long heapSizeBeforeDeleting = dbMemoryPool.usedHeap();
 
         // when deleting some IDs
-        try ( Marker marker = idGenerator.marker( NULL ) )
+        try ( Marker marker = idGenerator.marker( NULL_CONTEXT ) )
         {
             for ( int i = 0; i < 100; i++ )
             {
@@ -203,11 +203,11 @@ class BufferingIdGeneratorFactoryTest
         }
         assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
         // maintenance where transactions are still open
-        bufferingIdGeneratorFactory.maintenance( NULL );
+        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
         assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
         // maintenance where transactions are closed and i.e. the buffered IDs gets released
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance( NULL );
+        bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
 
         // then heap usage should go down again
         assertThat( dbMemoryPool.usedHeap() ).isEqualTo( heapSizeBeforeDeleting );
@@ -265,7 +265,7 @@ class BufferingIdGeneratorFactoryTest
             MockedMarker marker = new MockedMarker();
             generators.put( idType, idGenerator );
             markers.put( idType, marker );
-            when( idGenerator.marker( NULL ) ).thenReturn( marker );
+            when( idGenerator.marker( NULL_CONTEXT ) ).thenReturn( marker );
             return idGenerator;
         }
 

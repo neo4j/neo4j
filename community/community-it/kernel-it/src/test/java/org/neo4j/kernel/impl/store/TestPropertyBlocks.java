@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
@@ -180,7 +180,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         final List<Pair<String, Object>> props = new ArrayList<>();
         PropertyStore propertyStore = propertyStore();
         final PropertyRecord record = propertyStore.newRecord();
-        try ( var cursor = propertyStore.openPageCursorForReading( 0, NULL ) )
+        try ( var cursor = propertyStore.openPageCursorForReading( 0, NULL_CONTEXT ) )
         {
             propertyStore.getRecordByCursor( recordId, record, RecordLoad.FORCE, cursor );
         }

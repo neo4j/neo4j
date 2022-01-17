@@ -69,7 +69,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -111,7 +111,7 @@ class BatchingTransactionAppenderTest
         // WHEN
         TransactionRepresentation transaction = transaction( singleTestCommand(), new byte[]{1, 2, 5}, 12345, 4545, 12345 + 10 );
 
-        appender.append( new TransactionToApply( transaction, NULL, StoreCursors.NULL ), logAppendEvent );
+        appender.append( new TransactionToApply( transaction, NULL_CONTEXT, StoreCursors.NULL ), logAppendEvent );
 
         // THEN
         final LogEntryReader logEntryReader = logEntryReader();
@@ -176,7 +176,8 @@ class BatchingTransactionAppenderTest
         LogEntryCommit commit = new LogEntryCommit( nextTxId, 0L, BASE_TX_CHECKSUM );
         CommittedTransactionRepresentation transaction = new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 
-        appender.append( new TransactionToApply( transactionRepresentation, transaction.getCommitEntry().getTxId(), NULL, StoreCursors.NULL ), logAppendEvent );
+        appender.append( new TransactionToApply( transactionRepresentation, transaction.getCommitEntry().getTxId(), NULL_CONTEXT, StoreCursors.NULL ),
+                logAppendEvent );
 
         // THEN
         LogEntryReader logEntryReader = logEntryReader();
@@ -217,7 +218,7 @@ class BatchingTransactionAppenderTest
         CommittedTransactionRepresentation transaction = new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 
         var e = assertThrows( Exception.class, () -> appender.append( new TransactionToApply( transaction.getTransactionRepresentation(),
-            transaction.getCommitEntry().getTxId(), NULL, StoreCursors.NULL ), logAppendEvent ) );
+            transaction.getCommitEntry().getTxId(), NULL_CONTEXT, StoreCursors.NULL ), logAppendEvent ) );
         assertThat( e.getMessage() ).contains( "to be applied, but appending it ended up generating an" );
     }
 
@@ -243,7 +244,8 @@ class BatchingTransactionAppenderTest
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
 
-        var e = assertThrows( IOException.class, () -> appender.append( new TransactionToApply( transaction, NULL, StoreCursors.NULL ), logAppendEvent ) );
+        var e = assertThrows( IOException.class, () -> appender.append( new TransactionToApply( transaction, NULL_CONTEXT, StoreCursors.NULL ),
+                logAppendEvent ) );
         assertSame( failure, e );
         verify( transactionIdStore ).nextCommittingTransactionId();
         verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), any( CursorContext.class ) );
@@ -277,7 +279,8 @@ class BatchingTransactionAppenderTest
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
 
-        var e = assertThrows( IOException.class, () -> appender.append( new TransactionToApply( transaction, NULL, StoreCursors.NULL ), logAppendEvent ) );
+        var e = assertThrows( IOException.class, () -> appender.append( new TransactionToApply( transaction, NULL_CONTEXT, StoreCursors.NULL ),
+                logAppendEvent ) );
         assertSame( failure, e );
         verify( transactionIdStore ).nextCommittingTransactionId();
         verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), any( CursorContext.class ) );
@@ -289,7 +292,7 @@ class BatchingTransactionAppenderTest
         // Given
         BatchingTransactionAppender appender = life.add( createTransactionAppender() );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 42L );
-        TransactionToApply batch = new TransactionToApply( mock( TransactionRepresentation.class ), 43L, NULL, StoreCursors.NULL );
+        TransactionToApply batch = new TransactionToApply( mock( TransactionRepresentation.class ), 43L, NULL_CONTEXT, StoreCursors.NULL );
         // When
         var e = assertThrows( IllegalStateException.class, () -> appender.append( batch, LogAppendEvent.NULL ) );
         // Then
@@ -320,7 +323,7 @@ class BatchingTransactionAppenderTest
         TransactionToApply last = null;
         for ( TransactionRepresentation transaction : transactions )
         {
-            TransactionToApply tx = new TransactionToApply( transaction, NULL, StoreCursors.NULL );
+            TransactionToApply tx = new TransactionToApply( transaction, NULL_CONTEXT, StoreCursors.NULL );
             if ( first == null )
             {
                 first = last = tx;

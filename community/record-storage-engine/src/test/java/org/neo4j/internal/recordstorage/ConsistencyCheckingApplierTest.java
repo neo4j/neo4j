@@ -83,12 +83,12 @@ class ConsistencyCheckingApplierTest
         neoStores = new StoreFactory( layout, config, new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), DEFAULT_DATABASE_NAME ), pageCache,
                 directory.getFileSystem(), NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openAllNeoStores( true );
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
-        checker = new ConsistencyCheckingApplier( relationshipStore, CursorContext.NULL );
+        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT );
+        checker = new ConsistencyCheckingApplier( relationshipStore, CursorContext.NULL_CONTEXT );
         BatchContext batchContext = mock( BatchContext.class );
         when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
         applier = new NeoStoreTransactionApplier( CommandVersion.AFTER, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, 0,
-                batchContext, CursorContext.NULL, storeCursors );
+                batchContext, CursorContext.NULL_CONTEXT, storeCursors );
         appliers = new TransactionApplier[]{checker, applier};
     }
 

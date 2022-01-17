@@ -517,7 +517,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), readOnly(), NULL, immutable.empty(), databaseName, name, CursorContext.NULL ) )
+                RecoveryCleanupWorkCollector.ignore(), readOnly(), NULL, immutable.empty(), databaseName, name, CursorContext.NULL_CONTEXT ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             tree.visit( new GBPTreeVisitor.Adaptor<>()

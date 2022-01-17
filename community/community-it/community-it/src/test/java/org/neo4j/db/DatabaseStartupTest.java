@@ -61,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.Exceptions.findCauseOrSuppressed;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -94,7 +94,7 @@ class DatabaseStartupTest
               PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
-                    MetaDataStore.Position.STORE_VERSION, StoreVersion.versionStringToLong( "bad" ), databaseLayout.getDatabaseName(), NULL );
+                    MetaDataStore.Position.STORE_VERSION, StoreVersion.versionStringToLong( "bad" ), databaseLayout.getDatabaseName(), NULL_CONTEXT );
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
@@ -137,7 +137,7 @@ class DatabaseStartupTest
               PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.STORE_VERSION,
-                    StoreVersion.versionStringToLong( badStoreVersion ), databaseLayout.getDatabaseName(), NULL );
+                    StoreVersion.versionStringToLong( badStoreVersion ), databaseLayout.getDatabaseName(), NULL_CONTEXT );
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
@@ -179,7 +179,8 @@ class DatabaseStartupTest
                 PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             long newTime = System.currentTimeMillis() + 1;
-            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime, databaseLayout.getDatabaseName(), NULL );
+            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime, databaseLayout.getDatabaseName(),
+                    NULL_CONTEXT );
         }
 
         // Try to start

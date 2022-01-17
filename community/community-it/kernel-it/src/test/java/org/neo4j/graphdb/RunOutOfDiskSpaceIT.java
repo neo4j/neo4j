@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @Neo4jLayoutExtension
 class RunOutOfDiskSpaceIT
@@ -102,7 +102,7 @@ class RunOutOfDiskSpaceIT
         {
             assertEquals( logVersion,
                     MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, databaseLayout.getDatabaseName(),
-                            NULL ) );
+                            NULL_CONTEXT ) );
         }
     }
 
@@ -146,7 +146,7 @@ class RunOutOfDiskSpaceIT
         {
             assertEquals( logVersion,
                     MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, databaseLayout.getDatabaseName(),
-                            NULL ) );
+                            NULL_CONTEXT ) );
         }
     }
 

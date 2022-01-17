@@ -126,7 +126,7 @@ class NodeCheckerIT
     private void prepareContext() throws Exception
     {
         var neoStores = storageEngine.testAccessNeoStores();
-        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             Iterable<IndexDescriptor> indexDescriptors =
                     () -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).indexesGetAll(

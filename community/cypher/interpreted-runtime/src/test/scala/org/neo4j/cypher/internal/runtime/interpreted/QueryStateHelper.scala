@@ -70,7 +70,7 @@ object QueryStateHelper extends MockitoSugar {
                 query: QueryContext = null,
                 resources: ExternalCSVResource = null,
                 params: Array[AnyValue] = Array.empty,
-                expressionCursors: ExpressionCursors = new ExpressionCursors(mockCursorFactory, CursorContext.NULL, EmptyMemoryTracker.INSTANCE),
+                expressionCursors: ExpressionCursors = new ExpressionCursors(mockCursorFactory, CursorContext.NULL_CONTEXT, EmptyMemoryTracker.INSTANCE),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
                 nodeTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
                 relTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),

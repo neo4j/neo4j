@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValueIterator.NO_ID;
 
@@ -89,7 +89,7 @@ class TokenIndexUpdaterTest
         long[] expected = new long[NODE_COUNT];
         try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ) ) )
         {
-            writer.initialize( tree.writer( NULL ) );
+            writer.initialize( tree.writer( NULL_CONTEXT ) );
 
             // WHEN
             for ( int i = 0; i < NODE_COUNT * 3; i++ )
@@ -104,7 +104,7 @@ class TokenIndexUpdaterTest
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
             long[] actualNodeIds = asArray( new TokenScanValueIterator(
-                    tree.seek( new TokenScanKey( i, 0 ), new TokenScanKey( i, Long.MAX_VALUE ), NULL ), NO_ID ) );
+                    tree.seek( new TokenScanKey( i, 0 ), new TokenScanKey( i, Long.MAX_VALUE ), NULL_CONTEXT ), NO_ID ) );
             assertArrayEquals( expectedNodeIds, actualNodeIds, "For label " + i );
         }
     }
@@ -143,7 +143,7 @@ class TokenIndexUpdaterTest
                             {
                                 try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1 ) )
                                 {
-                                    writer.initialize( tree.writer( NULL ) );
+                                    writer.initialize( tree.writer( NULL_CONTEXT ) );
 
                                     // WHEN
                                     writer.process( TokenIndexEntryUpdate.change( 0, null, EMPTY_LONG_ARRAY, new long[]{2, 1} ) );
@@ -160,7 +160,7 @@ class TokenIndexUpdaterTest
                             {
                                 try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1 ) )
                                 {
-                                    writer.initialize( tree.writer( NULL ) );
+                                    writer.initialize( tree.writer( NULL_CONTEXT ) );
 
                                     // WHEN
                                     writer.process( TokenIndexEntryUpdate.change( 0, null, EMPTY_LONG_ARRAY, new long[]{2, -1} ) );
@@ -179,7 +179,7 @@ class TokenIndexUpdaterTest
         long[] labels = {labelId};
         try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ) ) )
         {
-            writer.initialize( tree.writer( NULL ) );
+            writer.initialize( tree.writer( NULL_CONTEXT ) );
 
             // a couple of tree entries with a couple of nodes each
             // concept art: [xxxx          ][xxxx          ][xxxx          ] where x is used node.
@@ -198,7 +198,7 @@ class TokenIndexUpdaterTest
         int treeEntryToRemoveFrom = 1;
         try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ) ) )
         {
-            writer.initialize( tree.writer( NULL ) );
+            writer.initialize( tree.writer( NULL_CONTEXT ) );
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;
             for ( int i = 0; i < numberOfNodesInEach; i++ )
             {
@@ -238,7 +238,7 @@ class TokenIndexUpdaterTest
                     assertTrue( expected.remove( tokenScanKey.idRange ) );
                 }
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertTrue( expected.isEmpty() );
     }
 

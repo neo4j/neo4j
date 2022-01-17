@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelAPIWriteTestSupport>
 {
@@ -226,7 +226,7 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
                         assertEquals( nameForType( indexType ), indexSession.reference().getName() );
 
                         int property = tx.token().propertyKey( PROPERTY );
-                        try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
+                        try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( NULL_CONTEXT, tx.memoryTracker() ) )
                         {
                             tx.dataRead().nodeIndexSeek( tx.queryContext(), indexSession, cursor, unconstrained(), exact( property, value ) );
 
@@ -279,7 +279,7 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
                         assertEquals( nameForType( indexType ), indexSession.reference().getName() );
 
                         int property = tx.token().propertyKey( PROPERTY );
-                        try ( RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() ) )
+                        try ( RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( NULL_CONTEXT, tx.memoryTracker() ) )
                         {
                             tx.dataRead().relationshipIndexSeek( tx.queryContext(), indexSession, cursor, unconstrained(), exact( property, value ) );
 

@@ -72,7 +72,7 @@ public class StoreVersionLoader implements AutoCloseable
         StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine( fs, layout, pageCache ).orElseGet( StorageEngineFactory::defaultStorageEngine );
         StoreVersionCheck versionCheck = sef.versionCheck( fs, layout, config, pageCache, NullLogService.getInstance(), PageCacheTracer.NULL );
 
-        String storeVersion = versionCheck.storeVersion( CursorContext.NULL )
+        String storeVersion = versionCheck.storeVersion( CursorContext.NULL_CONTEXT )
             .orElseThrow( () -> new IllegalStateException( "Can not read store version of database " + layout.getDatabaseName() ) );
         return new Result( storeVersion, sef.versionInformation( storeVersion ).latestStoreVersion() );
     }

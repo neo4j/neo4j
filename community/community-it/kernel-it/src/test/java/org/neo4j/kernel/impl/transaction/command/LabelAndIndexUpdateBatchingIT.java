@@ -160,11 +160,11 @@ class LabelAndIndexUpdateBatchingIT
         StorageEngine storageEngine = db.getDependencyResolver().resolveDependency( StorageEngine.class );
         TransactionToApply first = null;
         TransactionToApply last = null;
-        try ( var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL ) )
+        try ( var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL_CONTEXT ) )
         {
             for ( TransactionRepresentation transactionRepresentation : transactions )
             {
-                TransactionToApply transaction = new TransactionToApply( transactionRepresentation, CursorContext.NULL, storeCursors );
+                TransactionToApply transaction = new TransactionToApply( transactionRepresentation, CursorContext.NULL_CONTEXT, storeCursors );
                 if ( first == null )
                 {
                     first = last = transaction;

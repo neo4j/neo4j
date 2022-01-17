@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 class IndexUpdaterMapTest
@@ -80,7 +80,7 @@ class IndexUpdaterMapTest
         indexMap.putIndexProxy( indexProxy1 );
 
         // when
-        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1, NULL );
+        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1, NULL_CONTEXT );
 
         // then
         assertEquals( indexUpdater1, updater );
@@ -94,7 +94,7 @@ class IndexUpdaterMapTest
         indexMap.putIndexProxy( indexProxy1 );
 
         // when
-        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1, NULL );
+        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1, NULL_CONTEXT );
 
         // then
         assertThat( updater ).isEqualTo( indexUpdater1 );
@@ -107,8 +107,8 @@ class IndexUpdaterMapTest
         indexMap.putIndexProxy( indexProxy1 );
 
         // when
-        IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1, NULL );
-        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor1, NULL );
+        IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1, NULL_CONTEXT );
+        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor1, NULL_CONTEXT );
 
         // then
         assertEquals( updater1, updater2 );
@@ -119,7 +119,7 @@ class IndexUpdaterMapTest
     void shouldRetrieveNoUpdaterForNonExistingIndex()
     {
         // when
-        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1, NULL );
+        IndexUpdater updater = updaterMap.getUpdater( schemaIndexDescriptor1, NULL_CONTEXT );
 
         // then
         assertNull( updater );
@@ -133,8 +133,8 @@ class IndexUpdaterMapTest
         indexMap.putIndexProxy( indexProxy1 );
         indexMap.putIndexProxy( indexProxy2 );
 
-        IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1, NULL );
-        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor, NULL );
+        IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1, NULL_CONTEXT );
+        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor, NULL_CONTEXT );
 
         // hen
         updaterMap.close();

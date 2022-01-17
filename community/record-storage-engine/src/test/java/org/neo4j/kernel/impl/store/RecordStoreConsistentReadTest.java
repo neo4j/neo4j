@@ -46,7 +46,7 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -77,7 +77,7 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
                         pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
         neoStores = factory.openAllNeoStores( true );
-        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
         initialiseStore( neoStores );
     }
 
@@ -92,9 +92,9 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     protected S initialiseStore( NeoStores neoStores )
     {
         S store = getStore( neoStores );
-        try ( var cursor = store.openPageCursorForWriting( 0, CursorContext.NULL ) )
+        try ( var cursor = store.openPageCursorForWriting( 0, CursorContext.NULL_CONTEXT ) )
         {
-            store.updateRecord( createExistingRecord( false ), cursor, CursorContext.NULL, storeCursors );
+            store.updateRecord( createExistingRecord( false ), cursor, CursorContext.NULL_CONTEXT, storeCursors );
         }
         return store;
     }

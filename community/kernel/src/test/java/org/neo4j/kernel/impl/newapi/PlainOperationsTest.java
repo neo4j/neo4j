@@ -103,7 +103,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForSchema;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -957,15 +957,15 @@ public class PlainOperationsTest extends OperationsTest
         when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
-        when( cursors.allocateFullAccessNodeCursor( NULL ) ).thenReturn( mock( FullAccessNodeCursor.class ) );
-        when( cursors.allocateFullAccessPropertyCursor( NULL, INSTANCE ) ).thenReturn( mock( FullAccessPropertyCursor.class ) );
+        when( cursors.allocateFullAccessNodeCursor( NULL_CONTEXT ) ).thenReturn( mock( FullAccessNodeCursor.class ) );
+        when( cursors.allocateFullAccessPropertyCursor( NULL_CONTEXT, INSTANCE ) ).thenReturn( mock( FullAccessPropertyCursor.class ) );
 
         Operations operations =
                 new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ), commandCreationContext,
                         mock( StorageLocks.class ), ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
                         mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST,
                         mock( DbmsRuntimeRepository.class ) );
-        operations.initialize( NULL );
+        operations.initialize( NULL_CONTEXT );
 
         // when
         operations.nodeCreateWithLabels( new int[]{1} );

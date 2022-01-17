@@ -49,7 +49,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @PageCacheExtension
 @ExtendWith( RandomExtension.class )
@@ -138,13 +138,13 @@ abstract class IndexProviderCompatabilityTestBase
             runWithPopulator.accept( populator );
             if ( closeSuccessfully )
             {
-                populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, NULL );
+                populator.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, NULL_CONTEXT );
                 testSuite.consistencyCheck( populator );
             }
         }
         finally
         {
-            populator.close( closeSuccessfully, NULL );
+            populator.close( closeSuccessfully, NULL_CONTEXT );
         }
     }
 }

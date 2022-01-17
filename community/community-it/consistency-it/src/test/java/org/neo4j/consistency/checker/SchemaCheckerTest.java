@@ -99,7 +99,7 @@ class SchemaCheckerTest extends CheckerTestBase
     void shouldReportDuplicateRuleContent() throws Exception
     {
         // given
-        var cursorContext = CursorContext.NULL;
+        var cursorContext = CursorContext.NULL_CONTEXT;
         try ( AutoCloseable ignored = tx() )
         {
             IndexDescriptor index1 = IndexPrototype.forSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
@@ -127,7 +127,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -148,7 +148,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
                     .withName( NAME )
                     .withIndexType( IndexType.LOOKUP )
@@ -169,7 +169,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( UNUSED, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -190,7 +190,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forRelType( UNUSED, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -211,7 +211,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forRelType( relationshipType1, UNUSED ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -232,7 +232,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -254,7 +254,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             UniquenessConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForLabel( label1, propertyKey1 )
                     .withId( schemaStore.nextId( cursorContext ) )
                     .withName( NAME )
@@ -275,7 +275,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -285,7 +285,7 @@ class SchemaCheckerTest extends CheckerTestBase
             schemaStore.getRecordByCursor( index.getId(), schemaRecord, RecordLoad.NORMAL, storeCursors.readCursor( SCHEMA_CURSOR ) );
             try ( var storeCursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
             {
-                propertyStore.updateRecord( new PropertyRecord( schemaRecord.getNextProp() ), storeCursor, CursorContext.NULL, storeCursors );
+                propertyStore.updateRecord( new PropertyRecord( schemaRecord.getNextProp() ), storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
             }
         }
 
@@ -302,7 +302,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -329,7 +329,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -356,7 +356,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withIndexType( IndexType.BTREE )
                     .withName( NAME )
@@ -384,7 +384,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -417,7 +417,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -449,7 +449,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             NodeExistenceConstraintDescriptor constraint1 = ConstraintDescriptorFactory
                     .existsForLabel( label1, propertyKey1 )
                     .withId( schemaStore.nextId( cursorContext ) )
@@ -490,7 +490,7 @@ class SchemaCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            var cursorContext = CursorContext.NULL;
+            var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
@@ -651,7 +651,7 @@ class SchemaCheckerTest extends CheckerTestBase
             {
                 for ( DynamicRecord nameRecord : record.getNameRecords() )
                 {
-                    nameStore.updateRecord( nameRecord, storeCursor, CursorContext.NULL, storeCursors );
+                    nameStore.updateRecord( nameRecord, storeCursor, CursorContext.NULL_CONTEXT, storeCursors );
                 }
             }
         }
@@ -665,7 +665,7 @@ class SchemaCheckerTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        new SchemaChecker( context() ).check( mandatoryNodeProperties, mandatoryRelationshipProperties, CursorContext.NULL, storeCursors );
+        new SchemaChecker( context() ).check( mandatoryNodeProperties, mandatoryRelationshipProperties, CursorContext.NULL_CONTEXT, storeCursors );
     }
 
     interface TokenCreator

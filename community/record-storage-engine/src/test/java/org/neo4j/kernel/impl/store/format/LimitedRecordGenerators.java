@@ -129,7 +129,7 @@ public class LimitedRecordGenerators implements RecordGenerators
                 // Dynamic records will not be written and read by the property record format,
                 // that happens in the store where it delegates to a "sub" store.
                 PropertyStore.encodeValue( block, random.nextInt( tokenBits ), random.nextValue(),
-                        stringAllocator, arrayAllocator, CursorContext.NULL, INSTANCE );
+                        stringAllocator, arrayAllocator, CursorContext.NULL_CONTEXT, INSTANCE );
                 int tentativeBlocksWithThisOne = blocksOccupied + block.getValueBlocks().length;
                 if ( tentativeBlocksWithThisOne <= 4 )
                 {

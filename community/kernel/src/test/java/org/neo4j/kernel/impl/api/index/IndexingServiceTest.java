@@ -136,7 +136,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildAll;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -221,7 +221,7 @@ class IndexingServiceTest
         waitForIndexesToComeOnline( indexingService, index );
         verify( populator, timeout( 10000 ) ).close( eq( true ), any() );
 
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             updater.process( add( 10, "foo" ) );
         }
@@ -300,7 +300,7 @@ class IndexingServiceTest
         populationStartBarrier.release();
 
         IndexEntryUpdate<?> value2 = add( 2, "value2" );
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             updater.process( value2 );
         }
@@ -351,7 +351,7 @@ class IndexingServiceTest
         // don't wait for index to come ONLINE here since we're testing that it doesn't
         verify( populator, timeout( 20000 ) ).close( eq( true ), any() );
 
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             updater.process( add( 10, "foo" ) );
         }
@@ -499,8 +499,8 @@ class IndexingServiceTest
         Path theFile = Path.of( "Blah" );
 
         when( indexAccessor.snapshotFiles()).thenAnswer( newResourceIterator( theFile ) );
-        when( indexProvider.getInitialState( rule1, NULL ) ).thenReturn( ONLINE );
-        when( indexProvider.getInitialState( rule2, NULL ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( rule1, NULL_CONTEXT ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( rule2, NULL_CONTEXT ) ).thenReturn( ONLINE );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 100L, 32L, 32L ) );
 
         life.start();
@@ -603,7 +603,7 @@ class IndexingServiceTest
         life.start();
         life.shutdown();
 
-        var e = assertThrows( IllegalStateException.class, () -> indexingService.applyUpdates( asSet( add( 1, "foo" ) ) ,NULL, false ) );
+        var e = assertThrows( IllegalStateException.class, () -> indexingService.applyUpdates( asSet( add( 1, "foo" ) ) , NULL_CONTEXT, false ) );
         assertThat( e.getMessage() ).startsWith( "Can't apply index updates" );
     }
 
@@ -620,7 +620,7 @@ class IndexingServiceTest
         verify( populator, timeout( 10000 ) ).close( eq( true ), any() );
 
         // When
-        indexing.applyUpdates( asList( add( 1, "foo" ), add( 2, "bar" ) ), NULL, false );
+        indexing.applyUpdates( asList( add( 1, "foo" ), add( 2, "bar" ) ), NULL_CONTEXT, false );
 
         // Then
         InOrder inOrder = inOrder( updater );
@@ -668,7 +668,7 @@ class IndexingServiceTest
         // When
         indexing.applyUpdates( asList(
                 add( 1, "foo", index1 ),
-                add( 2, "bar", index2 ) ), NULL, false );
+                add( 2, "bar", index2 ) ), NULL_CONTEXT, false );
 
         // Then
         verify( updater1 ).close();
@@ -738,7 +738,7 @@ class IndexingServiceTest
         IndexingService indexing = newIndexingServiceWithMockedDependencies(
                 populator, accessor, withData( update ), index
         );
-        when( indexProvider.getInitialState( index, NULL ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( index, NULL_CONTEXT ) ).thenReturn( ONLINE );
         life.init();
 
         // WHEN dropping another index, which happens to have the same label/property... while recovering
@@ -748,7 +748,7 @@ class IndexingServiceTest
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndexes( AUTH_DISABLED, index );
         reset( accessor );
-        indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL, false );
+        indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL_CONTEXT, false );
         // and WHEN starting, i.e. completing recovery
         life.start();
 
@@ -769,7 +769,7 @@ class IndexingServiceTest
         IndexingService indexing = newIndexingServiceWithMockedDependencies(
                 populator, accessor, withData( update ), index
         );
-        when( indexProvider.getInitialState( index, NULL ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( index, NULL_CONTEXT ) ).thenReturn( ONLINE );
         life.init();
         populationStartLatch.getAndSet( new BinaryLatch() ).release();
 
@@ -781,7 +781,7 @@ class IndexingServiceTest
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndexes( AUTH_DISABLED, index );
         reset( accessor );
-        indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL, false );
+        indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ), NULL_CONTEXT, false );
         // and WHEN starting, i.e. completing recovery
         life.start();
 
@@ -907,7 +907,7 @@ class IndexingServiceTest
         nameLookup.label( labelId, "TheLabel" );
         nameLookup.propertyKey( propertyKeyId, "propertyKey" );
 
-        when( indexProvider.getInitialState( index, NULL ) ).thenReturn( POPULATING );
+        when( indexProvider.getInitialState( index, NULL_CONTEXT ) ).thenReturn( POPULATING );
         when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenThrow( exception );
 
@@ -1147,11 +1147,11 @@ class IndexingServiceTest
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
-        indexingService.forceAll( NULL );
-        verify( validIndex1 ).force( NULL );
-        verify( validIndex2 ).force( NULL );
-        verify( validIndex3 ).force( NULL );
-        verify( validIndex4 ).force( NULL );
+        indexingService.forceAll( NULL_CONTEXT );
+        verify( validIndex1 ).force( NULL_CONTEXT );
+        verify( validIndex2 ).force( NULL_CONTEXT );
+        verify( validIndex3 ).force( NULL_CONTEXT );
+        verify( validIndex4 ).force( NULL_CONTEXT );
     }
 
     @Test
@@ -1175,7 +1175,7 @@ class IndexingServiceTest
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
         var e = assertThrows( UnderlyingStorageException.class,
-                () -> indexingService.forceAll( NULL ) );
+                () -> indexingService.forceAll( NULL_CONTEXT ) );
         assertThat( e.getMessage() ).startsWith( "Unable to force" );
     }
 
@@ -1257,7 +1257,7 @@ class IndexingServiceTest
 
         // when
         IndexProxy proxy = indexingService.getIndexProxy( indexDescriptor );
-        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             updater.process( IndexEntryUpdate.add( 123, indexDescriptor, stringValue( "some value" ) ) );
         }

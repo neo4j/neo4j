@@ -66,7 +66,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @ImpermanentDbmsExtension
 class SchemaStorageIT
@@ -101,7 +101,7 @@ class SchemaStorageIT
             tokenWrite.relationshipTypeGetOrCreateForName( TYPE1 );
             transaction.commit();
         }
-        storageCursors = storageEngine.createStorageCursors( NULL );
+        storageCursors = storageEngine.createStorageCursors( NULL_CONTEXT );
         schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
         storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
     }

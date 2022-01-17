@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @TestDirectoryExtension
 class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCacheTest
@@ -72,7 +72,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
               var pagedFile = map( file( "a" ), pageCache.pageSize() ) )
         {
-            try ( MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( writer.next() );
                 assertEquals( pageCache.payloadSize(), writer.getPayloadSize() );
@@ -80,7 +80,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
                 assertEquals( pageCache.pageSize(), writer.getPageSize() );
             }
 
-            try ( MuninnPageCursor reader = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+            try ( MuninnPageCursor reader = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( reader.next() );
                 assertEquals( pageCache.payloadSize(), reader.getPayloadSize() );
@@ -96,12 +96,12 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
                 var pagedFile = map( file( "a" ), pageCache.pageSize() ) )
         {
-            try ( MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertEquals( pageCache.payloadSize(), writer.getPagedFile().payloadSize() );
             }
 
-            try ( MuninnPageCursor reader = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+            try ( MuninnPageCursor reader = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
             {
                 assertEquals( pageCache.payloadSize(), reader.getPagedFile().payloadSize() );
             }
@@ -117,7 +117,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
             generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
 
             try ( var pagedFile = map( file( "a" ), pageCache.pageSize() );
-                  var reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+                  var reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( reader.next() );
                 try ( MuninnPageCursor linedReader = (MuninnPageCursor) reader.openLinkedCursor( 1 ) )
@@ -136,7 +136,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
               var pagedFile = map( file( "a" ), pageCache.pageSize() ) )
         {
-            try ( MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( writer.next() );
 
@@ -150,7 +150,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
                 assertEquals( counter, writer.getPayloadSize() );
             }
 
-            try ( MuninnPageCursor reader = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+            try ( MuninnPageCursor reader = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( reader.next() );
                 int counter = 0;
@@ -171,7 +171,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
                 var pagedFile = map( file( "a" ), pageCache.pageSize() ) )
         {
-            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( writer.next() );
                 long value = 1;
@@ -182,7 +182,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
                 assertTrue( writer.checkAndClearBoundsFlag() );
             }
 
-            try ( var reader = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( var reader = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( reader.next() );
                 while ( reader.getOffset() < pageCache.pageSize() )
@@ -205,7 +205,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
             int expectedIterations = pageCache.payloadSize() / typeBytes;
             assertThat( expectedIterations ).isNotZero();
 
-            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( writer.next() );
                 int writes = 0;
@@ -220,7 +220,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
                 assertEquals( expectedIterations, writes );
             }
 
-            try ( var reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+            try ( var reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( reader.next() );
                 int reads = 0;
@@ -248,7 +248,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
             int expectedIterations = pageCache.payloadSize() / typeBytes;
             assertThat( expectedIterations ).isNotZero();
 
-            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( writer.next() );
                 int writes = 0;
@@ -263,7 +263,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
                 assertEquals( expectedIterations, writes );
             }
 
-            try ( var reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+            try ( var reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( reader.next() );
                 int reads = 0;
@@ -288,7 +288,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
             var file = file( "a" );
             generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
             try ( var pagedFile = map( file, pageCache.pageSize() );
-                  var reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+                  var reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( reader.next() );
 
@@ -312,7 +312,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
             var file = file( "a" );
             generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
             try ( var pagedFile = map( file, pageCache.pageSize() );
-                    var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+                    var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( writer.next() );
 
@@ -335,7 +335,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
               var pagedFile = map( file( "a" ), pageCache.pageSize() ) )
         {
             int offset = 0;
-            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( writer.next() );
 
@@ -352,7 +352,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
                 offset += Long.BYTES;
             }
 
-            try ( var reader = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( var reader = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( reader.next() );
 
@@ -390,8 +390,8 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
     {
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
                 var pagedFile = map( file( "a" ), pageCache.pageSize() );
-                MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL );
-                MuninnPageCursor writer2 = (MuninnPageCursor) pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL ) )
+                MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT );
+                MuninnPageCursor writer2 = (MuninnPageCursor) pagedFile.io( 1, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
         {
             assertTrue( writer.next() );
             assertTrue( writer2.next() );
@@ -419,7 +419,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
     {
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
                 var pagedFile = map( file( "a" ), pageCache.pageSize() );
-                MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+                MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
         {
             assertTrue( writer.next() );
 
@@ -445,7 +445,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
     {
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
               var pagedFile = map( file( "a" ), pageCache.pageSize() );
-              var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+              var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
         {
             assertTrue( writer.next() );
 
@@ -465,7 +465,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
     {
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
                 var pagedFile = map( file( "a" ), pageCache.pageSize() );
-                var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+                var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
         {
             assertTrue( writer.next() );
 
@@ -495,7 +495,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
               var pagedFile = map( file( "a" ), pageCache.pageSize() ) )
         {
-            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
+            try ( var writer = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( writer.next() );
 
@@ -506,7 +506,7 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
                 assertTrue( writer.checkAndClearBoundsFlag() );
             }
 
-            try ( MuninnPageCursor reader = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
+            try ( MuninnPageCursor reader = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
             {
                 assertTrue( reader.next() );
 

@@ -28,7 +28,7 @@ import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.notAnOffloadNode;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistencyCheckerTestBase<RawBytes,RawBytes>
 {
@@ -46,7 +46,7 @@ public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistency
             int keySize = index.inlineKeyValueSizeCap();
             RawBytes key = key( keySize + 1 );
             RawBytes value = value( 0 );
-            try ( Writer<RawBytes,RawBytes> writer = index.writer( NULL ) )
+            try ( Writer<RawBytes,RawBytes> writer = index.writer( NULL_CONTEXT ) )
             {
                 writer.put( key, value );
             }
@@ -55,7 +55,7 @@ public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistency
             ImmutableLongList offloadNodes = inspection.offloadNodes();
             long offloadNode = offloadNodes.get( random.nextInt( offloadNodes.size() ) );
 
-            index.unsafe( pageSpecificCorruption( offloadNode, notAnOffloadNode() ), NULL );
+            index.unsafe( pageSpecificCorruption( offloadNode, notAnOffloadNode() ), NULL_CONTEXT );
 
             assertReportException( index, offloadNode );
         }
@@ -90,7 +90,7 @@ public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistency
                 called.setTrue();
                 assertThat( e.getMessage() ).contains( "Tried to read from offload store but page is not an offload page." );
             }
-        }, NULL );
+        }, NULL_CONTEXT );
         assertCalled( called );
     }
 }

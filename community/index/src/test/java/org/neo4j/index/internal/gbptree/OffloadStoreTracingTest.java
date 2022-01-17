@@ -60,7 +60,7 @@ class OffloadStoreTracingTest
         pagedFile = pageCache.map( testDirectory.createFile( "file" ), pageCache.pageSize(), "neo4j" );
         OffloadPageCursorFactory pcFactory = pagedFile::io;
         idProvider = new FreeListIdProvider( pagedFile, 10 );
-        idProvider.initializeAfterCreation( CursorContext.NULL );
+        idProvider.initializeAfterCreation( CursorContext.NULL_CONTEXT );
         offloadStore = new OffloadStoreImpl<>( layout, idProvider, pcFactory, ALWAYS_TRUE, pageCache.pageSize() );
     }
 

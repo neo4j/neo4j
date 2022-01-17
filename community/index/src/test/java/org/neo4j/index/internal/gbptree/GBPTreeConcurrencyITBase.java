@@ -62,7 +62,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 /**
@@ -113,7 +113,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
     void consistencyCheckAndClose() throws IOException
     {
         threadPool.shutdownNow();
-        index.consistencyCheck( NULL );
+        index.consistencyCheck( NULL_CONTEXT );
         index.close();
         pageCache.close();
     }
@@ -291,7 +291,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         {
             List<Long> fullRange = LongStream.range( minRange, maxRange ).boxed().collect( Collectors.toList() );
             List<Long> rangeOutOfOrder = shuffleToNewList( fullRange, random );
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 for ( Long key : rangeOutOfOrder )
                 {
@@ -495,7 +495,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         Iterator<UpdateOperation> toWriteIterator = toWrite.iterator();
         while ( toWriteIterator.hasNext() )
         {
-            try ( Writer<KEY,VALUE> writer = index.writer( NULL ) )
+            try ( Writer<KEY,VALUE> writer = index.writer( NULL_CONTEXT ) )
             {
                 int inBatch = 0;
                 while ( toWriteIterator.hasNext() && inBatch < batchSize )
@@ -540,7 +540,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         @Override
         public void run()
         {
-            try ( Seeker<KEY,VALUE> reusableSeeker = useReusableSeeker ? index.allocateSeeker( NULL ) : null )
+            try ( Seeker<KEY,VALUE> reusableSeeker = useReusableSeeker ? index.allocateSeeker( NULL_CONTEXT ) : null )
             {
                 readerReadySignal.countDown(); // Ready, set...
                 readerStartSignal.await(); // GO!
@@ -632,7 +632,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             {
                 try
                 {
-                    index.checkpoint( NULL );
+                    index.checkpoint( NULL_CONTEXT );
                     // Sleep a little in between checkpoints
                     MILLISECONDS.sleep( 20L );
                 }
@@ -681,11 +681,11 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             KEY to = key( end() );
             if ( partitionedSeek )
             {
-                List<KEY> partitionEdges = tree.partitionedSeek( from, to, 10, NULL );
+                List<KEY> partitionEdges = tree.partitionedSeek( from, to, 10, NULL_CONTEXT );
                 List<Seeker<KEY,VALUE>> partitions = new ArrayList<>( partitionEdges.size() - 1 );
                 for ( int i = 0; i < partitionEdges.size() - 1; i++ )
                 {
-                    partitions.add( tree.seek( partitionEdges.get( i ), partitionEdges.get( i + 1 ), NULL ) );
+                    partitions.add( tree.seek( partitionEdges.get( i ), partitionEdges.get( i + 1 ), NULL_CONTEXT ) );
                 }
                 return new PartitionBridgingSeeker<>( partitions );
             }
@@ -694,7 +694,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             {
                 return tree.seek( reusableSeeker, from, to );
             }
-            return tree.seek( from, to, NULL );
+            return tree.seek( from, to, NULL_CONTEXT );
         }
     }
 

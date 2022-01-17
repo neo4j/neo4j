@@ -32,7 +32,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
@@ -93,12 +93,12 @@ class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
             long nodeId = createNode( singletonMap( "prop", value ), label1 );
 
             // when
-            try ( StorageNodeCursor node = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL ) )
+            try ( StorageNodeCursor node = storageReader.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL ) )
             {
                 node.single( nodeId );
                 assertTrue( node.next() );
 
-                try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor( NULL, StoreCursors.NULL, INSTANCE ) )
+                try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor( NULL_CONTEXT, StoreCursors.NULL, INSTANCE ) )
                 {
                     node.properties( props, ALL_PROPERTIES );
                     if ( props.next() )

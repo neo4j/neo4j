@@ -465,7 +465,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             AdditionalInitialIds additionalInitialIds =
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset, lastCheckpointLogVersion );
 
-            try ( var storeCursors = new CachedStoreCursors( legacyStore, CursorContext.NULL ) )
+            try ( var storeCursors = new CachedStoreCursors( legacyStore, CursorContext.NULL_CONTEXT ) )
             {
                 // We have to make sure to keep the token ids if we're migrating properties/labels
                 BatchImporter importer = batchImporterFactory.instantiate(

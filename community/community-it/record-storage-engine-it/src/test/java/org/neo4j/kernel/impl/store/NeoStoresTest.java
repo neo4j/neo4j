@@ -125,7 +125,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.AUTH_DISABLED;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
@@ -188,7 +188,7 @@ public class NeoStoresTest
         //Given
         RecordStorageEngineFactory sef = new RecordStorageEngineFactory();
         StoreFactory sf = getStoreFactory( Config.defaults(), databaseLayout, fs, NullLogProvider.getInstance() );
-        sef.setStoreId( fs, databaseLayout, pageCache, NULL, new StoreId( 123 ), 0, 0 );
+        sef.setStoreId( fs, databaseLayout, pageCache, NULL_CONTEXT, new StoreId( 123 ), 0, 0 );
 
         //When
         Assertions.assertThatCode( () -> sf.openAllNeoStores( true ) ).isInstanceOf( IllegalArgumentException.class );
@@ -220,7 +220,7 @@ public class NeoStoresTest
         {
             try ( NeoStores neoStores = sf.openNeoStores( true ) )
             {
-                neoStores.createDynamicArrayStore( Path.of( "someStore" ), Path.of( "someIdFile" ), RecordIdType.ARRAY_BLOCK, -2, NULL );
+                neoStores.createDynamicArrayStore( Path.of( "someStore" ), Path.of( "someIdFile" ), RecordIdType.ARRAY_BLOCK, -2, NULL_CONTEXT );
             }
         } );
         assertEquals( "Block size of dynamic array store should be positive integer.", e.getMessage() );
@@ -247,7 +247,7 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         StorageProperty oldProperty = null;
-        try ( StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL ) )
+        try ( StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL ) )
         {
             nodeCursor.single( nodeId );
             if ( nodeCursor.next() )
@@ -273,7 +273,7 @@ public class NeoStoresTest
 
     private StorageProperty getProperty( int key, Reference propertyReference )
     {
-        try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, StoreCursors.NULL, INSTANCE ) )
+        try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL_CONTEXT, StoreCursors.NULL, INSTANCE ) )
         {
             propertyCursor.initNodeProperties( propertyReference, ALL_PROPERTIES );
             if ( propertyCursor.next() )
@@ -324,7 +324,7 @@ public class NeoStoresTest
                 transactionState.relationshipDoDelete( relId, type, startNode, endNode );
         if ( !transactionState.relationshipVisit( id, visitor ) )
         {
-            try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor( NULL, StoreCursors.NULL ) )
+            try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor( NULL_CONTEXT, StoreCursors.NULL ) )
             {
                 cursor.single( id );
                 if ( !cursor.next() )
@@ -418,10 +418,10 @@ public class NeoStoresTest
     {
         Path storeDir = dir.homePath();
         createShutdownTestDatabase( fs, storeDir );
-        assertEquals( 0,
-                MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10, databaseLayout.getDatabaseName(), NULL ) );
-        assertEquals( 10,
-                MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12, databaseLayout.getDatabaseName(), NULL ) );
+        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10, databaseLayout.getDatabaseName(),
+                NULL_CONTEXT ) );
+        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12, databaseLayout.getDatabaseName(),
+                NULL_CONTEXT ) );
 
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs, LOG_PROVIDER );
@@ -439,13 +439,13 @@ public class NeoStoresTest
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            metaDataStore.setCreationTime( 3, NULL );
-            metaDataStore.setRandomNumber( 4, NULL );
-            metaDataStore.setCurrentLogVersion( 5, NULL );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 43, 44, NULL );
-            metaDataStore.setStoreVersion( recordVersion, NULL );
+            metaDataStore.setCreationTime( 3, NULL_CONTEXT );
+            metaDataStore.setRandomNumber( 4, NULL_CONTEXT );
+            metaDataStore.setCurrentLogVersion( 5, NULL_CONTEXT );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 43, 44, NULL_CONTEXT );
+            metaDataStore.setStoreVersion( recordVersion, NULL_CONTEXT );
 
-            metaDataStore.setLatestConstraintIntroducingTx( 9, NULL );
+            metaDataStore.setLatestConstraintIntroducingTx( 9, NULL_CONTEXT );
         }
 
         Path file = databaseLayout.metadataStore();
@@ -455,7 +455,7 @@ public class NeoStoresTest
             channel.writeAll( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
         }
 
-        MetaDataStore.setRecord( pageCache, file, Position.STORE_VERSION, recordVersion, databaseLayout.getDatabaseName(), NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.STORE_VERSION, recordVersion, databaseLayout.getDatabaseName(), NULL_CONTEXT );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -487,13 +487,13 @@ public class NeoStoresTest
         assertEquals( 0L, metaDataStore.getLatestConstraintIntroducingTx() );
 
         // when
-        metaDataStore.setLatestConstraintIntroducingTx( 10L, NULL );
+        metaDataStore.setLatestConstraintIntroducingTx( 10L, NULL_CONTEXT );
 
         // then
         assertEquals( 10L, metaDataStore.getLatestConstraintIntroducingTx() );
 
         // when
-        neoStores.flush( NULL );
+        neoStores.flush( NULL_CONTEXT );
         neoStores.close();
         neoStores = sf.openAllNeoStores();
 
@@ -547,23 +547,24 @@ public class NeoStoresTest
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            metaDataStore.setCreationTime( 3, NULL );
-            metaDataStore.setRandomNumber( 4, NULL );
-            metaDataStore.setCurrentLogVersion( 5, NULL );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 42, BASE_TX_COMMIT_TIMESTAMP, 43, 44, NULL );
-            metaDataStore.setStoreVersion( recordVersion, NULL );
+            metaDataStore.setCreationTime( 3, NULL_CONTEXT );
+            metaDataStore.setRandomNumber( 4, NULL_CONTEXT );
+            metaDataStore.setCurrentLogVersion( 5, NULL_CONTEXT );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 42, BASE_TX_COMMIT_TIMESTAMP, 43, 44, NULL_CONTEXT );
+            metaDataStore.setStoreVersion( recordVersion, NULL_CONTEXT );
 
-            metaDataStore.setLatestConstraintIntroducingTx( 9, NULL );
+            metaDataStore.setLatestConstraintIntroducingTx( 9, NULL_CONTEXT );
         }
 
         Path file = databaseLayout.metadataStore();
 
-        assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, databaseLayout.getDatabaseName(), NULL ) );
-        assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, databaseLayout.getDatabaseName(), NULL ) );
+        assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
+        assertNotEquals( 11,
+                MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
 
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, 10, databaseLayout.getDatabaseName(), NULL );
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11, databaseLayout.getDatabaseName(), NULL );
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TIME, 12, databaseLayout.getDatabaseName(), NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, 10, databaseLayout.getDatabaseName(), NULL_CONTEXT );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11, databaseLayout.getDatabaseName(), NULL_CONTEXT );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TIME, 12, databaseLayout.getDatabaseName(), NULL_CONTEXT );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -580,7 +581,7 @@ public class NeoStoresTest
             assertEquals( new ClosedTransactionMetadata( 6, new LogPosition( 44, 43 ) ), metaDataStore.getLastClosedTransaction() );
         }
 
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13, databaseLayout.getDatabaseName(), NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13, databaseLayout.getDatabaseName(), NULL_CONTEXT );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -600,10 +601,10 @@ public class NeoStoresTest
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP,
-                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0, NULL );
+                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0, NULL_CONTEXT );
 
             // WHEN
-            store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP, NULL );
+            store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP, NULL_CONTEXT );
 
             // THEN
             assertEquals( new TransactionId( 42, 6666, BASE_TX_COMMIT_TIMESTAMP ),
@@ -660,10 +661,10 @@ public class NeoStoresTest
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP,
-                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0, NULL );
+                    CURRENT_FORMAT_LOG_HEADER_SIZE, 0, NULL_CONTEXT );
 
             // WHEN
-            store.transactionCommitted( 39, 3333, BASE_TX_COMMIT_TIMESTAMP, NULL );
+            store.transactionCommitted( 39, 3333, BASE_TX_COMMIT_TIMESTAMP, NULL_CONTEXT );
 
             // THEN
             assertEquals( new TransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP ),
@@ -750,7 +751,7 @@ public class NeoStoresTest
                 new RecordStorageEngine( databaseLayout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
                         new DatabaseSchemaState( NullLogProvider.getInstance() ), new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE,
                         mock( Health.class ), idGeneratorFactory, new DefaultIdController(), immediate(), PageCacheTracer.NULL, true, INSTANCE, writable(),
-                        CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, NULL );
+                        CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, NULL_CONTEXT );
         life = new LifeSupport();
         life.add( storageEngine );
         life.add( storageEngine.schemaAndTokensLifecycle() );
@@ -767,9 +768,9 @@ public class NeoStoresTest
 
     private void commitTx() throws Exception
     {
-        CursorContext cursorContext = NULL;
+        CursorContext cursorContext = NULL_CONTEXT;
         try ( CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE );
-              var storeCursors = storageEngine.createStorageCursors( NULL ) )
+              var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
         {
             commandCreationContext.initialize( cursorContext, storeCursors );
             List<StorageCommand> commands = new ArrayList<>();
@@ -791,33 +792,33 @@ public class NeoStoresTest
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         if ( clazz.equals( PropertyKeyTokenRecord.class ) )
         {
-            return neoStores.getPropertyKeyTokenStore().nextId( NULL );
+            return neoStores.getPropertyKeyTokenStore().nextId( NULL_CONTEXT );
         }
         if ( clazz.equals( RelationshipType.class ) )
         {
-            return neoStores.getRelationshipTypeTokenStore().nextId( NULL );
+            return neoStores.getRelationshipTypeTokenStore().nextId( NULL_CONTEXT );
         }
         if ( clazz.equals( Node.class ) )
         {
-            return neoStores.getNodeStore().nextId( NULL );
+            return neoStores.getNodeStore().nextId( NULL_CONTEXT );
         }
         if ( clazz.equals( Relationship.class ) )
         {
-            return neoStores.getRelationshipStore().nextId( NULL );
+            return neoStores.getRelationshipStore().nextId( NULL_CONTEXT );
         }
         throw new IllegalArgumentException( clazz.getName() );
     }
 
     private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( StorageNodeCursor node )
     {
-        StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor( NULL, StoreCursors.NULL );
+        StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor( NULL_CONTEXT, StoreCursors.NULL );
         node.relationships( relationships, ALL_RELATIONSHIPS );
         return relationships;
     }
 
     private StorageNodeCursor allocateNodeCursor( long nodeId )
     {
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL );
         nodeCursor.single( nodeId );
         return nodeCursor;
     }

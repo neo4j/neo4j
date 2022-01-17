@@ -72,7 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -117,7 +117,7 @@ class IndexWorkSyncTransactionApplicationStressIT
                 .getWith( fileSystem, pageCache, RecordDatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) ) )
                 .indexUpdateListener( index )
                 .build();
-        try ( var storageCursors = storageEngine.createStorageCursors( NULL ) )
+        try ( var storageCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
         {
             storageEngine.apply( tx( singletonList( Commands.createIndexRule( DESCRIPTOR, 1, descriptor ) ), storageCursors ), EXTERNAL );
         }
@@ -146,7 +146,7 @@ class IndexWorkSyncTransactionApplicationStressIT
     private static TransactionToApply tx( List<StorageCommand> commands, StoreCursors storeCursors )
     {
         PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1, ANONYMOUS );
-        TransactionToApply tx = new TransactionToApply( txRepresentation, NULL, storeCursors );
+        TransactionToApply tx = new TransactionToApply( txRepresentation, NULL_CONTEXT, storeCursors );
         tx.commitment( NO_COMMITMENT, 0 );
         return tx;
     }
@@ -178,9 +178,9 @@ class IndexWorkSyncTransactionApplicationStressIT
         {
             try ( StorageReader reader = storageEngine.newReader();
                   CommandCreationContext creationContext = storageEngine.newCommandCreationContext( INSTANCE );
-                  var storeCursors = storageEngine.createStorageCursors( NULL ) )
+                  var storeCursors = storageEngine.createStorageCursors( NULL_CONTEXT ) )
             {
-                creationContext.initialize( NULL, storeCursors );
+                creationContext.initialize( NULL_CONTEXT, storeCursors );
                 TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
                 {
                     // Apply
@@ -206,12 +206,12 @@ class IndexWorkSyncTransactionApplicationStressIT
                 StoreCursors storeCursors ) throws Exception
         {
             TransactionState txState = new TxState();
-            long nodeId = nodeIds.nextId( NULL );
+            long nodeId = nodeIds.nextId( NULL_CONTEXT );
             txState.nodeDoCreate( nodeId );
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
             List<StorageCommand> commands = new ArrayList<>();
-            storageEngine.createCommands( commands, txState, reader, creationContext, null, LockTracer.NONE, 0, NO_DECORATION, NULL, storeCursors,
+            storageEngine.createCommands( commands, txState, reader, creationContext, null, LockTracer.NONE, 0, NO_DECORATION, NULL_CONTEXT, storeCursors,
                     INSTANCE );
             return tx( commands, storeCursors );
         }

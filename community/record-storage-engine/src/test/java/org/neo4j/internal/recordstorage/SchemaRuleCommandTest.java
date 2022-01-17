@@ -55,7 +55,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.SYSTEM;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -134,7 +134,7 @@ class SchemaRuleCommandTest
 
         // THEN
         verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( txId, NULL );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( txId, NULL_CONTEXT );
     }
 
     @Test

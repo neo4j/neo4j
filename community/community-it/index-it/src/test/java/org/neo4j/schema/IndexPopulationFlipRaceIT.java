@@ -43,7 +43,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 @DbmsExtension
@@ -162,9 +162,9 @@ class IndexPopulationFlipRaceIT
                 for ( int j = 0; j < NODES_PER_INDEX; j++ )
                 {
                     long nodeAId = data.first()[j];
-                    assertEquals( 1, valueIndexReaderA.countIndexedEntities( nodeAId, NULL, new int[]{keyAId}, Values.of( nodeAId ) ) );
+                    assertEquals( 1, valueIndexReaderA.countIndexedEntities( nodeAId, NULL_CONTEXT, new int[]{keyAId}, Values.of( nodeAId ) ) );
                     long nodeBId = data.other()[j];
-                    assertEquals( 1, valueIndexReaderB.countIndexedEntities( nodeBId, NULL, new int[]{keyBId}, Values.of( nodeBId ) ) );
+                    assertEquals( 1, valueIndexReaderB.countIndexedEntities( nodeBId, NULL_CONTEXT, new int[]{keyBId}, Values.of( nodeBId ) ) );
                 }
             }
         }

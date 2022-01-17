@@ -146,7 +146,7 @@ class KernelStatementTest
         var queryFactory = new ExecutingQueryFactory( Clocks.nanoClock(), cpuClockRef, Config.defaults() );
         var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
         var statement = createStatement( transaction );
-        statement.initialize( mock( Locks.Client.class ), CursorContext.NULL, 100 );
+        statement.initialize( mock( Locks.Client.class ), CursorContext.NULL_CONTEXT, 100 );
 
         var query1 = queryFactory.createForStatement( statement, "test1", MapValue.EMPTY );
         var query2 = queryFactory.createForStatement( statement, "test2", MapValue.EMPTY );

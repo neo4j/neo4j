@@ -23,7 +23,6 @@ import org.mockito.Mockito;
 
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.annotations.documented.ReporterFactories;
@@ -45,7 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
 {
@@ -92,7 +91,7 @@ class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCo
     @Override
     void consistencyCheck( IndexPopulator populator )
     {
-        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
+        ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL_CONTEXT );
     }
 
     @Override

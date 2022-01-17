@@ -58,7 +58,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGroupMonitor.EMPTY;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
@@ -90,10 +90,11 @@ class RelationshipGroupGetterTest
         stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP, StoreType.NODE, StoreType.NODE_LABEL );
         groupStore = spy( stores.getRelationshipGroupStore() );
         NodeStore nodeStore = stores.getNodeStore();
-        storeCursors = new CachedStoreCursors( stores, NULL );
-        groupRecords = new DirectRecordAccess<>( groupStore, Loaders.relationshipGroupLoader( groupStore, storeCursors ), NULL, GROUP_CURSOR, storeCursors );
-        nodeRecords = new DirectRecordAccess<>( nodeStore, Loaders.nodeLoader( nodeStore, storeCursors ), NULL, NODE_CURSOR, storeCursors );
-        groupGetter = new RelationshipGroupGetter( groupStore, NULL );
+        storeCursors = new CachedStoreCursors( stores, NULL_CONTEXT );
+        groupRecords =
+                new DirectRecordAccess<>( groupStore, Loaders.relationshipGroupLoader( groupStore, storeCursors ), NULL_CONTEXT, GROUP_CURSOR, storeCursors );
+        nodeRecords = new DirectRecordAccess<>( nodeStore, Loaders.nodeLoader( nodeStore, storeCursors ), NULL_CONTEXT, NODE_CURSOR, storeCursors );
+        groupGetter = new RelationshipGroupGetter( groupStore, NULL_CONTEXT );
     }
 
     @AfterEach
@@ -111,7 +112,7 @@ class RelationshipGroupGetterTest
         RelationshipGroupRecord group10 = group( 10 );
         RelationshipGroupRecord group23 = group( 23 );
         linkAndWrite( group2, group4, group10, group23 );
-        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( groupStore, NULL );
+        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( groupStore, NULL_CONTEXT );
         NodeRecord node = new NodeRecord( 0 ).initialize( true, NULL_REFERENCE.longValue(), true, group2.getId(), NO_LABELS_FIELD.longValue() );
 
         // WHEN trying to find relationship group 7
@@ -143,7 +144,7 @@ class RelationshipGroupGetterTest
         RelationshipGroupRecord group10 = group( 10 );
         RelationshipGroupRecord group12 = group( 12 );
         linkAndWrite( group1, group2, group10, group12 );
-        RecordAccess.RecordProxy<NodeRecord,Void> nodeChange = nodeRecords.create( 0, null, NULL );
+        RecordAccess.RecordProxy<NodeRecord,Void> nodeChange = nodeRecords.create( 0, null, NULL_CONTEXT );
         nodeChange.forChangingData().initialize( true, NULL_REFERENCE.longValue(), true, group1.getId(), NO_LABELS_FIELD.longValue() );
 
         // when inserting a group 5, i.e. 1 -> 2 -> 5 -> 10 -> 12
@@ -163,7 +164,7 @@ class RelationshipGroupGetterTest
         RelationshipGroupRecord group2 = group( 2 );
         RelationshipGroupRecord group3 = group( 3 );
         linkAndWrite( group2, group3 );
-        RecordAccess.RecordProxy<NodeRecord,Void> nodeChange = nodeRecords.create( 0, null, NULL );
+        RecordAccess.RecordProxy<NodeRecord,Void> nodeChange = nodeRecords.create( 0, null, NULL_CONTEXT );
         nodeChange.forChangingData().initialize( true, NULL_REFERENCE.longValue(), true, group2.getId(), NO_LABELS_FIELD.longValue() );
 
         // when inserting a group 1, i.e. 1 -> 2 -> 3
@@ -232,14 +233,14 @@ class RelationshipGroupGetterTest
         {
             for ( RelationshipGroupRecord group : groups )
             {
-                groupStore.updateRecord( group, cursor, NULL, storeCursors );
+                groupStore.updateRecord( group, cursor, NULL_CONTEXT, storeCursors );
             }
         }
     }
 
     private RelationshipGroupRecord group( int type )
     {
-        return new RelationshipGroupRecord( groupStore.nextId( NULL ) )
+        return new RelationshipGroupRecord( groupStore.nextId( NULL_CONTEXT ) )
                 .initialize( true, type, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
                         NULL_REFERENCE.longValue() );
     }

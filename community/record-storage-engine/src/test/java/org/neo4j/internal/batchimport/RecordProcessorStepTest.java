@@ -62,7 +62,7 @@ class RecordProcessorStepTest
                     batch[r] = new NodeRecord( startId + r );
                     batch[r].setInUse( true );
                 }
-                step.process( batch, null, CursorContext.NULL );
+                step.process( batch, null, CursorContext.NULL_CONTEXT );
             }, batchesPerThread );
             race.goUnchecked();
 

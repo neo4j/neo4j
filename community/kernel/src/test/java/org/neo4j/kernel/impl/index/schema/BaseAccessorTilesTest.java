@@ -57,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
 @PageCacheExtension
@@ -246,7 +246,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>>
 
     void processAll( List<IndexEntryUpdate<IndexDescriptor>> updates ) throws IndexEntryConflictException
     {
-        try ( NativeIndexUpdater<KEY> updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL, false ) )
+        try ( NativeIndexUpdater<KEY> updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {

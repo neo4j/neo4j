@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
@@ -69,7 +69,7 @@ class FlippableIndexProxyTest
         FlippableIndexProxy delegate = new FlippableIndexProxy( actual );
 
         //WHEN
-        delegate.close( NULL );
+        delegate.close( NULL_CONTEXT );
 
         delegate.setFlipTarget( indexContextFactory );
 

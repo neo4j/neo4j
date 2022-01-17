@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 
@@ -55,14 +55,14 @@ class LuceneIndexAccessorTest
     void indexIsNotConsistentWhenIndexIsNotValid()
     {
         when( schemaIndex.isValid() ).thenReturn( false );
-        assertFalse( accessor.consistencyCheck( ReporterFactories.noopReporterFactory(), NULL ) );
+        assertFalse( accessor.consistencyCheck( ReporterFactories.noopReporterFactory(), NULL_CONTEXT ) );
     }
 
     @Test
     void indexIsConsistentWhenIndexIsValid()
     {
         when( schemaIndex.isValid() ).thenReturn( true );
-        assertTrue( accessor.consistencyCheck( ReporterFactories.noopReporterFactory(), NULL ) );
+        assertTrue( accessor.consistencyCheck( ReporterFactories.noopReporterFactory(), NULL_CONTEXT ) );
     }
 
     @Test
@@ -74,7 +74,7 @@ class LuceneIndexAccessorTest
             called.setTrue();
             return null;
         };
-        assertFalse( accessor.consistencyCheck( new ReporterFactory( handler ), NULL ), "Expected index to be inconsistent" );
+        assertFalse( accessor.consistencyCheck( new ReporterFactory( handler ), NULL_CONTEXT ), "Expected index to be inconsistent" );
         assertTrue( called.booleanValue(), "Expected visitor to be called" );
     }
 }

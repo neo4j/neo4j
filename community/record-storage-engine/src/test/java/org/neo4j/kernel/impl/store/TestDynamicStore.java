@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -96,8 +96,8 @@ class TestDynamicStore
     private DynamicArrayStore createDynamicArrayStore() throws IOException
     {
         neoStores = storeFactory.openAllNeoStores( true );
-        neoStores.start( NULL );
-        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        neoStores.start( NULL_CONTEXT );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
         return neoStores.getPropertyStore().getArrayStore();
     }
 
@@ -106,13 +106,13 @@ class TestDynamicStore
     {
         DynamicArrayStore store = createDynamicArrayStore();
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecordsFromBytes( records, new byte[10], NULL, INSTANCE );
+        store.allocateRecordsFromBytes( records, new byte[10], NULL_CONTEXT, INSTANCE );
         long blockId = Iterables.first( records ).getId();
         try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_ARRAY_STORE_CURSOR ) )
         {
             for ( DynamicRecord record : records )
             {
-                store.updateRecord( record, storeCursor, NULL, storeCursors );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
             }
         }
         neoStores.close();
@@ -130,12 +130,12 @@ class TestDynamicStore
         char[] chars = new char[STR.length()];
         STR.getChars( 0, STR.length(), chars, 0 );
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, chars, NULL, INSTANCE );
+        store.allocateRecords( records, chars, NULL_CONTEXT, INSTANCE );
         try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_ARRAY_STORE_CURSOR ) )
         {
             for ( DynamicRecord record : records )
             {
-                store.updateRecord( record, storeCursor, NULL, storeCursors );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
             }
         }
         // assertEquals( STR, new String( store.getChars( blockId ) ) );
@@ -170,7 +170,7 @@ class TestDynamicStore
                     for ( DynamicRecord record : records )
                     {
                         record.setInUse( false );
-                        store.updateRecord( record, storeCursor, NULL, storeCursors );
+                        store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
                         set.remove( record.getId() );
                     }
                 }
@@ -180,13 +180,13 @@ class TestDynamicStore
             {
                 byte[] bytes = createRandomBytes( random );
                 Collection<DynamicRecord> records = new ArrayList<>();
-                store.allocateRecords( records, bytes, NULL, INSTANCE );
+                store.allocateRecords( records, bytes, NULL_CONTEXT, INSTANCE );
                 try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_ARRAY_STORE_CURSOR ) )
                 {
                     for ( DynamicRecord record : records )
                     {
                         assert !set.contains( record.getId() );
-                        store.updateRecord( record, storeCursor, NULL, storeCursors );
+                        store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
                         set.add( record.getId() );
                     }
                 }
@@ -197,7 +197,7 @@ class TestDynamicStore
             }
             if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
             {
-                neoStores.flush( NULL );
+                neoStores.flush( NULL_CONTEXT );
                 neoStores.close();
                 store = createDynamicArrayStore();
             }
@@ -226,12 +226,12 @@ class TestDynamicStore
     private static long create( DynamicArrayStore store, Object arrayToStore, StoreCursors storeCursors )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, arrayToStore, NULL, INSTANCE );
+        store.allocateRecords( records, arrayToStore, NULL_CONTEXT, INSTANCE );
         try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_ARRAY_STORE_CURSOR ) )
         {
             for ( DynamicRecord record : records )
             {
-                store.updateRecord( record, storeCursor, NULL, storeCursors );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
             }
         }
         return Iterables.first( records ).getId();
@@ -254,7 +254,7 @@ class TestDynamicStore
             for ( DynamicRecord record : records )
             {
                 record.setInUse( false );
-                store.updateRecord( record, storeCursor, NULL, storeCursors );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
             }
         }
     }
@@ -275,7 +275,7 @@ class TestDynamicStore
             for ( DynamicRecord record : records )
             {
                 record.setInUse( false );
-                store.updateRecord( record, storeCursor, NULL, storeCursors );
+                store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors );
             }
         }
     }
@@ -285,7 +285,7 @@ class TestDynamicStore
     {
         DynamicArrayStore store = createDynamicArrayStore();
         List<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, createBytes( 500 ), NULL, INSTANCE );
+        store.allocateRecords( records, createBytes( 500 ), NULL_CONTEXT, INSTANCE );
         long firstId = records.get( 0 ).getId();
         // Avoid creating this inconsistency at the last record, since that would trip up a data-size check instead.
         DynamicRecord secondLastRecord = records.get( records.size() - 2 );
@@ -293,7 +293,7 @@ class TestDynamicStore
         secondLastRecord.setNextBlock( secondLastId );
         try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_ARRAY_STORE_CURSOR ) )
         {
-            records.forEach( record -> store.updateRecord( record, storeCursor, NULL, storeCursors ) );
+            records.forEach( record -> store.updateRecord( record, storeCursor, NULL_CONTEXT, storeCursors ) );
         }
 
         var e = assertThrows( RecordChainCycleDetectedException.class,
