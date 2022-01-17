@@ -87,7 +87,7 @@ public class FullScanStoreView implements IndexStoreView
     {
         try ( StorageReader reader = storageReaderSupplier.get() )
         {
-            return reader.nodesGetCount( CursorContext.NULL ) == 0 && reader.relationshipsGetCount( CursorContext.NULL ) == 0;
+            return reader.nodesGetCount( cursorContext ) == 0 && reader.relationshipsGetCount( cursorContext ) == 0;
         }
     }
 }
