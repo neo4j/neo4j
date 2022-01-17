@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.SourceCode
+import org.neo4j.cypher.internal.plandescription.Arguments.StringRepresentation
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.UNNAMED_PATTERN
@@ -323,7 +324,8 @@ object renderAsTreeTable {
         !x.isInstanceOf[RuntimeImpl] &&
         !x.isInstanceOf[Version] &&
         !x.isInstanceOf[BatchSize] &&
-        !x.isInstanceOf[Details] => PlanDescriptionArgumentSerializer.serialize(x)
+        !x.isInstanceOf[Details] &&
+        !x.isInstanceOf[StringRepresentation] => PlanDescriptionArgumentSerializer.serialize(x)
     }
   }
 

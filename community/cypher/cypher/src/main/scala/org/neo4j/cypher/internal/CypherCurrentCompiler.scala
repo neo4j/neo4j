@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.CypherCurrentCompiler.isCoreAPI
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCache.ExecutionPlanCacheKey
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -381,7 +383,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           preParsingNotifications ++ (planningNotifications ++ executionPlan.notifications)
             .map(asKernelNotification(Some(queryOptions.offset)))
         new ExplainExecutionResult(columns,
-          planDescriptionBuilder.explain(),
+          planDescriptionBuilder.explain(!isCoreAPI(subscriber)),
           internalQueryType, allNotifications, subscriber)
       } else {
 
@@ -412,9 +414,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState
 
-    override def planDescriptionSupplier(): Supplier[ExecutionPlanDescription] = {
+    override def planDescriptionSupplier(includeStringRepresentation: Boolean): Supplier[ExecutionPlanDescription] = {
       val builder = planDescriptionBuilder
-      () => builder.explain()
+      () => builder.explain(includeStringRepresentation)
     }
   }
 
@@ -429,4 +431,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   }
 
   def clearExecutionPlanCache(): Unit = queryCaches.executionPlanCache.clear()
+}
+
+object CypherCurrentCompiler {
+  def isCoreAPI(querySubscriber: QuerySubscriber): Boolean = querySubscriber match {
+    case _: ResultSubscriber => true
+    case _ => false
+  }
 }

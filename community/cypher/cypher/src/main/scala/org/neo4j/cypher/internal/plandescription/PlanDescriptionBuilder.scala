@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
+import org.neo4j.cypher.internal.plandescription.Arguments.StringRepresentation
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.rewrite.InternalPlanDescriptionRewriter
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -79,17 +80,23 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter],
                              batchSize: Option[Int]) {
 
-  def explain(): InternalPlanDescription = {
+  def explain(includeStringRepresentation: Boolean = false): InternalPlanDescription = {
     val description =
       LogicalPlan2PlanDescription
         .create(logicalPlan, plannerName, cypherVersion, readOnly, effectiveCardinalities, withRawCardinalities, providedOrders, runtimeOperatorMetadata)
         .addArgument(Runtime(runtimeName.toTextOutput))
         .addArgument(RuntimeImpl(runtimeName.name))
 
-    (runtimeMetadata ++ batchSize.map(BatchSize)).foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
+    val withMetaData = (runtimeMetadata ++ batchSize.map(BatchSize)).foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
+
+    if (includeStringRepresentation) {
+      withMetaData.addArgument(StringRepresentation(withMetaData.toString))
+    } else {
+      withMetaData
+    }
   }
 
-  def profile(queryProfile: QueryProfile): InternalPlanDescription = {
+  def profile(queryProfile: QueryProfile, includeStringRepresentation: Boolean = false): InternalPlanDescription = {
 
     val planDescription = BuildPlanDescription(explain())
       .addArgument(Arguments.GlobalMemory, queryProfile.maxAllocatedMemory())
@@ -107,9 +114,14 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
           .plan
       }
 
-    internalPlanDescriptionRewriter match {
+    val rewritten = internalPlanDescriptionRewriter match {
       case Some(rewriter) => rewriter.rewrite(planDescription)
       case None => planDescription
+    }
+    if (includeStringRepresentation) {
+      rewritten.addArgument(StringRepresentation(rewritten.toString))
+    } else {
+      rewritten
     }
   }
 

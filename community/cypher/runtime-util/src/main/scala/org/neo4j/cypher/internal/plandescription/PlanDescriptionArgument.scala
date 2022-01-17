@@ -116,4 +116,8 @@ object Arguments {
 
     override def name: String = "batch-size"
   }
+
+  case class StringRepresentation(value: String) extends Argument {
+    override def name: String = "string-representation"
+  }
 }

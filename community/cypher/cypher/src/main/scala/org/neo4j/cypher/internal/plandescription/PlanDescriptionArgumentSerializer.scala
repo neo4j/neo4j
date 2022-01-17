@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.SourceCode
+import org.neo4j.cypher.internal.plandescription.Arguments.StringRepresentation
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
@@ -69,6 +70,7 @@ object PlanDescriptionArgumentSerializer {
       case PipelineInfo(pipelineId, fused) =>
         val fusion = if (fused) "Fused in" else "In"
         s"$fusion Pipeline $pipelineId"
+      case StringRepresentation(rep) => rep
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here

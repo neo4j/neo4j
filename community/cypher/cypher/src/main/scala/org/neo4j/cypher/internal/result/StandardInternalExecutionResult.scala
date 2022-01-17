@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.result
 
+import org.neo4j.cypher.internal.CypherCurrentCompiler.isCoreAPI
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
@@ -109,9 +110,9 @@ class StandardInternalExecutionResult(runtimeResult: RuntimeResult,
         taskCloser.close(success = false)
         throw new ProfilerStatisticsNotReadyException()
       }
-      planDescriptionBuilder.profile(runtimeResult.queryProfile)
+      planDescriptionBuilder.profile(runtimeResult.queryProfile, !isCoreAPI(subscriber))
     } else {
-      planDescriptionBuilder.explain()
+      planDescriptionBuilder.explain(!isCoreAPI(subscriber))
     }
 
   }

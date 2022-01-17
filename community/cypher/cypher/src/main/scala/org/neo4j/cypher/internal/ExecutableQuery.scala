@@ -71,7 +71,7 @@ trait ExecutableQuery extends CacheabilityInfo {
   /**
    * Plan desc.
    */
-  def planDescriptionSupplier(): Supplier[ExecutionPlanDescription]
+  def planDescriptionSupplier(includeStringRepresentation: Boolean): Supplier[ExecutionPlanDescription]
 
   /**
    * Meta-data about the compiled used for this query.
