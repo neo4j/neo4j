@@ -31,6 +31,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.value.NumberValueAdapter;
+import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.shell.state.BoltResult;
 
@@ -41,6 +42,7 @@ import static org.neo4j.shell.prettyprint.OutputFormatter.repeat;
 public class TableOutputFormatter implements OutputFormatter
 {
 
+    public static final String STRING_REPRESENTATION = "string-representation";
     private final boolean wrap;
     private final int numSampleRows;
 
@@ -346,7 +348,16 @@ public class TableOutputFormatter implements OutputFormatter
         {
             return "";
         }
-        return new TablePlanFormatter().formatPlan( summary.plan() );
+
+        Plan plan = summary.plan();
+        if ( plan.arguments().containsKey( STRING_REPRESENTATION ) )
+        {
+            return plan.arguments().get( STRING_REPRESENTATION ).asString();
+        }
+        else
+        {
+            return new TablePlanFormatter().formatPlan( plan );
+        }
     }
 
     @Override

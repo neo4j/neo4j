@@ -48,6 +48,8 @@ import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
+import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
@@ -609,6 +611,25 @@ class TableOutputFormatterTest
                                             "+---------+",
                                             NEWLINE ) ) );
     }
+
+    @Test
+    void useServerRenderedPlanIfThere()
+    {
+        //given
+        var formatter = new TableOutputFormatter( true, 1 );
+        var summary = mock( ResultSummary.class );
+        var plan = mock( Plan.class );
+        when( summary.hasPlan() ).thenReturn( true );
+        when( plan.arguments() ).thenReturn( Map.of( "string-representation", new StringValue( "SERVER SIDE PLAN" ) ) );
+        when( summary.plan() ).thenReturn( plan );
+
+        // when
+        var formatted = formatter.formatPlan( summary );
+
+        //then
+        assertThat( formatted, is( "SERVER SIDE PLAN" ) );
+    }
+
 
     private static String formatResult( Result result )
     {
