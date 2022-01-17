@@ -47,7 +47,6 @@ import org.neo4j.time.SystemNanoClock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -57,7 +56,7 @@ import static org.mockito.Mockito.when;
 
 class TransactionStateMachineSPIProviderV4Test
 {
-    private BoltChannel mockBoltChannel = mock( BoltChannel.class );
+    private final BoltChannel mockBoltChannel = mock( BoltChannel.class );
 
     @Test
     void shouldReturnTransactionStateMachineSPIIfDatabaseExists() throws Throwable
@@ -139,7 +138,7 @@ class TransactionStateMachineSPIProviderV4Test
         final DependencyResolver dependencyResolver = mock( DependencyResolver.class );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
 
-        when( databaseFacade.isAvailable( anyLong() ) ).thenReturn( true );
+        when( databaseFacade.isAvailable() ).thenReturn( true );
         when( managementService.database( databaseName ) ).thenReturn( databaseFacade );
         when( databaseFacade.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );

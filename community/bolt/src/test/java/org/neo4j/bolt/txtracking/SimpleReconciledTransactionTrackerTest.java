@@ -31,7 +31,6 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -58,7 +57,7 @@ class SimpleReconciledTransactionTrackerTest
     void shouldReturnDummyTransactionIdWhenSystemDatabaseNotAvailable()
     {
         when( managementService.database( SYSTEM_DATABASE_NAME ) ).thenReturn( systemDb );
-        when( systemDb.isAvailable( anyLong() ) ).thenReturn( false );
+        when( systemDb.isAvailable() ).thenReturn( false );
 
         assertEquals( -1, tracker.getLastReconciledTransactionId() );
     }
@@ -75,7 +74,7 @@ class SimpleReconciledTransactionTrackerTest
     void shouldReturnDummyTransactionIdWhenTransactionIdStoreForSystemDatabaseClosed()
     {
         when( managementService.database( SYSTEM_DATABASE_NAME ) ).thenReturn( systemDb );
-        when( systemDb.isAvailable( anyLong() ) ).thenReturn( true );
+        when( systemDb.isAvailable() ).thenReturn( true );
         var dependencyResolver = mock( DependencyResolver.class );
         when( systemDb.getDependencyResolver() ).thenReturn( dependencyResolver );
         var txIdStore = mock( TransactionIdStore.class );
@@ -89,7 +88,7 @@ class SimpleReconciledTransactionTrackerTest
     void shouldReturnLastClosedTransactionIdFromSystemDatabase()
     {
         when( managementService.database( SYSTEM_DATABASE_NAME ) ).thenReturn( systemDb );
-        when( systemDb.isAvailable( anyLong() ) ).thenReturn( true );
+        when( systemDb.isAvailable() ).thenReturn( true );
         var dependencyResolver = mock( DependencyResolver.class );
         when( systemDb.getDependencyResolver() ).thenReturn( dependencyResolver );
         var txIdStore = mock( TransactionIdStore.class );

@@ -41,7 +41,6 @@ import org.neo4j.time.SystemNanoClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,7 +48,7 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 class DefaultDatabaseTransactionStateMachineSPIProviderTest
 {
-    private BoltChannel mockBoltChannel = mock( BoltChannel.class );
+    private final BoltChannel mockBoltChannel = mock( BoltChannel.class );
 
     @Test
     void shouldReturnDefaultTransactionStateMachineSPIWithEmptyDatabaseName() throws Throwable
@@ -76,7 +75,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
         GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
-        when( databaseFacade.isAvailable( anyLong() ) ).thenReturn( true );
+        when( databaseFacade.isAvailable() ).thenReturn( true );
         when( managementService.database( databaseName ) ).thenReturn( databaseFacade );
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
         when( databaseFacade.getDependencyResolver() ).thenReturn( dependencyResolver );
