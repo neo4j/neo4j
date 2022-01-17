@@ -246,7 +246,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                logicalQuery.effectiveCardinalities,
                                debugOptions.rawCardinalitiesEnabled,
                                logicalQuery.providedOrders,
-                               executionPlan)
+                               executionPlan,
+                               renderPlanDescription = false
+                         )
       planDescriptionBuilder.explain()
     }
     (RecordingRuntimeResult(result, subscriber), executionPlanDescription)

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.CypherCurrentCompiler.isCoreAPI
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -184,7 +183,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
     if (isOutermostQuery) {
       context.executingQuery().onObfuscatorReady(executableQuery.queryObfuscator)
-      context.executingQuery().onCompilationCompleted(executableQuery.compilerInfo, executableQuery.planDescriptionSupplier(!isCoreAPI(subscriber)))
+      context.executingQuery().onCompilationCompleted(executableQuery.compilerInfo, executableQuery.planDescriptionSupplier())
     }
 
     executableQuery.execute(context, isOutermostQuery, query.options, combinedParams, prePopulate, input, queryMonitor, subscriber)

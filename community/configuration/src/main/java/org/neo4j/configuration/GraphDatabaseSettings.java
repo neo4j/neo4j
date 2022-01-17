@@ -219,6 +219,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration
         }
     }
 
+    @Description( "If set to `true` a textual representation of the plan description will be rendered on the " +
+                  "server for all queries running with `EXPLAIN` or `PROFILE`. This allows clients such as the neo4j " +
+                  "browser and Cypher shell to show a more detailed plan description." )
+    public static final Setting<Boolean> cypher_render_plan_descriptions =
+            newBuilder( "cypher.render_plan_description", BOOL, false ).dynamic().build();
+
     @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<CypherParserVersion> cypher_parser_version =
             newBuilder( "cypher.default_language_version", ofEnum( CypherParserVersion.class ), CypherParserVersion.DEFAULT ).build();
@@ -1020,7 +1026,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
      */
     public static final Map<Setting<?>,Object> SERVER_DEFAULTS = Maps.mutable
             .withMap( ConnectorDefaults.SERVER_CONNECTOR_DEFAULTS )
-            .withKeyValue( auth_enabled, true );
+            .withKeyValue( auth_enabled, true )
+            .withKeyValue( cypher_render_plan_descriptions, true );
 
     public enum Mode
     {

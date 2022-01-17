@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.CypherCurrentCompiler.isCoreAPI
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCache.ExecutionPlanCacheKey
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -158,7 +156,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       queryType,
       logicalPlanResult.shouldBeCached,
       contextManager.config.enableMonitors,
-      logicalPlanResult.queryObfuscator
+      logicalPlanResult.queryObfuscator,
+      contextManager.config.renderPlanDescription
     )
   }
 
@@ -280,7 +279,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         internalQueryType: InternalQueryType,
                                         override val shouldBeCached: Boolean,
                                         enableMonitors: Boolean,
-                                        override val queryObfuscator: QueryObfuscator) extends ExecutableQuery {
+                                        override val queryObfuscator: QueryObfuscator,
+                                        renderPlanDescription: Boolean) extends ExecutableQuery {
 
     //Monitors are implemented via dynamic proxies which are slow compared to NOOP which is why we want to able to completely disable
     private val searchMonitor = if (enableMonitors) kernelMonitors.newMonitor(classOf[IndexSearchMonitor]) else IndexSearchMonitor.NOOP
@@ -295,7 +295,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         effectiveCardinalities,
         rawCardinalitiesInPlanDescription,
         providedOrders,
-        executionPlan)
+        executionPlan,
+        renderPlanDescription)
 
     private def getQueryContext(transactionalContext: TransactionalContext, taskCloser: TaskCloser) = {
       val (threadSafeCursorFactory, resourceManager) = executionPlan.threadSafeExecutionResources() match {
@@ -383,7 +384,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           preParsingNotifications ++ (planningNotifications ++ executionPlan.notifications)
             .map(asKernelNotification(Some(queryOptions.offset)))
         new ExplainExecutionResult(columns,
-          planDescriptionBuilder.explain(!isCoreAPI(subscriber)),
+          planDescriptionBuilder.explain(),
           internalQueryType, allNotifications, subscriber)
       } else {
 
@@ -414,9 +415,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState
 
-    override def planDescriptionSupplier(includeStringRepresentation: Boolean): Supplier[ExecutionPlanDescription] = {
+    override def planDescriptionSupplier(): Supplier[ExecutionPlanDescription] = {
       val builder = planDescriptionBuilder
-      () => builder.explain(includeStringRepresentation)
+      () => builder.explain()
     }
   }
 
@@ -431,11 +432,4 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   }
 
   def clearExecutionPlanCache(): Unit = queryCaches.executionPlanCache.clear()
-}
-
-object CypherCurrentCompiler {
-  def isCoreAPI(querySubscriber: QuerySubscriber): Boolean = querySubscriber match {
-    case _: ResultSubscriber => true
-    case _ => false
-  }
 }

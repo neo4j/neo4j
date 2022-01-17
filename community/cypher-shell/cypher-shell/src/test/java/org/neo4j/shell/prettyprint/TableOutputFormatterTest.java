@@ -630,7 +630,6 @@ class TableOutputFormatterTest
         assertThat( formatted, is( "SERVER SIDE PLAN" ) );
     }
 
-
     private static String formatResult( Result result )
     {
         ToStringLinePrinter printer = new ToStringLinePrinter();

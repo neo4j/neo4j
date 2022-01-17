@@ -92,8 +92,10 @@ class CypherConfiguration private (val config: Config) {
 
   //dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
+  private var _renderPlanDescription: Boolean = config.get(GraphDatabaseSettings.cypher_render_plan_descriptions)
   config.addListener[java.lang.Boolean](GraphDatabaseSettings.log_queries_obfuscate_literals, (_: java.lang.Boolean, newValue: java.lang.Boolean) => _obfuscateLiterals = newValue)
+  config.addListener[java.lang.Boolean](GraphDatabaseSettings.cypher_render_plan_descriptions, (_: java.lang.Boolean, newValue: java.lang.Boolean) => _renderPlanDescription = newValue)
 
   def obfuscateLiterals: Boolean = _obfuscateLiterals
-
+  def renderPlanDescription: Boolean = _renderPlanDescription
 }

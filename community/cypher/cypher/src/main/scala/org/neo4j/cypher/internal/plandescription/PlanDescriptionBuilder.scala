@@ -44,7 +44,8 @@ object PlanDescriptionBuilder {
             effectiveCardinalities: EffectiveCardinalities,
             withRawCardinalities: Boolean,
             providedOrders: ProvidedOrders,
-            executionPlan: ExecutionPlan): PlanDescriptionBuilder = {
+            executionPlan: ExecutionPlan,
+            renderPlanDescription: Boolean): PlanDescriptionBuilder = {
     // NOTE: We should not keep a reference to the ExecutionPlan in the PlanDescriptionBuilder since it can end up in long-lived caches, e.g. RecentQueryBuffer
     val batchSize = executionPlan.batchSize
     val runtimeName = executionPlan.runtimeName
@@ -63,7 +64,8 @@ object PlanDescriptionBuilder {
                                runtimeMetadata,
                                runtimeOperatorMetadata,
                                internalPlanDescriptionRewriter,
-                               batchSize)
+                               batchSize,
+                               renderPlanDescription)
   }
 }
 
@@ -78,9 +80,10 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              runtimeMetadata: Seq[Argument],
                              runtimeOperatorMetadata: Id => Seq[Argument],
                              internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter],
-                             batchSize: Option[Int]) {
+                             batchSize: Option[Int],
+                             includeStringRepresentation: Boolean) {
 
-  def explain(includeStringRepresentation: Boolean = false): InternalPlanDescription = {
+  def explain(): InternalPlanDescription = {
     val description =
       LogicalPlan2PlanDescription
         .create(logicalPlan, plannerName, cypherVersion, readOnly, effectiveCardinalities, withRawCardinalities, providedOrders, runtimeOperatorMetadata)
@@ -96,7 +99,7 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
     }
   }
 
-  def profile(queryProfile: QueryProfile, includeStringRepresentation: Boolean = false): InternalPlanDescription = {
+  def profile(queryProfile: QueryProfile): InternalPlanDescription = {
 
     val planDescription = BuildPlanDescription(explain())
       .addArgument(Arguments.GlobalMemory, queryProfile.maxAllocatedMemory())

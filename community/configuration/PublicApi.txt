@@ -97,6 +97,7 @@ org.neo4j.configuration.GraphDatabaseSettings::cypher_lenient_create_relationshi
 org.neo4j.configuration.GraphDatabaseSettings::cypher_min_replan_interval org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::cypher_parser_version org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.CypherParserVersion> public static final
 org.neo4j.configuration.GraphDatabaseSettings::cypher_planner org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner> public static final
+org.neo4j.configuration.GraphDatabaseSettings::cypher_render_plan_descriptions org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::data_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::database_dumps_root_path org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::db_temporal_timezone org.neo4j.graphdb.config.Setting<java.time.ZoneId> public static final
