@@ -31,12 +31,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -48,6 +46,9 @@ import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
+
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.dedicated_transaction_appender;
+import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 @DbmsExtension( configurationCallback = "configure" )
 @ExtendWith( OtherThreadExtension.class )
@@ -70,7 +71,8 @@ public class TestStartTransactionDuringLogRotation
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) );
+        builder.setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
+               .setConfig( dedicated_transaction_appender, false );
     }
 
     @BeforeEach
