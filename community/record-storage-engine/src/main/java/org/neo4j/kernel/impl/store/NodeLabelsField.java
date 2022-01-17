@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 
 /**
  * Logic for parsing and constructing {@link NodeRecord#getLabelField()} and dynamic label
@@ -50,6 +54,32 @@ public class NodeLabelsField
         return fieldPointsToDynamicRecordOfLabels( labelField )
                 ? new DynamicNodeLabels( node )
                 : new InlineNodeLabels( node );
+    }
+
+    /**
+     * Get node labels without making node heavy
+     */
+    public static long[] getNoEnsureHeavy( NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors )
+    {
+        long labelField = node.getLabelField();
+        if ( !fieldPointsToDynamicRecordOfLabels( labelField ) )
+        {
+            return InlineNodeLabels.parseInlined( labelField );
+        }
+        var dynamicLabelStore = nodeStore.getDynamicLabelStore();
+        Iterable<DynamicRecord> dynamicLabelRecords;
+        if ( node.isLight() )
+        {
+            // labelField points to dynamic labels but records are not loaded, load them without updating node itself
+            var firstDynamicLabelRecord = firstDynamicLabelRecordId( labelField );
+            dynamicLabelRecords = dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL,
+                                                                false, storeCursors.readCursor( DYNAMIC_LABEL_STORE_CURSOR ) );
+        }
+        else
+        {
+            dynamicLabelRecords = node.getUsedDynamicLabelRecords();
+        }
+        return DynamicNodeLabels.getDynamicLabelsArray( dynamicLabelRecords, dynamicLabelStore, storeCursors );
     }
 
     public static long[] get( NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors )

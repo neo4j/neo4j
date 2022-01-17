@@ -32,6 +32,8 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.store.NodeLabels;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityUpdates;
@@ -145,8 +147,8 @@ public class OnlineIndexUpdates implements IndexUpdates
         if ( nodeChanges != null )
         {
             // Special case since the node may not be heavy, i.e. further loading may be required
-            nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore, storeCursors );
-            nodeLabelsAfter = parseLabelsField( nodeChanges.getAfter() ).get( nodeStore, storeCursors );
+            nodeLabelsBefore = NodeLabelsField.getNoEnsureHeavy( nodeChanges.getBefore(), nodeStore, storeCursors );
+            nodeLabelsAfter = NodeLabelsField.getNoEnsureHeavy( nodeChanges.getAfter(), nodeStore, storeCursors );
         }
         else
         {
