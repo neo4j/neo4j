@@ -88,6 +88,7 @@ Apache Software License, Version 2.0
   Netty/Handler
   Netty/Resolver
   Netty/Transport
+  Netty/Transport/Classes/Epoll
   Netty/Transport/Native/Epoll
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
