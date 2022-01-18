@@ -298,7 +298,14 @@ public class CliArgs
 
     public ConnectionConfig connectionConfig()
     {
-        return new ConnectionConfig( getScheme(), getHost(), getPort(), getUsername(), getPassword(), getEncryption(), getDatabase(), new Environment() );
+        return ConnectionConfig.connectionConfig( getScheme(),
+                                                  getHost(),
+                                                  getPort(),
+                                                  getUsername(),
+                                                  getPassword(),
+                                                  getEncryption(),
+                                                  getDatabase(),
+                                                  new Environment() );
     }
 
     public File getHistoryFile()

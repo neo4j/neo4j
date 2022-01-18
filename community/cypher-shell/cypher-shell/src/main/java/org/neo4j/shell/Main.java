@@ -164,17 +164,17 @@ public class Main
             else
             {
                 // Can only prompt for password if input has not been redirected
-                var newConnectionConfig = connectMaybeInteractively( connectionConfig );
+                connectMaybeInteractively( connectionConfig );
 
-                if ( !newConnectionConfig.driverUrl().equals( connectionConfig.driverUrl() ) )
+                if ( !shell.driverUrl().equals( connectionConfig.driverUrl() ) )
                 {
-                    var fallbackWarning = "Failed to connect to " + connectionConfig.driverUrl() + ", fallback to " + newConnectionConfig.driverUrl();
+                    var fallbackWarning = "Failed to connect to " + connectionConfig.driverUrl() + ", fallback to " + shell.driverUrl();
                     logger.printIfVerbose( AnsiFormattedText.s().colorOrange().append( fallbackWarning ).formattedString() );
                 }
 
                 // Construct shellrunner after connecting, due to interrupt handling
-                ShellRunner shellRunner = runnerFactory.create( args, shell, logger, newConnectionConfig, terminal );
-                CommandHelper commandHelper = new CommandHelper( logger, shellRunner.getHistorian(), shell, newConnectionConfig, terminal, parameters );
+                ShellRunner shellRunner = runnerFactory.create( args, shell, logger, terminal );
+                CommandHelper commandHelper = new CommandHelper( logger, shellRunner.getHistorian(), shell, terminal, parameters );
 
                 shell.setCommandHelper( commandHelper );
 
@@ -193,14 +193,14 @@ public class Main
      *
      * @return connection configuration used to connect (can be different from the supplied)
      */
-    private ConnectionConfig connectMaybeInteractively( ConnectionConfig connectionConfig ) throws Exception
+    private void connectMaybeInteractively( ConnectionConfig connectionConfig ) throws Exception
     {
         boolean didPrompt = false;
 
         // Prompt directly in interactive mode if user provided username but not password
         if ( terminal.isInteractive() && !connectionConfig.username().isEmpty() && connectionConfig.password().isEmpty() )
         {
-            promptForUsernameAndPassword( connectionConfig );
+            connectionConfig = promptForUsernameAndPassword( connectionConfig );
             didPrompt = true;
         }
 
@@ -209,9 +209,9 @@ public class Main
             try
             {
                 // Try to connect
-                var newConfig = shell.connect( connectionConfig );
+                shell.connect( connectionConfig );
                 setArgumentParameters();
-                return newConfig;
+                return;
             }
             catch ( AuthenticationException e )
             {
@@ -224,14 +224,14 @@ public class Main
                 }
 
                 // Otherwise we prompt for username and password, and try to connect again
-                promptForUsernameAndPassword( connectionConfig );
+                connectionConfig = promptForUsernameAndPassword( connectionConfig );
                 didPrompt = true;
             }
             catch ( Neo4jException e )
             {
                 if ( terminal.isInteractive() && isPasswordChangeRequiredException( e ) )
                 {
-                    promptAndChangePassword( connectionConfig, "Password change required" );
+                    connectionConfig = promptAndChangePassword( connectionConfig, "Password change required" );
                     didPrompt = true;
                 }
                 else
@@ -250,19 +250,21 @@ public class Main
         }
     }
 
-    private void promptForUsernameAndPassword( ConnectionConfig connectionConfig ) throws Exception
+    private ConnectionConfig promptForUsernameAndPassword( ConnectionConfig connectionConfig ) throws Exception
     {
-        if ( connectionConfig.username().isEmpty() )
+        String username = connectionConfig.username();
+        String password = connectionConfig.password();
+        if ( username.isEmpty() )
         {
-            String username = isOutputInteractive ?
+            username = isOutputInteractive ?
                     promptForNonEmptyText( "username", null ) :
                     promptForText( "username", null );
-            connectionConfig.setUsername( username );
         }
-        if ( connectionConfig.password().isEmpty() )
+        if ( password.isEmpty() )
         {
-            connectionConfig.setPassword( promptForText( "password", '*' ) );
+            password =  promptForText( "password", '*' );
         }
+        return connectionConfig.withUsernameAndPassword( username, password );
     }
 
     private ConnectionConfig promptAndChangePassword( ConnectionConfig connectionConfig, String message ) throws Exception
@@ -271,17 +273,19 @@ public class Main
         {
             terminal.write().println( message );
         }
-        if ( connectionConfig.username().isEmpty() )
+        String username = connectionConfig.username();
+        if ( username.isEmpty() )
         {
-            String username = isOutputInteractive ?
+            username = isOutputInteractive ?
                     promptForNonEmptyText( "username", null ) :
                     promptForText( "username", null );
-            connectionConfig.setUsername( username );
         }
-        if ( connectionConfig.password().isEmpty() )
+        String password = connectionConfig.password();
+        if ( password.isEmpty() )
         {
-            connectionConfig.setPassword( promptForText( "password", '*' ) );
+            password =  promptForText( "password", '*' );
         }
+        connectionConfig = connectionConfig.withUsernameAndPassword( username, password );
         String newPassword = isOutputInteractive ?
                              promptForNonEmptyText( "new password", '*' ) :
                              promptForText( "new password", '*' );
@@ -293,8 +297,7 @@ public class Main
         }
 
         shell.changePassword( connectionConfig, newPassword );
-        connectionConfig.setPassword( newPassword );
-        return connectionConfig;
+        return connectionConfig.withPassword( newPassword );
     }
 
     @VisibleForTesting

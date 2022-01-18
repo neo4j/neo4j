@@ -21,44 +21,35 @@ package org.neo4j.shell;
 
 import org.neo4j.shell.cli.Encryption;
 
-public class ConnectionConfig
+public record ConnectionConfig( String scheme,
+                                String host,
+                                int port,
+                                String username,
+                                String password,
+                                Encryption encryption,
+                                String database,
+                                Environment environment )
 {
     public static final String USERNAME_ENV_VAR = "NEO4J_USERNAME";
     public static final String PASSWORD_ENV_VAR = "NEO4J_PASSWORD";
     public static final String DATABASE_ENV_VAR = "NEO4J_DATABASE";
 
-    private final String scheme;
-    private final String host;
-    private final int port;
-    private final Encryption encryption;
-    private String username;
-    private String password;
-    private String database;
-    private final Environment environment;
-
-    public ConnectionConfig( String scheme, ConnectionConfig connectionConfig )
+    public static ConnectionConfig connectionConfig( String scheme,
+                                                     String host,
+                                                     int port,
+                                                     String username,
+                                                     String password,
+                                                     Encryption encryption,
+                                                     String database,
+                                                     Environment environment )
     {
-        this( scheme, connectionConfig.host, connectionConfig.port, connectionConfig.username, connectionConfig.password, connectionConfig.encryption,
-                connectionConfig.database, connectionConfig.environment );
-    }
-
-    public ConnectionConfig( String scheme,
-                             String host,
-                             int port,
-                             String username,
-                             String password,
-                             Encryption encryption,
-                             String database,
-                             Environment environment )
-    {
-        this.host = host;
-        this.port = port;
-        this.environment = environment;
-        this.username = fallbackToEnvVariable( environment, username, USERNAME_ENV_VAR );
-        this.password = fallbackToEnvVariable( environment, password, PASSWORD_ENV_VAR );
-        this.encryption = encryption;
-        this.scheme = scheme;
-        this.database = fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR );
+        return new ConnectionConfig( scheme,
+                                     host,
+                                     port,
+                                     fallbackToEnvVariable( environment, username, USERNAME_ENV_VAR ),
+                                     fallbackToEnvVariable( environment, password, PASSWORD_ENV_VAR ),
+                                     encryption,
+                                     fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR ), environment );
     }
 
     /**
@@ -74,58 +65,56 @@ public class ConnectionConfig
         return result;
     }
 
-    public String scheme()
-    {
-        return scheme;
-    }
-
-    public String host()
-    {
-        return host;
-    }
-
-    public int port()
-    {
-        return port;
-    }
-
-    public String username()
-    {
-        return username;
-    }
-
-    public String password()
-    {
-        return password;
-    }
-
     public String driverUrl()
     {
         return String.format( "%s://%s:%d", scheme(), host(), port() );
     }
 
-    public Encryption encryption()
+    public ConnectionConfig withPassword( String password )
     {
-        return encryption;
+        return new ConnectionConfig( scheme,
+                                     host,
+                                     port,
+                                     username,
+                                     password,
+                                     encryption,
+                                     database,
+                                     environment );
     }
 
-    public String database()
+    public ConnectionConfig withUsernameAndPassword( String username, String password )
     {
-        return database;
+        return new ConnectionConfig( scheme,
+                                     host,
+                                     port,
+                                     username,
+                                     password,
+                                     encryption,
+                                     database,
+                                     environment );
     }
 
-    public void setUsername( String username )
+    public ConnectionConfig withUsernameAndPasswordAndDatabase( String username, String password, String database )
     {
-        this.username = username;
+        return new ConnectionConfig( scheme,
+                                     host,
+                                     port,
+                                     username,
+                                     password,
+                                     encryption,
+                                     fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR ),
+                                     environment );
     }
 
-    public void setPassword( String password )
+    public ConnectionConfig withScheme( String scheme )
     {
-        this.password = password;
-    }
-
-    public void setDatabase( String database )
-    {
-        this.database = fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR );
+        return new ConnectionConfig( scheme,
+                                     host,
+                                     port,
+                                     username,
+                                     password,
+                                     encryption,
+                                     database,
+                                     environment );
     }
 }

@@ -32,8 +32,6 @@ import static org.mockito.Mockito.when;
 
 class ShellRunnerTest
 {
-    private final ConnectionConfig connectionConfig = mock( ConnectionConfig.class );
-
     @Test
     void inputIsNonInteractiveIfForced() throws Exception
     {
@@ -41,7 +39,7 @@ class ShellRunnerTest
         args.setNonInteractive( true );
         var terminal = mock( CypherShellTerminal.class );
         when( terminal.isInteractive() ).thenReturn( true );
-        ShellRunner runner = new ShellRunner.Factory().create( args, mock( CypherShell.class ), mock( Logger.class ), connectionConfig, terminal );
+        ShellRunner runner = new ShellRunner.Factory().create( args, mock( CypherShell.class ), mock( Logger.class ), terminal );
         assertTrue( runner instanceof NonInteractiveShellRunner, "Should be non-interactive shell runner when forced" );
     }
 }

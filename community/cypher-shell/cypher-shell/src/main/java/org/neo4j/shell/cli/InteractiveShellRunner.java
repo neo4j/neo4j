@@ -68,7 +68,6 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
     private final DatabaseManager databaseManager;
     private final StatementExecuter executer;
     private final UserMessagesHandler userMessagesHandler;
-    private final ConnectionConfig connectionConfig;
     private final Connector connector;
 
     public InteractiveShellRunner( StatementExecuter executer,
@@ -78,7 +77,6 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
                                    Logger logger,
                                    CypherShellTerminal terminal,
                                    UserMessagesHandler userMessagesHandler,
-                                   ConnectionConfig connectionConfig,
                                    File historyFile )
     {
         this.userMessagesHandler = userMessagesHandler;
@@ -89,7 +87,6 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         this.connector = connector;
         this.logger = logger;
         this.terminal = terminal;
-        this.connectionConfig = connectionConfig;
         setupHistory( historyFile );
 
         // Catch ctrl-c
@@ -183,7 +180,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
 
         String errorSuffix = getErrorPrompt( executer.lastNeo4jErrorCode() );
 
-        int promptIndent = connectionConfig.username().length() +
+        int promptIndent = connector.username().length() +
                            USERNAME_DB_DELIMITER.length() +
                            databaseName.length() +
                            errorSuffix.length() +
@@ -217,7 +214,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         if ( connector.isConnected() )
         {
             prePrompt
-                    .append( connectionConfig.username() )
+                    .append( connector.username() )
                     .append( "@" )
                     .append( databaseName );
         }

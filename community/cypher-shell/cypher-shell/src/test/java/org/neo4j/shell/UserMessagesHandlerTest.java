@@ -19,23 +19,33 @@
  */
 package org.neo4j.shell;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import org.neo4j.shell.cli.Encryption;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 
 class UserMessagesHandlerTest
 {
-    private final ConnectionConfig connectionConfig = mock( ConnectionConfig.class );
+    private final Connector connector = mock( Connector.class );
+
+    @BeforeEach
+    void setup()
+    {
+        when( connector.username() ).thenReturn( "bob" );
+        when( connector.getProtocolVersion() ).thenReturn( "3.0" );
+        when( connector.driverUrl() ).thenReturn( "bolt://some.place.com:99" );
+    }
 
     @Test
     void welcomeMessageTest()
     {
-        when( connectionConfig.username() ).thenReturn( "bob" );
-        when( connectionConfig.driverUrl() ).thenReturn( "bolt://some.place.com:99" );
-
-        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connectionConfig, "3.0" );
+        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connector );
         assertEquals( "Connected to Neo4j using Bolt protocol version 3.0 at @|BOLD bolt://some.place.com:99|@ as user @|BOLD bob|@.\n" +
                       "Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.\n" +
                       "Note that Cypher queries must end with a @|BOLD semicolon.|@",
@@ -45,10 +55,7 @@ class UserMessagesHandlerTest
     @Test
     void exitMessageTest()
     {
-        when( connectionConfig.username() ).thenReturn( "bob" );
-        when( connectionConfig.driverUrl() ).thenReturn( "bolt://some.place.com:99" );
-
-        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connectionConfig, "3.0" );
+        UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connector );
         assertEquals( "\nBye!", UserMessagesHandler.getExitMessage() );
     }
 }

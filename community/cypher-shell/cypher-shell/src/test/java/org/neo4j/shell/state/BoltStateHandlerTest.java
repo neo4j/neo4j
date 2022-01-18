@@ -78,6 +78,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
@@ -87,7 +88,7 @@ class BoltStateHandlerTest
     private final Logger logger = mock( Logger.class );
     private final Driver mockDriver = mock( Driver.class );
     private final OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler( mockDriver );
-    private final ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
+    private final ConnectionConfig config = connectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
 
     @BeforeEach
     void setup()
@@ -447,7 +448,7 @@ class BoltStateHandlerTest
     {
         RecordingDriverProvider provider = new RecordingDriverProvider();
         BoltStateHandler handler = new BoltStateHandler( provider, false );
-        ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME, new Environment() );
+        ConnectionConfig config = connectionConfig( "bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME, new Environment() );
         handler.connect( config );
         assertTrue( provider.config.encrypted() );
     }
@@ -498,7 +499,7 @@ class BoltStateHandlerTest
     void shouldChangePasswordAndKeepSystemDbBookmark() throws CommandException
     {
         // Given
-        ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
+        ConnectionConfig config = connectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
         Bookmark bookmark = InternalBookmark.parse( "myBookmark" );
         var newPassword = "newPW";
 
@@ -516,7 +517,7 @@ class BoltStateHandlerTest
         assertNull( handler.session );
 
         // When connecting to system db again
-        handler.connect( new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, SYSTEM_DB_NAME, new Environment() ) );
+        handler.connect( connectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, SYSTEM_DB_NAME, new Environment() ) );
 
         // Then use bookmark for system DB
         verify( driverMock ).session( SessionConfig.builder()
@@ -530,7 +531,7 @@ class BoltStateHandlerTest
     @Test
     void shouldKeepOneBookmarkPerDatabase() throws CommandException
     {
-        ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, "database1", new Environment() );
+        ConnectionConfig config = connectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, "database1", new Environment() );
         Bookmark db1Bookmark = InternalBookmark.parse( "db1" );
         Bookmark db2Bookmark = InternalBookmark.parse( "db2" );
 
@@ -695,7 +696,7 @@ class BoltStateHandlerTest
             }
         };
         BoltStateHandler handler = new BoltStateHandler( provider, false );
-        ConnectionConfig config = new ConnectionConfig( initialScheme, "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
+        ConnectionConfig config = connectionConfig( initialScheme, "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
         handler.connect( config );
 
         assertEquals( fallbackScheme, uriScheme[0] );
@@ -714,7 +715,7 @@ class BoltStateHandlerTest
 
         public void connect() throws CommandException
         {
-            connect( new ConnectionConfig( "bolt", "", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
+            connect( connectionConfig( "bolt", "", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() ) );
         }
     }
 

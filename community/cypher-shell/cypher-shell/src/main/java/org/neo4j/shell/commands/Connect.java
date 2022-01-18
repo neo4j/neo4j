@@ -42,14 +42,12 @@ public class Connect implements Command
 {
     private final CypherShell shell;
     private final CypherShellTerminal terminal;
-    private final ConnectionConfig config;
     private final ArgumentParser argumentParser;
 
-    public Connect( CypherShell shell, CypherShellTerminal terminal, ConnectionConfig config )
+    public Connect( CypherShell shell, CypherShellTerminal terminal )
     {
         this.shell = shell;
         this.terminal = terminal;
-        this.config = config;
         this.argumentParser = setupParser();
     }
 
@@ -61,11 +59,10 @@ public class Connect implements Command
             throw new CommandException( "Already connected" );
         }
 
-        parseArgString( args );
-        shell.connect( config );
+        connect( args );
     }
 
-    private void parseArgString( List<String> stringArgs ) throws CommandException
+    private void connect( List<String> stringArgs ) throws CommandException
     {
         requireArgumentCount( stringArgs, 0, 6 );
         try
@@ -80,21 +77,15 @@ public class Connect implements Command
             }
             else if ( user == null ) // We know password is null because of the previous if statement
             {
-                config.setUsername( promptForNonEmptyText( "username", null ) );
-                config.setPassword( promptForText( "password", '*' ) );
+                user = promptForNonEmptyText( "username", null );
+                password = promptForText( "password", '*' );
             }
             else if ( password == null )
             {
-                config.setUsername( user );
-                config.setPassword( promptForText( "password", '*' ) );
-            }
-            else
-            {
-                config.setUsername( user );
-                config.setPassword( password );
+                password = promptForText( "password", '*' );
             }
 
-            config.setDatabase( args.getString( "database" ) );
+            shell.connect( user, password, args.getString( "database" ) );
         }
         catch ( ArgumentParserException e )
         {
@@ -148,7 +139,7 @@ public class Connect implements Command
         @Override
         public Command executor( Arguments args )
         {
-            return new Connect( args.cypherShell(), args.terminal(), args.connectionConfig() );
+            return new Connect( args.cypherShell(), args.terminal() );
         }
     }
 }

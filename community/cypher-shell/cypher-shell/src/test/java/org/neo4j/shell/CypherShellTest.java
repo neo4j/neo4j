@@ -53,6 +53,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
 class CypherShellTest
@@ -75,7 +76,6 @@ class CypherShellTest
                 logger,
                 Historian.empty,
                 offlineTestShell,
-                mock( ConnectionConfig.class ),
                 mock( CypherShellTerminal.class ),
                 mock( ParameterService.class )
         );
@@ -86,7 +86,7 @@ class CypherShellTest
     @Test
     void verifyDelegationOfConnectionMethods() throws CommandException
     {
-        ConnectionConfig cc = new ConnectionConfig( "bolt", "", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
+        ConnectionConfig cc = connectionConfig( "bolt", "", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
         CypherShell shell = new CypherShell( logger, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
 
         shell.connect( cc );

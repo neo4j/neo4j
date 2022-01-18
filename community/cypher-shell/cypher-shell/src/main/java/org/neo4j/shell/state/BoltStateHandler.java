@@ -72,6 +72,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private String activeDatabaseNameAsSetByUser;
     private String actualDatabaseNameAsReportedByServer;
     private Transaction tx;
+    private ConnectionConfig connectionConfig;
 
     public BoltStateHandler( boolean isInteractive )
     {
@@ -228,12 +229,19 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public ConnectionConfig connect( ConnectionConfig connectionConfig ) throws CommandException
+    public void connect( String user, String password, String database ) throws CommandException
+    {
+        connect( connectionConfig.withUsernameAndPasswordAndDatabase( user, password, database ) );
+    }
+
+    @Override
+    public void connect( ConnectionConfig incomingConfig ) throws CommandException
     {
         if ( isConnected() )
         {
             throw new CommandException( "Already connected" );
         }
+        this.connectionConfig = incomingConfig;
         final AuthToken authToken = AuthTokens.basic( connectionConfig.username(), connectionConfig.password() );
         try
         {
@@ -254,7 +262,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                             case Scheme.NEO4J_HIGH_TRUST_URI_SCHEME -> Scheme.BOLT_HIGH_TRUST_URI_SCHEME;
                             default -> throw e;
                         };
-                connectionConfig = new ConnectionConfig( fallbackScheme, connectionConfig );
+                this.connectionConfig = connectionConfig.withScheme( fallbackScheme );
 
                 try
                 {
@@ -280,7 +288,6 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             }
             throw t;
         }
-        return connectionConfig;
     }
 
     private void reconnectAndPing( String databaseToConnectTo, String previousDatabase ) throws CommandException
@@ -387,6 +394,18 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             return protocolVersion;
         }
         return "";
+    }
+
+    @Override
+    public String username()
+    {
+        return connectionConfig != null ? connectionConfig.username() : "";
+    }
+
+    @Override
+    public String driverUrl()
+    {
+        return connectionConfig != null ? connectionConfig.driverUrl() : "";
     }
 
     @Override

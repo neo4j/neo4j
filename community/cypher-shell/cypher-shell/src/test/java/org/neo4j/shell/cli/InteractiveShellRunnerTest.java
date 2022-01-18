@@ -39,6 +39,7 @@ import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Connector;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.DatabaseManager;
+import org.neo4j.shell.Environment;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.OfflineTestShell;
 import org.neo4j.shell.StatementExecuter;
@@ -82,6 +83,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.cli.InteractiveShellRunner.DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
@@ -99,7 +101,6 @@ class InteractiveShellRunnerTest
     private ClientException badLineError;
     private Connector connector;
     private UserMessagesHandler userMessagesHandler;
-    private ConnectionConfig connectionConfig;
     private ByteArrayOutputStream out;
     private ParameterService parameters;
 
@@ -110,16 +111,15 @@ class InteractiveShellRunnerTest
         cmdExecuter = mock( StatementExecuter.class );
         txHandler = mock( TransactionHandler.class );
         databaseManager = mock( DatabaseManager.class );
-        connectionConfig = mock( ConnectionConfig.class );
         historyFile = new File( temp, "test" );
         badLineError = new ClientException( "Found a bad line" );
         connector = mock( Connector.class );
         when( connector.isConnected() ).thenReturn( true );
-        userMessagesHandler = mock( UserMessagesHandler.class );
+        when( connector.username() ).thenReturn( "myusername" );
+        when( connector.getProtocolVersion() ).thenReturn( "" );
+        userMessagesHandler = new UserMessagesHandler( connector );
         out = new ByteArrayOutputStream();
         when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( "mydb" );
-        when( userMessagesHandler.getWelcomeMessage() ).thenReturn( "Welcome to cypher-shell!" );
-        when( connectionConfig.username() ).thenReturn( "myusername" );
         parameters = mock( ParameterService.class );
 
         doThrow( badLineError ).when( cmdExecuter ).execute( statementContains( "bad" ) );
@@ -436,7 +436,10 @@ class InteractiveShellRunnerTest
         runner.runUntilEnd();
 
         // then
-        verify( logger ).printIfVerbose( "Welcome to cypher-shell!" );
+        verify( logger ).printIfVerbose( """
+                                                 Connected to Neo4j at @|BOLD null|@ as user @|BOLD myusername|@.
+                                                 Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
+                                                 Note that Cypher queries must end with a @|BOLD semicolon.|@""" );
         verify( logger ).printIfVerbose( "\nBye!" );
     }
 
@@ -535,6 +538,7 @@ class InteractiveShellRunnerTest
 
         BoltStateHandler mockedBoltStateHandler = mock( BoltStateHandler.class );
         when( mockedBoltStateHandler.getProtocolVersion() ).thenReturn( "" );
+        when( mockedBoltStateHandler.username() ).thenReturn( "myusername" );
         when( mockedBoltStateHandler.isConnected() ).thenReturn( true );
 
         final PrettyPrinter mockedPrettyPrinter = mock( PrettyPrinter.class );
@@ -544,10 +548,10 @@ class InteractiveShellRunnerTest
         var in = new ByteArrayInputStream( input.getBytes( UTF_8 ) );
         var terminal = terminalBuilder().dumb().streams( in, output ).interactive( true ).logger( logger ).build();
         OfflineTestShell offlineTestShell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
-        CommandHelper commandHelper = new CommandHelper( logger, Historian.empty, offlineTestShell, connectionConfig, terminal, parameters );
+        CommandHelper commandHelper = new CommandHelper( logger, Historian.empty, offlineTestShell, terminal, parameters );
         offlineTestShell.setCommandHelper( commandHelper );
         var runner = new InteractiveShellRunner( offlineTestShell, offlineTestShell, offlineTestShell, offlineTestShell, logger,
-                                                 terminal, userMessagesHandler, connectionConfig, historyFile );
+                                                 terminal, userMessagesHandler, historyFile );
 
         return new TestInteractiveShellRunner( runner, output, error, mockedBoltStateHandler );
     }
@@ -628,13 +632,13 @@ class InteractiveShellRunnerTest
     private InteractiveShellRunner runner( String input )
     {
         return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, logger,
-                                           testTerminal( input ), userMessagesHandler, connectionConfig, historyFile );
+                                           testTerminal( input ), userMessagesHandler, historyFile );
     }
 
     private InteractiveShellRunner runner( CypherShellTerminal terminal )
     {
         return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, logger,
-                                           terminal, userMessagesHandler, connectionConfig, historyFile );
+                                           terminal, userMessagesHandler, historyFile );
     }
 
     private static String lines( String... lines )

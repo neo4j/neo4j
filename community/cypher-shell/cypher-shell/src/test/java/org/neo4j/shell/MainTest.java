@@ -40,6 +40,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -53,18 +54,19 @@ class MainTest
     private ShellRunner.Factory mockRunnerFactory;
     private ParameterService parameters;
 
-    private AuthenticationException authException = new AuthenticationException( Main.NEO_CLIENT_ERROR_SECURITY_UNAUTHORIZED, "BOOM" );
-    private Neo4jException passwordChangeRequiredException = new SecurityException( "Neo.ClientError.Security.CredentialsExpired", "BLAM" );
+    private final AuthenticationException authException = new AuthenticationException( Main.NEO_CLIENT_ERROR_SECURITY_UNAUTHORIZED, "BOOM" );
+    private final Neo4jException passwordChangeRequiredException = new SecurityException( "Neo.ClientError.Security.CredentialsExpired", "BLAM" );
 
     @BeforeEach
     void setup() throws IOException
     {
         mockShell = mock( CypherShell.class );
+        when( mockShell.driverUrl() ).thenReturn( "neo4j://localhost:7687" );
         mockRunnerFactory = mock( ShellRunner.Factory.class );
         parameters = ParameterService.create( mockShell );
         var runnerMock = mock( ShellRunner.class );
         when( runnerMock.runUntilEnd() ).thenReturn( EXIT_SUCCESS );
-        when( mockRunnerFactory.create( any(), any(), any(), any(), any() ) ).thenReturn( runnerMock );
+        when( mockRunnerFactory.create( any(), any(), any(), any()) ).thenReturn( runnerMock );
     }
 
     @Test
@@ -304,11 +306,11 @@ class MainTest
 
     private AssertableMain.AssertableMainBuilder testWithMockUser( String name, String password, String expiredPassword ) throws CommandException
     {
-        when( mockShell.connect( any() )).thenAnswer( invocation -> {
+        doAnswer( invocation -> {
             var in = (ConnectionConfig) invocation.getArgument( 0 );
             if ( name.equals( in.username() ) && password.equals( in.password() ) )
             {
-                return in;
+               return null;
             }
             else if ( expiredPassword != null && name.equals( in.username() ) && expiredPassword.equals( in.password() ) )
             {
@@ -318,7 +320,7 @@ class MainTest
             {
                 throw authException;
             }
-        } );
+        } ).when( mockShell ).connect( any( ) );
         return testWithMocks();
     }
 }

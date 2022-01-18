@@ -45,7 +45,7 @@ class CommandHelperTest
     {
         // Given
         CommandHelper commandHelper =
-                new CommandHelper( logger, Historian.empty, shell, null, null, null );
+                new CommandHelper( logger, Historian.empty, shell, null, null );
 
         // When
         Command begin = commandHelper.getCommand( ":BEGIN" );
@@ -57,7 +57,7 @@ class CommandHelperTest
     @Test
     void internalStateSanityTest()
     {
-        var args = new Command.Factory.Arguments( logger, Historian.empty, shell, null, null, null );
+        var args = new Command.Factory.Arguments( logger, Historian.empty, shell, null, null );
         var factories = new CommandHelper.CommandFactoryHelper().factoryByClass();
         factories.forEach( ( cls, factory ) -> assertEquals( cls, factory.executor( args ).getClass() ) );
     }

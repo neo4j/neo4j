@@ -45,13 +45,12 @@ public class CommandHelper
             Logger logger,
             Historian historian,
             CypherShell cypherShell,
-            ConnectionConfig connectionConfig,
             CypherShellTerminal terminal,
             ParameterService parameters
     )
     {
-        var args = new Command.Factory.Arguments( logger, historian, cypherShell, connectionConfig, terminal, parameters );
-        new CommandFactoryHelper().factoryByName.forEach( ( key, value ) -> commands.put( key, value.executor( args ) ) );
+        var args = new Command.Factory.Arguments( logger, historian, cypherShell, terminal, parameters );
+        CommandFactoryHelper.factoryByName.forEach( ( key, value ) -> commands.put( key, value.executor( args ) ) );
     }
 
     /**

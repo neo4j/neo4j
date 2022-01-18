@@ -136,13 +136,17 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
 
     /**
      * Open a session to Neo4j
-     *
-     * @return connection configuration used to connect (can be different from the supplied)
      */
     @Override
-    public ConnectionConfig connect( ConnectionConfig connectionConfig ) throws CommandException
+    public void connect( ConnectionConfig connectionConfig ) throws CommandException
     {
-        return boltStateHandler.connect( connectionConfig );
+        boltStateHandler.connect( connectionConfig );
+    }
+
+    @Override
+    public void connect( String user, String password, String database ) throws CommandException
+    {
+        boltStateHandler.connect( user, password, database );
     }
 
     @Override
@@ -155,6 +159,18 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     public String getProtocolVersion()
     {
         return boltStateHandler.getProtocolVersion();
+    }
+
+    @Override
+    public String username()
+    {
+        return boltStateHandler.username();
+    }
+
+    @Override
+    public String driverUrl()
+    {
+        return boltStateHandler.driverUrl();
     }
 
     @Override

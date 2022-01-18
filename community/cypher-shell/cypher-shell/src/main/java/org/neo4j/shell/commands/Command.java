@@ -77,7 +77,6 @@ public interface Command
                 Logger logger,
                 Historian historian,
                 CypherShell cypherShell,
-                ConnectionConfig connectionConfig,
                 CypherShellTerminal terminal,
                 ParameterService parameters
         )

@@ -133,13 +133,18 @@ public interface ShellRunner
 
     class Factory
     {
-        public ShellRunner create( CliArgs cliArgs, CypherShell shell, Logger logger, ConnectionConfig connectionConfig,
+        public ShellRunner create( CliArgs cliArgs, CypherShell shell, Logger logger,
                                    CypherShellTerminal terminal ) throws IOException
         {
             if ( shouldBeInteractive( cliArgs, terminal.isInteractive() ) )
             {
-                var userMessagesHandler = new UserMessagesHandler( connectionConfig, shell.getProtocolVersion() );
-                return new InteractiveShellRunner( shell, shell, shell, shell, logger, terminal, userMessagesHandler, connectionConfig,
+                return new InteractiveShellRunner( shell,
+                                                   shell,
+                                                   shell,
+                                                   shell,
+                                                   logger,
+                                                   terminal,
+                                                   new UserMessagesHandler( shell ),
                                                    cliArgs.getHistoryFile() );
             }
             else

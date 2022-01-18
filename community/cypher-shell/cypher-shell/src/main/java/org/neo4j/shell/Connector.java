@@ -20,6 +20,7 @@
 package org.neo4j.shell;
 
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.log.AnsiFormattedText;
 
 /**
  * An object with the ability to connect and disconnect.
@@ -36,9 +37,10 @@ public interface Connector
      * Tries to connect to database.
      *
      * @throws CommandException if connection failed
-     * @return connection configuration used to connect (can be different from the supplied)
      */
-    ConnectionConfig connect( ConnectionConfig connectionConfig ) throws CommandException;
+    void connect( ConnectionConfig connectionConfig ) throws CommandException;
+
+    void connect( String user, String password, String database ) throws CommandException;
 
     void disconnect();
 
@@ -56,4 +58,8 @@ public interface Connector
      * @return the version of neo4j driver (like '4.3') if connected and available, an empty string otherwise
      */
     String getProtocolVersion();
+
+    String username();
+
+    String driverUrl();
 }
