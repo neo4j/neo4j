@@ -893,21 +893,54 @@ class MainIntegrationTest
                 .assertThatOutput(
                         containsString(
                                 """
-                                > :params
-                                :param advice        => ['talk', 'less', 'smile', 'more']
-                                :param easyAs        => 1 + 2 + 3
-                                :param purple        => 'rain'
-                                :param repeatAfterMe => 'A' + 'B' + 'C'
-                                :param when          => date('2021-01-12')"""
+                                        > :params
+                                        :param advice        => ['talk', 'less', 'smile', 'more']
+                                        :param easyAs        => 1 + 2 + 3
+                                        :param purple        => 'rain'
+                                        :param repeatAfterMe => 'A' + 'B' + 'C'
+                                        :param when          => date('2021-01-12')"""
                         ),
                         containsString(
                                 """
-                                 > return $purple, $advice, $when, $repeatAfterMe, $easyAs;
-                                 $purple, $advice, $when, $repeatAfterMe, $easyAs
-                                 "rain", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6
-                                 """
+                                        > return $purple, $advice, $when, $repeatAfterMe, $easyAs;
+                                        $purple, $advice, $when, $repeatAfterMe, $easyAs
+                                        "rain", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6
+                                        """
                         )
                 );
+    }
+
+    @Test
+    void shouldShowPlanDescription() throws Exception
+    {
+        assumeAtLeastVersion( "4.4.0" );
+
+        var expected = serverVersion.major() >= 5 ?
+                                """
+                                +-----------------+---------+----------------+---------------------+
+                                | Operator        | Details | Estimated Rows | Other               |
+                                +-----------------+---------+----------------+---------------------+
+                                | +ProduceResults | n       |             10 | Fused in Pipeline 0 |
+                                | |               +---------+----------------+---------------------+
+                                | +AllNodesScan   | n       |             10 | Fused in Pipeline 0 |
+                                +-----------------+---------+----------------+---------------------+
+                                """ :
+                               """
+                               +-----------------------+---------+----------------+---------------------+
+                               | Operator              | Details | Estimated Rows | Other               |
+                               +-----------------------+---------+----------------+---------------------+
+                               | +ProduceResults@neo4j | n       |             10 | Fused in Pipeline 0 |
+                               | |                     +---------+----------------+---------------------+
+                               | +AllNodesScan@neo4j   | n       |             10 | Fused in Pipeline 0 |
+                               +-----------------------+---------+----------------+---------------------+
+                               """;
+
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "verbose" )
+                .userInputLines( "EXPLAIN MATCH (n) RETURN n;", ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput( containsString( expected ) );
     }
 
     private void assertUserCanConnectAndRunQuery( String user, String password ) throws Exception
