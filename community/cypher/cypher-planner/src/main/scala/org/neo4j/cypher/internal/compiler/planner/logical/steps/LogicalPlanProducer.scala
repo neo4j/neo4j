@@ -843,11 +843,32 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(AssertSameNode(node, left, right), solved, providedOrders.get(left.id).fromLeft, context)
   }
 
-  def planOptional(inputPlan: LogicalPlan, ids: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+  def planOptional(inputPlan: LogicalPlan, ids: Set[String], context: LogicalPlanningContext, optionalQG: QueryGraph): LogicalPlan = {
+    val patternNodes =
+      optionalQG
+        .patternNodes
+        .intersect(ids)
+        .toSeq
+
+    val patternRelationships =
+      optionalQG
+        .patternRelationships
+        .filter(rel => ids(rel.name))
+        .toSeq
+
+    val optionalMatchQG =
+      solveds
+        .get(inputPlan.id)
+        .asSinglePlannerQuery
+        .queryGraph
+        .addPatternNodes(patternNodes: _*)
+        .addPatternRelationships(patternRelationships)
+
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .withAddedOptionalMatch(solveds.get(inputPlan.id).asSinglePlannerQuery.queryGraph)
+      .withAddedOptionalMatch(optionalMatchQG)
       .withArgumentIds(ids)
     )
+
     annotate(Optional(inputPlan, ids), solved, providedOrders.get(inputPlan.id).fromLeft, context)
   }
 

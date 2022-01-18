@@ -65,6 +65,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   override def labelsById: Map[Int, String] = Map.empty
   override def relTypesById: Map[Int, String] = Map.empty
   override def executionModel: ExecutionModel = ExecutionModel.default
+  override def lookupRelationshipsByType: LookupRelationshipsByType = LookupRelationshipsByType.default
 
   override def qg: QueryGraph = ???
 }

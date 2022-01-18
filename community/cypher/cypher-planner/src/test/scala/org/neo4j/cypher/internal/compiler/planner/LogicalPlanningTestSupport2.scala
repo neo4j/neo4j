@@ -279,7 +279,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def canLookupNodesByLabel: Boolean = true
 
-      override def canLookupRelationshipsByType: Boolean = false
+      override def canLookupRelationshipsByType: Boolean =
+        config.lookupRelationshipsByType.canLookupRelationshipsByType
 
       override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = {
         config.nodeConstraints.filter(p => p._1 == labelName).flatMap(p => p._2)

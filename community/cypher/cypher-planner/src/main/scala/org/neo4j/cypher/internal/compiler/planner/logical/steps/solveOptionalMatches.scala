@@ -66,7 +66,7 @@ case object applyOptional extends OptionalSolver {
     val innerContext: LogicalPlanningContext = context.withFusedLabelInfo(enclosingQg.selections.labelInfo)
     val inner = context.strategy.plan(optionalQg, interestingOrderConfig, innerContext)
     (lhs: LogicalPlan) => inner.allResults.map { inner =>
-      val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
+      val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext, optionalQg)
       val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
 
       // Often the Apply can be rewritten into an OptionalExpand. We want to do that before cost estimating against the hash joins, otherwise that
