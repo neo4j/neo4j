@@ -132,6 +132,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
     override def hasParameters(expr: Expression): Boolean = ???
   }
+  var lookupRelationshipsByType: LookupRelationshipsByType = LookupRelationshipsByType.default
 
   lazy val labelsById: Map[Int, String] = {
     val indexed = indexes.keys.collect {

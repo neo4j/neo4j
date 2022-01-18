@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.LookupRelationshipsByTypeDisabled
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -424,6 +425,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                                                 toLabel: Option[LabelId]): Cardinality = Cardinality(0.0)
           }
         )
+        lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
       } getLogicalPlanFor query)._2
 
       plan should beLike {

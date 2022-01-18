@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.LookupRelationshipsByTypeDisabled
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -404,6 +405,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
           case _ => 0.0
         }
       }
+      lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
     }
 
     val (_, plan, table,_) = cfg.getLogicalPlanFor(query)
@@ -470,5 +472,223 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         case _: RightOuterHashJoin => true
       } should be(true)
     }
+  }
+
+  test("should produce a valid plan for optional match with solved arguments passed to node by label scan") {
+    val config = new given {
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100000.0
+      }
+    }
+
+    val query =
+      """MATCH (n0), (n1)
+        |OPTIONAL MATCH (n0)--(:L0), (n1)
+        |RETURN n0
+        |LIMIT 0""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1")
+      .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.nodeByLabelScan("anon_1", "L0", IndexOrderNone, "n0", "n1")
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    plan should equal(expected)
+  }
+
+  test("should produce a valid plan for optional match with solved arguments passed to node index scan") {
+    val config = new given {
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100000.0
+      }
+      indexOn("L0", "prop")
+    }
+
+    val query =
+      """MATCH (n0), (n1)
+        |OPTIONAL MATCH (n0)--(:L0 {prop: 42}), (n1)
+        |RETURN n0
+        |LIMIT 0""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1")
+      .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.nodeIndexOperator("anon_1:L0(prop = 42)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    // due to effective cardinality being zero, filtering on `prop` inside the index operator or separately leads to the same cost – both are valid plans
+    val otherwiseExpected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1")
+      .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.filter("anon_1.prop = 42")
+      .|.nodeIndexOperator("anon_1:L0(prop)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    plan should (equal(expected) or equal(otherwiseExpected))
+  }
+
+  test("should produce a valid plan for optional match with solved arguments passed to a relationship index scan") {
+    val config = new given {
+      cost = {
+        case (expand: OptionalExpand, _, _, _) if expand.mode == ExpandAll => Double.MaxValue
+      }
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100000.0
+      }
+      relationshipIndexOn("R0", "prop")
+    }
+
+    val query =
+      """MATCH (n0), (n1)
+        |OPTIONAL MATCH (n0)--()-[:R0 {prop: 42}]->(), (n1)
+        |RETURN n0
+        |LIMIT 0""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1")
+      .|.filter("not anon_0 = anon_2")
+      .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop = 42)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    // due to effective cardinality being zero, filtering on `prop` inside the index operator or separately leads to the same cost – both are valid plans
+    val otherwiseExpected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1")
+      .|.filter("not anon_0 = anon_2")
+      .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.filter("anon_2.prop = 42")
+      .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    plan should (equal(expected) or equal(otherwiseExpected))
+  }
+
+  test("should produce a valid plan for optional match with solved arguments passed to a node by id seek") {
+    val config = new given {
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100000.0
+      }
+    }
+
+    val query =
+      """MATCH (n0), (n1)
+        |OPTIONAL MATCH (n0)--(x),(n1)
+        |WHERE id(x) = 0
+        |RETURN n0
+        |LIMIT 0""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1")
+      .|.expandInto("(n0)-[anon_0]-(x)")
+      .|.nodeByIdSeek("x", Set("n0", "n1"), 0)
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    plan should equal(expected)
+  }
+
+  test("should produce a valid plan for optional match with solved arguments passed to an undirected relationship by id seek") {
+    val config = new given {
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100000.0
+      }
+    }
+
+    val query =
+      """MATCH (n0), (n1)
+        |OPTIONAL MATCH (n0)-[r]-(),(n1)
+        |WHERE id(r) = 0
+        |RETURN n0
+        |LIMIT 0""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply(fromSubquery = false)
+      .|.optional("n0", "n1")
+      .|.filter("n0 = anon_1")
+      .|.undirectedRelationshipByIdSeek("r", "anon_1", "anon_0", Set("n0", "n1"), 0)
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    plan should equal(expected)
+  }
+
+  test("should produce a valid plan for optional match with solved arguments passed to a directed relationship by id seek") {
+    val config = new given {
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100000.0
+      }
+    }
+
+    val query =
+      """MATCH (n0), (n1)
+        |OPTIONAL MATCH (n0)<-[r]-(),(n1)
+        |WHERE id(r) = 42
+        |RETURN n0
+        |LIMIT 0""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1")
+      .|.filter("n0 = anon_1")
+      .|.directedRelationshipByIdSeek("r", "anon_0", "anon_1", Set("n0", "n1"), 42)
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    plan should equal(expected)
   }
 }

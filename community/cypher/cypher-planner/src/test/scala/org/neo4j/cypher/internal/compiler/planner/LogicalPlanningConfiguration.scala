@@ -61,6 +61,7 @@ trait LogicalPlanningConfiguration {
   def labelsById: Map[Int, String]
   def relTypesById: Map[Int, String]
   def qg: QueryGraph
+  def lookupRelationshipsByType: LookupRelationshipsByType
 
   protected def mapCardinality(pf: PartialFunction[PlannerQueryPart, Double]): PartialFunction[PlannerQueryPart, Cardinality] = pf.andThen(Cardinality.apply)
   protected def selectivitiesCardinality(selectivities: Map[Expression, Double],
@@ -91,6 +92,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def relTypesById = parent.relTypesById
   override def qg = parent.qg
   override def procedureSignatures: Set[ProcedureSignature] = parent.procedureSignatures
+  override def lookupRelationshipsByType: LookupRelationshipsByType = parent.lookupRelationshipsByType
 }
 
 trait LogicalPlanningConfigurationAdHocSemanticTable {
@@ -134,3 +136,15 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
     theTable
   }
 }
+
+sealed trait LookupRelationshipsByType {
+  def canLookupRelationshipsByType: Boolean = this match {
+    case LookupRelationshipsByTypeEnabled => true
+    case LookupRelationshipsByTypeDisabled => false
+  }
+}
+object LookupRelationshipsByType {
+  def default: LookupRelationshipsByType = LookupRelationshipsByTypeEnabled
+}
+case object LookupRelationshipsByTypeEnabled extends LookupRelationshipsByType
+case object LookupRelationshipsByTypeDisabled extends LookupRelationshipsByType

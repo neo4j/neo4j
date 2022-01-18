@@ -635,16 +635,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     val idExpressions = ids.map {
-      case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
+      case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
       case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
       case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
-    val input =
-      if (idExpressions.length == 1) {
-        SingleSeekableArg(idExpressions.head)
-      } else {
-        ManySeekableArgs(ListLiteral(idExpressions)(pos))
-      }
+    val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
     appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, args)(_)))
   }
@@ -654,16 +649,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNode(varFor(from))
     newNode(varFor(to))
     val idExpressions = ids.map {
-      case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
+      case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
       case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
       case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
-    val input =
-      if (idExpressions.length == 1) {
-        SingleSeekableArg(idExpressions.head)
-      } else {
-        ManySeekableArgs(ListLiteral(idExpressions)(pos))
-      }
+    val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
     appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
   }
@@ -673,16 +663,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNode(varFor(from))
     newNode(varFor(to))
     val idExpressions = ids.map {
-      case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
+      case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
       case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
       case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
-    val input =
-      if (idExpressions.length == 1) {
-        SingleSeekableArg(idExpressions.head)
-      } else {
-        ManySeekableArgs(ListLiteral(idExpressions)(pos))
-      }
+    val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
     appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
   }
