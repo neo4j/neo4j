@@ -27,6 +27,8 @@ import org.scalatest.time.Span
 
 /**
  * Limits tests in a class to 5 minutes.
+ *
+ * Broken due to compilation error introduced in Scala 2.13 https://github.com/scala/bug/issues/12520
  */
 trait TimeLimitedCypherTest extends TimeLimitedTests {
   self: CypherFunSuite =>
