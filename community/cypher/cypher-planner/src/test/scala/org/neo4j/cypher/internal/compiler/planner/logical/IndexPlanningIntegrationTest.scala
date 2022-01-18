@@ -152,7 +152,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     }
   }
 
-  test("should not plan range index seek if predicate is for points") {
+  test("should plan range index scan for partial existence predicate if predicate is for points") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
     for (predicate <- List("point.withinBBox(a.prop, point({x:1, y:1}), point({x:2, y:2}))", "point.distance(a.prop, point({x:1, y:1})) < 10")) {
@@ -160,7 +160,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
       plan shouldEqual cfg.subPlanBuilder()
         .filter(predicate)
-        .nodeByLabelScan("a", "Label", IndexOrderNone)
+        .nodeIndexOperator("a:Label(prop)", indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -337,7 +337,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     }
   }
 
-  test("should not plan range index usage for string comparison predicates") {
+  test("should plan range index scan for partial existence predicate for string comparison predicates") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
     for (op <- List("ENDS WITH", "CONTAINS")) {
@@ -346,7 +346,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       val planWithLabelScan = cfg.subPlanBuilder()
         .expandAll("(b)<-[r]-(a)")
         .filter(s"b.prop $op 'test'")
-        .nodeByLabelScan("b", "Label")
+        .nodeIndexOperator("b:Label(prop)", indexType = IndexType.RANGE)
         .build()
 
       plan should be(planWithLabelScan)
@@ -373,7 +373,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .enablePlanningRangeIndexes()
       .build()
 
-  test("should not plan range index usage for distance predicate") {
+  test("should plan range index scan for partial existence predicate for distance predicate") {
     val query =
       """WITH 10 AS maxDistance
         |MATCH (p:Place)
@@ -387,7 +387,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .projection("cacheN[p.location] AS point")
       .filter("point.distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance")
       .projection("10 AS maxDistance")
-      .nodeByLabelScan("p", "Place", IndexOrderNone)
+      .nodeIndexOperator("p:Place(location)", indexType = IndexType.RANGE)
       .build()
   }
 

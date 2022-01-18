@@ -68,7 +68,7 @@ object EntityIndexLeafPlanner {
   /**
    * Creates IS NOT NULL-predicates of the given variable to the given properties that are inferred from the context rather than read from the query.
    */
-  private[index] def implicitIsNotNullPredicates(variable: Variable,
+  private[index] def implicitIsNotNullPredicates(variable: LogicalVariable,
                                                  aggregatingProperties: Set[PropertyAccess],
                                                  constrainedPropNames: Set[String],
                                                  explicitCompatiblePredicates: Set[IndexCompatiblePredicate]): Set[IndexCompatiblePredicate] = {
@@ -214,7 +214,6 @@ object EntityIndexLeafPlanner {
       case pp: PartialPredicate[_] => pp.coveringPredicate
       case e                       => e
     }
-
   }
 
   private[index] def getValueBehaviors(indexDescriptor: IndexDescriptor,

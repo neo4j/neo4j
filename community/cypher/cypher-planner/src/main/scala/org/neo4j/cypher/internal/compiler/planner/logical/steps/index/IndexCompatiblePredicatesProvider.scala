@@ -76,10 +76,14 @@ trait IndexCompatiblePredicatesProvider {
 
     def valid(ident: LogicalVariable, dependencies: Set[LogicalVariable]): Boolean =
       !arguments.contains(ident) && dependencies.subsetOf(arguments)
-
     val implicitCompatiblePredicates = implicitIndexCompatiblePredicates(planContext, indexPredicateProviderContext, predicates, explicitCompatiblePredicates, valid)
 
-    explicitCompatiblePredicates ++ implicitCompatiblePredicates
+    val partialCompatiblePredicates = explicitCompatiblePredicates.collect {
+      case predicate if !predicate.compatibleIndexTypes.contains(IndexType.Range) =>
+        predicate.convertToScannable.copy(compatibleIndexTypes = Set(IndexType.Range))
+    }
+
+    explicitCompatiblePredicates ++ implicitCompatiblePredicates ++ partialCompatiblePredicates
   }
 
   /**
