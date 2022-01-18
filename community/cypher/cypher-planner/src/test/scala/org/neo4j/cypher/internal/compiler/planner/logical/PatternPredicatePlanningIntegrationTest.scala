@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.LookupRelationshipsByTypeDisabled
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Equals
@@ -114,6 +115,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if containsArgumentOnly(queryGraph) => 1
         case _ => 4000000
       }
+      lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
     } getLogicalPlanFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""")._2
 
     plan match {
@@ -312,7 +314,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with LetSelectOrSemiApply and SelectOrAntiSemiApply for two pattern predicates and expressions") {
-    val logicalPlan = planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
+    val config = new given {
+      lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
+    }
+
+    val query = "MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a"
+
+    val logicalPlan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -328,7 +337,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with LetSemiApply and SelectOrAntiSemiApply for two pattern predicates with one negation") {
-    val logicalPlan = planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
+    val config = new given {
+      lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
+    }
+
+    val query = "MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a"
+
+    val logicalPlan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -344,7 +360,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with LetAntiSemiApply and SelectOrAntiSemiApply for two negated pattern predicates") {
-    val logicalPlan = planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
+    val config = new given {
+      lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
+    }
+
+    val query = "MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a"
+
+    val logicalPlan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -959,7 +982,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |MERGE (n {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}) RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    new given {
+      lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
+    }.getLogicalPlanFor(q)._2 should beLike {
       case Merge(
             Selection(_,
               RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _) // Match part
@@ -977,6 +1002,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     new given {
       addTypeToSemanticTable(varFor("r"), CTRelationship)
+      lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
     }.getLogicalPlanFor(q)._2 should beLike {
       case Merge(
                Selection(_,

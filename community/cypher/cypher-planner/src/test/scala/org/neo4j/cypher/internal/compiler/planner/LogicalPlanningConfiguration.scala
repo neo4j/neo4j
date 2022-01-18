@@ -67,6 +67,7 @@ trait LogicalPlanningConfiguration {
   def relTypesById: Map[Int, String]
   def qg: QueryGraph
   def executionModel: ExecutionModel
+  def lookupRelationshipsByType: LookupRelationshipsByType
 
   protected def mapCardinality(pf: PartialFunction[PlannerQueryPart, Double]): PartialFunction[PlannerQueryPart, Cardinality] = pf.andThen(Cardinality.apply)
   protected def selectivitiesCardinality(selectivities: Map[Expression, Double],
@@ -122,3 +123,15 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
     theTable
   }
 }
+
+sealed trait LookupRelationshipsByType {
+  def canLookupRelationshipsByType: Boolean = this match {
+    case LookupRelationshipsByTypeEnabled => true
+    case LookupRelationshipsByTypeDisabled => false
+  }
+}
+object LookupRelationshipsByType {
+  def default: LookupRelationshipsByType = LookupRelationshipsByTypeEnabled
+}
+case object LookupRelationshipsByTypeEnabled extends LookupRelationshipsByType
+case object LookupRelationshipsByTypeDisabled extends LookupRelationshipsByType

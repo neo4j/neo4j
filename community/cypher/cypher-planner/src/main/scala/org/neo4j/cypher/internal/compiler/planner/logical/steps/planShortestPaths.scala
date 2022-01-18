@@ -109,7 +109,7 @@ case object planShortestPaths {
 
     val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, withFallBack = true,
       disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, context = context)
-    val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols, context)
+    val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols, context, QueryGraph.empty)
     val lhs = lpp.planApply(inner, lhsOption, context)
 
     val rhsArgument = context.logicalPlanProducer.planArgument(
