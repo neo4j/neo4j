@@ -54,7 +54,6 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Modifier
-
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
@@ -791,6 +790,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .pointBoundingBoxNodeIndexSeek("x", "L", "prop","{x: 0.0, y: 1.0, crs: 'cartesian'}", "{x: 100.0, y: 100.0, crs: 'cartesian'}", indexOrder = IndexOrderDescending)
       .build())
 
+  testPlan("pointDistanceRelationshipIndexSeek",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .apply()
+      .|.pointDistanceRelationshipIndexSeek("r2", "x", "y", "OTHER_REL", "prop2", "{x: 1.0, y: 2.0, crs: 'cartesian'}", 10, argumentIds = Set("r1"), getValue = GetValue, indexType = IndexType.POINT)
+      .pointDistanceRelationshipIndexSeek("r1", "a", "b", "REL", "prop1","{x: 0.0, y: 1.0, crs: 'cartesian'}", 100, indexOrder = IndexOrderDescending, directed = false, inclusive = true)
+      .build())
+
   testPlan("pointBoundingBoxRelationshipIndexSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
@@ -1274,7 +1281,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
    * This is done via reflection.
    */
   test("all the tests exist") {
-    val methodsWeCantTest = Set("filterExpression", "appendAtCurrentIndent", "nestedPlanExistsExpressionProjection", "nestedPlanCollectExpressionProjection", "pointDistanceNodeIndexSeekExpr", "pointBoundingBoxNodeIndexSeekExpr", "pointBoundingBoxRelationshipIndexSeekExpr")
+    val methodsWeCantTest = Set("filterExpression", "appendAtCurrentIndent", "nestedPlanExistsExpressionProjection", "nestedPlanCollectExpressionProjection", "pointDistanceNodeIndexSeekExpr", "pointDistanceRelationshipIndexSeekExpr", "pointBoundingBoxNodeIndexSeekExpr", "pointBoundingBoxRelationshipIndexSeekExpr")
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>
         val modifiers = m.getModifiers

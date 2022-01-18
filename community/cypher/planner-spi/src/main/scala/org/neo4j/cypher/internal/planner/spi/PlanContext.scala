@@ -66,6 +66,16 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
 
   /**
+   * Return all point indexes for a given label, without taking any schema locks.
+   */
+  def pointIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
+
+  /**
+   * Return all point indexes for a given relationship type, without taking any schema locks.
+   */
+  def pointIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
+
+  /**
    * Return all property indexes present in the database, without taking any schema locks.
    */
   def propertyIndexesGetAll(): Iterator[IndexDescriptor]

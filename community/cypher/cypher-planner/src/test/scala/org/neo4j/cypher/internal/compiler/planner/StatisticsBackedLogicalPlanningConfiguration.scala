@@ -458,6 +458,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     withSetting(GraphDatabaseInternalSettings.planning_range_indexes_enabled, Boolean.box(enabled))
   }
 
+  def enablePlanningPointIndexes(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    withSetting(GraphDatabaseInternalSettings.planning_point_indexes_enabled, Boolean.box(enabled))
+  }
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -555,6 +559,16 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
         indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.TEXT)
+      }
+
+      override def pointIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
+        indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.POINT)
+      }
+
+      override def pointIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
+        indexesGetForEntityAndIndexType(entityType, graphdb.schema.IndexType.POINT)
       }
 
       private def indexesGetForEntityAndIndexType(entityType: IndexDefinition.EntityType, indexType: graphdb.schema.IndexType): Iterator[IndexDescriptor] = {

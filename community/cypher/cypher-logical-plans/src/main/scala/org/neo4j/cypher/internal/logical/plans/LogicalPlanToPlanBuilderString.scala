@@ -146,6 +146,10 @@ object LogicalPlanToPlanBuilderString {
       case _:MultiNodeIndexSeek => "multiNodeIndexSeekOperator"
       case DirectedRelationshipIndexSeek(_, _, _, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _,  _, _) =>
         "pointBoundingBoxRelationshipIndexSeek"
+      case DirectedRelationshipIndexSeek(_, _, _, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _,  _, _) =>
+        "pointDistanceRelationshipIndexSeek"
+      case UndirectedRelationshipIndexSeek(_, _, _, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _,  _, _) =>
+        "pointDistanceRelationshipIndexSeek"
       case _:DirectedRelationshipIndexSeek => "relationshipIndexOperator"
       case UndirectedRelationshipIndexSeek(_, _, _, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _,  _, _) =>
         "pointBoundingBoxRelationshipIndexSeek"
@@ -415,6 +419,12 @@ object LogicalPlanToPlanBuilderString {
       case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
       PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight)))), argumentIds, indexOrder, indexType) =>
         pointBoundingBoxRelationshipIndexSeek(idName, start, end, typeToken, properties, lowerLeft, upperRight, argumentIds, indexOrder, indexType, directed = true)
+      case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(
+      PointDistanceRange(PointFunction(point), distance, inclusive))), argumentIds, indexOrder, indexType) =>
+        pointDistanceRelationshipIndexSeek(idName, start, end, typeToken, properties, point, distance, argumentIds, indexOrder, indexType, directed = true, inclusive)
+      case UndirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(
+      PointDistanceRange(PointFunction(point), distance, inclusive))), argumentIds, indexOrder, indexType) =>
+        pointDistanceRelationshipIndexSeek(idName, start, end, typeToken, properties, point, distance, argumentIds, indexOrder, indexType, directed = false, inclusive)
       case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
@@ -681,6 +691,36 @@ object LogicalPlanToPlanBuilderString {
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
     s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(lowerLeft)}", "${expressionStringifier(upperRight)}"$directedString$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
+  }
+
+  private def pointDistanceRelationshipIndexSeek(idName: String,
+                                                 start: String,
+                                                 end: String,
+                                                 typeToken: RelationshipTypeToken,
+                                                 properties: Seq[IndexedProperty],
+                                                 point: Expression,
+                                                 distance: Expression,
+                                                 argumentIds: Set[String],
+                                                 indexOrder: IndexOrder,
+                                                 indexType: IndexType,
+                                                 directed: Boolean,
+                                                 inclusive: Boolean): String = {
+    val propName = properties.head.propertyKeyToken.name
+    val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
+    val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val getValueBehavior = properties.map(_.getValueFromIndex).reduce {
+      (v1, v2) =>
+        if (v1 == v2) {
+          v1
+        } else {
+          throw new UnsupportedOperationException("Index operators with different getValueFromIndex behaviors not supported.")
+        }
+    }
+    val directedStr = s", directed = $directed"
+    val inclusiveStr = s", inclusive = $inclusive"
+    val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
+    val indexTypeStr = indexTypeToNamedArgumentString(indexType)
+    s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(distance)}$directedStr$inclusiveStr$getValueStr$indexOrderStr$argStr$indexTypeStr """.trim
   }
 
   private def idsStr(ids: SeekableArgs) = {

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
+//noinspection NotImplementedCode
 class NotImplementedPlanContext extends PlanContext {
   override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
 
@@ -38,9 +39,13 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
 
-  override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = ???
-
   override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = ???
+
+  override def pointIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
+
+  override def pointIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = ???
+
+  override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = ???
 
   override def indexExistsForLabel(labelId: Int): Boolean = ???
 

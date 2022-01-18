@@ -524,6 +524,15 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def range(lower: Option[Int], upper: Option[Int]): Range =
     Range(lower.map(literalUnsignedInt), upper.map(literalUnsignedInt))(pos)
 
+  def point(x: Double, y: Double): Expression =
+    function("point", mapOf("x" -> literal(x), "y" -> literal(y)))
+
+  def pointWithinBBox(point: Expression, lowerLeft: Expression, upperRight: Expression): Expression =
+    function(Seq("point"), "withinBBox", point, lowerLeft, upperRight)
+
+  def pointDistance(fromPoint: Expression, toPoint: Expression): Expression =
+    function(Seq("point"), "distance", fromPoint, toPoint)
+
   implicit class ExpressionOps(expr: Expression) {
     def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos, isAutoAliased = false)
 

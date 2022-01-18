@@ -68,7 +68,6 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 object WithSeekableArgs {
@@ -320,8 +319,9 @@ case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args:
 object PropertySeekable {
   def findCompatibleIndexTypes(cypherType: CypherType): Set[IndexType] = {
     val otherIndexTypes = cypherType match {
-      case _: StringType => Set(IndexType.Text)
-      case _             => Set.empty
+      case CTString => Set(IndexType.Text)
+      case CTPoint  => Set(IndexType.Point)
+      case _        => Set.empty
     }
     Set[IndexType](IndexType.Btree, IndexType.Range) ++ otherIndexTypes
   }

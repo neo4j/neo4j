@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NonSeekablePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NotExactPredicate
@@ -29,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
+import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialDistanceSeekWrapper
 import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialPredicateWrapper
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -40,6 +43,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -64,7 +68,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   testFindIndexCompatiblePredicate("equals", equals(property, integerLiteral), isExact = true)
 
-  testFindIndexCompatiblePredicate("equals with unknown variable", equals(property, varFor("m")), solvedPredicate = Some(isNotNull(property)))
+  testFindIndexCompatiblePredicate("equals with unknown variable", equals(property, varFor("m")), Some(PartialPredicateWrapper(isNotNull(property), _)))
 
   testFindIndexCompatiblePredicate("equals with known variable",
     equals(property, varFor("m")),
@@ -97,15 +101,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       solvedPredicate = Some(stringPredicate),
       dependencies = Set.empty,
       compatibleIndexTypes = Set(IndexType.Btree, IndexType.Text))
-    val implicitExistencePredicate = IndexCompatiblePredicate(variable = varFor("n"),
-      property = property,
-      predicate = stringPredicate,
-      queryExpression = ExistenceQueryExpression(),
-      propertyType = CTAny,
-      predicateExactness = NotExactPredicate,
-      solvedPredicate = Some(PartialPredicate(isNotNull(property), stringPredicate)),
-      dependencies = Set.empty,
-      compatibleIndexTypes = Set(IndexType.Range))
+    val implicitExistencePredicate = makeImplicitExistencePredicate(stringPredicate)
     testFindIndexCompatiblePredicate(predicateName,
       stringPredicate,
       indexTypes = Set(IndexType.Btree, IndexType.Text),
@@ -118,11 +114,11 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   testFindIndexCompatiblePredicate("lessThan with other property",
     lessThan(property, property2),
-    solvedPredicate = Some(isNotNull(property)))
+    solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _)))
 
   testFindIndexCompatiblePredicate("lessThan with unknown variable",
     lessThan(property, varFor("m")),
-    solvedPredicate = Some(isNotNull(property)))
+    solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _)))
 
   testFindIndexCompatiblePredicate("lessThan with known variable",
     lessThan(property, varFor("m")),
@@ -134,9 +130,49 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
   // this should only work for NodeIndexLeafPlanner
   testFindIndexCompatiblePredicate("hasLabel in generic leaf planner", hasLabels("n", "ConstraintLabel"), expectToExist = false)
 
+  testFindIndexPredicateOnPointPredicate("point.withinBBox",
+    pointWithinBBox(property, point(1.0, 2.0), point(3.0, 4.0)),
+  )
+
+  testFindIndexPredicateOnPointPredicate("point.distance",
+    lessThan(pointDistance(property, point(1.0, 2.0)), literal(1.0)),
+    solvedPredicate = Some(PartialDistanceSeekWrapper(_))
+  )
+
+  private def testFindIndexPredicateOnPointPredicate(predicateName: String, pointPredicate: Expression, solvedPredicate: Option[Expression => PartialPredicate[Expression]] = None): Unit = {
+    val explicitPredicate = IndexCompatiblePredicate(variable = varFor("n"),
+      property = property,
+      predicate = pointPredicate,
+      queryExpression = pointPredicate match {
+        case AsBoundingBoxSeekable(seekable) => seekable.asQueryExpression
+        case AsDistanceSeekable(seekable)    => seekable.asQueryExpression
+      },
+      propertyType = CTPoint,
+      predicateExactness = NotExactPredicate,
+      solvedPredicate = solvedPredicate.map(_.apply(pointPredicate)).orElse(Some(pointPredicate)),
+      dependencies = Set.empty,
+      compatibleIndexTypes = Set(IndexType.Btree, IndexType.Point))
+    val implicitExistencePredicate = makeImplicitExistencePredicate(pointPredicate).copy(propertyType = CTPoint)
+    testFindIndexCompatiblePredicate(predicateName,
+      pointPredicate,
+      expectedPredicates = Seq(explicitPredicate, implicitExistencePredicate))
+  }
+
+  private def makeImplicitExistencePredicate(predicate: Expression): IndexCompatiblePredicate = {
+    IndexCompatiblePredicate(variable = varFor("n"),
+      property = property,
+      predicate = predicate,
+      queryExpression = ExistenceQueryExpression(),
+      propertyType = CTAny,
+      predicateExactness = NotExactPredicate,
+      solvedPredicate = Some(PartialPredicate(isNotNull(property), predicate)),
+      dependencies = Set.empty,
+      compatibleIndexTypes = Set(IndexType.Range))
+  }
+
   private def testFindIndexCompatiblePredicate(name: String,
                                                predicate: Expression,
-                                               solvedPredicate: Option[Expression] = None,
+                                               solvedPredicate: Option[Expression => PartialPredicate[Expression]] = None,
                                                isExact: Boolean = false,
                                                argumentIds: Set[String] = Set.empty,
                                                dependencies: Set[String] = Set.empty,
@@ -163,7 +199,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
               compatiblePredicates.foreach { compatiblePredicate =>
                 compatiblePredicate.predicate should equal(predicate)
                 withClue("including solved predicate") {
-                  val expectedSolvedPredicate = solvedPredicate.map(PartialPredicateWrapper(_, predicate)).getOrElse(predicate)
+                  val expectedSolvedPredicate = solvedPredicate.map(_.apply(predicate)).getOrElse(predicate)
                   compatiblePredicate.solvedPredicate.get should equal(expectedSolvedPredicate)
                 }
                 withClue("including exactness") {

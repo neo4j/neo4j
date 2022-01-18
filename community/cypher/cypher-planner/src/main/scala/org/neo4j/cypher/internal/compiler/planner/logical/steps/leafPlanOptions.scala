@@ -101,14 +101,17 @@ object leafPlanOptions extends LeafPlanFinder {
              _: UndirectedRelationshipIndexContainsScan
         =>
           IndexDescriptor.IndexType.fromPublicApi(indexType).fold(0) {
+            case IndexType.Point => 0
             case IndexType.Range => 0
             case IndexType.Btree => 1
             case IndexType.Text  => 2
           }
 
+        // Prefer POINT index for all compatible queries
         // Prefer BTREE or Range index for other queries
         case _ =>
           IndexDescriptor.IndexType.fromPublicApi(indexType).fold(0) {
+            case IndexType.Point => 3
             case IndexType.Range => 2
             case IndexType.Btree => 1
             case IndexType.Text  => 0

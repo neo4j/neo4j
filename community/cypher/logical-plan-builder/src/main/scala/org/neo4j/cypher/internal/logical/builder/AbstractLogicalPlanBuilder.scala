@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -905,6 +906,57 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
+  def pointDistanceRelationshipIndexSeek(rel: String,
+                                         start: String,
+                                         end: String,
+                                         typeName: String,
+                                         property: String,
+                                         point: String,
+                                         distance: Double,
+                                         directed: Boolean = true,
+                                         inclusive: Boolean = false,
+                                         getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                         indexOrder: IndexOrder = IndexOrderNone,
+                                         argumentIds: Set[String] = Set.empty,
+                                         indexType: IndexType = IndexType.BTREE): IMPL = {
+    pointDistanceRelationshipIndexSeekExpr(rel, start, end, typeName, property, point, literalFloat(distance), directed, inclusive, getValue, indexOrder, argumentIds, indexType)
+  }
+
+  def pointDistanceRelationshipIndexSeekExpr(relationship: String,
+                                             startNode: String,
+                                             endNode: String,
+                                             typeName: String,
+                                             property: String,
+                                             point: String,
+                                             distanceExpr: Expression,
+                                             directed: Boolean = true,
+                                             inclusive: Boolean = false,
+                                             getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                             indexOrder: IndexOrder = IndexOrderNone,
+                                             argumentIds: Set[String] = Set.empty,
+                                             indexType: IndexType = IndexType.BTREE): IMPL = {
+    val typ = resolver.getRelTypeId(typeName)
+
+    val propId = resolver.getPropertyKeyId(property)
+    val planBuilder = (idGen: IdGen) => {
+      val typeToken = RelationshipTypeToken(typeName, RelTypeId(typ))
+      val propToken = PropertyKeyToken(PropertyKeyName(property)(NONE), PropertyKeyId(propId))
+      val indexedProperty = IndexedProperty(propToken, getValue, RELATIONSHIP_TYPE)
+      val e =
+        RangeQueryExpression(PointDistanceSeekRangeWrapper(
+          PointDistanceRange(function("point", parseExpression(point)), distanceExpr, inclusive))(NONE))
+
+      val plan =
+        if (directed) {
+          DirectedRelationshipIndexSeek(relationship,  startNode, endNode, typeToken,  Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
+        } else {
+          UndirectedRelationshipIndexSeek(relationship,  startNode, endNode, typeToken,  Seq(indexedProperty), e, argumentIds, indexOrder, indexType)(idGen)
+        }
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
   def pointBoundingBoxRelationshipIndexSeek(rel: String,
                                             start: String,
                                             end: String,
@@ -938,7 +990,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val planBuilder = (idGen: IdGen) => {
       val typeToken = RelationshipTypeToken(typeName, RelTypeId(typ))
       val propToken = PropertyKeyToken(PropertyKeyName(property)(NONE), PropertyKeyId(propId))
-      val indexedProperty = IndexedProperty(propToken, getValue, NODE_TYPE)
+      val indexedProperty = IndexedProperty(propToken, getValue, RELATIONSHIP_TYPE)
       val e =
         RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
           PointBoundingBoxRange(function("point", parseExpression(lowerLeft)), function("point", parseExpression(upperRight))))(NONE))

@@ -239,6 +239,9 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     } ++ {
       if (planningTextIndexesEnabled) planContext.textIndexesGetForLabel(labelId)
       else Iterator.empty
+    } ++ {
+      if (planningPointIndexesEnabled) planContext.pointIndexesGetForLabel(labelId)
+      else Iterator.empty
     }
   }
 

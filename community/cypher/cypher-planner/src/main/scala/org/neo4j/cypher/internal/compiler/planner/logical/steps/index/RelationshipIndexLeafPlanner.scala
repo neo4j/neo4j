@@ -236,6 +236,9 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     } ++ {
       if (planningTextIndexesEnabled) planContext.textIndexesGetForRelType(relTypeId)
       else Iterator.empty
+    } ++ {
+      if (planningPointIndexesEnabled) planContext.pointIndexesGetForRelType(relTypeId)
+      else Iterator.empty
     }
   }
 

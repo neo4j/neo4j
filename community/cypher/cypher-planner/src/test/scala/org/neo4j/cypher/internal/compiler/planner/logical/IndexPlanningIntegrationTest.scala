@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
@@ -30,6 +31,8 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
@@ -1479,6 +1482,170 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator("(anon_0)-[r:R(prop > 10)]->(anon_1)")
         .build()
+    }
+  }
+
+  private def plannerConfigForNodePointIndex: StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .enablePlanningPointIndexes()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
+      .build()
+
+  test("should plan node point index usage for equality") {
+    val cfg = plannerConfigForNodePointIndex
+    val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop = point({x:1.0, y:2.0}) RETURN a, a.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .nodeIndexOperator(s"a:A(prop = ???)", paramExpr = Some(point(1.0, 2.0)), getValue = Map("prop" -> GetValue), indexType = IndexType.POINT)
+      .build()
+  }
+
+  test("should plan node point index usage for point.distance") {
+    val cfg = plannerConfigForNodePointIndex
+    val plan = cfg.plan(s"MATCH (a:A) WHERE point.distance(a.prop, point({x:1, y:2})) < 1.0 RETURN a, a.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .filter("point.distance(cacheNFromStore[a.prop], point({x:1, y:2})) < 1.0")
+      .pointDistanceNodeIndexSeek("a", "A", "prop", "{x:1, y:2}", 1.0, indexType = IndexType.POINT)
+      .build()
+  }
+
+  test("should plan node point index usage for point.withinBBox") {
+    val cfg = plannerConfigForNodePointIndex
+    val plan = cfg.plan(s"MATCH (a:A) WHERE point.withinBBox(a.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN a, a.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("a.prop AS `a.prop`")
+      .pointBoundingBoxNodeIndexSeek("a", "A", "prop", "{x:1, y:2}", "{x:3, y:4}", indexType = IndexType.POINT)
+      .build()
+  }
+
+  test("should not plan node point index usage for inequalities") {
+    val cfg = plannerConfigForNodePointIndex
+    for (op <- Seq("<", "<=", ">", ">=")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op point({x:1, y:2}) RETURN a, a.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheN[a.prop] AS `a.prop`")
+        .filter(s"cacheNFromStore[a.prop] $op point({x:1, y:2})")
+        .nodeByLabelScan("a", "A")
+        .build()
+    }
+  }
+
+  test("should not plan node point index usage with IS NOT NULL predicate") {
+    val cfg = plannerConfigForNodePointIndex
+    val plan = cfg.plan("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN a, a.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .filter("cacheNFromStore[a.prop] IS NOT NULL")
+      .nodeByLabelScan("a", "A")
+      .build()
+  }
+
+  private def plannerConfigForRelPointIndex: StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .enablePlanningPointIndexes()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
+      .build()
+
+  test("should plan relationship point index usage for equality") {
+    val cfg = plannerConfigForRelPointIndex
+    val plan = cfg.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop = point({x:1.0, y:2.0}) RETURN r, r.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheR[r.prop] AS `r.prop`")
+      .relationshipIndexOperator("(a)-[r:REL(prop = ???)]->(b)", paramExpr = Some(point(1.0, 2.0)), getValue = Map("prop" -> GetValue), indexType = IndexType.POINT)
+      .build()
+  }
+
+  test("should plan relationship point index usage for point.distance") {
+    val cfg = plannerConfigForRelPointIndex
+    val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE point.distance(r.prop, point({x:1, y:2})) < 1.0 RETURN r, r.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheR[r.prop] AS `r.prop`")
+      .filter("point.distance(cacheRFromStore[r.prop], point({x:1, y:2})) < 1.0")
+      .pointDistanceRelationshipIndexSeek("r", "a", "b", "REL", "prop", "{x:1, y:2}", 1.0, indexType = IndexType.POINT)
+      .build()
+  }
+
+  test("should plan relationship point index usage for point.withinBBox") {
+    val cfg = plannerConfigForRelPointIndex
+    val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE point.withinBBox(r.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN r, r.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("r.prop AS `r.prop`")
+      .pointBoundingBoxRelationshipIndexSeek("r", "a", "b", "REL", "prop", "{x:1, y:2}", "{x:3, y:4}", indexType = IndexType.POINT)
+      .build()
+  }
+
+  test("should not plan relationship point index usage for inequalities") {
+    val cfg = plannerConfigForRelPointIndex
+    for (op <- Seq("<", "<=", ">", ">=")) {
+      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op point({x:1, y:2}) RETURN r, r.prop").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .filter(s"cacheRFromStore[r.prop] $op point({x:1, y:2})")
+        .relationshipTypeScan("(a)-[r:REL]->(b)")
+        .build()
+    }
+  }
+
+  test("should not plan relationship point index usage for IS NOT NULL") {
+    val cfg = plannerConfigForRelPointIndex
+    val plan = cfg.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN r, r.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheR[r.prop] AS `r.prop`")
+      .filter("cacheRFromStore[r.prop] IS NOT NULL")
+      .relationshipTypeScan("(a)-[r:REL]->(b)")
+      .build()
+  }
+
+  test("should prefer node point index usage over btree for compatible predicates") {
+    val cfg = plannerBuilder()
+      .enablePlanningPointIndexes()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
+      .build()
+
+    for (predicate <- Seq(
+      "a.prop = point({x:1, y:2})",
+      "point.withinBBox(a.prop, point({x:1, y:2}), point({x:3, y:4}))",
+      "point.distance(a.prop, point({x:1, y:2})) < 1.0",
+    )) {
+      val query = s"MATCH (a:A) WHERE $predicate RETURN a, a.prop"
+      val plan = cfg.plan(query)
+      withClue(plan.asLogicalPlanBuilderString() + "\n\n") {
+        plan.leftmostLeaf should beLike {
+          case leaf: NodeIndexLeafPlan if leaf.indexType == IndexType.POINT => ()
+        }
+      }
+    }
+  }
+
+  test("should prefer relationship point index usage over btree for compatible predicates") {
+    val cfg = plannerBuilder()
+      .enablePlanningPointIndexes()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
+      .build()
+
+    for (predicate <- Seq(
+      "r.prop = point({x:1, y:2})",
+      "point.withinBBox(r.prop, point({x:1, y:2}), point({x:3, y:4}))",
+      "point.distance(r.prop, point({x:1, y:2})) < 1.0",
+    )) {
+      val query = s"MATCH ()-[r:REL]->() WHERE $predicate RETURN r, r.prop"
+      val plan = cfg.plan(query)
+      withClue(plan.asLogicalPlanBuilderString() + "\n\n") {
+        plan.leftmostLeaf should beLike {
+          case leaf: RelationshipIndexLeafPlan if leaf.indexType == IndexType.POINT => ()
+        }
+      }
     }
   }
 }

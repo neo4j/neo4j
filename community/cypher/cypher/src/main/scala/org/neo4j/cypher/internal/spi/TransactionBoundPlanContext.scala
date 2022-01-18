@@ -163,6 +163,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     indexesGetForRelType(relTypeId, schema.IndexType.TEXT)
   }
 
+  override def pointIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+    indexesGetForLabel(labelId, Some(schema.IndexType.POINT))
+  }
+
+  override def pointIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+    indexesGetForRelType(relTypeId, schema.IndexType.POINT)
+  }
+
   private def indexesGetForLabel(labelId: Int, indexType: Option[schema.IndexType]): Iterator[IndexDescriptor] = {
     val selector: schema.IndexDescriptor => Boolean = indexType match {
       case Some(it) => _.getIndexType == it
