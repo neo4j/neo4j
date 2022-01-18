@@ -85,6 +85,6 @@ public abstract class AbstractIdentityModule extends LifecycleAdapter implements
     @Override
     public void dump( DiagnosticsLogger logger )
     {
-        logger.log( String.format( "ServerId is: %s", serverId().toString() ) );
+        logger.log( String.format( "Registered %s", serverId() ) );
     }
 }
