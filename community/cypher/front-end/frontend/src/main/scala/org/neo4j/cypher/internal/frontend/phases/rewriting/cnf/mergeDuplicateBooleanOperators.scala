@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
 case object mergeDuplicateBooleanOperators extends ASTRewriterFactory with CnfPhase {
-  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable ++ Set(!AndRewrittenToAnds)
+  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable ++ Set(!AndRewrittenToAnds, NoXorOperators)
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoDuplicateNeighbouringBooleanOperands)
 
