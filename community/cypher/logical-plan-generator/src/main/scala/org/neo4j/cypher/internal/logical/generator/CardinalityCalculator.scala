@@ -121,8 +121,10 @@ object CardinalityCalculator {
       val qgsi = QueryGraphSolverInput(labelInfo = state.labelInfo, state.relTypeInfo)
       val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(planContext,
         SimpleMetricsFactory.newSelectivityCalculator(planContext,
-          planningTextIndexesEnabled = false,
-          planningRangeIndexesEnabled = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue()),
+          planningTextIndexesEnabled = GraphDatabaseInternalSettings.planning_text_indexes_enabled.defaultValue(),
+          planningRangeIndexesEnabled = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
+          planningPointIndexesEnabled = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue(),
+        ),
         IndependenceCombiner)
       val expandCardinality = qgCardinalityModel(qg, qgsi, state.semanticTable, IndexCompatiblePredicatesProviderContext.default)
       expandCardinality * inboundCardinality

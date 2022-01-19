@@ -73,6 +73,9 @@ object IndexDescriptor {
   def forRelType(indexType: IndexType, relTypeId: RelTypeId, properties: Seq[PropertyKeyId]): IndexDescriptor =
     IndexDescriptor(indexType, EntityType.Relationship(relTypeId), properties)
 
+  def forNameId(indexType: IndexType, labelOrRelTypeId: NameId, properties: Seq[PropertyKeyId]): IndexDescriptor =
+    IndexDescriptor(indexType, EntityType.of(labelOrRelTypeId), properties)
+
   sealed trait EntityType
   object EntityType {
     final case class Node(label: LabelId) extends EntityType

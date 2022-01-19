@@ -72,6 +72,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   protected val indexPersonBtree: IndexDescriptor = IndexDescriptor.forLabel(getIndexType, LabelId(0), Seq(PropertyKeyId(0)))
   protected val indexPersonText: IndexDescriptor = indexPersonBtree.copy(indexType = IndexDescriptor.IndexType.Text)
+  protected val indexPersonPoint: IndexDescriptor = indexPersonBtree.copy(indexType = IndexDescriptor.IndexType.Point)
 
   protected val indexAnimal: IndexDescriptor = IndexDescriptor.forLabel(getIndexType, LabelId(1), Seq(PropertyKeyId(0)))
 
@@ -85,6 +86,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   protected val personPropIsNotNullSel: Double = 0.2
   protected val personTextPropIsNotNullSel: Double = 0.1
+  protected val personPointPropIsNotNullSel: Double = 0.1
   protected val indexPersonUniqueSel: Double= 1.0 / 180.0
   protected val animalPropIsNotNullSel: Double = 0.5
 
@@ -1250,7 +1252,8 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val stats = mock[GraphStatistics]
     when(stats.nodesAllCardinality()).thenReturn(2000.0)
     when(stats.nodesWithLabelCardinality(Some(indexPersonBtree.label))).thenReturn(1000.0)
-    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner, planningTextIndexesEnabled = false, planningRangeIndexesEnabled = false)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner,
+      planningTextIndexesEnabled = false, planningRangeIndexesEnabled = false, planningPointIndexesEnabled = false)
 
     val result = calculator(PartialPredicate[HasLabels](hasLabels, mock[HasLabels]), labelInfo, Map.empty)
 
@@ -1261,7 +1264,9 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val stats = mock[GraphStatistics]
     when(stats.nodesAllCardinality()).thenReturn(MIN_NODES_ALL_CARDINALITY)
     when(stats.nodesWithLabelCardinality(any())).thenReturn(MIN_NODES_WITH_LABEL_CARDINALITY)
-    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner, planningTextIndexesEnabled = false, planningRangeIndexesEnabled = false)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner,
+      planningTextIndexesEnabled = false, planningRangeIndexesEnabled = false, planningPointIndexesEnabled = false)
+
     implicit val semanticTable: SemanticTable = SemanticTable()
 
     val expr = HasLabels(null, Seq(labelName("Foo")))(pos)
@@ -1340,11 +1345,13 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
                                 relTypeInfo: RelTypeInfo = Map.empty,
                                 stats: GraphStatistics = mockStats(),
                                 planningTextIndexesEnabled: Boolean = true,
-                                planningRangeIndexesEnabled: Boolean = true): Expression => Selectivity = {
+                                planningRangeIndexesEnabled: Boolean = true,
+                                planningPointIndexesEnabled: Boolean = true,
+                               ): Expression => Selectivity = {
     implicit val semanticTable: SemanticTable = setupSemanticTable()
 
     val combiner = IndependenceCombiner
-    val calculator = ExpressionSelectivityCalculator(stats, combiner, planningTextIndexesEnabled, planningRangeIndexesEnabled)
+    val calculator = ExpressionSelectivityCalculator(stats, combiner, planningTextIndexesEnabled, planningRangeIndexesEnabled, planningPointIndexesEnabled)
     exp: Expression => calculator(exp, labelInfo, relTypeInfo)
   }
 
@@ -1361,6 +1368,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
                                   indexCardinalities: Map[IndexDescriptor, Double] = Map(
                                     indexPersonBtree -> 200.0,
                                     indexPersonText -> 100.0,
+                                    indexPersonPoint -> 100.0,
                                     indexFriends -> 200.0,
                                   ),
                                   indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(indexPersonBtree -> 180.0, indexFriends -> 180.0)
@@ -1451,13 +1459,24 @@ class BtreeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalc
     calculator(nPropDistance.expr) should equal(DEFAULT_RANGE_SELECTIVITY)
   }
 
+  test("distance with one label, point index disabled") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningPointIndexesEnabled = false)
+
+    val labelResult = calculator(nIsPerson.expr)
+    labelResult.factor should equal(0.1)
+    calculator(nPropDistance.expr).factor should equal(
+      personPropIsNotNullSel // n.prop IS NOT NULL
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
+    )
+  }
+
   test("distance with one label") {
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
 
     val labelResult = calculator(nIsPerson.expr)
     labelResult.factor should equal(0.1)
     calculator(nPropDistance.expr).factor should equal(
-      0.2 // n.prop IS NOT NULL
+      personPointPropIsNotNullSel // n.prop IS NOT NULL
         * DEFAULT_RANGE_SEEK_FACTOR // point distance
     )
   }
@@ -1498,6 +1517,20 @@ class BtreeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalc
       +- 0.00000001)
   }
 
+  test("distance in AndedPropertyInequalities, point index disabled") {
+    val inequality = lessThan(function(Seq("point"), "distance", nProp, fakePoint), rProp)
+    val predicate = AndedPropertyInequalities(varFor("r"), rProp, NonEmptyList(inequality))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningPointIndexesEnabled = false)
+
+    val distanceResult = calculator(predicate)
+
+    distanceResult.factor should equal(
+      personPropIsNotNullSel // exists n.prop
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
+    )
+  }
+
   test("distance in AndedPropertyInequalities") {
     val inequality = lessThan(function(Seq("point"), "distance", nProp, fakePoint), rProp)
     val predicate = AndedPropertyInequalities(varFor("r"), rProp, NonEmptyList(inequality))
@@ -1507,15 +1540,21 @@ class BtreeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalc
     val distanceResult = calculator(predicate)
 
     distanceResult.factor should equal(
-      0.2 // exists n.prop
+      personPointPropIsNotNullSel // exists n.prop
         * DEFAULT_RANGE_SEEK_FACTOR // point distance
     )
   }
 
   // POINT BOUNDING BOX
 
-  test("point.withinBBox(p, p1, p2) should have same selectivity as p1 <= p <= p2") {
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+  test("point.withinBBox(p, p1, p2) should have same selectivity as p1 <= p <= p2 when all properties are indexed points") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, stats = mockStats(
+      indexCardinalities =
+        Map(indexPersonBtree -> 200.0, indexPersonPoint -> 200.0),
+      indexUniqueCardinalities =
+        Map(indexPersonBtree -> 200.0, indexPersonPoint -> 200.0),
+    ))
+
     val lowerLeft = function("point", mapOf("x" -> literalInt(0), "y" -> literalInt(0)))
     val upperRight = function("point", mapOf("x" -> literalInt(10), "y" -> literalInt(10)))
     val inequality = nPredicate(nAnded(NonEmptyList(
@@ -1525,6 +1564,25 @@ class BtreeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalc
     val bbox = nPredicate(function(List("point"), "withinBBox", nProp, lowerLeft, upperRight))
 
     calculator(inequality.expr) should equal(calculator(bbox.expr))
+  }
+
+  test("point.withinBBox(p, p1, p2) should have lower selectivity than p1 <= p <= p2 when not all properties are points") {
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, stats = mockStats(
+      indexCardinalities =
+        Map(indexPersonBtree -> 200.0, indexPersonPoint -> 100.0),
+      indexUniqueCardinalities =
+        Map(indexPersonBtree -> 200.0, indexPersonPoint -> 100.0),
+    ))
+
+    val lowerLeft = function("point", mapOf("x" -> literalInt(0), "y" -> literalInt(0)))
+    val upperRight = function("point", mapOf("x" -> literalInt(10), "y" -> literalInt(10)))
+    val inequality = nPredicate(nAnded(NonEmptyList(
+      greaterThanOrEqual(nProp, lowerLeft),
+      lessThanOrEqual(nProp, upperRight)
+    )))
+    val bbox = nPredicate(function(List("point"), "withinBBox", nProp, lowerLeft, upperRight))
+
+    calculator(inequality.expr) should be > calculator(bbox.expr)
   }
 }
 

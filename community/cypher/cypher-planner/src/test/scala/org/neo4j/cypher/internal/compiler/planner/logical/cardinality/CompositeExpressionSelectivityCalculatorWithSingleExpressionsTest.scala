@@ -44,9 +44,11 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
                                          relTypeInfo: RelTypeInfo,
                                          stats: GraphStatistics,
                                          planningTextIndexesEnabled: Boolean,
-                                         planningRangeIndexesEnabled: Boolean): Expression => Selectivity = {
+                                         planningRangeIndexesEnabled: Boolean,
+                                         planningPointIndexesEnabled: Boolean,
+                                        ): Expression => Selectivity = {
     val semanticTable = setupSemanticTable()
-    val compositeCalculator = CompositeExpressionSelectivityCalculator(mockPlanContext(stats), planningTextIndexesEnabled, planningRangeIndexesEnabled)
+    val compositeCalculator = CompositeExpressionSelectivityCalculator(mockPlanContext(stats), planningTextIndexesEnabled, planningRangeIndexesEnabled, planningPointIndexesEnabled)
     exp: Expression => {
       compositeCalculator(Selections.from(exp), labelInfo, relTypeInfo, semanticTable, IndexCompatiblePredicatesProviderContext.default)
     }

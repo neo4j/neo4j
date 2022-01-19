@@ -81,7 +81,8 @@ import org.neo4j.cypher.internal.util.Selectivity
 case class ExpressionSelectivityCalculator(stats: GraphStatistics,
                                            combiner: SelectivityCombiner,
                                            planningTextIndexesEnabled: Boolean,
-                                           planningRangeIndexesEnabled: Boolean) {
+                                           planningRangeIndexesEnabled: Boolean,
+                                           planningPointIndexesEnabled: Boolean) {
 
   /**
    * Index type priority to be used to calculate selectivities of exists predicates, given that a substring predicate is used.
@@ -96,6 +97,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
     Some(IndexType.Btree),
     if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
+    if (planningPointIndexesEnabled) Some(IndexType.Point) else None,
   ).flatten
 
   private def indexTypesForPropertyEquality: Seq[IndexType] = Seq(
@@ -105,6 +107,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
   ).flatten
 
   private val indexTypesForRangeSeeks: Seq[IndexType] = Seq(
+    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
+    Some(IndexType.Btree),
+  ).flatten
+
+  private val indexTypesPriorityForPointPredicates: Seq[IndexType] = Seq(
+    if (planningPointIndexesEnabled) Some(IndexType.Point) else None,
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
     Some(IndexType.Btree),
   ).flatten
@@ -237,16 +245,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
     combiner.orTogetherSelectivities(indexPropertyExistsSelectivities).getOrElse(DEFAULT_PROPERTY_SELECTIVITY)
   }
 
-  private def indexPropertyExistsSelectivitiesFor(variable: String,
-                                                  labelInfo: LabelInfo,
-                                                  relTypeInfo: RelTypeInfo,
-                                                  propertyKey: PropertyKeyName,
-                                                  indexType: IndexType)
-                                                 (implicit semanticTable: SemanticTable): Seq[Selectivity] = {
-    multipleIndexPropertyExistsSelectivitiesFor(variable, labelInfo, relTypeInfo, propertyKey, Seq(indexType))
-      .map(_._1)
-  }
-
   private def multipleIndexPropertyExistsSelectivitiesFor(variable: String,
                                                           labelInfo: LabelInfo,
                                                           relTypeInfo: RelTypeInfo,
@@ -361,13 +359,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
 
       ids match {
         case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
-          val descriptorCreator = labelOrRelTypeId match {
-            case labelId: LabelId => IndexDescriptor.forLabel(_, labelId, Seq(propertyKeyId))
-            case relTypeId: RelTypeId => IndexDescriptor.forRelType(_, relTypeId, Seq(propertyKeyId))
-          }
-
           for {
-            descriptor <- indexTypesForRangeSeeks.map(descriptorCreator)
+            descriptor <- indexTypesForRangeSeeks.map(IndexDescriptor.forNameId(_, labelOrRelTypeId, Seq(propertyKeyId)))
             propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
             propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
           } yield {
@@ -386,8 +379,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
                                                            labelInfo: LabelInfo,
                                                            relTypeInfo: RelTypeInfo)
                                                           (implicit semanticTable: SemanticTable): Selectivity = {
-    val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(seekable.ident.name, labelInfo, relTypeInfo, seekable.propertyKeyName, IndexType.Btree)
-    val indexDistanceSelectivities = indexPropertyExistsSelectivities.map(_ * Selectivity(DEFAULT_RANGE_SEEK_FACTOR))
+    val indexPropertyExistsSelectivities =
+      multipleIndexPropertyExistsSelectivitiesFor(seekable.ident.name, labelInfo, relTypeInfo, seekable.propertyKeyName, indexTypesPriorityForPointPredicates)
+
+    val indexDistanceSelectivities = indexPropertyExistsSelectivities.map { case (selectivity, _) =>
+      selectivity * Selectivity(DEFAULT_RANGE_SEEK_FACTOR)
+    }
     combiner.orTogetherSelectivities(indexDistanceSelectivities).getOrElse(DEFAULT_RANGE_SELECTIVITY)
   }
 
@@ -420,18 +417,15 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
 
       ids match {
         case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
-          val descriptor = labelOrRelTypeId match {
-            case labelId: LabelId => IndexDescriptor.forLabel(IndexDescriptor.IndexType.Btree, labelId, Seq(propertyKeyId))
-            case relTypeId: RelTypeId => IndexDescriptor.forRelType(IndexDescriptor.IndexType.Btree, relTypeId, Seq(propertyKeyId))
-          }
-
-          for {
+          val selectivitiesInIndexPriorityOrder = for {
+            descriptor <- indexTypesPriorityForPointPredicates.map(IndexDescriptor.forNameId(_, labelOrRelTypeId, Seq(propertyKeyId)))
             propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
             propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
           } yield {
             val pRangeBounded: Selectivity = getPropertyPredicateRangeSelectivity(propEqValueSelectivity)
             pRangeBounded * propertyExistsSelectivity
           }
+          selectivitiesInIndexPriorityOrder.headOption
 
         case _ => Some(Selectivity.ZERO)
       }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
@@ -189,15 +188,21 @@ trait MetricsFactory {
                               expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def newCostModel(executionModel: ExecutionModel): CostModel
   def newQueryGraphCardinalityModel(planContext: PlanContext, calculator: SelectivityCalculator): QueryGraphCardinalityModel
-  def newSelectivityCalculator(planContext: PlanContext, planningTextIndexesEnabled: Boolean, planningRangeIndexesEnabled: Boolean): SelectivityCalculator =
-    CompositeExpressionSelectivityCalculator(planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled)
+
+  def newSelectivityCalculator(planContext: PlanContext,
+                               planningTextIndexesEnabled: Boolean,
+                               planningRangeIndexesEnabled: Boolean,
+                               planningPointIndexesEnabled: Boolean): SelectivityCalculator =
+    CompositeExpressionSelectivityCalculator(planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled, planningPointIndexesEnabled)
 
   def newMetrics(planContext: PlanContext,
                  expressionEvaluator: ExpressionEvaluator,
                  executionModel: ExecutionModel,
                  planningTextIndexesEnabled: Boolean,
-                 planningRangeIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue()): Metrics = {
-    val selectivityCalculator = newSelectivityCalculator(planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled)
+                 planningRangeIndexesEnabled: Boolean,
+                 planningPointIndexesEnabled: Boolean,
+                ): Metrics = {
+    val selectivityCalculator = newSelectivityCalculator(planContext, planningTextIndexesEnabled, planningRangeIndexesEnabled, planningPointIndexesEnabled)
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
     Metrics(newCostModel(executionModel), cardinality)

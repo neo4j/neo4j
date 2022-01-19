@@ -86,7 +86,8 @@ import scala.annotation.tailrec
  */
 case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
                                                     planningTextIndexesEnabled: Boolean,
-                                                    planningRangeIndexesEnabled: Boolean) extends SelectivityCalculator {
+                                                    planningRangeIndexesEnabled: Boolean,
+                                                    planningPointIndexesEnabled: Boolean) extends SelectivityCalculator {
 
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
@@ -94,7 +95,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
     planContext.statistics,
     combiner,
     planningTextIndexesEnabled,
-    planningRangeIndexesEnabled)
+    planningRangeIndexesEnabled,
+    planningPointIndexesEnabled)
 
   private val nodeIndexMatchCache = CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch]] {
     (a, b, c) => findNodeIndexMatches(a, b, c)

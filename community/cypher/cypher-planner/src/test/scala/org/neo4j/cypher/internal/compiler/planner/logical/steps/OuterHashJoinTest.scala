@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -54,6 +56,10 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
   private val r1Name = "r1"
   private val r1Rel = PatternRelationship(r1Name, (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
+  private def newMockedMetrics(factory: MetricsFactory): Metrics =
+    factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default,
+      planningTextIndexesEnabled = false, planningRangeIndexesEnabled = false, planningPointIndexesEnabled = false)
+
   test("solve optional match with outer joins") {
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
@@ -74,7 +80,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default, planningTextIndexesEnabled = false),
+      metrics = newMockedMetrics(factory),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
@@ -106,7 +112,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default, planningTextIndexesEnabled = false),
+      metrics = newMockedMetrics(factory),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
@@ -142,7 +148,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default, planningTextIndexesEnabled = false),
+      metrics = newMockedMetrics(factory),
       strategy = newMockedStrategyWithSortedPlan(unorderedPlan, orderedPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val io = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode))))

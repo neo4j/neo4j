@@ -752,7 +752,9 @@ class StatisticsBackedLogicalPlanningConfiguration(
       simpleExpressionEvaluator,
       options.executionModel,
       plannerConfiguration.planningTextIndexesEnabled,
-      plannerConfiguration.planningRangeIndexesEnabled)
+      plannerConfiguration.planningRangeIndexesEnabled,
+      plannerConfiguration.planningPointIndexesEnabled,
+    )
 
     val iDPSolverConfig = new ConfigurableIDPSolverConfig(plannerConfiguration.idpMaxTableSize, plannerConfiguration.idpIterationDuration)
 
