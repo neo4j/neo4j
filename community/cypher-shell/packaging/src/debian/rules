@@ -8,6 +8,3 @@
 
 %:
 	dh $@
-
-# Our native dependencies are already stripped
-override_dh_strip:

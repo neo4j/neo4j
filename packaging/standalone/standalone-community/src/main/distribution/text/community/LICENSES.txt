@@ -62,7 +62,6 @@ Apache Software License, Version 2.0
   Jackson-JAXRS: base
   Jackson-JAXRS: JSON
   Jakarta Bean Validation API
-  jansi
   Java Concurrency Tools Core Library
   Java Native Access
   Javassist
@@ -86,7 +85,6 @@ Apache Software License, Version 2.0
   long
   magnolia
   mercator
-  Neo4j Java Driver
   neo4j-driver
   Netty/Buffer
   Netty/Codec
@@ -375,9 +373,6 @@ BSD License
   hoek
   hoist-non-react-statics
   ieee754
-  JLine JANSI Terminal
-  JLine Reader
-  JLine Terminal
   json-schema
   node-pre-gyp
   qs
@@ -1801,7 +1796,6 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 MIT License
   ajv
   ansi-regex
-  argparse4j
   asap
   ascii-data-table
   asn1

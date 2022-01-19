@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 # build-rpm-package:
-# Build RPM package for Neo4j Cypher Shell from a zip file
+# Build RPM package for Neo4j Cypher Shell from jar file
 
 if [ $# -ne 3 ]
 then
@@ -42,16 +42,15 @@ sources_directory=${package_directory}/BUILD/cypher-shell-${rpm_version}
 mkdir -p ${sources_directory}
 mkdir -p ${sources_directory}/manpages
 common_directory=src/common
-spec_directory=src/rpm/noarch
+spec_directory=src/rpm
+mkdir -p ${sources_directory}/cypher-shell
 
 # Extract zip distribution
 unzip ${zipfile} -d ${sources_directory}
-zip_root=`unzip -Z1 ${zipfile} | head -1`
-mv ${sources_directory}/${zip_root} ${sources_directory}/cypher-shell
 
 # Manpage
 cp ${common_directory}/manpages/cypher-shell.1 ${sources_directory}/manpages/cypher-shell.1
-gzip -f ${sources_directory}/manpages/*
+gzip ${sources_directory}/manpages/*
 
 # Generate spec file
 VERSION=${rpm_version} RELEASE=${rpm_release} envsubst '${VERSION} ${RELEASE}' < ${spec_directory}/cypher-shell.spec > ${package_directory}/SPECS/cypher-shell.spec

@@ -37,9 +37,6 @@ import static com.sun.jna.Platform.is64Bit;
 @SuppressWarnings( "IdentityBinaryExpression" )
 final class RuntimeInternals
 {
-    // Please, add any additional new fields to
-    // org.neo4j.shell.svm.Target_org_neo4j_memory_RuntimeInternals
-    // with some default value
     static final boolean DEBUG_ESTIMATIONS = FeatureToggles.flag( HeapEstimator.class, "DEBUG", false );
 
     static final long LONG_CACHE_MIN_VALUE;

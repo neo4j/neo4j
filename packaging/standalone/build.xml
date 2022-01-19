@@ -11,8 +11,6 @@
   </target>
   <target name="extract-shell-zip" depends="find-shell-zip" if="zip.present">
     <echo>Unzipping...</echo>
-    <unzip src="${shell.zip}" dest="src/main/distribution/cypher-shell">
-      <cutdirsmapper dirs="1"/>
-    </unzip>
+    <unzip src="${shell.zip}" dest="src/main/distribution"/>
   </target>
 </project>
