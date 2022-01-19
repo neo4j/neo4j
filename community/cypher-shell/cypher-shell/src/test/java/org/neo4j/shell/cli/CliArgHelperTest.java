@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
+import org.neo4j.shell.test.LocaleDependentTestBase;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -44,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.shell.test.Util.asArray;
 
-class CliArgHelperTest
+class CliArgHelperTest extends LocaleDependentTestBase
 {
     private static CliArgs parse( String... args )
     {

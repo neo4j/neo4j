@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -eu
+# Creates the same OS Classifier like
+# https://github.com/trustin/os-maven-plugin
+
+os=$(uname -s | tr '[:upper:]' '[:lower:]')
+arch=$(uname -m)
+
+if [ "$os" = "darwin" ]; then
+    os='osx'
+fi
+os_classifier=${os}-${arch}
+
+echo $os_classifier

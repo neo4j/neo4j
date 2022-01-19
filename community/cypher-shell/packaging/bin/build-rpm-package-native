@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -eu
-# build-rpm-package:
-# Build RPM package for Neo4j Cypher Shell from a zip file
+# build-rpm-package-native:
+# Build RPM package for Neo4j Cypher Shell from a native binary matching the given architecture
 
-if [ $# -ne 3 ]
+if [ $# -ne 5 ]
 then
-  echo "Usage: ${0} <workspace> <zipfile> <distribution>"
+  echo "Usage: ${0} <workspace> <binary> <distribution> <version> <arch>"
   exit 1
 fi
 
@@ -13,8 +13,9 @@ fi
 . "$(dirname ${0})/shared.sh"
 
 package_directory=${1}
-zipfile=${2}
+binary=${2}
 distribution=${3}
+arch=${5}
 
 # Make path absolute because rpmbuild is a bit stupid
 if [[ ! "${package_directory}" =~ "^/" ]]; then
@@ -23,11 +24,11 @@ fi
 
 echo "Building Cypher Shell RPM package"
 echo "Package directory: ${package_directory}"
-echo "Zip file: ${zipfile}"
+echo "Binary: ${binary}"
 echo "Distribution: ${distribution}"
 
 # Get version(s)
-parse_version_from_zipfile "${zipfile}"
+parse_version_from_zipfile "${4}"
 
 echo "RPM version: ${rpm_version}"
 echo "Release: ${rpm_release}"
@@ -41,23 +42,21 @@ mkdir -p ${package_directory}/{BUILD,RPMS,SOURCES,BUILDROOT,SPECS,SRPMS}/
 sources_directory=${package_directory}/BUILD/cypher-shell-${rpm_version}
 mkdir -p ${sources_directory}
 mkdir -p ${sources_directory}/manpages
+mkdir -p ${sources_directory}/cypher-shell/bin
 common_directory=src/common
-spec_directory=src/rpm/noarch
+spec_directory=src/rpm/native
 
-# Extract zip distribution
-unzip ${zipfile} -d ${sources_directory}
-zip_root=`unzip -Z1 ${zipfile} | head -1`
-mv ${sources_directory}/${zip_root} ${sources_directory}/cypher-shell
+cp ${binary} ${sources_directory}/cypher-shell/bin/cypher-shell
 
 # Manpage
 cp ${common_directory}/manpages/cypher-shell.1 ${sources_directory}/manpages/cypher-shell.1
 gzip -f ${sources_directory}/manpages/*
 
 # Generate spec file
-VERSION=${rpm_version} RELEASE=${rpm_release} envsubst '${VERSION} ${RELEASE}' < ${spec_directory}/cypher-shell.spec > ${package_directory}/SPECS/cypher-shell.spec
+VERSION=${rpm_version} RELEASE=${rpm_release} ARCH=${arch} envsubst '${VERSION} ${RELEASE} ${ARCH}' < ${spec_directory}/cypher-shell.spec > ${package_directory}/SPECS/cypher-shell.spec
 
 # build package and metadata files
 (cd ${package_directory} && rpmbuild --define "_topdir ${package_directory}" -bb SPECS/cypher-shell.spec)
 
 # Move finished RPMs to directory below because TeamCity sucks
-cp ${package_directory}/RPMS/noarch/*.rpm ${package_directory}/..
+cp ${package_directory}/RPMS/${arch}/*.rpm ${package_directory}/..

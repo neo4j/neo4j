@@ -171,6 +171,17 @@
             <artifactId>neo4j-push-to-cloud</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>cypher-shell</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <!-- scope from public pom seems to overwrite the scope from cypher-shell -->
+            <scope>compile</scope>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

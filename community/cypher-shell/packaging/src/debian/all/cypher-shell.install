@@ -1,0 +1,2 @@
+cypher-shell/bin/cypher-shell  usr/share/cypher-shell/bin
+cypher-shell/lib/*.jar         usr/share/cypher-shell/lib

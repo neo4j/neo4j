@@ -1,0 +1,13 @@
+This is [cypher-shell][1].
+
+Use
+
+    ./bin/cypher-shell -h
+
+on a Unix like machine for usage instructions and
+
+    ./bin/cypher-shell.bat -h
+
+on Windows.
+
+[1]: https://neo4j.com/docs/operations-manual/current/tools/cypher-shell/
