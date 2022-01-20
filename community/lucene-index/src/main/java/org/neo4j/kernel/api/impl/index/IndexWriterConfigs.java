@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
 import org.neo4j.configuration.Config;
@@ -81,6 +82,14 @@ public final class IndexWriterConfigs
         IndexWriterConfig writerConfig = standard( config, analyzer );
         writerConfig.setMaxBufferedDocs( config.get( lucene_population_max_buffered_docs ) );
         writerConfig.setRAMBufferSizeMB( config.get( lucene_population_ram_buffer_size ) );
+        if ( config.get( LuceneSettings.lucene_population_serial_merge_scheduler ) )
+        {
+            // With this setting 'true' we respect the GraphDatabaseInternalSettings.index_population_workers setting and
+            // don't use separate lucene threads for merging during population.
+            // Population is a background task, and it is probably more important to limit CPU usage
+            // than be as fast as possible here.
+            writerConfig.setMergeScheduler( new SerialMergeScheduler() );
+        }
         return writerConfig;
     }
 

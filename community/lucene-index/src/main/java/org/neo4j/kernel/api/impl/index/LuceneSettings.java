@@ -27,7 +27,9 @@ import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
 
+import static java.lang.Boolean.TRUE;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 
@@ -65,4 +67,10 @@ public class LuceneSettings implements SettingsDeclaration
     @Description( "Setting for the matching lucene IndexWriterConfig config" )
     public static final Setting<Double> lucene_population_ram_buffer_size =
             newBuilder( "unsupported.dbms.index.lucene.population_ram_buffer_size", DOUBLE, 50D ).build();
+
+    @Internal
+    @Description( "Setting for the matching lucene IndexWriterConfig config. Used for set up of lucene indexes population. " +
+                  "If 'false' separate threads will be used for merge, if 'true' the merges will be done sequentially by the current thread." )
+    public static final Setting<Boolean> lucene_population_serial_merge_scheduler =
+            newBuilder( "unsupported.dbms.index.lucene.population_serial_merge_scheduler", BOOL, TRUE ).build();
 }
