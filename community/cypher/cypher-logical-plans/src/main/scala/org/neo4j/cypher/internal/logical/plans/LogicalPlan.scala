@@ -242,6 +242,8 @@ trait RelationshipTypeScan {
 }
 
 abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
+  // TODO REVIEWER/DISCUSS: can this be made a val?
+  final def hasUpdatingRhs: Boolean = right.treeExists{case _: UpdatingPlan => true}
   final def lhs: Option[LogicalPlan] = Some(left)
   final def rhs: Option[LogicalPlan] = Some(right)
 

@@ -164,6 +164,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.UnwindTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UserDefinedAggregationSupport
 import org.neo4j.cypher.internal.runtime.spec.tests.ValueHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.VarLengthExpandTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.WritingSubqueryApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexContainsScanConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexEndsWithScanConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexScanConcurrencyStressTestBase
@@ -180,6 +181,7 @@ class InterpretedAllNodeScanTest extends AllNodeScanTestBase(COMMUNITY.EDITION, 
                                  with AllNodeScanWithOtherOperatorsTestBase[CommunityRuntimeContext]
 class InterpretedCartesianProductTest extends CartesianProductTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedApplyTest extends ApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedWritingSubqueryApplyTest extends WritingSubqueryApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedNodeByIdSeekTest extends NodeByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDirectedRelationshipByIdSeekTest extends DirectedRelationshipByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedUndirectedRelationshipByIdSeekTest extends UndirectedRelationshipByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
