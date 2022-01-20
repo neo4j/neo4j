@@ -21,6 +21,7 @@ package org.neo4j.shell.state;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,6 +76,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
@@ -405,7 +407,10 @@ class BoltStateHandlerTest
         boltStateHandler.reset();
 
         // then
-        verify( sessionMock ).reset();
+        verify( sessionMock, times( 1 ) ).run( Mockito.anyString() );
+        verify( sessionMock, times( 2 ) ).isOpen();
+        verify( sessionMock, times( 1 ) ).beginTransaction();
+        verifyNoMoreInteractions( sessionMock );
     }
 
     @Test

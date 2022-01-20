@@ -99,6 +99,7 @@ public class FakeSession implements Session
     }
 
     @Override
+    @SuppressWarnings( {"deprecation", "RedundantSuppression"} ) // Not redundant, IntelliJ is lying
     public void reset()
     {
     }

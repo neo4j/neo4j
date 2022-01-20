@@ -20,9 +20,11 @@
 package org.neo4j.shell.prettyprint;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -42,7 +44,6 @@ import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.ListBoltResult;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -53,7 +54,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Iterables.map;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
 
-@SuppressWarnings( "ArraysAsListWithZeroOrOneArgument" )
 class PrettyPrinterTest
 {
     private final PrettyPrinter plainPrinter = new PrettyPrinter( new PrettyConfig( Format.PLAIN, false, 100 ) );
@@ -106,16 +106,16 @@ class PrettyPrinterTest
         String actual = plainPrinter.format( result );
 
         // then
-        String expected =
-                "Plan: \"PROFILE\"\n" +
-                "Statement: \"READ_ONLY\"\n" +
-                "Version: \"3.1\"\n" +
-                "Planner: \"COST\"\n" +
-                "Runtime: \"INTERPRETED\"\n" +
-                "Time: 12\n" +
-                "Rows: 20\n" +
-                "DbHits: 1000\n" +
-                "Memory (Bytes): 10";
+        String expected = """
+                Plan: "PROFILE"
+                Statement: "READ_ONLY"
+                Version: "3.1"
+                Planner: "COST"
+                Runtime: "INTERPRETED"
+                Time: 12
+                Rows: 20
+                DbHits: 1000
+                Memory (Bytes): 10""";
         Stream.of( expected.split( "\n" ) ).forEach( e -> assertThat( actual, containsString( e ) ) );
     }
 
@@ -146,16 +146,16 @@ class PrettyPrinterTest
         String actual = plainPrinter.format( result );
 
         // then
-        String expected =
-                "Plan: \"PROFILE\"\n" +
-                "Statement: \"READ_ONLY\"\n" +
-                "Version: \"3.1\"\n" +
-                "Planner: \"COST\"\n" +
-                "Runtime: \"INTERPRETED\"\n" +
-                "Time: 12\n" +
-                "Rows: 20\n" +
-                "DbHits: 1000\n" +
-                "Memory (Bytes): \"?\"";
+        String expected = """
+                Plan: "PROFILE"
+                Statement: "READ_ONLY"
+                Version: "3.1"
+                Planner: "COST"
+                Runtime: "INTERPRETED"
+                Time: 12
+                Rows: 20
+                DbHits: 1000
+                Memory (Bytes): "?\"""";
         Stream.of( expected.split( "\n" ) ).forEach( e -> assertThat( actual, containsString( e ) ) );
     }
 
@@ -183,13 +183,13 @@ class PrettyPrinterTest
         String actual = plainPrinter.format( result );
 
         // then
-        String expected =
-                "Plan: \"EXPLAIN\"\n" +
-                "Statement: \"READ_ONLY\"\n" +
-                "Version: \"3.1\"\n" +
-                "Planner: \"COST\"\n" +
-                "Runtime: \"INTERPRETED\"\n" +
-                "Time: 12";
+        String expected = """
+                Plan: "EXPLAIN"
+                Statement: "READ_ONLY"
+                Version: "3.1"
+                Planner: "COST"
+                Runtime: "INTERPRETED"
+                Time: 12""";
         Stream.of( expected.split( "\n" ) ).forEach( e -> assertThat( actual, containsString( e ) ) );
     }
 
@@ -202,11 +202,11 @@ class PrettyPrinterTest
         Value value1 = Values.value( "val1_1", "val1_2" );
         Value value2 = Values.value( new String[] {"val2_1"} );
 
-        when( record1.keys() ).thenReturn( asList( "col1", "col2" ) );
-        when( record1.values() ).thenReturn( asList( value1, value2 ) );
-        when( record2.values() ).thenReturn( asList( value2 ) );
+        when( record1.keys() ).thenReturn( List.of( "col1", "col2" ) );
+        when( record1.values() ).thenReturn( List.of( value1, value2 ) );
+        when( record2.values() ).thenReturn( List.of( value2 ) );
 
-        BoltResult result = new ListBoltResult( asList( record1, record2 ), mock( ResultSummary.class ) );
+        BoltResult result = new ListBoltResult( List.of( record1, record2 ), mock( ResultSummary.class ) );
 
         // when
         String actual = plainPrinter.format( result );
@@ -234,13 +234,11 @@ class PrettyPrinterTest
 
         when( value.type() ).thenReturn( InternalTypeSystem.TYPE_SYSTEM.MAP() );
 
-        //noinspection unchecked
-        when( value.asMap( (Function<Value, String>) any() ) ).thenReturn( map );
+        when( value.asMap( Mockito.<Function<Value, String>>any() ) ).thenReturn( map );
+        when( record.keys() ).thenReturn( List.of( "map" ) );
+        when( record.values() ).thenReturn( List.of( value ) );
 
-        when( record.keys() ).thenReturn( asList( "map" ) );
-        when( record.values() ).thenReturn( asList( value ) );
-
-        BoltResult result = new ListBoltResult( asList( record ), mock( ResultSummary.class ) );
+        BoltResult result = new ListBoltResult( List.of( record ), mock( ResultSummary.class ) );
 
         // when
         String actual = plainPrinter.format( result );
@@ -264,13 +262,13 @@ class PrettyPrinterTest
         when( value.type() ).thenReturn( InternalTypeSystem.TYPE_SYSTEM.NODE() );
 
         when( value.asNode() ).thenReturn( node );
-        when( node.labels() ).thenReturn( asList( "label1", "label2" ) );
+        when( node.labels() ).thenReturn( List.of( "label1", "label2" ) );
         when( node.asMap( any() ) ).thenReturn( unmodifiableMap( propertiesAsMap ) );
 
-        when( record.keys() ).thenReturn( asList( "col1", "col2" ) );
-        when( record.values() ).thenReturn( asList( value ) );
+        when( record.keys() ).thenReturn( List.of( "col1", "col2" ) );
+        when( record.values() ).thenReturn( List.of( value ) );
 
-        BoltResult result = new ListBoltResult( asList( record ), mock( ResultSummary.class ) );
+        BoltResult result = new ListBoltResult( List.of( record ), mock( ResultSummary.class ) );
 
         // when
         String actual = plainPrinter.format( result );
@@ -298,10 +296,10 @@ class PrettyPrinterTest
         when( relationship.type() ).thenReturn( "RELATIONSHIP_TYPE" );
         when( relationship.asMap( any() ) ).thenReturn( unmodifiableMap( propertiesAsMap ) );
 
-        when( record.keys() ).thenReturn( asList( "rel" ) );
-        when( record.values() ).thenReturn( asList( value ) );
+        when( record.keys() ).thenReturn( List.of( "rel" ) );
+        when( record.values() ).thenReturn( List.of( value ) );
 
-        BoltResult result = new ListBoltResult( asList( record ), mock( ResultSummary.class ) );
+        BoltResult result = new ListBoltResult( List.of( record ), mock( ResultSummary.class ) );
 
         // when
         String actual = plainPrinter.format( result );
@@ -338,13 +336,13 @@ class PrettyPrinterTest
         when( relationship.asMap( any() ) ).thenReturn( unmodifiableMap( relProp ) );
 
         when( nodeVal.asNode() ).thenReturn( node );
-        when( node.labels() ).thenReturn( asList( "label `1", "label2" ) );
+        when( node.labels() ).thenReturn( List.of( "label `1", "label2" ) );
         when( node.asMap( any() ) ).thenReturn( unmodifiableMap( nodeProp ) );
 
-        when( record.keys() ).thenReturn( asList( "rel", "node" ) );
-        when( record.values() ).thenReturn( asList( relVal, nodeVal ) );
+        when( record.keys() ).thenReturn( List.of( "rel", "node" ) );
+        when( record.values() ).thenReturn( List.of( relVal, nodeVal ) );
 
-        BoltResult result = new ListBoltResult( asList( record ), mock( ResultSummary.class ) );
+        BoltResult result = new ListBoltResult( List.of( record ), mock( ResultSummary.class ) );
 
         // when
         String actual = plainPrinter.format( result );
@@ -366,17 +364,17 @@ class PrettyPrinterTest
         Node start = mock( Node.class );
         HashMap<String, Object> startProperties = new HashMap<>();
         startProperties.put( "prop1", "prop1_value" );
-        when( start.labels() ).thenReturn( asList( "start" ) );
+        when( start.labels() ).thenReturn( List.of( "start" ) );
         when( start.id() ).thenReturn( 1L );
 
         Node middle = mock( Node.class );
-        when( middle.labels() ).thenReturn( asList( "middle" ) );
+        when( middle.labels() ).thenReturn( List.of( "middle" ) );
         when( middle.id() ).thenReturn( 2L );
 
         Node end = mock( Node.class );
         HashMap<String, Object> endProperties = new HashMap<>();
         endProperties.put( "prop2", "prop2_value" );
-        when( end.labels() ).thenReturn( asList( "end" ) );
+        when( end.labels() ).thenReturn( List.of( "end" ) );
         when( end.id() ).thenReturn( 3L );
 
         Path path = mock( Path.class );
@@ -398,14 +396,14 @@ class PrettyPrinterTest
 
         when( value.type() ).thenReturn( InternalTypeSystem.TYPE_SYSTEM.PATH() );
         when( value.asPath() ).thenReturn( path );
-        when( path.iterator() ).thenReturn( asList( segment1, segment2 ).iterator() );
+        when( path.iterator() ).thenReturn( List.of( segment1, segment2 ).iterator() );
         when( start.asMap( any() ) ).thenReturn( unmodifiableMap( startProperties ) );
         when( end.asMap( any() ) ).thenReturn( unmodifiableMap( endProperties ) );
 
-        when( record.keys() ).thenReturn( asList( "path" ) );
-        when( record.values() ).thenReturn( asList( value ) );
+        when( record.keys() ).thenReturn( List.of( "path" ) );
+        when( record.values() ).thenReturn( List.of( value ) );
 
-        BoltResult result = new ListBoltResult( asList( record ), mock( ResultSummary.class ) );
+        BoltResult result = new ListBoltResult( List.of( record ), mock( ResultSummary.class ) );
 
         // when
         String actual = plainPrinter.format( result );
@@ -424,11 +422,11 @@ class PrettyPrinterTest
         Value value = mock( Value.class );
 
         Node start = mock( Node.class );
-        when( start.labels() ).thenReturn( asList( "start" ) );
+        when( start.labels() ).thenReturn( List.of( "start" ) );
         when( start.id() ).thenReturn( 1L );
 
         Node end = mock( Node.class );
-        when( end.labels() ).thenReturn( asList( "end" ) );
+        when( end.labels() ).thenReturn( List.of( "end" ) );
         when( end.id() ).thenReturn( 2L );
 
         Path path = mock( Path.class );
@@ -445,12 +443,12 @@ class PrettyPrinterTest
 
         when( value.type() ).thenReturn( InternalTypeSystem.TYPE_SYSTEM.PATH() );
         when( value.asPath() ).thenReturn( path );
-        when( path.iterator() ).thenReturn( asList( segment1 ).iterator() );
+        when( path.iterator() ).thenReturn( List.of( segment1 ).iterator() );
 
-        when( record.keys() ).thenReturn( asList( "path" ) );
-        when( record.values() ).thenReturn( asList( value ) );
+        when( record.keys() ).thenReturn( List.of( "path" ) );
+        when( record.values() ).thenReturn( List.of( value ) );
 
-        BoltResult result = new ListBoltResult( asList( record ), mock( ResultSummary.class ) );
+        BoltResult result = new ListBoltResult( List.of( record ), mock( ResultSummary.class ) );
 
         // when
         String actual = plainPrinter.format( result );
@@ -467,19 +465,19 @@ class PrettyPrinterTest
         Value value = mock( Value.class );
 
         Node start = mock( Node.class );
-        when( start.labels() ).thenReturn( asList( "start" ) );
+        when( start.labels() ).thenReturn( List.of( "start" ) );
         when( start.id() ).thenReturn( 1L );
 
         Node second = mock( Node.class );
-        when( second.labels() ).thenReturn( asList( "second" ) );
+        when( second.labels() ).thenReturn( List.of( "second" ) );
         when( second.id() ).thenReturn( 2L );
 
         Node third = mock( Node.class );
-        when( third.labels() ).thenReturn( asList( "third" ) );
+        when( third.labels() ).thenReturn( List.of( "third" ) );
         when( third.id() ).thenReturn( 3L );
 
         Node end = mock( Node.class );
-        when( end.labels() ).thenReturn( asList( "end" ) );
+        when( end.labels() ).thenReturn( List.of( "end" ) );
         when( end.id() ).thenReturn( 4L );
 
         Path path = mock( Path.class );
@@ -506,12 +504,12 @@ class PrettyPrinterTest
 
         when( value.type() ).thenReturn( InternalTypeSystem.TYPE_SYSTEM.PATH() );
         when( value.asPath() ).thenReturn( path );
-        when( path.iterator() ).thenReturn( asList( segment1, segment2, segment3 ).iterator() );
+        when( path.iterator() ).thenReturn( List.of( segment1, segment2, segment3 ).iterator() );
 
-        when( record.keys() ).thenReturn( asList( "path" ) );
-        when( record.values() ).thenReturn( asList( value ) );
+        when( record.keys() ).thenReturn( List.of( "path" ) );
+        when( record.values() ).thenReturn( List.of( value ) );
 
-        BoltResult result = new ListBoltResult( asList( record ), mock( ResultSummary.class ) );
+        BoltResult result = new ListBoltResult( List.of( record ), mock( ResultSummary.class ) );
 
         // when
         String actual = plainPrinter.format( result );
