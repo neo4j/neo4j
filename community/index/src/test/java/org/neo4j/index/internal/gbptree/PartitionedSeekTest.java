@@ -147,7 +147,7 @@ class PartitionedSeekTest
             int numberOfDesiredPartitions = random.nextInt( 1, 10 );
             int high = insertEntriesUntil( tree, numberOfDesiredLevels, numberOfRootChildren );
             long from = random.nextLong( 0, high );
-            long to = random.nextLong( from + 1, high );
+            long to = random.nextLong( from, high );
 
             // when
             List<MutableLong> partitionEdges = tree.partitionedSeek( layout.key( from ), layout.key( to ), numberOfDesiredPartitions, NULL_CONTEXT );
