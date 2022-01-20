@@ -275,6 +275,7 @@ import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.ValidSyntax
@@ -569,6 +570,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     case HintIndexType.ANY   => UsingAnyIndexType
     case HintIndexType.BTREE => UsingBtreeIndexType
     case HintIndexType.TEXT  => UsingTextIndexType
+    case HintIndexType.RANGE => UsingRangeIndexType
   }
 
   override def usingJoin(p: InputPosition, joinVariables: util.List[Variable]): UsingHint =

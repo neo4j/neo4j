@@ -62,6 +62,7 @@ case object SeekOrScan extends UsingIndexHintSpec {
 sealed trait UsingIndexHintType
 case object UsingAnyIndexType extends UsingIndexHintType
 case object UsingBtreeIndexType extends UsingIndexHintType
+case object UsingRangeIndexType extends UsingIndexHintType
 case object UsingTextIndexType extends UsingIndexHintType
 
 case class UsingIndexHint(

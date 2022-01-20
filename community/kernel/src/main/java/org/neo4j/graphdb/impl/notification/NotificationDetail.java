@@ -74,6 +74,16 @@ public interface NotificationDetail
             return createNotificationDetail( "index", indexFormatString, true );
         }
 
+        public static NotificationDetail nodeRangeIndex( final String variableName, final String labelName, final String... propertyKeyNames )
+        {
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             labelName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.NODE,
+                                                                             IndexHintIndexType.RANGE );
+            return createNotificationDetail( "index", indexFormatString, true );
+        }
+
         public static NotificationDetail relationshipAnyIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
         {
             String indexFormatString = IndexHintException.indexFormatString( variableName,

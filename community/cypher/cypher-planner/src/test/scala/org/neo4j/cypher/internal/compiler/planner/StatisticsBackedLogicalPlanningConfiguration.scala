@@ -630,12 +630,20 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         textIndexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
       }
 
+      override def rangeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
+        rangeIndexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
+      }
+
       override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = {
         btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys).nonEmpty
       }
 
       override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = {
         textIndexGetForRelTypeAndProperties(relTypeName, propertyKeys).nonEmpty
+      }
+
+      override def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = {
+        rangeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys).nonEmpty
       }
 
       override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
@@ -648,6 +656,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.TEXT)
       }
 
+      override def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Node(labelName)
+        indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.RANGE)
+      }
+
       override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.BTREE)
@@ -656,6 +669,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.TEXT)
+      }
+
+      override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
+        indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.RANGE)
       }
 
       private def indexGetForEntityTypePropertiesAndIndexType(entityType: IndexDefinition.EntityType,

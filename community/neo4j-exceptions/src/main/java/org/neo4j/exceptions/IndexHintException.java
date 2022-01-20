@@ -34,7 +34,8 @@ public class IndexHintException extends Neo4jException
     {
         ANY,
         BTREE,
-        TEXT
+        TEXT,
+        RANGE
     }
 
     public IndexHintException( String variableName,
@@ -84,6 +85,9 @@ public class IndexHintException extends Neo4jException
             break;
         case TEXT:
             typeString = "TEXT ";
+            break;
+        case RANGE:
+            typeString = "RANGE ";
             break;
         default:
             typeString = "";

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
@@ -160,6 +161,7 @@ object VerifyBestPlan {
         case UsingAnyIndexType => IndexHintIndexType.ANY
         case UsingBtreeIndexType => IndexHintIndexType.BTREE
         case UsingTextIndexType => IndexHintIndexType.TEXT
+        case UsingRangeIndexType => IndexHintIndexType.RANGE
       }
       new IndexHintException(hint.variable.name, hint.labelOrRelType.name, hint.properties.map(_.name).asJava, entityType, exceptionIndexType)
     }
@@ -191,11 +193,13 @@ object VerifyBestPlan {
 
       def btreeExists = planContext.btreeIndexExistsForLabelAndProperties(labelName, propertyNames)
       def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(labelName, propertyNames)
+      def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForLabelAndProperties(labelName, propertyNames)
 
       indexHintType match {
-        case UsingAnyIndexType   => btreeExists || textExists
+        case UsingAnyIndexType   => btreeExists || textExists || rangeExists
         case UsingBtreeIndexType => btreeExists
         case UsingTextIndexType  => textExists
+        case UsingRangeIndexType => rangeExists
       }
     }
 
@@ -205,11 +209,13 @@ object VerifyBestPlan {
 
       def btreeExists = planContext.btreeIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
       def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
+      def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
 
       indexHintType match {
-        case UsingAnyIndexType   => btreeExists || textExists
+        case UsingAnyIndexType   => btreeExists || textExists || rangeExists
         case UsingBtreeIndexType => btreeExists
         case UsingTextIndexType  => textExists
+        case UsingRangeIndexType  => rangeExists
       }
     }
 

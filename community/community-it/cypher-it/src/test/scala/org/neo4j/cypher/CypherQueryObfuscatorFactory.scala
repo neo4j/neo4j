@@ -134,6 +134,10 @@ class CypherQueryObfuscatorFactory {
     override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
+    override def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
+    override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
+    override def rangeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
+    override def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
 
     private def fail() = throw new IllegalStateException("Should not have been called in this test.")
   }

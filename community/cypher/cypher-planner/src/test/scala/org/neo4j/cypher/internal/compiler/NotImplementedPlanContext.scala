@@ -108,4 +108,12 @@ class NotImplementedPlanContext extends PlanContext {
   override def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = ???
 
   override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = ???
+
+  override def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = ???
+
+  override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
+
+  override def rangeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = ???
+
+  override def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
 }

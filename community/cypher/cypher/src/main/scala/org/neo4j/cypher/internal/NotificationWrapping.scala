@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
+import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.compiler.CodeGenerationFailedNotification
 import org.neo4j.cypher.internal.compiler.DeprecatedFieldNotification
@@ -90,6 +91,7 @@ object NotificationWrapping {
             case UsingAnyIndexType => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
             case UsingBtreeIndexType => NotificationDetail.Factory.nodeBtreeIndex(variableName, label, propertyKeys: _*)
             case UsingTextIndexType => NotificationDetail.Factory.nodeTextIndex(variableName, label, propertyKeys: _*)
+            case UsingRangeIndexType => NotificationDetail.Factory.nodeRangeIndex(variableName, label, propertyKeys: _*)
           }
         case EntityType.RELATIONSHIP => indexType match {
           case UsingAnyIndexType => NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)

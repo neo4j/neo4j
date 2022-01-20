@@ -190,6 +190,7 @@ import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.Where
@@ -690,6 +691,7 @@ case class Prettifier(
             case UsingAnyIndexType   => "INDEX "
             case UsingBtreeIndexType => "BTREE INDEX "
             case UsingTextIndexType  => "TEXT INDEX "
+            case UsingRangeIndexType  => "RANGE INDEX "
           },
           if (s == SeekOnly) "SEEK " else "",
           expr(v), ":", expr(l),

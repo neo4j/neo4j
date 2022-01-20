@@ -96,6 +96,12 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
+   * Gets a RANGE index if it exists (general or unique) for a given label and properties, without taking any schema locks.
+   */
+  def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
+
+
+  /**
    * Gets a BTREE index if it exists for a given relationship type and properties, without taking any schema locks.
    */
   def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
@@ -104,6 +110,11 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
    * Gets a TEXT index if it exists for a given relationship type and properties, without taking any schema locks.
    */
   def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
+
+  /**
+   * Gets a RANGE index if it exists for a given relationship type and properties, without taking any schema locks.
+   */
+  def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
    * Checks if a BTREE index exists (general or unique) for a given label and properties, without taking any schema locks.
@@ -116,6 +127,11 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
 
   /**
+   * Checks if a RANGE index exists (general or unique) for a given label and properties, without taking any schema locks.
+   */
+  def rangeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
+
+  /**
    * Checks if a BTREE exists for a given relationship type and properties, without taking any schema locks.
    */
   def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
@@ -124,6 +140,11 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
    * Checks if a TEXT index exists for a given relationship type and properties, without taking any schema locks.
    */
   def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
+
+  /**
+   * Checks if a TEXT index exists for a given relationship type and properties, without taking any schema locks.
+   */
+  def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
 
   /**
    * Checks if it is possible to lookup nodes by their labels (either through the scan store or a lookup index). Does not take any schema locks.

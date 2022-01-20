@@ -150,4 +150,16 @@ class IndexHintExceptionTest
         String expected = "TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`)";
         assertEquals( expected, actual );
     }
+
+    @Test
+    void indexFormatStringForRangeIndex()
+    {
+        String actual = IndexHintException.indexFormatString( "person",
+                                                              "Person",
+                                                              Collections.singletonList( "name" ),
+                                                              EntityType.NODE,
+                                                              IndexHintIndexType.RANGE );
+        String expected = "RANGE INDEX FOR (`person`:`Person`) ON (`person`.`name`)";
+        assertEquals( expected, actual );
+    }
 }

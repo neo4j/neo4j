@@ -1846,6 +1846,7 @@ List<HINT> Hints() :
               <INDEX> hint = IndexHintBody( HintIndexType.ANY, pos( t ) )
             | <BTREE> <INDEX> hint = IndexHintBody( HintIndexType.BTREE, pos( t ) )
             | <TEXT> <INDEX> hint = IndexHintBody( HintIndexType.TEXT, pos( t ) )
+            | <RANGE> <INDEX> hint = IndexHintBody( HintIndexType.RANGE, pos( t ) )
             | <JOIN> <ON> joinVariables=VariableList1() { hint = astFactory.usingJoin( pos( t ), joinVariables ); }
             | <SCAN> v=Variable() labelOrRelType=LabelOrRelType() { hint = astFactory.usingScan( pos( t ), v, labelOrRelType.image ); }
         )
