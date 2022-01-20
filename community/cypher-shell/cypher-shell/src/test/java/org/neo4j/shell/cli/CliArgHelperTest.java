@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 
+import org.neo4j.shell.test.LocaleDependentTestBase;
+
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,7 +42,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.shell.test.Util.asArray;
 
-public class CliArgHelperTest
+public class CliArgHelperTest extends LocaleDependentTestBase
 {
     private static CliArgs parse( String... args )
     {
