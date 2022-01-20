@@ -117,6 +117,10 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
             yields(func(action, List(functionQualifier("mat?.a.\n.*n")), Seq(literalRole)))
           }
 
+          test(s"$verb $execute `mat?`.`a.\n`.`*n` ON DBMS $preposition role") {
+            yields(func(action, List(functionQualifier("mat?.a.\n.*n")), Seq(literalRole)))
+          }
+
           test(s"$verb $execute `a b` ON DBMS $preposition role") {
             yields(func(action, List(functionQualifier("a b")), Seq(literalRole)))
           }
@@ -138,6 +142,36 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
           }
 
           test(s"$verb $execute a b ON DBMS $preposition role") {
+            failsToParse
+          }
+
+          // Tests for invalid escaping
+
+          test(s"$verb $execute `ab?`* ON DBMS $preposition role") {
+            failsToParse
+          }
+
+          test(s"$verb $execute a`ab?` ON DBMS $preposition role") {
+            failsToParse
+          }
+
+          test(s"$verb $execute ab?`%ab`* ON DBMS $preposition role") {
+            failsToParse
+          }
+
+          test(s"$verb $execute apoc.`*`ab? ON DBMS $preposition role") {
+            failsToParse
+          }
+
+          test(s"$verb $execute apoc.*`ab?` ON DBMS $preposition role") {
+            failsToParse
+          }
+
+          test(s"$verb $execute `ap`oc.ab? ON DBMS $preposition role") {
+            failsToParse
+          }
+
+          test(s"$verb $execute ap`oc`.ab? ON DBMS $preposition role") {
             failsToParse
           }
       }

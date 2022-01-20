@@ -130,6 +130,10 @@ class ExecuteFunctionPrivilegeAdministrationCommandJavaccParserTest extends Pars
             assertSameAST(testName)
           }
 
+          test(s"$verb $execute `mat?`.`a.\n`.`*n` ON DBMS $preposition role") {
+            assertSameAST(testName)
+          }
+
           test(s"$verb $execute `a b` ON DBMS $preposition role") {
             assertSameAST(testName)
           }
@@ -165,6 +169,76 @@ class ExecuteFunctionPrivilegeAdministrationCommandJavaccParserTest extends Pars
             val offset = testName.length
             assertJavaCCException(testName,
               s"""Invalid input '': expected
+                 |  "*"
+                 |  "."
+                 |  "?"
+                 |  "ON"
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+          }
+
+          // Tests for invalid escaping
+
+          test(s"$verb $execute `ab?`* ON DBMS $preposition role") {
+            val offset = s"$verb $execute ".length
+            assertJavaCCException(testName,
+              s"""Invalid input 'ab?': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+          }
+
+          test(s"$verb $execute a`ab?` ON DBMS $preposition role") {
+            val offset = s"$verb $execute a".length
+            assertJavaCCException(testName,
+              s"""Invalid input 'ab?': expected
+                 |  "*"
+                 |  "."
+                 |  "?"
+                 |  "ON"
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+          }
+
+          test(s"$verb $execute ab?`%ab`* ON DBMS $preposition role") {
+            val offset = s"$verb $execute ab?".length
+            assertJavaCCException(testName,
+              s"""Invalid input '%ab': expected
+                 |  "*"
+                 |  "."
+                 |  "?"
+                 |  "ON"
+                 |  "YIELD"
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+          }
+
+          test(s"$verb $execute apoc.`*`ab? ON DBMS $preposition role") {
+            val offset = s"$verb $execute apoc.".length
+            assertJavaCCException(testName,
+              s"""Invalid input '*': expected
+                 |  "*"
+                 |  "."
+                 |  "?"
+                 |  "YIELD"
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+          }
+
+          test(s"$verb $execute apoc.*`ab?` ON DBMS $preposition role") {
+            val offset = s"$verb $execute apoc.*".length
+            assertJavaCCException(testName,
+              s"""Invalid input 'ab?': expected
+                 |  "*"
+                 |  "."
+                 |  "?"
+                 |  "ON"
+                 |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+          }
+
+          test(s"$verb $execute `ap`oc.ab? ON DBMS $preposition role") {
+            val offset = s"$verb $execute ".length
+            assertJavaCCException(testName,
+              s"""Invalid input 'ap': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
+          }
+
+          test(s"$verb $execute ap`oc`.ab? ON DBMS $preposition role") {
+            val offset = s"$verb $execute ap".length
+            assertJavaCCException(testName,
+              s"""Invalid input 'oc': expected
                  |  "*"
                  |  "."
                  |  "?"

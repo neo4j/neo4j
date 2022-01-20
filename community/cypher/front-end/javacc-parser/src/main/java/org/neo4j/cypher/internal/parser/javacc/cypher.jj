@@ -5191,11 +5191,39 @@ String Glob() :
 {
     String globString = "";
     String nextGlob = "";
+    Token t = null;
 }
 {
     (
+       // The whole glob is escaped
+        LOOKAHEAD(EscapedSymbolicNameString() ("," | (<ON> <DBMS> (<TO> | <FROM>) SymbolicNameOrStringParameterList() <EOF>)))
+            t=EscapedSymbolicNameString() { globString = t.image; }
+
+        // The first part of the glob is escaped. The escaped part must be followed by a dot.
+        | LOOKAHEAD(EscapedSymbolicNameString() <DOT>)
+            t=EscapedSymbolicNameString() { globString = t.image; }
+            nextGlob=GlobRecursive()  { globString += nextGlob; }
+
+        // The glob starts with an unescaped part
+        | globString=GlobRecursive()
+    )
+    {
+        return globString;
+    }
+}
+
+String GlobRecursive() :
+{
+    String globString = "";
+    String nextGlob = "";
+}
+{
+    (
+        // The last part of the glob => stop recursion
         LOOKAHEAD(GlobPart() ("," | (<ON> <DBMS> (<TO> | <FROM>) SymbolicNameOrStringParameterList() <EOF>))) globString=GlobPart()
-        | globString=GlobPart() nextGlob=Glob() { globString += nextGlob; }
+
+        // The glob consist of multiple parts => continue recursion
+        | globString=GlobPart() nextGlob=GlobRecursive() { globString += nextGlob; }
     )
     {
         return globString;
@@ -5205,14 +5233,19 @@ String Glob() :
 String GlobPart() :
 {
     String globPartString = null;
-    Token glob = null;
+    Token globPart = null;
 }
 {
     (
-        <QUESTION> { globPartString = "?"; }
+        // Unless the escaped part is the whole glob or the first part of the glob (both which are covered in Glob()),
+        // it must be preceded by a dot and either be followed by a dot or be the last part of the glob.
+        LOOKAHEAD(<DOT> EscapedSymbolicNameString() (<DOT> | "," | (<ON> <DBMS> (<TO> | <FROM>) SymbolicNameOrStringParameterList() <EOF>)))
+            <DOT> globPart=EscapedSymbolicNameString() { globPartString = "." + globPart.image; }
+
+        | <QUESTION> { globPartString = "?"; }
         | <TIMES> { globPartString = "*"; }
         | <DOT> { globPartString = "."; }
-        | glob = SymbolicNameString() { globPartString = glob.image; }
+        | globPart = UnescapedSymbolicNameString() { globPartString = globPart.image; }
     )
     {
         return globPartString;
@@ -5287,8 +5320,34 @@ Token SymbolicNameString() :
 }
 {
     (
+        t=EscapedSymbolicNameString()
+        | t=UnescapedSymbolicNameString()
+    )
+    {
+        return t;
+    }
+}
+
+Token EscapedSymbolicNameString() :
+{
+    Token t;
+}
+{
+    (
+       t=<ESCAPED_SYMBOLIC_NAME>
+    )
+    {
+        return t;
+    }
+}
+
+Token UnescapedSymbolicNameString() :
+{
+    Token t;
+}
+{
+    (
         t=<IDENTIFIER>
-        | t=<ESCAPED_SYMBOLIC_NAME>
 
         //list of allowed keywords
         | t=<ACCESS>
