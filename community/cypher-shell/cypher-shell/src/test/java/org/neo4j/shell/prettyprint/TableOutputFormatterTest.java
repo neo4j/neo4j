@@ -57,6 +57,7 @@ import org.neo4j.driver.types.Relationship;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.ListBoltResult;
+import org.neo4j.shell.test.LocaleDependentTestBase;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -71,7 +72,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
 
 @SuppressWarnings( "ArraysAsListWithZeroOrOneArgument" )
-class TableOutputFormatterTest
+class TableOutputFormatterTest extends LocaleDependentTestBase
 {
     private final PrettyPrinter verbosePrinter = new PrettyPrinter( new PrettyConfig( Format.VERBOSE, true, 100 ) );
 
