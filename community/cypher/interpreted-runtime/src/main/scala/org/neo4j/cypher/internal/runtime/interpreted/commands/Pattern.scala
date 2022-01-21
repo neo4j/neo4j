@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.Map
-import scala.collection.Seq
 
 trait Pattern extends AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]

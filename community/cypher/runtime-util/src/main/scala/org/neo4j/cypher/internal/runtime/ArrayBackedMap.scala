@@ -76,8 +76,7 @@ class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int], nullValue: V = null.asIns
    * @note This class is not optimized for this operation, so this implementation is not particularly efficient.
    *       (Avoid using it if possible)
    */
-  override def +[B1 >: V](kv: (K, B1)): Map[K, B1] = {
-    val (key, value) = kv
+  override def updated[B1 >: V](key: K, value: B1): Map[K, B1] = {
     val index = keyToIndexMap.get(key)
     index match {
       //key already existed in map, copy over values and create new map
@@ -104,13 +103,13 @@ class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int], nullValue: V = null.asIns
    * @note This class is not optimized for this operation, so this implementation is not particularly efficient.
    *       (Avoid using it if possible)
    */
-  override def -(key: K): Map[K, V] = {
+  override def removed(key: K): Map[K, V] = {
     val index = keyToIndexMap.get(key)
     index match {
       case Some(indexToRemove) =>
         // Create a new headerToIndex map without the key to be removed
         // Note: We need to update the indexes of the new headers map to match the smaller array
-        val newHeadersMap = (keyToIndexMap - key).mapValues(i => if (i >= indexToRemove) i - 1 else i)
+        val newHeadersMap = (keyToIndexMap - key).view.mapValues(i => if (i >= indexToRemove) i - 1 else i).toMap
 
         // Create a new array by first filtering out the index to be removed
         val newArray = valueArray.indices.filterNot(_ == indexToRemove).map(valueArray).toArray

@@ -50,7 +50,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * @param f the graph creation
    * @return the graph, with entities that are valid in the new transaction
    */
-  def given[T <: AnyRef](f: => T): T = {
+  def `given`[T <: AnyRef](f: => T): T = {
     givenWithTransactionType(f, runtimeTestSupport.getTransactionType)
   }
 
@@ -77,7 +77,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    *
    * @param f the graph creation
    */
-  def given(f: => Unit): Unit = {
+  def `given`(f: => Unit): Unit = {
     givenWithTransactionType(unitF = f, runtimeTestSupport.getTransactionType)
   }
 
@@ -365,7 +365,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
         rels += a.createRelationshipTo(b, rType)
       }
     }
-    (nodes, rels)
+    (nodes, rels.toSeq)
   }
 
   def starGraph(ringSize: Int, labelCenter: String, labelRing: String): (Seq[Node], Seq[Relationship]) = {
@@ -381,7 +381,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
       val a = ring(i)
       rels += a.createRelationshipTo(center, rType)
     }
-    (ring :+ center, rels)
+    (ring :+ center, rels.toSeq)
   }
 
   /**
@@ -416,7 +416,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     }
     nodes += globalCenter
     recurse(depth, globalCenter)
-    (nodes, rels, globalCenter)
+    (nodes.toSeq, rels.toSeq, globalCenter)
   }
 
   /**

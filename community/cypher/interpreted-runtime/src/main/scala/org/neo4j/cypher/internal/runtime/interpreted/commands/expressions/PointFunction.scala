@@ -32,9 +32,9 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
 
   override def rewrite(f: Expression => Expression): Expression = f(PointFunction(data.rewrite(f)))
 
-  override def arguments: Seq[Expression] = data.arguments
+  override def arguments: collection.Seq[Expression] = data.arguments
 
-  override def children: Seq[AstNode[_]] = Seq(data)
+  override def children: collection.Seq[AstNode[_]] = Seq(data)
 
   override def toString: String = "Point(" + data + ")"
 }

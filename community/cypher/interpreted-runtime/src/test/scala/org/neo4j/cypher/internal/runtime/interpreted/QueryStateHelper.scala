@@ -142,7 +142,7 @@ object QueryStateHelper extends MockitoSugar {
     override def trace(resource: AutoCloseablePlus): Unit = ()
     override def untrace(resource: AutoCloseablePlus): Unit = ()
     override def close(resource: AutoCloseablePlus): Unit = _closedResources += resource
-    def closedResources: Seq[AutoCloseablePlus] = _closedResources
+    def closedResources: Seq[AutoCloseablePlus] = _closedResources.toSeq
   }
 
   def trackClosedMonitor = new TrackClosedMonitor

@@ -322,7 +322,7 @@ case class IsNull(test: IntermediateRepresentation) extends IntermediateRepresen
  * A block is a sequence of operations where the block evaluates to the last expression
  * @param ops the operations to perform in the block
  */
-case class Block(ops: Seq[IntermediateRepresentation]) extends IntermediateRepresentation {
+case class Block(ops: collection.Seq[IntermediateRepresentation]) extends IntermediateRepresentation {
   override def typeReference: TypeReference = ops.last.typeReference
 }
 
@@ -579,7 +579,7 @@ case class ExtendClass(name: String,
                        overrides: TypeReference,
                        parameters: Seq[Parameter],
                        methods: Seq[MethodDeclaration],
-                       fields: Seq[Field])
+                       fields: collection.Seq[Field])
 /**
  * Defines a method
  *
@@ -608,13 +608,13 @@ case class Parameter(typ: codegen.TypeReference, name: String) {
 case class ClassDeclaration[T](packageName: String,
                             className: String,
                             extendsClass: Option[codegen.TypeReference],
-                            implementsInterfaces: Seq[codegen.TypeReference],
-                            constructorParameters: Seq[Parameter],
+                            implementsInterfaces: collection.Seq[codegen.TypeReference],
+                            constructorParameters: collection.Seq[Parameter],
                             initializationCode: IntermediateRepresentation,
-                            genFields: () => Seq[Field],
+                            genFields: () => collection.Seq[Field],
                             methods: Seq[MethodDeclaration]) {
 
-  def fields: Seq[Field] = genFields()
+  def fields: collection.Seq[Field] = genFields()
 }
 
 case class MethodDeclaration(methodName: String,
@@ -1004,6 +1004,12 @@ object IntermediateRepresentation {
     NotEq(lhs, rhs)
 
   def block(ops: IntermediateRepresentation*): IntermediateRepresentation = {
+    if (ops.isEmpty) noop()
+    else if (ops.length == 1) ops.head
+    else Block(ops)
+  }
+
+  def block(ops: collection.Seq[IntermediateRepresentation]): IntermediateRepresentation = {
     if (ops.isEmpty) noop()
     else if (ops.length == 1) ops.head
     else Block(ops)

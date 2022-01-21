@@ -61,7 +61,7 @@ trait ListSupport {
     case x: MapValue => VirtualValues.list(x) // TODO: This is slightly peculiar. Excercise this in tests to clarify behavior
   }
 
-  implicit class RichSeq[T](inner: Seq[T]) {
+  implicit class RichSeq[T](inner: collection.Seq[T]) {
 
     def foldMap[A](acc: A)(f: (A, T) => (A, T)): (A, Seq[T]) = {
       val builder = Seq.newBuilder[T]

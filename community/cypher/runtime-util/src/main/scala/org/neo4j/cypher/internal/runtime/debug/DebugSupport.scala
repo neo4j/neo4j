@@ -70,7 +70,7 @@ object DebugSupport {
 
   /** TOOLING **/
 
-  def logPipelines(rows: => Seq[String]): Unit = {
+  def logPipelines(rows: => collection.Seq[String]): Unit = {
     if (DEBUG_PIPELINES) {
       for (row <- rows) {
         print(s"       || $row\n")

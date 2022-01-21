@@ -29,7 +29,7 @@ trait WritableRow extends CachedPropertiesRow {
   def setLongAt(offset: Int, value: Long): Unit
   def setRefAt(offset: Int, value: AnyValue): Unit
 
-  def set(newEntries: Seq[(String, AnyValue)]): Unit
+  def set(newEntries: collection.Seq[(String, AnyValue)]): Unit
   def set(key: String, value: AnyValue): Unit
   def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue): Unit
   def set(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): Unit

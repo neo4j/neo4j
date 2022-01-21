@@ -126,7 +126,7 @@ object CodeGeneration {
     clazz.asInstanceOf[Class[T]]
   }
 
-  private def setConstants(clazz: Class[_], fields: Seq[Field]): Unit = {
+  private def setConstants(clazz: Class[_], fields: collection.Seq[Field]): Unit = {
     if (fields.isEmpty) {
       return
     }
@@ -158,11 +158,11 @@ object CodeGeneration {
   }
 
   private def generateConstructor(clazz: codegen.ClassGenerator,
-                                  fields: Seq[Field],
-                                  params: Seq[Parameter],
+                                  fields: collection.Seq[Field],
+                                  params: collection.Seq[Parameter],
                                   initializationCode: codegen.CodeBlock => codegen.Expression,
                                   parent: Option[TypeReference]): Unit = {
-    beginBlock(clazz.generateConstructor(params.map(_.asCodeGen): _*)) { block =>
+    beginBlock(clazz.generateConstructor(params.map(_.asCodeGen).toSeq: _*)) { block =>
       block.expression(invokeSuper(parent.getOrElse(OBJECT)))
       fields.distinct.foreach {
         case InstanceField(typ, name, initializer) =>
@@ -443,7 +443,7 @@ object CodeGeneration {
   }
 
   private def compileClassDeclaration(c: ClassDeclaration[_], generator: CodeGenerator): codegen.ClassHandle = {
-    val handle = beginBlock(generator.generateClass(c.extendsClass.getOrElse(codegen.TypeReference.OBJECT), c.packageName, c.className, c.implementsInterfaces: _*)) { clazz: codegen.ClassGenerator =>
+    val handle = beginBlock(generator.generateClass(c.extendsClass.getOrElse(codegen.TypeReference.OBJECT), c.packageName, c.className, c.implementsInterfaces.toSeq: _*)) { clazz: codegen.ClassGenerator =>
       generateConstructor(clazz,
                           c.fields,
                           c.constructorParameters,

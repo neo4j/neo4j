@@ -130,13 +130,13 @@ class CompositeValueIndexCursorTest extends CypherFunSuite {
      stub
   }
 
-  private def asList(cursor: NodeValueIndexCursor): Seq[Int] = {
+  private def asList(cursor: NodeValueIndexCursor): List[Int] = {
     val values = ArrayBuffer.empty[Int]
     while (cursor.next()) {
       values.append(cursor.propertyValue(0).asObject().asInstanceOf[Int])
     }
     values
-  }
+  }.toList
 
   private def randomCursors(indexOrder: IndexOrder = IndexOrderNone) = {
     val randomArray = new Array[NodeValueIndexCursor](Random.nextInt(1000))

@@ -49,15 +49,13 @@ import org.neo4j.values.storable.IntValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values
-import org.scalatestplus.mockito.MockitoSugar
 
 import java.util.UUID
 
 class ProcedureCallPipeTest
   extends CypherFunSuite
   with PipeTestSupport
-  with ImplicitDummyPos
-  with MockitoSugar {
+  with ImplicitDummyPos {
 
   private val ID = 42
   private val procedureName: QualifiedName = QualifiedName(List.empty, "foo")

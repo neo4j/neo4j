@@ -1167,7 +1167,7 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
 
   override def providedLanguageFunctions: Seq[FunctionInformation] = {
     val dependencyResolver = transactionalContext.graph.getDependencyResolver
-    dependencyResolver.resolveDependency(classOf[QueryExecutionEngine]).getProvidedLanguageFunctions.asScala
+    dependencyResolver.resolveDependency(classOf[QueryExecutionEngine]).getProvidedLanguageFunctions.asScala.toSeq
   }
 
   override def contextWithNewTransaction(): TransactionBoundQueryContext = {

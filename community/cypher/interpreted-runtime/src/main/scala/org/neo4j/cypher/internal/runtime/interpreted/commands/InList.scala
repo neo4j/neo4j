@@ -28,8 +28,6 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 
-import scala.collection.Seq
-
 /**
  * These classes solve List Predicates.
  */
@@ -65,7 +63,7 @@ abstract class InList(collection: Expression,
 
   override def children: Seq[Expression] = Seq(collection, predicate)
 
-  def arguments: scala.Seq[Expression] = Seq(collection)
+  def arguments: Seq[Expression] = Seq(collection)
 
 }
 

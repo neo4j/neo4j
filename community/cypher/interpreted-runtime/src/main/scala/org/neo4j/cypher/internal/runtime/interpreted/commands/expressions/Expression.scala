@@ -39,10 +39,10 @@ abstract class Expression extends AstNode[Expression] {
 
 
   // Expressions that do not get anything in their context from this expression.
-  def arguments: Seq[Expression]
+  def arguments: collection.Seq[Expression]
 
   // Any expressions that this expression builds on
-  def children: Seq[AstNode[_]]
+  def children: collection.Seq[AstNode[_]]
 
   def containsAggregate: Boolean = exists(_.isInstanceOf[AggregationExpression])
 

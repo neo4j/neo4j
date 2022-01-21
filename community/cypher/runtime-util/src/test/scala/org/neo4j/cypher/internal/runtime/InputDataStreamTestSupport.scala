@@ -101,7 +101,7 @@ class InputValues() {
   }
 
   def flatten: IndexedSeq[Array[Any]] =
-    batches.flatten
+    batches.flatten.toIndexedSeq
 
   def stream(): BufferInputStream = new BufferInputStream(batches.map(_.map(row => row.map(ValueUtils.asAnyValue))))
 }

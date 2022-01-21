@@ -111,7 +111,7 @@ object TestSubscriber {
     }
 
     override def onRecordCompleted(): Unit = {
-      records += current
+      records += current.toSeq
     }
 
     override def onError(throwable: Throwable): Unit = {}
@@ -123,11 +123,11 @@ object TestSubscriber {
 
     override def isCompleted: Boolean = done
 
-    override def lastSeen: Seq[AnyValue] = current
+    override def lastSeen: Seq[AnyValue] = current.toSeq
 
     override def numberOfSeenResults: Int = numberOfSeenRecords
 
-    override def allSeen: Seq[Seq[AnyValue]] = records
+    override def allSeen: Seq[Seq[AnyValue]] = records.toSeq
 
     override def queryStatistics: graphdb.QueryStatistics = statistics
   }

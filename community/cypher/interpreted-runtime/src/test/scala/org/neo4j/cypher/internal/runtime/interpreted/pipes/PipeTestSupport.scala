@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.scalatestplus.mockito.MockitoSugar
 
-trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
+trait PipeTestSupport {
+  self: CypherFunSuite =>
 
   val query: QueryContext = mock[QueryContext]
 

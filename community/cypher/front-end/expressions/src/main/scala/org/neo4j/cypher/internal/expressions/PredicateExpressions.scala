@@ -30,7 +30,7 @@ case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
 
 object Ands {
 
-  def create(exprs: Seq[Expression]): Expression = {
+  def create(exprs: collection.Seq[Expression]): Expression = {
     val size = exprs.size
     if(size == 0)
       True()(InputPosition.NONE)

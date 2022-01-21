@@ -145,12 +145,12 @@ import org.neo4j.values.storable.Values.intValue
 case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends ExpressionConverter {
 
   override def toCommandProjection(id: Id, projections: Map[String, Expression], self: ExpressionConverters): Option[CommandProjection] = {
-    val projected = for ((k,Some(v)) <- projections.mapValues(e => toCommandExpression(id, e, self))) yield (k,v)
+    val projected = for ((k,Some(v)) <- projections.view.mapValues(e => toCommandExpression(id, e, self)).toMap) yield (k,v)
     if (projected.size < projections.size) None else Some(InterpretedCommandProjection(projected))
   }
 
 
-  override def toGroupingExpression(id: Id, groupings: Map[String, Expression], orderToLeverage: Seq[Expression], self: ExpressionConverters): Option[GroupingExpression] = {
+  override def toGroupingExpression(id: Id, groupings: Map[String, Expression], orderToLeverage: collection.Seq[Expression], self: ExpressionConverters): Option[GroupingExpression] = {
     throw new IllegalStateException("CommunityExpressionConverter cannot create grouping expressions")
   }
 

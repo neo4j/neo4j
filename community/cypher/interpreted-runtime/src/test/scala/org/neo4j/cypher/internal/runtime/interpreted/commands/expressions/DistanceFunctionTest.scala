@@ -38,7 +38,7 @@ class DistanceFunctionTest extends CypherFunSuite {
   implicit def javaToScalaPair(pair: Pair[PointValue, PointValue]): (PointValue, PointValue) = (pair.first(), pair.other())
 
   def boundingBox(center: PointValue, distance: Double): Seq[(PointValue, PointValue)] =
-    center.getCoordinateReferenceSystem.getCalculator.boundingBox(center, distance).asScala.map(pair => (pair.first(), pair.other()))
+    center.getCoordinateReferenceSystem.getCalculator.boundingBox(center, distance).asScala.map(pair => (pair.first(), pair.other())).toSeq
 
   def boundingBoxLengthOne(center: PointValue, distance: Double): (PointValue, PointValue) = {
     val boxes = boundingBox(center, distance)

@@ -31,9 +31,9 @@ case class WithinBBoxFunction(point: Expression, lowerLeft: Expression, upperRig
 
   override def rewrite(f: Expression => Expression): Expression = f(WithinBBoxFunction(point, lowerLeft, upperRight))
 
-  override def arguments: Seq[Expression] = point.arguments ++ lowerLeft.arguments ++ upperRight.arguments
+  override def arguments: collection.Seq[Expression] = point.arguments ++ lowerLeft.arguments ++ upperRight.arguments
 
-  override def children: Seq[AstNode[_]] = Seq(point, lowerLeft, upperRight)
+  override def children: collection.Seq[AstNode[_]] = Seq(point, lowerLeft, upperRight)
 
   override def toString: String = s"WithinBBox($point, $lowerLeft, $upperRight)"
 }

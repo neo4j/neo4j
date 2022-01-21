@@ -58,7 +58,7 @@ import org.neo4j.graphdb.Direction
 trait ExpressionConverter {
   def toCommandExpression(id: Id, expression: Expression, self: ExpressionConverters): Option[commands.expressions.Expression]
   def toCommandProjection(id: Id, projections: Map[String, Expression], self: ExpressionConverters): Option[CommandProjection]
-  def toGroupingExpression(id: Id, groupings: Map[String, Expression], orderToLeverage: Seq[Expression], self: ExpressionConverters): Option[GroupingExpression]
+  def toGroupingExpression(id: Id, groupings: Map[String, Expression], orderToLeverage: collection.Seq[Expression], self: ExpressionConverters): Option[GroupingExpression]
 }
 
 trait ExpressionConversionLogger {

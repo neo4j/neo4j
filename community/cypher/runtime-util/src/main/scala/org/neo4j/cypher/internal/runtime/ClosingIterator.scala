@@ -207,7 +207,7 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
           counter += 1
         }
         buffer
-      }
+      }.toSeq
 
       override protected[this] def closeMore(): Unit = self.close()
     }

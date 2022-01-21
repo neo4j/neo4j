@@ -54,16 +54,16 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
   def registerQueryIndex(indexType: IndexType, label: LabelToken, property: IndexedProperty): Int =
     registerQueryIndex(indexType, label, Seq(property))
 
-  def registerQueryIndex(indexType: IndexType, label: LabelToken, properties: Seq[IndexedProperty]): Int =
+  def registerQueryIndex(indexType: IndexType, label: LabelToken, properties: collection.Seq[IndexedProperty]): Int =
     registerQueryIndex(indexType, label.nameId, properties)
 
   def registerQueryIndex(indexType: IndexType, typeToken: RelationshipTypeToken, property: IndexedProperty): Int =
     registerQueryIndex(indexType, typeToken, Seq(property))
 
-  def registerQueryIndex(indexType: IndexType, relationshipTypeToken: RelationshipTypeToken, properties: Seq[IndexedProperty]): Int =
+  def registerQueryIndex(indexType: IndexType, relationshipTypeToken: RelationshipTypeToken, properties: collection.Seq[IndexedProperty]): Int =
     registerQueryIndex(indexType, relationshipTypeToken.nameId, properties)
 
-  private def registerQueryIndex(indexType: IndexType, tokenNameId: NameId, properties: Seq[IndexedProperty]): Int = {
+  private def registerQueryIndex(indexType: IndexType, tokenNameId: NameId, properties: collection.Seq[IndexedProperty]): Int = {
     val reference = InternalIndexReference(
       tokenNameId,
       properties.map(_.propertyKeyToken.nameId.id),
@@ -84,12 +84,12 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
       indexReferences.map {
         case InternalIndexReference(LabelId(token), properties, indexType) =>
           schemaRead.indexForSchemaAndIndexTypeNonTransactional(
-            SchemaDescriptors.forLabel(token, properties: _*),
+            SchemaDescriptors.forLabel(token, properties.toSeq: _*),
             indexType)
 
         case InternalIndexReference(RelTypeId(token), properties, indexType) =>
           schemaRead.indexForSchemaAndIndexTypeNonTransactional(
-            SchemaDescriptors.forRelType(token, properties: _*),
+            SchemaDescriptors.forRelType(token, properties.toSeq: _*),
             indexType)
 
         case _ => throw new IllegalStateException()
@@ -108,7 +108,7 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
     QueryIndexes(indexes, labelTokenIndex, typeTokenIndex)
   }
 
-  private case class InternalIndexReference(token: NameId, properties: Seq[Int], indexType: internal.schema.IndexType)
+  private case class InternalIndexReference(token: NameId, properties: collection.Seq[Int], indexType: internal.schema.IndexType)
   private case class InternalTokenReference(token: NameId)
 }
 

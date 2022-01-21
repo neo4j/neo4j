@@ -78,7 +78,7 @@ trait CypherRow extends ReadWriteRow with Measurable {
   def copyWith(key: String, value: AnyValue): CypherRow
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): CypherRow
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): CypherRow
-  def copyWith(newEntries: Seq[(String, AnyValue)]): CypherRow
+  def copyWith(newEntries: collection.Seq[(String, AnyValue)]): CypherRow
 
   /** Create a copy of this row, with all values transformed by the given function (including cached values)  */
   def copyMapped(func: AnyValue => AnyValue): CypherRow
@@ -147,7 +147,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
     case _ => fail()
   }
 
-  override def set(newEntries: Seq[(String, AnyValue)]): Unit =
+  override def set(newEntries: collection.Seq[(String, AnyValue)]): Unit =
     m ++= newEntries
 
   // This may seem silly but it has measurable impact in tight loops
@@ -189,7 +189,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
     cloneFromMap(newMap)
   }
 
-  override def copyWith(newEntries: Seq[(String, AnyValue)]): CypherRow = {
+  override def copyWith(newEntries: collection.Seq[(String, AnyValue)]): CypherRow = {
     cloneFromMap(m.clone() ++ newEntries)
   }
 

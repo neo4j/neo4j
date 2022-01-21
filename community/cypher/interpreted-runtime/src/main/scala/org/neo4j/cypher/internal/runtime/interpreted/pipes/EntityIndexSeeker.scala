@@ -84,7 +84,7 @@ trait EntityIndexSeeker {
     indexMode match {
       case _: ExactSeek |
            _: SeekByRange =>
-        val indexQueries: Seq[Seq[PropertyIndexQuery]] = computeIndexQueries(state, baseContext)
+        val indexQueries: collection.Seq[Seq[PropertyIndexQuery]] = computeIndexQueries(state, baseContext)
         if (indexQueries.size == 1) {
           state.query.nodeIndexSeek(index, needsValues, indexOrder, indexQueries.head)
         } else {
@@ -105,7 +105,7 @@ trait EntityIndexSeeker {
                                       needsValues: Boolean,
                                       indexOrder: IndexOrder,
                                       baseContext: CypherRow): RelationshipValueIndexCursor = {
-    val indexQueries: Seq[Seq[PropertyIndexQuery]] = computeIndexQueries(state, baseContext)
+    val indexQueries: collection.Seq[Seq[PropertyIndexQuery]] = computeIndexQueries(state, baseContext)
     if (indexQueries.size == 1) {
       state.query.relationshipIndexSeek(index, needsValues, indexOrder, indexQueries.head)
     } else {
@@ -129,7 +129,7 @@ trait EntityIndexSeeker {
 
   private val BY_VALUE: MinMaxOrdering[Value] = MinMaxOrdering(Ordering.comparatorToOrdering(Values.COMPARATOR))
 
-  def computeIndexQueries(state: QueryState, row: ReadableRow): Seq[Seq[PropertyIndexQuery]] =
+  def computeIndexQueries(state: QueryState, row: ReadableRow): collection.Seq[Seq[PropertyIndexQuery]] =
     valueExpr match {
 
       // Index range seek over range of values
@@ -166,7 +166,7 @@ trait EntityIndexSeeker {
         computeExactQueries(state, row)
     }
 
-  private def computeRangeQueries(state: QueryState, row: ReadableRow, rangeWrapper: Expression, propertyId: Int): Seq[PropertyIndexQuery] = {
+  private def computeRangeQueries(state: QueryState, row: ReadableRow, rangeWrapper: Expression, propertyId: Int): collection.Seq[PropertyIndexQuery] = {
     rangeWrapper match {
       case PrefixSeekRangeExpression(range) =>
         val expr = range.prefix
@@ -239,7 +239,7 @@ trait EntityIndexSeeker {
     }
   }
 
-  protected def computeExactQueries(state: QueryState, row: ReadableRow): Seq[Seq[PropertyIndexQuery.ExactPredicate]] =
+  protected def computeExactQueries(state: QueryState, row: ReadableRow): collection.Seq[Seq[PropertyIndexQuery.ExactPredicate]] =
     valueExpr match {
       // Index exact value seek on single value
       case SingleQueryExpression(expr) =>
@@ -269,7 +269,7 @@ trait EntityIndexSeeker {
         checkOnlyWhenAssertionsAreEnabled(exprs.lengthCompare(propertyIds.length) == 0)
 
         // indexQueries = [[1], ["a", "b"], [3.0]]
-        val indexQueries: Seq[Seq[PropertyIndexQuery.ExactPredicate]] = exprs.zip(propertyIds).map {
+        val indexQueries: Seq[collection.Seq[PropertyIndexQuery.ExactPredicate]] = exprs.zip(propertyIds).map {
           case (expr, propId) =>
             computeCompositeQueries(state, row)(expr, propId).flatMap {
               case e: PropertyIndexQuery.ExactPredicate => Some(e)
@@ -281,7 +281,7 @@ trait EntityIndexSeeker {
         combine(indexQueries)
     }
 
-  private def computeCompositeQueries(state: QueryState, row: ReadableRow)(queryExpression: QueryExpression[Expression], propertyId: Int): Seq[PropertyIndexQuery] =
+  private def computeCompositeQueries(state: QueryState, row: ReadableRow)(queryExpression: QueryExpression[Expression], propertyId: Int): collection.Seq[PropertyIndexQuery] =
     queryExpression match {
       case SingleQueryExpression(inner) =>
         Seq(PropertyIndexQuery.exact(propertyId, makeValueNeoSafe(inner(row, state))))

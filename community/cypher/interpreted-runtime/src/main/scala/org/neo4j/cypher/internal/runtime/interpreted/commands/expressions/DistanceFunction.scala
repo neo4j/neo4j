@@ -31,9 +31,9 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
   override def rewrite(f: Expression => Expression): Expression = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
 
-  override def arguments: Seq[Expression] = p1.arguments ++ p2.arguments
+  override def arguments: collection.Seq[Expression] = p1.arguments ++ p2.arguments
 
-  override def children: Seq[AstNode[_]] = Seq(p1, p2)
+  override def children: collection.Seq[AstNode[_]] = Seq(p1, p2)
 
   override def toString: String = "Distance(" + p1 + ", " + p2 + ")"
 }

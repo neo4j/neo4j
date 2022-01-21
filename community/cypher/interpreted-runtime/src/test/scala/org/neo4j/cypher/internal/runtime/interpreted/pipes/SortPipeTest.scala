@@ -28,11 +28,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEqu
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.intValue
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.collection.mutable
 
-class SortPipeTest extends CypherFunSuite with MockitoSugar {
+class SortPipeTest extends CypherFunSuite {
 
   test("empty input gives empty output") {
     val source = new FakePipe(List())

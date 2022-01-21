@@ -25,7 +25,7 @@ import org.neo4j.exceptions.CypherTypeException
 import scala.reflect.ClassTag
 
 trait AstNode[T] {
-  def children: Seq[AstNode[_]]
+  def children: collection.Seq[AstNode[_]]
 
   def rewrite(f: Expression => Expression): T
 

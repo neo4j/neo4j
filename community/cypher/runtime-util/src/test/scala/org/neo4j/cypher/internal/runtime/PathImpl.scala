@@ -78,7 +78,7 @@ case class PathImpl(pathEntities: Entity*)
 
   def length(): Int = relList.size
 
-  def iterator(): util.Iterator[Entity] = pathEntities.asJava.iterator()
+  override def iterator(): util.Iterator[Entity] = pathEntities.asJava.iterator()
 
   override def toString: String = Paths.defaultPathToString(this)
 
