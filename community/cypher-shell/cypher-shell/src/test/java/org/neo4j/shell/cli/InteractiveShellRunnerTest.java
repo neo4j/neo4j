@@ -117,6 +117,7 @@ class InteractiveShellRunnerTest
         when( connector.isConnected() ).thenReturn( true );
         when( connector.username() ).thenReturn( "myusername" );
         when( connector.getProtocolVersion() ).thenReturn( "" );
+        when( connector.driverUrl() ).thenReturn( "neo4j://localhost:7687" );
         userMessagesHandler = new UserMessagesHandler( connector );
         out = new ByteArrayOutputStream();
         when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( "mydb" );
@@ -437,7 +438,7 @@ class InteractiveShellRunnerTest
 
         // then
         verify( logger ).printIfVerbose( """
-                                                 Connected to Neo4j at @|BOLD null|@ as user @|BOLD myusername|@.
+                                                 Connected to Neo4j at @|BOLD neo4j://localhost:7687|@ as user @|BOLD myusername|@.
                                                  Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
                                                  Note that Cypher queries must end with a @|BOLD semicolon.|@""" );
         verify( logger ).printIfVerbose( "\nBye!" );
