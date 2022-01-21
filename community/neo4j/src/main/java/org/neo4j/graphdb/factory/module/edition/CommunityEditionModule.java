@@ -69,7 +69,9 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
+import org.neo4j.kernel.database.MapCachingDatabaseReferenceRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.SystemGraphDatabaseReferenceRepository;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
@@ -117,10 +119,10 @@ public class CommunityEditionModule extends StandaloneEditionModule
     protected final GlobalModule globalModule;
     protected final ServerIdentity identityModule;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
-    private final FabricServicesBootstrap fabricServicesBootstrap;
 
     protected DatabaseStateService databaseStateService;
     private ReadOnlyDatabases globalReadOnlyChecker;
+    private FabricServicesBootstrap fabricServicesBootstrap;
 
     public CommunityEditionModule( GlobalModule globalModule )
     {
@@ -157,7 +159,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
         globalAvailabilityGuard = globalModule.getGlobalAvailabilityGuard();
 
-        fabricServicesBootstrap = new FabricServicesBootstrap.Community( globalModule.getGlobalLife(), globalDependencies, globalModule.getLogService() );
     }
 
     @Override
@@ -174,7 +175,15 @@ public class CommunityEditionModule extends StandaloneEditionModule
                                                              globalModule.getTransactionEventListeners(), globalModule.getGlobalLife(),
                                                              globalModule.getLogService().getInternalLogProvider() );
 
-        var databaseIdCacheCleaner = new DatabaseReferenceCacheClearingListener( databaseManager.databaseIdRepository() );
+        var databaseReferenceRepo = new MapCachingDatabaseReferenceRepository(
+                new SystemGraphDatabaseReferenceRepository( databaseManager::getSystemDatabaseContext ) );
+
+        fabricServicesBootstrap = new FabricServicesBootstrap.Community( globalModule.getGlobalLife(),
+                                                                         globalModule.getGlobalDependencies(),
+                                                                         globalModule.getLogService(),
+                                                                         databaseManager, databaseReferenceRepo );
+
+        var databaseIdCacheCleaner = new DatabaseReferenceCacheClearingListener( databaseManager.databaseIdRepository(), databaseReferenceRepo );
         globalModule.getTransactionEventListeners().registerTransactionEventListener( SYSTEM_DATABASE_NAME, databaseIdCacheCleaner );
 
         return databaseManager;

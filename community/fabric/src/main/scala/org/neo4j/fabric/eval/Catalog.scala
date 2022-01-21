@@ -69,6 +69,8 @@ object Catalog {
     override def toString: String = s"graph alias $id" + name.map(n => s" ($n)").getOrElse("")
   }
 
+
+
   trait View extends Entry {
     val arity: Int
     val signature: Seq[Arg[_]]

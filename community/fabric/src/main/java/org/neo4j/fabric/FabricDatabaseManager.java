@@ -32,11 +32,11 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public abstract class FabricDatabaseManager
 {
-    private final DatabaseManager<DatabaseContext> databaseManager;
+    private final DatabaseManager<? extends DatabaseContext> databaseManager;
     private final DatabaseIdRepository databaseIdRepository;
     private final boolean multiGraphEverywhere;
 
-    public FabricDatabaseManager( FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager )
+    public FabricDatabaseManager( FabricConfig fabricConfig, DatabaseManager<? extends DatabaseContext> databaseManager )
     {
         this.databaseManager = databaseManager;
         this.databaseIdRepository = databaseManager.databaseIdRepository();
@@ -81,7 +81,7 @@ public abstract class FabricDatabaseManager
 
     public static class Community extends FabricDatabaseManager
     {
-        public Community( FabricConfig fabricConfig, DatabaseManager<DatabaseContext> databaseManager )
+        public Community( FabricConfig fabricConfig, DatabaseManager<? extends DatabaseContext> databaseManager )
         {
             super( fabricConfig, databaseManager );
         }

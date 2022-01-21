@@ -19,11 +19,12 @@
  */
 package org.neo4j.fabric.eval
 
-import org.neo4j.kernel.database.DatabaseIdRepository
+import org.neo4j.cypher.internal.administration.BaseDatabaseInfoMapper.RichOptional
+import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 
-import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.JavaConverters.asScalaSetConverter
 import scala.collection.SortedSet
 import scala.collection.immutable.SortedMap
@@ -52,21 +53,22 @@ object DatabaseLookup {
   implicit val databaseNameOrdering: Ordering[NormalizedDatabaseName] = Ordering.by(_.name)
   implicit val databaseIdOrdering: Ordering[NamedDatabaseId] = Ordering.by(_.name)
 
-  class Default(databaseIdRepository: DatabaseIdRepository) extends DatabaseLookup {
+  class Default(databaseRef: DatabaseReferenceRepository) extends DatabaseLookup {
 
     def databaseReferences: SortedMap[NormalizedDatabaseName,NamedDatabaseId] = {
-      val unsortedMap = databaseIdRepository.getAllDatabaseAliases.asScala
+      val unsortedMap = databaseRef.getInternalDatabaseReferences.asScala.map( ref => ref.alias -> ref.databaseId ).toMap
       SortedMap.empty[NormalizedDatabaseName,NamedDatabaseId] ++ unsortedMap
     }
 
     def databaseIds: SortedSet[NamedDatabaseId] = {
-      val unsortedSet = databaseIdRepository.getAllDatabaseIds.asScala
+      val unsortedSet = databaseRef.getInternalDatabaseReferences.asScala.map(_.databaseId)
       SortedSet.empty[NamedDatabaseId] ++ unsortedSet
     }
 
-    def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] = {
-      val maybeDatabaseId = databaseIdRepository.getByName(databaseName)
-      Option(maybeDatabaseId.get)
-    }
+    def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] =
+      databaseRef.getByName(databaseName).asScala match {
+        case Some( ref ) if ref.isInstanceOf[DatabaseReference.Internal] => Some(ref.asInstanceOf[DatabaseReference.Internal].databaseId)
+        case _ => None
+      }
   }
 }

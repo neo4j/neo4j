@@ -41,11 +41,12 @@ import org.neo4j.values.virtual.MapValue;
 
 public class FabricStatementLifecycles
 {
-    private final DatabaseManager<DatabaseContext> databaseManager;
+    private final DatabaseManager<? extends DatabaseContext> databaseManager;
     private final QueryExecutionMonitor dbmsMonitor;
     private final ExecutingQueryFactory executingQueryFactory;
 
-    public FabricStatementLifecycles( DatabaseManager<DatabaseContext> databaseManager, Monitors dbmsMonitors, Config config, SystemNanoClock systemNanoClock )
+    public FabricStatementLifecycles( DatabaseManager<? extends DatabaseContext> databaseManager,
+            Monitors dbmsMonitors, Config config, SystemNanoClock systemNanoClock )
     {
         this.databaseManager = databaseManager;
         this.dbmsMonitor = dbmsMonitors.newMonitor( QueryExecutionMonitor.class );

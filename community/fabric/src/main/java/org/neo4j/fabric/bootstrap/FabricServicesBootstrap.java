@@ -61,7 +61,7 @@ import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
-import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -87,12 +87,17 @@ public abstract class FabricServicesBootstrap
     private final ServiceBootstrapper serviceBootstrapper;
     private final Config config;
     private final AvailabilityGuard availabilityGuard;
+    protected final DatabaseManager<? extends DatabaseContext> databaseManager;
+    private final DatabaseReferenceRepository databaseReferenceRepo;
 
-    public FabricServicesBootstrap( LifeSupport lifeSupport, Dependencies dependencies, LogService logService, AbstractSecurityLog securityLog )
+    public FabricServicesBootstrap( LifeSupport lifeSupport, Dependencies dependencies, LogService logService, AbstractSecurityLog securityLog,
+            DatabaseManager<? extends DatabaseContext> databaseManager, DatabaseReferenceRepository databaseReferenceRepo )
     {
         this.dependencies = dependencies;
         this.logService = logService;
         this.securityLog = securityLog;
+        this.databaseManager = databaseManager;
+        this.databaseReferenceRepo = databaseReferenceRepo;
 
         serviceBootstrapper = new ServiceBootstrapper( lifeSupport, dependencies );
 
@@ -116,8 +121,6 @@ public abstract class FabricServicesBootstrap
     {
         LogProvider internalLogProvider = logService.getInternalLogProvider();
 
-        @SuppressWarnings( "unchecked" )
-        var databaseManager = (DatabaseManager<DatabaseContext>) resolve( DatabaseManager.class );
         var fabricDatabaseManager = register( createFabricDatabaseManager( fabricConfig ), FabricDatabaseManager.class );
 
         var jobScheduler = resolve( JobScheduler.class );
@@ -140,7 +143,7 @@ public abstract class FabricServicesBootstrap
         var cypherConfig = CypherConfiguration.fromConfig( config );
 
         Supplier<GlobalProcedures> proceduresSupplier = () -> resolve( GlobalProcedures.class );
-        var catalogManager = register( createCatalogManger( databaseManager.databaseIdRepository() ), CatalogManager.class );
+        var catalogManager = register( createCatalogManager( databaseReferenceRepo ), CatalogManager.class );
         var signatureResolver = new SignatureResolver( proceduresSupplier );
         var statementLifecycles = new FabricStatementLifecycles( databaseManager, monitors, config, systemNanoClock );
         var monitoredExecutor = jobScheduler.monitoredJobExecutor( CYPHER_CACHE );
@@ -158,9 +161,9 @@ public abstract class FabricServicesBootstrap
         register( new TransactionBookmarkManagerFactory( fabricDatabaseManager ), TransactionBookmarkManagerFactory.class );
     }
 
-    protected DatabaseLookup createDatabaseLookup( DatabaseIdRepository databaseIdRepository )
+    protected DatabaseLookup createDatabaseLookup( DatabaseReferenceRepository databaseReferenceRepository )
     {
-        return new DatabaseLookup.Default( databaseIdRepository );
+        return new DatabaseLookup.Default( databaseReferenceRepository );
     }
 
     public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider(
@@ -175,7 +178,6 @@ public abstract class FabricServicesBootstrap
 
         var transactionIdTracker = new TransactionIdTracker( managementService, monitors, clock );
 
-        var databaseManager = (DatabaseManager<DatabaseContext>) dependencies.resolveDependency( DatabaseManager.class );
         var databaseIdRepository = databaseManager.databaseIdRepository();
         var transactionBookmarkManagerFactory = dependencies.resolveDependency( TransactionBookmarkManagerFactory.class );
 
@@ -209,7 +211,7 @@ public abstract class FabricServicesBootstrap
 
     protected abstract FabricDatabaseManager createFabricDatabaseManager( FabricConfig fabricConfig );
 
-    protected abstract CatalogManager createCatalogManger( DatabaseIdRepository databaseIdRepository  );
+    protected abstract CatalogManager createCatalogManager( DatabaseReferenceRepository databaseReferenceRepo );
 
     protected abstract FabricDatabaseAccess createFabricDatabaseAccess();
 
@@ -219,23 +221,23 @@ public abstract class FabricServicesBootstrap
 
     public static class Community extends FabricServicesBootstrap
     {
-        public Community( LifeSupport lifeSupport, Dependencies dependencies, LogService logService )
+        public Community( LifeSupport lifeSupport, Dependencies dependencies, LogService logService,
+                DatabaseManager<? extends DatabaseContext> databaseManager, DatabaseReferenceRepository databaseReferenceRepo )
         {
-            super( lifeSupport, dependencies, logService, CommunitySecurityLog.NULL_LOG );
+            super( lifeSupport, dependencies, logService, CommunitySecurityLog.NULL_LOG, databaseManager, databaseReferenceRepo );
         }
 
         @Override
         protected FabricDatabaseManager createFabricDatabaseManager( FabricConfig fabricConfig )
         {
-            var databaseManager = (DatabaseManager<DatabaseContext>) resolve( DatabaseManager.class );
             return new FabricDatabaseManager.Community( fabricConfig, databaseManager );
         }
 
         @Override
-        protected CatalogManager createCatalogManger( DatabaseIdRepository databaseIdRepository )
+        protected CatalogManager createCatalogManager( DatabaseReferenceRepository databaseReferenceRepo )
         {
             var txEventListeners = resolve( GlobalTransactionEventListeners.class );
-            return new CommunityCatalogManager( createDatabaseLookup( databaseIdRepository ), txEventListeners );
+            return new CommunityCatalogManager( createDatabaseLookup( databaseReferenceRepo ), txEventListeners );
         }
 
         @Override

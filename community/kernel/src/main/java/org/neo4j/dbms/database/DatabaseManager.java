@@ -25,6 +25,7 @@ import java.util.SortedMap;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -80,6 +81,17 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
     default Optional<DB> getDatabaseContext( DatabaseId databaseId )
     {
         return databaseIdRepository().getById( databaseId ).flatMap( this::getDatabaseContext );
+    }
+
+    /**
+     * Returns the {@link DatabaseContext} for the system database, or throws if said context does not exist.
+     *
+     * @return the database context for the system database
+     */
+    default DB getSystemDatabaseContext()
+    {
+        return getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID )
+                .orElseThrow( () -> new DatabaseShutdownException( new DatabaseManagementException( "Unable to retrieve the system database!" ) ) );
     }
 
     /**

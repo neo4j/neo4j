@@ -92,12 +92,6 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
                         new SystemGraphDatabaseIdRepository( this::getSystemDatabaseContext ) ) );
     }
 
-    private DB getSystemDatabaseContext()
-    {
-        return getDatabaseContext( NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID )
-                .orElseThrow( () -> new DatabaseShutdownException( new DatabaseManagementException( "Unable to retrieve the system database!" ) ) );
-    }
-
     @Override
     public DatabaseIdRepository.Caching databaseIdRepository()
     {
