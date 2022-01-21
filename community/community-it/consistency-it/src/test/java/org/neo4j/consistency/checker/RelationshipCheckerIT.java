@@ -114,11 +114,15 @@ class RelationshipCheckerIT
         prepareContext();
         var relationshipChecker = new RelationshipChecker( context, new IntObjectHashMap<>() );
 
+        long initialPins = pageCacheTracer.pins();
+        long initialUnpins = pageCacheTracer.unpins();
+        long initialHits = pageCacheTracer.hits();
+
         relationshipChecker.check( LongRange.range( 0, relationshipId + 1 ), true, false );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 3 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 3 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 3 );
+        assertThat( pageCacheTracer.pins() - initialPins ).isEqualTo( 3 );
+        assertThat( pageCacheTracer.unpins() - initialUnpins ).isEqualTo( 3 );
+        assertThat( pageCacheTracer.hits() - initialHits ).isEqualTo( 3 );
     }
 
     private void prepareContext() throws Exception

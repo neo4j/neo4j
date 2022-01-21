@@ -183,6 +183,7 @@ import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.recovery.Recovery.context;
@@ -678,7 +679,7 @@ public class Database extends LifecycleAdapter
     private DatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
     {
         var factory = new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, tracers.getPageCacheTracer(), scheduler,
-                namedDatabaseId, memoryTracker, databaseHealth, cursorContextFactory );
+                namedDatabaseId, memoryTracker, databaseHealth, new CursorContextFactory( tracers.getPageCacheTracer(), EMPTY ) );
         return factory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies );
     }
 

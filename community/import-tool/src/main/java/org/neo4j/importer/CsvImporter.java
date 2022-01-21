@@ -38,6 +38,7 @@ import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
+import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
@@ -72,7 +73,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
 import static org.neo4j.internal.batchimport.input.Collectors.collect;
 import static org.neo4j.internal.batchimport.input.Collectors.silentBadCollector;
@@ -189,8 +189,7 @@ class CsvImporter implements Importer
                     importConfig,
                     new SimpleLogService( NullLogProvider.getInstance(), logProvider ),
                     stdOut,
-                    verbose,
-                    EMPTY,
+                    verbose, AdditionalInitialIds.EMPTY,
                     databaseConfig,
                     new PrintingImportLogicMonitor( stdOut, stdErr ),
                     jobScheduler,
@@ -427,7 +426,7 @@ class CsvImporter implements Importer
         private final Map<String, List<Path[]>> relationshipFiles = new HashMap<>();
         private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         private PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
-        private final CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        private CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
         private MemoryTracker memoryTracker = EmptyMemoryTracker.INSTANCE;
         private PrintStream stdOut = System.out;
         private PrintStream stdErr = System.err;
@@ -546,6 +545,7 @@ class CsvImporter implements Importer
         Builder withPageCacheTracer( PageCacheTracer pageCacheTracer )
         {
             this.pageCacheTracer = pageCacheTracer;
+            this.contextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
             return this;
         }
 

@@ -50,6 +50,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -81,6 +82,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_B
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -159,7 +161,7 @@ public class ConsistencyCheckServiceIntegrationTest
         {
             var result = consistencyCheckService()
                     .with( pageCache )
-                    .with( pageCacheTracer )
+                    .with( new CursorContextFactory( pageCacheTracer, EMPTY ) )
                     .runFullConsistencyCheck();
 
             assertFalse( result.isSuccessful() );

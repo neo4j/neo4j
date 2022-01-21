@@ -116,6 +116,12 @@ public class ConsistencyCheckService
         this.memoryTracker = memoryTracker;
     }
 
+    public ConsistencyCheckService with( CursorContextFactory contextFactory )
+    {
+        return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,
+                consistencyFlags, pageCacheTracer, contextFactory, memoryTracker );
+    }
+
     public ConsistencyCheckService with( Date timestamp )
     {
         return new ConsistencyCheckService( timestamp, layout, config, progressOutput, logProvider, fileSystem, pageCache, verbose, reportDir,

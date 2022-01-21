@@ -41,7 +41,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
@@ -116,7 +115,7 @@ class BatchInserterImplTest
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
         var databaseTracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         try ( var inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, databaseTracers, contextFactory ) )
         {
             for ( int i = 0; i < 10; i++ )

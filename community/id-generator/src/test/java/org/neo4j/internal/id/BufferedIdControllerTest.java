@@ -85,16 +85,16 @@ class BufferedIdControllerTest
             idGenerator.marker( NULL_CONTEXT ).markDeleted( 1L );
             idGenerator.clearCache( NULL_CONTEXT );
 
-            assertThat( pageCacheTracer.pins() ).isZero();
-            assertThat( pageCacheTracer.unpins() ).isZero();
-            assertThat( pageCacheTracer.hits() ).isZero();
+            long initialPins = pageCacheTracer.pins();
+            long initialUnpins = pageCacheTracer.unpins();
+            long initialHits = pageCacheTracer.hits();
 
             var controller = newController( contextFactory );
             controller.maintenance();
 
-            assertThat( pageCacheTracer.pins() ).isOne();
-            assertThat( pageCacheTracer.unpins() ).isOne();
-            assertThat( pageCacheTracer.hits() ).isOne();
+            assertThat( pageCacheTracer.pins() - initialPins ).isOne();
+            assertThat( pageCacheTracer.unpins() - initialUnpins ).isOne();
+            assertThat( pageCacheTracer.hits() - initialHits ).isOne();
         }
     }
 

@@ -140,15 +140,15 @@ class IdContextFactoryBuilderTest
             idGenerator.marker( NULL_CONTEXT ).markDeleted( 1 );
             idGeneratorFactory.clearCache( NULL_CONTEXT );
 
-            assertThat( cacheTracer.pins() ).isZero();
-            assertThat( cacheTracer.unpins() ).isZero();
-            assertThat( cacheTracer.hits() ).isZero();
+            long initialPins = cacheTracer.pins();
+            long initialUnpins = cacheTracer.unpins();
+            long initialHits = cacheTracer.hits();
 
             idController.maintenance();
 
-            assertThat( cacheTracer.pins() ).isGreaterThan( 0 );
-            assertThat( cacheTracer.unpins() ).isGreaterThan( 0 );
-            assertThat( cacheTracer.hits() ).isGreaterThan( 0 );
+            assertThat( cacheTracer.pins() - initialPins ).isGreaterThan( 0 );
+            assertThat( cacheTracer.unpins() - initialUnpins ).isGreaterThan( 0 );
+            assertThat( cacheTracer.hits() - initialHits ).isGreaterThan( 0 );
         }
     }
 }
