@@ -37,6 +37,7 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checker.EntityBasedMemoryLimiter;
 import org.neo4j.consistency.checker.RecordStorageConsistencyChecker;
+import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -73,6 +74,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -140,6 +142,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TO
 import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 
@@ -503,11 +506,27 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
+    public long optimalAvailableConsistencyCheckerMemory( FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache )
+    {
+        RecordDatabaseLayout databaseLayout = convert( layout );
+        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        RecordFormats recordFormats = selectForStore( databaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory );
+        var idGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
+        try ( NeoStores neoStores = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, NullLogProvider.getInstance(),
+                contextFactory, readOnly(), immutable.empty() ).openNeoStores( StoreType.NODE_LABEL, StoreType.NODE ) )
+        {
+            long highNodeId = neoStores.getNodeStore().getHighId();
+            return ByteArrayBitsManipulator.MAX_BYTES * highNodeId;
+        }
+    }
+
+    @Override
     public void consistencyCheck( FileSystemAbstraction fileSystem, DatabaseLayout layout, Config config, PageCache pageCache, IndexProviderMap indexProviders,
             Log log, ConsistencySummaryStatistics summary, int numberOfThreads, double memoryLimitLeewayFactor, OutputStream progressOutput, boolean verbose,
             ConsistencyFlags flags, CursorContextFactory contextFactory ) throws ConsistencyCheckIncompleteException
     {
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, RecoveryCleanupWorkCollector.ignore(), layout.getDatabaseName() );
+        IdGeneratorFactory idGeneratorFactory =
+                new DefaultIdGeneratorFactory( fileSystem, RecoveryCleanupWorkCollector.ignore(), layout.getDatabaseName() );
         try ( NeoStores neoStores = new StoreFactory( layout, config,
                 idGeneratorFactory, pageCache, fileSystem,
                 NullLogProvider.getInstance(), contextFactory, readOnly() ).openAllNeoStores() )
@@ -515,9 +534,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             neoStores.start( CursorContext.NULL_CONTEXT );
             ProgressMonitorFactory progressMonitorFactory =
                     progressOutput != null ? ProgressMonitorFactory.textual( progressOutput ) : ProgressMonitorFactory.NONE;
-            try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( fileSystem, RecordDatabaseLayout.convert( layout ), pageCache,
-                    neoStores, indexProviders, null, idGeneratorFactory, summary, progressMonitorFactory, config, numberOfThreads, log, verbose, flags,
-                    EntityBasedMemoryLimiter.defaultWithLeeway( memoryLimitLeewayFactor ), EmptyMemoryTracker.INSTANCE, contextFactory ) )
+            try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( fileSystem, RecordDatabaseLayout.convert( layout ),
+                    pageCache, neoStores, indexProviders, null, idGeneratorFactory, summary, progressMonitorFactory, config, numberOfThreads, log,
+                    verbose, flags, EntityBasedMemoryLimiter.defaultWithLeeway( memoryLimitLeewayFactor ),
+                    EmptyMemoryTracker.INSTANCE, contextFactory ) )
             {
                 checker.check();
             }

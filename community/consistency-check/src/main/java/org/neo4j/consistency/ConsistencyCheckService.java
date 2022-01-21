@@ -38,6 +38,7 @@ import org.neo4j.internal.logging.LoggingReporterFactoryInvocationHandler;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -52,11 +53,13 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MachineMemory;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
@@ -64,14 +67,18 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 
+import static java.lang.Long.max;
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.io.ByteUnit.bytesToString;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
+import static org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
@@ -200,9 +207,39 @@ public class ConsistencyCheckService
         var life = new LifeSupport();
         try
         {
+            Config config = this.config;
             PageCache pageCache = this.pageCache;
             if ( pageCache == null )
             {
+                // Now that there's no existing page cache we have the opportunity to change that setting for the benefit of a faster
+                // consistency check ahead of us. Ask the checker what the optimal amount of available off-heap memory would be
+                // and change the page cache memory setting a bit in that direction.
+                long availablePhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+                if ( availablePhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE )
+                {
+                    availablePhysicalMemory *= config.get( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor );
+                    long optimalOffHeapMemory = calculateOptimalOffHeapMemoryForChecker();
+                    // Check the configured page cache memory setting and potentially change it a bit to get closer to the
+                    // optimal amount of off-heap for the checker
+
+                    // [heap|pageCache|                        ]
+                    long heapMemory = Runtime.getRuntime().maxMemory();
+                    Long pageCacheMemory = config.get( GraphDatabaseSettings.pagecache_memory );
+                    pageCacheMemory = pageCacheMemory != null ? pageCacheMemory : defaultHeuristicPageCacheMemory( MachineMemory.DEFAULT );
+                    long availableOffHeapMemory = availablePhysicalMemory - heapMemory - pageCacheMemory;
+                    if ( availableOffHeapMemory < optimalOffHeapMemory )
+                    {
+                        // current: [heap|        pageCache      |          ]
+                        // optimal: [heap|pageCache|                        ]
+                        // Reduce the page cache memory setting, although not below 20% of what it was configured to
+                        long newPageCacheMemory = max( (long) (pageCacheMemory * 0.2D), availablePhysicalMemory - optimalOffHeapMemory - heapMemory );
+                        config = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.pagecache_memory, newPageCacheMemory ).build();
+                        logProvider.getLog( ConsistencyCheckService.class ).info(
+                                "%s setting was tweaked from %s down to %s for better overall performance of the consistency checker",
+                                GraphDatabaseSettings.pagecache_memory.name(), bytesToString( pageCacheMemory ), bytesToString( newPageCacheMemory ) );
+                    }
+                }
+
                 JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
                 life.add( onShutdown( jobScheduler::close ) );
                 ConfiguringPageCacheFactory pageCacheFactory =
@@ -276,6 +313,26 @@ public class ConsistencyCheckService
         finally
         {
             life.shutdown();
+        }
+    }
+
+    /**
+     * Starts a tiny page cache just to ask the store about rough number of entities in it. Based on that the storage can then decide
+     * what the optimal amount of available off-heap memory should be when running the consistency check.
+     */
+    private long calculateOptimalOffHeapMemoryForChecker() throws ConsistencyCheckIncompleteException
+    {
+        try ( JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+                PageCache tempPageCache = new ConfiguringPageCacheFactory( fileSystem,
+                        Config.defaults( GraphDatabaseSettings.pagecache_memory, mebiBytes( 8 ) ), PageCacheTracer.NULL, NullLog.getInstance(), jobScheduler,
+                        Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache() )
+        {
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( fileSystem, layout, tempPageCache ).get();
+            return storageEngineFactory.optimalAvailableConsistencyCheckerMemory( fileSystem, layout, config, tempPageCache );
+        }
+        catch ( Exception e )
+        {
+            throw new ConsistencyCheckIncompleteException( e );
         }
     }
 

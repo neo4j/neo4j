@@ -244,6 +244,14 @@ public interface StorageEngineFactory
             CursorContextFactory contextFactory );
 
     /**
+     * Calculates the optimal amount of memory that this consistency checker would want to have to perform optimally in terms of fitting
+     * off-heap caches while doing the check.
+     *
+     * @return the optimal amount of memory that should be available when running consistency checker for this provided db.
+     */
+    long optimalAvailableConsistencyCheckerMemory( FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache );
+
+    /**
      * Checks consistency of a store.
      *
      * @param fileSystem file system the store is on.
