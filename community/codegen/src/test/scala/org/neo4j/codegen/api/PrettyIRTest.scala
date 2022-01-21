@@ -46,18 +46,26 @@ import org.neo4j.codegen.api.IntermediateRepresentation.subtract
 import org.neo4j.codegen.api.IntermediateRepresentation.ternary
 import org.neo4j.codegen.api.IntermediateRepresentation.tryCatch
 import org.neo4j.codegen.api.IntermediateRepresentation.typeRefOf
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values
-import org.scalatest.FunSuite
-import org.scalatest.Matchers._
 
-class PrettyIRTest extends FunSuite {
+class PrettyIRTest extends CypherFunSuite {
+
   val indent: String = " "*PrettyIR.indentSize
 
   test("prettify empty block") {
-    PrettyIR.pretty(block()) shouldBe "{ }"
+    PrettyIR.pretty(block()) shouldBe empty
+  }
+
+  test("prettify block with single operation") {
+    val blockIr = block(Seq(
+      assign("a", add(constant(0), constant(7)))
+    ): _*)
+
+    PrettyIR.pretty(blockIr) shouldBe s"a = 0 + 7"
   }
 
   test("prettify block") {
@@ -154,15 +162,15 @@ class PrettyIRTest extends FunSuite {
   }
 
   test("if-condition") {
-    PrettyIR.pretty(condition(constant(true))(constant(false))) shouldBe "if (true) false"
+    PrettyIR.pretty(condition(load[Boolean]("condition"))(constant(false))) shouldBe "if (condition) false"
   }
 
   test("if-else-condition") {
-    PrettyIR.pretty(ifElse(constant(true))(constant(false))(constant(true))) shouldBe "if (true) false else true"
+    PrettyIR.pretty(ifElse(load[Boolean]("condition"))(constant(false))(constant(true))) shouldBe "if (condition) false else true"
   }
 
   test("if-else-block-condition") {
-    val condition = ifElse(constant(true))(
+    val condition = ifElse(load[Boolean]("condition"))(
       constant(0)
     )(
       block(Seq(
@@ -170,14 +178,14 @@ class PrettyIRTest extends FunSuite {
       assign("a", add(load[Int]("a"), constant(7)))
     ): _*))
     PrettyIR.pretty(condition) shouldBe
-      s"""if (true) 0 else {
+      s"""if (condition) 0 else {
          |${indent}a = 0 + 7
          |${indent}a = a + 7
          |}""".stripMargin
   }
 
   test("ternary") {
-    PrettyIR.pretty(ternary(constant(true), constant(false), constant(true))) shouldBe "true ? false : true"
+    PrettyIR.pretty(ternary(load[Boolean]("condition"), constant(false), constant(true))) shouldBe "condition ? false : true"
   }
 
   test("Loop without label") {
