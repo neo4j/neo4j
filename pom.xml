@@ -448,7 +448,8 @@
             <excludedGroups>
               ^((org.neo4j){1}|(org.neo4j.community){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.test){1})$
             </excludedGroups>
-            <excludedArtifacts>^((neo4j-browser))$</excludedArtifacts>
+            <!-- temporaily disabling netty-tcnative-classes whilst licence issue is corrected-->
+            <excludedArtifacts>^((neo4j-browser)|(netty-tcnative-classes))$</excludedArtifacts>
             <includedScopes>compile</includedScopes>
           </configuration>
           <executions>
@@ -1352,11 +1353,11 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.70.Final</version>
+        <version>4.1.73.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      
+
       <dependency>
         <groupId>org.glassfish.jersey.core</groupId>
         <artifactId>jersey-server</artifactId>
