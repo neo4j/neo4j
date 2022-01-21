@@ -155,7 +155,21 @@ Eclipse Public License v2.0
   ServiceLocator Default Implementation
 
 GNU General Public License, version 2 with the Classpath Exception
+  HK2 API module
+  HK2 Implementation Utilities
+  Jakarta Annotations API
+  jakarta.ws.rs-api
   Java Servlet API
+  javax.inject:1 as OSGi bundle
+  javax.ws.rs-api
+  jaxb-api
+  jersey-container-servlet
+  jersey-container-servlet-core
+  jersey-core-client
+  jersey-core-common
+  jersey-core-server
+  jersey-inject-hk2
+  ServiceLocator Default Implementation
 
 MIT License
   jersey-container-servlet
@@ -183,18 +197,51 @@ Eclipse Collections Main Library
   Eclipse Distribution License - v 1.0
   Eclipse Public License - v 1.0
 
+HK2 API module
+  Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
+
+HK2 Implementation Utilities
+  Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
+
+Jakarta Annotations API
+  Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
+
 Java Servlet API
   Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
+
+ServiceLocator Default Implementation
+  Eclipse Public License v2.0
   GNU General Public License, version 2 with the Classpath Exception
 
 fastinfoset
   Apache Software License, Version 2.0
   Eclipse Distribution License - v 1.0
 
+jakarta.ws.rs-api
+  Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
+
+javax.inject:1 as OSGi bundle
+  Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
+
+javax.ws.rs-api
+  Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
+
+jaxb-api
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
+
 jersey-container-servlet
   Apache Software License, Version 2.0
   Eclipse Distribution License - v 1.0
   Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
   MIT License
   Unlicense
 
@@ -202,6 +249,7 @@ jersey-container-servlet-core
   Apache Software License, Version 2.0
   Eclipse Distribution License - v 1.0
   Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
   MIT License
   Unlicense
 
@@ -209,22 +257,26 @@ jersey-core-client
   Apache Software License, Version 2.0
   Eclipse Distribution License - v 1.0
   Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
   MIT License
   Unlicense
 
 jersey-core-common
   Apache Software License, Version 2.0
   Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
   Unlicense
 
 jersey-core-server
   Apache Software License, Version 2.0
   Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
 
 jersey-inject-hk2
   Apache Software License, Version 2.0
   Eclipse Distribution License - v 1.0
   Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
   MIT License
   Unlicense
 

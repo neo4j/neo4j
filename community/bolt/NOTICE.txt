@@ -100,6 +100,9 @@ Eclipse Public License - v 1.0
 Eclipse Public License v2.0
   javax.ws.rs-api
 
+GNU General Public License, version 2 with the Classpath Exception
+  javax.ws.rs-api
+
 MIT License
   SLF4J API Module
 
@@ -113,4 +116,8 @@ Eclipse Collections API
 Eclipse Collections Main Library
   Eclipse Distribution License - v 1.0
   Eclipse Public License - v 1.0
+
+javax.ws.rs-api
+  Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
 

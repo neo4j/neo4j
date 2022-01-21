@@ -20,6 +20,7 @@
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <moduleName>org.neo4j.cypher.internal.compiler</moduleName>
         <jline.version>3.21.0</jline.version>
+        <svm.version>21.3.0</svm.version>
     </properties>
 
     <scm>
@@ -92,6 +93,25 @@
             <groupId>org.jline</groupId>
             <artifactId>jline-terminal-jansi</artifactId>
             <version>${jline.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
+            <version>${svm.version}</version>
+            <!-- Provided scope as it is only needed for compiling the SVM substitution classes -->
+            <scope>provided</scope>
+            <!-- We don't use those, they are not GPLv2 licensed. -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.graalvm.sdk</groupId>
+                    <artifactId>graal-sdk</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.graalvm.truffle</groupId>
+                    <artifactId>truffle-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Test dependencies -->

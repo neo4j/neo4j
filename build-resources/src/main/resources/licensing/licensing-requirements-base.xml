@@ -31,6 +31,7 @@
   <liked-license>Common Development and Distribution License Version 1.0</liked-license>
   <liked-license>Common Development and Distribution License Version 1.1</liked-license>
   <liked-license>Common Development and Distribution License Version 1.1 and GNU General Public License, version 2 with the Classpath Exception</liked-license>
+  <liked-license>GNU General Public License, version 2 with the Classpath Exception</liked-license>
   <liked-license>Eclipse Public License - v 1.0</liked-license>
   <liked-license>Eclipse Distribution License - v 1.0</liked-license>
   <liked-license>Eclipse Public License v2.0</liked-license>
@@ -136,6 +137,7 @@
       <aka>GPL2/CPE</aka>
       <aka>GPL2 w/ CPE</aka>
       <aka>The GNU General Public License (GPL), Version 2, With Classpath Exception</aka>
+      <aka>GNU General Public License, version 2, with the Classpath Exception</aka>
     </license>
     <license name="GNU General Public License, Version 3">
       <aka>GPL3</aka>
