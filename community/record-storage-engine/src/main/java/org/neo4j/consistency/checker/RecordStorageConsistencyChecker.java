@@ -37,12 +37,14 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.checking.index.IndexAccessors.IndexAccessorLookup;
+import org.neo4j.consistency.checking.index.IndexDescriptorProvider;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyMessageLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.statistics.Counts;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
@@ -80,6 +82,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_
 import static org.neo4j.consistency.checker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
 import static org.neo4j.consistency.checker.SchemaChecker.moreDescriptiveRecordToStrings;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
 
 /**
  * A consistency checker for a {@link RecordStorageEngine}, focused on keeping abstractions to a minimum and having clean and understandable
@@ -164,13 +167,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     {
         SchemaRuleAccess schemaRuleAccess =
                 SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore() );
-        return new IndexAccessors( indexProviders, context -> {
-            try ( var storeCursors = new CachedStoreCursors( neoStores, context ) )
-            {
-                return schemaRuleAccess.indexesGetAllIgnoreMalformed( storeCursors );
-            }
-        }, new IndexSamplingConfig( config ),
-                tokenHolders, contextFactory );
+        return new IndexAccessors( indexProviders, new SchemaRulesDescriptors( neoStores, schemaRuleAccess ), new IndexSamplingConfig( config ), tokenHolders,
+                contextFactory );
     }
 
     public void check() throws ConsistencyCheckIncompleteException
@@ -435,6 +433,26 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             checkable.consistencyCheck( proxyFactory, cursorContext );
             handler.updateSummary();
             listener.add( 1 );
+        }
+    }
+
+    private static class SchemaRulesDescriptors implements IndexDescriptorProvider
+    {
+        private final NeoStores neoStores;
+        private final SchemaRuleAccess schemaRuleAccess;
+
+        SchemaRulesDescriptors( NeoStores neoStores, SchemaRuleAccess schemaRuleAccess )
+        {
+            this.neoStores = neoStores;
+            this.schemaRuleAccess = schemaRuleAccess;
+        }
+
+        @Override
+        public ResourceIterator<IndexDescriptor> indexDescriptors( CursorContext cursorContext )
+        {
+            var storeCursors = new CachedStoreCursors( neoStores, cursorContext );
+            var descriptorIterator = schemaRuleAccess.indexesGetAllIgnoreMalformed( storeCursors );
+            return resourceIterator( descriptorIterator, storeCursors::close );
         }
     }
 }

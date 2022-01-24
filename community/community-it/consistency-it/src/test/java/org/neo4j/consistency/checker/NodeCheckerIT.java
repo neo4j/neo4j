@@ -56,6 +56,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -134,7 +135,8 @@ class NodeCheckerIT
                     () -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).indexesGetAll(
                             storeCursors );
             var indexAccessors =
-                    new IndexAccessors( providerMap, c -> indexDescriptors.iterator(), new IndexSamplingConfig( config ), tokenHolders, contextFactory );
+                    new IndexAccessors( providerMap, cursorContext -> asResourceIterator( indexDescriptors.iterator() ), new IndexSamplingConfig( config ),
+                            tokenHolders, contextFactory );
             context = new CheckerContext( neoStores, indexAccessors,
                     execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
                     tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( EntityBasedMemoryLimiter.class ),

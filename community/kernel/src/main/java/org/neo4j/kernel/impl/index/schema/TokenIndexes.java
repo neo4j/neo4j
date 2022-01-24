@@ -40,17 +40,13 @@ public final class TokenIndexes
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( FAILED );
         GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext );
-        switch ( headerReader.state )
-        {
-        case FAILED:
-            return InternalIndexState.FAILED;
-        case ONLINE:
-            return InternalIndexState.ONLINE;
-        case POPULATING:
-            return InternalIndexState.POPULATING;
-        default:
-            throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
-        }
+        return switch ( headerReader.state )
+                {
+                    case FAILED -> InternalIndexState.FAILED;
+                    case ONLINE -> InternalIndexState.ONLINE;
+                    case POPULATING -> InternalIndexState.POPULATING;
+                    default -> throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
+                };
     }
 
     static String readFailureMessage( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext )

@@ -109,6 +109,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.consistency.checker.RecordStorageConsistencyChecker.DEFAULT_SLOT_SIZES;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_BYTES;
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
@@ -249,7 +250,7 @@ class CheckerTestBase
         IndexingService indexingService = dependencies.resolveDependency( IndexingService.class );
         CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
         IndexAccessors indexAccessors = new IndexAccessors( indexProviders,
-                cursorContext -> allIndexes( neoStores, dependencies.resolveDependency( TokenHolders.class ) ).iterator(),
+                cursorContext -> asResourceIterator( allIndexes( neoStores, dependencies.resolveDependency( TokenHolders.class ) ).iterator() ),
                 new IndexSamplingConfig( config ), new LookupAccessorsFromRunningDb( indexingService ), tokenHolders, contextFactory );
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );

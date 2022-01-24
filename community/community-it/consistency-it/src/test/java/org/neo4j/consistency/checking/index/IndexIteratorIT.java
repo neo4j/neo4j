@@ -46,6 +46,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
@@ -91,10 +92,10 @@ class IndexIteratorIT
         try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             var tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, storeCursors );
-            indexAccessors = new IndexAccessors( providerMap,
-                    c -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST )
-                            .indexesGetAll( storeCursors ),
-                    new IndexSamplingConfig( config ), SIMPLE_NAME_LOOKUP, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+            indexAccessors = new IndexAccessors( providerMap, c -> asResourceIterator(
+                    SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST )
+                            .indexesGetAll( storeCursors ) ), new IndexSamplingConfig( config ), SIMPLE_NAME_LOOKUP,
+                    new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
         }
         pageCacheTracer = new DefaultPageCacheTracer();
     }
