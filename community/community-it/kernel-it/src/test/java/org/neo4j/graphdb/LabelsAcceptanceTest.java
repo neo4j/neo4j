@@ -35,8 +35,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -53,6 +53,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -83,6 +84,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ImpermanentDbmsExtension
@@ -830,28 +832,29 @@ class LabelsAcceptanceTest
 
     private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
-        return IdContextFactoryBuilder.of( fileSystem, jobScheduler, Config.defaults(), PageCacheTracer.NULL ).withIdGenerationFactoryProvider(
+        return IdContextFactoryBuilder.of( fileSystem, jobScheduler, Config.defaults(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) )
+                .withIdGenerationFactoryProvider(
                 any -> new DefaultIdGeneratorFactory( fileSystem, immediate(), db.databaseName() )
                 {
                     @Override
                     public IdGenerator open( PageCache pageCache, Path fileName, IdType idType, LongSupplier highId, long maxId,
-                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
                             IdSlotDistribution slotDistribution )
                             throws IOException
                     {
-                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnlyChecker, config, cursorContext,
+                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnlyChecker, config, contextFactory,
                                 openOptions,
                                 slotDistribution );
                     }
 
                     @Override
                     public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
                             IdSlotDistribution slotDistribution )
                             throws IOException
                     {
                         return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnlyChecker,
-                                config, cursorContext, openOptions, slotDistribution );
+                                config, contextFactory, openOptions, slotDistribution );
                     }
 
                     private long maxId( IdType idType, long maxId, LongSupplier highId )

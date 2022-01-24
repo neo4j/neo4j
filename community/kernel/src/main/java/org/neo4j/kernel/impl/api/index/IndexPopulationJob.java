@@ -27,14 +27,14 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryTracker;
@@ -56,7 +56,7 @@ public class IndexPopulationJob implements Runnable
     private static final String INDEX_POPULATION_TAG = "indexPopulationJob";
     private final IndexMonitor monitor;
     private final boolean verifyBeforeFlipping;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final ByteBufferFactory bufferFactory;
     private final ThreadSafePeakMemoryTracker memoryAllocationTracker;
@@ -80,13 +80,13 @@ public class IndexPopulationJob implements Runnable
     private volatile JobHandle<?> jobHandle;
 
     public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexMonitor monitor, boolean verifyBeforeFlipping,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, String databaseName, Subject subject, EntityType populatedEntityType,
+            CursorContextFactory contextFactory, MemoryTracker memoryTracker, String databaseName, Subject subject, EntityType populatedEntityType,
             Config config )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
         this.verifyBeforeFlipping = verifyBeforeFlipping;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
         this.memoryAllocationTracker = new ThreadSafePeakMemoryTracker();
         this.bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, config.get( index_populator_block_size ).intValue() );
@@ -119,7 +119,7 @@ public class IndexPopulationJob implements Runnable
     @Override
     public void run()
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_POPULATION_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( INDEX_POPULATION_TAG ) )
         {
             if ( !multiPopulator.hasPopulators() )
             {
@@ -136,7 +136,7 @@ public class IndexPopulationJob implements Runnable
                 multiPopulator.resetIndexCounts( cursorContext );
 
                 monitor.indexPopulationScanStarting();
-                indexAllEntities( pageCacheTracer );
+                indexAllEntities( contextFactory );
                 monitor.indexPopulationScanComplete();
                 if ( stopped )
                 {
@@ -162,9 +162,9 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllEntities( PageCacheTracer cacheTracer ) throws IndexPopulationFailedKernelException
+    private void indexAllEntities( CursorContextFactory contextFactory ) throws IndexPopulationFailedKernelException
     {
-        storeScan = multiPopulator.createStoreScan( cacheTracer );
+        storeScan = multiPopulator.createStoreScan( contextFactory );
         storeScan.run( multiPopulator );
     }
 

@@ -82,6 +82,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -167,6 +168,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
@@ -2987,7 +2989,8 @@ public class FullCheckIntegrationTest
                 dependencyResolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores(),
                 dependencyResolver.resolveDependency( IndexProviderMap.class ), accessorLookup,
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ), summary, ProgressMonitorFactory.NONE, config(), 4,
-                logProvider.getLog( "test" ), false, ConsistencyFlags.DEFAULT, memoryLimiter, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE ).check();
+                logProvider.getLog( "test" ), false, ConsistencyFlags.DEFAULT, memoryLimiter, EmptyMemoryTracker.INSTANCE,
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ).check();
         return summary;
     }
 
@@ -3016,17 +3019,10 @@ public class FullCheckIntegrationTest
     {
         switch ( direction )
         {
-        case OUTGOING:
-            group.setFirstOut( rel );
-            break;
-        case INCOMING:
-            group.setFirstIn( rel );
-            break;
-        case BOTH:
-            group.setFirstLoop( rel );
-            break;
-        default:
-            throw new IllegalArgumentException( direction.name() );
+        case OUTGOING -> group.setFirstOut( rel );
+        case INCOMING -> group.setFirstIn( rel );
+        case BOTH -> group.setFirstLoop( rel );
+        default -> throw new IllegalArgumentException( direction.name() );
         }
         return group;
     }

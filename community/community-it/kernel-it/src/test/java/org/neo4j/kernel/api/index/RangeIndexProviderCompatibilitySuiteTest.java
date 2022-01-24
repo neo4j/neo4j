@@ -60,7 +60,7 @@ class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderComp
         var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, databaseIdRepository ) );
         var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return RangeIndexProviderFactory.
-                create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, PageCacheTracer.NULL,
+                create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
                 new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ), DEFAULT_DATABASE_NAME );
     }
 

@@ -39,7 +39,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -65,7 +65,6 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private final Path path;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final String databaseName;
-    private final PageCacheTracer pageCacheTracer;
     private final IndexStatisticsLayout layout;
     private final DatabaseReadOnlyChecker readOnlyChecker;
     private GBPTree<IndexStatisticsKey,IndexStatisticsValue> tree;
@@ -74,32 +73,34 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private final ConcurrentHashMap<Long,ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
 
     public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer, CursorContext cursorContext ) throws IOException
+            DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory ) throws IOException
     {
         this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnlyChecker, databaseLayout.getDatabaseName(),
-                pageCacheTracer, cursorContext );
+                contextFactory );
     }
 
     public IndexStatisticsStore( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, PageCacheTracer pageCacheTracer, CursorContext cursorContext ) throws IOException
+            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, CursorContextFactory contextFactory ) throws IOException
     {
         this.pageCache = pageCache;
         this.path = path;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.databaseName = databaseName;
-        this.pageCacheTracer = pageCacheTracer;
         this.layout = new IndexStatisticsLayout();
         this.readOnlyChecker = readOnlyChecker;
-        initTree( cursorContext );
+        initTree( contextFactory );
     }
 
-    private void initTree( CursorContext cursorContext ) throws IOException
+    private void initTree( CursorContextFactory contextFactory ) throws IOException
     {
         try
         {
             tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                    recoveryCleanupWorkCollector, readOnlyChecker, pageCacheTracer, immutable.empty(), databaseName, "Statistics store", cursorContext );
-            scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ), cursorContext );
+                    recoveryCleanupWorkCollector, readOnlyChecker, immutable.empty(), databaseName, "Statistics store", contextFactory );
+            try ( var cursorContext = contextFactory.create( "indexStatisticScan" ) )
+            {
+                scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ), cursorContext );
+            }
         }
         catch ( TreeFileNotFoundException e )
         {

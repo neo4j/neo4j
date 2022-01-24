@@ -35,8 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV5_0;
@@ -163,17 +162,17 @@ public class RecordFormatSelector
      * @param databaseLayout directory with the store
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
-     * @param pageCacheTracer underlying page cache operations tracer.
+     * @param contextFactory underlying page cache context factory.
      * @return record format of the given store or <code>null</code> if {@link RecordDatabaseLayout#metadataStore()} file not
      * found or can't be read
      */
     public static RecordFormats selectForStore( RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider,
-            PageCacheTracer pageCacheTracer )
+            CursorContextFactory contextFactory )
     {
         Path neoStoreFile = databaseLayout.metadataStore();
         if ( fs.fileExists( neoStoreFile ) )
         {
-            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( STORE_SELECTION_TAG ) ) )
+            try ( var cursorContext = contextFactory.create( STORE_SELECTION_TAG ) )
             {
                 long value = MetaDataStore.getRecord( pageCache, neoStoreFile, STORE_VERSION, databaseLayout.getDatabaseName(), cursorContext );
                 if ( value != MetaDataRecordFormat.FIELD_NOT_PRESENT )
@@ -206,17 +205,17 @@ public class RecordFormatSelector
      * @param databaseLayout database directory structure
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
-     * @param pageCacheTracer underlying page cache operations tracer.
+     * @param contextFactory underlying page cache operations context factory.
      * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
      * @throws IllegalArgumentException when configured format is different from the format present in the store
      */
     public static RecordFormats selectForStoreOrConfig( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider, PageCacheTracer pageCacheTracer )
+            LogProvider logProvider, CursorContextFactory contextFactory )
     {
         RecordFormats configuredFormat = getConfiguredRecordFormat( config, databaseLayout );
         boolean formatConfigured = configuredFormat != null;
 
-        RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider, pageCacheTracer );
+        RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider, contextFactory );
         boolean storeWithFormatExists = currentFormat != null;
 
         if ( formatConfigured && storeWithFormatExists )
@@ -292,12 +291,12 @@ public class RecordFormatSelector
      * @param databaseLayout database directory structure
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
-     * @param pageCacheTracer underlying page cache operations tracer.
+     * @param contextFactory underlying page cache context factory.
      * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
      * @see RecordFormats#generation()
      */
     public static RecordFormats selectNewestFormat( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider, PageCacheTracer pageCacheTracer )
+            LogProvider logProvider, CursorContextFactory contextFactory )
     {
         boolean formatConfigured = StringUtils.isNotEmpty( configuredRecordFormat( config ) );
         if ( formatConfigured )
@@ -307,7 +306,7 @@ public class RecordFormatSelector
         }
         else
         {
-            final RecordFormats result = selectForStore( databaseLayout, fs, pageCache, logProvider, pageCacheTracer );
+            final RecordFormats result = selectForStore( databaseLayout, fs, pageCache, logProvider, contextFactory );
             if ( result == null )
             {
                 // format was not explicitly configured and store does not exist, select default format

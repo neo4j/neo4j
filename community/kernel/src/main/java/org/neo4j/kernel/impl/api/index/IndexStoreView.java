@@ -23,7 +23,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
@@ -48,11 +48,11 @@ public interface IndexStoreView
      * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
      * then store scan will be used, otherwise if {@code false} then the best suited will be used.
      * @param parallelWrite whether or not the visitors can be called by multiple threads concurrently.
-     * @param cacheTracer underlying page cursor events tracer.
+     * @param contextFactory underlying page cursor context factory.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
-            boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
+            boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker );
 
     /**
      * Retrieve all relationships in the database which have any of the the given relationship types AND
@@ -70,12 +70,12 @@ public interface IndexStoreView
      * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
      * then store scan will be used, otherwise if {@code false} then the best suited will be used.
      * @param parallelWrite whether or not the visitors can be called by multiple threads concurrently.
-     * @param cacheTracer underlying page cursor events tracer.
+     * @param contextFactory underlying page cursor context factory.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer relationshipTypeScanConsumer,
-            boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
+            boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker );
 
     NodePropertyAccessor newPropertyAccessor( CursorContext cursorContext, MemoryTracker memoryTracker );
 
@@ -104,7 +104,7 @@ public interface IndexStoreView
     {
         @Override
         public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
-                TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
+                TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory,
                 MemoryTracker memoryTracker )
         {
             return EMPTY_SCAN;
@@ -112,7 +112,7 @@ public interface IndexStoreView
 
         @Override
         public StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
-                TokenScanConsumer relationshipTypeScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
+                TokenScanConsumer relationshipTypeScanConsumer, boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory,
                 MemoryTracker memoryTracker )
         {
             return EMPTY_SCAN;

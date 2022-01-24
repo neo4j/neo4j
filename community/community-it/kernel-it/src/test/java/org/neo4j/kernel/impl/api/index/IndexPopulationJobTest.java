@@ -58,6 +58,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
@@ -107,7 +108,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.IndexMonitor.NO_MONITOR;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -120,6 +121,8 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 @ImpermanentDbmsExtension
 class IndexPopulationJobTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Inject
     private DatabaseManagementService managementService;
     @Inject
@@ -200,8 +203,9 @@ class IndexPopulationJobTest
         int prop = tokenHolders.propertyKeyTokens().getIdByName( name );
         LabelSchemaDescriptor descriptor = SchemaDescriptors.forLabel( label, prop );
         var pageCacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.NODE, IndexPrototype.forSchema( descriptor ),
-                pageCacheTracer );
+                contextFactory );
 
         job.run();
 
@@ -259,7 +263,8 @@ class IndexPopulationJobTest
         IndexPopulator actualPopulator = indexPopulator( descriptor );
         TrackingIndexPopulator populator = new TrackingIndexPopulator( actualPopulator );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor, pageCacheTracer );
+        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), EntityType.RELATIONSHIP, descriptor, contextFactory );
 
         job.run();
 
@@ -566,7 +571,7 @@ class IndexPopulationJobTest
         IndexPopulator populator = spy( indexPopulator( false ) );
         IndexPopulationJob job =
                 newIndexPopulationJob( failureDelegateFactory, populator, new FlippableIndexProxy(), indexStoreView, NullLogProvider.getInstance(),
-                        EntityType.NODE, indexPrototype( FIRST, name, false ), NULL );
+                        EntityType.NODE, indexPrototype( FIRST, name, false ), CONTEXT_FACTORY );
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
         doThrow( failure ).when( populator ).close( eq( true ), any() );
@@ -606,7 +611,7 @@ class IndexPopulationJobTest
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), jobScheduler, tokens );
         IndexPopulationJob populationJob =
-                new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
+                new IndexPopulationJob( populator, NO_MONITOR, false, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
 
         // when
         populationJob.run();
@@ -624,7 +629,7 @@ class IndexPopulationJobTest
         {
             @Override
             public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
-                    TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
+                    TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory,
                     MemoryTracker memoryTracker )
             {
                 return new StoreScan()
@@ -651,7 +656,7 @@ class IndexPopulationJobTest
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), jobScheduler, tokens );
         IndexPopulationJob populationJob =
-                new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
+                new IndexPopulationJob( populator, NO_MONITOR, false, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
 
         // when
         populationJob.run();
@@ -838,38 +843,38 @@ class IndexPopulationJobTest
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )
     {
-        return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype, NULL );
+        return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype, CONTEXT_FACTORY );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype,
-            PageCacheTracer cacheTracer )
+            CursorContextFactory contextFactory )
     {
-        return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype, cacheTracer );
+        return newIndexPopulationJob( populator, flipper, indexStoreView, NullLogProvider.getInstance(), type, prototype, contextFactory );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, IndexStoreView storeView, LogProvider logProvider,
-            EntityType type, IndexPrototype prototype, PageCacheTracer pageCacheTracer )
+            EntityType type, IndexPrototype prototype, CursorContextFactory contextFactory )
     {
-        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, pageCacheTracer );
+        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, contextFactory );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper,
             IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype )
     {
-        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, NULL );
+        return newIndexPopulationJob( mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, type, prototype, CONTEXT_FACTORY );
     }
 
     private IndexPopulationJob newIndexPopulationJob( FailedIndexProxyFactory failureDelegateFactory, IndexPopulator populator, FlippableIndexProxy flipper,
-            IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype, PageCacheTracer pageCacheTracer )
+            IndexStoreView storeView, LogProvider logProvider, EntityType type, IndexPrototype prototype, CursorContextFactory contextFactory )
     {
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, jobScheduler, tokens, pageCacheTracer, INSTANCE,
+                new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, jobScheduler, tokens, contextFactory, INSTANCE,
                         "", AUTH_DISABLED, Config.defaults() );
         IndexPopulationJob job =
-                new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
+                new IndexPopulationJob( multiPopulator, NO_MONITOR, false, contextFactory, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
         IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy( descriptor, indexStatisticsStore, tokens );
         job.addPopulator( populator, indexProxyStrategy, flipper, failureDelegateFactory );
@@ -938,7 +943,7 @@ class IndexPopulationJobTest
         TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
                 JobScheduler jobScheduler, TokenNameLookup tokens )
         {
-            super( storeView, logProvider, type, schemaState, jobScheduler, tokens, NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
+            super( storeView, logProvider, type, schemaState, jobScheduler, tokens, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
         }
 
         @Override

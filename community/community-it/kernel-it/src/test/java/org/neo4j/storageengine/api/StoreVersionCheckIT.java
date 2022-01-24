@@ -26,6 +26,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.logging.internal.NullLogService;
@@ -33,6 +34,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @ImpermanentDbmsExtension
 class StoreVersionCheckIT
@@ -65,7 +67,8 @@ class StoreVersionCheckIT
 
         //Then
         StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine( fs, databaseLayout, pc ).get();
-        StoreVersionCheck storeVersionCheck = sef.versionCheck( fs, databaseLayout, config, pc, NullLogService.getInstance(), PageCacheTracer.NULL );
+        StoreVersionCheck storeVersionCheck = sef.versionCheck( fs, databaseLayout, config, pc, NullLogService.getInstance(),
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
         String storeVersionStr = storeVersionCheck.storeVersion( CursorContext.NULL_CONTEXT ).get();
         StoreVersion storeVersion = sef.versionInformation( storeVersionStr );
         assertThat( storeVersion ).isNotNull();

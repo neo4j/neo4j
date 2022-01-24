@@ -76,6 +76,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -113,6 +114,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
@@ -525,6 +527,7 @@ class FulltextIndexProviderTest
         controller.restartDbms( builder ->
         {
             var cacheTracer = NULL;
+            CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
             FileSystemAbstraction fs = builder.getFileSystem();
             RecordDatabaseLayout databaseLayout = RecordDatabaseLayout.of( Config.defaults( GraphDatabaseSettings.neo4j_home, builder.getHomeDirectory() ) );
             DefaultIdGeneratorFactory idGenFactory =
@@ -534,7 +537,7 @@ class FulltextIndexProviderTest
             {
 
                 StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance(),
-                        cacheTracer, writable() );
+                        contextFactory, writable() );
                 var cursorContext = CursorContext.NULL_CONTEXT;
                 try ( NeoStores neoStores = factory.openAllNeoStores( false );
                       var storeCursors = new CachedStoreCursors( neoStores, cursorContext )  )

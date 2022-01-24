@@ -40,7 +40,7 @@ import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
@@ -104,14 +104,14 @@ class RelationshipChecker implements Checker
                 ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to, firstRange && last ) ) );
         // Let's not report progress for this since it's so much faster than store checks, it's just scanning the cache
         execution.run( getClass().getSimpleName() + "-unusedRelationships", execution.partition( nodeIdRange,
-                ( from, to, last ) -> () -> checkNodesReferencingUnusedRelationships( from, to, context.pageCacheTracer ) ) );
+                ( from, to, last ) -> () -> checkNodesReferencingUnusedRelationships( from, to, context.contextFactory ) ) );
     }
 
     private void check( LongRange nodeIdRange, boolean firstRound, long fromRelationshipId, long toRelationshipId, boolean checkToEndOfIndex ) throws Exception
     {
         RelationshipCounter counter = observedCounts.instantiateRelationshipCounter();
         long[] typeHolder = new long[1];
-        try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_RANGE_CHECKER_TAG ) );
+        try ( var cursorContext = context.contextFactory.create( RELATIONSHIP_RANGE_CHECKER_TAG );
              var storeCursors = new CachedStoreCursors( this.context.neoStores, cursorContext );
                 RecordReader<RelationshipRecord> relationshipReader = new RecordReader<>( context.neoStores.getRelationshipStore(), true, cursorContext );
               BoundedIterable<EntityTokenRange> relationshipTypeReader = getRelationshipTypeIndexReader( fromRelationshipId, toRelationshipId,
@@ -378,12 +378,12 @@ class RelationshipChecker implements Checker
         }
     }
 
-    private void checkNodesReferencingUnusedRelationships( long fromNodeId, long toNodeId, PageCacheTracer pageCacheTracer )
+    private void checkNodesReferencingUnusedRelationships( long fromNodeId, long toNodeId, CursorContextFactory contextFactory )
     {
         // Do this after we've done node.nextRel caching and checking of those. Checking also clears those values, so simply
         // go through the cache and see if there are any relationship ids left and report them
         CacheAccess.Client client = cacheAccess.client();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( UNUSED_RELATIONSHIP_CHECKER_TAG ) );
+        try ( var cursorContext = contextFactory.create( UNUSED_RELATIONSHIP_CHECKER_TAG );
               var storeCursors = new CachedStoreCursors( this.context.neoStores, cursorContext ) )
         {
             for ( long id = fromNodeId; id < toNodeId && !context.isCancelled(); id++ )

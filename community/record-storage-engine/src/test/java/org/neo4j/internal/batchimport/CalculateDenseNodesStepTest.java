@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -30,6 +32,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 class CalculateDenseNodesStepTest
@@ -39,7 +42,8 @@ class CalculateDenseNodesStepTest
     {
         // GIVEN
         NodeRelationshipCache cache = mock( NodeRelationshipCache.class );
-        try ( CalculateDenseNodesStep step = new CalculateDenseNodesStep( new SimpleStageControl(), Configuration.DEFAULT, cache ) )
+        try ( CalculateDenseNodesStep step = new CalculateDenseNodesStep( new SimpleStageControl(), Configuration.DEFAULT, cache,
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ) )
         {
             step.start( 0 );
             step.processors( 4 );

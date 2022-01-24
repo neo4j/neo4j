@@ -124,7 +124,7 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
 
         cacheAccess.setCacheSlotSizesAndClear( TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE ); //can hold up to 5 indexes
         List<IndexContext> indexesToCheck = new ArrayList<>();
-        try ( var indexChecker = new CursorContext( context.pageCacheTracer.createPageCursorTracer( INDEX_CHECKER_TAG ) );
+        try ( var indexChecker = context.contextFactory.create( INDEX_CHECKER_TAG );
               var storeCursors = new CachedStoreCursors( context.neoStores, indexChecker ) )
         {
             for ( int i = 0; i < indexes.size() && !context.isCancelled(); i++ )
@@ -172,7 +172,7 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
                     int progressPart = 0;
                     ProgressListener localCacheProgress = cacheProgress.threadLocalReporter();
                     var client = cacheAccess.client();
-                    try ( var context = new CursorContext( this.context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_CACHER_TAG ) );
+                    try ( var context = this.context.contextFactory.create( CONSISTENCY_INDEX_CACHER_TAG );
                           var localStoreCursors = new CachedStoreCursors( this.context.neoStores, context ) )
                     {
                         while ( partition.hasNext() && !this.context.isCancelled() )
@@ -288,7 +288,7 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
     {
         // This is one thread
         CheckerContext noReportingContext = context.withoutReporting();
-        try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ENTITY_CHECK_TAG ) );
+        try ( var cursorContext = context.contextFactory.create( CONSISTENCY_INDEX_ENTITY_CHECK_TAG );
               var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext );
               RecordReader<Record> entityReader = new RecordReader<>( store(), true, cursorContext );
               RecordReader<DynamicRecord> entityTokenReader = additionalEntityTokenReader( cursorContext );

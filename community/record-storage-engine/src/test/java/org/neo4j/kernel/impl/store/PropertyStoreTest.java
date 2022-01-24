@@ -31,6 +31,8 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -52,6 +54,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -89,7 +92,7 @@ class PropertyStoreTest
                     pageCache, NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
                     RecordFormatSelector.defaultFormat(), writable(), databaseLayout.getDatabaseName(), immutable.empty() ) )
             {
-                store.initialise( true, NULL_CONTEXT );
+                store.initialise( true, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
                 store.start( NULL_CONTEXT );
                 final long propertyRecordId = store.nextId( NULL_CONTEXT );
 

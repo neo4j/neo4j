@@ -123,7 +123,7 @@ class SchemaIndexMigratorTest
         schemaRules.add( forSchema( SchemaDescriptors.forRelType( 5, 3 ) ).withName( "r1" ).materialise( 2L ) );
         schemaRules.add( forSchema( SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "r2" ).materialise( 3L ) );
         schemaRules.add( forSchema( SchemaDescriptors.fulltext( NODE, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "n2" ).materialise( 4L ) );
-        when( storageEngineFactory.loadSchemaRules( any(), any(), any(), any(), anyBoolean(), any(), any(), any() ) ).thenReturn( schemaRules );
+        when( storageEngineFactory.loadSchemaRules( any(), any(), any(), any(), anyBoolean(), any(), any() ) ).thenReturn( schemaRules );
         var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
         SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, false,
                 contextFactory );

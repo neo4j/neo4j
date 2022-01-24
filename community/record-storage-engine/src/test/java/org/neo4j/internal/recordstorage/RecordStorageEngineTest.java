@@ -41,6 +41,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -72,6 +73,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 @EphemeralPageCacheExtension
@@ -257,7 +259,7 @@ class RecordStorageEngineTest
 
         CapturingTransactionApplierFactoryChain( Consumer<Boolean> applierCloseCall )
         {
-            super( w -> w.newBatch( PageCacheTracer.NULL ) );
+            super( w -> w.newBatch( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ) );
             this.applierCloseCall = applierCloseCall;
         }
 

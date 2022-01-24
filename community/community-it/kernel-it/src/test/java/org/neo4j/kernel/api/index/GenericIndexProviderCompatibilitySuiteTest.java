@@ -62,7 +62,7 @@ class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCo
         var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, databaseIdRepository ) );
         var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return GenericNativeIndexProviderFactory.
-                create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, PageCacheTracer.NULL,
+                create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
                 new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ), DEFAULT_DATABASE_NAME );
     }
 

@@ -59,6 +59,7 @@ import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -108,6 +109,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -344,7 +346,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService = IndexingServiceFactory.createIndexingService( config, scheduler,
                     providerMap, indexStoreViewFactory, ktx.tokenRead(), initialSchemaRulesLoader( storageEngine ),
                     nullLogProvider, IndexMonitor.NO_MONITOR, getSchemaState(),
-                    mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, "", writable() );
+                    mock( IndexStatisticsStore.class ), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), INSTANCE, "", writable() );
             indexService.start();
 
             rules = createIndexRules( schemaIndex, labelNameIdMap, propertyId );
@@ -514,12 +516,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
 
         @Override
-        public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
-                boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+        public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
+                TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory,
+                MemoryTracker memoryTracker )
         {
             StoreScan storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyScanConsumer,
-                    labelScanConsumer, forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
+                    labelScanConsumer, forceStoreScan, parallelWrite, contextFactory, memoryTracker );
             return new LabelViewNodeStoreWrapper( storageReader.get(), lockService,
                     null, propertyScanConsumer, labelIds, propertyKeyIdFilter,
                     (NodeStoreScan) storeScan, customAction, jobScheduler );
@@ -538,7 +540,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 JobScheduler jobScheduler )
         {
             super( Config.defaults(), storageReader, any -> StoreCursors.NULL, locks, labelScanConsumer, propertyUpdatesConsumer, labelIds, propertyKeyIdFilter,
-                    false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
+                    false, jobScheduler, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), INSTANCE );
             this.delegate = delegate;
             this.customAction = customAction;
         }

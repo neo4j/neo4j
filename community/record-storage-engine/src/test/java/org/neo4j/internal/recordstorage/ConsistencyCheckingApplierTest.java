@@ -29,6 +29,7 @@ import org.neo4j.internal.recordstorage.ConsistencyCheckingApplierFactory.Consis
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -53,6 +54,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @PageCacheExtension
 class ConsistencyCheckingApplierTest
@@ -81,7 +83,8 @@ class ConsistencyCheckingApplierTest
         Config config = Config.defaults( neo4j_home, directory.homePath() );
         RecordDatabaseLayout layout = RecordDatabaseLayout.of( config );
         neoStores = new StoreFactory( layout, config, new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), DEFAULT_DATABASE_NAME ), pageCache,
-                directory.getFileSystem(), NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openAllNeoStores( true );
+                directory.getFileSystem(), NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                writable() ).openAllNeoStores( true );
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT );
         checker = new ConsistencyCheckingApplier( relationshipStore, CursorContext.NULL_CONTEXT );

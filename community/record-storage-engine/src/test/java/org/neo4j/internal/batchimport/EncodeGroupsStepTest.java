@@ -32,6 +32,7 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -47,9 +48,11 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class EncodeGroupsStepTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
     private final StageControl control = new SimpleStageControl();
     private final RecordStore<RelationshipGroupRecord> store = mock( RecordStore.class );
 
@@ -65,7 +68,7 @@ class EncodeGroupsStepTest
             return null;
         } ).when( store ).prepareForCommit( any( RelationshipGroupRecord.class ), any( CursorContext.class ) );
         Configuration config = Configuration.withBatchSize( Configuration.DEFAULT, 10 );
-        EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store, PageCacheTracer.NULL );
+        EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store, CONTEXT_FACTORY );
 
         // WHEN
         encoder.start( Step.ORDER_SEND_DOWNSTREAM );
@@ -102,9 +105,9 @@ class EncodeGroupsStepTest
             return 1L;
         } );
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnEncode" ) );
+        var cursorContext = CONTEXT_FACTORY.create( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnEncode" ) );
         Configuration config = Configuration.withBatchSize( Configuration.DEFAULT, 10 );
-        try ( EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store, PageCacheTracer.NULL ) )
+        try ( EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store, CONTEXT_FACTORY ) )
         {
             encoder.start( Step.ORDER_SEND_DOWNSTREAM );
             Catcher catcher = new Catcher();

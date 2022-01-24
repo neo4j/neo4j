@@ -29,6 +29,7 @@ import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -39,6 +40,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @EphemeralPageCacheExtension
 class ReadOnlyLogVersionRepositoryIT
@@ -54,7 +56,8 @@ class ReadOnlyLogVersionRepositoryIT
         // given
         var databaseLayout = Neo4jLayout.of( directory.homePath() ).databaseLayout( "db" );
         new StoreFactory( databaseLayout, Config.defaults(), new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, directory.getFileSystem(),
-                NullLogProvider.getInstance(), PageCacheTracer.NULL, DatabaseReadOnlyChecker.writable() ).openAllNeoStores( true ).close();
+                NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                DatabaseReadOnlyChecker.writable() ).openAllNeoStores( true ).close();
         var pageCacheTracer = new DefaultPageCacheTracer();
         var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnReadOnlyLogRepoConstruction" ) );
 

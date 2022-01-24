@@ -275,7 +275,6 @@ public class FusionSupportPartitionedScanTest extends SupportPartitionedScanTest
                                                                               Config.defaults(),
                                                                               mock( DatabaseReadOnlyChecker.class ),
                                                                               mock( RecoveryCleanupWorkCollector.class ),
-                                                                              mock( PageCacheTracer.class ),
                                                                               new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
                                                                               "testDatabase" );
 

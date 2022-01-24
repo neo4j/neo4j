@@ -47,6 +47,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -77,6 +78,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_toke
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_single_automatic_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @TestDirectoryExtension
 public class FullCheckTokenIndexIT
@@ -227,7 +229,8 @@ public class FullCheckTokenIndexIT
                 dependencyResolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores(),
                 dependencyResolver.resolveDependency( IndexProviderMap.class ), accessorLookup,
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ), summary, ProgressMonitorFactory.NONE, config, 4, logProvider.getLog( "test" ),
-                false, ConsistencyFlags.DEFAULT, EntityBasedMemoryLimiter.DEFAULT, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE ).check();
+                false, ConsistencyFlags.DEFAULT, EntityBasedMemoryLimiter.DEFAULT, EmptyMemoryTracker.INSTANCE,
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ).check();
         return summary;
     }
 

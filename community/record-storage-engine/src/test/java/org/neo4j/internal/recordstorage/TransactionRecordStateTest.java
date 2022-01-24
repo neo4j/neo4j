@@ -58,6 +58,7 @@ import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -137,6 +138,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -200,7 +202,7 @@ class TransactionRecordStateTest
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         var storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs,
-                formats, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable(), immutable.empty() );
+                formats, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), immutable.empty() );
         neoStores = storeFactory.openAllNeoStores( true );
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }

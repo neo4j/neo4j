@@ -45,6 +45,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -77,12 +79,14 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
 class CommonAbstractStoreTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
     private static final int PAGE_SIZE = 32;
     private static final int RECORD_SIZE = 10;
     private static final int HIGH_ID = 42;
@@ -157,7 +161,7 @@ class CommonAbstractStoreTest
                 databaseLayout.getDatabaseName(), immutable.empty() ) )
         {
             StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false,
-                    NULL_CONTEXT ) );
+                    CONTEXT_FACTORY ) );
             assertEquals( "Fail to read header record of store file: " + storeFile.toAbsolutePath(), storeNotFoundException.getMessage() );
         }
     }
@@ -220,7 +224,7 @@ class CommonAbstractStoreTest
         TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType,
                 new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, NullLogProvider.getInstance(), recordFormat,
                 immutable.with( DELETE_ON_CLOSE ) );
-        store.initialise( true, NULL_CONTEXT );
+        store.initialise( true, CONTEXT_FACTORY );
         store.start( NULL_CONTEXT );
         assertTrue( fs.fileExists( nodeStore ) );
         assertTrue( fs.fileExists( idFile ) );
@@ -266,7 +270,7 @@ class CommonAbstractStoreTest
     {
         LogProvider log = NullLogProvider.getInstance();
         TheStore store = new TheStore( storeFile, idStoreFile, config, idType, idGeneratorFactory, mockedPageCache, log, recordFormat, immutable.empty() );
-        store.initialise( false, NULL_CONTEXT );
+        store.initialise( false, CONTEXT_FACTORY );
         return store;
     }
 

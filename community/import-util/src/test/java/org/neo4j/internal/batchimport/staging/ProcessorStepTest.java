@@ -31,6 +31,7 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.extension.Inject;
@@ -49,11 +50,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.batchimport.executor.ProcessorScheduler.SPAWN_THREAD;
 import static org.neo4j.internal.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @ExtendWith( OtherThreadExtension.class )
 class ProcessorStepTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Inject
     private OtherThread t2;
 
@@ -87,7 +90,8 @@ class ProcessorStepTest
         StageControl control = new SimpleStageControl();
         var cacheTracer = new DefaultPageCacheTracer();
         int batches = 10;
-        try ( MyProcessorStep step = new MyProcessorStep( control, 0, cacheTracer ) )
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
+        try ( MyProcessorStep step = new MyProcessorStep( control, 0, contextFactory ) )
         {
             step.start( Step.ORDER_SEND_DOWNSTREAM );
 
@@ -256,7 +260,7 @@ class ProcessorStepTest
 
     private static ProcessorStep<Integer> intProcessor( Configuration configuration, Stage stage )
     {
-        return new ProcessorStep<>( stage.control(), "processor", configuration, 1, NULL )
+        return new ProcessorStep<>( stage.control(), "processor", configuration, 1, CONTEXT_FACTORY )
         {
             @Override
             protected void process( Integer batch, BatchSender sender, CursorContext cursorContext )
@@ -273,7 +277,7 @@ class ProcessorStepTest
         BlockingProcessorStep( StageControl control, Configuration configuration,
                 int maxProcessors, CountDownLatch latch )
         {
-            super( control, "test", configuration, maxProcessors, NULL );
+            super( control, "test", configuration, maxProcessors, CONTEXT_FACTORY );
             this.latch = latch;
         }
 
@@ -290,12 +294,12 @@ class ProcessorStepTest
 
         private MyProcessorStep( StageControl control, int maxProcessors )
         {
-            this( control, maxProcessors, NULL );
+            this( control, maxProcessors, CONTEXT_FACTORY );
         }
 
-        private MyProcessorStep( StageControl control, int maxProcessors, PageCacheTracer pageCacheTracer )
+        private MyProcessorStep( StageControl control, int maxProcessors, CursorContextFactory contextFactory )
         {
-            super( control, "test", Configuration.DEFAULT, maxProcessors, pageCacheTracer );
+            super( control, "test", Configuration.DEFAULT, maxProcessors, contextFactory );
         }
 
         @Override

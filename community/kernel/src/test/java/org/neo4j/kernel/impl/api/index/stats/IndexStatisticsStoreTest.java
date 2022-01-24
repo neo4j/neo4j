@@ -70,12 +70,12 @@ class IndexStatisticsStoreTest
 
     private IndexStatisticsStore store;
     private final PageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
-    private CursorContextFactory cursorContextFactory;
+    private CursorContextFactory contextFactory;
 
     @BeforeEach
     void setUp() throws IOException
     {
-        cursorContextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
+        contextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
         store = openStore( "stats" );
         lifeSupport.start();
     }
@@ -88,19 +88,16 @@ class IndexStatisticsStoreTest
 
     private IndexStatisticsStore openStore( String fileName ) throws IOException
     {
-        try ( var context = cursorContextFactory.create( "openStore" ) )
-        {
-            var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), writable(), DEFAULT_DATABASE_NAME,
-                    pageCacheTracer, context );
-            return lifeSupport.add( statisticsStore );
-        }
+        var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), writable(), DEFAULT_DATABASE_NAME,
+                contextFactory );
+        return lifeSupport.add( statisticsStore );
     }
 
     @Test
     void tracePageCacheAccessOnConsistencyCheck() throws IOException
     {
         var store = openStore("consistencyCheck" );
-        try ( var cursorContext = cursorContextFactory.create( "tracePageCacheAccessOnConsistencyCheck" ) )
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnConsistencyCheck" ) )
         {
             for ( int i = 0; i < 100; i++ )
             {
@@ -137,7 +134,7 @@ class IndexStatisticsStoreTest
     {
         var store = openStore( "checkpoint" );
 
-        try ( var cursorContext = cursorContextFactory.create( "tracePageCacheAccessOnCheckpoint" ) )
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnCheckpoint" ) )
         {
             for ( int i = 0; i < 100; i++ )
             {
@@ -278,15 +275,12 @@ class IndexStatisticsStoreTest
     @Test
     void shouldNotStartWithoutFileIfReadOnly()
     {
-        try ( CursorContext cursorContext = cursorContextFactory.create( "shouldNotStartWithoutFileIfReadOnly" ) )
-        {
-            final Exception e = assertThrows( Exception.class,
-                    () -> new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(), DEFAULT_DATABASE_NAME,
-                            PageCacheTracer.NULL, cursorContext ) );
-            assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
-            assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
-            assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
-        }
+        final Exception e = assertThrows( Exception.class,
+                () -> new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(), DEFAULT_DATABASE_NAME,
+                        contextFactory ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
     }
 
     private void replaceAndVerifySample( long indexId, IndexSample indexSample )

@@ -35,7 +35,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.Log;
@@ -61,12 +61,12 @@ class CheckerContext
     final ProgressMonitorFactory.MultiPartBuilder progress;
     final TokenNameLookup tokenNameLookup;
     final PageCache pageCache;
-    final PageCacheTracer pageCacheTracer;
     final MemoryTracker memoryTracker;
     final long highNodeId;
     final long highRelationshipId;
     final IndexAccessor nodeLabelIndex;
     final IndexAccessor relationshipTypeIndex;
+    final CursorContextFactory contextFactory;
     private final AtomicBoolean cancelled;
     private final Log log;
     private final boolean verbose;
@@ -83,13 +83,13 @@ class CheckerContext
             EntityBasedMemoryLimiter limiter,
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
-            PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
             Log log, boolean verbose,
-            ConsistencyFlags consistencyFlags )
+            ConsistencyFlags consistencyFlags,
+            CursorContextFactory contextFactory )
     {
         this( neoStores, indexAccessors, execution, reporter, cacheAccess, tokenHolders, recordLoader,
-                observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, log, verbose, new AtomicBoolean(), consistencyFlags );
+                observedCounts, limiter, progress, pageCache, memoryTracker, log, verbose, new AtomicBoolean(), consistencyFlags, contextFactory );
     }
 
     private CheckerContext(
@@ -104,11 +104,11 @@ class CheckerContext
             EntityBasedMemoryLimiter limiter,
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
-            PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
             Log log, boolean verbose,
             AtomicBoolean cancelled,
-            ConsistencyFlags consistencyFlags )
+            ConsistencyFlags consistencyFlags,
+            CursorContextFactory contextFactory )
     {
         this.neoStores = neoStores;
         this.highNodeId = neoStores.getNodeStore().getHighId();
@@ -119,7 +119,8 @@ class CheckerContext
         this.log = log;
         this.verbose = verbose;
         this.consistencyFlags = consistencyFlags;
-        this.indexSizes = new IndexSizes( execution, indexAccessors, highNodeId, highRelationshipId, pageCacheTracer );
+        this.contextFactory = contextFactory;
+        this.indexSizes = new IndexSizes( execution, indexAccessors, highNodeId, highRelationshipId, contextFactory );
         this.execution = execution;
         this.reporter = reporter;
         this.cacheAccess = cacheAccess;
@@ -131,15 +132,14 @@ class CheckerContext
         this.cancelled = cancelled;
         this.tokenNameLookup = tokenHolders.lookupWithIds();
         this.pageCache = pageCache;
-        this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
     }
 
     CheckerContext withoutReporting()
     {
         return new CheckerContext( neoStores, indexAccessors, execution, ConsistencyReport.NO_REPORT, cacheAccess,
-                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, log, verbose,
-                cancelled, consistencyFlags );
+                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, memoryTracker, log, verbose,
+                cancelled, consistencyFlags, contextFactory );
     }
 
     void initialize() throws Exception

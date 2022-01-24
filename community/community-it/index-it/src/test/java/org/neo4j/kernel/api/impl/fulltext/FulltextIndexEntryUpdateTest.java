@@ -58,7 +58,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -143,7 +142,7 @@ class FulltextIndexEntryUpdateTest
         final var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         provider = new FulltextIndexProviderFactory().create( pageCache, fs, NullLogService.getInstance(), new Monitors(), CONFIG, readOnlyChecker,
-                                                              DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(), PageCacheTracer.NULL, databaseLayout,
+                                                              DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(), databaseLayout,
                                                               tokenHolders, jobScheduler, contextFactory );
         life.add( provider );
         life.start();

@@ -24,7 +24,7 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
@@ -45,11 +45,11 @@ public class CountGroupsStage extends Stage
     public static final String NAME = "Count groups";
 
     public CountGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
-            RelationshipGroupCache groupCache, PageCacheTracer pageCacheTracer, StatsProvider... additionalStatsProviders )
+            RelationshipGroupCache groupCache, CursorContextFactory contextFactory, StatsProvider... additionalStatsProviders )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( store, config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store, pageCacheTracer ) );
-        add( new CountGroupsStep( control(), config, groupCache, pageCacheTracer, additionalStatsProviders ) );
+        add( new ReadRecordsStep<>( control(), config, false, store, contextFactory ) );
+        add( new CountGroupsStep( control(), config, groupCache, contextFactory, additionalStatsProviders ) );
     }
 }

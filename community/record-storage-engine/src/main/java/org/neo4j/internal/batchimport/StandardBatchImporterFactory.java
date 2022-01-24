@@ -48,14 +48,13 @@ public class StandardBatchImporterFactory extends BatchImporterFactory
     }
 
     @Override
-    public BatchImporter instantiate( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem,
-            PageCacheTracer pageCacheTracer, Configuration config,
-            LogService logService, ExecutionMonitor executionMonitor, AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats,
-            Monitor monitor, JobScheduler scheduler, Collector badCollector,
+    public BatchImporter instantiate( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem, PageCacheTracer cacheTracer,
+            Configuration config, LogService logService, ExecutionMonitor executionMonitor, AdditionalInitialIds additionalInitialIds, Config dbConfig,
+            RecordFormats recordFormats, Monitor monitor, JobScheduler scheduler, Collector badCollector,
             LogFilesInitializer logFilesInitializer, IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker,
             CursorContextFactory contextFactory )
     {
-        return new ParallelBatchImporter( directoryStructure, fileSystem, pageCacheTracer, config, logService, executionMonitor,
+        return new ParallelBatchImporter( directoryStructure, fileSystem, cacheTracer, config, logService, executionMonitor,
                 additionalInitialIds, dbConfig, recordFormats, monitor, scheduler, badCollector, logFilesInitializer,
                 indexImporterFactory, memoryTracker, contextFactory );
     }

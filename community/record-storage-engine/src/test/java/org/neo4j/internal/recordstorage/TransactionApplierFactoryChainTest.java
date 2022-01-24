@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.storageengine.api.CommandsToApply;
 
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class TransactionApplierFactoryChainTest
 {
@@ -57,7 +59,7 @@ class TransactionApplierFactoryChainTest
         applier3 = mock( TransactionApplierFactory.class );
         when( applier3.startTx( any( CommandsToApply.class ), any( BatchContext.class ) ) ).thenReturn( txApplier3 );
 
-        facade = new TransactionApplierFactoryChain( w -> w.newBatch( PageCacheTracer.NULL ), applier1, applier2, applier3 );
+        facade = new TransactionApplierFactoryChain( w -> w.newBatch( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ), applier1, applier2, applier3 );
     }
 
     @Test

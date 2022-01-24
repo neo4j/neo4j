@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -63,13 +64,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 
 @ExtendWith( JobSchedulerExtension.class )
 class TokenIndexPopulationTest
 {
     private final IndexStoreView storeView = mock( IndexStoreView.class );
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     private final IndexDescriptor valueIndex = TestIndexDescriptorFactory.forLabel( 1, 1 );
     private final IndexPopulator valueIndexPopulator = mock( IndexPopulator.class );
@@ -93,7 +95,7 @@ class TokenIndexPopulationTest
                                    .materialise( 123 );
 
         multipleIndexPopulator = new MultipleIndexPopulator( storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), jobScheduler,
-                new InMemoryTokens(), PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE, "", AUTH_DISABLED, Config.defaults() );
+                new InMemoryTokens(), CONTEXT_FACTORY, EmptyMemoryTracker.INSTANCE, "", AUTH_DISABLED, Config.defaults() );
     }
 
     @Test
@@ -109,7 +111,7 @@ class TokenIndexPopulationTest
         } );
 
         multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
-        multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
 
         verify( tokenIndexPopulator ).add( indexUpdates.capture(), any() );
 
@@ -144,7 +146,7 @@ class TokenIndexPopulationTest
         mockPropertyStore( batch -> batch.addRecord( 1, new long[]{1}, Map.of(1, Values.stringValue( "Hello" )) ) );
 
         multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
-        multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
 
         verify( tokenIndexPopulator, never() ).add( indexUpdates.capture(), any() );
         verify( valueIndexPopulator ).add( any(), any() );
@@ -158,7 +160,7 @@ class TokenIndexPopulationTest
         mockTokenStore( batch -> batch.addRecord( 1, new long[]{123} ) );
 
         multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
-        multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
 
         verify( storeView ).visitNodes( any(), any(), isNull(), any(), anyBoolean(), anyBoolean(), any(), any() );
     }
@@ -171,7 +173,7 @@ class TokenIndexPopulationTest
         mockPropertyStore( batch -> batch.addRecord( 1, new long[]{1}, Map.of(1, Values.stringValue( "Hello" )) ) );
 
         multipleIndexPopulator.create( CursorContext.NULL_CONTEXT );
-        multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
 
         verify( storeView ).visitNodes( any(), any(), any(), isNull(), anyBoolean(), anyBoolean(), any(), any() );
     }

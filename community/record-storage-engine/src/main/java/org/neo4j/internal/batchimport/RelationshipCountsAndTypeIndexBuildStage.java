@@ -32,7 +32,6 @@ import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -50,18 +49,17 @@ public class RelationshipCountsAndTypeIndexBuildStage extends Stage
     public RelationshipCountsAndTypeIndexBuildStage( Configuration config, BatchingNeoStores neoStores, NodeLabelsCache cache,
             RelationshipStore relationshipStore, int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
             NumberArrayFactory cacheFactory, ProgressReporter progressReporter, IndexImporterFactory indexImporterFactory,
-            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory,
-            Function<CursorContext,StoreCursors> storeCursorsCreator, MemoryTracker memoryTracker )
+            CursorContextFactory contextFactory, Function<CursorContext,StoreCursors> storeCursorsCreator, MemoryTracker memoryTracker )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ), relationshipStore.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, relationshipStore, pageCacheTracer ) );
+        add( new ReadRecordsStep<>( control(), config, false, relationshipStore, contextFactory ) );
         if ( config.indexConfig().createRelationshipIndex() )
         {
-            add( new RelationshipTypeIndexWriterStep( control(), config, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer, contextFactory,
+            add( new RelationshipTypeIndexWriterStep( control(), config, neoStores, indexImporterFactory, memoryTracker, contextFactory,
                     storeCursorsCreator ) );
         }
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
-                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, pageCacheTracer, storeCursorsCreator, memoryTracker ) );
+                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, contextFactory, storeCursorsCreator, memoryTracker ) );
     }
 }

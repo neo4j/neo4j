@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -36,6 +37,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
@@ -66,10 +68,11 @@ class FullScanStoreViewTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         var indexStoreView =
                 new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
         var storeScan = indexStoreView.visitNodes( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null,
-                new TestTokenScanConsumer(), true, true, pageCacheTracer, INSTANCE );
+                new TestTokenScanConsumer(), true, true, contextFactory, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( pageCacheTracer.pins() ).isEqualTo( 103 );

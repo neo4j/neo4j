@@ -24,7 +24,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
@@ -53,16 +53,16 @@ public class RelationshipStoreScan extends PropertyAwareEntityStoreScan<StorageR
             TokenScanConsumer relationshipTypeScanConsumer,
             PropertyScanConsumer propertyScanConsumer,
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
-            JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            JobScheduler scheduler, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, storeCursorsFactory, getRelationshipCount( storageReader, cacheTracer ), relationshipTypeIds, propertyKeyIdFilter,
+        super( config, storageReader, storeCursorsFactory, getRelationshipCount( storageReader, contextFactory ), relationshipTypeIds, propertyKeyIdFilter,
                 propertyScanConsumer, relationshipTypeScanConsumer, id -> locks.acquireRelationshipLock( id, SHARED ),
-                new RelationshipCursorBehaviour( storageReader ), parallelWrite, scheduler, cacheTracer, memoryTracker );
+                new RelationshipCursorBehaviour( storageReader ), parallelWrite, scheduler, contextFactory, memoryTracker );
     }
 
-    private static long getRelationshipCount( StorageReader storageReader, PageCacheTracer cacheTracer )
+    private static long getRelationshipCount( StorageReader storageReader, CursorContextFactory contextFactory )
     {
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( TRACER_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( TRACER_TAG ) )
         {
             return storageReader.relationshipsGetCount( cursorContext );
         }

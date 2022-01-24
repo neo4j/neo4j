@@ -36,6 +36,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -70,6 +71,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_ARRAY_S
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -98,7 +100,8 @@ class PropertyDeleterTest
         Config config = Config.defaults( GraphDatabaseInternalSettings.log_inconsistent_data_deletion, log );
         idGeneratorFactory = new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), "db" );
         neoStores = new StoreFactory( DatabaseLayout.ofFlat( directory.homePath() ), config, idGeneratorFactory, pageCache, directory.getFileSystem(),
-                NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openAllNeoStores( true );
+                NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                writable() ).openAllNeoStores( true );
         propertyStore = neoStores.getPropertyStore();
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
         deleter = new PropertyDeleter( traverser, this.neoStores, new TokenNameLookup()

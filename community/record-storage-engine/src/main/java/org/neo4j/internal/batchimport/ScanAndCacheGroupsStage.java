@@ -24,7 +24,7 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
@@ -44,11 +44,11 @@ public class ScanAndCacheGroupsStage extends Stage
     public static final String NAME = "Gather";
 
     public ScanAndCacheGroupsStage( Configuration config, RecordStore<RelationshipGroupRecord> store,
-            RelationshipGroupCache cache, PageCacheTracer pageCacheTracer, StatsProvider... additionalStatsProviders )
+            RelationshipGroupCache cache, CursorContextFactory contextFactory, StatsProvider... additionalStatsProviders )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allInReversed( store, config ), store.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, false, store, pageCacheTracer ) );
-        add( new CacheGroupsStep( control(), config, cache, pageCacheTracer, additionalStatsProviders ) );
+        add( new ReadRecordsStep<>( control(), config, false, store, contextFactory ) );
+        add( new CacheGroupsStep( control(), config, cache, contextFactory, additionalStatsProviders ) );
     }
 }

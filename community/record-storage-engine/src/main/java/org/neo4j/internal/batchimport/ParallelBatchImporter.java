@@ -95,7 +95,7 @@ public class ParallelBatchImporter implements BatchImporter
     public void doImport( Input input ) throws IOException
     {
         try ( BatchingNeoStores store = ImportLogic.instantiateNeoStores( fileSystem, databaseLayout, pageCacheTracer, recordFormats,
-                      config, logService, additionalInitialIds, dbConfig, jobScheduler, memoryTracker );
+                      config, logService, additionalInitialIds, dbConfig, jobScheduler, memoryTracker, contextFactory );
               ImportLogic logic = new ImportLogic(
                       databaseLayout, store, config, dbConfig, logService, executionMonitor, recordFormats, badCollector,
                       monitor, pageCacheTracer, contextFactory, indexImporterFactory, memoryTracker ) )
@@ -109,7 +109,8 @@ public class ParallelBatchImporter implements BatchImporter
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
             logic.buildCountsStore();
-            logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT );
+            logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT,
+                    contextFactory );
             logic.success();
         }
     }

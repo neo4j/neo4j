@@ -40,6 +40,8 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -57,6 +59,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -68,6 +71,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 @EphemeralPageCacheExtension
 class CommonAbstractStoreBehaviourTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
     /**
      * Note that tests MUST use the non-modifying methods, to make alternate copies
      * of this settings class.
@@ -139,7 +143,7 @@ class CommonAbstractStoreBehaviourTest
     private void createStore()
     {
         store = new MyStore( config, pageCache, 8 );
-        store.initialise( true, NULL_CONTEXT );
+        store.initialise( true, CONTEXT_FACTORY );
         readCursor = store.openPageCursorForReading( 0, NULL_CONTEXT );
     }
 
@@ -148,18 +152,18 @@ class CommonAbstractStoreBehaviourTest
     {
         // 16-byte header will overflow an 8-byte page size
         MyStore store = new MyStore( config, pageCache, PAGE_SIZE + 1 );
-        assertThrowsUnderlyingStorageException( () -> store.initialise( true, NULL_CONTEXT ) );
+        assertThrowsUnderlyingStorageException( () -> store.initialise( true, CONTEXT_FACTORY ) );
     }
 
     @Test
     void extractHeaderRecordDuringLoadStorageMustThrowOnPageOverflow()
     {
         MyStore first = new MyStore( config, pageCache, 8 );
-        first.initialise( true, NULL_CONTEXT );
+        first.initialise( true, CONTEXT_FACTORY );
         first.close();
 
         MyStore second = new MyStore( config, pageCache, PAGE_SIZE + 1 );
-        assertThrowsUnderlyingStorageException( () -> second.initialise( false, NULL_CONTEXT ) );
+        assertThrowsUnderlyingStorageException( () -> second.initialise( false, CONTEXT_FACTORY ) );
     }
 
     @Test

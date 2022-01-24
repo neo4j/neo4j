@@ -67,6 +67,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -460,18 +462,20 @@ class DatabaseRecoveryIT
     private static void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, DatabaseLayout databaseLayout )
     {
         NullLogProvider logProvider = NullLogProvider.getInstance();
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
         try (
                 ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
-                PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL, NullLog.getInstance(),
+                PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), cacheTracer, NullLog.getInstance(),
                         jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
-                PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL, NullLog.getInstance(),
+                PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), cacheTracer, NullLog.getInstance(),
                         jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(),
                         new DefaultIdGeneratorFactory( fs1, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache1, fs1, logProvider, PageCacheTracer.NULL, writable() ).openAllNeoStores();
+                        pageCache1, fs1, logProvider, contextFactory, writable() ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( databaseLayout, defaults(),
                         new DefaultIdGeneratorFactory( fs2, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache2, fs2, logProvider, PageCacheTracer.NULL, writable() ).openAllNeoStores()
+                        pageCache2, fs2, logProvider, contextFactory, writable() ).openAllNeoStores()
                 )
         {
             for ( StoreType storeType : StoreType.values() )

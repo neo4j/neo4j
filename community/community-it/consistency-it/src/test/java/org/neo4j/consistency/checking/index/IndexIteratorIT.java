@@ -31,6 +31,7 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -46,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 
 @DbmsExtension
@@ -90,8 +92,9 @@ class IndexIteratorIT
         {
             var tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, storeCursors );
             indexAccessors = new IndexAccessors( providerMap,
-                    () -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).indexesGetAll(
-                            storeCursors ), new IndexSamplingConfig( config ), PageCacheTracer.NULL, SIMPLE_NAME_LOOKUP );
+                    c -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST )
+                            .indexesGetAll( storeCursors ),
+                    new IndexSamplingConfig( config ), SIMPLE_NAME_LOOKUP, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
         }
         pageCacheTracer = new DefaultPageCacheTracer();
     }

@@ -42,6 +42,8 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.internal.locker.FileLockException;
 
@@ -49,6 +51,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.fs.FileUtils.deleteDirectory;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 
@@ -142,6 +145,7 @@ public class LoadCommand extends AbstractCommand
     protected void loadDump() throws IOException
     {
         Config config = buildConfig();
+        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
         DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database.name() );
         ctx.fs().mkdirs( databaseLayout.databaseDirectory() );
@@ -164,7 +168,7 @@ public class LoadCommand extends AbstractCommand
             throw new CommandFailedException( "You do not have permission to load the database.", e );
         }
 
-        StoreVersionLoader.Result result = loader.getStoreVersion( ctx.fs(), config, databaseLayout );
+        StoreVersionLoader.Result result = loader.getStoreVersion( ctx.fs(), config, databaseLayout, contextFactory );
         if ( !result.isLatest )
         {
             ctx.err().printf( "The loaded database is not on the latest format (current:%s, latest:%s). Set %s=true to enable migration.%n",

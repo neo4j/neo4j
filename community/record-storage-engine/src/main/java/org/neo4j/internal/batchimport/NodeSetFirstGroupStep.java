@@ -26,7 +26,7 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -48,13 +48,13 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     private NodeRecord[] current;
     private int cursor;
 
-    NodeSetFirstGroupStep( StageControl control, Configuration config, NodeStore nodeStore, ByteArray cache, PageCacheTracer pageCacheTracer )
+    NodeSetFirstGroupStep( StageControl control, Configuration config, NodeStore nodeStore, ByteArray cache, CursorContextFactory contextFactory )
     {
-        super( control, "FIRST", config, 1, pageCacheTracer );
+        super( control, "FIRST", config, 1, contextFactory );
         this.cache = cache;
         this.batchSize = config.batchSize();
         this.nodeStore = nodeStore;
-        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( SET_FIRST_GROUP_STEP_TAG ) );
+        this.cursorContext = contextFactory.create( SET_FIRST_GROUP_STEP_TAG );
         this.nodeCursor = nodeStore.openPageCursorForReading( 0, cursorContext );
         newBatch();
     }

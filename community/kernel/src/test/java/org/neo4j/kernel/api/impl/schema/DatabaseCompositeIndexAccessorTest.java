@@ -54,8 +54,8 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -325,7 +325,7 @@ public class DatabaseCompositeIndexAccessorTest
                 new RangeIndexProviderFactory() );
         return indexProviderFactories.stream().map( f -> f.create( pageCache, fileSystem, new SimpleLogService( logProvider ),
                                                                    new Monitors(), CONFIG, writable(), DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(),
-                                                                   PageCacheTracer.NULL, DatabaseLayout.ofFlat( testDirectory.homePath() ),
+                                                                   DatabaseLayout.ofFlat( testDirectory.homePath() ),
                                                                    new TokenHolders( null, null, null ), jobScheduler,
                                                                    new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ) ).collect( Collectors.toList() );
     }

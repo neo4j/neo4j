@@ -24,7 +24,7 @@ import java.util.function.LongPredicate;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -40,27 +40,27 @@ public class IndexSamplingControllerFactory
     private final JobScheduler scheduler;
     private final TokenNameLookup tokenNameLookup;
     private final LogProvider logProvider;
-    private final PageCacheTracer cacheTracer;
+    private final CursorContextFactory contextFactory;
     private final Config config;
     private final String databaseName;
 
     public IndexSamplingControllerFactory( IndexSamplingConfig samplingConfig, IndexStatisticsStore indexStatisticsStore,
                                            JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                                           LogProvider logProvider, PageCacheTracer cacheTracer, Config config, String databaseName )
+                                           LogProvider logProvider, CursorContextFactory contextFactory, Config config, String databaseName )
     {
         this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;
         this.scheduler = scheduler;
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
-        this.cacheTracer = cacheTracer;
+        this.contextFactory = contextFactory;
         this.config = config;
         this.databaseName = databaseName;
     }
 
     public IndexSamplingController create( IndexMapSnapshotProvider snapshotProvider )
     {
-        OnlineIndexSamplingJobFactory jobFactory = new OnlineIndexSamplingJobFactory( indexStatisticsStore, tokenNameLookup, logProvider, cacheTracer );
+        OnlineIndexSamplingJobFactory jobFactory = new OnlineIndexSamplingJobFactory( indexStatisticsStore, tokenNameLookup, logProvider, contextFactory );
         LongPredicate samplingUpdatePredicate = createSamplingPredicate();
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( scheduler, databaseName );
         RecoveryCondition indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );

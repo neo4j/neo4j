@@ -24,7 +24,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
@@ -45,10 +45,10 @@ public class LabelIndexedNodeStoreScan extends NodeStoreScan
                                       TokenScanConsumer labelScanConsumer,
                                       PropertyScanConsumer propertyScanConsumer,
                                       int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
-                                      JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+                                      JobScheduler scheduler, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         super( config, storageReader, storeCursorsFactory, locks, labelScanConsumer, propertyScanConsumer, labelIds,
-               propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
+               propertyKeyIdFilter, parallelWrite, scheduler, contextFactory, memoryTracker );
         this.tokenIndexReader = tokenIndexReader;
     }
 

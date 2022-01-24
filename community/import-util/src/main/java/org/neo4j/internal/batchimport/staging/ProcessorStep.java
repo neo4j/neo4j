@@ -27,7 +27,7 @@ import org.neo4j.internal.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.internal.batchimport.executor.TaskExecutor;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.util.concurrent.AsyncApply;
 
 import static java.lang.System.currentTimeMillis;
@@ -45,19 +45,19 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     private TaskExecutor<Sender> executor;
     // max processors for this step, zero means unlimited, or rather config.maxNumberOfProcessors()
     private final int maxProcessors;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
 
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
     private String cursorTracerName;
 
-    protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors, PageCacheTracer pageCacheTracer,
+    protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors, CursorContextFactory contextFactory,
             StatsProvider... additionalStatsProviders )
     {
         super( control, name, config, additionalStatsProviders );
         this.maxProcessors = maxProcessors;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         updateCursorTracerName();
     }
 
@@ -78,7 +78,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         {
             assertHealthy();
             sender.initialize( ticket );
-            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( cursorTracerName ) ) )
+            try ( var cursorContext = contextFactory.create( cursorTracerName ) )
             {
                 long startTime = nanoTime();
                 process( batch, sender, cursorContext );

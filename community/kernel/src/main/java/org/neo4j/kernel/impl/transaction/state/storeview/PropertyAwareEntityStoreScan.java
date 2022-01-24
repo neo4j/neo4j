@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -41,7 +41,6 @@ import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -59,7 +58,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     protected final EntityScanCursorBehaviour<CURSOR> cursorBehaviour;
     private final boolean parallelWrite;
     private final JobScheduler scheduler;
-    protected final PageCacheTracer cacheTracer;
+    protected final CursorContextFactory contextFactory;
     private final AtomicBoolean continueScanning = new AtomicBoolean();
     private final long totalCount;
     private final MemoryTracker memoryTracker;
@@ -75,14 +74,14 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     protected PropertyAwareEntityStoreScan( Config config, StorageReader storageReader, Function<CursorContext,StoreCursors> storeCursorsFactory,
             long totalEntityCount, int[] entityTokenIdFilter, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
             TokenScanConsumer tokenScanConsumer, LongFunction<Lock> lockFunction, EntityScanCursorBehaviour<CURSOR> cursorBehaviour, boolean parallelWrite,
-            JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            JobScheduler scheduler, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         this.storageReader = storageReader;
         this.storeCursorsFactory = storeCursorsFactory;
         this.cursorBehaviour = cursorBehaviour;
         this.parallelWrite = parallelWrite;
         this.scheduler = scheduler;
-        this.cacheTracer = cacheTracer;
+        this.contextFactory = contextFactory;
         this.entityTokenIdFilter = entityTokenIdFilter;
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.lockFunction = lockFunction;
@@ -102,7 +101,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
             continueScanning.set( true );
             stage = new StoreScanStage<>( dbConfig, Configuration.DEFAULT, this::getEntityIdIterator, externalUpdatesCheck, continueScanning, storageReader,
                     storeCursorsFactory, entityTokenIdFilter, propertyKeyIdFilter, propertyScanConsumer, tokenScanConsumer, cursorBehaviour, lockFunction,
-                    parallelWrite, scheduler, cacheTracer, memoryTracker );
+                    parallelWrite, scheduler, contextFactory, memoryTracker );
             superviseDynamicExecution( INVISIBLE, stage );
             stage.reportTo( phaseTracker );
         }

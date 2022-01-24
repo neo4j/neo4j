@@ -32,7 +32,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -85,25 +85,25 @@ public class DynamicIndexStoreView implements IndexStoreView
     @Override
     public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
                                  PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
-                                 boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+                                 boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         var tokenIndex = findTokenIndex( storageReader, NODE );
         if ( tokenIndex.isPresent() )
         {
             var nodeStoreScan = new LabelIndexedNodeStoreScan(
                     config, storageReader.get(), cursorFactory, lockService, tokenIndex.get().reader, labelScanConsumer, propertyScanConsumer, labelIds,
-                    propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, cacheTracer, memoryTracker );
+                    propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, contextFactory, memoryTracker );
             return new IndexedStoreScan( locks, tokenIndex.get().descriptor, config, nodeStoreScan );
         }
 
         return fullScanStoreView.visitNodes(
-                labelIds, propertyKeyIdFilter, propertyScanConsumer, labelScanConsumer, forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
+                labelIds, propertyKeyIdFilter, propertyScanConsumer, labelScanConsumer, forceStoreScan, parallelWrite, contextFactory, memoryTracker );
     }
 
     @Override
     public StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
                                          TokenScanConsumer relationshipTypeScanConsumer, boolean forceStoreScan, boolean parallelWrite,
-                                         PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+                                         CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
 
         var tokenIndex = findTokenIndex( storageReader, RELATIONSHIP );
@@ -112,13 +112,13 @@ public class DynamicIndexStoreView implements IndexStoreView
             var relationshipStoreScan = new RelationshipIndexedRelationshipStoreScan(
                     config, storageReader.get(), cursorFactory, lockService, tokenIndex.get().reader, relationshipTypeScanConsumer, propertyScanConsumer,
                     relationshipTypeIds,
-                    propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, cacheTracer, memoryTracker );
+                    propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, contextFactory, memoryTracker );
             return new IndexedStoreScan( locks, tokenIndex.get().descriptor, config, relationshipStoreScan );
         }
 
         return fullScanStoreView.visitRelationships(
                 relationshipTypeIds, propertyKeyIdFilter, propertyScanConsumer,
-                relationshipTypeScanConsumer, forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
+                relationshipTypeScanConsumer, forceStoreScan, parallelWrite, contextFactory, memoryTracker );
     }
 
     @Override

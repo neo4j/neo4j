@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -61,19 +61,19 @@ public class FullScanStoreView implements IndexStoreView
     @Override
     public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
-            boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         return new NodeStoreScan( config, storageReaderSupplier.get(), storeCursorsFactory, locks, labelScanConsumer,
-                propertyScanConsumer, labelIds, propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
+                propertyScanConsumer, labelIds, propertyKeyIdFilter, parallelWrite, scheduler, contextFactory, memoryTracker );
     }
 
     @Override
     public StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer relationshipTypeScanConsumer,
-            boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         return new RelationshipStoreScan( config, storageReaderSupplier.get(), storeCursorsFactory, locks, relationshipTypeScanConsumer, propertyScanConsumer,
-                relationshipTypeIds, propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
+                relationshipTypeIds, propertyKeyIdFilter, parallelWrite, scheduler, contextFactory, memoryTracker );
     }
 
     @Override

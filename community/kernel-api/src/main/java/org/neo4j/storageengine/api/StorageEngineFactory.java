@@ -96,7 +96,7 @@ public interface StorageEngineFactory
      * @return StoreVersionCheck to check store version as well as upgradability to other versions.
      */
     StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, LogService logService,
-            PageCacheTracer pageCacheTracer );
+            CursorContextFactory contextFactory );
 
     StoreVersion versionInformation( String storeVersion );
 
@@ -111,7 +111,8 @@ public interface StorageEngineFactory
      * @return StoreMigrationParticipant for migration.
      */
     List<StoreMigrationParticipant> migrationParticipants( FileSystemAbstraction fs, Config config, PageCache pageCache,
-            JobScheduler jobScheduler, LogService logService, PageCacheTracer cacheTracer, MemoryTracker memoryTracker, CursorContextFactory contextFactory );
+            JobScheduler jobScheduler, LogService logService, MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer,
+            CursorContextFactory contextFactory );
 
     /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.
@@ -121,8 +122,8 @@ public interface StorageEngineFactory
     StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
             IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider internalLogProvider,
-            LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
-            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker, CursorContext cursorContext )
+            LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean createStoreIfNotExists,
+            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
             throws IOException;
 
     /**
@@ -165,7 +166,7 @@ public interface StorageEngineFactory
      * @throws IOException on I/O error or if the store doesn't exist.
      */
     MetadataProvider transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
-            PageCacheTracer cacheTracer, DatabaseReadOnlyChecker readOnlyChecker ) throws IOException;
+            DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory ) throws IOException;
 
     StoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException;
 
@@ -178,13 +179,13 @@ public interface StorageEngineFactory
     Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext );
 
     SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            LogService logService, String recordFormats, PageCacheTracer cacheTracer, CursorContext cursorContext, MemoryTracker memoryTracker );
+            LogService logService, String recordFormats, CursorContextFactory contextFactory, MemoryTracker memoryTracker );
 
     List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout, boolean lenient,
-            Function<SchemaRule,SchemaRule> schemaRuleMigration, PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory );
+            Function<SchemaRule,SchemaRule> schemaRuleMigration, CursorContextFactory contextFactory );
 
     TokenHolders loadReadOnlyTokens( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, boolean lenient,
-            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory );
+            CursorContextFactory contextFactory );
 
     /**
      * Asks this storage engine about the state of a specific store before opening it. If this specific store is missing optional or
@@ -257,12 +258,12 @@ public interface StorageEngineFactory
      * @param progressOutput output where progress of the check is printed, or {@code null} if no progress should be printed.
      * @param verbose whether or not to print verbose progress output.
      * @param flags which parts of the store/indexes to check.
-     * @param pageCacheTracer to trace cursor access.
+     * @param contextFactory underlying page cursor context factory.
      * @throws ConsistencyCheckIncompleteException on failure doing the consistency check.
      */
     void consistencyCheck( FileSystemAbstraction fileSystem, DatabaseLayout layout, Config config, PageCache pageCache, IndexProviderMap indexProviders,
             Log log, ConsistencySummaryStatistics summary, int numberOfThreads, double memoryLimitLeewayFactor, OutputStream progressOutput, boolean verbose,
-            ConsistencyFlags flags, PageCacheTracer pageCacheTracer ) throws ConsistencyCheckIncompleteException;
+            ConsistencyFlags flags, CursorContextFactory contextFactory ) throws ConsistencyCheckIncompleteException;
 
     /**
      * @return the default {@link StorageEngineFactory}.
@@ -361,6 +362,7 @@ public interface StorageEngineFactory
         return defaultStorageEngine();
     }
 
+    @FunctionalInterface
     interface Selector
     {
         Optional<StorageEngineFactory> selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );

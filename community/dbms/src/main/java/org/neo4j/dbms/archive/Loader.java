@@ -42,6 +42,7 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.util.VisibleForTesting;
 
@@ -114,9 +115,10 @@ public class Loader
         }
     }
 
-    public StoreVersionLoader.Result getStoreVersion( FileSystemAbstraction fs, Config config, DatabaseLayout databaseLayout )
+    public StoreVersionLoader.Result getStoreVersion( FileSystemAbstraction fs, Config config, DatabaseLayout databaseLayout,
+            CursorContextFactory contextFactory )
     {
-        try ( StoreVersionLoader stl = new StoreVersionLoader( fs, config ) )
+        try ( StoreVersionLoader stl = new StoreVersionLoader( fs, config, contextFactory ) )
         {
             return stl.loadStoreVersion( databaseLayout );
         }

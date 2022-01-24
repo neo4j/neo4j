@@ -30,7 +30,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -63,7 +62,7 @@ public class FulltextIndexProviderFactory extends AbstractIndexProviderFactory<F
     protected FulltextIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
                                                     Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
                                                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
-                                                    PageCacheTracer pageCacheTracer, Log log, TokenHolders tokenHolders,
+                                                    Log log, TokenHolders tokenHolders,
                                                     JobScheduler scheduler, CursorContextFactory contextFactory )
     {
         boolean ephemeral = config.get( GraphDatabaseInternalSettings.ephemeral_lucene );

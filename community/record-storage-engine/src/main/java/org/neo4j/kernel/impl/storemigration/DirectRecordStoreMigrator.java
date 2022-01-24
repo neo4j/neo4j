@@ -32,7 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -59,14 +59,14 @@ class DirectRecordStoreMigrator
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
     private final Config config;
-    private final PageCacheTracer cacheTracer;
+    private final CursorContextFactory contextFactory;
 
-    DirectRecordStoreMigrator( PageCache pageCache, FileSystemAbstraction fs, Config config, PageCacheTracer cacheTracer )
+    DirectRecordStoreMigrator( PageCache pageCache, FileSystemAbstraction fs, Config config, CursorContextFactory contextFactory )
     {
         this.pageCache = pageCache;
         this.fs = fs;
         this.config = config;
-        this.cacheTracer = cacheTracer;
+        this.contextFactory = contextFactory;
     }
 
     public void migrate( RecordDatabaseLayout fromDirectoryStructure, RecordFormats fromFormat, RecordDatabaseLayout toDirectoryStructure,
@@ -77,13 +77,13 @@ class DirectRecordStoreMigrator
 
         try (
                 NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(),
-                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), cacheTracer, readOnly(), immutable.empty() )
+                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), contextFactory, readOnly(), immutable.empty() )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
                         new DefaultIdGeneratorFactory( fs, immediate(), toDirectoryStructure.getDatabaseName() ), pageCache, fs, toFormat,
-                        NullLogProvider.getInstance(), cacheTracer, writable(), immutable.empty() )
+                        NullLogProvider.getInstance(), contextFactory, writable(), immutable.empty() )
                         .openNeoStores( true, storesToOpen );
-                var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( DIRECT_STORE_MIGRATOR_TAG ) );
+                var cursorContext = contextFactory.create( DIRECT_STORE_MIGRATOR_TAG );
                 var toStoreCursors = new CachedStoreCursors( toStores, cursorContext ) )
         {
             toStores.start( cursorContext );

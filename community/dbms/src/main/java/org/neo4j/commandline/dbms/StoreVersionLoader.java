@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -44,13 +45,15 @@ public class StoreVersionLoader implements AutoCloseable
 {
     private final FileSystemAbstraction fs;
     private final Config config;
+    private final CursorContextFactory contextFactory;
     private final JobScheduler jobScheduler;
     private final PageCache pageCache;
 
-    public StoreVersionLoader( FileSystemAbstraction fs, Config config )
+    public StoreVersionLoader( FileSystemAbstraction fs, Config config, CursorContextFactory contextFactory )
     {
         this.fs = fs;
         this.config = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) ).build();
+        this.contextFactory = contextFactory;
         this.jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         this.pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(), jobScheduler, Clocks.nanoClock(),
                 new MemoryPools() ).getOrCreatePageCache();
@@ -70,7 +73,7 @@ public class StoreVersionLoader implements AutoCloseable
     public Result loadStoreVersion( DatabaseLayout layout )
     {
         StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine( fs, layout, pageCache ).orElseGet( StorageEngineFactory::defaultStorageEngine );
-        StoreVersionCheck versionCheck = sef.versionCheck( fs, layout, config, pageCache, NullLogService.getInstance(), PageCacheTracer.NULL );
+        StoreVersionCheck versionCheck = sef.versionCheck( fs, layout, config, pageCache, NullLogService.getInstance(), contextFactory );
 
         String storeVersion = versionCheck.storeVersion( CursorContext.NULL_CONTEXT )
             .orElseThrow( () -> new IllegalStateException( "Can not read store version of database " + layout.getDatabaseName() ) );

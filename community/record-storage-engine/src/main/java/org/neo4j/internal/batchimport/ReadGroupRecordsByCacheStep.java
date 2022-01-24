@@ -29,7 +29,7 @@ import org.neo4j.internal.batchimport.staging.ProducerStep;
 import org.neo4j.internal.batchimport.staging.RecordDataAssembler;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -45,21 +45,21 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
     private static final String READ_RELATIONSHIP_GROUPS_STEP_TAG = "readRelationshipGroupsStep";
     private final RecordStore<RelationshipGroupRecord> store;
     private final NodeRelationshipCache cache;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
 
     public ReadGroupRecordsByCacheStep( StageControl control, Configuration config,
-            RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache, PageCacheTracer pageCacheTracer )
+            RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache, CursorContextFactory contextFactory )
     {
         super( control, config );
         this.store = store;
         this.cache = cache;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
     }
 
     @Override
     protected void process()
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( READ_RELATIONSHIP_GROUPS_STEP_TAG ) );
+        try ( var cursorContext = contextFactory.create( READ_RELATIONSHIP_GROUPS_STEP_TAG );
               NodeVisitor visitor = new NodeVisitor( cursorContext ) )
         {
             cache.visitChangedNodes( visitor, NodeType.NODE_TYPE_DENSE );

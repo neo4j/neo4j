@@ -28,12 +28,14 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class IdGeneratorUpdatesWorkSyncTest
 {
@@ -48,12 +50,13 @@ class IdGeneratorUpdatesWorkSyncTest
         workSync.add( idGenerator );
 
         // when
-        IdGeneratorUpdatesWorkSync.Batch batch = workSync.newBatch( PageCacheTracer.NULL );
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+        IdGeneratorUpdatesWorkSync.Batch batch = workSync.newBatch( contextFactory );
         batch.markIdAsUsed( idGenerator, 10, 1, CursorContext.NULL_CONTEXT );
         batch.markIdAsUnused( idGenerator, 11, 1, CursorContext.NULL_CONTEXT );
         batch.markIdAsUsed( idGenerator, 270, 4, CursorContext.NULL_CONTEXT );
         batch.markIdAsUnused( idGenerator, 513, 7, CursorContext.NULL_CONTEXT );
-        batch.apply( PageCacheTracer.NULL );
+        batch.apply();
 
         // then
         assertThat( marker.used( 10, 1 ) ).isTrue();

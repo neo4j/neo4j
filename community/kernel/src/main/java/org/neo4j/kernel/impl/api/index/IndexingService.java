@@ -58,7 +58,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -119,7 +119,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final Iterable<IndexDescriptor> indexDescriptors;
     private final Log internalLog;
     private final IndexStatisticsStore indexStatisticsStore;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final String databaseName;
     private final DatabaseReadOnlyChecker readOnlyChecker;
@@ -154,7 +154,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             LogProvider internalLogProvider,
             IndexMonitor monitor,
             IndexStatisticsStore indexStatisticsStore,
-            PageCacheTracer pageCacheTracer,
+            CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker,
@@ -173,7 +173,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.populationJobController = new IndexPopulationJobController( scheduler );
         this.internalLog = internalLogProvider.getLog( getClass() );
         this.indexStatisticsStore = indexStatisticsStore;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
         this.databaseName = databaseName;
         this.readOnlyChecker = readOnlyChecker;
@@ -189,7 +189,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     {
         validateDefaultProviderExisting();
 
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INIT_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( INIT_TAG ) )
         {
             indexMapRef.modify( indexMap ->
             {
@@ -371,7 +371,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             proxy.start();
             indexMap.putIndexProxy( proxy );
         } );
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( START_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( START_TAG ) )
         {
             startIndexPopulation( populationJob, cursorContext );
         }
@@ -667,7 +667,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 {
                     // This is OK to get during recovery because the underlying index can be in any unknown state
                     // while we're recovering. Let's just move on to closing it instead.
-                    try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) ) )
+                    try ( var cursorContext = contextFactory.create( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
                     {
                         index.close( cursorContext );
                     }
@@ -776,7 +776,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private void closeAllIndexes()
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
         {
             indexMapRef.modify( indexMap ->
             {
@@ -828,8 +828,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping, Subject subject )
     {
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState,
-                jobScheduler, tokenNameLookup, pageCacheTracer, memoryTracker, databaseName, subject, config );
-        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer, memoryTracker, databaseName, subject, NODE, config );
+                jobScheduler, tokenNameLookup, contextFactory, memoryTracker, databaseName, subject, config );
+        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, contextFactory, memoryTracker, databaseName, subject, NODE, config );
     }
 
     private void startIndexPopulation( IndexPopulationJob job, CursorContext cursorContext )
@@ -939,7 +939,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         void startPopulation()
         {
-            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( START_TAG ) ) )
+            try ( var cursorContext = contextFactory.create( START_TAG ) )
             {
                 if ( nodePopulationJob != null )
                 {

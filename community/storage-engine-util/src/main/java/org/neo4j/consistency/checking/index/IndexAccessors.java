@@ -27,7 +27,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
@@ -36,7 +38,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -55,29 +57,30 @@ public class IndexAccessors implements Closeable
 
     public IndexAccessors(
             IndexProviderMap providers,
-            Iterable<IndexDescriptor> indexes,
-            IndexSamplingConfig samplingConfig, PageCacheTracer pageCacheTracer, TokenNameLookup tokenNameLookup )
+            Function<CursorContext,Iterator<IndexDescriptor>> indexes,
+            IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup, CursorContextFactory contextFactory )
     {
-        this( providers, indexes, samplingConfig, null /*we'll use a default below, if this is null*/, pageCacheTracer, tokenNameLookup );
+        this( providers, indexes, samplingConfig, null /*we'll use a default below, if this is null*/, tokenNameLookup, contextFactory );
     }
 
     public IndexAccessors(
             IndexProviderMap providers,
-            Iterable<IndexDescriptor> indexes,
+            Function<CursorContext,Iterator<IndexDescriptor>> indexes,
             IndexSamplingConfig samplingConfig,
             IndexAccessorLookup accessorLookup,
-            PageCacheTracer pageCacheTracer,
-            TokenNameLookup tokenNameLookup )
+            TokenNameLookup tokenNameLookup, CursorContextFactory contextFactory )
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG ) )
         {
             // Default to instantiate new accessors
             accessorLookup = accessorLookup != null ? accessorLookup
                                                     : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig, tokenNameLookup );
-            for ( IndexDescriptor indexDescriptor : indexes )
+            Iterator<IndexDescriptor> descriptors = indexes.apply( cursorContext );
+            while ( descriptors.hasNext() )
             {
                 try
                 {
+                    IndexDescriptor indexDescriptor = descriptors.next();
                     // we intentionally only check indexes that are online since
                     // - populating indexes will be rebuilt on next startup
                     // - failed indexes have to be dropped by the user anyways

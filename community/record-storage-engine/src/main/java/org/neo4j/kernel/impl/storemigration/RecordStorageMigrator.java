@@ -175,14 +175,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private final LogService logService;
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
+    private final PageCacheTracer pageCacheTracer;
     private final JobScheduler jobScheduler;
-    private final PageCacheTracer cacheTracer;
     private final CursorContextFactory contextFactory;
     private final BatchImporterFactory batchImporterFactory;
     private final MemoryTracker memoryTracker;
 
-    public RecordStorageMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
-            LogService logService, JobScheduler jobScheduler, PageCacheTracer cacheTracer,
+    public RecordStorageMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, PageCacheTracer pageCacheTracer, Config config,
+            LogService logService, JobScheduler jobScheduler,
             CursorContextFactory contextFactory,
             BatchImporterFactory batchImporterFactory, MemoryTracker memoryTracker )
     {
@@ -192,7 +192,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         this.config = config;
         this.logService = logService;
         this.jobScheduler = jobScheduler;
-        this.cacheTracer = cacheTracer;
+        this.pageCacheTracer = pageCacheTracer;
         this.contextFactory = contextFactory;
         this.batchImporterFactory = batchImporterFactory;
         this.memoryTracker = memoryTracker;
@@ -275,7 +275,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
                 // Token stores
                 try ( NeoStores dstStore = dstFactory.openNeoStores( false, StoreType.SCHEMA, StoreType.PROPERTY, StoreType.META_DATA );
-                      SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorContext,
+                      SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, contextFactory,
                               memoryTracker, dstStore.getMetaDataStore() ) )
                 {
                     dstStore.start( cursorContext );
@@ -473,7 +473,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             {
                 // We have to make sure to keep the token ids if we're migrating properties/labels
                 BatchImporter importer = batchImporterFactory.instantiate(
-                        migrationDirectoryStructure, fileSystem, cacheTracer, importConfig, logService,
+                        migrationDirectoryStructure, fileSystem, pageCacheTracer, importConfig, logService,
                         migrationBatchImporterMonitor( legacyStore, progressReporter,
                                 importConfig ), additionalInitialIds, config, newFormat, Monitor.NO_MONITOR, jobScheduler,
                         Collector.STRICT, LogFilesInitializer.NULL, indexImporterFactory, memoryTracker, contextFactory );
@@ -531,7 +531,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private NeoStores instantiateLegacyStore( RecordFormats format, RecordDatabaseLayout directoryStructure )
     {
         return new StoreFactory( directoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
-                format, NullLogProvider.getInstance(), cacheTracer, readOnly(), Sets.immutable.empty() ).openAllNeoStores( true );
+                format, NullLogProvider.getInstance(), contextFactory, readOnly(), Sets.immutable.empty() ).openAllNeoStores( true );
     }
 
     private void prepareBatchImportMigration( RecordDatabaseLayout sourceDirectoryStructure, RecordDatabaseLayout migrationStrcuture, RecordFormats oldFormat,
@@ -562,7 +562,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         else
         {
             // Migrate all token stores and dynamic node label ids, keeping their ids intact
-            DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config, cacheTracer );
+            DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config, contextFactory );
 
             StoreType[] storesToMigrate = {
                     StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
@@ -590,7 +590,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private StoreFactory createStoreFactory( RecordDatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
     {
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), cacheTracer,
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), contextFactory,
                 writable(), immutable.empty() );
     }
 
@@ -760,7 +760,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorContext );
 
             try ( SchemaRuleMigrationAccess dstAccess =
-                          RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorContext, memoryTracker );
+                          RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, contextFactory, memoryTracker );
                   var schemaCursors = schemaStorageCreator.getSchemaStorageTokenCursors( srcCursors ) )
             {
                 migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, schemaCursors );

@@ -42,24 +42,24 @@ public class DatabaseMigratorFactory
     private final Config config;
     private final LogService logService;
     private final PageCache pageCache;
+    private final PageCacheTracer pageCacheTracer;
     private final JobScheduler jobScheduler;
     private final NamedDatabaseId namedDatabaseId;
-    private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
     private final DatabaseHealth databaseHealth;
     private final CursorContextFactory contextFactory;
 
-    public DatabaseMigratorFactory( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler,
-            NamedDatabaseId namedDatabaseId, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, DatabaseHealth databaseHealth,
+    public DatabaseMigratorFactory( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, PageCacheTracer pageCacheTracer,
+            JobScheduler jobScheduler, NamedDatabaseId namedDatabaseId, MemoryTracker memoryTracker, DatabaseHealth databaseHealth,
             CursorContextFactory contextFactory )
     {
         this.fs = fs;
         this.config = config;
         this.logService = logService;
         this.pageCache = pageCache;
+        this.pageCacheTracer = pageCacheTracer;
         this.jobScheduler = jobScheduler;
         this.namedDatabaseId = namedDatabaseId;
-        this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
         this.databaseHealth = databaseHealth;
         this.contextFactory = contextFactory;
@@ -69,7 +69,7 @@ public class DatabaseMigratorFactory
             DependencyResolver dependencies )
     {
         DatabaseConfig dbConfig = new DatabaseConfig( Collections.emptyMap(), config, namedDatabaseId );
-        return new DatabaseMigrator( fs, dbConfig, logService, dependencies, pageCache, jobScheduler, databaseLayout,
-                storageEngineFactory, pageCacheTracer, contextFactory, memoryTracker, databaseHealth );
+        return new DatabaseMigrator( fs, dbConfig, logService, dependencies, pageCache, pageCacheTracer, jobScheduler, databaseLayout,
+                storageEngineFactory, contextFactory, memoryTracker, databaseHealth );
     }
 }

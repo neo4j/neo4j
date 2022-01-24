@@ -178,7 +178,8 @@ class CsvInputEstimateCalculationIT
                     .reservedPageBytes( reserved_page_header_bytes.defaultValue() ) );
                     NeoStores stores = new StoreFactory( databaseLayout, config,
                             new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
-                          NullLogProvider.getInstance(), cacheTracer, writable() ).openAllNeoStores() )
+                          NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ),
+                            writable() ).openAllNeoStores() )
             {
                 assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
                 assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );

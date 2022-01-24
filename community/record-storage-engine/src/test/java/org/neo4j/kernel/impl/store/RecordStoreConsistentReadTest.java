@@ -33,6 +33,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -75,7 +77,7 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
         pageCache = PageCacheSupportExtension.getPageCache( fs, config().withInconsistentReads( nextReadIsInconsistent ) );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
+                        pageCache, fs, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable() );
         neoStores = factory.openAllNeoStores( true );
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
         initialiseStore( neoStores );

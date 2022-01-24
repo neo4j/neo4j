@@ -63,7 +63,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -144,7 +144,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final boolean parallelIndexUpdatesApply;
     private IndexUpdatesWorkSync indexUpdatesSync;
     private final IdController idController;
-    private final PageCacheTracer cacheTracer;
+    private final CursorContextFactory contextFactory;
     private final MemoryTracker otherMemoryTracker;
     private final CommandLockVerification.Factory commandLockVerificationFactory;
     private final LockVerificationMonitor.Factory lockVerificationFactory;
@@ -173,13 +173,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             IdGeneratorFactory idGeneratorFactory,
             IdController idController,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            PageCacheTracer cacheTracer,
             boolean createStoreIfNotExists,
             MemoryTracker otherMemoryTracker,
             DatabaseReadOnlyChecker readOnlyChecker,
             CommandLockVerification.Factory commandLockVerificationFactory,
             LockVerificationMonitor.Factory lockVerificationFactory,
-            CursorContext cursorContext
+            CursorContextFactory contextFactory
     )
     {
         this.databaseLayout = databaseLayout;
@@ -191,12 +190,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.databaseHealth = databaseHealth;
         this.constraintSemantics = constraintSemantics;
         this.idController = idController;
-        this.cacheTracer = cacheTracer;
+        this.contextFactory = contextFactory;
         this.otherMemoryTracker = otherMemoryTracker;
         this.commandLockVerificationFactory = commandLockVerificationFactory;
         this.lockVerificationFactory = lockVerificationFactory;
 
-        StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, internalLogProvider, cacheTracer, readOnlyChecker );
+        StoreFactory factory =
+                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, internalLogProvider, contextFactory, readOnlyChecker );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
         Stream.of( RecordIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
         Stream.of( SchemaIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
@@ -213,10 +213,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
 
             countsStore = openCountsStore( pageCache, fs, databaseLayout, internalLogProvider, userLogProvider, recoveryCleanupWorkCollector, readOnlyChecker,
-                    config, cacheTracer, cursorContext );
+                    config, contextFactory );
 
-            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, userLogProvider, recoveryCleanupWorkCollector, readOnlyChecker, config,
-                    cacheTracer, cursorContext );
+            groupDegreesStore =
+                    openDegreesStore( pageCache, fs, databaseLayout, userLogProvider, recoveryCleanupWorkCollector, readOnlyChecker, config, contextFactory );
 
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
             storeEntityCounters = new RecordDatabaseEntityCounters( idGeneratorFactory, countsStore );
@@ -240,7 +240,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private TransactionApplierFactoryChain buildApplierFacadeChain( TransactionApplicationMode mode )
     {
         Function<IdGeneratorUpdatesWorkSync,IdUpdateListener> idUpdateListenerFunction =
-                mode == REVERSE_RECOVERY ? workSync -> IdUpdateListener.IGNORE : workSync -> workSync.newBatch( cacheTracer );
+                mode == REVERSE_RECOVERY ? workSync -> IdUpdateListener.IGNORE : workSync -> workSync.newBatch( contextFactory );
         List<TransactionApplierFactory> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
         if ( consistencyCheckApply && mode.needsAuxiliaryStores() )
@@ -269,7 +269,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout, LogProvider internalLogProvider,
             LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            PageCacheTracer pageCacheTracer, CursorContext cursorContext )
+            CursorContextFactory contextFactory )
     {
         try
         {
@@ -281,7 +281,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
                 {
                     log.warn( "Missing counts store, rebuilding it." );
-                    new CountsComputer( neoStores, pageCache, pageCacheTracer, layout, memoryTracker, log ).initialize( updater, cursorContext, memoryTracker );
+                    new CountsComputer( neoStores, pageCache, contextFactory, layout, memoryTracker, log ).initialize( updater, cursorContext, memoryTracker );
                     log.warn( "Counts store rebuild completed." );
                 }
 
@@ -290,8 +290,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 {
                     return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                 }
-            }, readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
-                    config.get( counts_store_max_cached_entries ), userLogProvider, cursorContext );
+            }, readOnlyChecker, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
+                    config.get( counts_store_max_cached_entries ), userLogProvider, contextFactory );
         }
         catch ( IOException e )
         {
@@ -301,13 +301,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout,
             LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            PageCacheTracer pageCacheTracer, CursorContext cursorContext )
+            CursorContextFactory contextFactory )
     {
         try
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
-                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
-                    config.get( counts_store_max_cached_entries ), userLogProvider, cursorContext );
+                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
+                    config.get( counts_store_max_cached_entries ), userLogProvider, contextFactory );
         }
         catch ( IOException e )
         {
@@ -457,7 +457,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             InjectedNLIUpgradeCallback injectedNLIUpgradeCallback )
     {
         // Pass in callback with new id here and modify
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_UPGRADE_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( SCHEMA_UPGRADE_TAG ) )
         {
             SchemaStore schemaStore = neoStores.getSchemaStore();
             long nliId = schemaStore.nextId( cursorContext );
@@ -550,7 +550,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void start() throws Exception
     {
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( STORAGE_ENGINE_START_TAG ) );
+        try ( var cursorContext = contextFactory.create( STORAGE_ENGINE_START_TAG );
               var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
             neoStores.start( cursorContext );
@@ -563,7 +563,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @VisibleForTesting
     public void loadSchemaCache()
     {
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_CACHE_START_TAG ) );
+        try ( var cursorContext = contextFactory.create( SCHEMA_CACHE_START_TAG );
               var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
             schemaCache.load( schemaRuleAccess.getAll( storeCursors ) );
@@ -661,7 +661,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             @Override
             public void init()
             {
-                try ( var cursorContext = new CursorContext(  cacheTracer.createPageCursorTracer( TOKENS_INIT_TAG ) );
+                try ( var cursorContext = contextFactory.create( TOKENS_INIT_TAG );
                       var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
                 {
                     tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), storeCursors );

@@ -28,7 +28,7 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -65,7 +65,7 @@ public class TransactionLogInitializer
     private final FileSystemAbstraction fs;
     private final MetadataProvider store;
     private final StorageEngineFactory storageEngineFactory;
-    private final PageCacheTracer tracer;
+    private final CursorContextFactory contextFactory;
 
     /**
      * Get a {@link LogFilesInitializer} implementation, suitable for e.g. passing to a batch importer.
@@ -73,13 +73,13 @@ public class TransactionLogInitializer
      */
     public static LogFilesInitializer getLogFilesInitializer()
     {
-        return ( databaseLayout, store, fileSystem, checkpointReason ) ->
+        return ( databaseLayout, store, fileSystem, checkpointReason, contextFactory ) ->
         {
             try
             {
                 TransactionLogInitializer initializer = new TransactionLogInitializer(
                         fileSystem, store, StorageEngineFactory.defaultStorageEngine(),
-                        PageCacheTracer.NULL );
+                        contextFactory );
                 initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason );
             }
             catch ( IOException e )
@@ -90,12 +90,12 @@ public class TransactionLogInitializer
     }
 
     public TransactionLogInitializer( FileSystemAbstraction fs, MetadataProvider store, StorageEngineFactory storageEngineFactory,
-                                      PageCacheTracer tracer )
+                                      CursorContextFactory contextFactory )
     {
         this.fs = fs;
         this.store = store;
         this.storageEngineFactory = storageEngineFactory;
-        this.tracer = tracer;
+        this.contextFactory = contextFactory;
     }
 
     /**
@@ -103,7 +103,7 @@ public class TransactionLogInitializer
      */
     public void initializeEmptyLogFile( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason ) throws IOException
     {
-        try ( var cursorContext = new CursorContext( tracer.createPageCursorTracer( RESET_TRANSACTION_OFFSET_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( RESET_TRANSACTION_OFFSET_TAG ) )
         {
             // since we reset transaction log file, we can't trust old log file offset anymore from metadata store and we need to reset it before
             // log files will be started since on start we will try position writer on the last known good location
@@ -171,7 +171,7 @@ public class TransactionLogInitializer
         int checksum = transactionLogWriter.append( emptyTx, BASE_TX_ID, BASE_TX_CHECKSUM );
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint( logFiles, reason, position );
-        try ( CursorContext cursorContext = new CursorContext( tracer.createPageCursorTracer( LOGS_UPGRADER_TRACER_TAG ) ) )
+        try ( CursorContext cursorContext = contextFactory.create( LOGS_UPGRADER_TRACER_TAG ) )
         {
             store.setLastCommittedAndClosedTransactionId(
                     transactionId, checksum, timestamp, position.getByteOffset(), position.getLogVersion(), cursorContext );

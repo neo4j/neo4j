@@ -25,7 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -35,9 +35,9 @@ public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implemen
 {
     private static final String PAGE_CACHE_LONG_ARRAY_WORKER_TAG = "pageCacheLongArrayWorker";
 
-    PageCacheLongArray( PagedFile pagedFile, PageCacheTracer pageCacheTracer, long length, long defaultValue, long base ) throws IOException
+    PageCacheLongArray( PagedFile pagedFile, CursorContextFactory contextFactory, long length, long defaultValue, long base ) throws IOException
     {
-        super( pagedFile, pageCacheTracer, Long.BYTES, length, defaultValue, base );
+        super( pagedFile, contextFactory, Long.BYTES, length, defaultValue, base );
     }
 
     @Override
@@ -45,7 +45,7 @@ public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( PAGE_CACHE_LONG_ARRAY_WORKER_TAG ) );
+        try ( CursorContext cursorContext = contextFactory.create( PAGE_CACHE_LONG_ARRAY_WORKER_TAG );
               PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorContext ) )
         {
             cursor.next();
@@ -69,7 +69,7 @@ public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( PAGE_CACHE_LONG_ARRAY_WORKER_TAG ) );
+        try ( CursorContext cursorContext = contextFactory.create( PAGE_CACHE_LONG_ARRAY_WORKER_TAG );
             PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorContext ) )
         {
             cursor.next();

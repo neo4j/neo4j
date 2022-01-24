@@ -32,7 +32,9 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
@@ -51,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -59,6 +62,8 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 @Neo4jLayoutExtension
 class NodeImporterTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Inject
     private PageCache pageCache;
 
@@ -75,7 +80,7 @@ class NodeImporterTest
         IdMapper idMapper = mock( IdMapper.class );
         JobScheduler scheduler = new ThreadPoolJobScheduler();
         try ( Lifespan life = new Lifespan( scheduler );
-              BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, layout,
+              BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, CONTEXT_FACTORY, layout,
                       defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults(),
                       INSTANCE ) )
         {
@@ -112,7 +117,7 @@ class NodeImporterTest
     {
         JobScheduler scheduler = new ThreadPoolJobScheduler();
         try ( Lifespan life = new Lifespan( scheduler );
-                BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, layout,
+                BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, CONTEXT_FACTORY, layout,
                         defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults(),
                         INSTANCE ) )
         {

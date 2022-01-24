@@ -25,7 +25,7 @@ import org.neo4j.internal.id.BufferedIdController;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -34,28 +34,29 @@ public class IdContextFactory
     private final JobScheduler jobScheduler;
     private final Function<NamedDatabaseId,IdGeneratorFactory> idFactoryProvider;
     private final Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
-    private final PageCacheTracer cacheTracer;
+    private final CursorContextFactory contextFactory;
 
     IdContextFactory( JobScheduler jobScheduler, Function<NamedDatabaseId,IdGeneratorFactory> idFactoryProvider,
-            Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper, PageCacheTracer cacheTracer )
+            Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper, CursorContextFactory contextFactory )
     {
         this.jobScheduler = jobScheduler;
         this.idFactoryProvider = idFactoryProvider;
         this.factoryWrapper = factoryWrapper;
-        this.cacheTracer = cacheTracer;
+        this.contextFactory = contextFactory;
     }
 
     public DatabaseIdContext createIdContext( NamedDatabaseId namedDatabaseId )
     {
-        return createBufferingIdContext( idFactoryProvider, jobScheduler, cacheTracer, namedDatabaseId );
+        return createBufferingIdContext( idFactoryProvider, jobScheduler, contextFactory, namedDatabaseId );
     }
 
     private DatabaseIdContext createBufferingIdContext( Function<NamedDatabaseId,? extends IdGeneratorFactory> idGeneratorFactoryProvider,
-            JobScheduler jobScheduler, PageCacheTracer cacheTracer, NamedDatabaseId namedDatabaseId )
+            JobScheduler jobScheduler, CursorContextFactory contextFactory, NamedDatabaseId namedDatabaseId )
     {
         IdGeneratorFactory idGeneratorFactory = idGeneratorFactoryProvider.apply( namedDatabaseId );
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory );
-        BufferedIdController bufferingController = createBufferedIdController( bufferingIdGeneratorFactory, jobScheduler, cacheTracer, namedDatabaseId.name() );
+        BufferedIdController bufferingController = createBufferedIdController( bufferingIdGeneratorFactory, jobScheduler, contextFactory,
+                namedDatabaseId.name() );
         return createIdContext( bufferingIdGeneratorFactory, bufferingController );
     }
 
@@ -65,8 +66,8 @@ public class IdContextFactory
     }
 
     private static BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory, JobScheduler scheduler,
-            PageCacheTracer cacheTracer, String databaseName )
+            CursorContextFactory contextFactory, String databaseName )
     {
-        return new BufferedIdController( idGeneratorFactory, scheduler, cacheTracer, databaseName );
+        return new BufferedIdController( idGeneratorFactory, scheduler, contextFactory, databaseName );
     }
 }

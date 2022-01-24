@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.RandomSupport;
@@ -60,6 +61,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import static org.neo4j.index.internal.gbptree.TreeNode.setKeyCount;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @EphemeralTestDirectoryExtension
@@ -293,8 +295,10 @@ class CrashGenerationCleanerTest
         assertThat( cacheTracer.unpins() ).isZero();
         assertThat( cacheTracer.hits() ).isZero();
 
+        var cursorContextFactory = new CursorContextFactory( cacheTracer, EMPTY );
+
         var cleaner = new CrashGenerationCleaner( pagedFile, treeNode, 0, pages.length,
-                unstableTreeState.stableGeneration(), unstableTreeState.unstableGeneration(), NO_MONITOR, cacheTracer, "test tree" );
+                unstableTreeState.stableGeneration(), unstableTreeState.unstableGeneration(), NO_MONITOR, cursorContextFactory, "test tree" );
         cleaner.clean( executor );
 
         assertThat( cacheTracer.pins() ).isEqualTo( pages.length );
@@ -305,7 +309,8 @@ class CrashGenerationCleanerTest
     private CrashGenerationCleaner crashGenerationCleaner( PagedFile pagedFile, int lowTreeNodeId, int highTreeNodeId, SimpleCleanupMonitor monitor )
     {
         return new CrashGenerationCleaner( pagedFile, treeNode, lowTreeNodeId, highTreeNodeId,
-                unstableTreeState.stableGeneration(), unstableTreeState.unstableGeneration(), monitor, PageCacheTracer.NULL, "test tree" );
+                unstableTreeState.stableGeneration(), unstableTreeState.unstableGeneration(), monitor,
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), "test tree" );
     }
 
     private void initializeFile( PagedFile pagedFile, Page... pages ) throws IOException

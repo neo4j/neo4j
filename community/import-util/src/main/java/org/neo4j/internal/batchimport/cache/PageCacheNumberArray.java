@@ -25,7 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -41,30 +41,30 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
     private static final String PAGE_CACHE_WORKER_TAG = "pageCacheNumberArrayWorker";
     protected final PagedFile pagedFile;
     protected final int entriesPerPage;
-    protected final PageCacheTracer pageCacheTracer;
     protected final int entrySize;
+    protected final CursorContextFactory contextFactory;
     private final long length;
     private final long defaultValue;
     private final long base;
     private boolean closed;
 
-    PageCacheNumberArray( PagedFile pagedFile, PageCacheTracer pageCacheTracer, int entrySize, long length, long base ) throws IOException
+    PageCacheNumberArray( PagedFile pagedFile, CursorContextFactory contextFactory, int entrySize, long length, long base ) throws IOException
     {
-        this( pagedFile, pageCacheTracer, entrySize, length, 0, base );
+        this( pagedFile, contextFactory, entrySize, length, 0, base );
     }
 
-    PageCacheNumberArray( PagedFile pagedFile, PageCacheTracer pageCacheTracer, int entrySize, long length, long defaultValue, long base )
+    PageCacheNumberArray( PagedFile pagedFile, CursorContextFactory contextFactory, int entrySize, long length, long defaultValue, long base )
             throws IOException
     {
         this.pagedFile = pagedFile;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.entrySize = entrySize;
         this.entriesPerPage = pagedFile.payloadSize() / entrySize;
         this.length = length;
         this.defaultValue = defaultValue;
         this.base = base;
 
-        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( PAGE_CACHE_WORKER_TAG ) );
+        try ( CursorContext cursorContext = contextFactory.create( PAGE_CACHE_WORKER_TAG );
               PageCursor cursorToSetLength = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
             setLength( cursorToSetLength, length );
@@ -102,7 +102,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
 
     protected void setDefaultValue( long defaultValue ) throws IOException
     {
-        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( PAGE_CACHE_WORKER_TAG ) );
+        try ( CursorContext cursorContext = contextFactory.create( PAGE_CACHE_WORKER_TAG );
               PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorContext ) )
         {
             writeCursor.next();

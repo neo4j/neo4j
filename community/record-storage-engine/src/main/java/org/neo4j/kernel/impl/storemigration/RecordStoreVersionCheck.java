@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -52,9 +52,9 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     private final String databaseName;
 
     public RecordStoreVersionCheck( FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout, LogProvider logProvider, Config config,
-            PageCacheTracer pageCacheTracer )
+            CursorContextFactory contextFactory )
     {
-        this( pageCache, databaseLayout, configuredVersion( config, databaseLayout, fs, pageCache, logProvider, pageCacheTracer ), config );
+        this( pageCache, databaseLayout, configuredVersion( config, databaseLayout, fs, pageCache, logProvider, contextFactory ), config );
     }
 
     RecordStoreVersionCheck( PageCache pageCache, RecordDatabaseLayout databaseLayout, RecordFormats configuredFormat, Config config )
@@ -165,8 +165,8 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     }
 
     private static RecordFormats configuredVersion( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider, PageCacheTracer pageCacheTracer )
+            LogProvider logProvider, CursorContextFactory contextFactory )
     {
-        return RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider, pageCacheTracer );
+        return RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider, contextFactory );
     }
 }

@@ -41,7 +41,7 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.lock.LockService;
@@ -61,6 +61,7 @@ import org.neo4j.token.api.TokenHolder;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
@@ -222,8 +223,8 @@ public class RecordStorageEngineSupport
         {
             super( databaseLayout, config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState, constraintSemantics,
                     indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(),
-                    PageCacheTracer.NULL, true, EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(),
-                    CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, CursorContext.NULL_CONTEXT );
+                     true, EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(),
+                    CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

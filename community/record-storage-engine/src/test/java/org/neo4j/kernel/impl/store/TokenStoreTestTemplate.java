@@ -39,6 +39,8 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -61,6 +63,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -95,8 +98,9 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         nameStore = new DynamicStringStore( namesFile, namesIdFile, config, RecordIdType.LABEL_TOKEN_NAME, generatorFactory, pageCache, logProvider,
                 TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion(), writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         store = instantiateStore( file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config );
-        nameStore.initialise( true, NULL_CONTEXT );
-        store.initialise( true, NULL_CONTEXT );
+        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+        nameStore.initialise( true, contextFactory );
+        store.initialise( true, contextFactory );
         nameStore.start( NULL_CONTEXT );
         store.start( NULL_CONTEXT );
         storeCursors = createCursors( store, nameStore );

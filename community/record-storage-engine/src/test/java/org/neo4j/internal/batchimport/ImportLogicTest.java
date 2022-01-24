@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -65,6 +66,8 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 @ExtendWith( RandomExtension.class )
 class ImportLogicTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
@@ -80,8 +83,8 @@ class ImportLogicTest
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
         IndexImporterFactory factory = mock( IndexImporterFactory.class );
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
-        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
-                getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
+        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, CONTEXT_FACTORY,
+                databaseLayout, defaultFormat(), DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
             //noinspection EmptyTryBlock
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
@@ -155,8 +158,8 @@ class ImportLogicTest
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
         IndexImporterFactory factory = mock( IndexImporterFactory.class );
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
-        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
-                getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
+        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, CONTEXT_FACTORY,
+                databaseLayout, defaultFormat(), DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
             // when
             DataStatistics.RelationshipTypeCount[] relationshipTypeCounts = new DataStatistics.RelationshipTypeCount[]

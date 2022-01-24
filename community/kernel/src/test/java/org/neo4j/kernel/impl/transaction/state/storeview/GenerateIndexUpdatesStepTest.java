@@ -37,6 +37,7 @@ import java.util.function.LongFunction;
 
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.state.storeview.GenerateIndexUpdatesStep.GeneratedIndexUpdates;
 import org.neo4j.lock.Lock;
@@ -52,6 +53,7 @@ import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -64,6 +66,7 @@ class GenerateIndexUpdatesStepTest
     private static final int OTHER_LABEL = 2;
     private static final String KEY = "key";
     private static final String OTHER_KEY = "other_key";
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @ValueSource( booleans = {true, false} )
     @ParameterizedTest
@@ -74,7 +77,7 @@ class GenerateIndexUpdatesStepTest
         TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep( new SimpleStageControl(), DEFAULT, data, any -> StoreCursors.NULL, alwaysTrue(), new NodeCursorBehaviour( data ),
-                        new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
+                        new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, CONTEXT_FACTORY, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
@@ -103,7 +106,8 @@ class GenerateIndexUpdatesStepTest
         TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, any -> StoreCursors.NULL, alwaysTrue(),
-                        new NodeCursorBehaviour( data ), new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, 100, alsoWrite, PageCacheTracer.NULL, INSTANCE );
+                        new NodeCursorBehaviour( data ), new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, 100, alsoWrite,
+                        CONTEXT_FACTORY, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
@@ -131,8 +135,8 @@ class GenerateIndexUpdatesStepTest
         TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, any -> StoreCursors.NULL, alwaysTrue(),
-                        new NodeCursorBehaviour( data ), new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL,
-                        INSTANCE );
+                        new NodeCursorBehaviour( data ), new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite,
+                        CONTEXT_FACTORY, INSTANCE );
         Set<TestPropertyScanConsumer.Record> expectedUpdates = new HashSet<>();
         try ( StorageNodeCursor cursor = data.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL );
                 StoragePropertyCursor propertyCursor = data.allocatePropertyCursor( NULL_CONTEXT, StoreCursors.NULL, INSTANCE ) )
@@ -183,8 +187,8 @@ class GenerateIndexUpdatesStepTest
         TestTokenScanConsumer scanConsumer = new TestTokenScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, any -> StoreCursors.NULL, alwaysTrue(),
-                        new NodeCursorBehaviour( data ), new int[]{LABEL}, null, scanConsumer, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL,
-                        INSTANCE );
+                        new NodeCursorBehaviour( data ), new int[]{LABEL}, null, scanConsumer, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite,
+                        CONTEXT_FACTORY, INSTANCE );
         Set<TestTokenScanConsumer.Record> expectedUpdates = new HashSet<>();
         try ( StorageNodeCursor cursor = data.allocateNodeCursor( NULL_CONTEXT, StoreCursors.NULL ) )
         {
@@ -238,8 +242,8 @@ class GenerateIndexUpdatesStepTest
         TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, any -> StoreCursors.NULL, alwaysTrue(),
-                        new NodeCursorBehaviour( data ), new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), false, PageCacheTracer.NULL,
-                        INSTANCE );
+                        new NodeCursorBehaviour( data ), new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), false,
+                        CONTEXT_FACTORY, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
@@ -279,8 +283,8 @@ class GenerateIndexUpdatesStepTest
         TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep( new SimpleStageControl(), DEFAULT, data, any -> StoreCursors.NULL, pid -> pid == otherKeyId,
-                        new NodeCursorBehaviour( data ), new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL,
-                        INSTANCE );
+                        new NodeCursorBehaviour( data ), new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite,
+                        CONTEXT_FACTORY, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
@@ -318,7 +322,7 @@ class GenerateIndexUpdatesStepTest
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, any -> StoreCursors.NULL, alwaysTrue(),
                         new NodeCursorBehaviour( data ), new int[]{LABEL}, propertyScanConsumer, tokenScanConsumer, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite,
-                        PageCacheTracer.NULL, INSTANCE );
+                        CONTEXT_FACTORY, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();

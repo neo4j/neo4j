@@ -35,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore.HeavyRecordData;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -56,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -76,7 +78,7 @@ class TestArrayStore
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fileSystem,
-                NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
+                NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable() );
         neoStores = factory.openAllNeoStores( true );
         arrayStore = neoStores.getPropertyStore().getArrayStore();
     }

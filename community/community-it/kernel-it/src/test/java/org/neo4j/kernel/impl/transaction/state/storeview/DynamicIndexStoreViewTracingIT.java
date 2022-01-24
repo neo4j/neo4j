@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -72,13 +74,14 @@ class DynamicIndexStoreViewTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
         var neoStoreStoreView =
                 new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
         var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, locks, lockService, Config.defaults(),
                 indexDescriptor -> indexingService.getIndexProxy( indexDescriptor ), storageEngine::newReader, storageEngine::createStorageCursors,
                 NullLogProvider.getInstance() );
         var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
-                new TestTokenScanConsumer(), false, true, pageCacheTracer, INSTANCE );
+                new TestTokenScanConsumer(), false, true, contextFactory, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( pageCacheTracer.pins() ).isEqualTo( 104 );

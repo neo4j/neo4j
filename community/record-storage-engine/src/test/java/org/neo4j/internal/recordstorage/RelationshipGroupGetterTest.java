@@ -30,6 +30,8 @@ import org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGrou
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -86,7 +88,7 @@ class RelationshipGroupGetterTest
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache, fs, logProvider, PageCacheTracer.NULL, writable() );
+                        pageCache, fs, logProvider, new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ), writable() );
         stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP, StoreType.NODE, StoreType.NODE_LABEL );
         groupStore = spy( stores.getRelationshipGroupStore() );
         NodeStore nodeStore = stores.getNodeStore();

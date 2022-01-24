@@ -61,7 +61,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -105,7 +105,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private final ProgressMonitorFactory progressFactory;
     private final Log log;
     private final ConsistencyFlags consistencyFlags;
-    private final PageCacheTracer cacheTracer;
+    private final CursorContextFactory contextFactory;
     private final CacheAccess cacheAccess;
     private final ConsistencyReporter reporter;
     private final CountsState observedCounts;
@@ -118,7 +118,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     public RecordStorageConsistencyChecker( FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout, PageCache pageCache, NeoStores neoStores,
             IndexProviderMap indexProviders, IndexAccessorLookup accessorLookup, IdGeneratorFactory idGeneratorFactory, ConsistencySummaryStatistics summary,
             ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, Log log, boolean verbose, ConsistencyFlags consistencyFlags,
-            EntityBasedMemoryLimiter.Factory memoryLimit, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            EntityBasedMemoryLimiter.Factory memoryLimit, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
     {
         this.fileSystem = fileSystem;
         this.databaseLayout = databaseLayout;
@@ -129,7 +129,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         this.progressFactory = progressFactory;
         this.log = log;
         this.consistencyFlags = consistencyFlags;
-        this.cacheTracer = cacheTracer;
+        this.contextFactory = contextFactory;
         int stopCountThreshold = config.get( consistency_checker_fail_fast_threshold );
         AtomicInteger stopCount = new AtomicInteger( 0 );
         ConsistencyReporter.Monitor monitor = ConsistencyReporter.NO_MONITOR;
@@ -143,7 +143,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                 }
             };
         }
-        TokenHolders tokenHolders = safeLoadTokens( neoStores, cacheTracer );
+        TokenHolders tokenHolders = safeLoadTokens( neoStores, contextFactory );
         this.report = new InconsistencyReport( new InconsistencyMessageLogger( log, moreDescriptiveRecordToStrings( neoStores, tokenHolders ) ), summary );
         this.reporter = new ConsistencyReporter( report, monitor );
         ParallelExecution execution = new ParallelExecution( numberOfThreads,
@@ -154,22 +154,23 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         this.cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( limiter.rangeSize(), memoryTracker ), Counts.NONE, numberOfThreads );
         this.observedCounts = new CountsState( neoStores, cacheAccess, memoryTracker );
         this.progress = progressFactory.multipleParts( "Consistency check" );
-        this.indexAccessors = instantiateIndexAccessors( neoStores, indexProviders, accessorLookup, tokenHolders, config );
+        this.indexAccessors = instantiateIndexAccessors( neoStores, indexProviders, tokenHolders, config );
         this.context = new CheckerContext( neoStores, indexAccessors,
-                execution, reporter, cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, cacheTracer, memoryTracker, log,
-                verbose, consistencyFlags );
+                execution, reporter, cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, memoryTracker, log,
+                verbose, consistencyFlags, contextFactory );
     }
 
-    private IndexAccessors instantiateIndexAccessors( NeoStores neoStores, IndexProviderMap indexProviders, IndexAccessorLookup accessorLookup,
-            TokenHolders tokenHolders, Config config )
+    private IndexAccessors instantiateIndexAccessors( NeoStores neoStores, IndexProviderMap indexProviders, TokenHolders tokenHolders, Config config )
     {
-        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
-        {
-            SchemaRuleAccess schemaRuleAccess =
-                    SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore() );
-            return new IndexAccessors( indexProviders, () -> schemaRuleAccess.indexesGetAllIgnoreMalformed( storeCursors ), new IndexSamplingConfig( config ),
-                    cacheTracer, tokenHolders );
-        }
+        SchemaRuleAccess schemaRuleAccess =
+                SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore() );
+        return new IndexAccessors( indexProviders, context -> {
+            try ( var storeCursors = new CachedStoreCursors( neoStores, context ) )
+            {
+                return schemaRuleAccess.indexesGetAllIgnoreMalformed( storeCursors );
+            }
+        }, new IndexSamplingConfig( config ),
+                tokenHolders, contextFactory );
     }
 
     public void check() throws ConsistencyCheckIncompleteException
@@ -187,7 +188,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             SchemaChecker schemaChecker = new SchemaChecker( context );
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties = new IntObjectHashMap<>();
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties = new IntObjectHashMap<>();
-            try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_CONSISTENCY_CHECKER_TAG ) );
+            try ( var cursorContext = contextFactory.create( SCHEMA_CONSISTENCY_CHECKER_TAG );
                   var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext ) )
             {
                 schemaChecker.check( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext, storeCursors );
@@ -263,7 +264,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     {
         if ( consistencyFlags.isCheckIndexStructure() )
         {
-            try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( INDEX_STRUCTURE_CHECKER_TAG ) ) )
+            try ( var cursorContext = contextFactory.create( INDEX_STRUCTURE_CHECKER_TAG ) )
             {
                 List<IdGenerator> idGenerators = new ArrayList<>();
                 idGeneratorFactory.visit( idGenerators::add );
@@ -331,7 +332,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
     private void checkCounts()
     {
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( COUNT_STORE_CONSISTENCY_CHECKER_TAG ) );
+        try ( var cursorContext = contextFactory.create( COUNT_STORE_CONSISTENCY_CHECKER_TAG );
                 var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
                 new CountsBuilder()
                 {
@@ -347,8 +348,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                     {
                         return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                     }
-                }, readOnly(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
-                        cursorContext );
+                }, readOnly(),GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
+                        contextFactory );
                 var checker = observedCounts.checker( reporter ) )
         {
             if ( context.consistencyFlags.isCheckGraph() )
@@ -366,7 +367,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
     private void checkRelationshipGroupDegressStore()
     {
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG ) );
+        try ( var cursorContext = contextFactory.create( REL_GROUP_STORE_CONSISTENCY_CHECKER_TAG );
               var relationshipGroupDegrees = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
                 RecoveryCleanupWorkCollector.ignore(), new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
         {
@@ -382,8 +383,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             {
                 return neoStores.getMetaDataStore().getLastCommittedTransactionId();
             }
-        }, readOnly(), cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
-                      cursorContext ) )
+        }, readOnly(), GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
+                      contextFactory ) )
         {
             consistencyCheckSingleCheckable( report, ProgressListener.NONE, relationshipGroupDegrees, RecordType.RELATIONSHIP_GROUP, cursorContext );
         }
@@ -394,13 +395,13 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         }
     }
 
-    private static TokenHolders safeLoadTokens( NeoStores neoStores, PageCacheTracer cacheTracer )
+    private static TokenHolders safeLoadTokens( NeoStores neoStores, CursorContextFactory contextFactory )
     {
         TokenHolders tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( CONSISTENCY_CHECKER_TOKEN_LOADER_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( CONSISTENCY_CHECKER_TOKEN_LOADER_TAG ) )
         {
             tokenHolders.relationshipTypeTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getRelationshipTypeTokenStore(), cursorContext ) );
             tokenHolders.labelTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getLabelTokenStore(), cursorContext ) );

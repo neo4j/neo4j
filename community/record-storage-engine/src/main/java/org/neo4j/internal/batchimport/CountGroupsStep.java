@@ -24,7 +24,7 @@ import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 /**
@@ -35,10 +35,10 @@ public class CountGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
 {
     private final RelationshipGroupCache cache;
 
-    public CountGroupsStep( StageControl control, Configuration config, RelationshipGroupCache groupCache, PageCacheTracer pageCacheTracer,
+    public CountGroupsStep( StageControl control, Configuration config, RelationshipGroupCache groupCache, CursorContextFactory contextFactory,
             StatsProvider... additionalStatsProviders )
     {
-        super( control, "COUNT", config, 1, pageCacheTracer, additionalStatsProviders );
+        super( control, "COUNT", config, 1, contextFactory, additionalStatsProviders );
         this.cache = groupCache;
     }
 

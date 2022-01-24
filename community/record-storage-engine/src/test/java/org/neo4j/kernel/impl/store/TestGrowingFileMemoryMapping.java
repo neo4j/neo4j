@@ -29,6 +29,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -43,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @PageCacheExtension
@@ -68,7 +70,7 @@ class TestGrowingFileMemoryMapping
         DefaultIdGeneratorFactory idGeneratorFactory =
                 new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate(), databaseLayout.getDatabaseName() );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache,
-                testDirectory.getFileSystem(), NullLogProvider.getInstance(), NULL, writable() );
+                testDirectory.getFileSystem(), NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable() );
 
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true );
                var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )

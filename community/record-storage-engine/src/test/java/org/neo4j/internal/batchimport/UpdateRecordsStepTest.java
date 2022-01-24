@@ -31,6 +31,7 @@ import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -50,9 +51,12 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class UpdateRecordsStepTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Test
     void ioThroughputStatDoesNotOverflow()
     {
@@ -62,7 +66,7 @@ class UpdateRecordsStepTest
 
         Configuration configuration = mock( Configuration.class );
         StageControl stageControl = mock( StageControl.class );
-        UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, configuration, store, new StorePrepareIdSequence(), PageCacheTracer.NULL,
+        UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, configuration, store, new StorePrepareIdSequence(), CONTEXT_FACTORY,
                 getCursorsCreator(), NODE_CURSOR );
 
         NodeRecord record = new NodeRecord( 1 );
@@ -83,7 +87,7 @@ class UpdateRecordsStepTest
         RecordStore<NodeRecord> store = mock( NodeStore.class );
         StageControl stageControl = mock( StageControl.class );
         UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, Configuration.DEFAULT, store,
-                new StorePrepareIdSequence(), PageCacheTracer.NULL, getCursorsCreator(), NODE_CURSOR );
+                new StorePrepareIdSequence(), CONTEXT_FACTORY, getCursorsCreator(), NODE_CURSOR );
 
         NodeRecord node1 = new NodeRecord( 1 );
         node1.setInUse( true );

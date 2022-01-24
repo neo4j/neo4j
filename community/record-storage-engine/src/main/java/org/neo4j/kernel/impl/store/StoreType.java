@@ -28,128 +28,127 @@ import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
-import org.neo4j.io.pagecache.context.CursorContext;
 
 public enum StoreType
 {
     NODE_LABEL( RecordDatabaseFile.NODE_LABEL_STORE, RecordIdType.NODE_LABELS )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createNodeLabelStore( cursorContext );
+                    return neoStores.createNodeLabelStore();
                 }
             },
     NODE( RecordDatabaseFile.NODE_STORE, RecordIdType.NODE )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createNodeStore( cursorContext );
+                    return neoStores.createNodeStore();
                 }
             },
     PROPERTY_KEY_TOKEN_NAME( RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE, RecordIdType.PROPERTY_KEY_TOKEN_NAME )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createPropertyKeyTokenNamesStore( cursorContext );
+                    return neoStores.createPropertyKeyTokenNamesStore();
                 }
             },
     PROPERTY_KEY_TOKEN( RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, SchemaIdType.PROPERTY_KEY_TOKEN )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createPropertyKeyTokenStore( cursorContext );
+                    return neoStores.createPropertyKeyTokenStore();
                 }
             },
     PROPERTY_STRING( RecordDatabaseFile.PROPERTY_STRING_STORE, RecordIdType.STRING_BLOCK )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createPropertyStringStore( cursorContext );
+                    return neoStores.createPropertyStringStore();
                 }
             },
     PROPERTY_ARRAY( RecordDatabaseFile.PROPERTY_ARRAY_STORE, RecordIdType.ARRAY_BLOCK )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createPropertyArrayStore( cursorContext );
+                    return neoStores.createPropertyArrayStore();
                 }
             },
     PROPERTY( RecordDatabaseFile.PROPERTY_STORE, RecordIdType.PROPERTY )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createPropertyStore( cursorContext );
+                    return neoStores.createPropertyStore();
                 }
             },
     RELATIONSHIP( RecordDatabaseFile.RELATIONSHIP_STORE, RecordIdType.RELATIONSHIP )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createRelationshipStore( cursorContext );
+                    return neoStores.createRelationshipStore();
                 }
             },
     RELATIONSHIP_TYPE_TOKEN_NAME( RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE, RecordIdType.RELATIONSHIP_TYPE_TOKEN_NAME )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createRelationshipTypeTokenNamesStore( cursorContext );
+                    return neoStores.createRelationshipTypeTokenNamesStore();
                 }
             },
     RELATIONSHIP_TYPE_TOKEN( RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, SchemaIdType.RELATIONSHIP_TYPE_TOKEN )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createRelationshipTypeTokenStore( cursorContext );
+                    return neoStores.createRelationshipTypeTokenStore();
                 }
             },
     LABEL_TOKEN_NAME( RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE, RecordIdType.LABEL_TOKEN_NAME )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createLabelTokenNamesStore( cursorContext );
+                    return neoStores.createLabelTokenNamesStore();
                 }
             },
     LABEL_TOKEN( RecordDatabaseFile.LABEL_TOKEN_STORE, SchemaIdType.LABEL_TOKEN )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createLabelTokenStore( cursorContext );
+                    return neoStores.createLabelTokenStore();
                 }
             },
     SCHEMA( RecordDatabaseFile.SCHEMA_STORE, SchemaIdType.SCHEMA )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createSchemaStore( cursorContext );
+                    return neoStores.createSchemaStore();
                 }
             },
     RELATIONSHIP_GROUP( RecordDatabaseFile.RELATIONSHIP_GROUP_STORE, RecordIdType.RELATIONSHIP_GROUP )
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createRelationshipGroupStore( cursorContext );
+                    return neoStores.createRelationshipGroupStore();
                 }
             },
     META_DATA( CommonDatabaseFile.METADATA_STORE, RecordIdType.NODE ) // Make sure this META store is last
             {
                 @Override
-                public CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext )
+                public CommonAbstractStore open( NeoStores neoStores )
                 {
-                    return neoStores.createMetadataStore( cursorContext );
+                    return neoStores.createMetadataStore();
                 }
             };
 
@@ -162,7 +161,7 @@ public enum StoreType
         this.idType = idType;
     }
 
-    abstract CommonAbstractStore open( NeoStores neoStores, CursorContext cursorContext );
+    abstract CommonAbstractStore open( NeoStores neoStores );
 
     public DatabaseFile getDatabaseFile()
     {

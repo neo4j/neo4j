@@ -113,6 +113,7 @@ import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PA
 public class StoreUpgraderTest
 {
     private static final String INTERNAL_LOG_FILE = "debug.log";
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Inject
     private TestDirectory testDirectory;
@@ -289,7 +290,7 @@ public class StoreUpgraderTest
 
         StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig,
                 new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, databaseLayout.getDatabaseName() ), pageCache, fileSystem,
-                NullLogProvider.getInstance(), NULL, writable() );
+                NullLogProvider.getInstance(), CONTEXT_FACTORY, writable() );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );
@@ -305,7 +306,8 @@ public class StoreUpgraderTest
 
         fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), pageCacheTracer );
+        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), contextFactory );
 
         assertThat( pageCacheTracer.hits() ).isEqualTo( 0 );
         assertThat( pageCacheTracer.pins() ).isEqualTo( 1 );
@@ -486,12 +488,12 @@ public class StoreUpgraderTest
 
     private StoreVersionCheck getVersionCheck( PageCache pageCache )
     {
-        return getVersionCheck( pageCache, NULL );
+        return getVersionCheck( pageCache, CONTEXT_FACTORY );
     }
 
-    private StoreVersionCheck getVersionCheck( PageCache pageCache, PageCacheTracer cacheTracer )
+    private StoreVersionCheck getVersionCheck( PageCache pageCache, CursorContextFactory contextFactory )
     {
-        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), getTuningConfig(), cacheTracer );
+        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), getTuningConfig(), contextFactory );
     }
 
     private static StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
@@ -553,7 +555,7 @@ public class StoreUpgraderTest
         NullLogService instance = NullLogService.getInstance();
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
         var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler, pageCacheTracer,
+        RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, pageCacheTracer, getTuningConfig(), instance, jobScheduler,
                 contextFactory, batchImporterFactory, INSTANCE );
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         SchemaIndexMigrator indexMigrator =
@@ -565,10 +567,10 @@ public class StoreUpgraderTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new Monitors() );
         var logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache,
-                                             logsLocator, config, dependencies, pageCacheTracer, INSTANCE, databaseHealth );
+                                             logsLocator, config, dependencies, INSTANCE, databaseHealth, contextFactory );
         StoreUpgrader upgrader =
                 new StoreUpgrader( storageEngineFactory, storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader,
-                        pageCacheTracer );
+                        contextFactory );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( NOT_PARTICIPATING );
         upgrader.addParticipant( NOT_PARTICIPATING );
@@ -623,7 +625,7 @@ public class StoreUpgraderTest
     {
         StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig,
                 new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, databaseLayout.getDatabaseName() ), pageCache, fileSystem,
-                NullLogProvider.getInstance(), NULL, writable() );
+                NullLogProvider.getInstance(), CONTEXT_FACTORY, writable() );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );

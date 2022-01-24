@@ -60,6 +60,7 @@ import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
@@ -101,6 +102,7 @@ import org.neo4j.token.TokenHolders;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
@@ -145,7 +147,8 @@ public class CommunityEditionModule extends StandaloneEditionModule
         LocksFactory lockFactory = createLockFactory( globalConfig, logService );
         locksSupplier = () -> createLockManager( lockFactory, globalConfig, globalClock );
 
-        idContextFactory = tryResolveOrCreate( IdContextFactory.class, externalDependencies, () -> createIdContextFactory( globalModule ) );
+        idContextFactory = tryResolveOrCreate( IdContextFactory.class, externalDependencies, () -> createIdContextFactory( globalModule,
+                new CursorContextFactory( globalModule.getTracers().getPageCacheTracer(), EMPTY ) ) );
 
         tokenHoldersProvider = createTokenHolderProvider( globalModule );
 
@@ -196,10 +199,10 @@ public class CommunityEditionModule extends StandaloneEditionModule
         };
     }
 
-    private static IdContextFactory createIdContextFactory( GlobalModule globalModule )
+    private static IdContextFactory createIdContextFactory( GlobalModule globalModule, CursorContextFactory contextFactory )
     {
         return IdContextFactoryBuilder.of( globalModule.getFileSystem(), globalModule.getJobScheduler(), globalModule.getGlobalConfig(),
-                globalModule.getTracers().getPageCacheTracer() ).build();
+                contextFactory ).build();
     }
 
     protected Predicate<String> fileWatcherFileNameFilter()

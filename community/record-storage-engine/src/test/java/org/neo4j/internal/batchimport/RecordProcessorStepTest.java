@@ -27,12 +27,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class RecordProcessorStepTest
 {
@@ -46,7 +48,8 @@ class RecordProcessorStepTest
         AtomicInteger doneCalls = new AtomicInteger();
         AtomicInteger closeCalls = new AtomicInteger();
         try ( RecordProcessorStep<NodeRecord> step = new RecordProcessorStep<>( new SimpleStageControl(), "test", config,
-                () -> new TestProcessor( result, doneCalls, closeCalls ), true, numThreads, NULL, any -> StoreCursors.NULL ) )
+                () -> new TestProcessor( result, doneCalls, closeCalls ), true, numThreads,
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), any -> StoreCursors.NULL ) )
         {
             // when
             step.start( 0 );

@@ -24,10 +24,9 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.Integer.min;
 
@@ -45,20 +44,20 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
     private final RecordDataAssembler<RECORD> assembler;
 
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage, RecordStore<RECORD> store,
-            PageCacheTracer pageCacheTracer )
+            CursorContextFactory contextFactory )
     {
-        this( control, config, inRecordWritingStage, store, new RecordDataAssembler<>( store::newRecord, true ), pageCacheTracer );
+        this( control, config, inRecordWritingStage, store, new RecordDataAssembler<>( store::newRecord, true ), contextFactory );
     }
 
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
-            RecordStore<RECORD> store, RecordDataAssembler<RECORD> converter, PageCacheTracer pageCacheTracer )
+            RecordStore<RECORD> store, RecordDataAssembler<RECORD> converter, CursorContextFactory contextFactory )
     {
         super( control, ">", config, parallelReading( config, inRecordWritingStage )
                                      // Limit reader (I/O) threads to 12, it's a high degree of concurrency and assigning more
                                      // will likely not make things faster, rather the other way around and it's difficult for
                                      // the processor assigner to proficiently understand that dynamic
                                      ? min( 12, config.maxNumberOfProcessors() )
-                                     : 1, pageCacheTracer );
+                                     : 1, contextFactory );
         this.store = store;
         this.assembler = converter;
         this.batchSize = config.batchSize();

@@ -73,6 +73,8 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -161,6 +163,8 @@ import static org.neo4j.storageengine.api.StorageEngineFactory.defaultStorageEng
 class RecoveryIT
 {
     private static final int TEN_KB = (int) ByteUnit.kibiBytes( 10 );
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
     @Inject
@@ -1075,7 +1079,8 @@ class RecoveryIT
         // Make an ID generator, say for the node store, dirty
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
         try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, layout.idNodeStore(), RecordIdType.NODE, () -> 0L /*will not be used*/, 10_000,
-                writable(), Config.defaults(), NULL_CONTEXT, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
+                writable(), Config.defaults(), CONTEXT_FACTORY,
+                Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
         {
             // Merely opening a marker will make the backing GBPTree dirty
             idGenerator.marker( NULL_CONTEXT ).close();
@@ -1452,7 +1457,7 @@ class RecoveryIT
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
         try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, path, idType, () -> 0L /*will not be used*/, 10_000, readOnly(),
-                Config.defaults(), NULL_CONTEXT, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
+                Config.defaults(), CONTEXT_FACTORY, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
         {
             MutableBoolean dirtyOnStartup = new MutableBoolean();
             InvocationHandler invocationHandler = ( proxy, method, args ) ->

@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobMonitoringParams;
@@ -44,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.CrashGenerationCleaner.MAX_BATCH_SIZE;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @PageCacheExtension
 class CrashGenerationCleanerCrashTest
@@ -85,7 +87,7 @@ class CrashGenerationCleanerCrashTest
         int pageSize = 8192;
         PagedFile pagedFile = new StubPagedFile( pageSize )
         {
-            AtomicBoolean first = new AtomicBoolean( true );
+            final AtomicBoolean first = new AtomicBoolean( true );
 
             @Override
             public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
@@ -106,6 +108,6 @@ class CrashGenerationCleanerCrashTest
             }
         };
         return new CrashGenerationCleaner( pagedFile, new TreeNodeFixedSize<>( pageSize, SimpleLongLayout.longLayout().build() ), 0,
-                MAX_BATCH_SIZE * 1_000_000_000, 5, 7, NO_MONITOR, PageCacheTracer.NULL, "test tree" );
+                MAX_BATCH_SIZE * 1_000_000_000, 5, 7, NO_MONITOR, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), "test tree" );
     }
 }

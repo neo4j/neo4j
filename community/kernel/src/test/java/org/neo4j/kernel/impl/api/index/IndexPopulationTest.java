@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -52,12 +53,14 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class IndexPopulationTest
 {
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
     private final InMemoryTokens tokens = new InMemoryTokens();
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Test
     void mustFlipToFailedIfFailureToApplyLastBatchWhileFlipping() throws Exception
@@ -73,11 +76,11 @@ class IndexPopulationTest
 
         try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
                 MultipleIndexPopulator multipleIndexPopulator = new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ),
-                        scheduler, tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() ) )
+                        scheduler, tokens, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, Config.defaults() ) )
         {
             MultipleIndexPopulator.IndexPopulation indexPopulation = multipleIndexPopulator.addPopulator( populator, dummyIndex(), flipper, t -> failedProxy );
             multipleIndexPopulator.queueConcurrentUpdate( someUpdate() );
-            multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL ).run( StoreScan.NO_EXTERNAL_UPDATES );
+            multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( StoreScan.NO_EXTERNAL_UPDATES );
 
             // when
             indexPopulation.flip( false, CursorContext.NULL_CONTEXT );
@@ -128,7 +131,7 @@ class IndexPopulationTest
         {
             @Override
             public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
-                    TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
+                    TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory,
                     MemoryTracker memoryTracker )
             {
                 return new StoreScan()

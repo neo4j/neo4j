@@ -36,8 +36,8 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -55,6 +55,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
@@ -123,17 +124,19 @@ class RelationshipCheckerIT
     private void prepareContext() throws Exception
     {
         var neoStores = storageEngine.testAccessNeoStores();
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             Iterable<IndexDescriptor> indexDescriptors =
                     () -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).indexesGetAll(
                             storeCursors );
-            var indexAccessors = new IndexAccessors( providerMap, indexDescriptors, new IndexSamplingConfig( config ), PageCacheTracer.NULL, tokenHolders );
+            var indexAccessors =
+                    new IndexAccessors( providerMap, c -> indexDescriptors.iterator(), new IndexSamplingConfig( config ), tokenHolders, contextFactory );
             context = new CheckerContext( neoStores, indexAccessors,
                     execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
                     tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( EntityBasedMemoryLimiter.class ),
-                    ProgressMonitorFactory.NONE.multipleParts( "test" ), pageCache, pageCacheTracer, INSTANCE, NullLog.getInstance(), false,
-                    ConsistencyFlags.DEFAULT );
+                    ProgressMonitorFactory.NONE.multipleParts( "test" ), pageCache, INSTANCE, NullLog.getInstance(), false,
+                    ConsistencyFlags.DEFAULT, contextFactory );
             context.initialize();
         }
     }

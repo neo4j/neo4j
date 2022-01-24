@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -79,6 +80,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intValue;
@@ -86,6 +88,8 @@ import static org.neo4j.values.storable.Values.intValue;
 @ExtendWith( {RandomExtension.class, JobSchedulerExtension.class} )
 class MultipleIndexPopulatorTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Inject
     private RandomSupport random;
     @Inject
@@ -112,7 +116,7 @@ class MultipleIndexPopulatorTest
         schemaState = mock( SchemaState.class );
         tokens = new InMemoryTokens();
         multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState,
-                jobScheduler, tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
+                jobScheduler, tokens, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
     }
 
     @Test
@@ -225,7 +229,7 @@ class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.stop( populationToCancel, NULL_CONTEXT );
 
-        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -247,7 +251,7 @@ class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.stop( populationToCancel, NULL_CONTEXT );
 
-        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
@@ -266,10 +270,10 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator2, 2 );
 
         multipleIndexPopulator.create( NULL_CONTEXT );
-        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
 
         verify( indexStoreView ).visitNodes( any( int[].class ), any( IntPredicate.class ), any( PropertyScanConsumer.class ), isNull(), anyBoolean(),
-                anyBoolean(), any( PageCacheTracer.class ), any() );
+                anyBoolean(), any( CursorContextFactory.class ), any() );
     }
 
     @Test
@@ -394,7 +398,7 @@ class MultipleIndexPopulatorTest
 
         when( indexPopulator1.sample( any( CursorContext.class ) ) ).thenThrow( getSampleError() );
 
-        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
         multipleIndexPopulator.flipAfterStoreScan( false, NULL_CONTEXT );
 
         verify( indexPopulator1 ).close( false, NULL_CONTEXT );
@@ -502,7 +506,7 @@ class MultipleIndexPopulatorTest
         when( indexPopulator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
 
         // when
-        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
         multipleIndexPopulator.flipAfterStoreScan( true, NULL_CONTEXT );
 
         // then
@@ -528,7 +532,7 @@ class MultipleIndexPopulatorTest
         IndexSample sample = new IndexSample( indexSize, uniqueValues, sampleSize, updates );
         when( indexPopulator.sample( any( CursorContext.class ) ) ).thenReturn( sample );
 
-        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
         multipleIndexPopulator.flipAfterStoreScan( false, NULL_CONTEXT );
 
         verify( indexPopulator ).close( true, NULL_CONTEXT );
@@ -547,7 +551,7 @@ class MultipleIndexPopulatorTest
         int roughlyNumUpdates = (int) (multipleIndexPopulator.batchMaxByteSizeScan / HeapEstimator.sizeOf( largeString ));
         Value largeStringValue = Values.stringValue( largeString );
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "name" ).materialise( 99 );
-        multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
+        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
         boolean full = false;
 
         // when
@@ -617,7 +621,7 @@ class MultipleIndexPopulatorTest
         multipleIndexPopulator.create( NULL_CONTEXT );
 
         // when
-        StoreScan storeScan = multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
+        StoreScan storeScan = multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
         cancelAction.accept( population1 );
         verify( actualStoreScan, never() ).stop();

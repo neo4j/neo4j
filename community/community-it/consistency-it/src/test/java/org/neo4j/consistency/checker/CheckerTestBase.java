@@ -63,6 +63,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.Kernel;
@@ -113,6 +114,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intArray;
@@ -245,9 +247,10 @@ class CheckerTestBase
         DependencyResolver dependencies = db.getDependencyResolver();
         IndexProviderMap indexProviders = dependencies.resolveDependency( IndexProviderMap.class );
         IndexingService indexingService = dependencies.resolveDependency( IndexingService.class );
+        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
         IndexAccessors indexAccessors = new IndexAccessors( indexProviders,
-                allIndexes( neoStores, dependencies.resolveDependency( TokenHolders.class ) ),
-                new IndexSamplingConfig( config ), new LookupAccessorsFromRunningDb( indexingService ), PageCacheTracer.NULL, tokenHolders );
+                cursorContext -> allIndexes( neoStores, dependencies.resolveDependency( TokenHolders.class ) ).iterator(),
+                new IndexSamplingConfig( config ), new LookupAccessorsFromRunningDb( indexingService ), tokenHolders, contextFactory );
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );
         reporter = new ConsistencyReporter( report, monitor );
@@ -257,8 +260,8 @@ class CheckerTestBase
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
         ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK );
         context = new CheckerContext( neoStores, indexAccessors, execution, reporter, cacheAccess, tokenHolders,
-                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, INSTANCE, NullLog.getInstance(), false,
-                consistencyFlags );
+                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, INSTANCE, NullLog.getInstance(), false,
+                consistencyFlags, contextFactory );
         context.initialize();
         return context;
     }

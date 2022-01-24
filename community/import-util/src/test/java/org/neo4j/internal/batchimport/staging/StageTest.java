@@ -33,9 +33,11 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,12 +47,14 @@ import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.internal.batchimport.staging.StageExecution.DEFAULT_PANIC_MONITOR;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @ExtendWith( RandomExtension.class )
 class StageTest
 {
     private static final int TEST_BATCH_SIZE = 100;
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Inject
     private RandomSupport random;
 
@@ -160,7 +164,7 @@ class StageTest
                 }
             } );
 
-            stage.add( new ProcessorStep<>( stage.control(), "consumer", config, 1, NULL )
+            stage.add( new ProcessorStep<>( stage.control(), "consumer", config, 1, CONTEXT_FACTORY )
             {
                 @Override
                 protected void process( Object batch, BatchSender sender, CursorContext cursorContext )
@@ -225,7 +229,7 @@ class StageTest
                 } );
 
                 // Processor
-                add( new ProcessorStep<>( control(), "processor", configuration, 2, NULL )
+                add( new ProcessorStep<>( control(), "processor", configuration, 2, CONTEXT_FACTORY )
                 {
                     private final ChaosMonkey chaosMonkey = new ChaosMonkey();
 
@@ -250,7 +254,7 @@ class StageTest
                 } );
 
                 // Final consumer
-                add( new ProcessorStep<>( control(), "consumer", configuration, 1, NULL )
+                add( new ProcessorStep<>( control(), "consumer", configuration, 1, CONTEXT_FACTORY )
                 {
                     private final ChaosMonkey chaosMonkey = new ChaosMonkey();
 
@@ -279,7 +283,7 @@ class StageTest
         ReceiveOrderAssertingStep( StageControl control, String name, Configuration config,
                 long processingTime, boolean endOfLine )
         {
-            super( control, name, config, 1, NULL );
+            super( control, name, config, 1, CONTEXT_FACTORY );
             this.processingTime = processingTime;
             this.endOfLine = endOfLine;
         }

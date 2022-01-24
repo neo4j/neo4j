@@ -38,6 +38,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.internal.locker.FileLockException;
@@ -147,11 +149,12 @@ public class StoreInfoCommand extends AbstractCommand
             Config config, boolean structured, boolean failSilently )
     {
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
         try ( var ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             var storageEngineFactory = storageEngineSelector.selectStorageEngine( fs, databaseLayout, pageCache ).orElseThrow();
             var storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, Config.defaults(), pageCache,
-                    NullLogService.getInstance(), PageCacheTracer.NULL );
+                    NullLogService.getInstance(), contextFactory );
             var storeVersion = storeVersionCheck.storeVersion( CursorContext.NULL_CONTEXT )
                     .orElseThrow( () ->
                             new CommandFailedException( format( "Could not find version metadata in store '%s'", databaseLayout.databaseDirectory() ) ) );

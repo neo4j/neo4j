@@ -31,7 +31,7 @@ import org.neo4j.internal.batchimport.staging.PullingProducerStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -46,18 +46,18 @@ public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.Rea
     private final AtomicBoolean continueScanning;
     private final BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier;
     private final Function<CursorContext,StoreCursors> storeCursorsFactory;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final AtomicLong position = new AtomicLong();
     private volatile long lastEntityId;
 
     public ReadEntityIdsStep( StageControl control, Configuration configuration,
             BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier, Function<CursorContext,StoreCursors> storeCursorsFactory,
-            PageCacheTracer cacheTracer, StoreScan.ExternalUpdatesCheck externalUpdatesCheck, AtomicBoolean continueScanning )
+            CursorContextFactory contextFactory, StoreScan.ExternalUpdatesCheck externalUpdatesCheck, AtomicBoolean continueScanning )
     {
         super( control, configuration );
         this.entityIdIteratorSupplier = entityIdIteratorSupplier;
         this.storeCursorsFactory = storeCursorsFactory;
-        this.pageCacheTracer = cacheTracer;
+        this.contextFactory = contextFactory;
         this.externalUpdatesCheck = externalUpdatesCheck;
         this.continueScanning = continueScanning;
     }
@@ -65,7 +65,7 @@ public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.Rea
     @Override
     protected ReadEntityProcessContext processContext()
     {
-        return new ReadEntityProcessContext( pageCacheTracer, storeCursorsFactory, entityIdIteratorSupplier );
+        return new ReadEntityProcessContext( contextFactory, storeCursorsFactory, entityIdIteratorSupplier );
     }
 
     @Override
@@ -135,10 +135,10 @@ public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.Rea
         private final StoreCursors storeCursors;
         private final EntityIdIterator entityIdIterator;
 
-        ReadEntityProcessContext( PageCacheTracer cacheTracer, Function<CursorContext,StoreCursors> storeCursorsFactory,
+        ReadEntityProcessContext( CursorContextFactory contextFactory, Function<CursorContext,StoreCursors> storeCursorsFactory,
                 BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier )
         {
-            cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( CURSOR_TRACER_TAG ) );
+            cursorContext = contextFactory.create( CURSOR_TRACER_TAG );
             storeCursors = storeCursorsFactory.apply( cursorContext );
             entityIdIterator = entityIdIteratorSupplier.apply( cursorContext, storeCursors );
         }

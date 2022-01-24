@@ -52,6 +52,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
@@ -82,6 +83,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
@@ -479,14 +481,14 @@ class NodeStoreTest
             @Override
             protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                     Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-                    CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
+                    CursorContextFactory contextFactory, String databaseName, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
             {
                 return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnlyChecker, config,
-                        cursorContext, databaseName, openOptions, slotDistribution ) );
+                        contextFactory, databaseName, openOptions, slotDistribution ) );
             }
         } );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(),
-                PageCacheTracer.NULL, writable() );
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable() );
         neoStores = factory.openAllNeoStores( true );
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
         nodeStore = neoStores.getNodeStore();

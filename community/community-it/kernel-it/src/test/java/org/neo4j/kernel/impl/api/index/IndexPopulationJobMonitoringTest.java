@@ -26,6 +26,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.memory.MemoryTracker;
@@ -36,14 +38,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.internal.kernel.api.IndexMonitor.NO_MONITOR;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class IndexPopulationJobMonitoringTest
 {
     private final MultipleIndexPopulator populator = mock( MultipleIndexPopulator.class );
     private final MemoryTracker memoryTracker = mock( MemoryTracker.class );
     private final StoreScan scan = mock( StoreScan.class );
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Test
     void testPopulationOfSingleIndex()
@@ -57,7 +60,7 @@ class IndexPopulationJobMonitoringTest
                 PopulationProgress.single( 999, 1000 ),
                 PopulationProgress.DONE
         );
-        var job = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, memoryTracker, "Test DB",
+        var job = new IndexPopulationJob( populator, NO_MONITOR, false, CONTEXT_FACTORY, memoryTracker, "Test DB",
                 new Subject( "Test User" ), NODE, Config.defaults() );
 
         addIndex( job, "the ONE" );
@@ -91,7 +94,7 @@ class IndexPopulationJobMonitoringTest
                 PopulationProgress.single( 999, 1000 ),
                 PopulationProgress.DONE
         );
-        var job = new IndexPopulationJob( populator, NO_MONITOR, false, NULL, memoryTracker, "Another Test DB",
+        var job = new IndexPopulationJob( populator, NO_MONITOR, false, CONTEXT_FACTORY, memoryTracker, "Another Test DB",
                 new Subject( "Another Test User" ), NODE, Config.defaults() );
 
         addIndex( job, "index 1" );

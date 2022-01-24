@@ -48,6 +48,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -120,6 +122,7 @@ import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 class BatchingNeoStoresTest
 {
     private static final RelationshipType RELTYPE = RelationshipType.withName( "TEST" );
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
 
     @Inject
     private TestDirectory testDirectory;
@@ -144,7 +147,9 @@ class BatchingNeoStoresTest
             {
                 RecordFormats recordFormats = selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
                 try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, recordFormats, Configuration.DEFAULT,
-                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL, INSTANCE ) )
+                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL,
+                        CONTEXT_FACTORY,
+                        INSTANCE ) )
                 {
                     store.createNew();
                 }
@@ -168,7 +173,9 @@ class BatchingNeoStoresTest
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
               BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout,
-              recordFormats, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler, PageCacheTracer.NULL, INSTANCE ) )
+              recordFormats, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler, PageCacheTracer.NULL,
+                      CONTEXT_FACTORY,
+                      INSTANCE ) )
         {
             store.createNew();
 
@@ -187,7 +194,8 @@ class BatchingNeoStoresTest
             // given all the stores with some records in them
             testDirectory.cleanup();
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
-                    PageCacheTracer.NULL, databaseLayout, defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    PageCacheTracer.NULL, CONTEXT_FACTORY,
+                    databaseLayout, defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults(), INSTANCE ) )
             {
                 stores.createNew();
@@ -199,7 +207,8 @@ class BatchingNeoStoresTest
 
             // when opening and pruning all except the one we test
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
-                    PageCacheTracer.NULL, databaseLayout, defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    PageCacheTracer.NULL, CONTEXT_FACTORY,
+                    databaseLayout, defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults(), INSTANCE ) )
             {
                 stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
@@ -227,7 +236,8 @@ class BatchingNeoStoresTest
         // given
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( defaultFormat() );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
+                pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY,
+                databaseLayout, formats, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
@@ -247,7 +257,8 @@ class BatchingNeoStoresTest
         // given
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( defaultFormat() );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
+                pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY,
+                databaseLayout, formats, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
@@ -267,7 +278,8 @@ class BatchingNeoStoresTest
         // given
         RecordFormats formats = defaultFormat();
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, databaseLayout, formats, Configuration.DEFAULT,
+                pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY,
+                databaseLayout, formats, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
@@ -286,8 +298,8 @@ class BatchingNeoStoresTest
     {
         // given
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
-                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), NULL_CONTEXT ) )
+                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(),
+                GBPTreeCountsStore.NO_MONITOR, DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), CONTEXT_FACTORY ) )
         {
             countsStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
             countsStore.checkpoint( NULL_CONTEXT );
@@ -295,12 +307,13 @@ class BatchingNeoStoresTest
 
         // when
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, databaseLayout, defaultFormat(), Configuration.DEFAULT,
+                pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY, databaseLayout, defaultFormat(), Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
             stores.buildCountsStore( new CountsBuilder()
             {
+
                 @Override
                 public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
                 {
@@ -315,13 +328,13 @@ class BatchingNeoStoresTest
                 {
                     return BASE_TX_ID + 1;
                 }
-            }, PageCacheTracer.NULL, NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
+            }, CONTEXT_FACTORY, StoreCursors.NULL, INSTANCE );
         }
 
         // then
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
-                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), NULL_CONTEXT ) )
+                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), GBPTreeCountsStore.NO_MONITOR,
+                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), CONTEXT_FACTORY ) )
         {
             assertEquals( 10, countsStore.nodeCount( 1, NULL_CONTEXT ) );
             assertEquals( 20, countsStore.nodeCount( 2, NULL_CONTEXT ) );
@@ -399,8 +412,8 @@ class BatchingNeoStoresTest
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( PanicEventGenerator.NO_OP, nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(),
-                            recoveryCleanupWorkCollector, PageCacheTracer.NULL, true, INSTANCE, writable(), CommandLockVerification.Factory.IGNORE,
-                            LockVerificationMonitor.Factory.IGNORE, NULL_CONTEXT ) );
+                            recoveryCleanupWorkCollector,  true, INSTANCE, writable(), CommandLockVerification.Factory.IGNORE,
+                            LockVerificationMonitor.Factory.IGNORE, CONTEXT_FACTORY ) );
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();

@@ -37,6 +37,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
@@ -55,7 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasFormatVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgraderTest.removeCheckPointFromTxLog;
@@ -87,7 +89,7 @@ public class StoreUpgradeOnStartupTest
         workingHomeDir = testDir.homePath( "working_" + version );
         workingDatabaseLayout = RecordDatabaseLayout.of( Neo4jLayout.of( workingHomeDir ), DEFAULT_DATABASE_NAME );
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
-                Config.defaults(), NULL );
+                Config.defaults(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
         Path prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout, prepareDirectory );
         RecordFormats baselineFormat = RecordFormatSelector.selectForVersion( version );

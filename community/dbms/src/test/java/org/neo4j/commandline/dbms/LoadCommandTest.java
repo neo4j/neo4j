@@ -91,7 +91,7 @@ class LoadCommandTest
         configDir = testDirectory.directory( "config-dir" );
         archive = testDirectory.directory( "some-archive.dump" );
         loader = mock( Loader.class );
-        doReturn( mock( StoreVersionLoader.Result.class ) ).when( loader ).getStoreVersion( any(), any(), any() );
+        doReturn( mock( StoreVersionLoader.Result.class ) ).when( loader ).getStoreVersion( any(), any(), any(), any() );
     }
 
     private void prepareFooDatabaseDirectory() throws IOException

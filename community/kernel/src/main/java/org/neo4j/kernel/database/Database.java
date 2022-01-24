@@ -68,7 +68,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.database.transaction.TransactionLogServiceImpl;
@@ -192,7 +191,6 @@ import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
 public class Database extends LifecycleAdapter
 {
     private static final String STORE_ID_VALIDATOR_TAG = "storeIdValidator";
-    private static final String DATABASE_START_TAG = "databaseStart";
     private final Monitors parentMonitors;
     private final DependencyResolver globalDependencies;
     private final PageCache globalPageCache;
@@ -438,91 +436,88 @@ public class Database extends LifecycleAdapter
                             .startupChecker( new RecoveryStartupChecker( startupController, namedDatabaseId ) )
                             .clock( clock ) );
 
-            try ( var startContext = cursorContextFactory.create( DATABASE_START_TAG ) )
-            {
-                // Build all modules and their services
-                DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
+            // Build all modules and their services
+            DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
 
-                idController.initialize( () -> kernelModule.kernelTransactions().get(), otherDatabaseMemoryTracker );
+            idController.initialize( () -> kernelModule.kernelTransactions().get(), otherDatabaseMemoryTracker );
 
-                storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
-                        constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
-                        userLogProvider, recoveryCleanupWorkCollector, pageCacheTracer, !storageExists, readOnlyDatabaseChecker, otherDatabaseMemoryTracker,
-                        startContext );
+            storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
+                    constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
+                    userLogProvider, recoveryCleanupWorkCollector, !storageExists, readOnlyDatabaseChecker, otherDatabaseMemoryTracker,
+                    cursorContextFactory );
 
-                MetadataProvider metadataProvider = storageEngine.metadataProvider();
-                databaseDependencies.satisfyDependency( metadataProvider );
+            MetadataProvider metadataProvider = storageEngine.metadataProvider();
+            databaseDependencies.satisfyDependency( metadataProvider );
 
-                //Recreate the logFiles after storage engine to get access to dependencies
-                logFiles = getLogFiles( logEntryReader );
+            //Recreate the logFiles after storage engine to get access to dependencies
+            logFiles = getLogFiles( logEntryReader );
 
-                life.add( storageEngine );
-                life.add( storageEngine.schemaAndTokensLifecycle() );
-                life.add( logFiles );
+            life.add( storageEngine );
+            life.add( storageEngine.schemaAndTokensLifecycle() );
+            life.add( logFiles );
 
-                // Token indexes
-                FullScanStoreView fullScanStoreView =
-                        new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, databaseConfig, scheduler );
-                IndexStoreViewFactory indexStoreViewFactory =
-                        new IndexStoreViewFactory( databaseConfig, storageEngine::createStorageCursors, storageEngine::newReader, locks, fullScanStoreView,
-                                lockService, internalLogProvider );
+            // Token indexes
+            FullScanStoreView fullScanStoreView =
+                    new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, databaseConfig, scheduler );
+            IndexStoreViewFactory indexStoreViewFactory =
+                    new IndexStoreViewFactory( databaseConfig, storageEngine::createStorageCursors, storageEngine::newReader, locks, fullScanStoreView,
+                            lockService, internalLogProvider );
 
-                // Schema indexes
-                IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
-                        readOnlyDatabaseChecker, pageCacheTracer, startContext );
-                life.add( indexStatisticsStore );
+            // Schema indexes
+            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
+                    readOnlyDatabaseChecker, cursorContextFactory );
+            life.add( indexStatisticsStore );
 
-                IndexingService indexingService =
-                        buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore, pageCacheTracer,
-                                otherDatabaseMemoryTracker );
+            IndexingService indexingService =
+                    buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore, otherDatabaseMemoryTracker );
 
-                databaseDependencies.satisfyDependency( storageEngine.countsAccessor() );
+            databaseDependencies.satisfyDependency( storageEngine.countsAccessor() );
 
-                cursorContextFactory.init( metadataProvider::getLastClosedTransactionId );
+            cursorContextFactory.init( metadataProvider::getLastClosedTransactionId );
 
-                CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
-                DatabaseTransactionLogModule transactionLogModule =
-                        buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation, logEntryReader, metadataProvider,
-                                databaseMonitors, databaseDependencies, cursorContextFactory );
+            CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
+            DatabaseTransactionLogModule transactionLogModule =
+                    buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation, logEntryReader, metadataProvider,
+                            databaseMonitors, databaseDependencies, cursorContextFactory );
 
-                databaseTransactionEventListeners = new DatabaseTransactionEventListeners( databaseFacade, transactionEventListeners, namedDatabaseId );
-                life.add( databaseTransactionEventListeners );
-                final DatabaseKernelModule kernelModule =
-                        buildKernel( logFiles, transactionLogModule.transactionAppender(), indexingService, databaseSchemaState, storageEngine,
-                                metadataProvider, metadataProvider, databaseAvailabilityGuard, clock, indexStatisticsStore, leaseService,
-                                cursorContextFactory );
+            databaseTransactionEventListeners = new DatabaseTransactionEventListeners( databaseFacade, transactionEventListeners, namedDatabaseId );
+            life.add( databaseTransactionEventListeners );
+            final DatabaseKernelModule kernelModule =
+                    buildKernel( logFiles, transactionLogModule.transactionAppender(), indexingService, databaseSchemaState, storageEngine,
+                            metadataProvider, metadataProvider, databaseAvailabilityGuard, clock, indexStatisticsStore, leaseService,
+                            cursorContextFactory );
 
-                kernelModule.satisfyDependencies( databaseDependencies );
+            kernelModule.satisfyDependencies( databaseDependencies );
 
-                // Do these assignments last so that we can ensure no cyclical dependencies exist
-                this.kernelModule = kernelModule;
+            // Do these assignments last so that we can ensure no cyclical dependencies exist
+            this.kernelModule = kernelModule;
 
-                databaseDependencies.satisfyDependency( databaseSchemaState );
-                databaseDependencies.satisfyDependency( logEntryReader );
-                databaseDependencies.satisfyDependency( storageEngine );
-                databaseDependencies.satisfyDependency( indexingService );
-                databaseDependencies.satisfyDependency( indexStoreViewFactory );
-                databaseDependencies.satisfyDependency( indexStatisticsStore );
-                databaseDependencies.satisfyDependency( indexProviderMap );
-                databaseDependencies.satisfyDependency( forceOperation );
-                databaseDependencies.satisfyDependency( storageEngine.storeEntityCounters() );
+            databaseDependencies.satisfyDependency( databaseSchemaState );
+            databaseDependencies.satisfyDependency( logEntryReader );
+            databaseDependencies.satisfyDependency( storageEngine );
+            databaseDependencies.satisfyDependency( indexingService );
+            databaseDependencies.satisfyDependency( indexStoreViewFactory );
+            databaseDependencies.satisfyDependency( indexStatisticsStore );
+            databaseDependencies.satisfyDependency( indexProviderMap );
+            databaseDependencies.satisfyDependency( forceOperation );
+            databaseDependencies.satisfyDependency( storageEngine.storeEntityCounters() );
 
-                var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
-                this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi );
+            var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
+            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi );
 
-                this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
+            this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
 
-                life.add( databaseHealth );
-                life.add( databaseAvailabilityGuard );
-                life.add( databaseAvailability );
-                life.setLast( checkpointerLifecycle );
+            life.add( databaseHealth );
+            life.add( databaseAvailabilityGuard );
+            life.add( databaseAvailability );
+            life.setLast( checkpointerLifecycle );
 
-                databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
-                life.start();
+            databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
+            life.start();
 
-                registerUpgradeListener();
-                eventListeners.databaseStart( namedDatabaseId );
-            }
+            registerUpgradeListener();
+            eventListeners.databaseStart( namedDatabaseId );
+
             started = true;
             postStartupInit( storageExists );
         }
@@ -662,7 +657,7 @@ public class Database extends LifecycleAdapter
 
         var indexProviderMap = StaticIndexProviderMapFactory.create(
                 indexProvidersLife, databaseConfig, databasePageCache, fs, databaseLogService, databaseMonitors, readOnlyDatabaseChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, tracers.getPageCacheTracer(), databaseLayout, tokenHolders, scheduler, cursorContextFactory, dependencies );
+                recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, cursorContextFactory, dependencies );
         this.indexProviderMap = indexProvidersLife.add( indexProviderMap );
         dependencies.satisfyDependency( this.indexProviderMap );
         // fulltextadapter for FulltextProcedures
@@ -682,8 +677,8 @@ public class Database extends LifecycleAdapter
 
     private DatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
     {
-        var factory = new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, namedDatabaseId,
-                tracers.getPageCacheTracer(), memoryTracker, databaseHealth, cursorContextFactory );
+        var factory = new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, tracers.getPageCacheTracer(), scheduler,
+                namedDatabaseId, memoryTracker, databaseHealth, cursorContextFactory );
         return factory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies );
     }
 
@@ -695,12 +690,11 @@ public class Database extends LifecycleAdapter
             DatabaseSchemaState databaseSchemaState,
             IndexStoreViewFactory indexStoreViewFactory,
             IndexStatisticsStore indexStatisticsStore,
-            PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker )
     {
         return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore, databaseConfig, scheduler,
                 indexProviderMap, tokenHolders, internalLogProvider, databaseMonitors.newMonitor( IndexMonitor.class ),
-                pageCacheTracer, memoryTracker, namedDatabaseId.name(), readOnlyDatabaseChecker ) );
+                cursorContextFactory, memoryTracker, namedDatabaseId.name(), readOnlyDatabaseChecker ) );
     }
 
     /**
@@ -717,14 +711,14 @@ public class Database extends LifecycleAdapter
             TokenNameLookup tokenNameLookup,
             LogProvider internalLogProvider,
             IndexMonitor indexMonitor,
-            PageCacheTracer pageCacheTracer,
+            CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker )
     {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory,
                 tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, indexMonitor,
-                databaseSchemaState, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnlyChecker );
+                databaseSchemaState, indexStatisticsStore, contextFactory, memoryTracker, databaseName, readOnlyChecker );
         storageEngine.addIndexUpdateListener( indexingService );
         return indexingService;
     }
@@ -1044,6 +1038,11 @@ public class Database extends LifecycleAdapter
     public IOController getIoController()
     {
         return ioController;
+    }
+
+    public CursorContextFactory getCursorContextFactory()
+    {
+        return cursorContextFactory;
     }
 
     private void prepareStop( Predicate<PagedFile> deleteFilePredicate )

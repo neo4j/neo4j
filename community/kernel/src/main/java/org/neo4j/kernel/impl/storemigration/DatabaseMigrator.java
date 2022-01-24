@@ -53,31 +53,31 @@ public class DatabaseMigrator
     private final LogService logService;
     private final DependencyResolver dependencyResolver;
     private final PageCache pageCache;
+    private final PageCacheTracer pageCacheTracer;
     private final JobScheduler jobScheduler;
     private final DatabaseLayout databaseLayout;
     private final LegacyTransactionLogsLocator legacyLogsLocator;
     private final StorageEngineFactory storageEngineFactory;
-    private final PageCacheTracer pageCacheTracer;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final DatabaseHealth databaseHealth;
 
     public DatabaseMigrator(
             FileSystemAbstraction fs, Config config, LogService logService, DependencyResolver dependencyResolver, PageCache pageCache,
-            JobScheduler jobScheduler, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
-            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory, MemoryTracker memoryTracker, DatabaseHealth databaseHealth )
+            PageCacheTracer pageCacheTracer, JobScheduler jobScheduler, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
+            CursorContextFactory contextFactory, MemoryTracker memoryTracker, DatabaseHealth databaseHealth )
     {
         this.fs = fs;
         this.config = config;
         this.logService = logService;
         this.dependencyResolver = dependencyResolver;
         this.pageCache = pageCache;
+        this.pageCacheTracer = pageCacheTracer;
         this.jobScheduler = jobScheduler;
         this.databaseLayout = databaseLayout;
         this.contextFactory = contextFactory;
         this.legacyLogsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
         this.storageEngineFactory = storageEngineFactory;
-        this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
         this.databaseHealth = databaseHealth;
     }
@@ -90,17 +90,17 @@ public class DatabaseMigrator
      */
     public void migrate( boolean forceUpgrade ) throws IOException
     {
-        StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, pageCacheTracer );
+        StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, contextFactory );
         var logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, databaseLayout, pageCache, legacyLogsLocator, config, dependencyResolver,
-                                                      pageCacheTracer, memoryTracker, databaseHealth );
+                                                      memoryTracker, databaseHealth, contextFactory );
         Log userLog = logService.getUserLog( DatabaseMigrator.class );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( userLog );
         LogProvider logProvider = logService.getInternalLogProvider();
-        StoreUpgrader storeUpgrader = new StoreUpgrader( storageEngineFactory, versionCheck, progress, config, fs, logProvider, logsUpgrader, pageCacheTracer );
+        StoreUpgrader storeUpgrader = new StoreUpgrader( storageEngineFactory, versionCheck, progress, config, fs, logProvider, logsUpgrader, contextFactory );
 
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants(
-                fs, config, pageCache, jobScheduler, logService, pageCacheTracer, memoryTracker, contextFactory );
+                fs, config, pageCache, jobScheduler, logService, memoryTracker, pageCacheTracer, contextFactory );
         storeParticipants.forEach( storeUpgrader::addParticipant );
 
         IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );

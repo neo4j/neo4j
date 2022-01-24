@@ -138,7 +138,7 @@ class StoreMigratorTest
         setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp, databaseLayout.getDatabaseName(), NULL_CONTEXT );
 
         // ... and with migrator
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, PageCacheTracer.NULL, config, logService, jobScheduler,
                 contextFactory, batchImporterFactory, INSTANCE );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL_CONTEXT );
 
@@ -163,7 +163,7 @@ class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
         // ... and with migrator
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, PageCacheTracer.NULL, config, logService, jobScheduler,
                 contextFactory, batchImporterFactory, INSTANCE );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL_CONTEXT );
 
@@ -197,7 +197,7 @@ class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseLayout.getDatabaseName(), NULL_CONTEXT ) );
         // ... and with migrator
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, PageCacheTracer.NULL, config, logService, jobScheduler,
                 contextFactory, batchImporterFactory, INSTANCE );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId, databaseLayout, NULL_CONTEXT );
 
@@ -276,7 +276,7 @@ class StoreMigratorTest
 
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
                 MetaDataRecordFormat.FIELD_NOT_PRESENT, databaseLayout.getDatabaseName(), NULL_CONTEXT );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler, PageCacheTracer.NULL,
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, PageCacheTracer.NULL, config, logService, jobScheduler,
                 contextFactory, batchImporterFactory, INSTANCE );
         LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100, NULL_CONTEXT );
 
@@ -289,7 +289,7 @@ class StoreMigratorTest
 
     private RecordStorageMigrator newStoreMigrator()
     {
-        return new RecordStorageMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL,
+        return new RecordStorageMigrator( fileSystem, pageCache, PageCacheTracer.NULL, Config.defaults(), NullLogService.getInstance(), jobScheduler,
                 contextFactory, batchImporterFactory, INSTANCE );
     }
 

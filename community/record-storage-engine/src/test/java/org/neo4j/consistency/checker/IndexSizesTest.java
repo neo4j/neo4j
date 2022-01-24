@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 
@@ -52,6 +53,7 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.consistency.checker.NodeIndexChecker.NUM_INDEXES_IN_CACHE;
 import static org.neo4j.consistency.checker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class IndexSizesTest
 {
@@ -79,7 +81,7 @@ class IndexSizesTest
             return mock;
         } );
 
-        sizes = new IndexSizes( execution, indexAccessors, highNodeId, highRelationshipId, PageCacheTracer.NULL );
+        sizes = new IndexSizes( execution, indexAccessors, highNodeId, highRelationshipId, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
     }
 
     @Test

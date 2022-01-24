@@ -48,6 +48,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -150,14 +151,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         this.log = logProvider.getLog( getClass() );
     }
 
-    protected void initialise( boolean createIfNotExists, CursorContext cursorContext )
+    protected void initialise( boolean createIfNotExists, CursorContextFactory contextFactory )
     {
         try
         {
-            boolean created = checkAndLoadStorage( createIfNotExists, cursorContext );
+            boolean created = checkAndLoadStorage( createIfNotExists, contextFactory );
             if ( !created )
             {
-                openIdGenerator( cursorContext );
+                openIdGenerator( contextFactory );
             }
         }
         catch ( Exception e )
@@ -193,72 +194,75 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * this method will instead throw an exception in that situation.
      * @return {@code true} if the store was created as part of this call, otherwise {@code false} if it already existed.
      */
-    private boolean checkAndLoadStorage( boolean createIfNotExists, CursorContext cursorContext )
+    private boolean checkAndLoadStorage( boolean createIfNotExists, CursorContextFactory contextFactory )
     {
-        try
+        try ( var cursorContext = contextFactory.create( "checkAndLoadStorage" ) )
         {
-            determineRecordSize( storeHeaderFormat.generateHeader() );
-            if ( getNumberOfReservedLowIds() > 0 )
+            try
             {
-                // This store has a store-specific header so we have read it before we can be sure that we can map it with correct page size.
-                // Try to open the store file (w/o creating if it doesn't exist), with page size for the configured header value.
-                HEADER defaultHeader = storeHeaderFormat.generateHeader();
-                pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( ANY_PAGE_SIZE ) );
-                HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile, cursorContext );
-                if ( !defaultHeader.equals( readHeader ) )
+                determineRecordSize( storeHeaderFormat.generateHeader() );
+                if ( getNumberOfReservedLowIds() > 0 )
                 {
-                    // The header that we read was different from the default one so unmap
+                    // This store has a store-specific header so we have read it before we can be sure that we can map it with correct page size.
+                    // Try to open the store file (w/o creating if it doesn't exist), with page size for the configured header value.
+                    HEADER defaultHeader = storeHeaderFormat.generateHeader();
+                    pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( ANY_PAGE_SIZE ) );
+                    HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile, cursorContext );
+                    if ( !defaultHeader.equals( readHeader ) )
+                    {
+                        // The header that we read was different from the default one so unmap
+                        pagedFile.close();
+                        pagedFile = null;
+                    }
+                }
+
+                if ( pagedFile == null )
+                {
+                    // Map the file with the correct page size
+                    pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions );
+                }
+            }
+            catch ( NoSuchFileException | StoreNotFoundException e )
+            {
+                if ( pagedFile != null )
+                {
                     pagedFile.close();
                     pagedFile = null;
                 }
-            }
 
-            if ( pagedFile == null )
-            {
-                // Map the file with the correct page size
-                pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions );
-            }
-        }
-        catch ( NoSuchFileException | StoreNotFoundException e )
-        {
-            if ( pagedFile != null )
-            {
-                pagedFile.close();
-                pagedFile = null;
-            }
-
-            if ( createIfNotExists )
-            {
-                try
+                if ( createIfNotExists )
                 {
-                    // Generate the header and determine correct page size
-                    determineRecordSize( storeHeaderFormat.generateHeader() );
+                    try
+                    {
+                        // Generate the header and determine correct page size
+                        determineRecordSize( storeHeaderFormat.generateHeader() );
 
-                    // Create the id generator, and also open it because some stores may need the id generator when initializing their store
-                    idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(),
-                            readOnlyChecker, configuration, cursorContext, openOptions, SINGLE_IDS );
+                        // Create the id generator, and also open it because some stores may need the id generator when initializing their store
+                        idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(),
+                                readOnlyChecker, configuration, contextFactory, openOptions, SINGLE_IDS );
 
-                    // Map the file (w/ the CREATE flag) and initialize the header
-                    pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( CREATE ) );
-                    initialiseNewStoreFile( cursorContext );
-                    return true; // <-- successfully created and initialized
+                        // Map the file (w/ the CREATE flag) and initialize the header
+                        pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( CREATE ) );
+                        initialiseNewStoreFile( cursorContext );
+                        return true; // <-- successfully created and initialized
+                    }
+                    catch ( IOException e1 )
+                    {
+                        e.addSuppressed( e1 );
+                    }
                 }
-                catch ( IOException e1 )
+                if ( e instanceof StoreNotFoundException )
                 {
-                    e.addSuppressed( e1 );
+                    throw (StoreNotFoundException) e;
                 }
+                throw new StoreNotFoundException( "Store file not found: " + storageFile, e );
             }
-            if ( e instanceof StoreNotFoundException )
+            catch ( IOException e )
             {
-                throw (StoreNotFoundException) e;
+                throw new UnderlyingStorageException( "Unable to open store file: " + storageFile, e );
             }
-            throw new StoreNotFoundException( "Store file not found: " + storageFile, e );
+            return false;
         }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to open store file: " + storageFile, e );
-        }
-        return false;
     }
 
     protected void initialiseNewStoreFile( CursorContext cursorContext ) throws IOException
@@ -622,10 +626,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    private void openIdGenerator( CursorContext cursorContext ) throws IOException
+    private void openIdGenerator( CursorContextFactory contextFactory ) throws IOException
     {
-        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), () -> scanForHighId( cursorContext ), recordFormat.getMaxId(), readOnlyChecker,
-                configuration, cursorContext, openOptions, SINGLE_IDS );
+        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), () ->
+        {
+            try ( var cursorContext = contextFactory.create( "highIdScan" ) )
+            {
+                return scanForHighId( cursorContext );
+            }
+        }, recordFormat.getMaxId(), readOnlyChecker, configuration, contextFactory, openOptions, SINGLE_IDS );
     }
 
     /**

@@ -47,7 +47,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -80,7 +80,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 /**
  * There are two ways data is fed to this multi-populator:
  * <ul>
- * <li>A {@link StoreScan} is created through {@link #createStoreScan(PageCacheTracer)}. The store scan is started by
+ * <li>A {@link StoreScan} is created through {@link #createStoreScan(CursorContextFactory)}. The store scan is started by
  * {@link StoreScan#run(StoreScan.ExternalUpdatesCheck)}, which is a blocking call and will scan the entire store and generate
  * updates that are fed into the {@link IndexPopulator populators}. Only a single call to this
  * method should be made during the life time of a {@link MultipleIndexPopulator} and should be called by the
@@ -95,7 +95,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>Instantiation.</li>
  * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexProxyStrategy, FlippableIndexProxy, FailedIndexProxyFactory)}.</li>
  * <li>Call to {@link #create(CursorContext)} to create data structures and files to start accepting updates.</li>
- * <li>Call to {@link #createStoreScan(PageCacheTracer)} and {@link StoreScan#run(StoreScan.ExternalUpdatesCheck)}(blocking call).</li>
+ * <li>Call to {@link #createStoreScan(CursorContextFactory)} and {@link StoreScan#run(StoreScan.ExternalUpdatesCheck)}(blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
  * <li>Call to {@link #flipAfterStoreScan(boolean, CursorContext)} after successful population, or {@link #cancel(Throwable, CursorContext)} if not</li>
  * </ol>
@@ -130,6 +130,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
 
     private final AtomicLong activeTasks = new AtomicLong();
     private final IndexStoreView storeView;
+    private final CursorContextFactory contextFactory;
     private final NodePropertyAccessor propertyAccessor;
     private final LogProvider logProvider;
     private final Log log;
@@ -141,16 +142,16 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     private final MemoryTracker memoryTracker;
     private volatile StoreScan storeScan;
     private final TokenNameLookup tokenNameLookup;
-    private final PageCacheTracer cacheTracer;
     private final String databaseName;
     private final Subject subject;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer,
+            JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, CursorContextFactory contextFactory,
             MemoryTracker memoryTracker, String databaseName, Subject subject, Config config )
     {
         this.storeView = storeView;
-        this.cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( MULTIPLE_INDEX_POPULATOR_TAG ) );
+        this.contextFactory = contextFactory;
+        this.cursorContext = contextFactory.create( MULTIPLE_INDEX_POPULATOR_TAG );
         this.memoryTracker = memoryTracker;
         this.propertyAccessor = storeView.newPropertyAccessor( cursorContext, memoryTracker );
         this.logProvider = logProvider;
@@ -160,7 +161,6 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         this.phaseTracker = new LoggingPhaseTracker( logProvider.getLog( IndexPopulationJob.class ) );
         this.jobScheduler = jobScheduler;
         this.tokenNameLookup = tokenNameLookup;
-        this.cacheTracer = cacheTracer;
         this.databaseName = databaseName;
         this.subject = subject;
 
@@ -197,7 +197,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         }, cursorContext );
     }
 
-    StoreScan createStoreScan( PageCacheTracer cacheTracer )
+    StoreScan createStoreScan( CursorContextFactory contextFactory )
     {
         int[] entityTokenIds = entityTokenIds();
         int[] propertyKeyIds = propertyKeyIds();
@@ -211,7 +211,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                     createTokenScanConsumer(),
                     false,
                     true,
-                    cacheTracer,
+                    contextFactory,
                     memoryTracker );
             storeScan = new LoggingStoreScan( innerStoreScan, false );
         }
@@ -223,7 +223,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                     createTokenScanConsumer(),
                     false,
                     true,
-                    cacheTracer,
+                    contextFactory,
                     memoryTracker );
             storeScan = new LoggingStoreScan( innerStoreScan, true );
         }
@@ -769,7 +769,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                 @Override
                 public void process()
                 {
-                    try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( POPULATION_WORK_FLUSH_TAG ) ) )
+                    try ( var cursorContext = contextFactory.create( POPULATION_WORK_FLUSH_TAG ) )
                     {
                         addFromScan( updates, cursorContext );
                     }

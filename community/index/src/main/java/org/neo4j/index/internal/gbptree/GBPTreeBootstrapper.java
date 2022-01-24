@@ -31,7 +31,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -54,20 +54,20 @@ public class GBPTreeBootstrapper implements Closeable
     private final JobScheduler jobScheduler;
     private final LayoutBootstrapper layoutBootstrapper;
     private final DatabaseReadOnlyChecker readOnlyChecker;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private PageCache pageCache;
 
     public GBPTreeBootstrapper( FileSystemAbstraction fs, JobScheduler jobScheduler, LayoutBootstrapper layoutBootstrapper,
-            DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer )
+            DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory )
     {
         this.fs = fs;
         this.jobScheduler = jobScheduler;
         this.layoutBootstrapper = layoutBootstrapper;
         this.readOnlyChecker = readOnlyChecker;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
     }
 
-    public Bootstrap bootstrapTree( Path file, CursorContext cursorContext, OpenOption... additionalOptions )
+    public Bootstrap bootstrapTree( Path file, OpenOption... additionalOptions )
     {
         try
         {
@@ -93,7 +93,7 @@ public class GBPTreeBootstrapper implements Closeable
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
             GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnlyChecker,
-                    pageCacheTracer, Sets.immutable.of( additionalOptions ), DEFAULT_DATABASE_NAME, file.getFileName().toString(), cursorContext );
+                    Sets.immutable.of( additionalOptions ), DEFAULT_DATABASE_NAME, file.getFileName().toString(), contextFactory );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )
@@ -116,7 +116,7 @@ public class GBPTreeBootstrapper implements Closeable
     private MetaVisitor<?,?> visitMeta( Path file ) throws IOException
     {
         MetaVisitor<?,?> metaVisitor = new MetaVisitor();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) ) )
+        try ( var cursorContext = contextFactory.create( "TreeBootstrap" ) )
         {
             GBPTreeStructure.visitMeta( pageCache, file, metaVisitor, file.getFileName().toString(), cursorContext );
         }
@@ -126,7 +126,7 @@ public class GBPTreeBootstrapper implements Closeable
     private StateVisitor<?,?> visitState( Path file ) throws IOException
     {
         StateVisitor<?,?> stateVisitor = new StateVisitor();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) ) )
+        try ( var cursorContext = contextFactory.create( "TreeBootstrap" ) )
         {
             GBPTreeStructure.visitState( pageCache, file, stateVisitor, file.getFileName().toString(), cursorContext );
         }
@@ -140,7 +140,7 @@ public class GBPTreeBootstrapper implements Closeable
             return;
         }
         closePageCache();
-        var swapper = new SingleFilePageSwapperFactory( fs, pageCacheTracer );
+        var swapper = new SingleFilePageSwapperFactory( fs, PageCacheTracer.NULL );
         long expectedMemory = Math.max( MuninnPageCache.memoryRequiredForPages( 100 ), 3L * pageSize );
         pageCache = new MuninnPageCache( swapper, jobScheduler, config( createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE ) ).pageSize( pageSize )
                 .reservedPageBytes( reserved_page_header_bytes.defaultValue() ) );

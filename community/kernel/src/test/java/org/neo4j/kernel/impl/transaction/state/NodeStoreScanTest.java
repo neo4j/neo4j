@@ -37,20 +37,22 @@ import java.util.function.IntPredicate;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.kernel.impl.transaction.state.storeview.TestPropertyScanConsumer;
 import org.neo4j.kernel.impl.transaction.state.storeview.TestTokenScanConsumer;
-import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -60,7 +62,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.collection.PrimitiveArrays.intersect;
 import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
@@ -68,6 +70,7 @@ class NodeStoreScanTest
 {
     private static final String KEY_NAME = "name";
     private static final String KEY_AGE = "age";
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Inject
     private RandomSupport random;
@@ -121,7 +124,7 @@ class NodeStoreScanTest
     {
         // given
         NodeStoreScan scan = new NodeStoreScan( Config.defaults(), cursors, any -> StoreCursors.NULL, locks, mock( TokenScanConsumer.class ),
-                mock( PropertyScanConsumer.class ), allPossibleLabelIds, k -> true, false, jobScheduler, NULL, INSTANCE );
+                mock( PropertyScanConsumer.class ), allPossibleLabelIds, k -> true, false, jobScheduler, CONTEXT_FACTORY, INSTANCE );
 
         // when
         PopulationProgress progressBeforeStarted = scan.getProgress();
@@ -169,17 +172,18 @@ class NodeStoreScanTest
         var propertyConsumer = new TestPropertyScanConsumer();
         NodeStoreScan scan =
                 new NodeStoreScan( Config.defaults(), cursors, any -> StoreCursors.NULL, locks, tokenConsumer, propertyConsumer, labelFilter, propertyKeyFilter,
-                        false, jobScheduler, NULL, INSTANCE );
+                        false, jobScheduler, CONTEXT_FACTORY, INSTANCE );
         assertThat( scan.getProgress().getCompleted() ).isZero();
 
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         // then
-        assertThat( LongSets.mutable.of( tokenConsumer.batches.stream().flatMap( Collection::stream ).mapToLong( record -> record.getEntityId() ).toArray() ) )
+        assertThat( LongSets.mutable.of(
+                tokenConsumer.batches.stream().flatMap( Collection::stream ).mapToLong( TestTokenScanConsumer.Record::getEntityId ).toArray() ) )
                 .isEqualTo( expectedTokenUpdatesNodes );
         assertThat( LongSets.mutable.of( propertyConsumer.batches.stream()
                                                                  .flatMap( Collection::stream )
-                                                                 .mapToLong( record -> record.getEntityId() )
+                                                                 .mapToLong( TestPropertyScanConsumer.Record::getEntityId )
                                                                  .toArray() ) )
                 .isEqualTo( expectedPropertyUpdatesNodes );
     }

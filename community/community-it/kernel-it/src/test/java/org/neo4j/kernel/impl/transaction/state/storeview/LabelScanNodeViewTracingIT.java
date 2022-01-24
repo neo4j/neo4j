@@ -26,6 +26,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -43,6 +44,7 @@ import static java.util.stream.StreamSupport.stream;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
@@ -77,10 +79,11 @@ class LabelScanNodeViewTracingIT
         var labelId = getLabelId( label );
 
         var cacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
         IndexProxy indexProxy = indexingService.getIndexProxy( findTokenIndex() );
 
         var scan = new LabelIndexedNodeStoreScan( Config.defaults(), storageEngine.newReader(), storageEngine::createStorageCursors, lockService,
-                indexProxy.newTokenReader(), new TestTokenScanConsumer(), null, new int[]{labelId}, any -> false, false, jobScheduler, cacheTracer,
+                indexProxy.newTokenReader(), new TestTokenScanConsumer(), null, new int[]{labelId}, any -> false, false, jobScheduler, contextFactory,
                 INSTANCE );
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
 

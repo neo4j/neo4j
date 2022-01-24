@@ -55,6 +55,7 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -79,6 +80,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
@@ -90,6 +92,7 @@ class CountsComputerTest
 {
     private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final Config CONFIG = Config.defaults();
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Inject
     private FileSystemAbstraction fileSystem;
@@ -501,8 +504,8 @@ class CountsComputerTest
 
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder ) throws IOException
     {
-        return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(), builder, writable(), PageCacheTracer.NULL,
-                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000, NullLogProvider.getInstance(), NULL_CONTEXT );
+        return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(), builder, writable(),
+                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000, NullLogProvider.getInstance(), CONTEXT_FACTORY );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
@@ -516,7 +519,7 @@ class CountsComputerTest
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER, PageCacheTracer.NULL, writable() );
+                new StoreFactory( databaseLayout, CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER, CONTEXT_FACTORY, writable() );
 
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
@@ -525,7 +528,7 @@ class CountsComputerTest
             int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
             int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
             CountsComputer countsComputer = new CountsComputer( neoStores, lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId,
-                    highRelationshipTypeId, NumberArrayFactories.AUTO_WITHOUT_PAGECACHE, databaseLayout, progressReporter, PageCacheTracer.NULL, INSTANCE );
+                    highRelationshipTypeId, NumberArrayFactories.AUTO_WITHOUT_PAGECACHE, databaseLayout, progressReporter, CONTEXT_FACTORY, INSTANCE );
             try ( GBPTreeCountsStore countsStore = createCountsStore( countsComputer ) )
             {
                 countsStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );

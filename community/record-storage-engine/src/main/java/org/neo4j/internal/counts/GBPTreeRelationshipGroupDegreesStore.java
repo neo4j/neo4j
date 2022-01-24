@@ -30,7 +30,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -50,11 +50,11 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
     public GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem,
             RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker,
-            PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName, int maxCacheSize, LogProvider userLogProvider,
-            CursorContext cursorContext ) throws IOException
+            Monitor monitor, String databaseName, int maxCacheSize, LogProvider userLogProvider,
+            CursorContextFactory contextFactory ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnlyChecker, NAME, pageCacheTracer, monitor,
-                databaseName, maxCacheSize, userLogProvider, cursorContext );
+        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnlyChecker, NAME, monitor,
+                databaseName, maxCacheSize, userLogProvider, contextFactory );
     }
 
     @Override
@@ -142,9 +142,9 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         return key.first >> 2;
     }
 
-    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContext cursorContext ) throws IOException
+    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContextFactory contextFactory ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, cursorContext, GBPTreeRelationshipGroupDegreesStore::keyToString );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, contextFactory, GBPTreeRelationshipGroupDegreesStore::keyToString );
     }
 
     private static final Updater NO_OP_UPDATER = new Updater()

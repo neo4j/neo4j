@@ -31,6 +31,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -51,7 +53,7 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
@@ -60,6 +62,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class DynamicIndexStoreViewTest
 {
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @AfterEach
     void tearDown() throws Exception
@@ -95,7 +98,8 @@ class DynamicIndexStoreViewTest
         DynamicIndexStoreView storeView = dynamicIndexStoreView( cursors, indexProxies );
         TestTokenScanConsumer consumer = new TestTokenScanConsumer();
         StoreScan storeScan = storeView.visitNodes(
-                indexedLabels, Predicates.ALWAYS_TRUE_INT, new TestPropertyScanConsumer(), consumer, false, true, NULL, INSTANCE );
+                indexedLabels, Predicates.ALWAYS_TRUE_INT, new TestPropertyScanConsumer(), consumer, false, true,
+                CONTEXT_FACTORY, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( consumer.batches.size() ).isEqualTo( 1 );
@@ -144,7 +148,7 @@ class DynamicIndexStoreViewTest
         TestTokenScanConsumer tokenConsumer = new TestTokenScanConsumer();
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitRelationships(
-                indexedTypes, relationType -> true, propertyScanConsumer, tokenConsumer, false, true, NULL, INSTANCE );
+                indexedTypes, relationType -> true, propertyScanConsumer, tokenConsumer, false, true, CONTEXT_FACTORY, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         // Then make sure all the fitting relationships where included
@@ -174,8 +178,8 @@ class DynamicIndexStoreViewTest
 
         DynamicIndexStoreView storeView = dynamicIndexStoreView( cursors, indexProxies );
         TestTokenScanConsumer consumer = new TestTokenScanConsumer();
-        StoreScan storeScan = storeView.visitNodes(
-                indexedLabels, Predicates.ALWAYS_TRUE_INT, new TestPropertyScanConsumer(), consumer, false, true, NULL, INSTANCE );
+        StoreScan storeScan = storeView.visitNodes( indexedLabels, Predicates.ALWAYS_TRUE_INT, new TestPropertyScanConsumer(), consumer, false, true,
+                CONTEXT_FACTORY, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( consumer.batches.size() ).isEqualTo( 1 );
@@ -213,7 +217,7 @@ class DynamicIndexStoreViewTest
         TestTokenScanConsumer tokenConsumer = new TestTokenScanConsumer();
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitRelationships(
-                targetTypeArray, propertyKeyIdFilter, propertyScanConsumer, tokenConsumer, false, true, NULL, INSTANCE );
+                targetTypeArray, propertyKeyIdFilter, propertyScanConsumer, tokenConsumer, false, true, CONTEXT_FACTORY, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( tokenConsumer.batches.size() ).isEqualTo( 1 );

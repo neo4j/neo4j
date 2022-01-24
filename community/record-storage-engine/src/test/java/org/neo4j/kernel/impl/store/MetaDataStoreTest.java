@@ -50,6 +50,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -82,6 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
@@ -814,7 +816,8 @@ class MetaDataStoreTest
     void tracePageCacheAccessOnStoreInitialisation()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( MetaDataStore ignored = newMetaDataStore( pageCacheTracer ) )
+        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        try ( MetaDataStore ignored = newMetaDataStore( contextFactory ) )
         {
             assertThat( pageCacheTracer.faults() ).isOne();
             assertThat( pageCacheTracer.pins() ).isEqualTo( 13 );
@@ -1008,7 +1011,8 @@ class MetaDataStoreTest
     {
         // given
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var store = newMetaDataStore( pageCacheTracer ) )
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        try ( var store = newMetaDataStore( contextFactory ) )
         {
             var pinsBefore = pageCacheTracer.pins();
             readAllFields( store );
@@ -1074,15 +1078,15 @@ class MetaDataStoreTest
 
     private MetaDataStore newMetaDataStore()
     {
-        return newMetaDataStore( PageCacheTracer.NULL );
+        return newMetaDataStore( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
     }
 
-    private MetaDataStore newMetaDataStore( PageCacheTracer pageCacheTracer )
+    private MetaDataStore newMetaDataStore( CursorContextFactory contextFactory )
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCacheWithFakeOverflow, fs, logProvider, pageCacheTracer, writable() );
+                        pageCacheWithFakeOverflow, fs, logProvider, contextFactory, writable() );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 }

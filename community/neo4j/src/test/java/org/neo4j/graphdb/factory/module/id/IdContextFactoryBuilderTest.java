@@ -35,6 +35,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
@@ -54,11 +55,14 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 @PageCacheExtension
 class IdContextFactoryBuilderTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -71,7 +75,7 @@ class IdContextFactoryBuilderTest
     void requireFileSystemWhenIdGeneratorFactoryNotProvided()
     {
         NullPointerException exception =
-                assertThrows( NullPointerException.class, () -> IdContextFactoryBuilder.of( null, jobScheduler, null, PageCacheTracer.NULL ).build() );
+                assertThrows( NullPointerException.class, () -> IdContextFactoryBuilder.of( null, jobScheduler, null, CONTEXT_FACTORY ).build() );
         assertThat( exception.getMessage() ).contains( "File system is required" );
     }
 
@@ -81,7 +85,7 @@ class IdContextFactoryBuilderTest
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Config config = defaults();
         IdContextFactory contextFactory =
-                IdContextFactoryBuilder.of( fs, jobScheduler, config, PageCacheTracer.NULL ).withIdGenerationFactoryProvider(
+                IdContextFactoryBuilder.of( fs, jobScheduler, config, CONTEXT_FACTORY ).withIdGenerationFactoryProvider(
                         any -> idGeneratorFactory ).build();
         DatabaseIdContext idContext = contextFactory.createIdContext( from( "database", UUID.randomUUID() ) );
 
@@ -95,9 +99,9 @@ class IdContextFactoryBuilderTest
         LongSupplier highIdSupplier = () -> 0;
         int maxId = 100;
 
-        idGeneratorFactory.open( pageCache, file, idType, highIdSupplier, maxId, writable(), config, NULL_CONTEXT, immutable.empty(), SINGLE_IDS );
+        idGeneratorFactory.open( pageCache, file, idType, highIdSupplier, maxId, writable(), config, CONTEXT_FACTORY, immutable.empty(), SINGLE_IDS );
 
-        verify( idGeneratorFactory ).open( pageCache, file, idType, highIdSupplier, maxId, writable(), config, NULL_CONTEXT, immutable.empty(), SINGLE_IDS );
+        verify( idGeneratorFactory ).open( pageCache, file, idType, highIdSupplier, maxId, writable(), config, CONTEXT_FACTORY, immutable.empty(), SINGLE_IDS );
     }
 
     @Test
@@ -106,7 +110,7 @@ class IdContextFactoryBuilderTest
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper = ignored -> idGeneratorFactory;
 
-        IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, jobScheduler, defaults(), PageCacheTracer.NULL )
+        IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, jobScheduler, defaults(), CONTEXT_FACTORY )
                                         .withFactoryWrapper( factoryWrapper )
                                         .build();
 
@@ -119,8 +123,9 @@ class IdContextFactoryBuilderTest
     void useProvidedPageCacheCursorOnIdMaintenance() throws IOException
     {
         PageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
         Config config = defaults();
-        var idContextFactory = IdContextFactoryBuilder.of( fs, jobScheduler, config, cacheTracer ).build();
+        var idContextFactory = IdContextFactoryBuilder.of( fs, jobScheduler, config, contextFactory ).build();
         var idContext = idContextFactory.createIdContext( from( "test", UUID.randomUUID() ) );
         var idGeneratorFactory = idContext.getIdGeneratorFactory();
         var idController = idContext.getIdController();
@@ -129,8 +134,8 @@ class IdContextFactoryBuilderTest
         Path file = testDirectory.file( "b" );
         RecordIdType idType = RecordIdType.NODE;
 
-        try ( IdGenerator idGenerator = idGeneratorFactory.create( pageCache, file, idType, 1, false, 100, writable(), config, NULL_CONTEXT, immutable.empty(),
-                SINGLE_IDS ) )
+        try ( IdGenerator idGenerator = idGeneratorFactory.create( pageCache, file, idType, 1, false, 100, writable(), config, contextFactory,
+                immutable.empty(), SINGLE_IDS ) )
         {
             idGenerator.marker( NULL_CONTEXT ).markDeleted( 1 );
             idGeneratorFactory.clearCache( NULL_CONTEXT );

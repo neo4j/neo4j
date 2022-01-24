@@ -36,7 +36,7 @@ import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.internal.Version;
@@ -91,10 +91,10 @@ public class StoreUpgrader
     private final Log log;
     private final LogsUpgrader logsUpgrader;
     private final String configuredFormat;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
 
     public StoreUpgrader( StorageEngineFactory storageEngineFactory, StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor,
-            Config config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogsUpgrader logsUpgrader, PageCacheTracer pageCacheTracer )
+            Config config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogsUpgrader logsUpgrader, CursorContextFactory contextFactory )
     {
         this.storageEngineFactory = storageEngineFactory;
         this.storeVersionCheck = storeVersionCheck;
@@ -104,7 +104,7 @@ public class StoreUpgrader
         this.logsUpgrader = logsUpgrader;
         this.log = logProvider.getLog( getClass() );
         this.configuredFormat = storeVersionCheck.configuredVersion();
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
     }
 
     /**
@@ -138,7 +138,7 @@ public class StoreUpgrader
             return;
         }
 
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( STORE_UPGRADE_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( STORE_UPGRADE_TAG ) )
         {
             DatabaseLayout migrationStructure = DatabaseLayout.ofFlat( layout.file( MIGRATION_DIRECTORY ) );
 
@@ -222,23 +222,15 @@ public class StoreUpgrader
 
     private String getVersionFromResult( StoreVersionCheck.Result result )
     {
-        switch ( result.outcome() )
-        {
-        case ok:
-            return result.actualVersion();
-        case missingStoreFile:
-            throw new StoreUpgrader.UpgradeMissingStoreFilesException( result.storeFilename() );
-        case storeVersionNotFound:
-            throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( result.storeFilename() );
-        case attemptedStoreDowngrade:
-            throw new StoreUpgrader.AttemptedDowngradeException();
-        case unexpectedStoreVersion:
-            throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException( result.actualVersion(), configuredFormat );
-        case unexpectedUpgradingVersion:
-            throw new StoreUpgrader.UnexpectedUpgradingStoreFormatException();
-        default:
-            throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome().name() );
-        }
+        return switch ( result.outcome() )
+                {
+                    case ok -> result.actualVersion();
+                    case missingStoreFile -> throw new UpgradeMissingStoreFilesException( result.storeFilename() );
+                    case storeVersionNotFound -> throw new UpgradingStoreVersionNotFoundException( result.storeFilename() );
+                    case attemptedStoreDowngrade -> throw new AttemptedDowngradeException();
+                    case unexpectedStoreVersion -> throw new UnexpectedUpgradingStoreVersionException( result.actualVersion(), configuredFormat );
+                    case unexpectedUpgradingVersion -> throw new UnexpectedUpgradingStoreFormatException();
+                };
     }
 
     List<StoreMigrationParticipant> getParticipants()

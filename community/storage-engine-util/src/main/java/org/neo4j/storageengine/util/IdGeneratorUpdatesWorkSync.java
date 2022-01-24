@@ -30,7 +30,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
@@ -42,7 +42,7 @@ import static org.neo4j.internal.id.IdUtils.usedFromCombinedId;
 
 /**
  * Convenience for updating one or more {@link IdGenerator} in a concurrent fashion. Supports applying in batches, e.g. multiple transactions
- * in one go, see {@link #newBatch(PageCacheTracer)}.
+ * in one go, see {@link #newBatch(CursorContextFactory)}.
  */
 public class IdGeneratorUpdatesWorkSync
 {
@@ -55,19 +55,19 @@ public class IdGeneratorUpdatesWorkSync
         this.workSyncMap.put( idGenerator, new WorkSync<>( idGenerator ) );
     }
 
-    public Batch newBatch( PageCacheTracer pageCacheTracer )
+    public Batch newBatch( CursorContextFactory contextFactory )
     {
-        return new Batch( pageCacheTracer );
+        return new Batch( contextFactory );
     }
 
     public class Batch implements IdUpdateListener
     {
         private final Map<IdGenerator,ChangedIds> idUpdatesMap = new HashMap<>();
-        private final PageCacheTracer pageCacheTracer;
+        private final CursorContextFactory contextFactory;
 
-        protected Batch( PageCacheTracer pageCacheTracer )
+        protected Batch( CursorContextFactory contextFactory )
         {
-            this.pageCacheTracer = pageCacheTracer;
+            this.contextFactory = contextFactory;
         }
 
         @Override
@@ -82,7 +82,7 @@ public class IdGeneratorUpdatesWorkSync
             idUpdatesMap.computeIfAbsent( idGenerator, t -> new ChangedIds() ).addUnusedId( id, size );
         }
 
-        public AsyncApply applyAsync( PageCacheTracer cacheTracer )
+        public AsyncApply applyAsync()
         {
             // Run through the id changes and apply them, or rather apply them asynchronously.
             // This allows multiple concurrent threads applying batches of transactions to help each other out so that
@@ -91,15 +91,15 @@ public class IdGeneratorUpdatesWorkSync
             {
                 return AsyncApply.EMPTY;
             }
-            applyInternal( cacheTracer );
+            applyInternal();
             return this::awaitApply;
         }
 
-        public void apply( PageCacheTracer cacheTracer ) throws ExecutionException
+        public void apply() throws ExecutionException
         {
             if ( !idUpdatesMap.isEmpty() )
             {
-                applyInternal( cacheTracer );
+                applyInternal();
                 awaitApply();
             }
         }
@@ -114,19 +114,19 @@ public class IdGeneratorUpdatesWorkSync
             }
         }
 
-        private void applyInternal( PageCacheTracer cacheTracer )
+        private void applyInternal()
         {
             for ( Map.Entry<IdGenerator,ChangedIds> idChanges : idUpdatesMap.entrySet() )
             {
                 ChangedIds unit = idChanges.getValue();
-                unit.applyAsync( workSyncMap.get( idChanges.getKey() ), cacheTracer );
+                unit.applyAsync( workSyncMap.get( idChanges.getKey() ), contextFactory );
             }
         }
 
         @Override
         public void close() throws Exception
         {
-            apply( pageCacheTracer );
+            apply(  );
         }
     }
 
@@ -163,9 +163,9 @@ public class IdGeneratorUpdatesWorkSync
             } );
         }
 
-        void applyAsync( WorkSync<IdGenerator,IdGeneratorUpdateWork> workSync, PageCacheTracer cacheTracer )
+        void applyAsync( WorkSync<IdGenerator,IdGeneratorUpdateWork> workSync, CursorContextFactory contextFactory )
         {
-            asyncApply = workSync.applyAsync( new IdGeneratorUpdateWork( this, cacheTracer ) );
+            asyncApply = workSync.applyAsync( new IdGeneratorUpdateWork( this, contextFactory ) );
         }
 
         void awaitApply() throws ExecutionException
@@ -177,11 +177,11 @@ public class IdGeneratorUpdatesWorkSync
     private static class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdateWork>
     {
         private final List<ChangedIds> changeList = new ArrayList<>();
-        private final PageCacheTracer cacheTracer;
+        private final CursorContextFactory contextFactory;
 
-        IdGeneratorUpdateWork( ChangedIds changes, PageCacheTracer cacheTracer )
+        IdGeneratorUpdateWork( ChangedIds changes, CursorContextFactory contextFactory )
         {
-            this.cacheTracer = cacheTracer;
+            this.contextFactory = contextFactory;
             this.changeList.add( changes );
         }
 
@@ -195,9 +195,8 @@ public class IdGeneratorUpdatesWorkSync
         @Override
         public void apply( IdGenerator idGenerator )
         {
-            try ( var cursorTracer = cacheTracer.createPageCursorTracer( ID_GENERATOR_BATCH_APPLIER_TAG );
-                    var cursorContext = new CursorContext( cursorTracer );
-                    IdGenerator.Marker marker = idGenerator.marker( cursorContext ) )
+            try (  var cursorContext = contextFactory.create( ID_GENERATOR_BATCH_APPLIER_TAG );
+                   IdGenerator.Marker marker = idGenerator.marker( cursorContext ) )
             {
                 for ( ChangedIds changes : this.changeList )
                 {

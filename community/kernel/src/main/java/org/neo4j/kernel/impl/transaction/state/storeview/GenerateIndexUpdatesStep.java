@@ -32,7 +32,7 @@ import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.Lock;
@@ -68,10 +68,10 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
             IntPredicate propertyKeyIdFilter,
             EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour, int[] entityTokenIdFilter,
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer tokenScanConsumer,
-            LongFunction<Lock> lockFunction, int parallelism, long maxBatchSizeBytes, boolean alsoWrite, PageCacheTracer cacheTracer,
+            LongFunction<Lock> lockFunction, int parallelism, long maxBatchSizeBytes, boolean alsoWrite, CursorContextFactory contextFactory,
             MemoryTracker memoryTracker )
     {
-        super( control, "generate updates", config, parallelism, cacheTracer );
+        super( control, "generate updates", config, parallelism, contextFactory );
         this.reader = reader;
         this.storeCursorsFactory = storeCursorsFactory;
         this.propertyKeyIdFilter = propertyKeyIdFilter;

@@ -67,7 +67,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -171,7 +170,6 @@ public class BatchInserterImpl implements BatchInserter
     private final SimpleLogService logService;
     private final FileSystemAbstraction fileSystem;
     private final JobScheduler jobScheduler;
-    private final PageCacheTracer pageCacheTracer;
     private final CursorContextFactory contextFactory;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
@@ -212,7 +210,6 @@ public class BatchInserterImpl implements BatchInserter
                 .build();
         this.fileSystem = fileSystem;
         this.contextFactory = contextFactory;
-        pageCacheTracer = tracers.getPageCacheTracer();
         cursorContext = contextFactory.create( BATCH_INSERTER_TAG );
         memoryTracker = EmptyMemoryTracker.INSTANCE;
         life = new LifeSupport();
@@ -224,7 +221,7 @@ public class BatchInserterImpl implements BatchInserter
 
             locker = tryLockStore( fileSystem, databaseLayout );
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, pageCacheTracer, NullLog.getInstance(), jobScheduler, Clocks.nanoClock(),
+                fileSystem, config, tracers.getPageCacheTracer(), NullLog.getInstance(), jobScheduler, Clocks.nanoClock(),
                     new MemoryPools( config.get( memory_tracking ) ) );
             pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );
@@ -239,10 +236,10 @@ public class BatchInserterImpl implements BatchInserter
 
             LogProvider internalLogProvider = logService.getInternalLogProvider();
             RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
-                pageCache, internalLogProvider, pageCacheTracer );
+                pageCache, internalLogProvider, contextFactory );
             readOnlyChecker = writable();
             StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, internalLogProvider, pageCacheTracer, readOnlyChecker, immutable.empty() );
+                recordFormats, internalLogProvider, contextFactory, readOnlyChecker, immutable.empty() );
 
             if ( dump )
             {
@@ -265,8 +262,8 @@ public class BatchInserterImpl implements BatchInserter
             labelTokenStore = neoStores.getLabelTokenStore();
 
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
-                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
-                    databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ), logService.getUserLogProvider(), cursorContext );
+                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, NO_MONITOR,
+                    databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ), logService.getUserLogProvider(), contextFactory );
             groupDegreesStore.start( cursorContext, storeCursors, memoryTracker );
 
             degreeUpdater = groupDegreesStore.directApply( cursorContext );
@@ -282,7 +279,7 @@ public class BatchInserterImpl implements BatchInserter
             fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ),
                                                        any -> new CachedStoreCursors( neoStores, cursorContext ), config, jobScheduler );
             indexProviderMap = life.add( StaticIndexProviderMapFactory.create(
-                    life, config, pageCache, fileSystem, logService, monitors, readOnlyChecker, DbmsInfo.TOOL, immediate(), pageCacheTracer,
+                    life, config, pageCache, fileSystem, logService, monitors, readOnlyChecker, DbmsInfo.TOOL, immediate(),
                     databaseLayout, tokenHolders, jobScheduler, contextFactory ) );
 
             var schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders,
@@ -367,17 +364,16 @@ public class BatchInserterImpl implements BatchInserter
     private void repopulateAllIndexes( CursorContext cursorContext ) throws IOException
     {
         LogProvider logProvider = logService.getInternalLogProvider();
-        var cacheTracer = PageCacheTracer.NULL;
 
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory( config, context -> new CachedStoreCursors( neoStores, context ),
                 () -> new RecordStorageReader( neoStores, schemaCache ), NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE, logProvider );
 
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
-                immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer, cursorContext );
+                immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), contextFactory );
         life.add( indexStatisticsStore );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory, tokenHolders, emptyList(), logProvider,
-                        IndexMonitor.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker,
+                        IndexMonitor.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, contextFactory, memoryTracker,
                         databaseLayout.getDatabaseName(), readOnlyChecker );
         life.add( indexingService );
         try
@@ -417,7 +413,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private void rebuildCounts( PageCacheTracer cacheTracer, MemoryTracker memoryTracker, CursorContext cursorContext ) throws IOException
+    private void rebuildCounts( MemoryTracker memoryTracker, CursorContext cursorContext ) throws IOException
     {
         Path countsStoreFile = databaseLayout.countStore();
         if ( fileSystem.fileExists( countsStoreFile ) )
@@ -425,10 +421,10 @@ public class BatchInserterImpl implements BatchInserter
             fileSystem.deleteFile( countsStoreFile );
         }
         CountsComputer initialCountsBuilder =
-                new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
+                new CountsComputer( neoStores, pageCache, contextFactory, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
-                initialCountsBuilder, readOnlyChecker, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName(),
-                config.get( counts_store_max_cached_entries ), logService.getUserLogProvider(), cursorContext );
+                initialCountsBuilder, readOnlyChecker, NO_MONITOR, databaseLayout.getDatabaseName(),
+                config.get( counts_store_max_cached_entries ), logService.getUserLogProvider(), contextFactory );
                 var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
             countsStore.start( cursorContext, storeCursors, memoryTracker );
@@ -438,7 +434,8 @@ public class BatchInserterImpl implements BatchInserter
 
     private void createEmptyTransactionLog()
     {
-        TransactionLogInitializer.getLogFilesInitializer().initializeLogFiles( databaseLayout, neoStores.getMetaDataStore(), fileSystem, CHECKPOINT_REASON );
+        TransactionLogInitializer.getLogFilesInitializer().initializeLogFiles( databaseLayout, neoStores.getMetaDataStore(), fileSystem, CHECKPOINT_REASON,
+                contextFactory );
     }
 
     private IndexDescriptor[] getIndexesNeedingPopulation( CursorContext cursorContext )
@@ -533,7 +530,7 @@ public class BatchInserterImpl implements BatchInserter
               groupDegreesStore;
               storeCursors )
         {
-            rebuildCounts( pageCacheTracer, memoryTracker, cursorContext );
+            rebuildCounts( memoryTracker, cursorContext );
             repopulateAllIndexes( cursorContext );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( cursorContext );

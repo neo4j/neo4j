@@ -62,6 +62,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -137,6 +138,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.api.index.IndexSamplingMode.backgroundRebuildAll;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -152,6 +154,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 class IndexingServiceTest
 {
     private final LifeSupport life = new LifeSupport();
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     private final SchemaState schemaState = mock( SchemaState.class );
     private final int labelId = 7;
@@ -402,7 +405,7 @@ class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreViewFactory.class ), nameLookup, asList( onlineIndex, populatingIndex, failedIndex ),
-                internalLogProvider, IndexMonitor.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",
+                internalLogProvider, IndexMonitor.NO_MONITOR, schemaState, indexStatisticsStore, CONTEXT_FACTORY, INSTANCE, "",
                 writable() ) );
 
         when( provider.getInitialState( eq( onlineIndex ), any() ) ).thenReturn( ONLINE );
@@ -440,7 +443,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeViewFactory, nameLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), internalLogProvider, IndexMonitor.NO_MONITOR,
-                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", writable() );
+                schemaState, indexStatisticsStore, CONTEXT_FACTORY, INSTANCE, "", writable() );
 
         when( provider.getInitialState( eq( onlineIndex ), any() ) ).thenReturn( ONLINE );
         when( provider.getInitialState( eq( populatingIndex ), any() ) ).thenReturn( POPULATING );
@@ -1051,7 +1054,7 @@ class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreViewFactory.class ), nameLookup, indexes, internalLogProvider, IndexMonitor.NO_MONITOR,
-                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", writable() ) );
+                schemaState, indexStatisticsStore, CONTEXT_FACTORY, INSTANCE, "", writable() ) );
 
         nameLookup.propertyKey( 1, "prop" );
 
@@ -1097,7 +1100,7 @@ class IndexingServiceTest
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeViewFactory, nameLookup, indexes,
-                internalLogProvider, IndexMonitor.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",
+                internalLogProvider, IndexMonitor.NO_MONITOR, schemaState, indexStatisticsStore, CONTEXT_FACTORY, INSTANCE, "",
                 writable() );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 100, 32, 32 ) );
         nameLookup.propertyKey( 1, "prop" );
@@ -1234,7 +1237,7 @@ class IndexingServiceTest
         IndexingService indexingService = new IndexingService(
                 indexProxyCreator, indexProviderMap, indexMapReference, storeViewFactory, schemaRules,
                 samplingController, nameLookup, scheduler, null, logProvider, monitor, mock( IndexStatisticsStore.class ),
-                PageCacheTracer.NULL, INSTANCE, "", writable(), Config.defaults() );
+                CONTEXT_FACTORY, INSTANCE, "", writable(), Config.defaults() );
         // and where index population starts
         indexingService.init();
 
@@ -1405,7 +1408,7 @@ class IndexingServiceTest
                 monitor,
                 schemaState,
                 indexStatisticsStore,
-                PageCacheTracer.NULL,
+                CONTEXT_FACTORY,
                 INSTANCE,
                 "",
                 writable() )
@@ -1434,7 +1437,7 @@ class IndexingServiceTest
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
             when( mock.visitNodes( any(int[].class), any( IntPredicate.class ),
-                    any( PropertyScanConsumer.class ), isNull(), anyBoolean(), anyBoolean(), any( PageCacheTracer.class ), any() ) ).thenAnswer( this );
+                    any( PropertyScanConsumer.class ), isNull(), anyBoolean(), anyBoolean(), any( CursorContextFactory.class ), any() ) ).thenAnswer( this );
         }
 
         @Override
@@ -1540,7 +1543,7 @@ class IndexingServiceTest
                 indexMapReference, mock( IndexStoreViewFactory.class ), Collections.emptyList(),
                 mock( IndexSamplingController.class ), nameLookup,
                 mock( JobScheduler.class ), mock( SchemaState.class ),
-                internalLogProvider, IndexMonitor.NO_MONITOR, mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, "",
+                internalLogProvider, IndexMonitor.NO_MONITOR, mock( IndexStatisticsStore.class ), CONTEXT_FACTORY, INSTANCE, "",
                 writable(), Config.defaults() );
     }
 

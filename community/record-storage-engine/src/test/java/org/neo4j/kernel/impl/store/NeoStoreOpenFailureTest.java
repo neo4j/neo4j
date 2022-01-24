@@ -31,6 +31,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.LogProvider;
@@ -45,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
@@ -71,8 +73,9 @@ class NeoStoreOpenFailureTest
         boolean create = true;
         StoreType[] storeTypes = StoreType.values();
         ImmutableSet<OpenOption> openOptions = immutable.empty();
-        NeoStores neoStores = new NeoStores( fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, NULL, writable(),
-                storeTypes, openOptions );
+        CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
+        NeoStores neoStores = new NeoStores( fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create,
+                contextFactory, writable(), storeTypes, openOptions );
         Path schemaStore = neoStores.getSchemaStore().getStorageFile();
         neoStores.close();
 
@@ -83,8 +86,8 @@ class NeoStoreOpenFailureTest
         assertThrows( RuntimeException.class, () ->
                 // This should fail due to the permissions we changed above.
                 // And when it fails, the already-opened stores should be closed.
-                new NeoStores( fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, NULL, writable(), storeTypes,
-                        openOptions ) );
+                new NeoStores( fileSystem, databaseLayout, config, idGenFactory, pageCache, logProvider, formats, create, contextFactory, writable(),
+                        storeTypes, openOptions ) );
 
         // We verify that the successfully opened stores were closed again by the failed NeoStores open,
         // by closing the page cache, which will throw if not all files have been unmapped.

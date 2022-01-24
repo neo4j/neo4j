@@ -34,6 +34,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -52,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
 @EphemeralPageCacheExtension
@@ -75,16 +76,21 @@ class StoreFactoryTest
         idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
     }
 
-    private StoreFactory storeFactory( Config config, PageCacheTracer pageCacheTracer )
+    private StoreFactory storeFactory( Config config )
     {
-        return storeFactory( config, pageCacheTracer, immutable.empty() );
+        return storeFactory( config, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
     }
 
-    private StoreFactory storeFactory( Config config, PageCacheTracer pageCacheTracer, ImmutableSet<OpenOption> openOptions )
+    private StoreFactory storeFactory( Config config, CursorContextFactory contextFactory )
+    {
+        return storeFactory( config, contextFactory, immutable.empty() );
+    }
+
+    private StoreFactory storeFactory( Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fileSystem, pageCache, logProvider, NULL );
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, pageCacheTracer, writable(),
+        RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fileSystem, pageCache, logProvider, contextFactory );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, contextFactory, writable(),
                 openOptions );
     }
 
@@ -101,7 +107,8 @@ class StoreFactoryTest
     void tracePageCacheAccessOnOpenStores()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        neoStores = storeFactory( defaults(), pageCacheTracer ).openAllNeoStores( true );
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        neoStores = storeFactory( defaults(), contextFactory ).openAllNeoStores( true );
 
         assertThat( pageCacheTracer.pins() ).isNotZero();
         assertThat( pageCacheTracer.unpins() ).isNotZero();
@@ -111,7 +118,7 @@ class StoreFactoryTest
     void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup()
     {
         // When
-        neoStores = storeFactory( defaults(), NULL ).openAllNeoStores( true );
+        neoStores = storeFactory( defaults() ).openAllNeoStores( true );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -122,7 +129,7 @@ class StoreFactoryTest
     void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
     {
         // When
-        neoStores = storeFactory( defaults(), NULL ).openAllNeoStores( true );
+        neoStores = storeFactory( defaults() ).openAllNeoStores( true );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -134,7 +141,7 @@ class StoreFactoryTest
     {
         assertThrows( StoreNotFoundException.class, () ->
         {
-            try ( NeoStores neoStores = storeFactory( defaults(), NULL ).openAllNeoStores() )
+            try ( NeoStores neoStores = storeFactory( defaults() ).openAllNeoStores() )
             {
                 neoStores.getMetaDataStore();
             }
@@ -145,7 +152,7 @@ class StoreFactoryTest
     void shouldDelegateDeletionOptionToStores() throws IOException
     {
         // GIVEN
-        StoreFactory storeFactory = storeFactory( defaults(), NULL, immutable.of( DELETE_ON_CLOSE ) );
+        StoreFactory storeFactory = storeFactory( defaults(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), immutable.of( DELETE_ON_CLOSE ) );
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );
@@ -159,7 +166,7 @@ class StoreFactoryTest
     @Test
     void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
     {
-        StoreFactory storeFactory = storeFactory( defaults(), NULL );
+        StoreFactory storeFactory = storeFactory( defaults() );
         fileSystem.write( databaseLayout.file( "neostore.nodestore.db.labels" ) );
         storeFactory.openAllNeoStores( true ).close();
     }
@@ -167,7 +174,7 @@ class StoreFactoryTest
     @Test
     void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
     {
-        StoreFactory storeFactory = storeFactory( defaults(), NULL );
+        StoreFactory storeFactory = storeFactory( defaults() );
         storeFactory.openAllNeoStores( true ).close();
         for ( Path f : fileSystem.listFiles( databaseLayout.databaseDirectory() ) )
         {
@@ -176,7 +183,7 @@ class StoreFactoryTest
                 fileSystem.truncate( f, 0 );
             }
         }
-        storeFactory = storeFactory( defaults(), NULL );
+        storeFactory = storeFactory( defaults() );
         storeFactory.openAllNeoStores( true ).close();
     }
 }

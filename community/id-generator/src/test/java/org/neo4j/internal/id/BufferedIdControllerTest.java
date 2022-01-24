@@ -27,6 +27,7 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -43,6 +44,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @EphemeralPageCacheExtension
 class BufferedIdControllerTest
@@ -66,7 +68,7 @@ class BufferedIdControllerTest
     @Test
     void shouldStopWhenNotStarted()
     {
-        BufferedIdController controller = newController( PageCacheTracer.NULL );
+        BufferedIdController controller = newController( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
 
         assertDoesNotThrow( controller::stop );
     }
@@ -75,9 +77,10 @@ class BufferedIdControllerTest
     void reportPageCacheMetricsOnMaintenance() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
 
         try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), TestIdType.TEST, 100L, true, 1000L, writable(),
-                Config.defaults() , NULL_CONTEXT, immutable.empty(), SINGLE_IDS ) )
+                Config.defaults(), contextFactory, immutable.empty(), SINGLE_IDS ) )
         {
             idGenerator.marker( NULL_CONTEXT ).markDeleted( 1L );
             idGenerator.clearCache( NULL_CONTEXT );
@@ -86,7 +89,7 @@ class BufferedIdControllerTest
             assertThat( pageCacheTracer.unpins() ).isZero();
             assertThat( pageCacheTracer.hits() ).isZero();
 
-            var controller = newController( pageCacheTracer );
+            var controller = newController( contextFactory );
             controller.maintenance();
 
             assertThat( pageCacheTracer.pins() ).isOne();
@@ -95,9 +98,9 @@ class BufferedIdControllerTest
         }
     }
 
-    private BufferedIdController newController( PageCacheTracer pageCacheTracer )
+    private BufferedIdController newController( CursorContextFactory contextFactory )
     {
-        BufferedIdController controller = new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler(), pageCacheTracer, "test db" );
+        BufferedIdController controller = new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler(), contextFactory, "test db" );
         controller.initialize( () -> () -> true, EmptyMemoryTracker.INSTANCE );
         return controller;
     }

@@ -92,6 +92,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.EMPTY_REBUILD;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.OtherThreadExecutor.command;
@@ -108,6 +109,7 @@ class GBPTreeGenericCountsStoreTest
     private static final int LABEL_ID_2 = 2;
     private static final int RELATIONSHIP_TYPE_ID_1 = 1;
     private static final int RELATIONSHIP_TYPE_ID_2 = 2;
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Inject
     private TestDirectory directory;
@@ -144,12 +146,9 @@ class GBPTreeGenericCountsStoreTest
         assertZeroGlobalTracer( pageCacheTracer );
 
         CursorContextFactory cursorContextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
-        try ( var treeBuilder = cursorContextFactory.create( "treeBuilder" );
-              var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, writable(), pageCacheTracer,
-                NO_MONITOR, DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance(), treeBuilder ) )
+        try ( var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, writable(),
+                NO_MONITOR, DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance(), cursorContextFactory ) )
         {
-            treeBuilder.getCursorTracer().reportEvents();
-
             assertThat( pageCacheTracer.pins() ).isEqualTo( 14 );
             assertThat( pageCacheTracer.unpins() ).isEqualTo( 14 );
             assertThat( pageCacheTracer.hits() ).isEqualTo( 9 );
@@ -166,7 +165,7 @@ class GBPTreeGenericCountsStoreTest
     void tracePageCacheAccessOnNodeCount()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodeCount" ) );
+        var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodeCount" ) );
         assertZeroTracer( cursorContext );
         assertEquals( 0, countsStore.read( nodeKey( 0 ), cursorContext ) );
 
@@ -179,7 +178,7 @@ class GBPTreeGenericCountsStoreTest
     void tracePageCacheAccessOnRelationshipCount()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRelationshipCount" ) );
+        var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRelationshipCount" ) );
         assertZeroTracer( cursorContext );
         assertEquals( 0, countsStore.read( relationshipKey( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL ), cursorContext ) );
 
@@ -192,7 +191,7 @@ class GBPTreeGenericCountsStoreTest
     void tracePageCacheAccessOnApply()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnApply" ) );
+        var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnApply" ) );
         assertZeroTracer( cursorContext );
 
         try ( CountUpdater updater = countsStore.updater( 1 + BASE_TX_ID, cursorContext ) )
@@ -499,8 +498,8 @@ class GBPTreeGenericCountsStoreTest
     {
         final Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
-                () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, readOnly(), PageCacheTracer.NULL, NO_MONITOR,
-                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance(), NULL_CONTEXT ) );
+                () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, readOnly(), NO_MONITOR,
+                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance(), CONTEXT_FACTORY ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -564,7 +563,8 @@ class GBPTreeGenericCountsStoreTest
         Path file = directory.file( "abcd" );
 
         // when
-        assertThrows( NoSuchFileException.class, () -> GBPTreeCountsStore.dump( pageCache, file, System.out, NULL_CONTEXT ) );
+        assertThrows( NoSuchFileException.class,
+                () -> GBPTreeCountsStore.dump( pageCache, file, System.out, CONTEXT_FACTORY ) );
 
         // then
         assertFalse( fs.fileExists( file ) );
@@ -890,8 +890,8 @@ class GBPTreeGenericCountsStoreTest
             throws IOException
     {
         countsStore =
-                new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, "test", PageCacheTracer.NULL, monitor,
-                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance(), NULL_CONTEXT );
+                new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, "test", monitor,
+                        DEFAULT_DATABASE_NAME, randomMaxCacheSize(), NullLogProvider.getInstance(), CONTEXT_FACTORY );
     }
 
     private static void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )

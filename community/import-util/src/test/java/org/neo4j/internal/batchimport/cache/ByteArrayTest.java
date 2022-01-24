@@ -37,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 public class ByteArrayTest extends NumberArrayPageCacheTestSupport
@@ -51,9 +50,11 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         fixture = prepareDirectoryAndPageCache( ByteArrayTest.class );
         PageCache pageCache = fixture.pageCache;
         Path dir = fixture.directory;
+        var contextFactory = fixture.contextFactory;
         NullLog log = NullLog.getInstance();
-        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactories.auto( pageCache, NULL, dir, true, NO_MONITOR, log, DEFAULT_DATABASE_NAME );
-        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME );
+        NumberArrayFactory autoWithPageCacheFallback =
+                NumberArrayFactories.auto( pageCache, contextFactory, dir, true, NO_MONITOR, log, DEFAULT_DATABASE_NAME );
+        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
         int chunkSize = LENGTH / ChunkedNumberArrayFactory.MAGIC_CHUNK_COUNT;
         return Stream.of(
                 Arguments.of( NumberArrayFactories.HEAP.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),

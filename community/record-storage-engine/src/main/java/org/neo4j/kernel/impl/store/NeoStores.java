@@ -42,7 +42,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -80,10 +80,10 @@ public class NeoStores implements AutoCloseable
     private final PageCache pageCache;
     private final LogProvider logProvider;
     private final boolean createIfNotExist;
+    private final CursorContextFactory contextFactory;
     private final StoreType[] initializedStores;
     private final RecordFormats recordFormats;
     private final CommonAbstractStore[] stores;
-    private final PageCacheTracer pageCacheTracer;
     private final ImmutableSet<OpenOption> openOptions;
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
@@ -96,7 +96,7 @@ public class NeoStores implements AutoCloseable
             final LogProvider logProvider,
             RecordFormats recordFormats,
             boolean createIfNotExist,
-            PageCacheTracer pageCacheTracer,
+            CursorContextFactory contextFactory,
             DatabaseReadOnlyChecker readOnlyChecker,
             StoreType[] storeTypes,
             ImmutableSet<OpenOption> openOptions )
@@ -109,20 +109,20 @@ public class NeoStores implements AutoCloseable
         this.logProvider = logProvider;
         this.recordFormats = recordFormats;
         this.createIfNotExist = createIfNotExist;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.readOnlyChecker = readOnlyChecker;
         this.openOptions = openOptions;
 
         stores = new CommonAbstractStore[StoreType.values().length];
         // First open the meta data store so that we can verify the record format. We know that this store is of the type MetaDataStore
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( OPEN_ALL_STORES_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( OPEN_ALL_STORES_TAG ) )
         {
             try
             {
                 verifyRecordFormat( storeTypes, cursorContext );
                 for ( StoreType type : storeTypes )
                 {
-                    getOrOpenStore( type, cursorContext );
+                    getOrOpenStore( type );
                 }
             }
             catch ( RuntimeException initException )
@@ -179,7 +179,7 @@ public class NeoStores implements AutoCloseable
         if ( contains( storeTypes, StoreType.META_DATA ) )
         {
             // We're going to open this store anyway so might as well do it here, like we open the others
-            MetaDataStore metaDataStore = (MetaDataStore) getOrOpenStore( StoreType.META_DATA, cursorContext );
+            MetaDataStore metaDataStore = (MetaDataStore) getOrOpenStore( StoreType.META_DATA );
             try ( var cursor = metaDataStore.openPageCursorForReading( STORE_VERSION.id(), cursorContext ) )
             {
                 existingFormat = metaDataStore.getRecordByCursor( STORE_VERSION.id(), metaDataStore.newRecord(), RecordLoad.CHECK, cursor ).getValue();
@@ -253,17 +253,17 @@ public class NeoStores implements AutoCloseable
         visitStores( store -> store.getIdGenerator().checkpoint( cursorContext ) );
     }
 
-    private CommonAbstractStore openStore( StoreType type, CursorContext cursorContext )
+    private CommonAbstractStore openStore( StoreType type )
     {
         int storeIndex = type.ordinal();
-        CommonAbstractStore store = type.open( this, cursorContext );
+        CommonAbstractStore store = type.open( this );
         stores[storeIndex] = store;
         return store;
     }
 
-    private <T extends CommonAbstractStore> T initialize( T store, CursorContext cursorContext )
+    private <T extends CommonAbstractStore> T initialize( T store, CursorContextFactory contextFactory )
     {
-        store.initialise( createIfNotExist, cursorContext );
+        store.initialise( createIfNotExist, contextFactory );
         return store;
     }
 
@@ -296,12 +296,12 @@ public class NeoStores implements AutoCloseable
      * @param storeType store type to get or create
      * @return store of requested type
      */
-    private CommonAbstractStore getOrOpenStore( StoreType storeType, CursorContext cursorContext )
+    private CommonAbstractStore getOrOpenStore( StoreType storeType )
     {
         CommonAbstractStore store = stores[storeType.ordinal()];
         if ( store == null )
         {
-            store = openStore( storeType, cursorContext );
+            store = openStore( storeType );
         }
         return store;
     }
@@ -417,7 +417,7 @@ public class NeoStores implements AutoCloseable
 
     public void logIdUsage( DiagnosticsLogger msgLog )
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( ID_USAGE_LOGGER_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( ID_USAGE_LOGGER_TAG ) )
         {
             visitStores( store -> store.logIdUsage( msgLog, cursorContext ) );
         }
@@ -440,137 +440,134 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    CommonAbstractStore createNodeStore( CursorContext cursorContext )
+    CommonAbstractStore createNodeStore()
     {
         return initialize( new NodeStore( layout.nodeStore(), layout.idNodeStore(), config, idGeneratorFactory, pageCache, logProvider,
-                (DynamicArrayStore) getOrOpenStore( StoreType.NODE_LABEL, cursorContext ), recordFormats, readOnlyChecker, layout.getDatabaseName(),
-                openOptions ), cursorContext );
+                (DynamicArrayStore) getOrOpenStore( StoreType.NODE_LABEL ), recordFormats, readOnlyChecker, layout.getDatabaseName(),
+                openOptions ), contextFactory );
     }
 
-    CommonAbstractStore createNodeLabelStore( CursorContext cursorContext )
+    CommonAbstractStore createNodeLabelStore()
     {
         return createDynamicArrayStore( layout.nodeLabelStore(), layout.idNodeLabelStore(), RecordIdType.NODE_LABELS,
-                GraphDatabaseInternalSettings.label_block_size, cursorContext );
+                GraphDatabaseInternalSettings.label_block_size );
     }
 
-    CommonAbstractStore createPropertyKeyTokenStore( CursorContext cursorContext )
+    CommonAbstractStore createPropertyKeyTokenStore()
     {
         return initialize( new PropertyKeyTokenStore( layout.propertyKeyTokenStore(), layout.idPropertyKeyTokenStore(), config,
-                idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrOpenStore( StoreType.PROPERTY_KEY_TOKEN_NAME, cursorContext ),
-                recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), cursorContext );
+                idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrOpenStore( StoreType.PROPERTY_KEY_TOKEN_NAME ),
+                recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), contextFactory );
     }
 
-    CommonAbstractStore createPropertyKeyTokenNamesStore( CursorContext cursorContext )
+    CommonAbstractStore createPropertyKeyTokenNamesStore()
     {
         return createDynamicStringStore( layout.propertyKeyTokenNamesStore(), layout.idPropertyKeyTokenNamesStore(),
-                RecordIdType.PROPERTY_KEY_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE, cursorContext );
+                RecordIdType.PROPERTY_KEY_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE );
     }
 
-    CommonAbstractStore createPropertyStore( CursorContext cursorContext )
+    CommonAbstractStore createPropertyStore()
     {
         return initialize( new PropertyStore( layout.propertyStore(), layout.idPropertyStore(), config, idGeneratorFactory, pageCache, logProvider,
-                (DynamicStringStore) getOrOpenStore( StoreType.PROPERTY_STRING, cursorContext ),
-                (PropertyKeyTokenStore) getOrOpenStore( StoreType.PROPERTY_KEY_TOKEN, cursorContext ),
-                (DynamicArrayStore) getOrOpenStore( StoreType.PROPERTY_ARRAY, cursorContext ), recordFormats, readOnlyChecker, layout.getDatabaseName(),
-                openOptions ), cursorContext );
+                (DynamicStringStore) getOrOpenStore( StoreType.PROPERTY_STRING ),
+                (PropertyKeyTokenStore) getOrOpenStore( StoreType.PROPERTY_KEY_TOKEN ),
+                (DynamicArrayStore) getOrOpenStore( StoreType.PROPERTY_ARRAY ), recordFormats, readOnlyChecker, layout.getDatabaseName(),
+                openOptions ), contextFactory );
     }
 
-    CommonAbstractStore createPropertyStringStore( CursorContext cursorContext )
+    CommonAbstractStore createPropertyStringStore()
     {
-        return createDynamicStringStore( layout.propertyStringStore(), layout.idPropertyStringStore(), cursorContext );
+        return createDynamicStringStore( layout.propertyStringStore(), layout.idPropertyStringStore() );
     }
 
-    CommonAbstractStore createPropertyArrayStore( CursorContext cursorContext )
+    CommonAbstractStore createPropertyArrayStore()
     {
         return createDynamicArrayStore( layout.propertyArrayStore(), layout.idPropertyArrayStore(), RecordIdType.ARRAY_BLOCK,
-                GraphDatabaseInternalSettings.array_block_size, cursorContext );
+                GraphDatabaseInternalSettings.array_block_size );
     }
 
-    CommonAbstractStore createRelationshipStore( CursorContext cursorContext )
+    CommonAbstractStore createRelationshipStore()
     {
         return initialize(
                 new RelationshipStore( layout.relationshipStore(), layout.idRelationshipStore(), config, idGeneratorFactory,
-                        pageCache, logProvider, recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), cursorContext );
+                        pageCache, logProvider, recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), contextFactory );
     }
 
-    CommonAbstractStore createRelationshipTypeTokenStore( CursorContext cursorContext )
+    CommonAbstractStore createRelationshipTypeTokenStore()
     {
         return initialize(
                 new RelationshipTypeTokenStore( layout.relationshipTypeTokenStore(), layout.idRelationshipTypeTokenStore(), config,
                         idGeneratorFactory,
-                        pageCache, logProvider, (DynamicStringStore) getOrOpenStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME, cursorContext ),
-                        recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), cursorContext );
+                        pageCache, logProvider, (DynamicStringStore) getOrOpenStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME ),
+                        recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), contextFactory );
     }
 
-    CommonAbstractStore createRelationshipTypeTokenNamesStore( CursorContext cursorContext )
+    CommonAbstractStore createRelationshipTypeTokenNamesStore()
     {
         return createDynamicStringStore( layout.relationshipTypeTokenNamesStore(), layout.idRelationshipTypeTokenNamesStore(),
-                RecordIdType.RELATIONSHIP_TYPE_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE, cursorContext );
+                RecordIdType.RELATIONSHIP_TYPE_TOKEN_NAME, TokenStore.NAME_STORE_BLOCK_SIZE );
     }
 
-    CommonAbstractStore createLabelTokenStore( CursorContext cursorContext )
+    CommonAbstractStore createLabelTokenStore()
     {
         return initialize( new LabelTokenStore( layout.labelTokenStore(), layout.idLabelTokenStore(), config, idGeneratorFactory, pageCache, logProvider,
-                (DynamicStringStore) getOrOpenStore( StoreType.LABEL_TOKEN_NAME, cursorContext ), recordFormats, readOnlyChecker, layout.getDatabaseName(),
-                openOptions ), cursorContext );
+                (DynamicStringStore) getOrOpenStore( StoreType.LABEL_TOKEN_NAME ), recordFormats, readOnlyChecker, layout.getDatabaseName(),
+                openOptions ), contextFactory );
     }
 
-    CommonAbstractStore createSchemaStore( CursorContext cursorContext )
+    CommonAbstractStore createSchemaStore()
     {
         return initialize(
                 new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, SchemaIdType.SCHEMA, idGeneratorFactory, pageCache,
                         logProvider,
-                        (PropertyStore) getOrOpenStore( StoreType.PROPERTY, cursorContext ),
-                        recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), cursorContext );
+                        (PropertyStore) getOrOpenStore( StoreType.PROPERTY ),
+                        recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), contextFactory );
     }
 
-    CommonAbstractStore createRelationshipGroupStore( CursorContext cursorContext )
+    CommonAbstractStore createRelationshipGroupStore()
     {
         return initialize( new RelationshipGroupStore( layout.relationshipGroupStore(), layout.idRelationshipGroupStore(), config,
-                idGeneratorFactory, pageCache, logProvider, recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), cursorContext );
+                idGeneratorFactory, pageCache, logProvider, recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), contextFactory );
     }
 
-    CommonAbstractStore createLabelTokenNamesStore( CursorContext cursorContext )
+    CommonAbstractStore createLabelTokenNamesStore()
     {
         return createDynamicStringStore( layout.labelTokenNamesStore(), layout.idLabelTokenNamesStore(), RecordIdType.LABEL_TOKEN_NAME,
-                TokenStore.NAME_STORE_BLOCK_SIZE, cursorContext );
+                TokenStore.NAME_STORE_BLOCK_SIZE );
     }
 
-    CommonAbstractStore createMetadataStore( CursorContext cursorContext )
+    CommonAbstractStore createMetadataStore()
     {
         return initialize( new MetaDataStore( layout.metadataStore(), config, pageCache, logProvider,
                         recordFormats.metaData(),
-                        recordFormats.storeVersion(), pageCacheTracer, readOnlyChecker, layout.getDatabaseName(), openOptions ),
-                cursorContext );
+                        recordFormats.storeVersion(), contextFactory, readOnlyChecker, layout.getDatabaseName(), openOptions ), contextFactory );
     }
 
-    private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile, CursorContext cursorContext )
+    private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile )
     {
-        return createDynamicStringStore( storeFile, idFile, RecordIdType.STRING_BLOCK, config.get( GraphDatabaseInternalSettings.string_block_size ),
-                cursorContext );
+        return createDynamicStringStore( storeFile, idFile, RecordIdType.STRING_BLOCK, config.get( GraphDatabaseInternalSettings.string_block_size ) );
     }
 
-    private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile, RecordIdType idType, int blockSize, CursorContext cursorContext )
+    private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile, RecordIdType idType, int blockSize )
     {
         return initialize( new DynamicStringStore( storeFile, idFile, config, idType, idGeneratorFactory,
                 pageCache, logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion(), readOnlyChecker, layout.getDatabaseName(),
-                openOptions ), cursorContext );
+                openOptions ), contextFactory );
     }
 
-    private CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, RecordIdType idType, Setting<Integer> blockSizeProperty,
-            CursorContext cursorContext )
+    private CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, RecordIdType idType, Setting<Integer> blockSizeProperty )
     {
-        return createDynamicArrayStore( storeFile, idFile, idType, config.get( blockSizeProperty ), cursorContext );
+        return createDynamicArrayStore( storeFile, idFile, idType, config.get( blockSizeProperty ) );
     }
 
-    CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, RecordIdType idType, int blockSize, CursorContext cursorContext )
+    CommonAbstractStore createDynamicArrayStore( Path storeFile, Path idFile, RecordIdType idType, int blockSize )
     {
         if ( blockSize <= 0 )
         {
             throw new IllegalArgumentException( "Block size of dynamic array store should be positive integer." );
         }
         return initialize( new DynamicArrayStore( storeFile, idFile, config, idType, idGeneratorFactory, pageCache,
-                logProvider, blockSize, recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), cursorContext );
+                logProvider, blockSize, recordFormats, readOnlyChecker, layout.getDatabaseName(), openOptions ), contextFactory );
     }
 
     @SuppressWarnings( "unchecked" )

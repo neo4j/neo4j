@@ -27,7 +27,7 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -46,12 +46,12 @@ public class NodeFirstGroupStage extends Stage
     public static final String NAME = "Node --> Group";
 
     NodeFirstGroupStage( Configuration config, RecordStore<RelationshipGroupRecord> groupStore, NodeStore nodeStore, ByteArray cache,
-            PageCacheTracer pageCacheTracer, Function<CursorContext,StoreCursors> storeCursorsCreator )
+            CursorContextFactory contextFactory, Function<CursorContext,StoreCursors> storeCursorsCreator )
     {
         super( NAME, null, config, 0 );
         add( new BatchFeedStep( control(), config, allIn( groupStore, config ), groupStore.getRecordSize() ) );
-        add( new ReadRecordsStep<>( control(), config, true, groupStore, pageCacheTracer ) );
-        add( new NodeSetFirstGroupStep( control(), config, nodeStore, cache, pageCacheTracer ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence(), pageCacheTracer, storeCursorsCreator, NODE_CURSOR ) );
+        add( new ReadRecordsStep<>( control(), config, true, groupStore, contextFactory ) );
+        add( new NodeSetFirstGroupStep( control(), config, nodeStore, cache, contextFactory ) );
+        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence(), contextFactory, storeCursorsCreator, NODE_CURSOR ) );
     }
 }

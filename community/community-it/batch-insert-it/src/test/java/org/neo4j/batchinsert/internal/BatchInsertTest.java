@@ -54,6 +54,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -83,6 +84,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -459,8 +461,8 @@ class BatchInsertTest
                         {
                             return TransactionIdStore.BASE_TX_ID;
                         }
-                    }, readOnly(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1000,
-                    NullLogProvider.getInstance(), cursorContext ) )
+                    }, readOnly(), GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1000,
+                    NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) ) )
             {
                 countsStore.start( cursorContext, StoreCursors.NULL, INSTANCE );
                 assertThat( countsStore.relationshipCount( ANY_LABEL, 0, ANY_LABEL, cursorContext ) ).isEqualTo( (r + 1) * 100L );

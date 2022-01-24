@@ -153,22 +153,23 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = SILENT;
-        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
                 batchImporterFactory, INSTANCE );
         migrator.migrate(
                 databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ),
                 EMPTY );
 
         // WHEN simulating resuming the migration
-        migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory, batchImporterFactory,
+        migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory, batchImporterFactory,
                 INSTANCE );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG,
-                new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs, logService.getInternalLogProvider(),
-                PageCacheTracer.NULL, writable() );
+        StoreFactory storeFactory =
+                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
+                        logService.getInternalLogProvider(), contextFactory, writable() );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -188,8 +189,9 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
                 batchImporterFactory, INSTANCE );
 
         // WHEN migrating
@@ -225,8 +227,8 @@ class RecordStorageMigratorIT
         };
         try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
                 databaseLayout.relationshipGroupDegreesStore(), testDirectory.getFileSystem(), immediate(), noRebuildAssertion, writable(),
-                PageCacheTracer.NULL, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue(),
-                NullLogProvider.getInstance(), cursorContext ) )
+                GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue(),
+                NullLogProvider.getInstance(), contextFactory ) )
         {
             // The rebuild would happen here in start and will throw exception (above) if invoked
             groupDegreesStore.start( cursorContext, StoreCursors.NULL, INSTANCE );
@@ -239,7 +241,7 @@ class RecordStorageMigratorIT
 
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
-                logService.getInternalLogProvider(), PageCacheTracer.NULL, writable() );
+                logService.getInternalLogProvider(), contextFactory, writable() );
         storeFactory.openAllNeoStores().close();
         assertThat( logProvider ).forLevel( ERROR ).doesNotHaveAnyLogs();
     }
@@ -260,8 +262,9 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = SILENT;
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        var contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
                 batchImporterFactory, INSTANCE );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, getVersionToMigrateTo( check ), EMPTY );
@@ -273,7 +276,7 @@ class RecordStorageMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
-                        logService.getInternalLogProvider(), PageCacheTracer.NULL, writable() );
+                        logService.getInternalLogProvider(), contextFactory, writable() );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -293,8 +296,9 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = SILENT;
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        var contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
                 batchImporterFactory, INSTANCE );
 
         // WHEN migrating
@@ -322,8 +326,9 @@ class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = SILENT;
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, contextFactory,
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        var contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
                 batchImporterFactory, INSTANCE );
 
         // when
@@ -347,11 +352,12 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         String versionToMigrateTo = getVersionToMigrateTo( check );
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        var contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
 
         // when
         RecordStorageMigrator migrator =
-                new RecordStorageMigrator( fs, pageCache, CONFIG, NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL, contextFactory,
+                new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, NullLogService.getInstance(), jobScheduler, contextFactory,
                         batchImporterFactory, INSTANCE );
 
         // when
@@ -362,7 +368,7 @@ class RecordStorageMigratorIT
         // then
         try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(),
                 new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, NullLogProvider.getInstance(),
-                PageCacheTracer.NULL, writable() ).openNeoStores( StoreType.META_DATA ) )
+                contextFactory, writable() ).openNeoStores( StoreType.META_DATA ) )
         {
             neoStores.start( NULL_CONTEXT );
             assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( 0 );
@@ -383,13 +389,14 @@ class RecordStorageMigratorIT
         String versionToMigrateTo = getVersionToMigrateTo( check );
         // explicitly set a checkpoint log version into the meta data store
         long checkpointLogVersion = 4;
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        var contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
         MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), CHECKPOINT_LOG_VERSION, checkpointLogVersion, databaseLayout.getDatabaseName(),
                 NULL_CONTEXT );
 
         // when
         RecordStorageMigrator migrator =
-                new RecordStorageMigrator( fs, pageCache, CONFIG, NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL, contextFactory,
+                new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, NullLogService.getInstance(), jobScheduler, contextFactory,
                         batchImporterFactory, INSTANCE );
 
         // when
@@ -400,7 +407,7 @@ class RecordStorageMigratorIT
         // then
         try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(),
                 new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, NullLogProvider.getInstance(),
-                PageCacheTracer.NULL, writable() ).openNeoStores( StoreType.META_DATA ) )
+                contextFactory, writable() ).openNeoStores( StoreType.META_DATA ) )
         {
             neoStores.start( NULL_CONTEXT );
             assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( checkpointLogVersion );

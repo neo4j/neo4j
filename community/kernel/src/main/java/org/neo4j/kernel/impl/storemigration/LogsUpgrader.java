@@ -28,7 +28,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.DatabaseNotCleanlyShutDownException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -55,9 +55,9 @@ public class LogsUpgrader
     private final LegacyTransactionLogsLocator legacyLogsLocator;
     private final Config config;
     private final DependencyResolver dependencyResolver;
-    private final PageCacheTracer tracer;
     private final MemoryTracker memoryTracker;
     private final DatabaseHealth databaseHealth;
+    private final CursorContextFactory contextFactory;
 
     public LogsUpgrader(
             FileSystemAbstraction fs,
@@ -67,9 +67,9 @@ public class LogsUpgrader
             LegacyTransactionLogsLocator legacyLogsLocator,
             Config config,
             DependencyResolver dependencyResolver,
-            PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
-            DatabaseHealth databaseHealth )
+            DatabaseHealth databaseHealth,
+            CursorContextFactory contextFactory )
     {
         this.fs = fs;
         this.storageEngineFactory = storageEngineFactory;
@@ -78,9 +78,9 @@ public class LogsUpgrader
         this.legacyLogsLocator = legacyLogsLocator;
         this.config = config;
         this.dependencyResolver = dependencyResolver;
-        this.tracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
         this.databaseHealth = databaseHealth;
+        this.contextFactory = contextFactory;
     }
 
     public void assertCleanlyShutDown( DatabaseLayout layout )
@@ -154,7 +154,7 @@ public class LogsUpgrader
         try ( MetadataProvider store = getMetaDataStore() )
         {
             TransactionLogInitializer logInitializer = new TransactionLogInitializer(
-                    fs, store, storageEngineFactory, tracer );
+                    fs, store, storageEngineFactory, contextFactory );
 
             Path transactionLogsDirectory = layout.getTransactionLogsDirectory();
             Path legacyLogsDirectory = legacyLogsLocator.getTransactionLogsDirectory();
@@ -221,7 +221,7 @@ public class LogsUpgrader
 
     private MetadataProvider getMetaDataStore() throws IOException
     {
-        return storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, config, pageCache, tracer, DatabaseReadOnlyChecker.readOnly() );
+        return storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, config, pageCache, DatabaseReadOnlyChecker.readOnly(), contextFactory );
     }
 
     private static DatabaseNotCleanlyShutDownException upgradeException( LogTailInformation tail )

@@ -36,7 +36,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 
@@ -45,7 +44,6 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements ConsistencyCheckable
 {
-    private static final String NATIVE_INDEX_CREATION_TAG = "nativeIndexCreation";
     final PageCache pageCache;
     final IndexFiles indexFiles;
     final IndexLayout<KEY> layout;
@@ -54,7 +52,6 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     private final Monitors monitors;
     private final String monitorTag;
     private final DatabaseReadOnlyChecker readOnlyChecker;
-    private final PageCacheTracer pageCacheTracer;
     private final String databaseName;
     private final CursorContextFactory contextFactory;
 
@@ -67,7 +64,6 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         this.monitors = databaseIndexContext.monitors;
         this.monitorTag = databaseIndexContext.monitorTag;
         this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
-        this.pageCacheTracer = databaseIndexContext.pageCacheTracer;
         this.databaseName = databaseIndexContext.databaseName;
         this.contextFactory = databaseIndexContext.contextFactory;
         this.indexFiles = indexFiles;
@@ -80,12 +76,9 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
         Path storeFile = indexFiles.getStoreFile();
-        try ( var context = contextFactory.create( NATIVE_INDEX_CREATION_TAG ) )
-        {
-            tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker,
-                    pageCacheTracer, immutable.empty(), databaseName, descriptor.getName(), context );
-            afterTreeInstantiation( tree );
-        }
+        tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker,
+                immutable.empty(), databaseName, descriptor.getName(), contextFactory );
+        afterTreeInstantiation( tree );
     }
 
     protected void afterTreeInstantiation( GBPTree<KEY,NullValue> tree )

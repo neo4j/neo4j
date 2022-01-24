@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -89,7 +90,8 @@ class RecordStoreVersionCheckTest
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL_CONTEXT );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCheckUpgradable" ) );
+        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnCheckUpgradable" );
 
         StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( storeVersion, cursorContext );
 
@@ -104,12 +106,13 @@ class RecordStoreVersionCheckTest
     void tracePageCacheAccessOnConstruction() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
+        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
         long v1 = StoreVersion.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL_CONTEXT );
 
-        assertNotNull( newStoreVersionCheck( pageCacheTracer ) );
+        assertNotNull( newStoreVersionCheck( contextFactory ) );
         assertThat( pageCacheTracer.pins() ).isOne();
         assertThat( pageCacheTracer.unpins() ).isOne();
         assertThat( pageCacheTracer.faults() ).isOne();
@@ -119,7 +122,8 @@ class RecordStoreVersionCheckTest
     void tracePageCacheAccessOnStoreVersionAccessConstruction() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnStoreVersionAccessConstruction" ) );
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnStoreVersionAccessConstruction" );
 
         Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
@@ -208,11 +212,11 @@ class RecordStoreVersionCheckTest
 
     private RecordStoreVersionCheck newStoreVersionCheck()
     {
-        return newStoreVersionCheck( PageCacheTracer.NULL );
+        return newStoreVersionCheck( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
     }
 
-    private RecordStoreVersionCheck newStoreVersionCheck( PageCacheTracer pageCacheTracer )
+    private RecordStoreVersionCheck newStoreVersionCheck( CursorContextFactory contextFactory )
     {
-        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), pageCacheTracer );
+        return new RecordStoreVersionCheck( fileSystem, pageCache, databaseLayout, NullLogProvider.getInstance(), Config.defaults(), contextFactory );
     }
 }

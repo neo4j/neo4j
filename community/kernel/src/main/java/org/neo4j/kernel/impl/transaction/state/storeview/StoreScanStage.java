@@ -32,7 +32,7 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -61,22 +61,22 @@ public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends S
             int[] entityTokenIdFilter, IntPredicate propertyKeyIdFilter,
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer tokenScanConsumer,
             EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour, LongFunction<Lock> lockFunction, boolean parallelWrite,
-            JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            JobScheduler scheduler, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         super( "IndexPopulation store scan", null, config, parallelWrite ? 0 : ORDER_SEND_DOWNSTREAM, runInJobScheduler( scheduler ), DEFAULT_PANIC_MONITOR );
         int parallelism = dbConfig.get( GraphDatabaseInternalSettings.index_population_workers );
         long maxBatchByteSize = dbConfig.get( GraphDatabaseInternalSettings.index_population_batch_max_byte_size );
         // Read from entity iterator --> long[]
-        add( feedStep = new ReadEntityIdsStep( control(), config, entityIdIteratorSupplier, storeCursorsFactory, cacheTracer, externalUpdatesCheck,
+        add( feedStep = new ReadEntityIdsStep( control(), config, entityIdIteratorSupplier, storeCursorsFactory, contextFactory, externalUpdatesCheck,
                 continueScanning ) );
         // Read entities --> List<EntityUpdates>
         add( generatorStep = new GenerateIndexUpdatesStep<>( control(), config, storageReader, storeCursorsFactory, propertyKeyIdFilter, entityCursorBehaviour,
                 entityTokenIdFilter,
-                propertyScanConsumer, tokenScanConsumer, lockFunction, parallelism, maxBatchByteSize, parallelWrite, cacheTracer, memoryTracker ) );
+                propertyScanConsumer, tokenScanConsumer, lockFunction, parallelism, maxBatchByteSize, parallelWrite, contextFactory, memoryTracker ) );
         if ( !parallelWrite )
         {
             // Write the updates with a single thread if we're not allowed to do this in parallel. The updates are still generated in parallel
-            add( writeStep = new WriteUpdatesStep( control(), config, cacheTracer ) );
+            add( writeStep = new WriteUpdatesStep( control(), config, contextFactory ) );
         }
     }
 

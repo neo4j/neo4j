@@ -28,7 +28,7 @@ import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -44,12 +44,12 @@ public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<Relat
 {
     public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache, Configuration config, int
             highLabelId, int highRelationshipTypeId,
-            CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory, ProgressReporter progressReporter, PageCacheTracer pageCacheTracer,
+            CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory, ProgressReporter progressReporter, CursorContextFactory contextFactory,
             Function<CursorContext,StoreCursors> storeCursorsCreator, MemoryTracker memoryTracker )
     {
         super( control, "COUNT", config,
                 () -> new RelationshipCountsProcessor( cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, memoryTracker ), true,
-                numberOfProcessors( config, cache, highLabelId, highRelationshipTypeId ), pageCacheTracer, storeCursorsCreator );
+                numberOfProcessors( config, cache, highLabelId, highRelationshipTypeId ), contextFactory, storeCursorsCreator );
     }
 
     /**

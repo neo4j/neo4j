@@ -33,6 +33,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -52,6 +53,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.keyToString;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
@@ -182,7 +184,7 @@ class GBPTreeCountsStoreTest
 
         // when
         ByteArrayOutputStream out = new ByteArrayOutputStream( 1024 );
-        GBPTreeCountsStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), NULL_CONTEXT );
+        GBPTreeCountsStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
 
         // then
         String dump = out.toString();
@@ -225,8 +227,8 @@ class GBPTreeCountsStoreTest
 
     private void instantiateCountsStore( CountsBuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor ) throws IOException
     {
-        countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, PageCacheTracer.NULL, monitor,
-                DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), NULL_CONTEXT );
+        countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, monitor,
+                DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
     }
 
     private static class TestableCountsBuilder implements CountsBuilder

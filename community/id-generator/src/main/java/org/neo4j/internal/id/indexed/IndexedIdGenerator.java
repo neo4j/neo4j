@@ -52,7 +52,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrder;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
@@ -62,7 +62,6 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
  * At the heart of this free-list sits a {@link GBPTree}, containing all deleted and freed ids. The tree is used as a bit-set and since it's
@@ -329,7 +328,7 @@ public class IndexedIdGenerator implements IdGenerator
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
             boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, DatabaseReadOnlyChecker readOnlyChecker, Config config, String databaseName,
-            CursorContext cursorContext, Monitor monitor, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
+            CursorContextFactory contextFactory, Monitor monitor, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
     {
         this.path = path;
         this.readOnlyChecker = readOnlyChecker;
@@ -343,7 +342,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.defaultMerger = new IdRangeMerger( false, monitor );
         this.recoveryMerger = new IdRangeMerger( true, monitor );
 
-        Optional<HeaderReader> header = readHeader( pageCache, path, databaseName, cursorContext );
+        Optional<HeaderReader> header = readHeader( pageCache, path, databaseName, contextFactory );
         // We check generation here too since we could get into this scenario:
         // 1. start on existing store, but with missing .id file so that it gets created
         // 2. rebuild will happen in start(), but perhaps the db was shut down or killed before or during start()
@@ -371,7 +370,7 @@ public class IndexedIdGenerator implements IdGenerator
         monitor.opened( highestWrittenId.get(), highId.get() );
 
         this.layout = new IdRangeLayout( idsPerEntry );
-        this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnlyChecker, databaseName, cursorContext, openOptions );
+        this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnlyChecker, databaseName, contextFactory, openOptions );
 
         this.strictlyPrioritizeFreelist = config.get( GraphDatabaseInternalSettings.strictly_prioritize_id_freelist );
         this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;
@@ -380,13 +379,13 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     private GBPTree<IdRangeKey,IdRange> instantiateTree( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
+            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
     {
         try
         {
             final HeaderWriter headerWriter = new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry );
             return new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker,
-                    NULL, openOptions, databaseName, "Indexed ID generator", cursorContext );
+                    openOptions, databaseName, "Indexed ID generator", contextFactory );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -658,9 +657,9 @@ public class IndexedIdGenerator implements IdGenerator
      * @return {@link Optional} with the data embedded inside the {@link HeaderReader} if the id generator existed and the header was read correctly,
      * otherwise {@link Optional#empty()}.
      */
-    private static Optional<HeaderReader> readHeader( PageCache pageCache, Path path, String databaseName, CursorContext cursorContext )
+    private static Optional<HeaderReader> readHeader( PageCache pageCache, Path path, String databaseName, CursorContextFactory contextFactory )
     {
-        try
+        try ( var cursorContext = contextFactory.create( "readHeader" ) )
         {
             HeaderReader headerReader = new HeaderReader();
             GBPTree.readHeader( pageCache, path, headerReader, databaseName, cursorContext );
@@ -682,18 +681,15 @@ public class IndexedIdGenerator implements IdGenerator
      *
      * @param pageCache {@link PageCache} to map id generator in.
      * @param path {@link Path} pointing to the id generator.
-     * @param cacheTracer underlying page cache tracer
      * @throws IOException if the file was missing or some other I/O error occurred.
      */
-    public static void dump( PageCache pageCache, Path path, PageCacheTracer cacheTracer, boolean onlySummary ) throws IOException
+    public static void dump( PageCache pageCache, Path path, CursorContextFactory contextFactory, boolean onlySummary ) throws IOException
     {
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "IndexDump" ) ) )
-        {
-            HeaderReader header = readHeader( pageCache, path, DEFAULT_DATABASE_NAME, cursorContext ).orElseThrow(
+            HeaderReader header = readHeader( pageCache, path, DEFAULT_DATABASE_NAME, contextFactory ).orElseThrow(
                     () -> new NoSuchFileException( path.toAbsolutePath().toString() ) );
             IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
             try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
-                    immediate(), readOnly(), cacheTracer, immutable.empty(), DEFAULT_DATABASE_NAME, "Indexed ID generator", cursorContext ) )
+                    immediate(), readOnly(), immutable.empty(), DEFAULT_DATABASE_NAME, "Indexed ID generator", contextFactory ) )
             {
                 System.out.println( header );
                 if ( onlySummary )
@@ -701,25 +697,28 @@ public class IndexedIdGenerator implements IdGenerator
                     MutableLong numDeletedNotFreed = new MutableLong();
                     MutableLong numDeletedAndFreed = new MutableLong();
                     System.out.println( "Calculating summary..." );
-                    tree.visit( new GBPTreeVisitor.Adaptor<>()
+                    try ( var cursorContext = contextFactory.create( "IndexDump" ) )
                     {
-                        @Override
-                        public void value( IdRange value )
+                        tree.visit( new GBPTreeVisitor.Adaptor<>()
                         {
-                            for ( int i = 0; i < header.idsPerEntry; i++ )
+                            @Override
+                            public void value( IdRange value )
                             {
-                                IdRange.IdState state = value.getState( i );
-                                if ( state == IdRange.IdState.FREE )
+                                for ( int i = 0; i < header.idsPerEntry; i++ )
                                 {
-                                    numDeletedAndFreed.increment();
-                                }
-                                else if ( state == IdRange.IdState.DELETED )
-                                {
-                                    numDeletedNotFreed.increment();
+                                    IdRange.IdState state = value.getState( i );
+                                    if ( state == IdRange.IdState.FREE )
+                                    {
+                                        numDeletedAndFreed.increment();
+                                    }
+                                    else if ( state == IdRange.IdState.DELETED )
+                                    {
+                                        numDeletedNotFreed.increment();
+                                    }
                                 }
                             }
-                        }
-                    }, cursorContext );
+                        }, cursorContext );
+                    }
 
                     System.out.println();
                     System.out.println( "Number of IDs deleted and available for reuse: " + numDeletedAndFreed );
@@ -730,29 +729,31 @@ public class IndexedIdGenerator implements IdGenerator
                 }
                 else
                 {
-                    tree.visit( new GBPTreeVisitor.Adaptor<>()
+                    try ( var cursorContext = contextFactory.create( "IndexDump" ) )
                     {
-                        private IdRangeKey key;
-
-                        @Override
-                        public void key( IdRangeKey key, boolean isLeaf, long offloadId )
+                        tree.visit( new GBPTreeVisitor.Adaptor<>()
                         {
-                            this.key = key;
-                        }
+                            private IdRangeKey key;
 
-                        @Override
-                        public void value( IdRange value )
-                        {
-                            long rangeIndex = key.getIdRangeIdx();
-                            int idsPerEntry = layout.idsPerEntry();
-                            System.out.printf( "%s [rangeIndex: %d, i.e. IDs:%d-%d]%n", value, rangeIndex, rangeIndex * idsPerEntry,
-                                    (rangeIndex + 1) * idsPerEntry - 1 );
-                        }
-                    }, cursorContext );
+                            @Override
+                            public void key( IdRangeKey key, boolean isLeaf, long offloadId )
+                            {
+                                this.key = key;
+                            }
+
+                            @Override
+                            public void value( IdRange value )
+                            {
+                                long rangeIndex = key.getIdRangeIdx();
+                                int idsPerEntry = layout.idsPerEntry();
+                                System.out.printf( "%s [rangeIndex: %d, i.e. IDs:%d-%d]%n", value, rangeIndex, rangeIndex * idsPerEntry,
+                                        (rangeIndex + 1) * idsPerEntry - 1 );
+                            }
+                        }, cursorContext );
+                    }
                 }
                 System.out.println( header );
             }
-        }
     }
 
     @Override

@@ -32,11 +32,13 @@ import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 class ReadGroupsFromCacheStepTest
@@ -105,7 +107,7 @@ class ReadGroupsFromCacheStepTest
 
         VerifierStep( StageControl control, Configuration config, AtomicInteger processCounter )
         {
-            super( control, "Verifier", config, 1, PageCacheTracer.NULL );
+            super( control, "Verifier", config, 1, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
             this.processCounter = processCounter;
         }
 

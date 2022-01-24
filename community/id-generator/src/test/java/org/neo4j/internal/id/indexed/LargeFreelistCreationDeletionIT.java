@@ -32,6 +32,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -46,6 +48,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.Race.throwing;
 
 /**
@@ -80,7 +83,8 @@ class LargeFreelistCreationDeletionIT
         {
             // Create
             try ( var freelist = new IndexedIdGenerator( pageCache, directory.file( "file.id" ), immediate(), TestIdType.TEST, false, () -> 0, Long.MAX_VALUE,
-                    writable(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, Sets.immutable.empty(), SINGLE_IDS ) )
+                    writable(), Config.defaults(), DEFAULT_DATABASE_NAME, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                    NO_MONITOR, Sets.immutable.empty(), SINGLE_IDS ) )
             {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.
                 freelist.maintenance( NULL_CONTEXT );

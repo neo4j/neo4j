@@ -130,7 +130,7 @@ class NodeChecker implements Checker
     private void check( long fromNodeId, long toNodeId, boolean last ) throws Exception
     {
         long usedNodes = 0;
-        try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( NODE_RANGE_CHECKER_TAG ) );
+        try ( var cursorContext = context.contextFactory.create( NODE_RANGE_CHECKER_TAG );
               var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext );
               RecordReader<NodeRecord> nodeReader = new RecordReader<>( context.neoStores.getNodeStore(), true, cursorContext );
               RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), false, cursorContext );
@@ -442,7 +442,7 @@ class NodeChecker implements Checker
         PropertySchemaType propertySchemaType = schema.propertySchemaType();
         long[] indexEntityTokenIds = toLongArray( schema.getEntityTokenIds() );
         indexEntityTokenIds = sortAndDeduplicate( indexEntityTokenIds );
-        try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( NODE_INDEXES_CHECKER_TAG ) );
+        try ( var cursorContext = context.contextFactory.create( NODE_INDEXES_CHECKER_TAG );
               var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext );
               var allEntriesReader = accessor.newAllEntriesValueReader( range.from(), lastRange ? Long.MAX_VALUE : range.to(), cursorContext ) )
         {
@@ -462,7 +462,7 @@ class NodeChecker implements Checker
                         compareTwoSortedLongArrays( propertySchemaType, entityTokenIds, indexEntityTokenIds,
                                 indexLabel -> reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
                                         .nodeDoesNotHaveExpectedLabel( recordLoader.node( entityId, storeCursors ), indexLabel ),
-                                storeLabel -> {/*here we're only interested in what the the index has that the store doesn't have*/} );
+                                storeLabel -> {/*here we're only interested in what the index has that the store doesn't have*/} );
                     }
                 }
                 catch ( ArrayIndexOutOfBoundsException e )

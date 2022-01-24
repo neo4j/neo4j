@@ -28,6 +28,7 @@ import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -38,6 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class ProcessRelationshipCountsDataStepTest
@@ -91,7 +93,8 @@ class ProcessRelationshipCountsDataStepTest
         when( config.maxNumberOfProcessors() ).thenReturn( maxProcessors );
         when( config.maxMemoryUsage() ).thenReturn( maxMemory );
         return new ProcessRelationshipCountsDataStep( control, cache, config, highLabelId, highRelationshipTypeId, mock( CountsAccessor.Updater.class ),
-                                                      NumberArrayFactories.OFF_HEAP, ProgressReporter.SILENT, PageCacheTracer.NULL,
+                                                      NumberArrayFactories.OFF_HEAP, ProgressReporter.SILENT,
+                                                      new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
                                                       any -> StoreCursors.NULL, INSTANCE );
     }
 

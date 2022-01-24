@@ -26,7 +26,6 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -41,10 +40,10 @@ public class RelationshipTypeIndexWriterStep extends IndexWriterStep<Relationshi
     private final IndexImporter importer;
 
     public RelationshipTypeIndexWriterStep( StageControl control, Configuration config, BatchingNeoStores neoStores, IndexImporterFactory indexImporterFactory,
-            MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker, CursorContextFactory contextFactory,
             Function<CursorContext,StoreCursors> storeCursorsCreator )
     {
-        super( control, "RELATIONSHIP TYPE INDEX", config, 1, pageCacheTracer );
+        super( control, "RELATIONSHIP TYPE INDEX", config, 1, contextFactory );
         this.cursorContext = contextFactory.create( RELATIONSHIP_INDEX_WRITE_STEP_TAG );
         this.importer = indexImporter( config.indexConfig(), indexImporterFactory, neoStores, RELATIONSHIP, memoryTracker, contextFactory,
                 storeCursorsCreator );

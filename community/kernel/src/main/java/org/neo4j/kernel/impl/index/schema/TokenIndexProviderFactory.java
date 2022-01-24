@@ -29,7 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
@@ -57,22 +56,22 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
     protected TokenIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors,
                                                  String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
                                                  RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                                 DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, Log log,
+                                                 DatabaseLayout databaseLayout, Log log,
                                                  TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
     {
         return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                       databaseLayout, pageCacheTracer, contextFactory );
+                       databaseLayout, contextFactory );
     }
 
     @VisibleForTesting
     public static TokenIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
             String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory )
+            DatabaseLayout databaseLayout, CursorContextFactory contextFactory )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         DatabaseIndexContext databaseIndexContext =
                 DatabaseIndexContext.builder( pageCache, fs, contextFactory, databaseLayout.getDatabaseName() ).withMonitors( monitors ).withTag( monitorTag )
-                        .withReadOnlyChecker( readOnlyChecker ).withPageCacheTracer( pageCacheTracer ).build();
+                        .withReadOnlyChecker( readOnlyChecker ).build();
         return new TokenIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config, databaseLayout );
     }
 }

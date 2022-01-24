@@ -21,8 +21,7 @@ package org.neo4j.internal.id;
 
 import java.util.function.Supplier;
 
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
@@ -42,16 +41,16 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     private static final String BUFFERED_ID_CONTROLLER = "idController";
     private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private final JobScheduler scheduler;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final String databaseName;
     private JobHandle<?> jobHandle;
 
-    public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler, PageCacheTracer pageCacheTracer,
+    public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler, CursorContextFactory contextFactory,
             String databaseName )
     {
         this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
         this.scheduler = scheduler;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.databaseName = databaseName;
     }
 
@@ -75,7 +74,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     @Override
     public void maintenance()
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( BUFFERED_ID_CONTROLLER ) ) )
+        try ( var cursorContext = contextFactory.create( BUFFERED_ID_CONTROLLER ) )
         {
             bufferingIdGeneratorFactory.maintenance( cursorContext );
         }

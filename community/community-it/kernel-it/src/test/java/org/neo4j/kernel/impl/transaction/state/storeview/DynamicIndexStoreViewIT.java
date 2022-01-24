@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -48,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
 import static org.neo4j.graphdb.IndexingTestUtil.dropTokenIndexes;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
@@ -144,14 +146,16 @@ public class DynamicIndexStoreViewIT
 
     private StoreScan nodeStoreScan( TestTokenScanConsumer consumer )
     {
+        CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         return storeView.visitNodes(
-                getLabelIds(), ALWAYS_TRUE_INT, null, consumer, false, true, new DefaultPageCacheTracer(), INSTANCE );
+                getLabelIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE );
     }
 
     private StoreScan relationshipStoreScan( TestTokenScanConsumer consumer )
     {
+        CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         return storeView.visitRelationships(
-                getRelationTypeIds(), ALWAYS_TRUE_INT, null, consumer, false, true, new DefaultPageCacheTracer(), INSTANCE );
+                getRelationTypeIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE );
     }
 
     private int[] getLabelIds()

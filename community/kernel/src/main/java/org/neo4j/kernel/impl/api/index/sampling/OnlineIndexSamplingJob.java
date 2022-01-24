@@ -20,8 +20,7 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -42,10 +41,10 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final Log log;
     private final String indexUserDescription;
     private final String indexName;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
 
     OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStatisticsStore indexStatisticsStore, String indexUserDescription, String indexName,
-            LogProvider logProvider, PageCacheTracer pageCacheTracer )
+            LogProvider logProvider, CursorContextFactory contextFactory )
     {
         this.indexId = indexId;
         this.indexProxy = indexProxy;
@@ -53,7 +52,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
         this.log = logProvider.getLog( getClass() );
         this.indexUserDescription = indexUserDescription;
         this.indexName = indexName;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
     }
 
     @Override
@@ -76,7 +75,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
             try
             {
                 try ( var reader = indexProxy.newValueReader();
-                      var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_SAMPLER_TAG ) );
+                      var cursorContext = contextFactory.create( INDEX_SAMPLER_TAG );
                       IndexSampler sampler = reader.createSampler() )
                 {
                     IndexSample sample = sampler.sampleIndex( cursorContext );

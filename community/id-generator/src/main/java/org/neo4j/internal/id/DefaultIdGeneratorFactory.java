@@ -38,6 +38,7 @@ import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 import static org.neo4j.internal.id.indexed.LoggingIndexedIdGeneratorMonitor.defaultIdMonitor;
 
@@ -79,10 +80,10 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
+            Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
     {
         IndexedIdGenerator generator =
-                instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnlyChecker, config, cursorContext,
+                instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnlyChecker, config, contextFactory,
                         databaseName, openOptions,
                         slotDistribution );
         generators.put( idType, generator );
@@ -91,11 +92,11 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
+            CursorContextFactory contextFactory, String databaseName, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
     {
         // highId not used when opening an IndexedIdGenerator
         return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, highIdSupplier, maxValue, readOnlyChecker,
-                config, databaseName, cursorContext, defaultIdMonitor( fs, fileName, config ), openOptions, slotDistribution );
+                config, databaseName, contextFactory, defaultIdMonitor( fs, fileName, config ), openOptions, slotDistribution );
     }
 
     @Override
@@ -106,7 +107,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
             IdSlotDistribution slotDistribution ) throws IOException
     {
         // For the potential scenario where there's no store (of course this is where this method will be called),
@@ -118,8 +119,11 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnlyChecker,
-                        config, databaseName, cursorContext, defaultIdMonitor( fs, fileName, config ), openOptions, slotDistribution );
-        generator.checkpoint( cursorContext );
+                        config, databaseName, contextFactory, defaultIdMonitor( fs, fileName, config ), openOptions, slotDistribution );
+        try ( var cursorContext = contextFactory.create( "idGeneratorCreation" ) )
+        {
+            generator.checkpoint( cursorContext );
+        }
         generators.put( idType, generator );
         return generator;
     }

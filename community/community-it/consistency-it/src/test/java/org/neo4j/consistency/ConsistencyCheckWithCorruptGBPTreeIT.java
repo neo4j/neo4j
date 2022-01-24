@@ -65,6 +65,7 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
@@ -93,6 +94,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
@@ -857,13 +859,14 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             LayoutBootstrapper layoutBootstrapper, Path... targetFiles ) throws Exception
     {
         List<Path> treeFiles = new ArrayList<>();
-        try ( CursorContext cursorContext = CursorContext.NULL_CONTEXT;
+        var contextFactory = new CursorContextFactory( NULL, EMPTY );
+        try ( var cursorContext = contextFactory.create( "corruptIndexes" );
               JobScheduler jobScheduler = createInitialisedScheduler();
-              GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, jobScheduler, layoutBootstrapper, readOnlyChecker, NULL ) )
+              GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, jobScheduler, layoutBootstrapper, readOnlyChecker, contextFactory ) )
         {
             for ( Path file : targetFiles )
             {
-                GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file, cursorContext, NO_FLUSH_ON_CLOSE );
+                GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file, NO_FLUSH_ON_CLOSE );
                 if ( bootstrap.isTree() )
                 {
                     treeFiles.add( file );

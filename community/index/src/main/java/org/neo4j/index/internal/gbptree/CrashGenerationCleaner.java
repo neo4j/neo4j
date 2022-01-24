@@ -31,8 +31,7 @@ import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.util.FeatureToggles;
 
@@ -59,11 +58,11 @@ class CrashGenerationCleaner
     private final long stableGeneration;
     private final long unstableGeneration;
     private final Monitor monitor;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final String treeName;
 
     CrashGenerationCleaner( PagedFile pagedFile, TreeNode<?,?> treeNode, long lowTreeNodeId, long highTreeNodeId,
-            long stableGeneration, long unstableGeneration, Monitor monitor, PageCacheTracer pageCacheTracer, String treeName )
+            long stableGeneration, long unstableGeneration, Monitor monitor, CursorContextFactory contextFactory, String treeName )
     {
         this.pagedFile = pagedFile;
         this.treeNode = treeNode;
@@ -72,7 +71,7 @@ class CrashGenerationCleaner
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.monitor = monitor;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.treeName = treeName;
     }
 
@@ -101,7 +100,7 @@ class CrashGenerationCleaner
         List<CleanupJob.JobResult<?>> jobResults = new ArrayList<>();
         for ( int i = 0; i < threads; i++ )
         {
-            Callable<?> cleanerTask = cleaner( nextId, batchSize, numberOfTreeNodes, cleanedPointers, stopFlag, pageCacheTracer );
+            Callable<?> cleanerTask = cleaner( nextId, batchSize, numberOfTreeNodes, cleanedPointers, stopFlag );
             CleanupJob.JobResult<?> jobHandle = executor.submit( "Recovery clean up of '" + treeName + "'", cleanerTask );
             jobResults.add( jobHandle );
         }
@@ -111,12 +110,11 @@ class CrashGenerationCleaner
         monitor.cleanupFinished( pagesToClean, numberOfTreeNodes.sum(), cleanedPointers.sum(), startTime.elapsed( MILLISECONDS ) );
     }
 
-    private Callable<?> cleaner( AtomicLong nextId, long batchSize, LongAdder numberOfTreeNodes, LongAdder cleanedPointers, AtomicBoolean stopFlag,
-            PageCacheTracer pageCacheTracer )
+    private Callable<?> cleaner( AtomicLong nextId, long batchSize, LongAdder numberOfTreeNodes, LongAdder cleanedPointers, AtomicBoolean stopFlag )
     {
         return () ->
         {
-            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_CLEANER_TAG ) );
+            try ( var cursorContext = contextFactory.create( INDEX_CLEANER_TAG );
                   PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, cursorContext );
                   PageCursor writeCursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
             {

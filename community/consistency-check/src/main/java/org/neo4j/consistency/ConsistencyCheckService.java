@@ -69,8 +69,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -226,8 +226,7 @@ public class ConsistencyCheckService
             var jobScheduler = life.add( JobSchedulerFactory.createInitialisedScheduler() );
             var recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.ignore();
             var monitors = new Monitors();
-            var tokenHolders = storageEngineFactory.loadReadOnlyTokens( fileSystem, layout, config, pageCache, true, pageCacheTracer,
-                    contextFactory );
+            var tokenHolders = storageEngineFactory.loadReadOnlyTokens( fileSystem, layout, config, pageCache, true, contextFactory );
             var extensions = life.add( instantiateExtensions(
                     layout, fileSystem, config, new SimpleLogService( logProvider ), pageCache, jobScheduler,
                     recoveryCleanupWorkCollector,
@@ -235,7 +234,7 @@ public class ConsistencyCheckService
                     monitors, tokenHolders, pageCacheTracer, readOnly() ) );
             var indexProviders = life.add( StaticIndexProviderMapFactory.create(
                     life, config, pageCache, fileSystem, new SimpleLogService( logProvider ), monitors, readOnly(), TOOL, recoveryCleanupWorkCollector,
-                    pageCacheTracer, layout, tokenHolders, jobScheduler, contextFactory, extensions ) );
+                    layout, tokenHolders, jobScheduler, contextFactory, extensions ) );
 
             // do the consistency check
             life.start();
@@ -245,7 +244,7 @@ public class ConsistencyCheckService
 
             if ( consistencyFlags.isCheckIndexStructure() )
             {
-                IndexStatisticsStore statisticsStore = getStatisticStore( pageCache, recoveryCleanupWorkCollector );
+                IndexStatisticsStore statisticsStore = getStatisticStore( pageCache, recoveryCleanupWorkCollector, contextFactory );
                 life.add( statisticsStore );
                 consistencyCheckSingleCheckable( log, summary, statisticsStore, "INDEX_STATISTICS", NULL_CONTEXT );
             }
@@ -253,7 +252,7 @@ public class ConsistencyCheckService
             try
             {
                 storageEngineFactory.consistencyCheck( fileSystem, layout, config, pageCache, indexProviders, log, summary, numberOfThreads,
-                        memoryLimitLeewayFactor, progressOutput, verbose, consistencyFlags, pageCacheTracer );
+                        memoryLimitLeewayFactor, progressOutput, verbose, consistencyFlags, contextFactory );
             }
             catch ( Exception e )
             {
@@ -274,11 +273,12 @@ public class ConsistencyCheckService
         }
     }
 
-    private IndexStatisticsStore getStatisticStore( PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    private IndexStatisticsStore getStatisticStore( PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            CursorContextFactory contextFactory )
     {
         try
         {
-            return new IndexStatisticsStore( pageCache, layout, recoveryCleanupWorkCollector, readOnly(), pageCacheTracer, NULL_CONTEXT );
+            return new IndexStatisticsStore( pageCache, layout, recoveryCleanupWorkCollector, readOnly(), contextFactory );
         }
         catch ( IOException e )
         {

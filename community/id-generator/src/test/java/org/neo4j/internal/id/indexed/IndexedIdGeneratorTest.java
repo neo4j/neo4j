@@ -66,8 +66,9 @@ import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -115,6 +116,7 @@ import static org.neo4j.internal.id.IdSlotDistribution.powerTwoSlotSizesDownward
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.Race.throwing;
 
 @PageCacheExtension
@@ -122,6 +124,7 @@ import static org.neo4j.test.Race.throwing;
 class IndexedIdGeneratorTest
 {
     private static final long MAX_ID = 0x3_00000000L;
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Inject
     private TestDirectory directory;
@@ -149,7 +152,7 @@ class IndexedIdGeneratorTest
     void open( Config config, IndexedIdGenerator.Monitor monitor, DatabaseReadOnlyChecker readOnlyChecker, IdSlotDistribution slotDistribution )
     {
         idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnlyChecker, config,
-                DEFAULT_DATABASE_NAME, NULL_CONTEXT, monitor, immutable.empty(), slotDistribution );
+                DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, monitor, immutable.empty(), slotDistribution );
     }
 
     @AfterEach
@@ -175,7 +178,7 @@ class IndexedIdGeneratorTest
         var readableChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
 
         try ( var customGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readableChecker,
-                config, DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
+                config, DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             customGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
             for ( int i = 0; i < generatedIds; i++ )
@@ -190,7 +193,7 @@ class IndexedIdGeneratorTest
         }
 
         try ( var reopenedGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readableChecker,
-                config, DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
+                config, DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             reopenedGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
             assertDoesNotThrow( () -> reopenedGenerator.nextId( NULL_CONTEXT ) );
@@ -584,7 +587,7 @@ class IndexedIdGeneratorTest
         LongSupplier highIdSupplier = mock( LongSupplier.class );
         when( highIdSupplier.getAsLong() ).thenReturn( highId );
         idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, highIdSupplier, MAX_ID, writable(), Config.defaults(),
-                DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS );
+                DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS );
 
         // then
         verify( highIdSupplier ).getAsLong();
@@ -605,7 +608,7 @@ class IndexedIdGeneratorTest
         LongSupplier highIdSupplier = mock( LongSupplier.class );
         when( highIdSupplier.getAsLong() ).thenReturn( 101L );
         idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, highIdSupplier, MAX_ID, writable(), Config.defaults(),
-                DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS );
+                DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS );
 
         // then
         verifyNoMoreInteractions( highIdSupplier );
@@ -619,7 +622,7 @@ class IndexedIdGeneratorTest
         Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(), Config.defaults(),
-                        DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ) );
+                        DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -630,12 +633,12 @@ class IndexedIdGeneratorTest
     {
         Path file = directory.file( "existing" );
         new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(), Config.defaults(), DEFAULT_DATABASE_NAME,
-                NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ).close();
+                CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ).close();
         // Never start id generator means it will need rebuild on next start
 
         // Start in readOnly mode
         try ( IndexedIdGenerator readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID,
-                readOnly(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
+                readOnly(), Config.defaults(), DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             var e = assertThrows( Exception.class, () -> readOnlyGenerator.start( NO_FREE_IDS, NULL_CONTEXT ) );
             assertThat( e ).hasCauseInstanceOf( WriteOnReadOnlyAccessDbException.class );
@@ -648,14 +651,14 @@ class IndexedIdGeneratorTest
         Path file = directory.file( "existing" );
         var indexedIdGenerator =
                 new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(), Config.defaults(),
-                        DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS );
+                        DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS );
         indexedIdGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
         indexedIdGenerator.close();
         // Never start id generator means it will need rebuild on next start
 
         // Start in readOnly mode should not throw
         try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             readOnlyGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
         }
@@ -741,7 +744,7 @@ class IndexedIdGeneratorTest
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) ) )
+        try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) ) )
         {
             idGenerator.consistencyCheck( noopReporterFactory(), cursorContext );
 
@@ -757,7 +760,7 @@ class IndexedIdGeneratorTest
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "noPageCacheActivityWithNoMaintenanceOnOnNextId" ) ) )
+        try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "noPageCacheActivityWithNoMaintenanceOnOnNextId" ) ) )
         {
             idGenerator.nextId( cursorContext );
 
@@ -773,7 +776,7 @@ class IndexedIdGeneratorTest
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "noPageCacheActivityWithNoMaintenanceOnOnNextId" ) ) )
+        try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "noPageCacheActivityWithNoMaintenanceOnOnNextId" ) ) )
         {
             idGenerator.marker( NULL_CONTEXT ).markDeleted( 1 );
             idGenerator.clearCache( NULL_CONTEXT );
@@ -791,7 +794,7 @@ class IndexedIdGeneratorTest
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheActivityWhenMark" ) ) )
+        try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheActivityWhenMark" ) ) )
         {
             idGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
             var cursorTracer = cursorContext.getCursorTracer();
@@ -816,7 +819,7 @@ class IndexedIdGeneratorTest
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorCacheClear" ) ) )
+        try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorCacheClear" ) ) )
         {
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
@@ -837,7 +840,7 @@ class IndexedIdGeneratorTest
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorMaintenance" ) ) )
+        try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorMaintenance" ) ) )
         {
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
@@ -865,7 +868,7 @@ class IndexedIdGeneratorTest
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorCheckpoint" ) ) )
+        try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorCheckpoint" ) ) )
         {
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
@@ -886,7 +889,7 @@ class IndexedIdGeneratorTest
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithRebuild" ) ) )
+        try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithRebuild" ) ) )
         {
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
@@ -905,15 +908,15 @@ class IndexedIdGeneratorTest
     void tracePageCacheOnIdGeneratorStartWithoutRebuild() throws IOException
     {
         try ( var prepareIndexWithoutRebuild = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             prepareIndexWithoutRebuild.checkpoint( NULL_CONTEXT );
         }
         try ( var idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             var pageCacheTracer = new DefaultPageCacheTracer();
-            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithoutRebuild" ) ) )
+            try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithoutRebuild" ) ) )
             {
                 var cursorTracer = cursorContext.getCursorTracer();
                 assertThat( cursorTracer.pins() ).isZero();
@@ -1172,13 +1175,13 @@ class IndexedIdGeneratorTest
         Path file = directory.file( "existing" );
         var indexedIdGenerator =
                 new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(), Config.defaults(),
-                        DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS );
+                        DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS );
         indexedIdGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
         indexedIdGenerator.close();
 
         // Start in readOnly mode
         try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             readOnlyGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
             assertDoesNotThrow( () -> operation.apply( readOnlyGenerator ) );
@@ -1190,13 +1193,13 @@ class IndexedIdGeneratorTest
         Path file = directory.file( "existing" );
         var indexedIdGenerator =
                 new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(), Config.defaults(),
-                        DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS );
+                        DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS );
         indexedIdGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
         indexedIdGenerator.close();
 
         // Start in readOnly mode
         try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, CONTEXT_FACTORY, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             readOnlyGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
             var e = assertThrows( Exception.class, operation.apply( readOnlyGenerator ) );

@@ -36,6 +36,7 @@ import java.util.function.LongFunction;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
@@ -57,6 +58,7 @@ import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.internal.batchimport.staging.ProcessorAssignmentStrategies.saturateSpecificStep;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -69,6 +71,8 @@ class StoreScanStageTest
     private static final int NUMBER_OF_BATCHES = 4;
 
     private final Config dbConfig = Config.defaults( GraphDatabaseInternalSettings.index_population_workers, WORKERS );
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     private final Configuration config = new Configuration()
     {
         @Override
@@ -104,7 +108,7 @@ class StoreScanStageTest
         StoreScanStage<StorageNodeCursor> scan =
                 new StoreScanStage<>( dbConfig, config, ( ct, sc ) -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data,
                         any -> StoreCursors.NULL, new int[]{LABEL}, alwaysTrue(), propertyConsumer, tokenConsumer, new NodeCursorBehaviour( data ),
-                        lockFunction, parallelWrite, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                        lockFunction, parallelWrite, jobScheduler, CONTEXT_FACTORY, EmptyMemoryTracker.INSTANCE );
 
         // when
         runScan( scan );
@@ -137,7 +141,7 @@ class StoreScanStageTest
         StoreScanStage<StorageNodeCursor> scan =
                 new StoreScanStage<>( dbConfig, config, ( ct, sc ) -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data,
                         any -> StoreCursors.NULL, new int[]{LABEL},
-                        alwaysTrue(), failingWriter, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, PageCacheTracer.NULL,
+                        alwaysTrue(), failingWriter, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, CONTEXT_FACTORY,
                         EmptyMemoryTracker.INSTANCE );
 
         // when/then
@@ -158,7 +162,7 @@ class StoreScanStageTest
                 new StoreScanStage( dbConfig, config, ( ct, sc ) -> entityIdIterator, externalUpdatesCheck, new AtomicBoolean( true ), data,
                         any -> StoreCursors.NULL, new int[]{LABEL},
                         alwaysTrue(), writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler,
-                        PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                        CONTEXT_FACTORY, EmptyMemoryTracker.INSTANCE );
 
         // when
         runScan( scan );
@@ -179,7 +183,7 @@ class StoreScanStageTest
         var writer = new PropertyConsumer( numBatchesProcessed::incrementAndGet );
         StoreScanStage<StorageNodeCursor> scan =
                 new StoreScanStage( dbConfig, config, ( ct, sc ) -> entityIdIterator, externalUpdatesCheck, continueScanning, data, any -> StoreCursors.NULL,
-                        new int[]{LABEL}, alwaysTrue(), writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, PageCacheTracer.NULL,
+                        new int[]{LABEL}, alwaysTrue(), writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, CONTEXT_FACTORY,
                         EmptyMemoryTracker.INSTANCE );
 
         // when
@@ -210,7 +214,7 @@ class StoreScanStageTest
         StoreScanStage<StorageNodeCursor> scan =
                 new StoreScanStage( dbConfig, config, ( ct, sc ) -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data,
                         any -> StoreCursors.NULL, new int[]{LABEL}, alwaysTrue(), new ThreadCapturingPropertyConsumer(), new ThreadCapturingTokenConsumer(),
-                        new NodeCursorBehaviour( data ), l -> LockService.NO_LOCK, true, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                        new NodeCursorBehaviour( data ), l -> LockService.NO_LOCK, true, jobScheduler, CONTEXT_FACTORY, EmptyMemoryTracker.INSTANCE );
         stage.set( scan );
 
         // when

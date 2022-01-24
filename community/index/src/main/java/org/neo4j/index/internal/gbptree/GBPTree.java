@@ -48,7 +48,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -468,13 +468,6 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
     /**
-     * Underlying page cache tracer. Should be used to create page cursors tracers
-     * only for cases where work is performed by tree itself: construction or shutdown, otherwise tracers caller
-     * should provide correct context related tracer that should be used
-     */
-    private final PageCacheTracer pageCacheTracer;
-
-    /**
      * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(Path, int, String, ImmutableSet)}
      * at open/create. When initially creating the file an array consisting of {@link StandardOpenOption#CREATE}
      * concatenated with the contents of this array is passed into the map call.
@@ -483,6 +476,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     // Name of the database this tree belongs to.
     private final String databaseName;
+    private final CursorContextFactory contextFactory;
 
     /**
      * Whether or not this tree has been closed. Accessed and changed solely in
@@ -583,21 +577,21 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      */
     public GBPTree( PageCache pageCache, Path indexFile, Layout<KEY,VALUE> layout, Monitor monitor, Header.Reader headerReader,
             Consumer<PageCursor> headerWriter, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker,
-            PageCacheTracer pageCacheTracer, ImmutableSet<OpenOption> openOptions, String databaseName, String name,
-            CursorContext cursorContext ) throws MetadataMismatchException
+            ImmutableSet<OpenOption> openOptions, String databaseName, String name,
+            CursorContextFactory contextFactory ) throws MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
         this.readOnlyChecker = readOnlyChecker;
-        this.pageCacheTracer = pageCacheTracer;
         this.openOptions = openOptions;
         this.databaseName = databaseName;
+        this.contextFactory = contextFactory;
         this.generation = Generation.generation( MIN_GENERATION, MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
 
-        try
+        try ( var cursorContext = contextFactory.create( INDEX_INTERNAL_TAG ) )
         {
             this.pagedFile = openOrCreate( pageCache, indexFile, cursorContext, databaseName, openOptions );
             this.payloadSize = pagedFile.payloadSize();
@@ -1323,7 +1317,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     @Override
     public void close() throws IOException
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( INDEX_INTERNAL_TAG ) )
         {
             if ( openOptions.contains( NO_FLUSH_ON_CLOSE ) )
             {
@@ -1526,7 +1520,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
             CrashGenerationCleaner crashGenerationCleaner =
                     new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
-                            stableGeneration, unstableGeneration, monitor, pageCacheTracer, treeName );
+                            stableGeneration, unstableGeneration, monitor, contextFactory, treeName );
             GBPTreeCleanupJob cleanupJob = new GBPTreeCleanupJob( crashGenerationCleaner, cleanerLock, monitor, indexFile );
             recoveryCleanupWorkCollector.add( cleanupJob );
             return cleanupJob;

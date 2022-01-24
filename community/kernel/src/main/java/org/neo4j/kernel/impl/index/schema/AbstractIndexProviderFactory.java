@@ -27,7 +27,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -43,7 +42,7 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider>
 
     public T create( PageCache pageCache, FileSystemAbstraction fs, LogService logService, Monitors monitors,
                      Config config, DatabaseReadOnlyChecker readOnlyChecker, DbmsInfo dbmsInfo,
-                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer,
+                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                      DatabaseLayout databaseLayout, TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
     {
         if ( OperationalMode.SINGLE != dbmsInfo.operationalMode )
@@ -55,7 +54,7 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider>
         String monitorTag = descriptor().toString();
         monitors.addMonitorListener( new LoggingMonitor( log ), monitorTag );
         return internalCreate( pageCache, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, databaseLayout,
-                               pageCacheTracer, log, tokenHolders, scheduler, contextFactory );
+                               log, tokenHolders, scheduler, contextFactory );
     }
 
     protected abstract Class<?> loggingClass();
@@ -65,7 +64,6 @@ public abstract class AbstractIndexProviderFactory<T extends IndexProvider>
     protected abstract T internalCreate( PageCache pageCache, FileSystemAbstraction fs,
                                          Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
                                          RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
-                                         PageCacheTracer pageCacheTracer, Log log, TokenHolders tokenHolders, JobScheduler scheduler,
-                                         CursorContextFactory contextFactory );
+                                         Log log, TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory );
 
 }

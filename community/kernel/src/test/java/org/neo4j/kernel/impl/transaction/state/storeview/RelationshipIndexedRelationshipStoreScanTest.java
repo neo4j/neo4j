@@ -31,6 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -46,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RelationshipIndexedRelationshipStoreScanTest
@@ -130,6 +132,6 @@ class RelationshipIndexedRelationshipStoreScanTest
     {
         return new RelationshipIndexedRelationshipStoreScan( Config.defaults(), cursors, any -> StoreCursors.NULL, LockService.NO_LOCK_SERVICE,
                 relationshipTypeScanReader, typeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter, false, jobScheduler,
-                PageCacheTracer.NULL, INSTANCE );
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), INSTANCE );
     }
 }

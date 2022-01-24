@@ -34,6 +34,7 @@ import org.neo4j.internal.counts.RelationshipGroupDegreesStore.Updater;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -54,6 +55,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.degreeKey;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.keyToString;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
@@ -65,6 +67,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest
 {
     private static final long GROUP_ID_1 = 1;
     private static final long GROUP_ID_2 = 2;
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Inject
     private TestDirectory directory;
@@ -187,7 +190,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest
 
         // when
         ByteArrayOutputStream out = new ByteArrayOutputStream( 1024 );
-        GBPTreeRelationshipGroupDegreesStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), NULL_CONTEXT );
+        GBPTreeRelationshipGroupDegreesStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), CONTEXT_FACTORY );
 
         // then
         String dump = out.toString();
@@ -231,8 +234,8 @@ class GBPTreeRelationshipGroupDegreesStoreTest
     private void instantiateCountsStore( DegreesRebuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor )
             throws IOException
     {
-        countsStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, PageCacheTracer.NULL,
-                monitor, DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), NULL_CONTEXT );
+        countsStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker,
+                monitor, DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), CONTEXT_FACTORY );
     }
 
     private static class TestableCountsBuilder implements DegreesRebuilder

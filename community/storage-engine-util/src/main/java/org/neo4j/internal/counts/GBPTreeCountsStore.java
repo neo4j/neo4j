@@ -33,7 +33,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 
@@ -91,11 +91,11 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     }
 
     public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            CountsBuilder initialCountsBuilder, DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName,
-            int maxCacheSize, LogProvider userLogProvider, CursorContext cursorContext ) throws IOException
+            CountsBuilder initialCountsBuilder, DatabaseReadOnlyChecker readOnlyChecker, Monitor monitor, String databaseName,
+            int maxCacheSize, LogProvider userLogProvider, CursorContextFactory contextFactory ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnlyChecker, NAME, pageCacheTracer,
-                monitor, databaseName, maxCacheSize, userLogProvider, cursorContext );
+        super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnlyChecker, NAME,
+                monitor, databaseName, maxCacheSize, userLogProvider, contextFactory );
     }
 
     @Override
@@ -156,9 +156,9 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         throw new IllegalArgumentException( "Unknown type " + key.type );
     }
 
-    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContext cursorContext ) throws IOException
+    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContextFactory contextFactory ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, cursorContext, GBPTreeCountsStore::keyToString );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, contextFactory, GBPTreeCountsStore::keyToString );
     }
 
     private static class Incrementer implements CountsAccessor.Updater

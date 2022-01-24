@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -48,6 +49,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -69,7 +71,7 @@ class HighIdTransactionApplierTest
     {
         var storeFactory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
+                pageCache, fs, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
@@ -139,7 +141,7 @@ class HighIdTransactionApplierTest
     }
 
     @Test
-    void shouldTrackSecondaryUnitIdsAsWell() throws Exception
+    void shouldTrackSecondaryUnitIdsAsWell()
     {
         // GIVEN
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );

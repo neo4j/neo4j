@@ -38,6 +38,8 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -70,7 +72,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
@@ -81,6 +83,7 @@ public class BatchingMultipleIndexPopulatorTest
 {
     private static final int propertyId = 1;
     private static final int labelId = 1;
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Inject
     private JobScheduler jobScheduler;
@@ -94,7 +97,7 @@ public class BatchingMultipleIndexPopulatorTest
     {
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 mock( IndexStoreView.class ), NullLogProvider.getInstance(), EntityType.NODE,
-                mock( SchemaState.class ), new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
+                mock( SchemaState.class ), new CallingThreadJobScheduler(), tokens, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED,
                 Config.defaults( GraphDatabaseInternalSettings.index_population_queue_threshold, 5 ) );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
@@ -120,7 +123,7 @@ public class BatchingMultipleIndexPopulatorTest
                         jobScheduler );
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ),
-                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
+                new CallingThreadJobScheduler(), tokens, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED,
                 Config.defaults( GraphDatabaseInternalSettings.index_population_queue_threshold, 2 ) );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
@@ -131,7 +134,7 @@ public class BatchingMultipleIndexPopulatorTest
         IndexUpdater updater2 = mock( IndexUpdater.class );
         when( populator2.newPopulatingUpdater( any(), any() ) ).thenReturn( updater2 );
 
-        batchingPopulator.createStoreScan( NULL );
+        batchingPopulator.createStoreScan( CONTEXT_FACTORY );
         IndexEntryUpdate<?> update1 = add( 1, index1, "foo" );
         IndexEntryUpdate<?> update2 = add( 2, index42, "bar" );
         IndexEntryUpdate<?> update3 = add( 3, index1, "baz" );
@@ -157,12 +160,12 @@ public class BatchingMultipleIndexPopulatorTest
 
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                 NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ),
-                new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
+                new CallingThreadJobScheduler(), tokens, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
         IndexPopulator populator42 = addPopulator( batchingPopulator, index42 );
 
-        batchingPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
+        batchingPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
 
         verify( populator1 ).add( eq( forUpdates( index1, update1, update2, update3 ) ), any() );
         verify( populator42 ).add( eq( forUpdates( index42, update42 ) ), any() );
@@ -184,14 +187,14 @@ public class BatchingMultipleIndexPopulatorTest
         {
             MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
                     NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ),
-                    jobScheduler, tokens, NULL, INSTANCE,  "", AUTH_DISABLED,
+                    jobScheduler, tokens, CONTEXT_FACTORY, INSTANCE,  "", AUTH_DISABLED,
                     Config.defaults( GraphDatabaseInternalSettings.index_population_batch_max_byte_size, 1L ) );
 
             populator = addPopulator( batchingPopulator, index1 );
             List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
             doThrow( batchFlushError ).when( populator ).add( eq( expected ), any() );
 
-            batchingPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
+            batchingPopulator.createStoreScan( CONTEXT_FACTORY ).run( NO_EXTERNAL_UPDATES );
         }
         finally
         {

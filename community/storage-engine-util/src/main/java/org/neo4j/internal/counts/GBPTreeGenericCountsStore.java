@@ -52,7 +52,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -67,7 +67,6 @@ import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.strayTxId;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -113,8 +112,8 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private volatile boolean started;
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName,
-            int maxCacheSize, LogProvider userLogProvider, CursorContext cursorContext ) throws IOException
+            Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, Monitor monitor, String databaseName,
+            int maxCacheSize, LogProvider userLogProvider, CursorContextFactory contextFactory ) throws IOException
     {
         this.userLogProvider = userLogProvider;
         this.readOnlyChecker = readOnlyChecker;
@@ -130,18 +129,18 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         GBPTree<CountsKey,CountsValue> instantiatedTree;
         try
         {
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, pageCacheTracer, cursorContext );
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory );
         }
         catch ( MetadataMismatchException e )
         {
             // Corrupt, delete and rebuild
             fileSystem.deleteFileOrThrow( file );
             header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, pageCacheTracer, cursorContext );
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory );
         }
         this.tree = instantiatedTree;
         boolean successful = false;
-        try
+        try ( var cursorContext = contextFactory.create( OPEN_COUNT_STORE_TAG ) )
         {
             this.txIdInformation = readTxIdInformation( header.highestGapFreeTxId(), cursorContext );
             // Recreate the tx id state as it was from last checkpoint (or base if empty)
@@ -167,12 +166,12 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     }
 
     private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, Path file, RecoveryCleanupWorkCollector recoveryCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, CountsHeader header, PageCacheTracer pageCacheTracer, CursorContext cursorContext )
+            DatabaseReadOnlyChecker readOnlyChecker, CountsHeader header, CursorContextFactory contextFactory )
     {
         try
         {
-            return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnlyChecker, pageCacheTracer,
-                    immutable.empty(), databaseName, name, cursorContext );
+            return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnlyChecker,
+                    immutable.empty(), databaseName, name, contextFactory );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -504,38 +503,44 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param out to print to.
      * @param databaseName name of the database tree belongs to.
      * @param name of the {@link GBPTree}.
-     * @param cursorContext tracer for page cache access.
+     * @param contextFactory context factory for page cursors
      * @param keyToString function for generating proper descriptions of the keys.
      * @throws IOException on missing file or I/O error.
      */
-    protected static void dump( PageCache pageCache, Path file, PrintStream out, String databaseName, String name, CursorContext cursorContext,
+    protected static void dump( PageCache pageCache, Path file, PrintStream out, String databaseName, String name, CursorContextFactory contextFactory,
             Function<CountsKey,String> keyToString ) throws IOException
     {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
         CountsHeader header = new CountsHeader( BASE_TX_ID );
-        GBPTree.readHeader( pageCache, file, header, databaseName, cursorContext );
+        try ( var cursorContext = contextFactory.create( "dump" ) )
+        {
+            GBPTree.readHeader( pageCache, file, header, databaseName, cursorContext );
+        }
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), readOnly(), NULL, immutable.empty(), databaseName, name, CursorContext.NULL_CONTEXT ) )
+                RecoveryCleanupWorkCollector.ignore(), readOnly(), immutable.empty(), databaseName, name, contextFactory ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
-            tree.visit( new GBPTreeVisitor.Adaptor<>()
+            try ( var cursorContext = contextFactory.create( "dumpVisitor" ) )
             {
-                private CountsKey key;
-
-                @Override
-                public void key( CountsKey key, boolean isLeaf, long offloadId )
+                tree.visit( new GBPTreeVisitor.Adaptor<>()
                 {
-                    this.key = key;
-                }
+                    private CountsKey key;
 
-                @Override
-                public void value( CountsValue value )
-                {
-                    out.printf( "%s = %d%n", keyToString.apply( key ), value.count );
-                }
-            }, cursorContext );
+                    @Override
+                    public void key( CountsKey key, boolean isLeaf, long offloadId )
+                    {
+                        this.key = key;
+                    }
+
+                    @Override
+                    public void value( CountsValue value )
+                    {
+                        out.printf( "%s = %d%n", keyToString.apply( key ), value.count );
+                    }
+                }, cursorContext );
+            }
         }
     }
 

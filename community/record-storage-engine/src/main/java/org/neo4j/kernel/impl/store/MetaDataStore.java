@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -90,6 +90,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     private static final String METADATA_REFRESH_TAG = "metadataRefresh";
     static final UUID NOT_INITIALIZED_UUID = new UUID( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
+    private final CursorContextFactory contextFactory;
 
     // Positions of meta-data records
     public enum Position
@@ -163,7 +164,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile UUID externalStoreUUID;
     private volatile UUID databaseUUID;
     private volatile long kernelVersion = FIELD_NOT_INITIALIZED;
-    private final PageCacheTracer pageCacheTracer;
 
     private volatile TransactionId upgradeTransaction = new TransactionId( FIELD_NOT_INITIALIZED, (int) FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
 
@@ -193,14 +193,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     MetaDataStore( Path file, Config conf,
             PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
-            String storeVersion, PageCacheTracer pageCacheTracer,
+            String storeVersion, CursorContextFactory contextFactory,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( file, null, conf, null, EMPTY_ID_GENERATOR_FACTORY, pageCache, logProvider,
                 TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, readOnlyChecker, databaseName, openOptions );
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
     }
 
     @Override
@@ -231,9 +231,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    protected void initialise( boolean createIfNotExists, CursorContext cursorContext )
+    protected void initialise( boolean createIfNotExists, CursorContextFactory contextFactory )
     {
-        super.initialise( createIfNotExists, cursorContext );
+        super.initialise( createIfNotExists, contextFactory );
         refreshFields();
     }
 
@@ -808,7 +808,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void scanAllFields( int pf_flags, Visitor<PageCursor,IOException> visitor )
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( METADATA_REFRESH_TAG ) );
+        try ( var cursorContext = contextFactory.create( METADATA_REFRESH_TAG );
               PageCursor cursor = pagedFile.io( 0, pf_flags, cursorContext ) )
         {
             if ( cursor.next() )

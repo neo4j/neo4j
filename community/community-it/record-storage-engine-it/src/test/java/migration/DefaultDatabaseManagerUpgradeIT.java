@@ -38,6 +38,8 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
@@ -63,11 +65,13 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @Neo4jLayoutExtension
 class DefaultDatabaseManagerUpgradeIT
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -102,7 +106,7 @@ class DefaultDatabaseManagerUpgradeIT
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
         DefaultDatabaseManager databaseManager = getDatabaseManager( db );
         RecordStoreVersionCheck check =
-                new RecordStoreVersionCheck( fs, getPageCache( db ), databaseLayout, NullLogProvider.getInstance(), Config.defaults(), NULL );
+                new RecordStoreVersionCheck( fs, getPageCache( db ), databaseLayout, NullLogProvider.getInstance(), Config.defaults(), CONTEXT_FACTORY );
         assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL_CONTEXT ).orElseThrow() );
 
         // When
@@ -123,7 +127,7 @@ class DefaultDatabaseManagerUpgradeIT
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
         DefaultDatabaseManager databaseManager = getDatabaseManager( db );
         RecordStoreVersionCheck check =
-                new RecordStoreVersionCheck( fs, getPageCache( db ), databaseLayout, NullLogProvider.getInstance(), Config.defaults(), NULL );
+                new RecordStoreVersionCheck( fs, getPageCache( db ), databaseLayout, NullLogProvider.getInstance(), Config.defaults(), CONTEXT_FACTORY );
         assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL_CONTEXT ).orElseThrow() );
 
         // When

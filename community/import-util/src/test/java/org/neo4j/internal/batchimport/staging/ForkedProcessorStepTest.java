@@ -32,6 +32,8 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.StepStats;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,11 +44,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.io.IOUtils.closeAllSilently;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class ForkedProcessorStepTest
 {
     private static final int TIMEOUT_MINUTES = 2;
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Test
     void shouldProcessAllSingleThreaded() throws Exception
@@ -212,7 +215,7 @@ class ForkedProcessorStepTest
                 }
             }
         };
-        DeadEndStep downstream = new DeadEndStep( control );
+        DeadEndStep downstream = new DeadEndStep( control, CONTEXT_FACTORY );
         step.setDownstream( downstream );
 
         // WHEN
@@ -344,7 +347,7 @@ class ForkedProcessorStepTest
                     return ticket < batches ? ticket : null;
                 }
             } );
-            add( new ProcessorStep<Long>( control(), "Yeah", config, 3, NULL )
+            add( new ProcessorStep<Long>( control(), "Yeah", config, 3, CONTEXT_FACTORY )
             {
                 @Override
                 protected void process( Long batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
@@ -361,7 +364,7 @@ class ForkedProcessorStepTest
                     Thread.sleep( 1 );
                 }
             } );
-            add( new DeadEndStep( control() ) );
+            add( new DeadEndStep( control(), CONTEXT_FACTORY ) );
         }
     }
 

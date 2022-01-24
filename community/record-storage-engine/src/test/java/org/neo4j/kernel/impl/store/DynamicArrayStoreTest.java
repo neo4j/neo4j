@@ -39,7 +39,9 @@ import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -53,6 +55,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
@@ -130,7 +133,7 @@ class DynamicArrayStoreTest
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
         DynamicArrayStore store = new DynamicArrayStore( storeFile, idFile, Config.defaults(), RecordIdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
                 NullLogProvider.getInstance(), 1, defaultFormat(), writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
-        store.initialise( true, NULL_CONTEXT );
+        store.initialise( true, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
         store.start( NULL_CONTEXT );
         return store;
     }

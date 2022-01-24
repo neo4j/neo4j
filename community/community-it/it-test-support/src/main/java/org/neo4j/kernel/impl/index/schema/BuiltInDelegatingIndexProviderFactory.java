@@ -62,7 +62,7 @@ public class BuiltInDelegatingIndexProviderFactory extends ExtensionFactory<Buil
         var provider = delegate.create(
                 dependencies.pageCache(), dependencies.fileSystem(), dependencies.getLogService(), dependencies.monitors(), dependencies.getConfig(),
                 dependencies.readOnlyChecker(), context.dbmsInfo(), dependencies.recoveryCleanupWorkCollector(),
-                dependencies.databaseTracer().getPageCacheTracer(), dependencies.databaseLayout(), dependencies.tokenHolders(), dependencies.jobScheduler(),
+                dependencies.databaseLayout(), dependencies.tokenHolders(), dependencies.jobScheduler(),
                 dependencies.contextFactory() );
         return new IndexProvider.Delegating( provider )
         {

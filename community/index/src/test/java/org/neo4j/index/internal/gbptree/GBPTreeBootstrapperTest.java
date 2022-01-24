@@ -35,6 +35,7 @@ import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.scheduler.JobScheduler;
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @TestDirectoryExtension
 class GBPTreeBootstrapperTest
@@ -118,13 +120,14 @@ class GBPTreeBootstrapperTest
         ZipUtils.unzipResource( getClass(), zipName, storeFile );
 
         LayoutBootstrapper layoutBootstrapper = ( indexFile, pageCache, meta ) -> layout;
-        CursorContext cursorContext = CursorContext.NULL_CONTEXT;
+        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler();
-              GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, scheduler, layoutBootstrapper, readOnly(), PageCacheTracer.NULL ) )
+              GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, scheduler, layoutBootstrapper, readOnly(), contextFactory ) )
         {
-            GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( storeFile, cursorContext );
+            GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( storeFile );
             assertTrue( bootstrap.isTree() );
-            try ( GBPTree<?,?> tree = bootstrap.getTree() )
+            try ( GBPTree<?,?> tree = bootstrap.getTree();
+                  var cursorContext = contextFactory.create( "shouldBootstrapTreeOfDifferentPageSizes" ) )
             {
                 assertTrue( tree.consistencyCheck( cursorContext ) );
             }

@@ -28,7 +28,7 @@ import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
@@ -43,10 +43,10 @@ public class CalculateDenseNodesStep extends ProcessorStep<RelationshipRecord[]>
     private final Lock[] latches = new Lock[NUM_LATCHES];
     private final NodeRelationshipCache cache;
 
-    public CalculateDenseNodesStep( StageControl control, Configuration config, NodeRelationshipCache cache,
+    public CalculateDenseNodesStep( StageControl control, Configuration config, NodeRelationshipCache cache, CursorContextFactory contextFactory,
             StatsProvider... statsProviders )
     {
-        super( control, "CALCULATE", config, config.maxNumberOfProcessors(), PageCacheTracer.NULL, statsProviders );
+        super( control, "CALCULATE", config, config.maxNumberOfProcessors(), contextFactory, statsProviders );
         this.cache = cache;
         for ( int i = 0; i < latches.length; i++ )
         {

@@ -60,7 +60,7 @@ class FusionIndexProvider30CompatibilitySuiteTest extends PropertyIndexProviderC
         var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, databaseIdRepository ) );
         var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return NativeLuceneFusionIndexProviderFactory30.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker,
-                recoveryCleanupWorkCollector, PageCacheTracer.NULL, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), DEFAULT_DATABASE_NAME );
+                recoveryCleanupWorkCollector, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), DEFAULT_DATABASE_NAME );
     }
 
     @Override

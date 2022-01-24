@@ -29,7 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
@@ -56,22 +55,22 @@ public class PointIndexProviderFactory extends AbstractIndexProviderFactory<Poin
     @Override
     protected PointIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag, Config config,
             DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout,
-            PageCacheTracer pageCacheTracer, Log log, TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
+            Log log, TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
     {
         return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                pageCacheTracer, contextFactory, databaseLayout.getDatabaseName() );
+                contextFactory, databaseLayout.getDatabaseName() );
     }
 
     @VisibleForTesting
     public static PointIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
             String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, CursorContextFactory contextFactory,
             String databaseName )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, contextFactory, databaseName )
                                 .withMonitors( monitors ).withTag( monitorTag )
-                                .withReadOnlyChecker( readOnlyChecker ).withPageCacheTracer( pageCacheTracer )
+                                .withReadOnlyChecker( readOnlyChecker )
                                 .build();
         return new PointIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config );
     }

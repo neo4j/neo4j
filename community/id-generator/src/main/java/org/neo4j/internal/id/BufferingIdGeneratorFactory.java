@@ -41,6 +41,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
@@ -73,22 +74,22 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
+            Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 
         IdGenerator generator =
-                delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorContext, openOptions, slotDistribution );
+                delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnlyChecker, config, contextFactory, openOptions, slotDistribution );
         return wrapAndKeep( idType, generator );
     }
 
     @Override
     public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
             IdSlotDistribution slotDistribution ) throws IOException
     {
         IdGenerator idGenerator =
-                delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, readOnlyChecker, config, cursorContext, openOptions,
+                delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, readOnlyChecker, config, contextFactory, openOptions,
                         slotDistribution );
         return wrapAndKeep( idType, idGenerator );
     }

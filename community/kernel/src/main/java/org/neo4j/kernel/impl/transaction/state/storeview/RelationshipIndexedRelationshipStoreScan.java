@@ -24,7 +24,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
@@ -47,10 +47,10 @@ public class RelationshipIndexedRelationshipStoreScan extends RelationshipStoreS
                                                      int[] relationshipTypeIds,
                                                      IntPredicate propertyKeyIdFilter, boolean parallelWrite,
                                                      JobScheduler scheduler,
-                                                     PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+                                                     CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         super( config, storageReader, storeCursorsFactory, locks, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter,
-                parallelWrite, scheduler, cacheTracer, memoryTracker );
+                parallelWrite, scheduler, contextFactory, memoryTracker );
         this.tokenIndexReader = tokenIndexReader;
     }
 

@@ -30,7 +30,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -68,17 +67,17 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
     protected FusionIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
                                                   Config config, DatabaseReadOnlyChecker readOnlyChecker,
                                                   RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                                  DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, Log log,
+                                                  DatabaseLayout databaseLayout, Log log,
                                                   TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
     {
         return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                       pageCacheTracer, contextFactory, databaseLayout.getDatabaseName() );
+                       contextFactory, databaseLayout.getDatabaseName() );
     }
 
     @VisibleForTesting
     public static FusionIndexProvider create( PageCache pageCache, Path databaseDirectory, FileSystemAbstraction fs,
                                               Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
-                                              RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer,
+                                              RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                                               CursorContextFactory contextFactory, String databaseName )
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
@@ -86,7 +85,7 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
 
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, contextFactory, databaseName )
                                                                         .withMonitors( monitors ).withTag( monitorTag )
-                                                                        .withReadOnlyChecker( readOnlyChecker ).withPageCacheTracer( pageCacheTracer )
+                                                                        .withReadOnlyChecker( readOnlyChecker )
                                                                         .build();
         GenericNativeIndexProvider generic =
                 new GenericNativeIndexProvider( databaseIndexContext, childDirectoryStructure,

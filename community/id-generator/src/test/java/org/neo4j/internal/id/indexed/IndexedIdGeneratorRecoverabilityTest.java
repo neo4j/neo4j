@@ -34,6 +34,8 @@ import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.PageCacheSupport;
@@ -48,6 +50,7 @@ import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 @EphemeralPageCacheExtension
@@ -256,7 +259,8 @@ class IndexedIdGeneratorRecoverabilityTest
     private IndexedIdGenerator instantiateFreelist()
     {
         return new IndexedIdGenerator( pageCache, testDirectory.file( ID_FILE_NAME ), immediate(), ID_TYPE, true, () -> 0, Long.MAX_VALUE, writable(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL_CONTEXT, NO_MONITOR, Sets.immutable.empty(), SINGLE_IDS );
+                Config.defaults(), DEFAULT_DATABASE_NAME, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), NO_MONITOR, Sets.immutable.empty(),
+                SINGLE_IDS );
     }
 
     private static PageCache getPageCache( FileSystemAbstraction fs )

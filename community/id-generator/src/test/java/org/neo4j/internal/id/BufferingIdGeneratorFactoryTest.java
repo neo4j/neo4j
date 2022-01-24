@@ -48,16 +48,16 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdController.IdFreeCondition;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
-import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
@@ -66,14 +66,12 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.Race.throwing;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class BufferingIdGeneratorFactoryTest
 {
-    @Inject
-    private EphemeralFileSystemAbstraction fs;
-
     private MockedIdGeneratorFactory actual;
     private ControllableSnapshotSupplier boundaries;
     private PageCache pageCache;
@@ -93,7 +91,7 @@ class BufferingIdGeneratorFactoryTest
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries, dbMemoryPool.getPoolMemoryTracker() );
         idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), TestIdType.TEST, () -> 0L, Integer.MAX_VALUE, writable(),
-                Config.defaults(), NULL_CONTEXT, immutable.empty(), SINGLE_IDS );
+                Config.defaults(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), immutable.empty(), SINGLE_IDS );
     }
 
     @Test
@@ -258,7 +256,7 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
                 IdSlotDistribution slotDistribution )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
@@ -271,10 +269,10 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions,
                 IdSlotDistribution slotDistribution )
         {
-            return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, cursorContext, openOptions, SINGLE_IDS );
+            return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, contextFactory, openOptions, SINGLE_IDS );
         }
 
         @Override
@@ -325,11 +323,6 @@ class BufferingIdGeneratorFactoryTest
         public void markFree( long id, int numberOfIds )
         {
             freed.add( Pair.of( id, numberOfIds ) );
-        }
-
-        void verifyUsed( long id, int numberOfIds )
-        {
-            assertThat( used.remove( Pair.of( id, numberOfIds ) ) ).isTrue();
         }
 
         void verifyDeleted( long id, int numberOfIds )

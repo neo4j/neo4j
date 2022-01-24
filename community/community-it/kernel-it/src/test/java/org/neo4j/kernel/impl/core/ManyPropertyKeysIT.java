@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -62,6 +62,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -134,10 +135,11 @@ class ManyPropertyKeysIT
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
     {
         var cacheTracer = PageCacheTracer.NULL;
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "databaseWithManyPropertyKeys" ) );
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
+        var cursorContext = contextFactory.create( "databaseWithManyPropertyKeys" );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(),
                 new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ), pageCache, fileSystem,
-                NullLogProvider.getInstance(), cacheTracer, writable() );
+                NullLogProvider.getInstance(), contextFactory, writable() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         try ( var storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );

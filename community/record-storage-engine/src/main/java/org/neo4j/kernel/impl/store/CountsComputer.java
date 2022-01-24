@@ -33,7 +33,7 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
@@ -53,21 +53,21 @@ public class CountsComputer implements CountsBuilder
     private final DatabaseLayout databaseLayout;
     private final ProgressReporter progressMonitor;
     private final NumberArrayFactory numberArrayFactory;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
 
-    public CountsComputer( NeoStores stores, PageCache pageCache, PageCacheTracer pageCacheTracer, DatabaseLayout databaseLayout,
+    public CountsComputer( NeoStores stores, PageCache pageCache, CursorContextFactory contextFactory, DatabaseLayout databaseLayout,
             MemoryTracker memoryTracker, Log log )
     {
         this( stores, stores.getMetaDataStore().getLastCommittedTransactionId(), stores.getNodeStore(), stores.getRelationshipStore(),
                 (int) stores.getLabelTokenStore().getHighId(), (int) stores.getRelationshipTypeTokenStore().getHighId(),
-                NumberArrayFactories.auto( pageCache, pageCacheTracer, databaseLayout.databaseDirectory(), true, NO_MONITOR, log,
-                                databaseLayout.getDatabaseName() ), databaseLayout, ProgressReporter.SILENT, pageCacheTracer, memoryTracker );
+                NumberArrayFactories.auto( pageCache, contextFactory, databaseLayout.databaseDirectory(), true, NO_MONITOR, log,
+                                databaseLayout.getDatabaseName() ), databaseLayout, ProgressReporter.SILENT, contextFactory, memoryTracker );
     }
 
     public CountsComputer( NeoStores stores, long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId,
             int highRelationshipTypeId, NumberArrayFactory numberArrayFactory, DatabaseLayout databaseLayout, ProgressReporter progressMonitor,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         this.neoStores = stores;
         this.lastCommittedTransactionId = lastCommittedTransactionId;
@@ -78,7 +78,7 @@ public class CountsComputer implements CountsBuilder
         this.numberArrayFactory = numberArrayFactory;
         this.databaseLayout = databaseLayout;
         this.progressMonitor = progressMonitor;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
     }
 
@@ -107,12 +107,12 @@ public class CountsComputer implements CountsBuilder
             // Count nodes
             Function<CursorContext,StoreCursors> storeCursorsFunction = cursorContext -> new CachedStoreCursors( neoStores, cursorContext );
             superviseDynamicExecution(
-                    new NodeCountsStage( configuration, cache, nodes, highLabelId, countsUpdater, progressMonitor, pageCacheTracer,
+                    new NodeCountsStage( configuration, cache, nodes, highLabelId, countsUpdater, progressMonitor, contextFactory,
                             storeCursorsFunction ) );
             // Count relationships
             superviseDynamicExecution(
                     new RelationshipCountsStage( configuration, cache, relationships, highLabelId, highRelationshipTypeId, countsUpdater,
-                            numberArrayFactory, progressMonitor, pageCacheTracer, storeCursorsFunction, memoryTracker ) );
+                            numberArrayFactory, progressMonitor, contextFactory, storeCursorsFunction, memoryTracker ) );
         }
     }
 

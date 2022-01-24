@@ -25,6 +25,8 @@ import org.mockito.ArgumentMatchers;
 import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.Log;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -33,7 +35,7 @@ import org.neo4j.test.utils.TestDirectory;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -43,6 +45,7 @@ class PageCachedNumberArrayFactoryTest
     private PageCache pageCache;
     @Inject
     private TestDirectory directory;
+    private final CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @Test
     void shouldLogAllocationOnIntArray()
@@ -50,7 +53,7 @@ class PageCachedNumberArrayFactoryTest
         // given
         Log log = mock( Log.class );
         Path dir = directory.directory( "cache" );
-        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME );
+        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
 
         // when
         factory.newIntArray( 1_000, -1, 0, INSTANCE ).close();
@@ -65,7 +68,7 @@ class PageCachedNumberArrayFactoryTest
         // given
         Log log = mock( Log.class );
         Path dir = directory.directory( "cache" );
-        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME );
+        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
 
         // when
         factory.newLongArray( 1_000, -1, 0, INSTANCE ).close();
@@ -80,7 +83,7 @@ class PageCachedNumberArrayFactoryTest
         // given
         Log log = mock( Log.class );
         Path dir = directory.directory( "cache" );
-        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME );
+        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME );
 
         // when
         factory.newByteArray( 1_000, new byte[4], 0, INSTANCE ).close();

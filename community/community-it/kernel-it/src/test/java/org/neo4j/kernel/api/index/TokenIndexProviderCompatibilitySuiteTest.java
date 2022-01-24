@@ -82,6 +82,6 @@ class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
         var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, databaseIdRepository ) );
         var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
         return TokenIndexProviderFactory.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                databaseLayout, PageCacheTracer.NULL, new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) );
+                databaseLayout, new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) );
     }
 }

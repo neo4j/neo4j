@@ -39,7 +39,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -68,6 +68,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordNodeCursor.relationshipsReferenceWithDenseMarker;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -120,7 +121,8 @@ public class RecordRelationshipTraversalCursorTest
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs,
-                getRecordFormats(), NullLogProvider.getInstance(), PageCacheTracer.NULL, writable(), Sets.immutable.empty() );
+                getRecordFormats(), NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                writable(), Sets.immutable.empty() );
         neoStores = storeFactory.openAllNeoStores( true );
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
@@ -293,17 +295,10 @@ public class RecordRelationshipTraversalCursorTest
             assertTrue( expectedTypes.contains( cursor.type() ) );
             switch ( direction )
             {
-            case OUTGOING:
-                assertEquals( FIRST_OWNING_NODE, cursor.sourceNodeReference() );
-                break;
-            case INCOMING:
-                assertEquals( FIRST_OWNING_NODE, cursor.targetNodeReference() );
-                break;
-            case BOTH:
-                assertTrue( FIRST_OWNING_NODE == cursor.sourceNodeReference() || FIRST_OWNING_NODE == cursor.targetNodeReference() );
-                break;
-            default:
-                throw new UnsupportedOperationException( direction.name() );
+            case OUTGOING -> assertEquals( FIRST_OWNING_NODE, cursor.sourceNodeReference() );
+            case INCOMING -> assertEquals( FIRST_OWNING_NODE, cursor.targetNodeReference() );
+            case BOTH -> assertTrue( FIRST_OWNING_NODE == cursor.sourceNodeReference() || FIRST_OWNING_NODE == cursor.targetNodeReference() );
+            default -> throw new UnsupportedOperationException( direction.name() );
             }
         }
         assertEquals( count, found );

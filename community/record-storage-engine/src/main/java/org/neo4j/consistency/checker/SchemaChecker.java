@@ -47,7 +47,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -270,23 +270,23 @@ class SchemaChecker
     private void checkTokens() throws Exception
     {
         execution.run( getClass().getSimpleName() + "-checkTokens" , () -> checkTokens( neoStores.getLabelTokenStore(), reporter::forLabelName,
-                dynamicRecord -> reporter.forDynamicBlock( RecordType.LABEL_NAME, dynamicRecord ), context.pageCacheTracer ),
+                dynamicRecord -> reporter.forDynamicBlock( RecordType.LABEL_NAME, dynamicRecord ), context.contextFactory ),
                 () -> checkTokens( neoStores.getRelationshipTypeTokenStore(), reporter::forRelationshipTypeName,
-                dynamicRecord -> reporter.forDynamicBlock( RecordType.RELATIONSHIP_TYPE_NAME, dynamicRecord ), context.pageCacheTracer ),
+                dynamicRecord -> reporter.forDynamicBlock( RecordType.RELATIONSHIP_TYPE_NAME, dynamicRecord ), context.contextFactory ),
                 () -> checkTokens( neoStores.getPropertyKeyTokenStore(), reporter::forPropertyKey,
-                dynamicRecord -> reporter.forDynamicBlock( RecordType.PROPERTY_KEY_NAME, dynamicRecord ), context.pageCacheTracer ) );
+                dynamicRecord -> reporter.forDynamicBlock( RecordType.PROPERTY_KEY_NAME, dynamicRecord ), context.contextFactory ) );
     }
 
     private static <R extends TokenRecord> void checkTokens( TokenStore<R> store,
             Function<R,ConsistencyReport.NameConsistencyReport> report,
-            Function<DynamicRecord,ConsistencyReport.DynamicConsistencyReport> dynamicRecordReport, PageCacheTracer pageCacheTracer )
+            Function<DynamicRecord,ConsistencyReport.DynamicConsistencyReport> dynamicRecordReport, CursorContextFactory contextFactory )
     {
         DynamicStringStore nameStore = store.getNameStore();
         DynamicRecord nameRecord = nameStore.newRecord();
         long highId = store.getHighId();
         MutableLongSet seenNameRecordIds = LongSets.mutable.empty();
         int blockSize = store.getNameStore().getRecordDataSize();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_CHECKER_TAG ) );
+        try ( var cursorContext = contextFactory.create( CONSISTENCY_TOKEN_CHECKER_TAG );
               RecordReader<R> tokenReader = new RecordReader<>( store, true, cursorContext );
               RecordReader<DynamicRecord> nameReader = new RecordReader<>( store.getNameStore(), false, cursorContext ) )
         {

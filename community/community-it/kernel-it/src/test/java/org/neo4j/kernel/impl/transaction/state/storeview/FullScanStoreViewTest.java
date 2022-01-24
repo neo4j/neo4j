@@ -38,7 +38,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -66,7 +68,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -74,6 +76,8 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 @DbmsExtension
 class FullScanStoreViewTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
+
     @Inject
     private GraphDatabaseAPI graphDb;
     @Inject
@@ -141,7 +145,7 @@ class FullScanStoreViewTest
         // given
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, propertyScanConsumer, new TestTokenScanConsumer(),
-                false, true, NULL, INSTANCE );
+                false, true, CONTEXT_FACTORY, INSTANCE );
 
         // when
         storeScan.run( NO_EXTERNAL_UPDATES );
@@ -159,7 +163,8 @@ class FullScanStoreViewTest
         // given
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan =
-                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, propertyScanConsumer, null, true, true, NULL, INSTANCE );
+                storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, propertyScanConsumer, null, true, true, CONTEXT_FACTORY,
+                        INSTANCE );
 
         // when
         storeScan.run( NO_EXTERNAL_UPDATES );
@@ -179,7 +184,7 @@ class FullScanStoreViewTest
 
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, propertyScanConsumer, new TestTokenScanConsumer(),
-                false, true, NULL, INSTANCE );
+                false, true, CONTEXT_FACTORY, INSTANCE );
 
         // when
         storeScan.run( NO_EXTERNAL_UPDATES );
@@ -196,7 +201,7 @@ class FullScanStoreViewTest
 
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
         StoreScan storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, propertyScanConsumer, null,
-                true, true, NULL, INSTANCE );
+                true, true, CONTEXT_FACTORY, INSTANCE );
 
         // when
         storeScan.run( NO_EXTERNAL_UPDATES );
@@ -210,7 +215,8 @@ class FullScanStoreViewTest
     {
         // given
         StoreScan storeScan =
-                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, new TestPropertyScanConsumer(), null, false, true, NULL, INSTANCE );
+                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, new TestPropertyScanConsumer(), null, false, true, CONTEXT_FACTORY,
+                        INSTANCE );
 
         // when
         storeScan.run( NO_EXTERNAL_UPDATES );
@@ -233,7 +239,7 @@ class FullScanStoreViewTest
     {
         // given
         StoreScan storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, new TestPropertyScanConsumer(), null,
-                true, true, NULL, INSTANCE );
+                true, true, CONTEXT_FACTORY, INSTANCE );
 
         // when
         storeScan.run( NO_EXTERNAL_UPDATES );
@@ -265,9 +271,10 @@ class FullScanStoreViewTest
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
 
         var pageCacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         var propertyScanConsumer = new TestPropertyScanConsumer();
         var scan = new NodeStoreScan( Config.defaults(), storageEngine.newReader(), storageEngine::createStorageCursors, locks, null, propertyScanConsumer,
-                new int[]{labelId}, id -> true, false, jobScheduler, pageCacheTracer, INSTANCE );
+                new int[]{labelId}, id -> true, false, jobScheduler, contextFactory, INSTANCE );
         scan.run( NO_EXTERNAL_UPDATES );
 
         assertThat( propertyScanConsumer.batches.get( 0 ).size() ).isEqualTo( 2 );
@@ -283,10 +290,11 @@ class FullScanStoreViewTest
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
 
         var pageCacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         var propertyScanConsumer = new TestPropertyScanConsumer();
         var scan =
                 new RelationshipStoreScan( Config.defaults(), storageEngine.newReader(), storageEngine::createStorageCursors, locks, null, propertyScanConsumer,
-                        new int[]{relTypeId}, id -> true, false, jobScheduler, pageCacheTracer, INSTANCE );
+                        new int[]{relTypeId}, id -> true, false, jobScheduler, contextFactory, INSTANCE );
         scan.run( NO_EXTERNAL_UPDATES );
 
         assertThat( propertyScanConsumer.batches.get( 0 ).size() ).isEqualTo( 2 );
@@ -301,7 +309,7 @@ class FullScanStoreViewTest
         // Given
         TestTokenScanConsumer tokenScanConsumer = new TestTokenScanConsumer();
         StoreScan storeViewRelationshipStoreScan =
-                storeView.visitRelationships( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenScanConsumer, true, true, NULL, INSTANCE );
+                storeView.visitRelationships( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenScanConsumer, true, true, CONTEXT_FACTORY, INSTANCE );
 
         // When
         storeViewRelationshipStoreScan.run( NO_EXTERNAL_UPDATES );

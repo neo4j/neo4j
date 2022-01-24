@@ -44,7 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class NumberArrayTest extends NumberArrayPageCacheTestSupport
@@ -118,6 +117,7 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
     {
         PageCache pageCache = fixture.pageCache;
         Path dir = fixture.directory;
+        var contextFactory = fixture.contextFactory;
         NullLog log = NullLog.getInstance();
         Collection<NumberArrayTestData> list = new ArrayList<>();
         Map<String,NumberArrayFactory> factories = new HashMap<>();
@@ -125,8 +125,8 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
         factories.put( "OFF_HEAP", NumberArrayFactories.OFF_HEAP );
         factories.put( "AUTO_WITHOUT_PAGECACHE", NumberArrayFactories.AUTO_WITHOUT_PAGECACHE );
         factories.put( "CHUNKED_FIXED_SIZE", NumberArrayFactories.CHUNKED_FIXED_SIZE );
-        factories.put( "autoWithPageCacheFallback", NumberArrayFactories.auto( pageCache, NULL, dir, true, NO_MONITOR, log, DEFAULT_DATABASE_NAME ) );
-        factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME ) );
+        factories.put( "autoWithPageCacheFallback", NumberArrayFactories.auto( pageCache, contextFactory, dir, true, NO_MONITOR, log, DEFAULT_DATABASE_NAME ) );
+        factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, contextFactory, dir, log, DEFAULT_DATABASE_NAME ) );
         for ( Map.Entry<String,NumberArrayFactory> entry : factories.entrySet() )
         {
             String name = entry.getKey() + " => ";

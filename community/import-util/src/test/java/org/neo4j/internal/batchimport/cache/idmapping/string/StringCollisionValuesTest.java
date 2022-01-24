@@ -32,18 +32,20 @@ import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.PageCachedNumberArrayFactory;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLog;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -75,8 +77,8 @@ class StringCollisionValuesTest
                 ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.OFF_HEAP,
                 ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
                 ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.CHUNKED_FIXED_SIZE,
-                ( PageCache pageCache, Path homePath ) -> new PageCachedNumberArrayFactory( pageCache, PageCacheTracer.NULL, homePath,
-                        NullLog.getInstance(), DEFAULT_DATABASE_NAME ) );
+                ( PageCache pageCache, Path homePath ) -> new PageCachedNumberArrayFactory( pageCache, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                        homePath, NullLog.getInstance(), DEFAULT_DATABASE_NAME ) );
     }
 
     @ParameterizedTest

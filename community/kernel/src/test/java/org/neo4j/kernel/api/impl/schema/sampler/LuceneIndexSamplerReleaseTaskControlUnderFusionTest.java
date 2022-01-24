@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -67,6 +68,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -170,7 +172,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
             }
         };
         OnlineIndexSamplingJobFactory onlineIndexSamplingJobFactory = new OnlineIndexSamplingJobFactory( null, SIMPLE_NAME_LOOKUP, getInstance(),
-                PageCacheTracer.NULL );
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
         return onlineIndexSamplingJobFactory.create( 1, indexProxy );
     }
 

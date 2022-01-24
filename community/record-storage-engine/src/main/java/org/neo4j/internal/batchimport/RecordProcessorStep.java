@@ -33,9 +33,8 @@ import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -59,10 +58,10 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     };
 
     public RecordProcessorStep( StageControl control, String name, Configuration config,
-            Supplier<RecordProcessor<T>> processorFactory, boolean endOfLine, int maxProcessors, PageCacheTracer pageCacheTracer,
+            Supplier<RecordProcessor<T>> processorFactory, boolean endOfLine, int maxProcessors, CursorContextFactory contextFactory,
             Function<CursorContext, StoreCursors> storeCursorsCreator, StatsProvider... additionalStatsProviders )
     {
-        super( control, name, config, maxProcessors, pageCacheTracer, additionalStatsProviders );
+        super( control, name, config, maxProcessors, contextFactory, additionalStatsProviders );
         this.processorFactory = processorFactory;
         this.endOfLine = endOfLine;
         this.storeCursorsCreator = storeCursorsCreator;

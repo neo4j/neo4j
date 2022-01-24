@@ -30,8 +30,7 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RecordRelationshipScanCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
@@ -65,11 +64,11 @@ class RelationshipGroupChecker implements Checker
     public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
     {
         ParallelExecution execution = context.execution;
-        checkToOwner( nodeIdRange, context.pageCacheTracer );
+        checkToOwner( nodeIdRange, context.contextFactory );
         if ( firstRange )
         {
             execution.run( getClass().getSimpleName(), execution.partition( neoStores.getRelationshipGroupStore(),
-                    ( from, to, last ) -> () -> checkToRelationship( from, to, context.pageCacheTracer ) ) );
+                    ( from, to, last ) -> () -> checkToRelationship( from, to, context.contextFactory ) ) );
         }
     }
 
@@ -82,14 +81,14 @@ class RelationshipGroupChecker implements Checker
     /**
      * Check relationship group to owner node
      */
-    private void checkToOwner( LongRange nodeIdRange, PageCacheTracer pageCacheTracer )
+    private void checkToOwner( LongRange nodeIdRange, CursorContextFactory contextFactory )
     {
         ProgressListener localProgress = progress.threadLocalReporter();
         RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
         CacheAccess.Client client = context.cacheAccess.client();
         final long highId = groupStore.getHighId();
 
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RELATIONSHIP_GROUPS_CHECKER_TAG ) );
+        try ( var cursorContext = contextFactory.create( RELATIONSHIP_GROUPS_CHECKER_TAG );
                 var storeCursors = new CachedStoreCursors( neoStores, cursorContext );
                 RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), true, cursorContext ) )
         {
@@ -136,9 +135,9 @@ class RelationshipGroupChecker implements Checker
     /**
      * Check relationship groups to first in chain relationship. Run only on first node-range
      */
-    private void checkToRelationship( long fromGroupId, long toGroupId, PageCacheTracer pageCacheTracer )
+    private void checkToRelationship( long fromGroupId, long toGroupId, CursorContextFactory contextFactory )
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RELATIONSHIP_GROUPS_CHECKER_TAG ) );
+        try ( var cursorContext = contextFactory.create( RELATIONSHIP_GROUPS_CHECKER_TAG );
               var storeCursors = new CachedStoreCursors( neoStores, cursorContext );
               RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), true, cursorContext );
               RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), false, cursorContext );

@@ -26,7 +26,7 @@ import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -43,10 +43,10 @@ public class RelationshipGroupStage extends Stage
     public static final String NAME = "RelationshipGroup";
 
     RelationshipGroupStage( String topic, Configuration config, RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache,
-            PageCacheTracer pageCacheTracer, Function<CursorContext,StoreCursors> storeCursorsCreator )
+            CursorContextFactory contextFactory, Function<CursorContext,StoreCursors> storeCursorsCreator )
     {
         super( NAME, topic, config, Step.RECYCLE_BATCHES );
-        add( new ReadGroupRecordsByCacheStep( control(), config, store, cache, pageCacheTracer ) );
-        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence(), pageCacheTracer, storeCursorsCreator, GROUP_CURSOR ) );
+        add( new ReadGroupRecordsByCacheStep( control(), config, store, cache, contextFactory ) );
+        add( new UpdateRecordsStep<>( control(), config, store, new StorePrepareIdSequence(), contextFactory, storeCursorsCreator, GROUP_CURSOR ) );
     }
 }

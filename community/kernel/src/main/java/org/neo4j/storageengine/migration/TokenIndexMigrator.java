@@ -32,7 +32,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
@@ -110,8 +109,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
 
     private void moveTokenIndexes( DatabaseLayout databaseLayout ) throws IOException
     {
-        for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r,
-                PageCacheTracer.NULL, contextFactory ) )
+        for ( var schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r, contextFactory ) )
         {
             if ( !schemaRule.schema().isAnyTokenSchemaDescriptor() )
             {
@@ -148,8 +146,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
 
     private void deleteRelationshipTypeTokenIndex( DatabaseLayout databaseLayout ) throws IOException
     {
-        for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r,
-                PageCacheTracer.NULL, contextFactory ) )
+        for ( var schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, false, r -> r, contextFactory ) )
         {
             if ( schemaRule.schema().isAnyTokenSchemaDescriptor() && schemaRule.schema().entityType() == EntityType.RELATIONSHIP )
             {

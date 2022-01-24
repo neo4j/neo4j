@@ -30,7 +30,6 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -106,7 +105,7 @@ class RelationshipChainChecker implements Checker
         workers[workers.length - 1] = () ->
         {
             RelationshipRecord relationship = relationshipStore.newRecord();
-            try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_CONSISTENCY_CHECKER_TAG ) );
+            try ( var cursorContext = context.contextFactory.create( RELATIONSHIP_CONSISTENCY_CHECKER_TAG );
                   var cursor = relationshipStore.openPageCursorForReadingWithPrefetching( 0, cursorContext ) )
             {
                 int recordsPerPage = relationshipStore.getRecordsPerPage();
@@ -145,7 +144,7 @@ class RelationshipChainChecker implements Checker
     {
         CacheAccess.Client client = cacheAccess.client();
         RelationshipStore relationshipStore = context.neoStores.getRelationshipStore();
-        try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( SINGLE_RELATIONSHIP_CONSISTENCY_CHECKER_TAG ) );
+        try ( var cursorContext = context.contextFactory.create( SINGLE_RELATIONSHIP_CONSISTENCY_CHECKER_TAG );
               var relationshipCursor = relationshipStore.openPageCursorForReading( 0, cursorContext ) )
         {
             for ( long nodeId = nodeIdRange.from(); nodeId < nodeIdRange.to(); nodeId++ )
@@ -205,7 +204,7 @@ class RelationshipChainChecker implements Checker
         final long prevOrNext = direction.cacheSlot;
         return () ->
         {
-            try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_CONSISTENCY_CHECKER_TAG ) );
+            try ( var cursorContext = context.contextFactory.create( RELATIONSHIP_CONSISTENCY_CHECKER_TAG );
                     var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext ) )
             {
                 while ( (!end.get() || !queue.isEmpty()) && !context.isCancelled() )

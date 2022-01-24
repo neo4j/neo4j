@@ -38,6 +38,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -71,6 +72,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -101,7 +103,7 @@ public class RecordPropertyCursorTest
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, getRecordFormats(), NullLogProvider.getInstance(),
-                PageCacheTracer.NULL, writable(), Sets.immutable.empty() ).openAllNeoStores( true );
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), Sets.immutable.empty() ).openAllNeoStores( true );
         owner = neoStores.getNodeStore().newRecord();
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }

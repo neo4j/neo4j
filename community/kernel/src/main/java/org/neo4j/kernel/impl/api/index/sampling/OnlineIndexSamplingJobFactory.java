@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
@@ -30,15 +30,15 @@ public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
     private final IndexStatisticsStore indexStatisticsStore;
     private final LogProvider logProvider;
     private final TokenNameLookup nameLookup;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
 
     public OnlineIndexSamplingJobFactory( IndexStatisticsStore indexStatisticsStore, TokenNameLookup nameLookup, LogProvider logProvider,
-            PageCacheTracer pageCacheTracer )
+            CursorContextFactory contextFactory )
     {
         this.indexStatisticsStore = indexStatisticsStore;
         this.logProvider = logProvider;
         this.nameLookup = nameLookup;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
     }
 
     @Override
@@ -46,6 +46,6 @@ public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
     {
         final String indexUserDescription = indexProxy.getDescriptor().userDescription( nameLookup );
         String indexName = indexProxy.getDescriptor().getName();
-        return new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, indexUserDescription, indexName, logProvider, pageCacheTracer );
+        return new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, indexUserDescription, indexName, logProvider, contextFactory );
     }
 }

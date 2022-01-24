@@ -38,7 +38,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.util.Preconditions;
@@ -48,7 +47,6 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 public class TokenIndex implements ConsistencyCheckable
 {
-    private static final String TOKEN_INDEX_CREATION_TAG = "tokenIndexCreation";
     /**
      * Written in header to indicate native token index is clean
      *
@@ -109,8 +107,6 @@ public class TokenIndex implements ConsistencyCheckable
      */
     final FileSystemAbstraction fs;
 
-    private final PageCacheTracer cacheTracer;
-
     private final String databaseName;
     private final CursorContextFactory contextFactory;
     /**
@@ -145,7 +141,6 @@ public class TokenIndex implements ConsistencyCheckable
         this.monitorTag = databaseIndexContext.monitorTag;
         this.pageCache = databaseIndexContext.pageCache;
         this.fs = databaseIndexContext.fileSystem;
-        this.cacheTracer = databaseIndexContext.pageCacheTracer;
         this.databaseName = databaseIndexContext.databaseName;
         this.contextFactory = databaseIndexContext.contextFactory;
         this.indexFiles = indexFiles;
@@ -157,11 +152,8 @@ public class TokenIndex implements ConsistencyCheckable
     {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
-        try ( var context = contextFactory.create( TOKEN_INDEX_CREATION_TAG ) )
-        {
-            index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER, headerWriter,
-                    recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer, immutable.empty(), databaseName, tokenStoreName, context );
-        }
+        index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER, headerWriter,
+                recoveryCleanupWorkCollector, readOnlyChecker, immutable.empty(), databaseName, tokenStoreName, contextFactory );
     }
 
     void instantiateUpdater()

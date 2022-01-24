@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -45,10 +46,11 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 class OnlineIndexSamplingJobTest
 {
+    private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
     private final LogProvider logProvider = NullLogProvider.getInstance();
     private final long indexId = 1;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
@@ -74,7 +76,7 @@ class OnlineIndexSamplingJobTest
     void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, NULL );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, CONTEXT_FACTORY );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
@@ -89,7 +91,7 @@ class OnlineIndexSamplingJobTest
     void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, NULL );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, CONTEXT_FACTORY );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when
@@ -106,7 +108,8 @@ class OnlineIndexSamplingJobTest
         var pageCursorTracer = mock( PageCursorTracer.class );
         when( pageCacheTracer.createPageCursorTracer( any() ) ).thenReturn( pageCursorTracer );
 
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider, pageCacheTracer );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", "Foo", logProvider,
+                new CursorContextFactory( pageCacheTracer, EMPTY ) );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
