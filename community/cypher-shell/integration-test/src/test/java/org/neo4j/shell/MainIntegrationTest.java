@@ -822,6 +822,69 @@ class MainIntegrationTest
                 ) );
     }
 
+    @Test
+    void evaluatesParameterArguments() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .addArgs( "--param", "purple => 'rain'" )
+                .addArgs( "--param", "advice => ['talk', 'less', 'smile', 'more']" )
+                .addArgs( "--param", "when => date('2021-01-12')" )
+                .addArgs( "--param", "repeatAfterMe => 'A' + 'B' + 'C'" )
+                .addArgs( "--param", "easyAs => 1 + 2 + 3" )
+                .userInputLines( ":params", "return $purple, $advice, $when, $repeatAfterMe, $easyAs;" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString(
+                                "> :params\n" +
+                                ":param advice        => ['talk', 'less', 'smile', 'more']\n" +
+                                ":param easyAs        => 1 + 2 + 3\n" +
+                                ":param purple        => 'rain'\n" +
+                                ":param repeatAfterMe => 'A' + 'B' + 'C'\n" +
+                                ":param when          => date('2021-01-12')\n"
+                        ),
+                        containsString(
+                                 "> return $purple, $advice, $when, $repeatAfterMe, $easyAs;\n" +
+                                 "$purple, $advice, $when, $repeatAfterMe, $easyAs\n" +
+                                 "\"rain\", [\"talk\", \"less\", \"smile\", \"more\"], 2021-01-12, \"ABC\", 6\n"
+                        )
+                );
+    }
+
+    @Test
+    void evaluatesArgumentsInteractive() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines(
+                        ":param purple => 'rain'",
+                        ":param advice => ['talk', 'less', 'smile', 'more']",
+                        ":param when => date('2021-01-12')",
+                        ":param repeatAfterMe => 'A' + 'B' + 'C'",
+                        ":param easyAs => 1 + 2 + 3",
+                        ":params",
+                        "return $purple, $advice, $when, $repeatAfterMe, $easyAs;"
+                )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString(
+                                "> :params\n" +
+                                ":param advice        => ['talk', 'less', 'smile', 'more']\n" +
+                                ":param easyAs        => 1 + 2 + 3\n" +
+                                ":param purple        => 'rain'\n" +
+                                ":param repeatAfterMe => 'A' + 'B' + 'C'\n" +
+                                ":param when          => date('2021-01-12')\n"
+                        ),
+                        containsString(
+                                 "> return $purple, $advice, $when, $repeatAfterMe, $easyAs;\n" +
+                                 "$purple, $advice, $when, $repeatAfterMe, $easyAs\n" +
+                                 "\"rain\", [\"talk\", \"less\", \"smile\", \"more\"], 2021-01-12, \"ABC\", 6\n"
+                        )
+                );
+    }
+
     private void assertUserCanConnectAndRunQuery( String user, String password ) throws Exception
     {
         buildTest().addArgs( "-u", user, "-p", password, "--format", "plain", "return 42 as x;" ).run().assertSuccess();

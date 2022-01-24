@@ -240,7 +240,7 @@
                                     <mainClass>org.neo4j.shell.Main</mainClass>
                                     <manifestEntries>
                                         <!-- Hide 'An illegal reflective access...' warnings from org.neo4j.memory.RuntimeInternals -->
-                                        <Add-Opens>java.base/java.lang</Add-Opens>
+                                        <Add-Opens>java.base/java.lang java.base/java.nio java.base/sun.nio.ch</Add-Opens>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
