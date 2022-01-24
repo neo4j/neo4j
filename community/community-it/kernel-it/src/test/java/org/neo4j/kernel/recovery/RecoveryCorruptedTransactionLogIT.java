@@ -210,7 +210,7 @@ class RecoveryCorruptedTransactionLogIT
         managementService.shutdown();
 
         removeLastCheckpointRecordFromLastLogFile();
-        Supplier<Byte> randomBytesSupplier = this::randomNonZeroBytes;
+        Supplier<Byte> randomBytesSupplier = this::randomInvalidVersionsBytes;
         BytesCaptureSupplier capturingSupplier = new BytesCaptureSupplier( randomBytesSupplier );
         addRandomBytesToLastLogFile( capturingSupplier );
         assertFalse( recoveryMonitor.wasRecoveryRequired() );
