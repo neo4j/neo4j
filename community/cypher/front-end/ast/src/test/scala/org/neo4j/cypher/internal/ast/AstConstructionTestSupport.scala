@@ -437,7 +437,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     Create(Pattern(Seq(EveryPath(pattern)))(pattern.position))(position)
 
   def merge(pattern: PatternElement): Merge =
-    Merge(Pattern(Seq(EveryPath(pattern)))(pos), Seq.empty)(pos)
+    Merge(EveryPath(pattern), Seq.empty)(pos)
 
   def match_(pattern: PatternElement, where: Option[Where] = None): Match =
     Match(optional = false, Pattern(Seq(EveryPath(pattern)))(pos), Seq(), where)(pos)

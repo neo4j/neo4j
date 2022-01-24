@@ -630,7 +630,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
         OnCreate(clausesIter.next())(positionItr.next)
     }
 
-    Merge(Pattern(Seq(pattern))(p), actions)(p)
+    Merge(pattern, actions)(p)
   }
 
   override def callClause(p: InputPosition,

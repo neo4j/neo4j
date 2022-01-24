@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -67,7 +68,7 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
         val newWhere = addPredicate(m, uniqueRels, where)
         m.copy(where = newWhere)(m.position)
       }
-    case m@Merge(pattern: Pattern, _, where: Option[Where]) =>
+    case m@Merge(pattern: PatternPart, _, where: Option[Where]) =>
       val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
       if (uniqueRels.size < 2) {
         m

@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -229,11 +230,14 @@ final case class GraphRefParameter(parameter: Parameter)(val position: InputPosi
 trait SingleRelTypeCheck {
   self: Clause =>
 
-  protected def checkRelTypes(pattern: Pattern): SemanticCheck =
-    pattern.patternParts.foldSemanticCheck {
+  protected def checkRelTypes(patternPart: PatternPart): SemanticCheck =
+    patternPart match {
       case EveryPath(element) => checkRelTypes(element)
       case _ => success
     }
+
+  protected def checkRelTypes(pattern: Pattern): SemanticCheck =
+    pattern.patternParts.foldSemanticCheck(checkRelTypes)
 
   private def checkRelTypes(patternElement: PatternElement): SemanticCheck = {
     patternElement match {
@@ -740,13 +744,13 @@ object TerminateTransactionsClause {
   }
 }
 
-case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition)
+case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition)
   extends UpdateClause with SingleRelTypeCheck {
 
   override def name = "MERGE"
 
   override def semanticCheck: SemanticCheck =
-    SemanticPatternCheck.check(Pattern.SemanticContext.Merge, pattern) chain
+    SemanticPatternCheck.check(Pattern.SemanticContext.Merge, Pattern(Seq(pattern))(pattern.position)) chain
       actions.semanticCheck chain
       checkRelTypes(pattern)
 }

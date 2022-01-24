@@ -533,9 +533,9 @@ object ClauseConverters {
       case OnMatch(setClause) => setClause.items.map(toSetPattern(builder.semanticTable))
     }.flatten
 
-    clause.pattern.patternParts.foldLeft(builder) {
+    clause.pattern match {
       //MERGE (n :L1:L2 {prop: 42})
-      case (acc, EveryPath(NodePattern(Some(id), labels, props, _))) =>
+      case EveryPath(NodePattern(Some(id), labels, props, _)) =>
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))
@@ -551,19 +551,19 @@ object ClauseConverters {
           .withArgumentIds(matchGraph.argumentIds)
           .addMutatingPatterns(MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch))
 
-        acc
+        builder
           .withHorizon(PassthroughAllHorizon())
           .withTail(RegularSinglePlannerQuery(queryGraph = queryGraph))
           .withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds)))
           .withTail(RegularSinglePlannerQuery())
 
       //MERGE (n)-[r: R]->(m)
-      case (acc, EveryPath(pattern: RelationshipChain)) =>
+      case EveryPath(pattern: RelationshipChain) =>
         val (nodes, rels) = allCreatePatterns(pattern)
         //remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)
 
-        val seenPatternNodes = acc.allSeenPatternNodes
+        val seenPatternNodes = builder.allSeenPatternNodes
         //create nodes that are not already matched or created
         val nodesToCreate = dedupedNodes.filterNot {
           case CreateNodeCommand(pattern, _) => seenPatternNodes(pattern.idName)
@@ -608,13 +608,13 @@ object ClauseConverters {
           .withArgumentIds(matchGraph.argumentIds)
           .addMutatingPatterns(MergeRelationshipPattern(nodesToCreate.map(_.create), rels.map(_.create), matchGraph, onCreate, onMatch))
 
-        acc.
+        builder.
           withHorizon(PassthroughAllHorizon()).
           withTail(RegularSinglePlannerQuery(queryGraph = queryGraph)).
           withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds))).
           withTail(RegularSinglePlannerQuery())
 
-      case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: ${x._2}")
+      case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
     }
   }
 
