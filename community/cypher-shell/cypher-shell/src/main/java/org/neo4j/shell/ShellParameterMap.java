@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.parser.javacc.ParseException;
 import org.neo4j.shell.exception.ParameterException;
 import org.neo4j.shell.prettyprint.CypherVariablesFormatter;
 import org.neo4j.shell.state.ParamValue;
+import org.neo4j.values.storable.Value;
 
 /**
  * An object which keeps named parameters and allows them them to be set/unset.
@@ -53,7 +54,7 @@ public class ShellParameterMap implements ParameterMap
             Object value = new Cypher( interpreter,
                                          ParameterException.FACTORY,
                                          new CypherCharStream( valueString ) ).Expression();
-            queryParams.put( parameterName, new ParamValue( valueString, value ) );
+            queryParams.put( parameterName, new ParamValue( valueString, toJavaObject( value ) ) );
             return value;
         }
         catch ( ParseException | UnsupportedOperationException e )
@@ -61,7 +62,7 @@ public class ShellParameterMap implements ParameterMap
             try
             {
                 Object value = evaluator.evaluate( valueString, Object.class );
-                queryParams.put( parameterName, new ParamValue( valueString, value ) );
+                queryParams.put( parameterName, new ParamValue( valueString, toJavaObject( value ) ) );
                 return value;
             }
             catch ( EvaluationException e1 )
@@ -69,6 +70,16 @@ public class ShellParameterMap implements ParameterMap
                 throw new ParameterException( e1.getMessage() );
             }
         }
+    }
+
+    private static Object toJavaObject( Object value )
+    {
+        if ( value instanceof Value )
+        {
+            return ( (Value) value).asObject();
+        }
+
+        return value;
     }
 
     @Nonnull
