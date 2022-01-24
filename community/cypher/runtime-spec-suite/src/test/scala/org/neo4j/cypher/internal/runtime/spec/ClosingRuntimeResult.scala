@@ -26,6 +26,7 @@ import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.util.VisibleForTesting
 
 /**
  * This is needed for tests, because closing is usually handled in org.neo4j.cypher.internal.result.ClosingExecutionResult,
@@ -41,6 +42,9 @@ class ClosingRuntimeResult(inner: RuntimeResult,
   private var error: Throwable = _
   private var _pageCacheHits: Long = -1L
   private var _pageCacheMisses: Long = -1L
+
+  @VisibleForTesting
+  def getInner: RuntimeResult = inner
 
   override def fieldNames(): Array[String] = inner.fieldNames()
 
