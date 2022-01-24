@@ -27,10 +27,10 @@ import java.util.stream.LongStream;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipType;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.RelationshipTypeIndexScan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.test.Tags.Suppliers.UUID.RELATIONSHIP_TYPE;
 
 abstract class RelationshipTypeIndexScanPartitionedScanTestSuite
         extends TokenIndexScanPartitionedScanTestSuite<RelationshipTypeIndexCursor>
@@ -54,7 +54,7 @@ abstract class RelationshipTypeIndexScanPartitionedScanTestSuite
         {
             final var numberOfRelTypes = 3;
 
-            final var relTypeIds = createTags( numberOfRelTypes, RelationshipType.FACTORY );
+            final var relTypeIds = createTags( numberOfRelTypes, RELATIONSHIP_TYPE );
             return emptyQueries( EntityType.RELATIONSHIP, relTypeIds );
         }
     }
@@ -73,7 +73,7 @@ abstract class RelationshipTypeIndexScanPartitionedScanTestSuite
             final var numberOfRelTypes = 3;
             final var numberOfRelationships = 100_000;
 
-            final var relTypeIds = createTags( numberOfRelTypes, RelationshipType.FACTORY );
+            final var relTypeIds = createTags( numberOfRelTypes, RELATIONSHIP_TYPE );
             return createData( numberOfRelationships, relTypeIds );
         }
 

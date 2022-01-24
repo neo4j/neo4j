@@ -19,13 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -48,7 +43,11 @@ import org.neo4j.kernel.impl.newapi.PropertyIndexScanPartitionedScanTestSuite.Pr
 import org.neo4j.kernel.impl.newapi.PropertyIndexSeekPartitionedScanTestSuite.PropertyKeySeekQuery;
 import org.neo4j.kernel.impl.newapi.TokenIndexScanPartitionedScanTestSuite.TokenScanQuery;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.util.Id;
+import org.neo4j.test.Tags;
+
+import static org.neo4j.test.Tags.Suppliers.UUID.LABEL;
+import static org.neo4j.test.Tags.Suppliers.UUID.PROPERTY_KEY;
+import static org.neo4j.test.Tags.Suppliers.UUID.RELATIONSHIP_TYPE;
 
 class PartitionedScanFactories
 {
@@ -165,16 +164,16 @@ class PartitionedScanFactories
     {
         abstract SchemaDescriptor getSchemaDescriptor( int tokenId, int... propKeyIds );
 
-        abstract Tag<?> getTokenFactory();
+        abstract Tags.Suppliers.Supplier<?> getTokenSupplier();
 
-        final PropertyKey getPropKeyFactory()
+        final Tags.Suppliers.PropertyKey getPropKeySupplier()
         {
-            return PropertyKey.FACTORY;
+            return PROPERTY_KEY;
         }
 
         final String getIndexName( int tokenId, int... propKeyIds )
         {
-            return String.format( "%s[%s[%d] {%s}]", name(), getTokenFactory().name(), tokenId,
+            return String.format( "%s[%s[%d] {%s}]", name(), getTokenSupplier().name(), tokenId,
                                   Arrays.stream( propKeyIds ).mapToObj( String::valueOf ).collect( Collectors.joining( "," ) ) );
         }
 
@@ -232,9 +231,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        Label getTokenFactory()
+        Tags.Suppliers.Label getTokenSupplier()
         {
-            return Label.FACTORY;
+            return LABEL;
         }
 
         @Override
@@ -279,9 +278,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        Label getTokenFactory()
+        Tags.Suppliers.Label getTokenSupplier()
         {
-            return Label.FACTORY;
+            return LABEL;
         }
 
         @Override
@@ -326,9 +325,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        RelationshipType getTokenFactory()
+        Tags.Suppliers.RelationshipType getTokenSupplier()
         {
-            return RelationshipType.FACTORY;
+            return RELATIONSHIP_TYPE;
         }
 
         @Override
@@ -373,9 +372,9 @@ class PartitionedScanFactories
         }
 
         @Override
-        RelationshipType getTokenFactory()
+        Tags.Suppliers.RelationshipType getTokenSupplier()
         {
-            return RelationshipType.FACTORY;
+            return RELATIONSHIP_TYPE;
         }
 
         @Override
@@ -389,112 +388,5 @@ class PartitionedScanFactories
     interface CursorWithContext<CURSOR extends Cursor>
     {
         CURSOR with( CursorContext cursorContext );
-    }
-
-    abstract static class Tag<TAG> implements Supplier<TAG>
-    {
-        protected abstract TagFromName<TAG> fromName();
-
-        abstract int createId( KernelTransaction tx, TAG TAG ) throws KernelException;
-
-        @Override
-        public final TAG get()
-        {
-            final var id = new Id( UUID.randomUUID() );
-            return fromName().generate( name() + '_' + id );
-        }
-
-        final String name()
-        {
-            return getClass().getSimpleName();
-        }
-
-        final List<TAG> generate( int numberOfTags )
-        {
-            return Stream.generate( this ).limit( numberOfTags ).toList();
-        }
-
-        final List<Integer> createIds( KernelTransaction tx, Iterable<TAG> tags ) throws KernelException
-        {
-            final var ids = new ArrayList<Integer>();
-            for ( final var tag : tags )
-            {
-                ids.add( createId( tx, tag ) );
-            }
-            return ids;
-        }
-
-        final List<Integer> generateAndCreateIds( KernelTransaction tx, int numberOfTags ) throws KernelException
-        {
-            return createIds( tx, generate( numberOfTags ) );
-        }
-
-        interface TagFromName<TAG>
-        {
-            TAG generate( String name );
-        }
-    }
-
-    static final class Label extends Tag<org.neo4j.graphdb.Label>
-    {
-        public static final Label FACTORY = new Label();
-
-        private Label()
-        {
-        }
-
-        @Override
-        protected TagFromName<org.neo4j.graphdb.Label> fromName()
-        {
-            return org.neo4j.graphdb.Label::label;
-        }
-
-        @Override
-        int createId( KernelTransaction tx, org.neo4j.graphdb.Label label ) throws KernelException
-        {
-            return tx.tokenWrite().labelGetOrCreateForName( label.name() );
-        }
-    }
-
-    static final class RelationshipType extends Tag<org.neo4j.graphdb.RelationshipType>
-    {
-        public static final RelationshipType FACTORY = new RelationshipType();
-
-        private RelationshipType()
-        {
-        }
-
-        @Override
-        protected TagFromName<org.neo4j.graphdb.RelationshipType> fromName()
-        {
-            return org.neo4j.graphdb.RelationshipType::withName;
-        }
-
-        @Override
-        int createId( KernelTransaction tx, org.neo4j.graphdb.RelationshipType relType ) throws KernelException
-        {
-            return tx.tokenWrite().relationshipTypeGetOrCreateForName( relType.name() );
-        }
-    }
-
-    static final class PropertyKey extends Tag<String>
-    {
-        public static final PropertyKey FACTORY = new PropertyKey();
-
-        private PropertyKey()
-        {
-        }
-
-        @Override
-        protected TagFromName<String> fromName()
-        {
-            return name -> name;
-        }
-
-        @Override
-        int createId( KernelTransaction tx, String propertyKey ) throws KernelException
-        {
-            return tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
-        }
     }
 }

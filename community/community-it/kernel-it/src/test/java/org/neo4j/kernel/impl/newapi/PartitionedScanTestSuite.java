@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.PartitionedScanFact
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.Tags;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -518,17 +519,17 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         }
     }
 
-    protected final <TAG> List<Integer> createTags( int numberOfTags, PartitionedScanFactories.Tag<TAG> tagFactory )
+    protected final <TAG> List<Integer> createTags( int numberOfTags, Tags.Suppliers.Supplier<TAG> tag )
     {
         List<Integer> tagIds;
         try ( var tx = beginTx() )
         {
-            tagIds = tagFactory.generateAndCreateIds( tx, numberOfTags );
+            tagIds = tag.getIds( tx, numberOfTags );
             tx.commit();
         }
         catch ( KernelException e )
         {
-            throw new AssertionError( String.format( "failed to create %ss in database", tagFactory.name() ), e );
+            throw new AssertionError( String.format( "failed to create %ss in database", tag.name() ), e );
         }
         return tagIds;
     }

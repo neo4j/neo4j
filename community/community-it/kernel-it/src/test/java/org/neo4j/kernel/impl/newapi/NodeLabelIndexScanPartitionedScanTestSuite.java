@@ -26,10 +26,10 @@ import java.util.List;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.Label;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.NodeLabelIndexScan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.test.Tags.Suppliers.UUID.LABEL;
 
 abstract class NodeLabelIndexScanPartitionedScanTestSuite
         extends TokenIndexScanPartitionedScanTestSuite<NodeLabelIndexCursor>
@@ -53,7 +53,7 @@ abstract class NodeLabelIndexScanPartitionedScanTestSuite
         {
             final var numberOfLabels = 3;
 
-            final var labelIds = createTags( numberOfLabels, Label.FACTORY );
+            final var labelIds = createTags( numberOfLabels, LABEL );
             return emptyQueries( EntityType.NODE, labelIds );
         }
     }
@@ -72,7 +72,7 @@ abstract class NodeLabelIndexScanPartitionedScanTestSuite
             final var numberOfLabels = 3;
             final var numberOfNodes = 100_000;
 
-            final var labelIds = createTags( numberOfLabels, Label.FACTORY );
+            final var labelIds = createTags( numberOfLabels, LABEL );
             return createData( numberOfNodes, labelIds );
         }
 
