@@ -366,7 +366,8 @@ class PushdownPropertyReadsTest
       .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
+      planBuilder.getSemanticTable)
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
       .semiApply()
@@ -388,7 +389,8 @@ class PushdownPropertyReadsTest
       .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
+      planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -425,7 +427,8 @@ class PushdownPropertyReadsTest
       .allNodeScan("m").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
+      planBuilder.getSemanticTable)
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
       .semiApply()
@@ -587,7 +590,8 @@ class PushdownPropertyReadsTest
       .allNodeScan("n").withEffectiveCardinality(100)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
+      planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -859,7 +863,7 @@ class PushdownPropertyReadsTest
       .nodeByLabelScan("n", "B", IndexOrderAscending).withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -872,7 +876,7 @@ class PushdownPropertyReadsTest
       .nodeByLabelScan("n", "B", IndexOrderAscending).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -1375,4 +1379,172 @@ class PushdownPropertyReadsTest
         .nodeByLabelScan("a", "A")
         .build()
   }
+
+  test("should not co-read when reading single property") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("p1")
+      .projection("a.prop1 AS p1").withEffectiveCardinality(10)
+      .allNodeScan("a").withEffectiveCardinality(10)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not co-read when reading single property on multiple nodes") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("p1", "p2")
+      .projection("a.prop1 AS p1", "b.prop2 AS p2").withEffectiveCardinality(50)
+      .expandAll("(a)-->(b)").withEffectiveCardinality(50)
+      .allNodeScan("a").withEffectiveCardinality(50)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should co-read when reading multiple properties on same node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("p1", "p2")
+      .projection("a.prop1 AS p1", "a.prop2 AS p2").withEffectiveCardinality(10)
+      .allNodeScan("a").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(planBuilder.build(), planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("p1", "p2")
+        .projection("a.prop1 AS p1", "a.prop2 AS p2")
+        .cacheProperties("a.prop1", "a.prop2")
+        .allNodeScan("a")
+        .build()
+  }
+
+  test("should not cache when already cached") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("p1", "p2")
+      .projection("a.prop1 AS p1", "a.prop2 AS p2").withEffectiveCardinality(10)
+      .projection("a.prop1 AS b1", "a.prop2 AS b2").withEffectiveCardinality(10)
+      .allNodeScan("a").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(planBuilder.build(), planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("p1", "p2")
+        .projection("a.prop1 AS p1", "a.prop2 AS p2")
+        .projection("a.prop1 AS b1", "a.prop2 AS b2")
+        .cacheProperties("a.prop1", "a.prop2")
+        .allNodeScan("a")
+        .build()
+  }
+
+  test("should only cache properties that are not yet cached") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("p1", "p2")
+      .projection("a.prop1 AS p1", "a.prop2 AS p2", "a.prop3 AS p3").withEffectiveCardinality(10)
+      .projection("a.prop1 AS b1").withEffectiveCardinality(10)
+      .allNodeScan("a").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(planBuilder.build(), planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("p1", "p2")
+        .projection("a.prop1 AS p1", "a.prop2 AS p2", "a.prop3 AS p3")
+        .cacheProperties("a.prop2", "a.prop3")
+        .projection("a.prop1 AS b1")
+        .allNodeScan("a")
+        .build()
+  }
+
+  test("should co-read, but not further than optimal") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("p1", "p2")
+      .projection("a.prop1 AS p1", "a.prop2 AS p2").withEffectiveCardinality(10)
+      .expandAll("(a)-->(b)").withEffectiveCardinality(50)
+      .filter("a.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(9)
+      .allNodeScan("a").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(planBuilder.build(), planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("p1", "p2")
+        .projection("a.prop1 AS p1", "a.prop2 AS p2")
+        .expandAll("(a)-->(b)")
+        .cacheProperties("a.prop1", "a.prop2")
+        .filter("a.prop == 'NOT-IMPORTANT'")
+        .allNodeScan("a")
+        .build()
+  }
+
+  test("Should pushdown unmodified property, but not property which is set") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("p1", "p2")
+      .projection("a.prop1 AS p1", "a.prop2 AS p2").withEffectiveCardinality(100)
+      .setProperty("a", "prop1", "42").withEffectiveCardinality(100)
+      .expand("(a)-->(b)").withEffectiveCardinality(100)
+      .allNodeScan("a").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(planBuilder.build(), planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("p1", "p2")
+        .projection("a.prop1 AS p1", "a.prop2 AS p2")
+        .setProperty("a", "prop1", "42")
+        .expand("(a)-->(b)")
+        .cacheProperties("a.prop2")
+        .allNodeScan("a")
+        .build()
+  }
+
+  test("Should co-read properties that are not set") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("p1", "p2", "p3")
+      .projection("a.set AS p1", "a.p2 AS p2", "a.p3 AS p3").withEffectiveCardinality(100)
+      .setProperty("a", "set", "42").withEffectiveCardinality(100)
+      .allNodeScan("a").withEffectiveCardinality(100)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("p1", "p2", "p3")
+        .projection("a.set AS p1", "a.p2 AS p2", "a.p3 AS p3")
+        .cacheProperties("a.p2", "a.p3")
+        .setProperty("a", "set", "42")
+        .allNodeScan("a")
+        .build()
+  }
+
+  test("Should not pushdown co-read properties from filter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("p3" )
+      .projection( "a.p3 AS p3").withEffectiveCardinality(100)
+      .filter("a.p1 > 1", "a.p2 < 2").withEffectiveCardinality(100)
+      .allNodeScan("a").withEffectiveCardinality(100)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  // This is a heuristical decision, gambling on different variables typically being bound
+  // to different entities.
+  test("should pushdown when setProperty is called on other variable") {
+    val plan = new LogicalPlanBuilder()
+      .produceResults("p1", "p2")
+      .projection("a.prop1 AS p1", "a.prop2 AS p2").withEffectiveCardinality(100)
+      .setProperty("b", "prop1", "42").withEffectiveCardinality(100)
+      .expand("(a)-->(b)").withEffectiveCardinality(100)
+      .allNodeScan("a").withEffectiveCardinality(10)
+
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    rewritten shouldBe
+      new LogicalPlanBuilder()
+        .produceResults("p1", "p2")
+        .projection("a.prop1 AS p1", "a.prop2 AS p2")
+        .setProperty("b", "prop1", "42")
+        .expand("(a)-->(b)")
+        .cacheProperties("a.prop1", "a.prop2")
+        .allNodeScan("a")
+        .build()
+  }
+
 }

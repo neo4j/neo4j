@@ -74,12 +74,15 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     ).permutations.map {
       case Seq(seek1, seek2) =>
         Projection(
-          Distinct(
-            Union(
-              seek1,
-              seek2
+          CacheProperties(
+            Distinct(
+              Union(
+                seek1,
+                seek2
+              ),
+              Map("n" -> varFor("n"))
             ),
-            Map("n" -> varFor("n"))
+            Set(cachedNodeProp("n", "prop1"), cachedNodeProp("n", "prop2"))
           ),
           Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
         )
@@ -96,14 +99,17 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     ).permutations.map {
       case Seq(seek1, seek2) =>
         Projection(
-          Distinct(
-            Union(
-              seek1,
-              seek2
+          CacheProperties(
+            Distinct(
+              Union(
+                seek1,
+                seek2
+              ),
+              Map("n" -> varFor("n"))
             ),
-            Map("n" -> varFor("n"))
+            Set(cachedNodeProp("n", "prop1"), cachedNodeProp("n", "prop2", "n", knownToAccessStore = true))
           ),
-          Map(cachedNodePropertyProj("n", "prop1"), "n.prop2" -> prop("n", "prop2"))
+          Map(cachedNodePropertyProj("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
         )
     }.toSeq should contain(plan._2)
   }
@@ -120,12 +126,15 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     ).permutations.map {
       case Seq(seek1, seek2) =>
         Projection(
-          Distinct(
-            Union(
-              seek1,
-              seek2
+          CacheProperties(
+            Distinct(
+              Union(
+                seek1,
+                seek2
+              ),
+              Map("n" -> varFor("n"))
             ),
-            Map("n" -> varFor("n"))
+            Set(cachedNodeProp("n", "prop1"), cachedNodeProp("n", "prop2", "n", knownToAccessStore = false))
           ),
           Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
         )
@@ -159,7 +168,13 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     val planAlternatives = for {
       Seq((seek1, filter1), (seek2, filter2)) <- coveringCombinations.permutations.map(_.take(2)).toSeq
-    } yield Distinct(Union(Selection(Seq(filter1), seek1), Selection(Seq(filter2), seek2)), Map("n" -> varFor("n")))
+    } yield CacheProperties(
+      Distinct(
+        Union(
+          Selection(Seq(filter1), seek1),
+          Selection(Seq(filter2), seek2)),
+        Map("n" -> varFor("n"))),
+      Set(cachedNodeProp("n", "prop1"), cachedNodeProp("n", "prop2")))
 
     planAlternatives should contain(unionPlan)
 

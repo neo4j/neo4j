@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Qu
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -157,21 +158,24 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY renamed column expression with new name in WITH and project and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY b.foo, b.age + 5 RETURN b.name, age")._2
+    val plan = new given()
+      .getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY b.foo, b.age + 5 RETURN b.name, age", stripProduceResults = false)._2
+    val cachedProperties: Set[LogicalProperty] = Set(cachedNodeProp("a", "foo", "b", knownToAccessStore = true),
+      cachedNodeProp("a", "age", "b", knownToAccessStore = true))
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val ageAProperty = cachedNodeProp("a", "age")
-    val ageBProperty = cachedNodeProp("a", "age", "b", knownToAccessStore = true)
-    val nameProperty = prop("b", "name")
-    val fooProperty = prop("b", "foo")
-
-    val projection = Projection(labelScan, Map("b" -> varFor("a")))
-    val projection2 = Projection(projection, Map("b.foo" -> fooProperty, "b.age + 5" -> add(ageBProperty, literalInt(5))))
-    val sort = Sort(projection2, Seq(Ascending("b.foo"), Ascending("b.age + 5")))
-    val projection3 = Projection(sort, Map("age" -> ageAProperty))
-    val result = Projection(projection3, Map("b.name" -> nameProperty))
-
-    plan should equal(result)
+    plan should equal(new LogicalPlanBuilder()
+      .produceResults("`b.name`", "age")
+      .projection("b.name AS `b.name`")
+      .projection("cacheN[a.age] AS age")
+      .sort(Seq(Ascending("b.foo"), Ascending("b.age + 5")))
+      .projection(Map(
+        "b.foo" -> cachedNodeProp("a", "foo", "b"),
+        "b.age + 5" -> add(cachedNodeProp("a", "age", "b"), literalInt(5))
+      ))
+      .cacheProperties(cachedProperties)
+      .projection("a AS b")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build())
   }
 
   test("ORDER BY previously unprojected column in RETURN") {
@@ -293,47 +297,43 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected AGGREGATING column in WITH and project and return it") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, sum(a.age) AS age ORDER BY age RETURN name, age")._2
+    val plan = new given()
+      .getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, sum(a.age) AS age ORDER BY age RETURN name, age", stripProduceResults = false)._2
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("a", "name")
-    val ageSum = sum(ageProperty)
-
-    val aggregation = Aggregation(labelScan, Map("name" -> nameProperty), Map("age" -> ageSum))
-    val sort = Sort(aggregation, Seq(Ascending("age")))
-
-    plan should equal(sort)
+    plan should equal(new LogicalPlanBuilder()
+      .produceResults("name", "age")
+      .sort(Seq(Ascending("age")))
+      .aggregation(Seq("cacheN[a.name] AS name"), Seq("sum(cacheN[a.age]) AS age"))
+      .cacheProperties("cacheNFromStore[a.age]", "cacheNFromStore[a.name]")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build())
   }
 
   test("ORDER BY previously unprojected GROUPING column in WITH and project and return it") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, sum(a.age) AS age ORDER BY name RETURN name, age")._2
+    val plan = new given()
+      .getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, sum(a.age) AS age ORDER BY name RETURN name, age", stripProduceResults = false)._2
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("a", "name")
-    val ageSum = sum(ageProperty)
-
-    val aggregation = Aggregation(labelScan, Map("name" -> nameProperty), Map("age" -> ageSum))
-    val sort = Sort(aggregation, Seq(Ascending("name")))
-
-    plan should equal(sort)
+    plan should equal(new LogicalPlanBuilder()
+      .produceResults("name", "age")
+      .sort(Seq(Ascending("name")))
+      .aggregation(Seq("cacheN[a.name] AS name"), Seq("sum(cacheN[a.age]) AS age"))
+      .cacheProperties("cacheNFromStore[a.age]", "cacheNFromStore[a.name]")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build())
   }
 
   test("ORDER BY column that isn't referenced in WITH GROUP BY") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, a, sum(a.age) AS age ORDER BY a.foo RETURN name, age")._2
+    val plan = new given()
+      .getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, a, sum(a.age) AS age ORDER BY a.foo RETURN name, age", stripProduceResults = false)._2
 
-    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderAscending)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("a", "name")
-    val fooProperty = prop("a", "foo")
-    val ageSum = sum(ageProperty)
-
-    val aggregation = OrderedAggregation(labelScan, Map("name" -> nameProperty, "a" -> varFor("a")), Map("age" -> ageSum), Seq(varFor("a")))
-    val projection = Projection(aggregation, Map("a.foo" -> fooProperty))
-    val sort = Sort(projection, Seq(Ascending("a.foo")))
-
-    plan should equal(sort)
+    plan should equal(new LogicalPlanBuilder()
+      .produceResults("name", "age")
+      .sort(Seq(Ascending("a.foo")))
+      .projection("a.foo AS `a.foo`")
+      .orderedAggregation(Seq("cacheN[a.name] AS name", "a AS a"), Seq("sum(cacheN[a.age]) AS age"), Seq("a"))
+      .cacheProperties("cacheNFromStore[a.age]", "cacheNFromStore[a.name]")
+      .nodeByLabelScan("a", "A", IndexOrderAscending)
+      .build())
   }
 
   test("should use ordered aggregation if there is one grouping column, ordered") {
@@ -428,7 +428,8 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("`a.foo` AS `a.foo`", "`a.bar` AS `a.bar`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`", "`a.bar`"))
       .sort(Seq(Ascending("a.foo"), Ascending("a.bar")))
-      .projection("cacheFromStore[a.foo] AS `a.foo`", "a.bar AS `a.bar`")
+      .projection("cache[a.foo] AS `a.foo`", "cache[a.bar] AS `a.bar`")
+      .cacheProperties("cacheFromStore[a.foo]", "cacheFromStore[a.bar]")
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -554,7 +555,8 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("`a.foo`", "`a.bar`"), "`a.foo` AS `a.foo`", "`a.bar` AS `a.bar`")
       .sort(Seq(Ascending("a.foo"), Ascending("a.bar")))
-      .projection("a.foo AS `a.foo`", "a.bar AS `a.bar`")
+      .projection("cache[a.foo] AS `a.foo`", "cache[a.bar] AS `a.bar`")
+      .cacheProperties("cacheFromStore[a.foo]", "cacheFromStore[a.bar]")
       .nodeByLabelScan("a", "A")
       .build()
 

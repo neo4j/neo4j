@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
@@ -106,14 +107,12 @@ case object PushdownPropertyReads {
             acc2 => TraverseChildren(p :: acc2)
         }
 
-      val newPropertyReadOptima =
+      val newPushableProperties: Map[LogicalVariable, List[(CardinalityOptimum, Property)]] =
         newPropertyExpressions.flatMap {
           case p @ Property(v: LogicalVariable, _) =>
             acc.variableOptima.get(v.name) match {
               case Some(optimum: CardinalityOptimum) =>
-                if (optimum.cardinality < acc.incomingCardinality &&
-                  !acc.availableProperties.contains(p) &&
-                  !acc.availableWholeEntities.contains(v.name))
+                if (!acc.availableProperties.contains(p) && !acc.availableWholeEntities.contains(v.name))
                   Some((optimum, p))
                 else
                   None
@@ -122,6 +121,25 @@ case object PushdownPropertyReads {
             }
 
           case e => throw new IllegalStateException(s"$e is not a valid property expression")
+        }.groupBy { case (_, Property(v: LogicalVariable, _)) => v }
+
+      val newPropertyReadOptima =
+        newPushableProperties.toSeq.flatMap {
+          case (v, optimumProperties) =>
+            val (optimum, _) = optimumProperties.head
+            if (optimum.cardinality < acc.incomingCardinality) {
+              optimumProperties
+            } else if (optimumProperties.size > 1 && plan.rhs.isEmpty && plan.lhs.nonEmpty && !plan.isInstanceOf[Selection]) {
+              val uniqueProps = optimumProperties.map(_._2).toSet
+              if (uniqueProps.size > 1) {
+                val beforeThisPlanOptimum = CardinalityOptimum(acc.incomingCardinality, plan.lhs.get.id, v.name)
+                uniqueProps.toSeq.map(prop => (beforeThisPlanOptimum, prop))
+              } else {
+                Nil
+              }
+            } else {
+              Nil
+            }
         }
 
       val outgoingCardinality = effectiveCardinalities(plan.id)
