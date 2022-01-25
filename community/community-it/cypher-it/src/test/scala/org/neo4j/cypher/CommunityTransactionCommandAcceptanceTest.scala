@@ -990,7 +990,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   private def createUser(username: String = username, password: String = password): Unit = {
     selectDatabase(SYSTEM_DATABASE_NAME)
+    eventually(graph.txCounts.active should be(0))
     execute(s"CREATE USER $username SET PASSWORD '$password' CHANGE NOT REQUIRED")
+    eventually(graph.txCounts.active should be(0))
     selectDatabase(DEFAULT_DATABASE_NAME)
   }
 
