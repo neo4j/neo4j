@@ -256,7 +256,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         long heapGrabSize = config.get( GraphDatabaseInternalSettings.initial_transaction_heap_grab_size );
         this.memoryTracker = config.get( memory_tracking ) ? new LocalMemoryTracker( transactionMemoryPool, 0, heapGrabSize,
-                                     memory_transaction_max_size.name() ) : EmptyMemoryTracker.INSTANCE;
+                                     memory_transaction_max_size.name(), () -> !closed ) : EmptyMemoryTracker.INSTANCE;
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
@@ -315,6 +315,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Type type,
             SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
+        assert memoryTracker.estimatedHeapMemory() == 0;
+        assert memoryTracker.usedNativeMemory() == 0;
         this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), versionContextSupplier.createVersionContext() );
         this.transactionalCursors.reset( cursorContext );
         this.accessCapability = accessCapabilityFactory.newAccessCapability( readOnlyDatabaseChecker );

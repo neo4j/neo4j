@@ -19,6 +19,8 @@
  */
 package org.neo4j.memory;
 
+import java.util.function.BooleanSupplier;
+
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.api.exceptions.Status.General.TransactionOutOfMemoryError;
@@ -57,6 +59,11 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     private final String limitSettingName;
 
     /**
+     * Check if current memory tracker is open and any operations are allowed
+     */
+    private final BooleanSupplier openCheck;
+
+    /**
      * A per tracker limit.
      */
     private long localBytesLimit;
@@ -93,10 +100,16 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
 
     public LocalMemoryTracker( MemoryPool memoryPool, long localBytesLimit, long grabSize, String limitSettingName )
     {
+        this( memoryPool, localBytesLimit, grabSize, limitSettingName, () -> true );
+    }
+
+    public LocalMemoryTracker( MemoryPool memoryPool, long localBytesLimit, long grabSize, String limitSettingName, BooleanSupplier openCheck )
+    {
         this.memoryPool = requireNonNull( memoryPool );
         this.localBytesLimit = validateLimit( localBytesLimit );
         this.grabSize = requireNonNegative( grabSize );
         this.limitSettingName = limitSettingName;
+        this.openCheck = openCheck;
     }
 
     @Override
@@ -107,6 +120,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
             return;
         }
         requirePositive( bytes );
+        assert openCheck.getAsBoolean() : "Tracker should be open to allow new allocations.";
 
         this.allocatedBytesNative += bytes;
 
@@ -131,6 +145,8 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     @Override
     public void releaseNative( long bytes )
     {
+        assert allocatedBytesNative >= bytes :
+                "Can't release more then it was allocated. Allocated native: " + allocatedBytesNative + ", release request: " + bytes;
         this.allocatedBytesNative -= bytes;
         this.memoryPool.releaseNative( bytes );
     }
@@ -143,6 +159,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
             return;
         }
         requirePositive( bytes );
+        assert openCheck.getAsBoolean() : "Tracker should be open to allow new allocations.";
 
         allocatedBytesHeap += bytes;
 
@@ -177,6 +194,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     public void releaseHeap( long bytes )
     {
         requireNonNegative( bytes );
+        assert allocatedBytesHeap >= bytes : "Can't release more then it was allocated. Allocated heap: " + allocatedBytesHeap + ", release request: " + bytes;
         allocatedBytesHeap -= bytes;
 
         // If the localHeapPool has reserved a lot more memory than is being used release part of it again.
