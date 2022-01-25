@@ -39,7 +39,7 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
 
   def checkAmbiguousOrdering(returnItems: ReturnItems, nameOfClause: String): SemanticCheck = (state: SemanticState) => {
     val (aggregationItems, groupingItems) = returnItems.items.partition(item => item.expression.containsAggregate)
-    val groupingVariablesAndAliases = groupingItems.map(_.expression).collect { case v: LogicalVariable => v } ++ groupingItems.flatMap(_.alias)
+    val groupingVariablesAndAliases = groupingItems.map(_.expression).collect { case v: LogicalVariable => v } ++ returnItems.items.flatMap(_.alias)
     val propertiesUsedForGrouping = groupingItems.map(_.expression).collect { case v@LogicalProperty(LogicalVariable(_), _) => v }
 
     val stateWithNotifications = if (aggregationItems.nonEmpty) {
