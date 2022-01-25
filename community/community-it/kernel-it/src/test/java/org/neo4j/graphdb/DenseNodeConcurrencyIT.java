@@ -20,10 +20,9 @@
 package org.neo4j.graphdb;
 
 import org.assertj.core.description.Description;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -93,7 +92,6 @@ import static java.lang.String.format;
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
@@ -104,7 +102,6 @@ import static org.neo4j.test.Race.throwing;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
 @ExtendWith( RandomExtension.class )
-@TestInstance( PER_CLASS )
 class DenseNodeConcurrencyIT
 {
     private static final int NUM_INITIAL_RELATIONSHIPS_PER_DENSE_NODE = 500;
@@ -142,7 +139,7 @@ class DenseNodeConcurrencyIT
         }
     }
 
-    @AfterAll
+    @AfterEach
     void consistencyCheck() throws ConsistencyCheckIncompleteException, IOException
     {
         try
@@ -365,7 +362,7 @@ class DenseNodeConcurrencyIT
                         allRelationships.addAll(
                                 txDeleted.values().stream().flatMap( change -> change.relationships.stream() ).collect( Collectors.toSet() ) );
                         denseNodeIds.addAll(
-                                txDeleted.values().stream().filter( change -> change.node ).map( change -> change.id ).collect( Collectors.toList() ) );
+                                txDeleted.values().stream().filter( change -> change.node ).map( change -> change.id ).toList() );
                         numDeadlocks.incrementAndGet();
                         // Random back-off after deadlock
                         Thread.sleep( random.nextInt( 1, 10 * numRetries ) );
@@ -1095,7 +1092,7 @@ class DenseNodeConcurrencyIT
         private static void deleteRelationships( Set<Relationship> allRelationships, Map<Long,TxNodeChanges> txCreated,
                 Map<Long,TxNodeChanges> txDeleted, Iterable<Relationship> relationships, Set<Long> denseNodeIds )
         {
-            List<Relationship> readRelationships = StreamSupport.stream( relationships.spliterator(), false ).collect( Collectors.toList() );
+            List<Relationship> readRelationships = StreamSupport.stream( relationships.spliterator(), false ).toList();
             readRelationships.stream().filter( allRelationships::remove ).forEach(
                     relationship -> safeDeleteRelationship( relationship, txCreated, txDeleted, denseNodeIds ) );
         }
