@@ -19,15 +19,12 @@
  */
 package org.neo4j.graphdb.facade;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;

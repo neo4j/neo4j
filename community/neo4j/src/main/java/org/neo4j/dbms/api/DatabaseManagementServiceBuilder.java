@@ -50,6 +50,8 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 
 import static java.lang.Boolean.FALSE;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_store;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 
 /**
@@ -107,6 +109,10 @@ public class DatabaseManagementServiceBuilder
      */
     protected Config augmentConfig( Config config )
     {
+        if ( config.get( multi_version_store ) )
+        {
+            config.set( reserved_page_header_bytes, Long.BYTES * 3 );
+        }
         return config;
     }
 

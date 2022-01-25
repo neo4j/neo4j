@@ -765,6 +765,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Integer> reserved_page_header_bytes =
             newBuilder( "unsupported.dbms.reserved.page.header.bytes", INT, RESERVED_BYTES ).addConstraint( min( 0 ) ).build();
 
+    @Description( "Feature flag for multi-versioned store prototype" )
+    public static final Setting<Boolean> multi_version_store = newBuilder( "unsupported.dbms.multiversioned.store", BOOL,
+            Boolean.valueOf( System.getProperty( "unsupported.dbms.multiversioned.store.override" ) ) ).build();
+
     @Description( "Allow database to use dedicated transaction appender writer thread." )
     public static final Setting<Boolean> dedicated_transaction_appender =
             newBuilder( "unsupported.dbms.tx.logs.dedicated.appender", BOOL, Boolean.TRUE ).build();
