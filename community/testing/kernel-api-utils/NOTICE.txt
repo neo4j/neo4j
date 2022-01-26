@@ -33,6 +33,7 @@ Apache Software License, Version 2.0
   Byte Buddy (without dependencies)
   Byte Buddy agent
   Caffeine cache
+  IPAddress
   Java Native Access
   Jettison
 

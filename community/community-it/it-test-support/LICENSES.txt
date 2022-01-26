@@ -29,6 +29,7 @@ Apache Software License, Version 2.0
   AssertJ fluent assertions
   Caffeine cache
   fastinfoset
+  IPAddress
   Jackson module: Old JAXB Annotations (javax.xml.bind)
   Jackson-annotations
   Jackson-core

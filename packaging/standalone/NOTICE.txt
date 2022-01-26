@@ -57,6 +57,7 @@ Apache Software License, Version 2.0
   firebase
   forever-agent
   grpc
+  IPAddress
   Java Concurrency Tools Core Library
   Java Native Access
   Jettison
