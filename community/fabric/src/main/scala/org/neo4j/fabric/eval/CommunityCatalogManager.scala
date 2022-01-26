@@ -82,11 +82,11 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
     val internals = getInternals()
     val maxId = internals.map(_.id).reduceOption(_ max _).getOrElse(-1L)
     val aliases = getAliases(maxId+1)
-    Catalog.create(internals.toSeq, Seq.empty, aliases.toSeq, None)
+    Catalog.create(internals, Seq.empty, aliases.toSeq, None)
   }
 
-  protected def getInternals(firstId: Long = 0) = for {
-    (databaseId, idx) <- databaseLookup.databaseIds zip indicesFrom(firstId)
+  protected def getInternals(firstId: Long = 0): Seq[InternalGraph] = for {
+    (databaseId, idx) <- databaseLookup.databaseIds.toSeq zip indicesFrom(firstId)
     graphName = new NormalizedGraphName(databaseId.name)
     databaseName = new NormalizedDatabaseName(databaseId.name)
   } yield InternalGraph(idx, databaseId.databaseId.uuid, graphName, databaseName)
@@ -97,7 +97,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
     graphName = new NormalizedGraphName(databaseName.name)
   } yield GraphAlias(idx, databaseId.databaseId.uuid, graphName, databaseName)
 
-  private def indicesFrom(firstId: Long) = Stream.iterate(firstId)(_ + 1)
+  private def indicesFrom(firstId: Long) = LazyList.iterate(firstId)(_ + 1)
 
   override def locationOf(sessionDatabase: NamedDatabaseId, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
     case Catalog.InternalGraph(id, uuid, _, databaseName) =>

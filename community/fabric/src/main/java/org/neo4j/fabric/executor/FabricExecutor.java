@@ -22,6 +22,7 @@ package org.neo4j.fabric.executor;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import scala.collection.immutable.List$;
 
 import java.util.Map;
 import java.util.Optional;
@@ -79,9 +80,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.fabric.stream.StatementResults.withErrorMapping;
-import static scala.collection.JavaConverters.asJavaIterable;
-import static scala.collection.JavaConverters.mapAsJavaMap;
-import static scala.collection.JavaConverters.seqAsJavaList;
+import static scala.jdk.javaapi.CollectionConverters.asJava;
 
 public class FabricExecutor
 {
@@ -194,7 +193,7 @@ public class FabricExecutor
         {
             var dbId = fabricTransaction.getTransactionInfo().getSessionDatabaseId();
             var dbName = dbId.name();
-            var graph = catalogManager.currentCatalog().resolve( CatalogName.apply( dbName, scala.collection.immutable.List.empty() ) );
+            var graph = catalogManager.currentCatalog().resolve( CatalogName.apply( dbName, List$.MODULE$.empty() ) );
             var location = (Location.Local) catalogManager.locationOf( dbId, graph, false, false );
             var internalTransaction = new CompletableFuture<InternalTransaction>();
             fabricTransaction.execute( ctx ->
@@ -250,7 +249,7 @@ public class FabricExecutor
 
         StatementResult run()
         {
-            notifications.addAll( seqAsJavaList( plan.notifications() ) );
+            notifications.addAll( asJava( plan.notifications() ) );
 
             lifecycle.startExecution( false );
             var query = plan.query();
@@ -261,7 +260,7 @@ public class FabricExecutor
             {
                 lifecycle.endSuccess();
                 return StatementResults.create(
-                        Flux.fromIterable( asJavaIterable( query.outputColumns() ) ),
+                        Flux.fromIterable( asJava( query.outputColumns() ) ),
                         Flux.empty(),
                         Mono.just( new MergedSummary( Mono.just( plan.query().description() ), statistics, notifications ) ),
                         Mono.just( EffectiveQueryType.queryExecutionType( plan, accessMode ) )
@@ -275,7 +274,7 @@ public class FabricExecutor
                 Flux<Record> records;
                 if ( query.producesResults() )
                 {
-                    columns = Flux.fromIterable( asJavaIterable( query.outputColumns() ) );
+                    columns = Flux.fromIterable( asJava( query.outputColumns() ) );
                     records = fragmentResult.records;
                 }
                 else
@@ -375,7 +374,7 @@ public class FabricExecutor
         {
             ctx.validateStatementType( fragment.statementType() );
             Map<String,AnyValue> argumentValues = argumentValues( fragment, argument );
-            MapValue parameters = addParamsFromRecord( queryParams, argumentValues, mapAsJavaMap( fragment.parameters() ) );
+            MapValue parameters = addParamsFromRecord( queryParams, argumentValues, asJava( fragment.parameters() ) );
 
             Catalog.Graph graph = evalUse( fragment.use().graphSelection(), argumentValues );
             var transactionMode = getTransactionMode( fragment.queryType(), graph.toString() );
@@ -399,7 +398,7 @@ public class FabricExecutor
             else if ( location instanceof Location.Remote remote )
             {
                 FabricQuery.RemoteQuery remoteQuery = plannerInstance.asRemote( fragment );
-                MapValue fullParams = addParams( parameters, mapAsJavaMap( remoteQuery.extractedLiterals() ) );
+                MapValue fullParams = addParams( parameters, asJava( remoteQuery.extractedLiterals() ) );
 
                 return runRemoteQueryAt( remote, transactionMode, remoteQuery.query(), fullParams );
             }
@@ -464,7 +463,7 @@ public class FabricExecutor
             }
             else
             {
-                return Records.asMap( argument, seqAsJavaList( fragment.argumentColumns() ) );
+                return Records.asMap( argument, asJava( fragment.argumentColumns() ) );
             }
         }
 
