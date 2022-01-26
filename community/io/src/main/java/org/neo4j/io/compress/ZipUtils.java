@@ -19,8 +19,10 @@
  */
 package org.neo4j.io.compress;
 
-import java.io.File;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.FileSystem;
@@ -114,18 +116,7 @@ public class ZipUtils
         {
             throw new NoSuchFileException( zipName );
         }
-        unzip( resource.getFile(), targetFile );
-    }
-
-    /**
-     * Unzip the source file to targetFile.
-     *
-     * @param sourceZip {@link String} with path pointing at the source zip file.
-     * @param targetFile {@link File} defining the target file to extract.
-     * @throws IOException if something goes wrong.
-     */
-    public static void unzip( String sourceZip, Path targetFile ) throws IOException
-    {
+        String sourceZip = resource.getFile();
         try ( ZipFile zipFile = new ZipFile( sourceZip ) )
         {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -139,6 +130,38 @@ public class ZipUtils
                 throw new IllegalStateException( "Zip file '" + sourceZip + "' does not contain target file '" + targetFile.getFileName() + "'." );
             }
             Files.copy( zipFile.getInputStream( entry ), targetFile );
+        }
+    }
+
+    /**
+     * Unzip the source file to targetDirectory.
+     *
+     * @param sourceZip {@link String} with path pointing at the source zip file.
+     * @param targetDirectory {@link Path} defining directory where zip should be extracted.
+     * @throws IOException if something goes wrong.
+     */
+    public static void unzip( String sourceZip, Path targetDirectory ) throws IOException
+    {
+        try ( ZipFile zipFile = new ZipFile( sourceZip ) )
+        {
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while ( entries.hasMoreElements() )
+            {
+                ZipEntry entry = entries.nextElement();
+                if ( entry.isDirectory() )
+                {
+                    Files.createDirectories( targetDirectory.resolve( entry.getName() ) );
+                }
+                else
+                {
+                    try ( OutputStream file = new BufferedOutputStream( Files.newOutputStream( targetDirectory.resolve( entry.getName() ) ) );
+                          InputStream is = zipFile.getInputStream( entry ) )
+                    {
+                        int read;
+                        is.transferTo( file );
+                    }
+                }
+            }
         }
     }
 
