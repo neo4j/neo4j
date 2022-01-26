@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import java.lang.Iterable
-import java.util
-
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.ResourceIterable
+
+import java.lang
+import java.util
 
 trait FakeEntityTestSupport {
 
@@ -61,7 +62,7 @@ trait FakeEntityTestSupport {
 
     def removeProperty(key: String): AnyRef = null
 
-    def getPropertyKeys: Iterable[String] = null
+    def getPropertyKeys: lang.Iterable[String] = null
 
     def getProperties(keys: String*): util.Map[String, AnyRef] = null
 
@@ -74,25 +75,25 @@ trait FakeEntityTestSupport {
 
     def getId: Long = 0L
 
-    def getRelationships(types: RelationshipType*): Iterable[Relationship] = null
+    def getRelationships(types: RelationshipType*): ResourceIterable[Relationship] = null
 
     def delete() {}
 
-    def getRelationships: Iterable[Relationship] = null
+    def getRelationships: ResourceIterable[Relationship] = null
 
     def hasRelationship: Boolean = false
 
-    def getRelationships(direction: Direction, types: RelationshipType*): Iterable[Relationship] = null
+    def getRelationships(direction: Direction, types: RelationshipType*): ResourceIterable[Relationship] = null
 
     def hasRelationship(types: RelationshipType*): Boolean = false
 
     def hasRelationship(direction: Direction, types: RelationshipType*): Boolean = false
 
-    def getRelationships(dir: Direction): Iterable[Relationship] = null
+    def getRelationships(dir: Direction): ResourceIterable[Relationship] = null
 
     def hasRelationship(dir: Direction): Boolean = false
 
-    def getRelationships(`type`: RelationshipType, dir: Direction): Iterable[Relationship] = null
+    def getRelationships(`type`: RelationshipType, dir: Direction): ResourceIterable[Relationship] = null
 
     def hasRelationship(`type`: RelationshipType, dir: Direction): Boolean = false
 
@@ -112,7 +113,7 @@ trait FakeEntityTestSupport {
 
     def removeProperty(key: String): AnyRef = null
 
-    def getPropertyKeys: Iterable[String] = null
+    def getPropertyKeys: lang.Iterable[String] = null
 
     def getProperties(keys: String*): util.Map[String, AnyRef] = null
 

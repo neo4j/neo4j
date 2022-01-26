@@ -118,10 +118,10 @@ org.neo4j.graphdb.Node::getDegree(org.neo4j.graphdb.RelationshipType) int public
 org.neo4j.graphdb.Node::getDegree(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction) int public abstract
 org.neo4j.graphdb.Node::getLabels() java.lang.Iterable<org.neo4j.graphdb.Label> public abstract
 org.neo4j.graphdb.Node::getRelationshipTypes() java.lang.Iterable<org.neo4j.graphdb.RelationshipType> public abstract
-org.neo4j.graphdb.Node::getRelationships() java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
-org.neo4j.graphdb.Node::getRelationships(org.neo4j.graphdb.Direction) java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
-org.neo4j.graphdb.Node::getRelationships(org.neo4j.graphdb.Direction, org.neo4j.graphdb.RelationshipType...) java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
-org.neo4j.graphdb.Node::getRelationships(org.neo4j.graphdb.RelationshipType...) java.lang.Iterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Node::getRelationships() org.neo4j.graphdb.ResourceIterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Node::getRelationships(org.neo4j.graphdb.Direction) org.neo4j.graphdb.ResourceIterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Node::getRelationships(org.neo4j.graphdb.Direction, org.neo4j.graphdb.RelationshipType...) org.neo4j.graphdb.ResourceIterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Node::getRelationships(org.neo4j.graphdb.RelationshipType...) org.neo4j.graphdb.ResourceIterable<org.neo4j.graphdb.Relationship> public abstract
 org.neo4j.graphdb.Node::getSingleRelationship(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction) org.neo4j.graphdb.Relationship public abstract
 org.neo4j.graphdb.Node::hasLabel(org.neo4j.graphdb.Label) boolean public abstract
 org.neo4j.graphdb.Node::hasRelationship() boolean public abstract

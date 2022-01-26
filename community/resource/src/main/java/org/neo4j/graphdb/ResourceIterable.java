@@ -33,7 +33,8 @@ import org.neo4j.annotations.api.PublicApi;
  * Inside a long running transaction, it is possible to release associated resources early. To do so
  * you must ensure that all returned ResourceIterators are either fully exhausted, or explicitly closed.
  * <p>
- * If you intend to exhaust the returned iterators, you can use conventional code as you would with a normal Iterable:
+ * If you intend to exhaust the returned iterators, and you are sure that the code within the iteration will <b>NOT</b> throw any exceptions,
+ * you can use conventional code as you would with a normal Iterable:
  *
  * <pre>
  * {@code

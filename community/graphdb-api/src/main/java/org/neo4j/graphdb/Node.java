@@ -74,7 +74,7 @@ public interface Node extends Entity
      *
      * @return all relationships attached to this node
      */
-    Iterable<Relationship> getRelationships();
+    ResourceIterable<Relationship> getRelationships();
 
     /**
      * Returns <code>true</code> if there are any relationships attached to this
@@ -95,7 +95,7 @@ public interface Node extends Entity
      * @return all relationships of the given type(s) that are attached to this
      *         node
      */
-    Iterable<Relationship> getRelationships( RelationshipType... types );
+    ResourceIterable<Relationship> getRelationships( RelationshipType... types );
 
     /**
      * Returns all the relationships of any of the types in <code>types</code>
@@ -108,7 +108,7 @@ public interface Node extends Entity
      * @return all relationships of the given type(s) that are attached to this
      *         node
      */
-    Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
+    ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
 
     /**
      * Returns <code>true</code> if there are any relationships of any of the
@@ -152,7 +152,7 @@ public interface Node extends Entity
      * @return all relationships with the given direction that are attached to
      *         this node
      */
-    Iterable<Relationship> getRelationships( Direction dir );
+    ResourceIterable<Relationship> getRelationships( Direction dir );
 
     /**
      * Returns <code>true</code> if there are any relationships in the given

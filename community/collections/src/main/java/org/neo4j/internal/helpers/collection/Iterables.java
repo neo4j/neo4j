@@ -55,9 +55,9 @@ public final class Iterables
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> Iterable<T> emptyResourceIterable()
+    public static <T> ResourceIterable<T> emptyResourceIterable()
     {
-        return (Iterable<T>) EmptyResourceIterable.EMPTY_RESOURCE_ITERABLE;
+        return (ResourceIterable<T>) EmptyResourceIterable.EMPTY_RESOURCE_ITERABLE;
     }
 
     public static <T, C extends Collection<T>> C addAll( C collection, Iterable<? extends T> iterable )

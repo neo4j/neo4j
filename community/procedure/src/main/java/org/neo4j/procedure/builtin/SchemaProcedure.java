@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -378,7 +378,7 @@ public class SchemaProcedure
         }
 
         @Override
-        public Iterable<Relationship> getRelationships()
+        public ResourceIterable<Relationship> getRelationships()
         {
             return null;
         }
@@ -390,24 +390,24 @@ public class SchemaProcedure
         }
 
         @Override
-        public Iterable<Relationship> getRelationships( RelationshipType... types )
+        public ResourceIterable<Relationship> getRelationships( RelationshipType... types )
         {
             return null;
         }
 
         @Override
-        public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
+        public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
         {
             return null;
         }
 
-        public Iterable<Relationship> getRelationships( RelationshipType type, Direction direction )
+        public ResourceIterable<Relationship> getRelationships( RelationshipType type, Direction direction )
         {
             return null;
         }
 
         @Override
-        public Iterable<Relationship> getRelationships( Direction direction )
+        public ResourceIterable<Relationship> getRelationships( Direction direction )
         {
             return null;
         }

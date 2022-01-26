@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
+import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.memory.MemoryTracker
 
 import java.util.Collections
@@ -46,7 +47,7 @@ class ShortestPathPipeTest extends CypherFunSuite {
     val shortestPath = ShortestPath(pathName = "p", left = SingleNode("start"), right = SingleNode("end"), relTypes = Seq.empty,
       dir = SemanticDirection.OUTGOING, allowZeroLength = true, maxDepth = None, single = true, relIterator = None)
     val n1 = mock[Node]
-    when(n1.getRelationships).thenReturn(Collections.emptyList[Relationship]())
+    when(n1.getRelationships).thenReturn(Iterables.emptyResourceIterable[Relationship]())
     val input = new FakePipe(Seq.fill(10)(Map("start" -> n1, "end" -> n1)))
     val pipe = ShortestPathPipe(input, ShortestPathExpression(shortestPath))()
     val context = mock[QueryContext](Mockito.RETURNS_DEEP_STUBS)

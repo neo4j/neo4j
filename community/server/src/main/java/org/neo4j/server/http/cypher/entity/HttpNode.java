@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 
 public class HttpNode implements Node
 {
@@ -118,7 +119,7 @@ public class HttpNode implements Node
     }
 
     @Override
-    public Iterable<Relationship> getRelationships()
+    public ResourceIterable<Relationship> getRelationships()
     {
         return null;
     }
@@ -130,13 +131,13 @@ public class HttpNode implements Node
     }
 
     @Override
-    public Iterable<Relationship> getRelationships( RelationshipType... types )
+    public ResourceIterable<Relationship> getRelationships( RelationshipType... types )
     {
         return null;
     }
 
     @Override
-    public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
+    public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
     {
         return null;
     }
@@ -154,7 +155,7 @@ public class HttpNode implements Node
     }
 
     @Override
-    public Iterable<Relationship> getRelationships( Direction dir )
+    public ResourceIterable<Relationship> getRelationships( Direction dir )
     {
         return null;
     }
