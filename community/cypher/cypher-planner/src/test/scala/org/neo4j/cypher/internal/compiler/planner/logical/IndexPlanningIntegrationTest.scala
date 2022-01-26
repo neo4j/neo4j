@@ -135,9 +135,10 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     }
   }
 
-  test("should not plan range index if feature flag is not set") {
+  test("should not plan range index if feature flag is disabled") {
     val cfg =
       plannerBaseConfigForIndexOnLabelPropTests()
+        .enablePlanningRangeIndexes(false)
         .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
         .build()
 

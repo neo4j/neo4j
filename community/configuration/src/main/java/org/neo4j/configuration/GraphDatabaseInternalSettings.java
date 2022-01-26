@@ -760,7 +760,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "Feature flag to enable/disable planning use of range indexes." )
     public static final Setting<Boolean> planning_range_indexes_enabled =
-            newBuilder( "unsupported.cypher.planning_range_indexes_enabled", BOOL, false ).build();
+            newBuilder( "unsupported.cypher.planning_range_indexes_enabled", BOOL, true ).build();
 
     @Internal
     @Description( "Feature flag to enable/disable planning use of point indexes." )
