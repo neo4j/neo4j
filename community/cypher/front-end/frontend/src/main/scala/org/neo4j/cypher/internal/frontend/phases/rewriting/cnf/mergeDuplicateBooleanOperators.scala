@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
-case object mergeDuplicateBooleanOperators extends ASTRewriterFactory with CnfPhase {
-  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable ++ Set(!AndRewrittenToAnds, NoXorOperators)
+case class mergeDuplicateBooleanOperators(additionalPreConditions: Set[StepSequencer.Condition] = Set.empty) extends ASTRewriterFactory with CnfPhase {
+  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable ++ Set(!AndRewrittenToAnds) ++ additionalPreConditions
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoDuplicateNeighbouringBooleanOperands)
 
@@ -42,13 +42,13 @@ case object mergeDuplicateBooleanOperators extends ASTRewriterFactory with CnfPh
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = mergeDuplicateBooleanOperators(semanticState)
+                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = mergeDuplicateBooleanOperatorsRewriter(semanticState)
 
   override def getRewriter(from: BaseState,
-                           context: BaseContext): Rewriter = this (from.semantics())
+                           context: BaseContext): Rewriter = mergeDuplicateBooleanOperatorsRewriter(from.semantics())
 }
 
-case class mergeDuplicateBooleanOperators(semanticState: SemanticState) extends Rewriter {
+case class mergeDuplicateBooleanOperatorsRewriter(semanticState: SemanticState) extends Rewriter {
 
   private def instance(semanticState: SemanticState) = fixedPoint(topDown(Rewriter.lift {
     case p@And(lhs, rhs) if (lhs == rhs) => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.mergeDuplicateBooleanOperators
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.mergeDuplicateBooleanOperatorsRewriter
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -93,7 +93,7 @@ class MergeBooleanOperatorsTest extends CypherFunSuite {
       Equals(ExplicitParameter("n", CTAny)(position), AutoExtractedParameter("AUTOINT0", CTInteger, SignedDecimalIntegerLiteral("2")(position))(position))(position),
       Equals(ExplicitParameter("n", CTAny)(position), AutoExtractedParameter("AUTOINT1", CTInteger, SignedDecimalIntegerLiteral("3")(position))(position))(position)
     ))(position)
-    val rewriter = mergeDuplicateBooleanOperators(SemanticState.clean)
+    val rewriter = mergeDuplicateBooleanOperatorsRewriter(SemanticState.clean)
     val result = ast.rewrite(rewriter)
     ast should equal(result)
   }
@@ -103,7 +103,7 @@ class MergeBooleanOperatorsTest extends CypherFunSuite {
   private def assertRewrittenMatches(originalQuery: String, matcher: PartialFunction[Any, Unit]): Unit = {
     val original = JavaCCParser.parse("RETURN " +  originalQuery, exceptionFactory, new AnonymousVariableNameGenerator())
     val checkResult = original.semanticCheck(SemanticState.clean)
-    val rewriter = mergeDuplicateBooleanOperators(checkResult.state)
+    val rewriter = mergeDuplicateBooleanOperatorsRewriter(checkResult.state)
     val result = original.rewrite(rewriter)
     val maybeReturnExp = result.treeFind ({
       case UnaliasedReturnItem(expression, _) => {
