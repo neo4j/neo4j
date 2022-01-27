@@ -19,6 +19,8 @@
  */
 package org.neo4j.configuration;
 
+import inet.ipaddr.AddressStringException;
+import inet.ipaddr.IPAddressString;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
@@ -108,6 +110,36 @@ public final class SettingValueParsers
         public Class<SecureString> getType()
         {
             return SecureString.class;
+        }
+    };
+
+    public static final SettingValueParser<IPAddressString> CIDR_IP = new SettingValueParser<>()
+    {
+        @Override
+        public IPAddressString parse( String value )
+        {
+            IPAddressString ipAddress = new IPAddressString( value.trim() );
+            try
+            {
+                ipAddress.validate();
+            }
+            catch ( AddressStringException e )
+            {
+                throw new IllegalArgumentException( format( "'%s' is not a valid CIDR ip", value ), e );
+            }
+            return ipAddress;
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return "an ip with subnet in CDIR format. e.g. 127.168.0.1/8";
+        }
+
+        @Override
+        public Class<IPAddressString> getType()
+        {
+            return IPAddressString.class;
         }
     };
 

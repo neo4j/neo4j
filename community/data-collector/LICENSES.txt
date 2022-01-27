@@ -22,6 +22,7 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
+  IPAddress
   Java Concurrency Tools Core Library
   Java Native Access
   Jettison

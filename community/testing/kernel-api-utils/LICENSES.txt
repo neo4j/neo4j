@@ -10,6 +10,7 @@ Apache Software License, Version 2.0
   Apache Log4j Core
   Byte Buddy (without dependencies)
   Byte Buddy agent
+  IPAddress
   Java Agent for Memory Measurements
   Java Native Access
   Jettison

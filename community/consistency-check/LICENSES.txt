@@ -10,6 +10,7 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Apache Log4j API
   Apache Log4j Core
+  IPAddress
   Java Agent for Memory Measurements
   Java Concurrency Tools Core Library
   Java Native Access
