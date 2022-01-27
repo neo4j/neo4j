@@ -763,162 +763,20 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, contextFactory, memoryTracker );
                   var schemaCursors = schemaStorageCreator.getSchemaStorageTokenCursors( srcCursors ) )
             {
-                migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, schemaCursors );
+                migrateSchemaRules( srcAccess, dstAccess, schemaCursors );
             }
 
             dstStore.flush( cursorContext );
         }
     }
 
-    static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage srcAccess, SchemaRuleMigrationAccess dstAccess,
+    static void migrateSchemaRules( SchemaStorage srcAccess, SchemaRuleMigrationAccess dstAccess,
             StoreCursors storeCursors ) throws KernelException
     {
-        LinkedHashMap<Long,SchemaRule> rules = new LinkedHashMap<>();
-
-        schemaGenerateNames( srcAccess.getAll( storeCursors ), srcTokenHolders, rules );
-
-        // Once all rules have been processed, write them out.
-        for ( SchemaRule rule : rules.values() )
+        for ( SchemaRule rule : srcAccess.getAll( storeCursors ) )
         {
             dstAccess.writeSchemaRule( rule );
         }
-    }
-
-    public static void schemaGenerateNames( Iterable<SchemaRule> srcRules, TokenHolders srcTokenHolders, Map<Long,SchemaRule> rules ) throws KernelException
-    {
-        SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
-        List<SchemaRule> namedRules = new ArrayList<>();
-        List<SchemaRule> unnamedRules = new ArrayList<>();
-        srcRules.forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
-        // Make sure that we process explicitly named schemas first.
-        namedRules.forEach( r -> rules.put( r.getId(), r ) );
-        unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
-
-        for ( Map.Entry<Long,SchemaRule> entry : rules.entrySet() )
-        {
-            SchemaRule rule = entry.getValue();
-
-            if ( rule instanceof IndexDescriptor )
-            {
-                IndexDescriptor index = (IndexDescriptor) rule;
-                OptionalLong owningConstraintId = index.getOwningConstraintId();
-                if ( owningConstraintId.isPresent() && rules.containsKey( owningConstraintId.getAsLong() ) )
-                {
-                    // Indexes that are owned by constraints needs to be named after their constraints.
-                    ConstraintDescriptor constraint = (ConstraintDescriptor) rules.get( owningConstraintId.getAsLong() );
-                    constraint = nameGiver.ensureHasUniqueName( constraint );
-                    rules.put( constraint.getId(), constraint );
-                    index = index.withName( constraint.getName() );
-                }
-                else
-                {
-                    index = nameGiver.ensureHasUniqueName( index );
-                }
-                entry.setValue( index );
-            }
-            else
-            {
-                ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
-                constraint = nameGiver.ensureHasUniqueName( constraint );
-                entry.setValue( constraint );
-                if ( constraint.isIndexBackedConstraint() )
-                {
-                    IndexBackedConstraintDescriptor ibc = constraint.asIndexBackedConstraint();
-                    if ( ibc.hasOwnedIndexId() )
-                    {
-                        IndexDescriptor index = (IndexDescriptor) rules.get( ibc.ownedIndexId() );
-                        rules.put( index.getId(), index.withName( constraint.getName() ) );
-                    }
-                }
-            }
-        }
-    }
-
-    private static boolean hasName( SchemaRule rule )
-    {
-        String name = rule.getName();
-        return name != null && !name.startsWith( "index_" ) && !name.startsWith( "constraint_" );
-    }
-
-    private static final class SchemaNameGiver
-    {
-        private final Map<String, SchemaRule> takenNames = new HashMap<>();
-        private final TokenHolders tokens;
-
-        private SchemaNameGiver( TokenHolders tokens )
-        {
-            this.tokens = tokens;
-        }
-
-        @SuppressWarnings( "unchecked" )
-        private <T extends SchemaRule> T ensureHasUniqueName( T rule ) throws KernelException
-        {
-            String name = rule.getName();
-            if ( name != null && takenNames.get( name ) == rule )
-            {
-                return rule;
-            }
-            if ( !hasName( rule ) )
-            {
-                String[] entityTokenNames = getEntityTokenNames( tokens, rule );
-                String[] propertyTokenNames = getPropertyTokenNames( tokens, rule );
-                name = SchemaNameUtil.generateName( rule, entityTokenNames, propertyTokenNames );
-            }
-            int count = 0;
-            String originalName = name;
-            while ( takenNames.containsKey( name ) )
-            {
-                count++;
-                name = originalName + "_" + count;
-            }
-            rule = (T) rule.withName( name );
-            takenNames.put( name, rule );
-            return rule;
-        }
-    }
-
-    private static String[] getEntityTokenNames( TokenHolders tokenHolders, SchemaRule rule ) throws KernelException
-    {
-        SchemaDescriptor schema = rule.schema();
-        int[] entityTokenIds = schema.getEntityTokenIds();
-        String[] entityTokenNames = new String[entityTokenIds.length];
-        TokenHolder tokenHolder = schema.entityType() == EntityType.NODE ? tokenHolders.labelTokens() : tokenHolders.relationshipTypeTokens();
-        for ( int i = 0; i < entityTokenIds.length; i++ )
-        {
-            try
-            {
-                entityTokenNames[i] = tokenHolder.getTokenById( entityTokenIds[i] ).name();
-            }
-            catch ( TokenNotFoundException e )
-            {
-                if ( schema.entityType() == EntityType.NODE )
-                {
-                    throw new LabelNotFoundKernelException( entityTokenIds[i], e );
-                }
-                throw new RelationshipTypeIdNotFoundKernelException( entityTokenIds[i], e );
-            }
-        }
-        return entityTokenNames;
-    }
-
-    private static String[] getPropertyTokenNames( TokenHolders tokenHolders, SchemaRule rule ) throws KernelException
-    {
-        SchemaDescriptor schema = rule.schema();
-        int[] propertyIds = schema.getPropertyIds();
-        String[] propertyNames = new String[propertyIds.length];
-        TokenHolder tokenHolder = tokenHolders.propertyKeyTokens();
-        for ( int i = 0; i < propertyIds.length; i++ )
-        {
-            try
-            {
-                propertyNames[i] = tokenHolder.getTokenById( propertyIds[i] ).name();
-            }
-            catch ( TokenNotFoundException e )
-            {
-                throw new PropertyKeyIdNotFoundKernelException( propertyIds[i], e );
-            }
-        }
-        return propertyNames;
     }
 
     @Override
