@@ -54,7 +54,7 @@ public class AlignedRecordFormatIT
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( GraphDatabaseInternalSettings.storage_engine, RecordStorageEngineFactory.NAME );
-        builder.setConfig( GraphDatabaseSettings.record_format, PageAligned.LATEST_NAME );
+        builder.setConfig( GraphDatabaseSettings.record_format_created_db, GraphDatabaseSettings.DatabaseRecordFormat.aligned );
     }
 
     @Test

@@ -475,7 +475,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 BatchImporter importer = batchImporterFactory.instantiate(
                         migrationDirectoryStructure, fileSystem, pageCacheTracer, importConfig, logService,
                         migrationBatchImporterMonitor( legacyStore, progressReporter,
-                                importConfig ), additionalInitialIds, config, newFormat, Monitor.NO_MONITOR, jobScheduler,
+                                importConfig ), additionalInitialIds, config, Monitor.NO_MONITOR, jobScheduler,
                         Collector.STRICT, LogFilesInitializer.NULL, indexImporterFactory, memoryTracker, contextFactory );
                 InputIterable nodes =
                         () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, memoryTracker, storeCursors, contextFactory );

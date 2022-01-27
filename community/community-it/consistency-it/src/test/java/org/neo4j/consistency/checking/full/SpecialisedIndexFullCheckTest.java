@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -281,7 +280,7 @@ class SpecialisedIndexFullCheckTest
 
         private GraphStoreFixture createFixture()
         {
-            return new GraphStoreFixture( StringUtils.EMPTY, testDirectory )
+            return new GraphStoreFixture( testDirectory )
             {
                 @Override
                 protected void generateInitialData( GraphDatabaseService db )

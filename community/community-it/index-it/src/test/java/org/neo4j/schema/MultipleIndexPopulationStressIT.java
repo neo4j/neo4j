@@ -69,10 +69,7 @@ import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.RandomSupport;
@@ -396,7 +393,6 @@ class MultipleIndexPopulationStressIT
     private void createRandomData( long nodeCount, long relCount ) throws Exception
     {
         Config config = Config.defaults( neo4j_home, directory.homePath() );
-        RecordFormats recordFormats = RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
         try ( RandomDataInput input = new RandomDataInput( nodeCount, relCount );
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
@@ -404,7 +400,7 @@ class MultipleIndexPopulationStressIT
             IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl( config );
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemAbstraction, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
-                    ExecutionMonitor.INVISIBLE, EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    ExecutionMonitor.INVISIBLE, EMPTY, config, NO_MONITOR, jobScheduler, Collector.EMPTY,
                     TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE,
                     new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) );
             importer.doImport( input );

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format;
 
 import org.neo4j.annotations.service.Service;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -58,7 +59,7 @@ public interface RecordFormats
 
     /**
      * Generation of this format, format family local int value which should be incrementing along with
-     * releases, e.g. store version, e.g. official versions of the product. Use to determine generation of particular
+     * releases, e.g. store version, e.g. official versions of the product. Used to determine generation of particular
      * format and to be able to find newest of among them.
      * When implementing new format generation can be assigned to any positive integer, but please take into account
      * future version generations.
@@ -138,6 +139,10 @@ public interface RecordFormats
         return new RecordFormats[0];
     }
 
+    /**
+     * Can be used while developing a new format make sure it has a higher generation than the real formats and that
+     * {@link GraphDatabaseInternalSettings#include_versions_under_development} is set.
+     */
     default boolean formatUnderDevelopment()
     {
         return false;

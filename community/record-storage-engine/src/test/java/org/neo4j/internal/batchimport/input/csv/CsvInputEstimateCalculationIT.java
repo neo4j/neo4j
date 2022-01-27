@@ -63,7 +63,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyValueRecordSizeCalculator;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
@@ -155,9 +154,8 @@ class CsvInputEstimateCalculationIT
     {
         // given a couple of input files of various layouts
         Input input = generateData();
-        RecordFormats format = defaultFormat();
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
-                format.property().getRecordSize( NO_STORE_HEADER ),
+                defaultFormat().property().getRecordSize( NO_STORE_HEADER ),
                 GraphDatabaseInternalSettings.string_block_size.defaultValue(), 0,
                 GraphDatabaseInternalSettings.array_block_size.defaultValue(), 0 ) );
 
@@ -168,7 +166,7 @@ class CsvInputEstimateCalculationIT
         {
             PageCacheTracer cacheTracer = PageCacheTracer.NULL;
             new ParallelBatchImporter( databaseLayout, fs, cacheTracer, PBI_CONFIG, NullLogService.getInstance(),
-                    INVISIBLE, EMPTY, config, format, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    INVISIBLE, EMPTY, config, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE,
                     new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) ).doImport( input );
 

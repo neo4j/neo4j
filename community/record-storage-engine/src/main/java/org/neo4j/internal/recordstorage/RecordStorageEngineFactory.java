@@ -140,7 +140,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TO
 import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 
 @ServiceProvider
@@ -248,7 +248,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory )
     {
         RecordDatabaseLayout databaseLayout = convert( layout );
-        RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory );
+        RecordFormats recordFormats = selectForStoreOrConfigForNewDbs( config, databaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory );
         var idGeneratorFactory = readOnlyChecker.isReadOnly() ? new ScanOnOpenReadOnlyIdGeneratorFactory()
                                                               : new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, NullLogProvider.getInstance(), contextFactory,
@@ -474,13 +474,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             Monitor monitor, JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
             IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
     {
-        RecordFormats recordFormats = RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() );
         ExecutionMonitor executionMonitor = progressOutput != null
                 ? verboseProgressOutput ? new SpectrumExecutionMonitor( progressOutput ) : ExecutionMonitors.defaultVisible( progressOutput )
                 : ExecutionMonitor.INVISIBLE;
         return BatchImporterFactory.withHighestPriority().instantiate( databaseLayout, fileSystem, pageCacheTracer, config, logService,
-                executionMonitor, additionalInitialIds, dbConfig,
-                recordFormats, monitor, jobScheduler, badCollector, logFilesInitializer,
+                executionMonitor, additionalInitialIds, dbConfig, monitor, jobScheduler, badCollector, logFilesInitializer,
                 indexImporterFactory, memoryTracker, contextFactory );
     }
 

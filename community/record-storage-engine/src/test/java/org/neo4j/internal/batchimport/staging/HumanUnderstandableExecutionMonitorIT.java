@@ -74,7 +74,6 @@ import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneNo
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 @Neo4jLayoutExtension
 @ExtendWith( {RandomExtension.class, DefaultFileSystemExtension.class, TestDirectorySupportExtension.class} )
@@ -114,7 +113,7 @@ class HumanUnderstandableExecutionMonitorIT
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             new ParallelBatchImporter( databaseLayout, fileSystem, NULL, configuration, NullLogService.getInstance(), monitor,
-                    EMPTY, defaults(), defaultFormat(), Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    EMPTY, defaults(), Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE,
                     new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) ).doImport( input );
 

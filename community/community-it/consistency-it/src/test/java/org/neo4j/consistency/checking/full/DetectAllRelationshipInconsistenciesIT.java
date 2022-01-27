@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -148,14 +147,9 @@ public class DetectAllRelationshipInconsistenciesIT
         return (GraphDatabaseAPI) database;
     }
 
-    protected String getRecordFormatName()
-    {
-        return StringUtils.EMPTY;
-    }
-
     protected Map<Setting<?>,Object> getConfig()
     {
-        return Map.of( GraphDatabaseSettings.record_format, getRecordFormatName() );
+        return Map.of();
     }
 
     private static class Sabotage

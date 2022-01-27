@@ -65,6 +65,8 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 public class RecordFormatSelector
 {
     private static final String STORE_SELECTION_TAG = "storeSelection";
+
+    /** Default format here should be kept same as {@link GraphDatabaseSettings#record_format_created_db#defaultFormat()}. */
     private static final RecordFormats DEFAULT_FORMAT = PageAlignedV4_3.RECORD_FORMATS;
 
     private static final List<RecordFormats> KNOWN_FORMATS = asList(
@@ -198,47 +200,28 @@ public class RecordFormatSelector
     }
 
     /**
-     * Select record format for the given store (if exists) or from the given configuration. If there is no store and
-     * record format is not configured than {@link #DEFAULT_FORMAT} is selected.
+     * Select record format for the given store (if exists) or from the given configuration.
+     * For system db the default is used irrespective of the configuration value.
      *
      * @param config configuration parameters
      * @param databaseLayout database directory structure
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
      * @param contextFactory underlying page cache operations context factory.
-     * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
-     * @throws IllegalArgumentException when configured format is different from the format present in the store
+     * @return record format from the store (if it can be read) or configured record format or default format
      */
-    public static RecordFormats selectForStoreOrConfig( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-            LogProvider logProvider, CursorContextFactory contextFactory )
+    public static RecordFormats selectForStoreOrConfigForNewDbs( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs,
+            PageCache pageCache, LogProvider logProvider, CursorContextFactory contextFactory )
     {
-        RecordFormats configuredFormat = getConfiguredRecordFormat( config, databaseLayout );
-        boolean formatConfigured = configuredFormat != null;
-
         RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider, contextFactory );
-        boolean storeWithFormatExists = currentFormat != null;
-
-        if ( formatConfigured && storeWithFormatExists )
+        if ( currentFormat != null )
         {
-            if ( formatSameFamilyAndGeneration( currentFormat, configuredFormat ) )
-            {
-                info( logProvider, format( "Configured format matches format in the store %s. Selected: %s",
-                        databaseLayout.databaseDirectory(), currentFormat ) );
-                return currentFormat;
-            }
-            throw new IllegalArgumentException( format(
-                    "Configured format '%s' is different from the actual format in the store %s, which was '%s'",
-                    configuredFormat, databaseLayout.databaseDirectory(), currentFormat ) );
-        }
-
-        if ( !formatConfigured && storeWithFormatExists )
-        {
-            info( logProvider, format( "Format not configured for store %s. Selected format from the store files: %s",
-                    databaseLayout.databaseDirectory(), currentFormat ) );
+            info( logProvider, format( "Selected format from the store files: %s", currentFormat ) );
             return currentFormat;
         }
 
-        if ( formatConfigured )
+        RecordFormats configuredFormat = getConfiguredRecordFormatNewDb( config, databaseLayout );
+        if ( configuredFormat != null )
         {
             info( logProvider, format( "Selected configured format for store %s: %s", databaseLayout.databaseDirectory(), configuredFormat ) );
             return configuredFormat;
@@ -247,16 +230,23 @@ public class RecordFormatSelector
         return defaultFormat( config.get( GraphDatabaseInternalSettings.include_versions_under_development ) );
     }
 
-    private static RecordFormats getConfiguredRecordFormat( Config config, DatabaseLayout databaseLayout )
+    private static RecordFormats getConfiguredRecordFormatNewDb( Config config, DatabaseLayout databaseLayout )
     {
         if ( SYSTEM_DATABASE_NAME.equals( databaseLayout.getDatabaseName() ) )
         {
-            // TODO: System database does not support multiple formats, remove this when it does!
+            // System database record format is not configurable by users.
             return null;
         }
 
+        String specificFormat = config.get( GraphDatabaseInternalSettings.select_specific_record_format );
+        if ( StringUtils.isNotEmpty( specificFormat ) )
+        {
+            return selectSpecificFormat( specificFormat, config.get( GraphDatabaseInternalSettings.include_versions_under_development ) );
+        }
+
+        RecordFormats formats = loadRecordFormat( config.get( GraphDatabaseSettings.record_format_created_db ).name(), false );
+
         boolean includeDevFormats = config.get( GraphDatabaseInternalSettings.include_versions_under_development );
-        RecordFormats formats = loadRecordFormat( configuredRecordFormat( config ), includeDevFormats );
         if ( includeDevFormats && formats != null )
         {
             Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily( formats, true );
@@ -298,6 +288,12 @@ public class RecordFormatSelector
     public static RecordFormats selectNewestFormat( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             LogProvider logProvider, CursorContextFactory contextFactory )
     {
+        String specificFormat = config.get( GraphDatabaseInternalSettings.select_specific_record_format );
+        if ( StringUtils.isNotEmpty( specificFormat ) )
+        {
+            return selectSpecificFormat( specificFormat, config.get( GraphDatabaseInternalSettings.include_versions_under_development ) );
+        }
+
         boolean formatConfigured = StringUtils.isNotEmpty( configuredRecordFormat( config ) );
         if ( formatConfigured )
         {

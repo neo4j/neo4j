@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.DataAfterQuoteException;
 import org.neo4j.csv.reader.Readables;
@@ -45,7 +46,6 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -88,7 +88,8 @@ class ImportPanicIT
             BatchImporter importer = new ParallelBatchImporter(
                     databaseLayout, testDirectory.getFileSystem(), PageCacheTracer.NULL,
                     Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitor.INVISIBLE, AdditionalInitialIds.EMPTY,
-                    Config.defaults(), StandardV4_3.RECORD_FORMATS, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    Config.defaults( GraphDatabaseSettings.record_format_created_db, GraphDatabaseSettings.DatabaseRecordFormat.standard ),
+                    Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE,
                     new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
             Iterable<DataFactory> nodeData =

@@ -41,7 +41,7 @@ import org.neo4j.logging.LogProvider;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.DIRECT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
 
 /**
  * Factory for Store implementations. Can also be used to create empty stores.
@@ -63,7 +63,7 @@ public class StoreFactory
             FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, CursorContextFactory contextFactory, DatabaseReadOnlyChecker readOnlyChecker )
     {
         this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                selectForStoreOrConfig( config, RecordDatabaseLayout.convert( directoryStructure ), fileSystemAbstraction, pageCache, logProvider,
+                selectForStoreOrConfigForNewDbs( config, RecordDatabaseLayout.convert( directoryStructure ), fileSystemAbstraction, pageCache, logProvider,
                         contextFactory ), logProvider, contextFactory, readOnlyChecker, immutable.empty() );
     }
 

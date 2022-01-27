@@ -235,7 +235,7 @@ public class BatchInserterImpl implements BatchInserter
             this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), true, databaseLayout.getDatabaseName() );
 
             LogProvider internalLogProvider = logService.getInternalLogProvider();
-            RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
+            RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfigForNewDbs( config, this.databaseLayout, fileSystem,
                 pageCache, internalLogProvider, contextFactory );
             readOnlyChecker = writable();
             StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,

@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -112,7 +111,6 @@ import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeo
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
@@ -145,8 +143,7 @@ class BatchingNeoStoresTest
         {
             try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
             {
-                RecordFormats recordFormats = selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
-                try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, recordFormats, Configuration.DEFAULT,
+                try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, Configuration.DEFAULT,
                         NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL,
                         CONTEXT_FACTORY,
                         INSTANCE ) )
@@ -169,11 +166,10 @@ class BatchingNeoStoresTest
                 .build();
 
         // WHEN
-        RecordFormats recordFormats = defaultFormat();
-        int headerSize = recordFormats.dynamic().getRecordHeaderSize();
+        int headerSize = defaultFormat().dynamic().getRecordHeaderSize();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
               BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout,
-              recordFormats, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler, PageCacheTracer.NULL,
+              Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler, PageCacheTracer.NULL,
                       CONTEXT_FACTORY,
                       INSTANCE ) )
         {
@@ -195,7 +191,7 @@ class BatchingNeoStoresTest
             testDirectory.cleanup();
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
                     PageCacheTracer.NULL, CONTEXT_FACTORY,
-                    databaseLayout, defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    databaseLayout, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults(), INSTANCE ) )
             {
                 stores.createNew();
@@ -208,7 +204,7 @@ class BatchingNeoStoresTest
             // when opening and pruning all except the one we test
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
                     PageCacheTracer.NULL, CONTEXT_FACTORY,
-                    databaseLayout, defaultFormat(), Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    databaseLayout, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults(), INSTANCE ) )
             {
                 stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
@@ -234,11 +230,12 @@ class BatchingNeoStoresTest
     void shouldDecideToAllocateDoubleRelationshipRecordUnitsOnLargeAmountOfRelationshipsOnSupportedFormat() throws Exception
     {
         // given
-        RecordFormats formats = new ForcedSecondaryUnitRecordFormats( defaultFormat() );
+        Config config = Config.defaults( GraphDatabaseInternalSettings.select_specific_record_format,
+                ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name() );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY,
-                databaseLayout, formats, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
+                databaseLayout, Configuration.DEFAULT,
+                NullLogService.getInstance(), EMPTY, config, INSTANCE ) )
         {
             stores.createNew();
             Input.Estimates estimates = Input.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
@@ -255,11 +252,12 @@ class BatchingNeoStoresTest
     void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLowAmountOfRelationshipsOnSupportedFormat() throws Exception
     {
         // given
-        RecordFormats formats = new ForcedSecondaryUnitRecordFormats( defaultFormat() );
+        Config config = Config.defaults( GraphDatabaseInternalSettings.select_specific_record_format,
+                ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name() );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY,
-                databaseLayout, formats, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
+                databaseLayout, Configuration.DEFAULT,
+                NullLogService.getInstance(), EMPTY, config, INSTANCE ) )
         {
             stores.createNew();
             Input.Estimates estimates = Input.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD >> 1, 0, 0, 0, 0, 0 );
@@ -276,10 +274,9 @@ class BatchingNeoStoresTest
     void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsOnLargeAmountOfRelationshipsOnUnsupportedFormat() throws Exception
     {
         // given
-        RecordFormats formats = defaultFormat();
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY,
-                databaseLayout, formats, Configuration.DEFAULT,
+                databaseLayout, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
@@ -307,7 +304,7 @@ class BatchingNeoStoresTest
 
         // when
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY, databaseLayout, defaultFormat(), Configuration.DEFAULT,
+                pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY, databaseLayout, Configuration.DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();

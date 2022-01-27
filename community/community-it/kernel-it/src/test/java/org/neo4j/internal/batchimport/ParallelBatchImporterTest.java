@@ -74,7 +74,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -104,7 +103,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
@@ -187,9 +185,10 @@ public class ParallelBatchImporterTest
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         // This will have statistically half the nodes be considered dense
         Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_PER_NODE * 2 );
+        augmentConfig( dbConfig );
         IndexImporterFactoryImpl indexImporterFactory = new IndexImporterFactoryImpl( dbConfig );
         final BatchImporter inserter = new ParallelBatchImporter(
-                databaseLayout, fs, pageCacheTracer, config, NullLogService.getInstance(), monitor, EMPTY, dbConfig, getFormat(),
+                databaseLayout, fs, pageCacheTracer, config, NullLogService.getInstance(), monitor, EMPTY, dbConfig,
                 Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE,
                 contextFactory );
         LongAdder propertyCount = new LongAdder();
@@ -258,9 +257,8 @@ public class ParallelBatchImporterTest
             result.isSuccessful(), "Database contains inconsistencies, there should be a report in " + databaseLayout.databaseDirectory() );
     }
 
-    protected RecordFormats getFormat()
+    protected void augmentConfig( Config config )
     {
-        return defaultFormat();
     }
 
     protected TestDatabaseManagementServiceBuilder getDBMSBuilder( DatabaseLayout layout )

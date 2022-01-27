@@ -54,7 +54,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -89,7 +89,7 @@ class StoreFactoryTest
     private StoreFactory storeFactory( Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fileSystem, pageCache, logProvider, contextFactory );
+        RecordFormats recordFormats = selectForStoreOrConfigForNewDbs( config, databaseLayout, fileSystem, pageCache, logProvider, contextFactory );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, contextFactory, writable(),
                 openOptions );
     }

@@ -31,7 +31,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -56,7 +55,6 @@ public class ParallelBatchImporter implements BatchImporter
     private final Configuration config;
     private final LogService logService;
     private final Config dbConfig;
-    private final RecordFormats recordFormats;
     private final ExecutionMonitor executionMonitor;
     private final AdditionalInitialIds additionalInitialIds;
     private final Monitor monitor;
@@ -69,7 +67,7 @@ public class ParallelBatchImporter implements BatchImporter
 
     public ParallelBatchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer, Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, Monitor monitor,
+            AdditionalInitialIds additionalInitialIds, Config dbConfig, Monitor monitor,
             JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
             IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
     {
@@ -79,7 +77,6 @@ public class ParallelBatchImporter implements BatchImporter
         this.config = config;
         this.logService = logService;
         this.dbConfig = dbConfig;
-        this.recordFormats = recordFormats;
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
         this.monitor = monitor;
@@ -94,10 +91,10 @@ public class ParallelBatchImporter implements BatchImporter
     @Override
     public void doImport( Input input ) throws IOException
     {
-        try ( BatchingNeoStores store = ImportLogic.instantiateNeoStores( fileSystem, databaseLayout, pageCacheTracer, recordFormats,
+        try ( BatchingNeoStores store = ImportLogic.instantiateNeoStores( fileSystem, databaseLayout, pageCacheTracer,
                       config, logService, additionalInitialIds, dbConfig, jobScheduler, memoryTracker, contextFactory );
               ImportLogic logic = new ImportLogic(
-                      databaseLayout, store, config, dbConfig, logService, executionMonitor, recordFormats, badCollector,
+                      databaseLayout, store, config, dbConfig, logService, executionMonitor, badCollector,
                       monitor, pageCacheTracer, contextFactory, indexImporterFactory, memoryTracker ) )
         {
             store.createNew();

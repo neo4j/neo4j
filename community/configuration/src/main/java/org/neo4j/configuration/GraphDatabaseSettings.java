@@ -163,7 +163,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> upgrade_processors = newBuilder( "dbms.upgrade_max_processors", INT, 0 ).addConstraint( min( 0 ) ).dynamic().build();
 
     @Description( "Database record format. Valid values are blank(no value, default), `standard`, `aligned`, or `high_limit`. " +
-            "Specifying a value will force new databases to that format and existing databases to migrate if `dbms.allow_upgrade=true` is specified. " +
+            "This setting does not affect newly created databases, use dbms.record_format_created_db for that. " +
+            "Specifying a value will force existing databases to migrate if `dbms.allow_upgrade=true` is specified. " +
             "The `aligned` format is essentially the `standard` format with some minimal padding at the end of pages such that a single " +
             "record will never cross a page boundary. The `high_limit` format is available for Enterprise Edition only. " +
             "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties. " +
@@ -173,6 +174,20 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "because the setting implies a one-way store format migration." )
     @DocumentedDefaultValue( "Blank (no value). New databases will use `aligned`. Existing databases will stay on their current format" )
     public static final Setting<String> record_format = newBuilder( "dbms.record_format", STRING, "" ).build();
+
+    @Description( "Database record format. This is the format that will be used for new databases. " +
+                  "The `aligned` format is essentially the `standard` format with some minimal padding at the end of pages such that a single " +
+                  "record will never cross a page boundary. The `high_limit` format is available for Enterprise Edition only. " +
+                  "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties." )
+    public static final Setting<DatabaseRecordFormat> record_format_created_db =
+            newBuilder( "dbms.record_format_created_db", ofEnum( DatabaseRecordFormat.class ), DatabaseRecordFormat.aligned ).dynamic().build();
+
+    public enum DatabaseRecordFormat
+    {
+        standard,
+        aligned,
+        high_limit
+    }
 
     @Description( "Whether to allow a system graph upgrade to happen automatically in single instance mode (dbms.mode=SINGLE). " +
                   "Default is true. In clustering environments no automatic upgrade will happen (dbms.mode=CORE or dbms.mode=READ_REPLICA). " +

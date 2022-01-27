@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,7 +78,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
-import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -102,7 +100,7 @@ public class ConsistencyCheckServiceIntegrationTest
     @BeforeEach
     void setUp()
     {
-        fixture = new GraphStoreFixture( getRecordFormatName(), testDirectory )
+        fixture = new GraphStoreFixture( testDirectory )
         {
             @Override
             protected void generateInitialData( GraphDatabaseService graphDb )
@@ -379,7 +377,6 @@ public class ConsistencyCheckServiceIntegrationTest
         Map<Setting<?>, Object> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
         defaults.put( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() );
-        defaults.put( record_format, getRecordFormatName() );
         return defaults;
     }
 
@@ -394,11 +391,6 @@ public class ConsistencyCheckServiceIntegrationTest
                 tx.create( new NodeRecord( next.node() ).initialize( false, -1, false, next.relationship(), 0 ) );
             }
         } );
-    }
-
-    protected String getRecordFormatName()
-    {
-        return StringUtils.EMPTY;
     }
 
     private ConsistencyCheckService consistencyCheckService()

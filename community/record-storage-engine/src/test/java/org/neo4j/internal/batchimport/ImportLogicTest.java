@@ -57,7 +57,6 @@ import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.logging.internal.NullLogService.getInstance;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -84,11 +83,11 @@ class ImportLogicTest
         IndexImporterFactory factory = mock( IndexImporterFactory.class );
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, CONTEXT_FACTORY,
-                databaseLayout, defaultFormat(), DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
+                databaseLayout, DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
             //noinspection EmptyTryBlock
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
+                    Collector.EMPTY, NO_MONITOR, NULL, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
             {
                 // nothing to run in this import
                 logic.success();
@@ -159,7 +158,7 @@ class ImportLogicTest
         IndexImporterFactory factory = mock( IndexImporterFactory.class );
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, CONTEXT_FACTORY,
-                databaseLayout, defaultFormat(), DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
+                databaseLayout, DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
             // when
             DataStatistics.RelationshipTypeCount[] relationshipTypeCounts = new DataStatistics.RelationshipTypeCount[]
@@ -169,7 +168,7 @@ class ImportLogicTest
                     };
             DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
+                    Collector.EMPTY, NO_MONITOR, NULL, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
             {
                 logic.putState( dataStatistics );
                 logic.success();

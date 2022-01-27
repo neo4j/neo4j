@@ -19,6 +19,12 @@ org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner::COST org.neo4j.conf
 org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner::DEFAULT org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner public static final
 org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner public static
 org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner::values() org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner[] public static
+org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat>
+org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat::aligned org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat public static final
+org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat::high_limit org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat public static final
+org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat::standard org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat public static final
+org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat public static
+org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat::values() org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat[] public static
 org.neo4j.configuration.GraphDatabaseSettings.DriverApi public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.DriverApi>
 org.neo4j.configuration.GraphDatabaseSettings.DriverApi::ASYNC org.neo4j.configuration.GraphDatabaseSettings.DriverApi public static final
 org.neo4j.configuration.GraphDatabaseSettings.DriverApi::RX org.neo4j.configuration.GraphDatabaseSettings.DriverApi public static final
@@ -171,6 +177,7 @@ org.neo4j.configuration.GraphDatabaseSettings::reconciler_maximum_parallelism or
 org.neo4j.configuration.GraphDatabaseSettings::reconciler_may_retry org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::reconciler_minimum_backoff org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::record_format org.neo4j.graphdb.config.Setting<java.lang.String> public static final
+org.neo4j.configuration.GraphDatabaseSettings::record_format_created_db org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_default_router org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.RoutingMode> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_driver_api org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.DriverApi> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_driver_connect_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final

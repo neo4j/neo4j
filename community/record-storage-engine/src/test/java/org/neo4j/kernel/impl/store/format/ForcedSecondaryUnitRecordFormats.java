@@ -39,6 +39,7 @@ import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static java.util.stream.Collectors.toSet;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.SECONDARY_RECORD_UNITS;
 
 /**
@@ -49,6 +50,8 @@ import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.SECONDA
  */
 public class ForcedSecondaryUnitRecordFormats implements RecordFormats
 {
+    public static final ForcedSecondaryUnitRecordFormats DEFAULT_RECORD_FORMATS = new ForcedSecondaryUnitRecordFormats( defaultFormat() );
+
     private final RecordFormats actual;
 
     public ForcedSecondaryUnitRecordFormats( RecordFormats actual )
@@ -71,7 +74,7 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     @Override
     public int generation()
     {
-        return actual.generation();
+        return NO_GENERATION;
     }
 
     private static <R extends AbstractBaseRecord> RecordFormat<R> withForcedSecondaryUnit( RecordFormat<R> format )
@@ -156,7 +159,7 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     @Override
     public FormatFamily getFormatFamily()
     {
-        return FormatFamily.standard;
+        return actual.getFormatFamily();
     }
 
     @Override

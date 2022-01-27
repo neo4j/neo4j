@@ -31,6 +31,7 @@ import java.util.BitSet;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -70,7 +70,6 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -91,8 +90,9 @@ class RelationshipGroupDefragmenterTest
     private static Stream<Arguments> parameters()
     {
         return Stream.of(
-            of( defaultFormat(), 1 ),
-            of( new ForcedSecondaryUnitRecordFormats( defaultFormat() ), 2 )
+                of( Config.defaults(), 1 ),
+                of( Config.defaults( GraphDatabaseInternalSettings.select_specific_record_format,
+                        ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS.name() ), 2 )
         );
     }
 
@@ -101,12 +101,12 @@ class RelationshipGroupDefragmenterTest
     private JobScheduler jobScheduler;
     private int units;
 
-    private void init( RecordFormats format, int units ) throws IOException
+    private void init( Config config, int units ) throws IOException
     {
         this.units = units;
         jobScheduler = new ThreadPoolJobScheduler();
-        stores = BatchingNeoStores.batchingNeoStores( testDirectory.getFileSystem(), databaseLayout, format, CONFIG, NullLogService.getInstance(),
-            AdditionalInitialIds.EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL, CONTEXT_FACTORY,
+        stores = BatchingNeoStores.batchingNeoStores( testDirectory.getFileSystem(), databaseLayout, CONFIG, NullLogService.getInstance(),
+            AdditionalInitialIds.EMPTY, config, jobScheduler, PageCacheTracer.NULL, CONTEXT_FACTORY,
                 INSTANCE );
         stores.createNew();
         storeCursors = new CachedStoreCursors( stores.getNeoStores(), NULL_CONTEXT );
@@ -121,7 +121,7 @@ class RelationshipGroupDefragmenterTest
     @Test
     void tracePageCacheAccessOnDefragmentation() throws IOException
     {
-        init( defaultFormat(), 1 );
+        init( Config.defaults(), 1 );
 
         int nodeCount = 10;
         int relationshipTypeCount = 5;
@@ -137,9 +137,9 @@ class RelationshipGroupDefragmenterTest
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void shouldDefragmentRelationshipGroupsWhenAllDense( RecordFormats format, int units ) throws IOException
+    void shouldDefragmentRelationshipGroupsWhenAllDense( Config config, int units ) throws IOException
     {
-        init( format, units );
+        init( config, units );
         // GIVEN some nodes which has their groups scattered
         int nodeCount = 100;
         int relationshipTypeCount = 50;
@@ -155,9 +155,9 @@ class RelationshipGroupDefragmenterTest
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void shouldDefragmentRelationshipGroupsWhenSomeDense( RecordFormats format, int units ) throws IOException
+    void shouldDefragmentRelationshipGroupsWhenSomeDense( Config config, int units ) throws IOException
     {
-        init( format, units );
+        init( config, units );
         // GIVEN some nodes which has their groups scattered
         int nodeCount = 100;
         int relationshipTypeCount = 50;

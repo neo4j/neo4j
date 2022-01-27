@@ -133,12 +133,11 @@ public class ImportLogic implements Closeable
      * @param config import-specific {@link Configuration}.
      * @param logService {@link LogService} to use.
      * @param executionMonitor {@link ExecutionMonitor} to follow progress as the import proceeds.
-     * @param recordFormats which {@link RecordFormats record format} to use for the created db.
      * @param badCollector {@link Collector} for bad entries.
      * @param monitor {@link Monitor} for some events.
      */
     public ImportLogic( DatabaseLayout databaseLayout, BatchingNeoStores neoStore, Configuration config, Config dbConfig, LogService logService,
-            ExecutionMonitor executionMonitor, RecordFormats recordFormats, Collector badCollector, Monitor monitor,
+            ExecutionMonitor executionMonitor, Collector badCollector, Monitor monitor,
             PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory, IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker )
     {
@@ -147,7 +146,7 @@ public class ImportLogic implements Closeable
         this.neoStore = neoStore;
         this.config = config;
         this.dbConfig = dbConfig;
-        this.recordFormats = recordFormats;
+        this.recordFormats = neoStore.recordFormats();
         this.badCollector = badCollector;
         this.monitor = monitor;
         this.log = logService.getInternalLogProvider().getLog( getClass() );
@@ -533,11 +532,11 @@ public class ImportLogic implements Closeable
     }
 
     public static BatchingNeoStores instantiateNeoStores( FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout,
-            PageCacheTracer cacheTracer, RecordFormats recordFormats, Configuration config,
+            PageCacheTracer cacheTracer, Configuration config,
             LogService logService, AdditionalInitialIds additionalInitialIds, Config dbConfig, JobScheduler scheduler, MemoryTracker memoryTracker,
             CursorContextFactory contextFactory )
     {
-        return BatchingNeoStores.batchingNeoStores( fileSystem, databaseLayout, recordFormats, config, logService,
+        return BatchingNeoStores.batchingNeoStores( fileSystem, databaseLayout, config, logService,
                 additionalInitialIds, dbConfig, scheduler, cacheTracer, contextFactory, memoryTracker );
     }
 

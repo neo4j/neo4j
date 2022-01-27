@@ -810,6 +810,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.include_dev_record_format_versions", BOOL, false ).build();
 
     @Internal
+    @Description( "Selects specifc record format for new dbs and upgrade. Overrides dbms.record_format_created_db and dbms.record_format. " +
+                  "To be used from tests that need to use a test format that can't normally be selected." )
+    public static final Setting<String> select_specific_record_format =
+            newBuilder( "unsupported.dbms.select_specfic_record_format", STRING, "" ).build();
+
+    @Internal
     @Description( "If set, the database will locate token index files in the old location and under the old name." +
             "This is just a temporary setting to be used when the relocation of these indexes is under development" )
     public static final Setting<Boolean> use_old_token_index_location =

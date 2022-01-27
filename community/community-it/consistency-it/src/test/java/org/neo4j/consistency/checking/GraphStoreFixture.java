@@ -31,7 +31,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.store.DirectStoreAccess;
@@ -103,10 +102,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private DirectStoreAccess directStoreAccess;
     private final long[] highIds = new long[StoreType.values().length];
 
-    /**
-     * Record format used to generate initial database.
-     */
-    private final String formatName;
     private PageCache pageCache;
     private final TestDirectory testDirectory;
 
@@ -121,9 +116,8 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private RelationshipGroupDegreesStore groupDegreesStore;
     private StoreCursors storeCursors;
 
-    protected GraphStoreFixture( String formatName, TestDirectory testDirectory )
+    protected GraphStoreFixture( TestDirectory testDirectory )
     {
-        this.formatName = formatName;
         this.testDirectory = testDirectory;
         startDatabaseAndExtractComponents();
         generateInitialData();
@@ -133,7 +127,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
     {
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( testDirectory.getFileSystem() )
-                .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.

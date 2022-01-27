@@ -68,7 +68,6 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -195,7 +194,7 @@ class TransactionRecordStateTest
 
     private void createStores( Config config )
     {
-        createStores( config, RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() ) );
+        createStores( config, defaultFormat() );
     }
 
     private void createStores( Config config, RecordFormats formats )

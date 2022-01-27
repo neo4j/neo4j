@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.junit.jupiter.api.AfterEach;
@@ -2851,7 +2850,7 @@ public class FullCheckIntegrationTest
 
     private GraphStoreFixture createFixture()
     {
-        return new GraphStoreFixture( getRecordFormatName(), testDirectory )
+        return new GraphStoreFixture( testDirectory )
         {
             @Override
             protected void generateInitialData( GraphDatabaseService db )
@@ -3002,7 +3001,6 @@ public class FullCheckIntegrationTest
     private Config config()
     {
         return Config.newBuilder()
-                .set( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .set( getSettings() )
                 .build();
     }
@@ -3046,11 +3044,6 @@ public class FullCheckIntegrationTest
     {
         record.setOwningNode( owner );
         return record;
-    }
-
-    protected String getRecordFormatName()
-    {
-        return StringUtils.EMPTY;
     }
 
     private int createEntityToken( EntityType entityType ) throws Exception
