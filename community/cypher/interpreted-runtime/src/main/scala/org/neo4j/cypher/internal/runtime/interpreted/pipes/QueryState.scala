@@ -63,6 +63,7 @@ class QueryState(val query: QueryContext,
 
   private var _pathValueBuilder: PathValueBuilder = _
   private var _rowFactory: CypherRowFactory = _
+  private var _closed = false
 
   def newRow(rowFactory: CypherRowFactory): CypherRow = {
     initialContext match {
@@ -160,11 +161,14 @@ class QueryState(val query: QueryContext,
   def kernelQueryContext: kernel.api.QueryContext = query.transactionalContext.kernelQueryContext
 
   override def close(): Unit = {
-    cursors.close()
-    cachedIn.cache.foreach {
-      case (f, g) => g.checker.close()
+    if (!_closed) {
+      cursors.close()
+      cachedIn.cache.foreach {
+        case (_, g) => g.checker.close()
+      }
+      query.close()
     }
-    query.close()
+    _closed = true
   }
 }
 
