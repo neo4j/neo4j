@@ -197,7 +197,7 @@ public class PropertyDeleter
         logProvider.getLog( InconsistentDataDeletion.class ).error( message.toString(), cause );
     }
 
-    private static void deletePropertyRecordIncludingValueRecords( PropertyRecord record )
+    static void deletePropertyRecordIncludingValueRecords( PropertyRecord record )
     {
         for ( PropertyBlock block : record )
         {

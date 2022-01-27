@@ -28,10 +28,12 @@ import org.neo4j.io.pagecache.context.CursorContext;
 class ReadOnlyHighIdGenerator implements IdGenerator
 {
     private final long highId;
+    private final IdType idType;
 
-    ReadOnlyHighIdGenerator( long highId )
+    ReadOnlyHighIdGenerator( long highId, IdType idType )
     {
         this.highId = highId;
+        this.idType = idType;
     }
 
     @Override
@@ -123,6 +125,12 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     public void clearCache( CursorContext cursorContext )
     {
         // no-op
+    }
+
+    @Override
+    public IdType idType()
+    {
+        return idType;
     }
 
     @Override

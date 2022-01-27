@@ -91,6 +91,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.KernelVersionRepository;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -554,7 +555,7 @@ class FulltextIndexProviderTest
                         }
                     }
                     index = index.withIndexConfig( IndexConfig.with( indexConfigMap ) );
-                    storage.writeSchemaRule( index, cursorContext, INSTANCE, storeCursors );
+                    storage.writeSchemaRule( index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors );
                     schemaStore.flush( cursorContext );
                 }
             }

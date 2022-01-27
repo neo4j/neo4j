@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
@@ -82,7 +83,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
             IndexPrototype prototype = forSchema( forAnyEntityTokens( entityType ) ).withIndexType( LOOKUP ).withIndexProvider( providerDescriptor );
             String name = defaultIfEmpty( config.indexName( entityType ), generateName( prototype, new String[]{}, new String[]{} ) );
             IndexDescriptor descriptor = prototype.withName( name ).materialise( schemaStore.nextId( cursorContext ) );
-            schemaRule.writeSchemaRule( descriptor, cursorContext, memoryTracker, storeCursors );
+            schemaRule.writeSchemaRule( descriptor, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors );
             return descriptor;
         }
         catch ( KernelException e )

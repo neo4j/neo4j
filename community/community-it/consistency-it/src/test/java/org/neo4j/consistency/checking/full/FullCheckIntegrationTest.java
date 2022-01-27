@@ -129,6 +129,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -3232,7 +3233,7 @@ public class FullCheckIntegrationTest
     {
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders(),
                 KernelVersionRepository.LATEST );
-        schemaRuleAccess.writeSchemaRule( rule, NULL_CONTEXT, INSTANCE, fixture.getStoreCursors() );
+        schemaRuleAccess.writeSchemaRule( rule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, fixture.getStoreCursors() );
     }
 
     protected Iterator<IndexDescriptor> getValueIndexDescriptors()

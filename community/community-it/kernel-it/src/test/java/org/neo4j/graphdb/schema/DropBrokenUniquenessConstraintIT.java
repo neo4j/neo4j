@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -240,7 +241,7 @@ class DropBrokenUniquenessConstraintIT
     {
         for ( IndexDescriptor rule : loop( schemaRules.indexesGetAll( storeCursors ) ) )
         {
-            schemaRules.writeSchemaRule( rule, NULL_CONTEXT, INSTANCE, storeCursors );
+            schemaRules.writeSchemaRule( rule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, storeCursors );
         }
     }
 }

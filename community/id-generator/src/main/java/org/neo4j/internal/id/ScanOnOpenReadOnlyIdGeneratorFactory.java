@@ -51,7 +51,7 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
             Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
     {
         long highId = highIdScanner.getAsLong();
-        ReadOnlyHighIdGenerator idGenerator = new ReadOnlyHighIdGenerator( highId );
+        ReadOnlyHighIdGenerator idGenerator = new ReadOnlyHighIdGenerator( highId, idType );
         idGenerators.put( idType, idGenerator );
         return idGenerator;
     }

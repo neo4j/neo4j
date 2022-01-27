@@ -94,6 +94,12 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      */
     void clearCache( CursorContext cursorContext );
 
+    /**
+     *
+     * @return {@link IdType} of this generator.
+     */
+    IdType idType();
+
     interface Marker extends AutoCloseable
     {
         default void markUsed( long id )
@@ -218,6 +224,12 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         public void clearCache( CursorContext cursorContext )
         {
             delegate.clearCache( cursorContext );
+        }
+
+        @Override
+        public IdType idType()
+        {
+            return delegate.idType();
         }
 
         @Override

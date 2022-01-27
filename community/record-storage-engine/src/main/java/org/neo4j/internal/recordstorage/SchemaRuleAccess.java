@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.token.TokenHolders;
-import org.neo4j.util.VisibleForTesting;
 
 public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.SchemaStorage
 {
@@ -93,5 +93,13 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * Write the given schema rule at the location given by its persistent id, overwriting any data that might be at that location already.
      * This is a non-transactional operation that is used during schema store migration.
      */
-    void writeSchemaRule( SchemaRule rule, CursorContext cursorContext, MemoryTracker memoryTracker, StoreCursors storeCursors ) throws KernelException;
+    void writeSchemaRule( SchemaRule rule, IdUpdateListener idUpdateListener, CursorContext cursorContext,
+                          MemoryTracker memoryTracker, StoreCursors storeCursors ) throws KernelException;
+
+    /**
+     * Delete the schema rule with given id.
+     * This is a non-transactional operation that is used during schema store migration.
+     */
+    void deleteSchemaRule( long id, IdUpdateListener idUpdateListener, CursorContext cursorContext, MemoryTracker memoryTracker,
+                           StoreCursors storeCursors ) throws KernelException;
 }

@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
+import org.neo4j.storageengine.util.IdUpdateListener;
 
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
@@ -58,7 +59,13 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     @Override
     public void writeSchemaRule( SchemaRule rule ) throws KernelException
     {
-        schemaStorage.writeSchemaRule( rule, cursorContext, memoryTracker, storeCursors );
+        schemaStorage.writeSchemaRule( rule, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors );
+    }
+
+    @Override
+    public void deleteSchemaRule( long id ) throws KernelException
+    {
+        schemaStorage.deleteSchemaRule( id, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors );
     }
 
     @Override

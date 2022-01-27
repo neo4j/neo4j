@@ -606,6 +606,12 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
+    public IdType idType()
+    {
+        return idType;
+    }
+
+    @Override
     public long getHighestPossibleIdInUse()
     {
         return getHighId() - 1;

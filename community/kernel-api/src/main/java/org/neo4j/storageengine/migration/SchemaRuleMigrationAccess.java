@@ -30,5 +30,7 @@ public interface SchemaRuleMigrationAccess extends Closeable
 
     void writeSchemaRule( SchemaRule rule ) throws KernelException;
 
+    void deleteSchemaRule( long id ) throws KernelException;
+
     long nextId();
 }

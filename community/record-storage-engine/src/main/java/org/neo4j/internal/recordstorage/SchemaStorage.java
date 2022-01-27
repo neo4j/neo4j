@@ -41,6 +41,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -52,6 +53,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -59,6 +61,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
@@ -183,7 +186,8 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public void writeSchemaRule( SchemaRule rule, CursorContext cursorContext, MemoryTracker memoryTracker, StoreCursors storeCursors ) throws KernelException
+    public void writeSchemaRule( SchemaRule rule, IdUpdateListener idUpdateListener, CursorContext cursorContext,
+                                 MemoryTracker memoryTracker, StoreCursors storeCursors ) throws KernelException
     {
         IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tokenHolders );
         PropertyStore propertyStore = schemaStore.propertyStore();
@@ -197,7 +201,7 @@ public class SchemaStorage implements SchemaRuleAccess
 
         assert !blocks.isEmpty() : "Property blocks should have been produced for schema rule: " + rule;
 
-        long nextPropId = Record.NO_NEXT_PROPERTY.longValue();
+        long nextPropId = NO_NEXT_PROPERTY.longValue();
         PropertyRecord currRecord = newInitialisedPropertyRecord( propertyStore, rule, cursorContext );
 
         try ( var propertyCursor = storeCursors.writeCursor( PROPERTY_CURSOR );
@@ -208,23 +212,63 @@ public class SchemaStorage implements SchemaRuleAccess
                 if ( !currRecord.hasSpaceFor( block ) )
                 {
                     PropertyRecord nextRecord = newInitialisedPropertyRecord( propertyStore, rule, cursorContext );
-                    linkAndWritePropertyRecord( propertyStore, currRecord, nextRecord.getId(), nextPropId, propertyCursor, cursorContext, storeCursors );
+                    linkAndWritePropertyRecord( propertyStore, currRecord, idUpdateListener, nextRecord.getId(), nextPropId, propertyCursor, cursorContext,
+                                                storeCursors );
                     nextPropId = currRecord.getId();
                     currRecord = nextRecord;
                 }
                 currRecord.addPropertyBlock( block );
             }
 
-            linkAndWritePropertyRecord( propertyStore, currRecord, Record.NO_PREVIOUS_PROPERTY.longValue(), nextPropId, propertyCursor, cursorContext,
-                    storeCursors );
+            linkAndWritePropertyRecord( propertyStore, currRecord, idUpdateListener, Record.NO_PREVIOUS_PROPERTY.longValue(), nextPropId, propertyCursor,
+                                        cursorContext, storeCursors );
             nextPropId = currRecord.getId();
 
             SchemaRecord schemaRecord = schemaStore.newRecord();
             schemaRecord.initialize( true, nextPropId );
             schemaRecord.setId( rule.getId() );
             schemaRecord.setCreated();
-            schemaStore.updateRecord( schemaRecord, schemaCursor, cursorContext, storeCursors );
+            schemaStore.updateRecord( schemaRecord, idUpdateListener, schemaCursor, cursorContext, storeCursors );
             schemaStore.setHighestPossibleIdInUse( rule.getId() );
+        }
+    }
+
+    @Override
+    public void deleteSchemaRule( long ruleId, IdUpdateListener idUpdateListener, CursorContext cursorContext,
+                                  MemoryTracker memoryTracker, StoreCursors storeCursors ) throws KernelException
+    {
+        var schemaRecord = loadSchemaRecord( ruleId, storeCursors );
+        var propertyStore = schemaStore.propertyStore();
+
+        // Delete property records
+        PropertyRecord propRecord = propertyStore.newRecord();
+        var nextProp = schemaRecord.getNextProp();
+        try ( var propertyCursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
+        {
+            while ( nextProp != NO_NEXT_PROPERTY.longValue() )
+            {
+                try
+                {
+                    // Ensure all linked dynamic records are also loaded to property record by ensureHeavy
+                    propertyStore.getRecordByCursor( nextProp, propRecord, RecordLoad.NORMAL, propertyCursor );
+                    propertyStore.ensureHeavy( propRecord, storeCursors );
+                }
+                catch ( InvalidRecordException e )
+                {
+                    throw new MalformedSchemaRuleException(
+                            "Cannot read schema rule because it is referencing a property record (id " + nextProp + ") that is invalid: " + propRecord, e );
+                }
+                nextProp = propRecord.getNextProp();
+                deletePropertyRecord( propertyStore, propRecord, idUpdateListener, propertyCursor, cursorContext, storeCursors );
+            }
+        }
+
+        // Delete schema record
+        try ( var schemaCursor = storeCursors.writeCursor( SCHEMA_CURSOR ) )
+        {
+            schemaRecord.setId( ruleId );
+            schemaRecord.initialize( false, NO_NEXT_PROPERTY.longValue() );
+            schemaStore.updateRecord( schemaRecord, idUpdateListener, schemaCursor, cursorContext, storeCursors );
         }
     }
 
@@ -237,14 +281,26 @@ public class SchemaStorage implements SchemaRuleAccess
         return record;
     }
 
-    private static void linkAndWritePropertyRecord( PropertyStore propertyStore, PropertyRecord record, long prevPropId, long nextProp,
-            PageCursor propertyCursor, CursorContext cursorContext, StoreCursors storeCursors )
+    private static void linkAndWritePropertyRecord( PropertyStore propertyStore, PropertyRecord record,
+                                                    IdUpdateListener idUpdateListener, long prevPropId, long nextProp,
+                                                    PageCursor propertyCursor, CursorContext cursorContext, StoreCursors storeCursors )
     {
         record.setInUse( true );
         record.setPrevProp( prevPropId );
         record.setNextProp( nextProp );
-        propertyStore.updateRecord( record, propertyCursor, cursorContext, storeCursors );
+        propertyStore.updateRecord( record, idUpdateListener, propertyCursor, cursorContext, storeCursors );
         propertyStore.setHighestPossibleIdInUse( record.getId() );
+    }
+
+    private static void deletePropertyRecord( PropertyStore propertyStore, PropertyRecord record,
+                                              IdUpdateListener idUpdateListener, PageCursor propertyCursor,
+                                              CursorContext cursorContext,
+                                              StoreCursors storeCursors )
+    {
+        PropertyDeleter.deletePropertyRecordIncludingValueRecords( record );
+        record.setPrevProp( NO_NEXT_PROPERTY.longValue() );
+        record.setNextProp( NO_NEXT_PROPERTY.longValue() );
+        propertyStore.updateRecord( record, idUpdateListener, propertyCursor, cursorContext, storeCursors );
     }
 
     private SchemaRecord loadSchemaRecord( long ruleId, StoreCursors storeCursors )

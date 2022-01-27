@@ -172,6 +172,12 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
+        public IdType idType()
+        {
+            return null;
+        }
+
+        @Override
         public long nextId( CursorContext cursorContext )
         {
             return EMPTY_ID;

@@ -24,36 +24,58 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
+import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.TokenHolder;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.test.mockito.matcher.KernelExceptionUserMessageAssert.assertThat;
@@ -78,6 +100,15 @@ class SchemaStorageTest
 
     private SchemaStorage storage;
     private NeoStores neoStores;
+    private StoreCursors storeCursors;
+    private final RandomSchema randomSchema = new RandomSchema()
+    {
+        @Override
+        public int nextRuleId()
+        {
+            return (int) storage.newRuleId( NULL_CONTEXT );
+        }
+    };
 
     @BeforeEach
     void before()
@@ -87,8 +118,13 @@ class SchemaStorageTest
                         pageCache, fs, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), EMPTY_LOG_TAIL );
         neoStores = storeFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN,
             StoreType.RELATIONSHIP_TYPE_TOKEN );
-        storage = new SchemaStorage( neoStores.getSchemaStore(), StoreTokens.readOnlyTokenHolders( neoStores, StoreCursors.NULL ),
-                KernelVersionRepository.LATEST );
+        var tokenHolders = new TokenHolders(
+                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_LABEL ),
+                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE )
+        );
+        storage = new SchemaStorage( neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST );
+        storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
 
     @AfterEach
@@ -152,6 +188,84 @@ class SchemaStorageTest
         assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple relationship type property existence constraints found for ()-[:Type1 {prop1}]-()." );
     }
 
+    @Test
+    void shouldMarkAllRecordIdsAsUnusedOnDeletion() throws KernelException
+    {
+        // Given
+        var tracker = new TrackingIdUpdaterListener();
+
+        // When
+        SchemaRule schemaRule = randomSchema.nextSchemaRule();
+        storage.writeSchemaRule( schemaRule, tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors );
+
+        // Then
+        assertThat( tracker.usedIdsPerType ).isNotEmpty();
+        assertThat( tracker.usedIdsPerType ).containsKey( RecordIdType.PROPERTY )
+                                            .containsKey( RecordIdType.ARRAY_BLOCK )
+                                            .containsKey( RecordIdType.STRING_BLOCK )
+                                            .containsKey( SchemaIdType.SCHEMA );
+        assertThat( tracker.unusedIdsPerType ).isEmpty();
+
+        // When
+        storage.deleteSchemaRule( schemaRule.getId(), tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors );
+
+        // Then
+        assertThat( tracker.unusedIdsPerType ).isNotEmpty();
+        assertThat( tracker.unusedIdsPerType ).isEqualTo( tracker.usedIdsPerType );
+    }
+
+    @Test
+    void shouldMarkAllRecordsAsNotInUseOnDeletion() throws KernelException
+    {
+        // Given
+        SchemaRule schemaRule = randomSchema.nextSchemaRule();
+        var tracker = new TrackingIdUpdaterListener();
+        storage.writeSchemaRule( schemaRule, tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors );
+
+        // Then
+        verifyExpectedInUse( tracker.usedIdsPerType, true );
+
+        // When
+        storage.deleteSchemaRule( schemaRule.getId(), IdUpdateListener.DIRECT, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors );
+
+        // Then
+        verifyExpectedInUse( tracker.usedIdsPerType, false );
+    }
+
+    private void verifyExpectedInUse( Map<IdType,Set<Long>> idsByType, boolean expectInUse )
+    {
+        for ( Map.Entry<IdType,Set<Long>> entry : idsByType.entrySet() )
+        {
+            RecordStore<? extends AbstractBaseRecord> store = getStore( entry.getKey() );
+            verifyInUseStatusForStore( store, entry.getValue(), expectInUse );
+        }
+    }
+
+    private <T extends AbstractBaseRecord> void verifyInUseStatusForStore( RecordStore<T> store, Set<Long> ids, boolean expectInUse )
+    {
+        T record = store.newRecord();
+        try ( PageCursor pageCursor = store.openPageCursorForReading( 0, NULL_CONTEXT ) )
+        {
+            for ( Long id : ids )
+            {
+                store.getRecordByCursor( id, record, RecordLoad.CHECK, pageCursor );
+                assertThat( record.inUse() ).isEqualTo( expectInUse );
+            }
+        }
+    }
+
+    private RecordStore<? extends AbstractBaseRecord> getStore( IdType idType )
+    {
+        return switch ( idType.name() )
+                {
+                    case "SCHEMA" -> neoStores.getSchemaStore();
+                    case "PROPERTY" -> neoStores.getPropertyStore();
+                    case "ARRAY_BLOCK" -> neoStores.getPropertyStore().getArrayStore();
+                    case "STRING_BLOCK" -> neoStores.getPropertyStore().getStringStore();
+                    default -> throw new IllegalArgumentException( "Did not recognize idType " + idType.name() );
+                };
+    }
+
     private static TokenNameLookup getDefaultTokenNameLookup()
     {
         TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
@@ -171,5 +285,30 @@ class SchemaStorageTest
     private static ConstraintDescriptor getRelationshipPropertyExistenceConstraintRule( long id, int type, int property )
     {
         return ConstraintDescriptorFactory.existsForRelType( type, property ).withId( id );
+    }
+
+    private static class TrackingIdUpdaterListener implements IdUpdateListener
+    {
+        Map<IdType,Set<Long>> usedIdsPerType = new HashMap<>();
+        Map<IdType,Set<Long>> unusedIdsPerType = new HashMap<>();
+
+        @Override
+        public void markIdAsUsed( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
+        {
+            usedIdsPerType.computeIfAbsent( idGenerator.idType(), k -> new HashSet<>() ).add( id );
+            IdUpdateListener.DIRECT.markIdAsUsed( idGenerator, id, size, cursorContext );
+        }
+
+        @Override
+        public void markIdAsUnused( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
+        {
+            unusedIdsPerType.computeIfAbsent( idGenerator.idType(), k -> new HashSet<>() ).add( id );
+            IdUpdateListener.DIRECT.markIdAsUnused( idGenerator, id, size, cursorContext );
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+        }
     }
 }
