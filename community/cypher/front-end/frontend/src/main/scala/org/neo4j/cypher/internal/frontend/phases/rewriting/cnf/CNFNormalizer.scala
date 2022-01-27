@@ -52,7 +52,7 @@ object CNFNormalizer {
   val steps: Set[CnfPhase] = {
     Set(
       deMorganRewriter,
-      mergeDuplicateBooleanOperators,
+      mergeDuplicateBooleanOperators(Set(NoXorOperators)),
       distributeLawsRewriter,
       normalizeInequalities,
       simplifyPredicates,
