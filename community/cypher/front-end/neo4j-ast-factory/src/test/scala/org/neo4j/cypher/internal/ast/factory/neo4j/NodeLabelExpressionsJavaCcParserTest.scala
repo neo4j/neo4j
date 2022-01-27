@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
@@ -48,6 +49,18 @@ class NodeLabelExpressionsJavaCcParserTest extends CypherFunSuite with TestName 
         Seq(labelName("A")),
         None,
         None,
+        None
+      )(pos)
+    )
+  }
+
+  test("MATCH (n:A $param)") {
+    parseNodePatterns(testName) shouldBe Seq(
+      NodePattern(
+        Some(varFor("n")),
+        Seq(labelName("A")),
+        None,
+        Some(parameter("param", CTAny)),
         None
       )(pos)
     )

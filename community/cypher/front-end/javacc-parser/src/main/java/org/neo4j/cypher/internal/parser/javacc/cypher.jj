@@ -2160,7 +2160,7 @@ NODE_PATTERN NodePattern() :
 void NotLabelExpression() :
 {}
 {
-    LabelOrRelType() (<WHERE> | <RPAREN> | <LCURLY>  | ":")
+    LabelOrRelType() (<WHERE> | <RPAREN> | <LCURLY>  | ":" | <DOLLAR>)
 }
 
 List<StringPos<POS>> NodeLabels() :
