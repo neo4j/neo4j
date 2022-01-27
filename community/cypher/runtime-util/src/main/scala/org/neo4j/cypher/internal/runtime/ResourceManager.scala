@@ -185,8 +185,8 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
   }
 
   def clear(): Unit = {
-    highMark = 0
-    if (closeables != null) {
+    if (highMark > 0) {
+      highMark = 0
       memoryTracker.releaseHeap(trackedSize + SHALLOW_SIZE)
     }
   }
