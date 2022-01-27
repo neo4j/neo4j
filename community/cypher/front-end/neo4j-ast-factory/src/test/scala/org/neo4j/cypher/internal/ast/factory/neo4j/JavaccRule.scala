@@ -63,6 +63,11 @@ object JavaccRule {
   def PatternComprehension: JavaccRule[Expression] = fromParser(_.PatternComprehension())
   def RelationshipPattern: JavaccRule[RelationshipPattern] = fromParser(_.RelationshipPattern())
   def Statement: JavaccRule[Statement] = fromParser(_.Statement())
+
+  // The reason for using Statements rather than Statement, is that it will wrap any ParseException in exceptionFactory.syntaxException(...),
+  // just like the production code path, and thus produce correct assertable error messages.
+  def Statements: JavaccRule[Statement] = fromParser(_.Statements().get(0))
+
   def StringLiteral: JavaccRule[Expression] = fromParser(_.StringLiteral())
   def SubqueryClause: JavaccRule[Clause] = fromParser(_.SubqueryClause())
   def Variable: JavaccRule[Variable] = fromParser(_.Variable())

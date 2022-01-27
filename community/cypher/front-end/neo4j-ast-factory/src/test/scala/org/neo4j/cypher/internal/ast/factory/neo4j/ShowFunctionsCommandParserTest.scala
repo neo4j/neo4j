@@ -20,12 +20,10 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.ReturnItems
 
 /* Tests for listing functions */
-class ShowFunctionsCommandParserTest extends JavaccParserAstTestBase[Statement] {
-  implicit val parser: JavaccRule[Statement] = JavaccRule.Statement
-
+class ShowFunctionsCommandParserTest extends AdministrationCommandParserTestBase {
   Seq("FUNCTION", "FUNCTIONS").foreach { funcKeyword =>
     Seq(
       ("", ast.AllFunctions),
@@ -35,27 +33,28 @@ class ShowFunctionsCommandParserTest extends JavaccParserAstTestBase[Statement] 
     ).foreach { case (typeString, functionType) =>
 
       test(s"SHOW $typeString $funcKeyword") {
-        yields(_ => query(ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(pos)))
+        assertAst(query(ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(defaultPos)))
       }
 
       test(s"SHOW $typeString $funcKeyword EXECUTABLE") {
-        yields(_ => query(ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, hasYield = false)(pos)))
+        assertAst(query(ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, hasYield = false)(defaultPos)))
       }
 
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY CURRENT USER") {
-        yields(_ => query(ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, hasYield = false)(pos)))
+        assertAst(query(ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, hasYield = false)(defaultPos)))
       }
 
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY user") {
-        yields(_ => query(ast.ShowFunctionsClause(functionType, Some(ast.User("user")), None, hasYield = false)(pos)))
+        assertAst(query(ast.ShowFunctionsClause(functionType, Some(ast.User("user")), None, hasYield = false)(defaultPos)))
       }
 
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY CURRENT") {
-        yields(_ => query(ast.ShowFunctionsClause(functionType, Some(ast.User("CURRENT")), None, hasYield = false)(pos)))
+        assertAst(query(ast.ShowFunctionsClause(functionType, Some(ast.User("CURRENT")), None, hasYield = false)(defaultPos)))
       }
 
       test(s"USE db SHOW $typeString $funcKeyword") {
-        yields(_ => query(use(varFor("db")), ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(pos)))
+        assertAst(query(use(varFor("db")), ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(defaultPos)),
+          comparePosition = false)
       }
 
     }
@@ -64,52 +63,64 @@ class ShowFunctionsCommandParserTest extends JavaccParserAstTestBase[Statement] 
   // Filtering tests
 
   test("SHOW FUNCTION WHERE name = 'my.func'") {
-    yields(_ => query(ast.ShowFunctionsClause(ast.AllFunctions, None, Some(where(equals(varFor("name"), literalString("my.func")))), hasYield = false)(pos)))
+    assertAst(query(ast.ShowFunctionsClause(ast.AllFunctions, None, Some(where(equals(varFor("name"), literalString("my.func")))), hasYield = false)(defaultPos)),
+      comparePosition = false)
   }
 
   test("SHOW FUNCTIONS YIELD description") {
-    yields(_ => query(ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("description")))))
+    assertAst(query(ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)((defaultPos)),
+      yieldClause(ReturnItems(includeExisting = false, Seq(variableReturnItem("description", (1, 22, 21))))(1, 22, 21))))
   }
 
   test("SHOW USER DEFINED FUNCTIONS EXECUTABLE BY user YIELD *") {
-    yields(_ => query(ast.ShowFunctionsClause(ast.UserDefinedFunctions, Some(ast.User("user")), None, hasYield = true)(pos), yieldClause(returnAllItems)))
+    assertAst(query(ast.ShowFunctionsClause(ast.UserDefinedFunctions, Some(ast.User("user")), None, hasYield = true)(defaultPos), yieldClause(returnAllItems)),
+      comparePosition = false)
   }
 
   test("SHOW FUNCTIONS YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    yields(_ => query(ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(pos),
+    assertAst(query(ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(defaultPos),
       yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
-    ))
+    ), comparePosition = false)
   }
 
   test("USE db SHOW BUILT IN FUNCTIONS YIELD name, description AS pp WHERE pp < 50.0 RETURN name") {
-    yields(_ => query(
+    assertAst(query(
       use(varFor("db")),
-      ast.ShowFunctionsClause(ast.BuiltInFunctions, None, None, hasYield = true)(pos),
+      ast.ShowFunctionsClause(ast.BuiltInFunctions, None, None, hasYield = true)(defaultPos),
       yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("description", "pp")),
         where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
       return_(variableReturnItem("name"))
-    ))
+    ), comparePosition = false)
   }
 
   test("USE db SHOW FUNCTIONS EXECUTABLE YIELD name, description AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name") {
-    yields(_ => query(
+    assertAst(query(
       use(varFor("db")),
-      ast.ShowFunctionsClause(ast.AllFunctions, Some(ast.CurrentUser), None, hasYield = true)(pos),
+      ast.ShowFunctionsClause(ast.AllFunctions, Some(ast.CurrentUser), None, hasYield = true)(defaultPos),
       yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("description", "pp")),
         Some(orderBy(sortItem(varFor("pp")))),
         Some(skip(2)),
         Some(limit(5)),
         Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
       return_(variableReturnItem("name"))
-    ))
+    ), comparePosition = false)
   }
 
   test("SHOW ALL FUNCTIONS YIELD name AS FUNCTION, mode AS OUTPUT") {
-    yields(_ => query(ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(pos),
-      yieldClause(returnItems(aliasedReturnItem("name", "FUNCTION"), aliasedReturnItem("mode", "OUTPUT")))))
+    assertAst(query(ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(defaultPos),
+      yieldClause(returnItems(aliasedReturnItem("name", "FUNCTION"), aliasedReturnItem("mode", "OUTPUT")))),
+      comparePosition = false)
   }
 
   // Negative tests
+
+  test("SHOW FUNCTIONS YIELD (123 + xyz)") {
+    failsToParse
+  }
+
+  test("SHOW FUNCTIONS YIELD (123 + xyz) AS foo") {
+    failsToParse
+  }
 
   test("SHOW FUNCTIONS YIELD") {
     failsToParse
@@ -136,7 +147,46 @@ class ShowFunctionsCommandParserTest extends JavaccParserAstTestBase[Statement] 
   }
 
   test("SHOW EXECUTABLE FUNCTION") {
-    failsToParse
+    assertFailsWithMessage(testName,
+     """Invalid input 'EXECUTABLE': expected
+        |  "ALL"
+        |  "BTREE"
+        |  "BUILT"
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "CURRENT"
+        |  "DATABASE"
+        |  "DATABASES"
+        |  "DEFAULT"
+        |  "EXIST"
+        |  "EXISTENCE"
+        |  "EXISTS"
+        |  "FULLTEXT"
+        |  "FUNCTION"
+        |  "FUNCTIONS"
+        |  "HOME"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "LOOKUP"
+        |  "NODE"
+        |  "POINT"
+        |  "POPULATED"
+        |  "PRIVILEGE"
+        |  "PRIVILEGES"
+        |  "PROCEDURE"
+        |  "PROCEDURES"
+        |  "PROPERTY"
+        |  "RANGE"
+        |  "REL"
+        |  "RELATIONSHIP"
+        |  "ROLE"
+        |  "ROLES"
+        |  "TEXT"
+        |  "TRANSACTION"
+        |  "TRANSACTIONS"
+        |  "UNIQUE"
+        |  "USER"
+        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
   }
 
   test("SHOW FUNCTION EXECUTABLE user") {
@@ -216,7 +266,7 @@ class ShowFunctionsCommandParserTest extends JavaccParserAstTestBase[Statement] 
   }
 
   test("SHOW USER FUNCTIONS") {
-    failsToParse
+    assertFailsWithMessage(testName, """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))""")
   }
 
   test("SHOW USER-DEFINED FUNCTIONS") {
@@ -256,49 +306,49 @@ class ShowFunctionsCommandParserTest extends JavaccParserAstTestBase[Statement] 
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW FUNCTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix UNWIND range(1,10) as b SHOW FUNCTIONS YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix WITH 'n' as n SHOW FUNCTIONS YIELD name RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS YIELD a WITH a RETURN a") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS YIELD as UNWIND as as a RETURN a") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS YIELD name SHOW FUNCTIONS YIELD name2 RETURN name2") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS RETURN name2 YIELD name2") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
     }
   }
 

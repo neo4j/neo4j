@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
 import org.neo4j.cypher.internal.ast.RevokeGrantType
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
@@ -46,8 +47,37 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 import java.nio.charset.StandardCharsets
+import scala.util.Failure
+import scala.util.Success
 
-class AdministrationCommandParserTestBase extends JavaccParserAstTestBase[ast.Statement] {
+class AdministrationCommandParserTestBase extends JavaccParserAstTestBase[ast.Statement] with VerifyAstPositionTestSupport {
+
+    implicit protected val parser: JavaccRule[ast.Statement] = JavaccRule.Statements
+
+    protected def assertAst(expected: Statement, comparePosition: Boolean = true )(implicit p: JavaccRule[ast.Statement]): Unit = {
+      parseRule(p, testName) match {
+        case Success(statement) => {
+          statement shouldBe expected
+          if (comparePosition) {
+            //change flag to true to get basic print methods for position of words
+            printQueryPositions(testName, printFlag = false)
+            verifyPositions(statement, expected)
+          }
+        }
+        case Failure(exception) =>
+          fail(exception)
+      }
+    }
+
+    private def printQueryPositions(query: String, printFlag: Boolean): Unit = {
+    if (printFlag) {
+      println(query)
+      query.split("[ ,:.()\\[\\]]+").foreach(split =>
+        println(s"$split: ${query.indexOf(split)+1}, ${query.indexOf(split)}"))
+      println("---")
+    }
+  }
+
   val propSeq = Seq("prop")
   val accessString = "access"
   val actionString = "action"
@@ -78,8 +108,6 @@ class AdministrationCommandParserTestBase extends JavaccParserAstTestBase[ast.St
   val graphScopeFoo: InputPosition => NamedGraphScope = ast.NamedGraphScope(literalFoo)(_)
   val graphScopeParamFoo: InputPosition => NamedGraphScope = ast.NamedGraphScope(paramFoo)(_)
   val graphScopeBaz: InputPosition => NamedGraphScope = ast.NamedGraphScope(literal("baz"))(_)
-
-  implicit protected val parser: JavaccRule[ast.Statement] = JavaccRule.Statement
 
   def literal(name: String): Either[String, Parameter] = Left(name)
 

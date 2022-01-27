@@ -193,7 +193,7 @@ trait VerifyAstPositionTestSupport extends Assertions with Matchers {
     astWithPosition(javaCCAstNode).zip(astWithPosition(parboiledASTNode))
       .foreach {
         case ((astChildNode1, pos1), (_, pos2)) => withClue(
-          s"AST node $astChildNode1 was parsed with different positions (javaCC: $pos1, parboid: $pos2):")(pos1 shouldBe pos2)
+          s"AST node $astChildNode1 was parsed with different positions (javaCC: $pos1, expected: $pos2):")(pos1 shouldBe pos2)
         case _ => // Do nothing
       }
   }
