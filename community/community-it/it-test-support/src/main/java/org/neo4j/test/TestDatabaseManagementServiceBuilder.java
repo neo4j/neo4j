@@ -102,9 +102,14 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     @Override
     public DatabaseManagementService build()
     {
+       return build0();
+    }
+
+    protected DatabaseManagementService build0()
+    {
         Config cfg = config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toAbsolutePath() )
-                .fromConfig( fromConfig )
-                .build();
+                           .fromConfig( fromConfig )
+                           .build();
 
         var originalDependencies = dependencies;
         if ( noOpSystemGraphInitializer )
@@ -128,7 +133,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     {
         var factory = fabricInEmbeddedTestTransactionsEnabled()
                       ? new TestFabricDatabaseManagementServiceFactory(
-                              getDbmsInfo( config ), getEditionFactory( config ), impermanent, fileSystem, clock, internalLogProvider, config )
+                getDbmsInfo( config ), getEditionFactory( config ), impermanent, fileSystem, clock, internalLogProvider, config )
                       : new TestDatabaseManagementServiceFactory(
                               getDbmsInfo( config ), getEditionFactory( config ), impermanent, fileSystem, clock, internalLogProvider );
 
