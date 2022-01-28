@@ -70,9 +70,6 @@
     <artifact id="org.eclipse.jetty:jetty-security:">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="com.github.chewiebug:gcviewer:">
-      <license>LGPL2.1</license>
-    </artifact>
   </override-licenses>
   <coalesced-licenses>
     <license name="GNU Affero General Public License, Version 3">
