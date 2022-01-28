@@ -39,4 +39,8 @@ object MessageUtilProvider extends ErrorMessageProvider {
       entityName,
       additionalInfo
     )
+
+  override def createSelfReferenceError(name: String, variableType: String): String = {
+    MessageUtil.createSelfReferenceError(name, variableType)
+  }
 }

@@ -36,7 +36,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_POINTS_CO
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
@@ -339,37 +338,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotificationInSupportedVersions(queries, DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
 
     assertNoNotificationInSupportedVersions("RETURN NOT TRUE", DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
-  }
-
-  test("should not allow referencing elements being created by the pattern within that same pattern") {
-    val badQueries = Seq(
-      "CREATE (a {prop:7})-[r:R {prop: a.prop}]->(b)",
-      "CREATE (a {prop:7})-[r:R]->(b {prop: a.prop})",
-      "CREATE (a {prop: r.prop})-[r:R {prop:7}]->(b)",
-      "CREATE (a)-[r:R {prop:7}]->(b {prop: r.prop})",
-      "CREATE (a {prop:b.prop})-[r:R]->(b {prop: 7})",
-      "CREATE (a)-[r:R {prop:b.prop}]->(b {prop: 7})",
-      "CREATE (a:A:B)-[r:R]->(b {prop: labels(a)})",
-      "CREATE p=(a {prop:7})-[r:R {prop: a.prop}]->(b)",
-      "CREATE p=(a {prop:7})-[:R]->(b {prop: nodes(p)[0].prop})",
-      "CREATE (a {prop:7})-[:R {prop: a.prop}]->(b)",
-      "CREATE (a {prop:7})-[r:R]->({prop: a.prop})",
-      "CREATE p=({prop:7})-[:R]->(b {prop: nodes(p)[0].prop})",
-    )
-
-    assertNotificationInSupportedVersions(badQueries, DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN)
-
-    val okQueries = Seq(
-      "CREATE (a)-[:R]->(a)",
-      "CREATE (a {prop: 7})-[:R]->(a)",
-      "MATCH (b) CREATE ()-[:R]->(a {prop: b.prop})",
-      "CREATE (a {prop: 7}) CREATE (b {prop: a.prop})",
-      "MATCH (a {prop:7})-[r:R {prop: a.prop}]->(b) RETURN *",
-      "CREATE (a {prop:7}) CREATE (a)-[:R]->(b {prop: a.prop})",
-      "MATCH (a) CREATE (a)-[:R]->(b {prop: a.prop})",
-    )
-
-    assertNoNotificationInSupportedVersions(okQueries, DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN)
   }
 
   test("deprecated periodic commit hint") {

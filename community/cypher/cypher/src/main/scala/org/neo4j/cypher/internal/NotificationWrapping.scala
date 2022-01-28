@@ -174,8 +174,6 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCoercionOfListToBoolean(pos) =>
       NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedSelfReferenceToVariableInCreatePattern(pos) =>
-      NotificationCode.DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPointsComparison(pos) =>
       NotificationCode.DEPRECATED_POINTS_COMPARE.notification(pos.withOffset(offset).asInputPosition)
     case SubqueryVariableShadowing(pos, varName)             =>

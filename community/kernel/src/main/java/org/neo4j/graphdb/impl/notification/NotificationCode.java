@@ -167,12 +167,6 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "Coercion of list to boolean is deprecated. Please consider using `NOT isEmpty(...)` instead."
     ),
-    DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "Referencing a node or relationship variable that is created in the same CREATE clause is deprecated. " +
-            "The behaviour of using this syntax is undefined and should be avoided. Please consider only referencing variables created in earlier clauses."
-    ),
     DEPRECATED_POINTS_COMPARE(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

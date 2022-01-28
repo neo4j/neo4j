@@ -369,21 +369,6 @@ object Deprecations {
         CTList(CTAny).covariant.containsAll(typeInfo.specified) && isExpectedTypeBoolean(semanticTable, e)
     )
 
-    private def hasSelfReferenceToVariableInPattern(pattern: Pattern, semanticTable: SemanticTable): Boolean = {
-      val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
-
-      def findAllVariables(e: Any): Set[LogicalVariable] = e.findAllByClass[LogicalVariable].toSet
-      def isDefinition(variable: LogicalVariable): Boolean = allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
-
-      val (declaredVariables, referencedVariables) = pattern.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-        case NodePattern(maybeVariable, _, _, maybeProperties, _)                  => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-        case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-        case NamedPatternPart(variable, _)                                      => acc => TraverseChildren((acc._1 + variable, acc._2))
-      }
-
-      (declaredVariables & referencedVariables).nonEmpty
-    }
-
     override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = {
       case e: Expression if isListCoercedToBoolean(semanticTable, e) =>
         Deprecation(
@@ -395,13 +380,6 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedPointsComparison(x.position))
-        )
-
-      // CREATE (a {prop:7})-[r:R]->(b {prop: a.prop})
-      case Create(p: Pattern) if hasSelfReferenceToVariableInPattern(p, semanticTable) =>
-        Deprecation(
-          None,
-          Some(DeprecatedSelfReferenceToVariableInCreatePattern(p.position))
         )
     }
 
