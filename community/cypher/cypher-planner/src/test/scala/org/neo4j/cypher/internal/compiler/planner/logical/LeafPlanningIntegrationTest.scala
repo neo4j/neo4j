@@ -792,40 +792,38 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )
   }
 
-  test("should warn when index hint has btree type but the only matching index is text") {
+  test("should warn when node index hint specifies an index type that does not exist") {
 
-    val planner = nodeIndexHints.config
-      .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
-      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
-      .build()
-
-    the[IndexHintException]
-      .thrownBy(planner.plan(nodeIndexHints.query("USING BTREE INDEX b:B(prop)")))
-      .getMessage.should(include("No such index: BTREE INDEX FOR (`b`:`B`) ON (`b`.`prop`)"))
-  }
-
-  test("should warn when index hint has range type but the only matching index is text") {
-
-    val planner = nodeIndexHints.config
+    val baseCfg = nodeIndexHints.config
       .enablePlanningRangeIndexes()
       .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
-      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
-      .build()
 
-    the[IndexHintException]
-      .thrownBy(planner.plan(nodeIndexHints.query("USING RANGE INDEX b:B(prop)")))
-      .getMessage.should(include("No such index: RANGE INDEX FOR (`b`:`B`) ON (`b`.`prop`)"))
-  }
+    val basePlanner = baseCfg.build()
 
-  test("should warn when index hint has text type but the only matching index is btree") {
-    val planner = nodeIndexHints.config
-      .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
-      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
-      .build()
+    val allTypes = Seq(IndexType.BTREE, IndexType.TEXT, IndexType.RANGE)
 
-    the[IndexHintException]
-      .thrownBy(planner.plan(nodeIndexHints.query("USING TEXT INDEX b:B(prop)")))
-      .getMessage.should(include("No such index: TEXT INDEX FOR (`b`:`B`) ON (`b`.`prop`)"))
+    allTypes.foreach { hintType =>
+      val otherTypes = allTypes.filterNot(_ == hintType)
+      val hasOtherIndexes = otherTypes.foldLeft(baseCfg) { case (cfg, indexType) =>
+        cfg.addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = indexType)
+      }
+      val planner = hasOtherIndexes.build()
+
+      val hint = s"USING $hintType INDEX b:B(prop)"
+      val expectedMessage = s"No such index: $hintType INDEX FOR (`b`:`B`) ON (`b`.`prop`)"
+
+      withClue(s"Hinting for $hintType when existing types are $otherTypes") {
+        the[IndexHintException]
+          .thrownBy(planner.plan(nodeIndexHints.query(hint)))
+          .getMessage.should(include(expectedMessage))
+      }
+
+      withClue(s"Hinting for $hintType when no indexes exist") {
+        the[IndexHintException]
+          .thrownBy(basePlanner.plan(nodeIndexHints.query(hint)))
+          .getMessage.should(include(expectedMessage))
+      }
+    }
   }
 
   private object relIndexHints {
@@ -860,29 +858,38 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )
   }
 
-  test("should warn when index hint has text type but the only matching index is btree rel index") {
+  test("should warn when relationship index hint specifies an index type that does not exist") {
 
-    val planner = relIndexHints.config
-      .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
-      .build()
-
-    the[IndexHintException]
-      .thrownBy(planner.plan(relIndexHints.query("USING TEXT INDEX r:R(prop)")))
-      .getMessage.should(include("No such index: TEXT INDEX FOR ()-[`r`:`R`]-() ON (`r`.`prop`)"))
-  }
-
-  test("should warn when index hint has range type but the only matching index is text rel index") {
-
-    val planner = relIndexHints.config
+    val baseCfg = relIndexHints.config
       .enablePlanningRangeIndexes()
       .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
-      .build()
 
-    the[IndexHintException]
-      .thrownBy(planner.plan(relIndexHints.query("USING RANGE INDEX r:R(prop)")))
-      .getMessage.should(include("No such index: RANGE INDEX FOR ()-[`r`:`R`]-() ON (`r`.`prop`)"))
+    val basePlanner = baseCfg.build()
+
+    val allTypes = Seq(IndexType.BTREE, IndexType.TEXT, IndexType.RANGE)
+
+    allTypes.foreach { hintType =>
+      val otherTypes = allTypes.filterNot(_ == hintType)
+      val hasOtherIndexes = otherTypes.foldLeft(baseCfg) { case (cfg, indexType) =>
+        cfg.addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = indexType)
+      }
+      val planner = hasOtherIndexes.build()
+
+      val hint = s"USING $hintType INDEX r:R(prop)"
+      val expectedMessage = s"No such index: $hintType INDEX FOR ()-[`r`:`R`]-() ON (`r`.`prop`)"
+
+      withClue(s"Hinting for $hintType when existing types are $otherTypes") {
+        the[IndexHintException]
+          .thrownBy(planner.plan(relIndexHints.query(hint)))
+          .getMessage.should(include(expectedMessage))
+      }
+
+      withClue(s"Hinting for $hintType when no indexes exist") {
+        the[IndexHintException]
+          .thrownBy(basePlanner.plan(relIndexHints.query(hint)))
+          .getMessage.should(include(expectedMessage))
+      }
+    }
   }
 
   test("should plan text relationship index when index hint has text type") {
