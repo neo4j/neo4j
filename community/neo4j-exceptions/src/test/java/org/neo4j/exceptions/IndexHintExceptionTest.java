@@ -19,147 +19,86 @@
  */
 package org.neo4j.exceptions;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.ANY;
+import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.BTREE;
+import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.RANGE;
+import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.TEXT;
 
 class IndexHintExceptionTest
 {
-    @Test
-    void indexFormatStringForSingleNodePropertyIndex()
+    @ParameterizedTest( name = "Hint on {0}, {1}, {2}, {3}, {4} is shown as {5}" )
+    @MethodSource( "testCases" )
+    void indexFormatStringTest( String variableName,
+                                String labelOrRelType,
+                                List<String> properties,
+                                EntityType entityType,
+                                IndexHintIndexType indexType,
+                                String expected )
     {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Person",
-                                                              Collections.singletonList( "name" ),
-                                                              EntityType.NODE,
-                                                              IndexHintIndexType.ANY );
-        String expected = "INDEX FOR (`person`:`Person`) ON (`person`.`name`)";
+        String actual = IndexHintException.indexFormatString( variableName, labelOrRelType, properties, entityType, indexType );
         assertEquals( expected, actual );
     }
 
-    @Test
-    void indexFormatStringForCompositeNodePropertyIndex()
+    static Stream<Arguments> testCases()
     {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Person",
-                                                              Arrays.asList( "name", "surname" ),
-                                                              EntityType.NODE,
-                                                              IndexHintIndexType.ANY );
-        String expected = "INDEX FOR (`person`:`Person`) ON (`person`.`name`, `person`.`surname`)";
-        assertEquals( expected, actual );
+        return Stream.of(
+                basicHint( NODE, ANY, "INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
+                basicHint( NODE, BTREE, "BTREE INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
+                basicHint( NODE, TEXT, "TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
+                basicHint( NODE, RANGE, "RANGE INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
+                basicHint( RELATIONSHIP, ANY, "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
+                basicHint( RELATIONSHIP, BTREE, "BTREE INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
+                basicHint( RELATIONSHIP, TEXT, "TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
+                basicHint( RELATIONSHIP, RANGE, "RANGE INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
+                compositeHint( NODE, ANY, "INDEX FOR (`person`:`Person`) ON (`person`.`name`, `person`.`surname`)" ),
+                compositeHint( RELATIONSHIP, ANY, "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`, `person`.`surname`)" ),
+                escapedHint( NODE, ANY, "INDEX FOR (`pers``on`:`Pers``on`) ON (`pers``on`.`nam``e`, `pers``on`.`s``urname`)" ),
+                escapedHint( RELATIONSHIP, ANY, "INDEX FOR ()-[`pers``on`:`Pers``on`]-() ON (`pers``on`.`nam``e`, `pers``on`.`s``urname`)" )
+        );
     }
 
-    @Test
-    void indexFormatStringForSingleRelationshipPropertyIndex()
+    static Arguments basicHint( EntityType entityType, IndexHintIndexType indexType, String expected )
     {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Person",
-                                                              Collections.singletonList( "name" ),
-                                                              EntityType.RELATIONSHIP,
-                                                              IndexHintIndexType.ANY );
-        String expected = "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)";
-        assertEquals( expected, actual );
+        return Arguments.of( "person",
+                             "Person",
+                             Collections.singletonList( "name" ),
+                             entityType,
+                             indexType,
+                             expected );
     }
 
-    @Test
-    void indexFormatStringForCompositeRelationshipPropertyIndex()
+    static Arguments compositeHint( EntityType entityType, IndexHintIndexType indexType, String expected )
     {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Person",
-                                                              Arrays.asList( "name", "surname" ),
-                                                              EntityType.RELATIONSHIP,
-                                                              IndexHintIndexType.ANY );
-        String expected = "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`, `person`.`surname`)";
-        assertEquals( expected, actual );
+        return Arguments.of( "person",
+                             "Person",
+                             Arrays.asList( "name", "surname" ),
+                             entityType,
+                             indexType,
+                             expected );
     }
 
-    @Test
-    void indexFormatStringEscapesVariableName()
+    static Arguments escapedHint( EntityType entityType, IndexHintIndexType indexType, String expected )
     {
-        String actual = IndexHintException.indexFormatString( "pers`on",
-                                                              "Person",
-                                                              Collections.singletonList( "name" ),
-                                                              EntityType.NODE,
-                                                              IndexHintIndexType.ANY );
-        String expected = "INDEX FOR (`pers``on`:`Person`) ON (`pers``on`.`name`)";
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void indexFormatStringEscapesLabelName()
-    {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Pers`on",
-                                                              Collections.singletonList( "name" ),
-                                                              EntityType.NODE,
-                                                              IndexHintIndexType.ANY );
-        String expected = "INDEX FOR (`person`:`Pers``on`) ON (`person`.`name`)";
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void indexFormatStringEscapesRelationshipTypeName()
-    {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Pers`on",
-                                                              Collections.singletonList( "name" ),
-                                                              EntityType.RELATIONSHIP,
-                                                              IndexHintIndexType.ANY );
-        String expected = "INDEX FOR ()-[`person`:`Pers``on`]-() ON (`person`.`name`)";
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void indexFormatStringEscapesPropertyNames()
-    {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Person",
-                                                              Arrays.asList( "nam`e", "s`urname" ),
-                                                              EntityType.NODE,
-                                                              IndexHintIndexType.ANY );
-        String expected = "INDEX FOR (`person`:`Person`) ON (`person`.`nam``e`, `person`.`s``urname`)";
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void indexFormatStringForBtreeIndex()
-    {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Person",
-                                                              Collections.singletonList( "name" ),
-                                                              EntityType.NODE,
-                                                              IndexHintIndexType.BTREE );
-        String expected = "BTREE INDEX FOR (`person`:`Person`) ON (`person`.`name`)";
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void indexFormatStringForTextIndex()
-    {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Person",
-                                                              Collections.singletonList( "name" ),
-                                                              EntityType.NODE,
-                                                              IndexHintIndexType.TEXT );
-        String expected = "TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`)";
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void indexFormatStringForRangeIndex()
-    {
-        String actual = IndexHintException.indexFormatString( "person",
-                                                              "Person",
-                                                              Collections.singletonList( "name" ),
-                                                              EntityType.NODE,
-                                                              IndexHintIndexType.RANGE );
-        String expected = "RANGE INDEX FOR (`person`:`Person`) ON (`person`.`name`)";
-        assertEquals( expected, actual );
+        return Arguments.of( "pers`on",
+                             "Pers`on",
+                             Arrays.asList( "nam`e", "s`urname" ),
+                             entityType,
+                             indexType,
+                             expected );
     }
 }
