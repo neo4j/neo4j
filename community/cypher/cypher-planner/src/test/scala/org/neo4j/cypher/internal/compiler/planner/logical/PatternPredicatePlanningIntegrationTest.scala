@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
@@ -75,7 +73,6 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
@@ -90,13 +87,11 @@ import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
-import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
@@ -139,43 +134,25 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     // The important thing for this test is "RETURN u.id" instead of "RETURN u".
     // Like this the scoping is challenged to propagate `u` from the previous scope into the pattern expression
 
-    val patternComprehensionExpressionKeyString = "size(PatternComprehension(None,RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(u)),List(),None,None),RelationshipPattern(Some(Variable(r)),List(RelTypeName(FOLLOWS)),None,None,None,OUTGOING,false),NodePattern(Some(Variable(u2)),List(LabelName(User)),None,None))),None,Property(Variable(u2),PropertyKeyName(id))))"
+    val patternComprehensionExpressionKeyString = "size(PatternComprehension(None,RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(u)),List(),None,None,None),RelationshipPattern(Some(Variable(r)),List(RelTypeName(FOLLOWS)),None,None,None,OUTGOING,false),NodePattern(Some(Variable(u2)),List(LabelName(User)),None,None,None))),None,Property(Variable(u2),PropertyKeyName(id))))"
 
-    val plan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])", deduplicateNames = false)._2
+    val logicalPlan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])", deduplicateNames = false, stripProduceResults = false)._2
 
-    plan should beLike {
-      case Projection(
-        Sort(
-          Projection(
-            RollUpApply(
-              NodeByLabelScan("u", LabelName("User"),  SetExtractor(), IndexOrderNone),
-              Projection(
-                Selection(
-                  Ands(Seq(HasLabels(Variable("u2"), Seq(LabelName("User"))))),
-                  Expand(
-                    Argument(SetExtractor("u")),
-                    "u",
-                    OUTGOING,
-                    Seq(RelTypeName("FOLLOWS")),
-                    "u2",
-                    "r",
-                    _
-                  )
-                ),
-                MapKeys(AnonymousVariableNameGenerator("0"))
-              ),
-              AnonymousVariableNameGenerator("1"),
-              AnonymousVariableNameGenerator("0")
-            ),
-            MapKeys(`patternComprehensionExpressionKeyString`)
-          ),
-          Seq(Ascending(`patternComprehensionExpressionKeyString`))
-        ),
-        MapKeys("u.id")
-      ) => ()
-    }
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("`u.id`")
+        .projection("u.id AS `u.id`")
+        .sort(Seq(Ascending(s"$patternComprehensionExpressionKeyString")))
+        .projection(s"size(`  UNNAMED1`) AS `$patternComprehensionExpressionKeyString`")
+        .rollUpApply("  UNNAMED1", "  UNNAMED0")
+        .|.projection("u2.id AS `  UNNAMED0`")
+        .|.filter("u2:User")
+        .|.expandAll("(u)-[r:FOLLOWS]->(u2)")
+        .|.argument("u")
+        .nodeByLabelScan("u", "User", IndexOrderNone)
+        .build()
+    )
   }
-
   // Please look at the SemiApplyVsGetDegree benchmark.
   // GetDegree is slower on sparse nodes, but faster on dense nodes.
   // We heuristically always choose SemiApply, which will do better on average.
