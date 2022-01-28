@@ -55,14 +55,19 @@ public class BoltStateMachineV4StateTestBase
 
     protected BoltStateMachineV4 newStateMachineAfterAuth() throws BoltConnectionFatality
     {
-        var machine = (BoltStateMachineV4) env.newMachine( BoltProtocolV4.VERSION, BOLT_CHANNEL, MEMORY_TRACKER );
-        machine.process( BoltV4Messages.hello(), nullResponseHandler() );
-        return machine;
+        return newStateMachineAfterAuth(env);
     }
 
     protected BoltStateMachineV4 newStateMachineAfterAuth( String connectionId ) throws BoltConnectionFatality
     {
         var machine = (BoltStateMachineV4) env.newMachine( BoltProtocolV4.VERSION, BoltTestUtil.newTestBoltChannel( connectionId ), MEMORY_TRACKER );
+        machine.process( BoltV4Messages.hello(), nullResponseHandler() );
+        return machine;
+    }
+
+    protected static BoltStateMachineV4 newStateMachineAfterAuth( SessionExtension env ) throws BoltConnectionFatality
+    {
+        var machine = (BoltStateMachineV4) env.newMachine( BoltProtocolV4.VERSION, BOLT_CHANNEL, MEMORY_TRACKER );
         machine.process( BoltV4Messages.hello(), nullResponseHandler() );
         return machine;
     }
