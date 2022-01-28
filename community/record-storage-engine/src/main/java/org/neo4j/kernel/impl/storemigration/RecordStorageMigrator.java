@@ -30,7 +30,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.UUID;
 
 import org.neo4j.common.ProgressReporter;
@@ -61,10 +63,11 @@ import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -112,10 +115,12 @@ import org.neo4j.token.api.TokenHolder;
 import static java.util.Arrays.asList;
 import static org.apache.commons.io.IOUtils.lineIterator;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
+import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -233,7 +238,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 List<DatabaseFile> databaseFiles =
                         asList( RecordDatabaseFile.SCHEMA_STORE,
                                 RecordDatabaseFile.PROPERTY_STORE, RecordDatabaseFile.PROPERTY_ARRAY_STORE, RecordDatabaseFile.PROPERTY_STRING_STORE,
-                                RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
+                                RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                                RecordDatabaseFile.LABEL_TOKEN_STORE, RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE,
+                                RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
                 fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, true,
                         ExistingTargetStrategy.SKIP );
 
@@ -270,39 +277,18 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     }
                 }
 
-                try ( NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY, StoreType.META_DATA );
-                      SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, contextFactory,
-                              memoryTracker, dstStore.getMetaDataStore() ) )
+                try ( NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY, StoreType.META_DATA,
+                                                                     StoreType.LABEL_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.PROPERTY_KEY_TOKEN );
+                      var dstCursors = new CachedStoreCursors( dstStore, cursorContext );
+                      var dstAccess = createMigrationTargetSchemaRuleAccess( dstStore, contextFactory, memoryTracker, dstStore.getMetaDataStore() ) )
                 {
                     MetaDataStore metaDataStore = dstStore.getMetaDataStore();
                     metaDataStore.regenerateMetadata( storeId, externalId, cursorContext );
                     metaDataStore.setDatabaseIdUuid( databaseId, cursorContext );
 
-                    SchemaRule foundNLIThatNeedsUpdate = null;
-                    Iterable<SchemaRule> all = dstAccess.getAll();
-                    for ( SchemaRule schemaRule : all )
-                    {
-                        // This is the previous labelscanstore that we want to make into a real complete record
-                        if ( schemaRule.schema().equals( IndexDescriptor.NLI_PROTOTYPE.schema() ) )
-                        {
-                            // It was never persisted and now needs to persisted with a new id.
-                            if ( schemaRule.getId() == IndexDescriptor.INJECTED_NLI_ID )
-                            {
-                                foundNLIThatNeedsUpdate = IndexDescriptor.NLI_PROTOTYPE.materialise( dstAccess.nextId() );
-                                break;
-                            }
-                            // It was persisted and is a record with no properties, rewriting it will give it properties.
-                            if ( IndexDescriptor.NLI_GENERATED_NAME.equals( schemaRule.getName() ) )
-                            {
-                                foundNLIThatNeedsUpdate = schemaRule;
-                                break;
-                            }
-                        }
-                    }
-                    if ( foundNLIThatNeedsUpdate != null )
-                    {
-                        dstAccess.writeSchemaRule( foundNLIThatNeedsUpdate );
-                    }
+                    persisNodeLabelIndex( dstAccess );
+                    var dstTokensHolders = createTokenHolders( dstStore, dstCursors );
+                    filterOurBtreeIndexes( dstAccess, dstTokensHolders, directoryLayoutArg.getDatabaseName().equals( SYSTEM_DATABASE_NAME ) );
                     dstStore.flush( cursorContext );
                 }
 
@@ -317,6 +303,120 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         MetaDataRecord recordByCursor = oldMetadataStore.getRecordByCursor( id, record, RecordLoad.FORCE, pageCursor );
         return recordByCursor.inUse() ? recordByCursor.getValue() : -1;
+    }
+
+    /**
+     * Make sure node label index is correctly persisted. There are two situations where it might not be:
+     * 1. As part of upgrade to 4.3/4.4 a schema record without any properties was written to the schema store.
+     *    This record was used to represent the old label scan store (< 4.3) converted to node label index.
+     *    In this case we need to rewrite this schema to give it the properties it should have. In this way we
+     *    can keep the index id.
+     * 2. If no write transaction happened after upgrade of old store to 4.3/4.4 the upgrade transaction was never injected
+     *    and node label index (as schema rule with no properties) was never persisted at all. In this case
+     *    {@link IndexDescriptor#INJECTED_NLI} will be injected by {@link org.neo4j.internal.recordstorage.SchemaStorage}
+     *    when reading schema rules. In this case we materialise this injected rule with a new real id (instead of -2).
+     */
+    private static void persisNodeLabelIndex( SchemaRuleMigrationAccess dstAccess ) throws KernelException
+    {
+        SchemaRule foundNLIThatNeedsUpdate = null;
+        Iterable<SchemaRule> all = dstAccess.getAll();
+        for ( SchemaRule schemaRule : all )
+        {
+            // This is the previous labelscanstore that we want to make into a real complete record
+            if ( schemaRule.schema().equals( IndexDescriptor.NLI_PROTOTYPE.schema() ) )
+            {
+                // It was never persisted and now needs to persisted with a new id.
+                if ( schemaRule.getId() == IndexDescriptor.INJECTED_NLI_ID )
+                {
+                    foundNLIThatNeedsUpdate = IndexDescriptor.NLI_PROTOTYPE.materialise( dstAccess.nextId() );
+                    break;
+                }
+                // It was persisted and is a record with no properties, rewriting it will give it properties.
+                if ( IndexDescriptor.NLI_GENERATED_NAME.equals( schemaRule.getName() ) )
+                {
+                    foundNLIThatNeedsUpdate = schemaRule;
+                    break;
+                }
+            }
+        }
+        if ( foundNLIThatNeedsUpdate != null )
+        {
+            dstAccess.writeSchemaRule( foundNLIThatNeedsUpdate );
+        }
+    }
+
+    private static void filterOurBtreeIndexes( SchemaRuleMigrationAccess dstAccess, TokenHolders dstTokensHolders, boolean systemDb ) throws KernelException
+    {
+        if ( systemDb )
+        {
+            // Forcefully replace all
+            return;
+        }
+
+        Iterable<SchemaRule> all = dstAccess.getAll();
+
+        // Organize indexes by SchemaDescriptor
+        var indexesBySchema = new HashMap<SchemaDescriptor,List<IndexDescriptor>>();
+        for ( var schemaRule : all )
+        {
+            if ( schemaRule instanceof IndexDescriptor index )
+            {
+                indexesBySchema.computeIfAbsent( index.schema(), k -> new ArrayList<>() ).add( index );
+            }
+        }
+
+        // Figure out which btree indexes that has replacement and can be deleted and which don't
+        var indexesToDelete = new ArrayList<IndexDescriptor>();
+        var nonReplacedIndexes = new ArrayList<IndexDescriptor>();
+        for ( var schema : indexesBySchema.keySet() )
+        {
+            IndexDescriptor btreeIndex = null;
+            boolean hasReplacement = false;
+            for ( IndexDescriptor index : indexesBySchema.get( schema ) )
+            {
+                if ( index.getIndexType() == IndexType.BTREE )
+                {
+                    btreeIndex = index;
+                }
+                else if ( index.getIndexType() == IndexType.RANGE ||
+                          index.getIndexType() == IndexType.TEXT ||
+                          index.getIndexType() == IndexType.POINT )
+                {
+                    hasReplacement = true;
+                }
+            }
+            if ( btreeIndex != null )
+            {
+                if ( hasReplacement )
+                {
+                    indexesToDelete.add( btreeIndex );
+                }
+                else
+                {
+                    nonReplacedIndexes.add( btreeIndex );
+                }
+            }
+        }
+
+        // Throw if non-replaced index exists
+        if ( !nonReplacedIndexes.isEmpty() )
+        {
+            var nonReplacedIndexString = new StringJoiner( ", ", "[", "]" );
+            nonReplacedIndexes.forEach( index -> nonReplacedIndexString.add( index.userDescription( dstTokensHolders ) ) );
+            throw new IllegalStateException(
+                    "All BTREE indexes will be removed during migration. " +
+                    "It is assumed that those indexes should be replaced by some other index and to guard from unknowingly removing indexes, " +
+                    "all BTREE indexes need to have a corresponding RANGE, TEXT or POINT index as replacement for migration to succeed. " +
+                    "Please drop your BTREE indexes or create RANGE, TEXT or POINT indexes as replacements and retry the migration. " +
+                    "BTREE indexes without replacement: " + nonReplacedIndexString
+            );
+        }
+
+        // Delete all btree indexes
+        for ( IndexDescriptor indexToDelete : indexesToDelete )
+        {
+            dstAccess.deleteSchemaRule( indexToDelete.getId() );
+        }
     }
 
     void writeLastTxInformation( DatabaseLayout migrationStructure, TransactionId txInfo ) throws IOException
@@ -630,14 +730,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
               schemaStorageCreator )
         {
             dstStore.start( cursorContext );
-            TokenHolders srcTokenHolders = new TokenHolders( StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
-                    StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
-                    StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-            srcTokenHolders.setInitialTokens( allTokens( srcStore ), srcCursors );
+            TokenHolders srcTokenHolders = createTokenHolders( srcStore, srcCursors );
             SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorContext );
 
             try ( SchemaRuleMigrationAccess dstAccess =
-                          RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, contextFactory, memoryTracker );
+                          createMigrationTargetSchemaRuleAccess( dstStore, contextFactory, memoryTracker );
                   var schemaCursors = schemaStorageCreator.getSchemaStorageTokenCursors( srcCursors ) )
             {
                 migrateSchemaRules( srcAccess, dstAccess, schemaCursors );
@@ -654,6 +751,15 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         {
             dstAccess.writeSchemaRule( rule );
         }
+    }
+
+    private static TokenHolders createTokenHolders( NeoStores stores, CachedStoreCursors cursors )
+    {
+        TokenHolders tokenHolders = new TokenHolders( StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
+                                                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
+                                                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+        tokenHolders.setInitialTokens( allTokens( stores ), cursors );
+        return tokenHolders;
     }
 
     @Override
