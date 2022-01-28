@@ -218,48 +218,6 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
     }
 
     @Test
-    void shouldSupportUsingPeriodicCommitInSession() throws Exception
-    {
-        // Given
-        var machine = newStateMachineAfterAuth();
-        var params = map( "csvFileUrl", createLocalIrisData( machine ) );
-        var txIdBeforeQuery = env.lastClosedTxId();
-        var batch = 40;
-
-        // When
-        var recorder = new BoltResponseRecorder();
-        machine.process( run(
-                "USING PERIODIC COMMIT " + batch + "\n" +
-                        "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n" +
-                        "MATCH (c:Class {name: l.class_name})\n" +
-                        "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, " +
-                        "petal_length: l.petal_length, petal_width: l.petal_width})\n" +
-                        "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
-                        "RETURN count(*) AS c",
-                params ), recorder
-        );
-        machine.process( pullAll(), recorder );
-
-        // Then
-        assertThat( recorder.nextResponse() ).satisfies( succeeded() );
-        assertThat( recorder.nextResponse() ).satisfies( succeededWithRecord( 150L ) );
-
-        /*
-         * 7 tokens have been created for
-         * 'Sample' label
-         * 'HAS_CLASS' relationship type
-         * 'name', 'sepal_length', 'sepal_width', 'petal_length', and 'petal_width' property keys
-         *
-         * Note that the token id for the label 'Class' has been created in `createLocalIrisData(...)` so it shouldn't1
-         * be counted again here
-         */
-        var tokensCommits = 7;
-        var commits = (IRIS_DATA.split( "\n" ).length - 1 /* header */) / batch;
-        var txId = env.lastClosedTxId();
-        assertEquals( tokensCommits + commits + txIdBeforeQuery, txId );
-    }
-
-    @Test
     void shouldNotSupportUsingPeriodicCommitInTransaction() throws Exception
     {
         // Given
@@ -402,7 +360,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         return ((StatementProcessorTxManager) txManager).getCurrentNoOfOpenTx() > 0;
     }
 
-    private static String createLocalIrisData( BoltStateMachine machine ) throws Exception
+    static String createLocalIrisData( BoltStateMachine machine ) throws Exception
     {
         for ( String className : IRIS_CLASS_NAMES )
         {
@@ -439,7 +397,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
                     "Iris-virginica"
             };
 
-    private static final String IRIS_DATA =
+    static final String IRIS_DATA =
             "sepal_length,sepal_width,petal_length,petal_width,class_name\n" +
                     "5.1,3.5,1.4,0.2,Iris-setosa\n" +
                     "4.9,3.0,1.4,0.2,Iris-setosa\n" +

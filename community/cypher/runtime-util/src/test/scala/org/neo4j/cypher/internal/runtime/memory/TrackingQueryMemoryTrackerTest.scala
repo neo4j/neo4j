@@ -72,12 +72,12 @@ class TrackingQueryMemoryTrackerTest extends CypherFunSuite {
 
     // When
     operator0Tracker.allocateHeap(v1.estimatedHeapUsage)
-    operator0Tracker.allocateHeap(v2.estimatedHeapUsage)
-    operator0Tracker.releaseHeap(v3.estimatedHeapUsage)
+    operator0Tracker.allocateHeap(v3.estimatedHeapUsage)
+    operator0Tracker.releaseHeap(v2.estimatedHeapUsage)
     operator0Tracker.allocateHeap(v4.estimatedHeapUsage)
 
     // Then
-    val expected = Math.max(v1.estimatedHeapUsage() + v2.estimatedHeapUsage(), v1.estimatedHeapUsage() + v2.estimatedHeapUsage() - v3.estimatedHeapUsage() + v4.estimatedHeapUsage())
+    val expected = Math.max(v1.estimatedHeapUsage() + v3.estimatedHeapUsage(), v1.estimatedHeapUsage() + v3.estimatedHeapUsage() - v2.estimatedHeapUsage() + v4.estimatedHeapUsage())
     queryMemoryTracker.heapHighWaterMark should be(expected + sizeOfGrowingArray)
     txMemoryTracker.heapHighWaterMark() should be(expected)
     queryMemoryTracker.heapHighWaterMarkOfOperator(0) should be(expected)

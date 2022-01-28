@@ -69,6 +69,8 @@ public class SharedWebContainerTestBase
             // has committed and will be closed later. The strict verification that statements should be closed happens to early
             // in this scenario and will always fail the internal transaction.
             setWebContainerBuilderProperty( GraphDatabaseInternalSettings.track_tx_statement_close.name(), "false" );
+            // disable tracking for container because of broken periodic commit tracking
+            setWebContainerBuilderProperty( GraphDatabaseSettings.memory_tracking.name(), "false" );
             testWebContainer = WebContainerHolder.allocate();
             WebContainerHelper.cleanTheDatabase( testWebContainer );
             return null;

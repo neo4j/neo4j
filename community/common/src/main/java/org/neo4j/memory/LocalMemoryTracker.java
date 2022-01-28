@@ -146,7 +146,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     public void releaseNative( long bytes )
     {
         assert allocatedBytesNative >= bytes :
-                "Can't release more then it was allocated. Allocated native: " + allocatedBytesNative + ", release request: " + bytes;
+                "Can't release more than it was allocated. Allocated native: " + allocatedBytesNative + ", release request: " + bytes;
         this.allocatedBytesNative -= bytes;
         this.memoryPool.releaseNative( bytes );
     }
@@ -194,7 +194,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     public void releaseHeap( long bytes )
     {
         requireNonNegative( bytes );
-        assert allocatedBytesHeap >= bytes : "Can't release more then it was allocated. Allocated heap: " + allocatedBytesHeap + ", release request: " + bytes;
+        assert allocatedBytesHeap >= bytes : "Can't release more than it was allocated. Allocated heap: " + allocatedBytesHeap + ", release request: " + bytes;
         allocatedBytesHeap -= bytes;
 
         // If the localHeapPool has reserved a lot more memory than is being used release part of it again.
