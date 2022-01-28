@@ -142,7 +142,7 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
 
   /**
-   * Checks if a TEXT index exists for a given relationship type and properties, without taking any schema locks.
+   * Checks if a RANGE index exists for a given relationship type and properties, without taking any schema locks.
    */
   def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
 

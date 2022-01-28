@@ -115,6 +115,16 @@ public interface NotificationDetail
             return createNotificationDetail( "index", indexFormatString, true );
         }
 
+        public static NotificationDetail relationshipRangeIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
+        {
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             relationshipTypeName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.RELATIONSHIP,
+                                                                             IndexHintIndexType.RANGE );
+            return createNotificationDetail( "index", indexFormatString, true );
+        }
+
         public static NotificationDetail label( final String labelName )
         {
             return createNotificationDetail( "the missing label name", labelName, true );

@@ -97,6 +97,7 @@ object NotificationWrapping {
           case UsingAnyIndexType => NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
           case UsingBtreeIndexType => NotificationDetail.Factory.relationshipBtreeIndex(variableName, label, propertyKeys: _*)
           case UsingTextIndexType => NotificationDetail.Factory.relationshipTextIndex(variableName, label, propertyKeys: _*)
+          case UsingRangeIndexType => NotificationDetail.Factory.relationshipRangeIndex(variableName, label, propertyKeys: _*)
         }
       }
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, detail)
