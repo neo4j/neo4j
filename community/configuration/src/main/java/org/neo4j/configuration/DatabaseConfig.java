@@ -170,17 +170,20 @@ public class DatabaseConfig extends Config implements Lifecycle
     @Override
     public void init()
     {
-
     }
 
     @Override
     public void start()
     {
-
     }
 
     @Override
     public void stop() throws Exception
+    {
+    }
+
+    @Override
+    public void shutdown()
     {
         for ( var settingListeners : registeredListeners.entrySet() )
         {
@@ -192,12 +195,6 @@ public class DatabaseConfig extends Config implements Lifecycle
             }
         }
         registeredListeners = new ConcurrentHashMap<>();
-    }
-
-    @Override
-    public void shutdown()
-    {
-
     }
 
     Config getGlobalConfig()

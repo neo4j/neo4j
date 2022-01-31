@@ -31,10 +31,13 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Race;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
@@ -82,6 +85,25 @@ class DatabaseConfigTest
         Config newConfig = Config.newBuilder().fromConfig( dbConfig ).build();
         //Then
         assertThat( newConfig.get( default_database ) ).isEqualTo( "foo" );
+    }
+
+    @Test
+    void shouldUnregisterDatabaseConfigListenersOnShutdown()
+    {
+        // given
+        Config globalConfig = mock( Config.class );
+        LifeSupport life = new LifeSupport();
+        DatabaseConfig databaseConfig = life.add( new DatabaseConfig( Map.of(), globalConfig, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ) ) );
+        life.init();
+        SettingChangeListener<Boolean> listener = mock( SettingChangeListener.class );
+        databaseConfig.addListener( GraphDatabaseSettings.read_only_database_default, listener );
+        verify( globalConfig ).addListener( GraphDatabaseSettings.read_only_database_default, listener );
+
+        // when
+        life.shutdown();
+
+        // then
+        verify( globalConfig ).removeListener( GraphDatabaseSettings.read_only_database_default, listener );
     }
 
     private static class Listener implements SettingChangeListener<GraphDatabaseSettings.TransactionTracingLevel>
