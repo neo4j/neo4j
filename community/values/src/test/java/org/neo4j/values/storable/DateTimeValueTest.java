@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -469,13 +468,6 @@ class DateTimeValueTest
     void shouldEqualItself()
     {
         assertEqual( datetime( 10000, 100, UTC ), datetime( 10000, 100, UTC ) );
-    }
-
-    @Disabled // only runnable it JVM supports East-Saskatchewan
-    void shouldEqualRenamedTimeZone()
-    {
-        assertEqual( datetime( 10000, 100, ZoneId.of( "Canada/Saskatchewan" ) ),
-                     datetime( 10000, 100, ZoneId.of( "Canada/East-Saskatchewan" ) ) );
     }
 
     @Test

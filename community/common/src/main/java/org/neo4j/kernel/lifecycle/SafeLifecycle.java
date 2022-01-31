@@ -105,7 +105,6 @@ public abstract class SafeLifecycle implements Lifecycle, LifecycleStatusProvide
      * @param to The to state.
      * @param op The state transition operation.
      * @param force Causes the state to be updated regardless of if the operation throws.
-     * @throws Throwable Issues.
      */
     private void transition( LifecycleStatus expected, LifecycleStatus to, Operation op, boolean force ) throws Exception
     {

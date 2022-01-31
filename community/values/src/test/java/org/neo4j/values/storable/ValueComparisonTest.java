@@ -19,19 +19,16 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.lang.Integer.signum;
 import static java.lang.String.format;
@@ -257,7 +254,7 @@ public class ValueComparisonTest
     @Test
     void shouldOrderValuesCorrectly()
     {
-        List<Value> values = Arrays.stream( objs ).map( Values::of ).collect( Collectors.toList() );
+        List<Value> values = Arrays.stream( objs ).map( Values::of ).toList();
 
         for ( int i = 0; i < values.size(); i++ )
         {
@@ -273,14 +270,6 @@ public class ValueComparisonTest
                         format( "Comparing %s against %s does not agree with their positions in the sorted list (%d and " + "%d)", left, right, i, j ) );
             }
         }
-    }
-
-    @Disabled // only runnable it JVM supports East-Saskatchewan
-    public void shouldCompareRenamedTimeZonesByZoneNumber()
-    {
-        int cmp = Values.COMPARATOR.compare( datetime( 10000, 100, ZoneId.of( "Canada/Saskatchewan" ) ),
-                                             datetime( 10000, 100, ZoneId.of( "Canada/East-Saskatchewan" ) ) );
-        assertEquals( 0, cmp, "East-Saskatchewan and Saskatchewan are the same place" );
     }
 
     private static <T> int compare( Comparator<T> comparator, T left, T right )

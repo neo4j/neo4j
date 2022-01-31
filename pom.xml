@@ -881,7 +881,10 @@
                 <arg>-XDcompilePolicy=simple</arg>
                 <arg>-Xplugin:ErrorProne -Xep:MissingSummary:OFF -Xep:EmptyBlockTag:OFF -Xep:MalformedInlineTag:OFF -Xep:EqualsGetClass:OFF \
                   -Xep:StringSplitter:OFF -Xep:BadImport:OFF -Xep:InvalidBlockTag:OFF -Xep:InvalidInlineTag:OFF -Xep:AnnotateFormatMethod:OFF \
-                  -Xep:ImmutableEnumChecker:OFF -Xep:UnescapedEntity:OFF -Xep:InvalidParam:OFF -Xep:JavaLangClash:OFF \
+                  -Xep:ImmutableEnumChecker:OFF -Xep:UnescapedEntity:OFF -Xep:InvalidParam:OFF -Xep:JavaLangClash:OFF -Xep:ReturnValueIgnored:OFF \
+                  -Xep:FutureReturnValueIgnored:OFF -Xep:UnusedVariable:OFF -Xep:UnnecessaryLambda:OFF -Xep:DefaultCharset:OFF -Xep:UnnecessaryParentheses:OFF \
+                  -Xep:OperatorPrecedence:OFF -Xep:IntLongMath:OFF \
+                  -Xep:SelfComparison:WARN -Xep:BadAnnotationImplementation:WARN -Xep:ModifyingCollectionWithItself:WARN \
                   -XepExcludedPaths:.*/target/generated-sources/.*</arg>
                 <arg>-Xpkginfo:always</arg><!-- Prevents recompilation due to missing package-info.class, see MCOMPILER-368,-205 -->
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
@@ -899,7 +902,7 @@
                 <path>
                   <groupId>com.google.errorprone</groupId>
                   <artifactId>error_prone_core</artifactId>
-                  <version>2.10.0</version>
+                  <version>2.11.0</version>
                 </path>
               </annotationProcessorPaths>
             </configuration>

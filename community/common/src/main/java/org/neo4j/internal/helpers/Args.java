@@ -469,14 +469,8 @@ public class Args
     public static String jarUsage( Class<?> main, String... params )
     {
         StringBuilder usage = new StringBuilder( "USAGE: java [-cp ...] " );
-        try
-        {
-            String jar = main.getProtectionDomain().getCodeSource().getLocation().getPath();
-            usage.append( "-jar " ).append( jar );
-        }
-        catch ( Exception ignored )
-        {
-        }
+        String jar = main.getProtectionDomain().getCodeSource().getLocation().getPath();
+        usage.append( "-jar " ).append( jar );
         usage.append( ' ' ).append( main.getCanonicalName() );
         for ( String param : params )
         {

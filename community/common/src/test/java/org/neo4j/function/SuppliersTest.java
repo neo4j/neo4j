@@ -113,7 +113,7 @@ class SuppliersTest
     void correctlyReportInitialisedSuppliers()
     {
         Suppliers.Lazy<Object> lazySingleton = Suppliers.lazySingleton( () -> "a" );
-        lazySingleton.get();
+        assertNotNull( lazySingleton.get() );
         assertTrue( lazySingleton.isInitialised() );
         assertNotNull( lazySingleton.getIfPresent() );
         assertEquals( "a", lazySingleton.toString() );

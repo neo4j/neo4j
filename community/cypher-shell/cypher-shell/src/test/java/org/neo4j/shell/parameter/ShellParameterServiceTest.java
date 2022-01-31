@@ -26,7 +26,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +76,7 @@ class ShellParameterServiceTest
         assertEvaluate( "true", true );
         assertEvaluate( "point({x: 1.0, y: 2.0})", Values.pointValue( CARTESIAN, 1.0, 2.0 ) );
         assertEvaluate( "date('2021-01-13')", LocalDate.of( 2021, 1, 13 ) );
-        assertEvaluate( "datetime('2022-01-13T11:00Z')", ZonedDateTime.of( 2022, 1, 13, 11, 0, 0, 0, ZoneId.of( "Z" ) ) );
+        assertEvaluate( "datetime('2022-01-13T11:00Z')", ZonedDateTime.of( 2022, 1, 13, 11, 0, 0, 0, ZoneOffset.UTC ) );
         assertEvaluate( "localdatetime('2022-01-13T11:00')", LocalDateTime.of( 2022, 1, 13, 11, 0 ) );
         assertEvaluate( "localtime('12:00')", LocalTime.of( 12, 0 ) );
         assertEvaluate( "duration({ hours: 23 })", Values.durationValue( Duration.ofHours( 23 ) ) );
