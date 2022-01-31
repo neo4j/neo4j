@@ -128,13 +128,10 @@ class LogTruncationTest
                 {
                     commands.addAll( asList( permutations.get( cmd ) ) );
                 }
-                else if ( !Command.NeoStoreCommand.class.equals( cmd ) )
+                else if ( !isAbstract( cmd.getModifiers() ) )
                 {
-                    if ( !isAbstract( cmd.getModifiers() ) )
-                    {
-                        throw new AssertionError(
-                                "Unknown command type: " + cmd + ", please add missing instantiation to " + "test serialization of this command." );
-                    }
+                    throw new AssertionError(
+                            "Unknown command type: " + cmd + ", please add missing instantiation to " + "test serialization of this command." );
                 }
             }
         }

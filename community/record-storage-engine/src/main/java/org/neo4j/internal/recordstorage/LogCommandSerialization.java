@@ -247,11 +247,6 @@ public abstract class LogCommandSerialization implements CommandReader
         throw unsupportedInThisVersionException();
     }
 
-    public void writeNeoStoreCommand( WritableChannel channel, Command.NeoStoreCommand command ) throws IOException
-    {
-        throw unsupportedInThisVersionException();
-    }
-
     public void writeMetaDataCommand( WritableChannel channel, Command.MetaDataCommand command ) throws IOException
     {
         throw unsupportedInThisVersionException();

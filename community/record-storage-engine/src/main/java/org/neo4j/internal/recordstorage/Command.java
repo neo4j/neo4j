@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -310,34 +309,6 @@ public abstract class Command implements StorageCommand
                 // This lock on the property guards for reuse of this property
                 locks.add( lockService.acquireCustomLock( RECOVERY_LOCK_TYPE_RELATIONSHIP_GROUP, after.getId(), LockType.EXCLUSIVE ) );
             }
-        }
-    }
-
-    // Command that was used for graph properties.
-    // Here only for compatibility reasons for older versions (before 4.0)
-    @Deprecated( forRemoval = true )
-    public static class NeoStoreCommand extends BaseCommand<NeoStoreRecord>
-    {
-        NeoStoreCommand( NeoStoreRecord before, NeoStoreRecord after )
-        {
-            super( before, after );
-        }
-
-        NeoStoreCommand( LogCommandSerialization serialization, NeoStoreRecord before, NeoStoreRecord after )
-        {
-            super( serialization, before, after );
-        }
-
-        @Override
-        public boolean handle( CommandVisitor handler ) throws IOException
-        {
-            return false;
-        }
-
-        @Override
-        public void serialize( WritableChannel channel ) throws IOException
-        {
-            serialization.writeNeoStoreCommand( channel, this );
         }
     }
 
