@@ -32,8 +32,8 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -94,6 +94,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final TransactionMonitor transactionMonitor;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final KernelVersionRepository kernelVersionRepository;
+    private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final TransactionExecutionMonitor transactionExecutionMonitor;
     private final AvailabilityGuard databaseAvailabilityGuard;
     private final StorageEngine storageEngine;
@@ -134,8 +135,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final ConstraintSemantics constraintSemantics;
     private final AtomicInteger activeTransactionCounter = new AtomicInteger();
     private final TokenHoldersIdLookup tokenHoldersIdLookup;
-    private final ScopedMemoryPool transactionMemoryPool;
     private final AbstractSecurityLog securityLog;
+    private ScopedMemoryPool transactionMemoryPool;
 
     /**
      * Kernel transactions component status. True when stopped, false when started.
@@ -163,6 +164,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.transactionCommitProcess = transactionCommitProcess;
         this.eventListeners = eventListeners;
         this.transactionMonitor = transactionMonitor;
+        this.transactionsMemoryPool = transactionsMemoryPool;
         this.transactionExecutionMonitor = transactionExecutionMonitor;
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.storageEngine = storageEngine;
@@ -189,10 +191,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.txPool = new MonitoredTransactionPool(
                 new GlobalKernelTransactionPool( allTransactions, new KernelTransactionImplementationFactory( allTransactions, tracers ) ),
                 activeTransactionCounter, config );
-        this.transactionMemoryPool = transactionsMemoryPool.newDatabasePool( namedDatabaseId.name(),
-                config.get( memory_transaction_database_max_size ), memory_transaction_database_max_size.name() );
         this.securityLog = databaseDependendies.resolveDependency( AbstractSecurityLog.class );
-        config.addListener( memory_transaction_database_max_size, ( before, after ) -> transactionMemoryPool.setSize( after ) );
         doBlockNewTransactions();
     }
 
@@ -297,6 +296,14 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     public boolean haveClosingTransaction()
     {
         return allTransactions.stream().anyMatch( KernelTransactionImplementation::isClosing );
+    }
+
+    @Override
+    public void init() throws Exception
+    {
+        this.transactionMemoryPool = transactionsMemoryPool.newDatabasePool( namedDatabaseId.name(),
+                config.get( memory_transaction_database_max_size ), memory_transaction_database_max_size.name() );
+        config.addListener( memory_transaction_database_max_size, ( before, after ) -> transactionMemoryPool.setSize( after ) );
     }
 
     @Override

@@ -81,6 +81,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
@@ -583,6 +584,29 @@ class KernelTransactionsTest
         assertEquals( 0, kernelTransactions.getNumberOfActiveTransactions() );
     }
 
+    @Test
+    void shouldRegisterTransactionMemoryPoolOnInit() throws Exception
+    {
+        // given
+        GlobalMemoryGroupTracker memoryPools = new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null );
+        KernelTransactions transactions =
+                createTransactions( mock( StorageEngine.class ), mock( TransactionCommitProcess.class ), mock( TransactionIdStore.class ),
+                        DatabaseTracers.EMPTY, mock( Locks.class ), Clocks.nanoClock(), mock( AvailabilityGuard.class ), Config.defaults(), memoryPools );
+        assertThat( memoryPools.getDatabasePools() ).isEmpty();
+
+        // when
+        transactions.init();
+
+        // then
+        assertThat( memoryPools.getDatabasePools().size() ).isEqualTo( 1 );
+
+        // and when
+        transactions.shutdown();
+
+        // then
+        assertThat( memoryPools.getDatabasePools().size() ).isEqualTo( 0 );
+    }
+
     private static void stopKernelTransactions( KernelTransactions kernelTransactions )
     {
         try
@@ -688,15 +712,15 @@ class KernelTransactionsTest
         else
         {
             transactions = createTransactions( storageEngine, commitProcess, transactionIdStore, databaseTracers,
-                    locks, clock, databaseAvailabilityGuard, config );
+                    locks, clock, databaseAvailabilityGuard, config, new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ) );
         }
-        transactions.start();
+        life.add( transactions );
         return transactions;
     }
 
     private static KernelTransactions createTransactions( StorageEngine storageEngine, TransactionCommitProcess commitProcess,
             TransactionIdStore transactionIdStore, DatabaseTracers tracers, Locks locks,
-            SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard, Config config )
+            SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard, Config config, GlobalMemoryGroupTracker memoryGroupTracker )
     {
         return new KernelTransactions( config, locks, null,
                 commitProcess, mock( DatabaseTransactionEventListeners.class ),
@@ -707,7 +731,7 @@ class KernelTransactionsTest
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                 mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES,
-                new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),
+                memoryGroupTracker, writable(),
                 TransactionExecutionMonitor.NO_OP, ExternalIdReuseConditionProvider.NONE
         );
     }
