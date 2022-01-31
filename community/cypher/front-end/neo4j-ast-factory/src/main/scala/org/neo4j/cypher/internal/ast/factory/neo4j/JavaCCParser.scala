@@ -28,17 +28,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 case object JavaCCParser {
 
-  // Triggers to fallback to parboiled parser
-  private val FALLBACK_TRIGGERS = Seq()
-
-  def shouldFallback(errorMsg: String): Boolean = {
-    val upper = errorMsg.toUpperCase()
-    FALLBACK_TRIGGERS.exists(upper.contains)
-  }
-
   /**
-   * parse() should only be used when parsing a query that is certain to not include an administration command that has not yet been ported to JavaCCParser.
-   * Most likely, it should only be in tests.
    * @param queryText The query to be parsed.
    * @param cypherExceptionFactory A factory for producing error messages related to the specific implementation of the language.
    * @return
