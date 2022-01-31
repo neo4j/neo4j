@@ -50,9 +50,9 @@ abstract class AbstractCachedProperty extends Expression {
 
   def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val id = getId(row)
-    if (id == StatementConstants.NO_SUCH_ENTITY)
+    if (id == StatementConstants.NO_SUCH_ENTITY) {
       Values.NO_VALUE
-    else {
+    } else {
       getPropertyKey(state.query) match {
         case StatementConstants.NO_SUCH_PROPERTY_KEY => Values.NO_VALUE
         case propId =>
@@ -88,12 +88,37 @@ abstract class AbstractCachedNodeProperty extends AbstractCachedProperty {
                         propId: Int): Value = state.query.nodeProperty(id, propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = true)
 }
 
+abstract class AbstractCachedNodeHasProperty extends AbstractCachedProperty {
+  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value = state.query.nodeReadOps.getTxStateProperty(id, propId)
+
+  override def property(state: QueryState,
+                        id: Long,
+                        propId: Int): Value = {
+    if (state.query.nodeHasProperty(id, propId, state.cursors.nodeCursor, state.cursors.propertyCursor)) {
+      Values.TRUE
+    } else {
+      Values.NO_VALUE
+    }
+  }
+}
+
 abstract class AbstractCachedRelationshipProperty extends AbstractCachedProperty {
   override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value = state.query.relationshipReadOps.getTxStateProperty(id, propId)
 
   override def property(state: QueryState,
                         id: Long,
                         propId: Int): Value = state.query.relationshipProperty(id, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, throwOnDeleted = true)
+}
+
+abstract class AbstractCachedRelationshipHasProperty extends AbstractCachedProperty {
+  override def getTxStateProperty(state: QueryState, id: Long, propId: Int): Value = state.query.relationshipReadOps.getTxStateProperty(id, propId)
+
+  override def property(state: QueryState,
+                        id: Long,
+                        propId: Int): Value = {
+    val hasProperty = state.query.relationshipHasProperty(id, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)
+    if (hasProperty) Values.TRUE else Values.NO_VALUE
+  }
 }
 
 case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty.RuntimeKey)
@@ -117,8 +142,50 @@ case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTC
   override def children: Seq[AstNode[_]] = Seq(propertyKey)
 }
 
+case class CachedNodeHasProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty.RuntimeKey)
+  extends AbstractCachedNodeHasProperty
+{
+  override def toString: String = key.propertyAccessString
+
+  override def getId(ctx: ReadableRow): Long =
+    ctx.getByName(nodeName) match {
+      case IsNoValue() => StatementConstants.NO_SUCH_NODE
+      case n: VirtualNodeValue => n.id()
+      case other => throw new CypherTypeException(s"Type mismatch: expected a node but was $other")
+    }
+
+  override def getCachedProperty(ctx: ReadableRow): Value = ctx.getCachedProperty(key)
+
+  override def setCachedProperty(ctx: ReadableRow, value: Value): Unit = ctx.setCachedProperty(key, value)
+
+  override def getPropertyKey(tokenContext: ReadTokenContext): Int = propertyKey.getOptId(tokenContext).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)
+
+  override def children: Seq[AstNode[_]] = Seq(propertyKey)
+}
+
 case class CachedRelationshipProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty.RuntimeKey)
   extends AbstractCachedRelationshipProperty
+{
+  override def toString: String = key.propertyAccessString
+
+  override def getId(ctx: ReadableRow): Long =
+    ctx.getByName(nodeName) match {
+      case IsNoValue() => StatementConstants.NO_SUCH_RELATIONSHIP
+      case r: VirtualRelationshipValue => r.id()
+      case other => throw new CypherTypeException(s"Type mismatch: expected a relationship but was $other")
+    }
+
+  override def getCachedProperty(ctx: ReadableRow): Value = ctx.getCachedProperty(key)
+
+  override def setCachedProperty(ctx: ReadableRow, value: Value): Unit = ctx.setCachedProperty(key, value)
+
+  override def getPropertyKey(tokenContext: ReadTokenContext): Int = propertyKey.getOptId(tokenContext).getOrElse(StatementConstants.NO_SUCH_PROPERTY_KEY)
+
+  override def children: Seq[AstNode[_]] = Seq(propertyKey)
+}
+
+case class CachedRelationshipHasProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty.RuntimeKey)
+  extends AbstractCachedRelationshipHasProperty
 {
   override def toString: String = key.propertyAccessString
 
