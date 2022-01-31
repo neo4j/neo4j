@@ -17,9 +17,18 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <properties>
-        <license-text.header>headers/GPL-3-header.txt</license-text.header>
-        <moduleName>org.neo4j.cypher.internal.compiler</moduleName>
+        <appassembler-maven-plugin.version>2.1.0</appassembler-maven-plugin.version>
+        <assembly-suffix />
+        <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
+        <executable-suffix />
         <jline.version>3.21.0</jline.version>
+        <license-text.header>headers/GPL-3-header.txt</license-text.header>
+        <maven-assembly-plugin.version>3.3.0</maven-assembly-plugin.version>
+        <moduleName>org.neo4j.cypher.internal.compiler</moduleName>
+        <name-of-main-class>org.neo4j.shell.Main</name-of-main-class>
+        <native-maven-plugin.version>0.9.9</native-maven-plugin.version>
+        <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
+        <skipCompress>false</skipCompress>
         <svm.version>21.3.0</svm.version>
     </properties>
 
@@ -149,63 +158,163 @@
 
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>${appassembler-maven-plugin.version}</version>
+                <configuration>
+                    <assembleDirectory>${project.build.directory}/assembly</assembleDirectory>
+                    <repositoryLayout>flat</repositoryLayout>
+                    <repositoryName>lib</repositoryName>
+                    <extraJvmArguments>
+                        --add-opens java.base/java.net=ALL-UNNAMED
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens=java.base/java.nio=ALL-UNNAMED
+                    </extraJvmArguments>
+                    <programs>
+                        <program>
+                            <mainClass>${name-of-main-class}</mainClass>
+                            <id>cypher-shell</id>
+                        </program>
+                    </programs>
+                </configuration>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <id>make-distribution</id>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>assemble</goal>
                         </goals>
-                        <configuration>
-                            <finalName>cypher-shell-distribution-${project.version}</finalName>
-                            <minimizeJar>false</minimizeJar>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.neo4j.shell.Main</mainClass>
-                                    <manifestEntries>
-                                        <Add-Opens>java.base/java.lang java.base/java.nio java.base/sun.nio.ch</Add-Opens>
-                                    </manifestEntries>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <!--
-                                        Shading signded JARs will fail without this.
-                                        http://stackoverflow.com/questions/999489/invalid-signature-file-when-attempting-to-run-a-jar
-                                    -->
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>${maven-assembly-plugin.version}</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
                 <executions>
                     <execution>
                         <phase>package</phase>
+                        <id>assembly-java</id>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <appendAssemblyId>false</appendAssemblyId>
                             <descriptors>
-                                <descriptor>src/main/assembly/zip.xml</descriptor>
+                                <descriptor>src/main/assembly/assembly-java.xml</descriptor>
                             </descriptors>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
+            </extension>
+        </extensions>
     </build>
 
+    <profiles>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <executable-suffix>.exe</executable-suffix>
+            </properties>
+        </profile>
+        <profile>
+            <id>native</id>
+            <activation>
+                <property>
+                    <name>native</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>${native-maven-plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <mainClass>${name-of-main-class}</mainClass>
+                            <imageName>cypher-shell</imageName>
+                            <buildArgs>
+                                <buildArg>--no-fallback</buildArg>
+                                <!--
+                                 | Caused by
+                                 | org.neo4j.collection.trackable.HeapTrackingCollections and
+                                 | org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.ConstantCachedIn
+                                 | need some investigation
+                                 -->
+                                <buildArg>--allow-incomplete-classpath</buildArg>
+                            </buildArgs>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>create-native-image</id>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${exec-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>compress-binary</id>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration combine.self="override">
+                                    <executable>upx</executable>
+                                    <skip>${skipCompress}</skip>
+                                    <arguments>
+                                        <argument>${project.build.directory}/cypher-shell${executable-suffix}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>${maven-assembly-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>assembly-native</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <finalName>cypher-shell-${project.version}-${os.detected.classifier}</finalName>
+                                    <attach>false</attach>
+                                    <descriptors>
+                                        <descriptor>src/main/assembly/assembly-native${assembly-suffix}.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

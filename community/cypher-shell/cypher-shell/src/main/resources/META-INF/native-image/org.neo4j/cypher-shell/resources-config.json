@@ -1,0 +1,12 @@
+{
+  "bundles": [
+    {
+      "name": "net.sourceforge.argparse4j.internal.ArgumentParserImpl"
+    }
+  ],
+  "resources": [
+    {
+      "pattern": "build.properties"
+    }
+  ]
+}

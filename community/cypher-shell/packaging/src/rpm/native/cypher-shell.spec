@@ -8,8 +8,8 @@ URL: https://github.com/neo4j/neo4j
 Source0: https://github.com/neo4j/neo4j/archive/%{version}.tar.gz
 
 #Conflicts:
-Requires: which, jre-17-headless >= 17
-BuildArch: noarch
+Requires: which
+BuildArch: ${ARCH}
 Prefix: /usr
 
 %description
@@ -27,13 +27,13 @@ of Neo4j.
 rm -rf ${buildroot}
 
 mkdir -p %{buildroot}/%{_bindir}
+mkdir -p %{buildroot}/%{_datadir}/cypher-shell/bin
 mkdir -p %{buildroot}/%{_datadir}/cypher-shell/lib
 mkdir -p %{buildroot}/%{_mandir}/man1
 
 cd %{name}-%{version}
 
-install -m 0755 cypher-shell/cypher-shell %{buildroot}/%{_bindir}
-install -m 0755 cypher-shell/cypher-shell.jar %{buildroot}/%{_datadir}/cypher-shell/lib
+install -m 0755 cypher-shell/bin/cypher-shell %{buildroot}/%{_bindir}
 install -m 0644 manpages/* %{buildroot}/%{_mandir}/man1
 
 %clean

@@ -1,0 +1,55 @@
+<!--
+
+    Copyright (c) "Neo4j"
+    Neo4j Sweden AB [http://neo4j.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<assembly
+        xmlns="https://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+        xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 https://maven.apache.org/xsd/assembly-1.1.2.xsd">
+    <id>assembly-native</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <files>
+        <file>
+            <source>${project.basedir}/LICENSE.txt</source>
+            <destName>LICENSE</destName>
+            <outputDirectory/>
+        </file>
+        <file>
+            <source>src/main/assembly/README</source>
+            <outputDirectory/>
+        </file>
+        <file>
+            <source>${project.basedir}/NOTICE.txt</source>
+            <destName>NOTICE</destName>
+            <outputDirectory/>
+        </file>
+        <file>
+            <source>${project.basedir}/LICENSES.txt</source>
+            <destName>LICENSES</destName>
+            <outputDirectory/>
+        </file>
+        <file>
+            <source>${project.build.directory}/cypher-shell${executable-suffix}</source>
+            <outputDirectory>./bin</outputDirectory>
+        </file>
+    </files>
+</assembly>
