@@ -250,9 +250,8 @@ class SchemaRuleCommandTest
     {
         return r ->
         {
-            if ( r instanceof ConstraintDescriptor )
+            if ( r instanceof ConstraintDescriptor constraint )
             {
-                ConstraintDescriptor constraint = (ConstraintDescriptor) r;
                 return constraint.isIndexBackedConstraint() && constraint.asIndexBackedConstraint().hasOwnedIndexId();
             }
             return true;

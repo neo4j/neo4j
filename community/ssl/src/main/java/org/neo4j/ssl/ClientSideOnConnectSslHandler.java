@@ -131,9 +131,8 @@ public class ClientSideOnConnectSslHandler extends ChannelDuplexHandler
         @Override
         public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
         {
-            if ( evt instanceof SslHandshakeCompletionEvent )
+            if ( evt instanceof SslHandshakeCompletionEvent sslHandshakeEvent )
             {
-                SslHandshakeCompletionEvent sslHandshakeEvent = (SslHandshakeCompletionEvent) evt;
                 if ( sslHandshakeEvent.cause() == null )
                 {
                     SslHandler sslHandler = ctx.pipeline().get( SslHandler.class );

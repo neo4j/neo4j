@@ -631,9 +631,8 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     @Override
     public boolean equals( Value other )
     {
-        if ( other instanceof DurationValue )
+        if ( other instanceof DurationValue that )
         {
-            DurationValue that = (DurationValue) other;
             return that.months == this.months &&
                     that.days == this.days &&
                     that.seconds == this.seconds &&

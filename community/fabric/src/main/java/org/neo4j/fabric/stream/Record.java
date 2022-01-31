@@ -48,12 +48,10 @@ public abstract class Record
             return true;
         }
 
-        if ( !(o instanceof Record) )
+        if ( !(o instanceof Record that) )
         {
             return false;
         }
-
-        Record that = (Record) o;
 
         if ( this.size() != that.size() )
         {

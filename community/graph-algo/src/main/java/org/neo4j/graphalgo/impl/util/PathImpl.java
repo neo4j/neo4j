@@ -311,9 +311,8 @@ public final class PathImpl implements Path, Measurable
         {
             return true;
         }
-        else if ( obj instanceof Path )
+        else if ( obj instanceof Path other )
         {
-            Path other = (Path) obj;
             return start.equals( other.startNode() ) &&
                     iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
         }

@@ -145,9 +145,8 @@ class SchemaChecker
                     reporter.forSchema( record ).duplicateRuleContent( previousContentRecord );
                 }
 
-                if ( schemaRule instanceof IndexDescriptor )
+                if ( schemaRule instanceof IndexDescriptor rule )
                 {
-                    IndexDescriptor rule = (IndexDescriptor) schemaRule;
                     if ( rule.isUnique() && rule.getOwningConstraintId().isPresent() )
                     {
                         var previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(),
@@ -158,9 +157,8 @@ class SchemaChecker
                         }
                     }
                 }
-                else if ( schemaRule instanceof ConstraintDescriptor )
+                else if ( schemaRule instanceof ConstraintDescriptor rule )
                 {
-                    ConstraintDescriptor rule = (ConstraintDescriptor) schemaRule;
                     if ( rule.enforcesUniqueness() )
                     {
                         SchemaRecord previousObligation = indexObligations.put( rule.asIndexBackedConstraint().ownedIndexId(), record.copy() );
@@ -195,9 +193,8 @@ class SchemaChecker
                 {
                     SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, storeCursors );
                     schemaRule.schema().processWith( basicSchemaCheck );
-                    if ( schemaRule instanceof IndexDescriptor )
+                    if ( schemaRule instanceof IndexDescriptor rule )
                     {
-                        IndexDescriptor rule = (IndexDescriptor) schemaRule;
                         if ( rule.isUnique() )
                         {
                             SchemaRecord obligation = indexObligations.get( rule.getId() );
@@ -227,9 +224,8 @@ class SchemaChecker
                             reporter.forSchema( record ).malformedSchemaRule();
                         }
                     }
-                    else if ( schemaRule instanceof ConstraintDescriptor )
+                    else if ( schemaRule instanceof ConstraintDescriptor rule )
                     {
-                        ConstraintDescriptor rule = (ConstraintDescriptor) schemaRule;
                         if ( rule.enforcesUniqueness() )
                         {
                             ConstraintObligation obligation = constraintObligations.get( rule.getId() );

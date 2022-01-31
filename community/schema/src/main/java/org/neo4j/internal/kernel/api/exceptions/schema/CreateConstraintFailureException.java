@@ -57,9 +57,8 @@ public class CreateConstraintFailureException extends SchemaKernelException
         {
             message = String.format( "%s:%n%s", message, cause );
         }
-        if ( getCause() instanceof KernelException )
+        if ( getCause() instanceof KernelException cause )
         {
-            KernelException cause = (KernelException) getCause();
 
             return String.format( "%s:%n%s", message, cause.getUserMessage( tokenNameLookup ) );
         }

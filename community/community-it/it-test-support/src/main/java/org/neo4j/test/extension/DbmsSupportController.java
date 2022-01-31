@@ -332,19 +332,16 @@ public class DbmsSupportController
 
         if ( annotations.length == 1 )
         {
-            if ( annotations[0] instanceof DbmsExtension )
+            if ( annotations[0] instanceof DbmsExtension annotation )
             {
-                DbmsExtension annotation = (DbmsExtension) annotations[0];
                 return new TestConfiguration( annotation.configurationCallback() );
             }
-            if ( annotations[0] instanceof ImpermanentDbmsExtension )
+            if ( annotations[0] instanceof ImpermanentDbmsExtension annotation )
             {
-                ImpermanentDbmsExtension annotation = (ImpermanentDbmsExtension) annotations[0];
                 return new TestConfiguration( annotation.configurationCallback() );
             }
-            if ( annotations[0] instanceof BoltDbmsExtension )
+            if ( annotations[0] instanceof BoltDbmsExtension annotation )
             {
-                BoltDbmsExtension annotation = (BoltDbmsExtension) annotations[0];
                 return new TestConfiguration(
                         annotation.configurationCallback(),
                         dbmsBuilder -> dbmsBuilder.setConfig( BoltConnector.enabled, TRUE )

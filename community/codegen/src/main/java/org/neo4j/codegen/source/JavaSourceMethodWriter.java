@@ -29,8 +29,8 @@ import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
-import org.neo4j.codegen.MethodWriter;
 import org.neo4j.codegen.MethodReference;
+import org.neo4j.codegen.MethodWriter;
 import org.neo4j.codegen.TypeReference;
 
 class JavaSourceMethodWriter implements MethodWriter, ExpressionVisitor
@@ -341,9 +341,8 @@ class JavaSourceMethodWriter implements MethodWriter, ExpressionVisitor
         {
             append( value.toString() ).append( 'L' );
         }
-        else if ( value instanceof Double )
+        else if ( value instanceof Double doubleValue )
         {
-            Double doubleValue = (Double) value;
             if ( Double.isNaN( doubleValue ) )
             {
                 append( "Double.NaN" );

@@ -73,11 +73,10 @@ public abstract class VirtualRelationshipValue extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( !(other instanceof VirtualRelationshipValue) )
+        if ( !(other instanceof VirtualRelationshipValue that) )
         {
             return false;
         }
-        VirtualRelationshipValue that = (VirtualRelationshipValue) other;
         return id() == that.id();
     }
 

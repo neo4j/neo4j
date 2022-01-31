@@ -1027,18 +1027,16 @@ class PackStreamTest
         {
             packer.pack( (Boolean) value );
         }
-        else if ( value instanceof List )
+        else if ( value instanceof List list )
         {
-            List list = (List) value;
             packer.packListHeader( list.size() );
             for ( Object o : list )
             {
                 doTheThing( packer, o );
             }
         }
-        else if ( value instanceof Map )
+        else if ( value instanceof Map<?,?> map )
         {
-            Map<?,?> map = (Map<?,?>) value;
             packer.packMapHeader( map.size() );
             for ( Map.Entry<?,?> o : map.entrySet() )
             {

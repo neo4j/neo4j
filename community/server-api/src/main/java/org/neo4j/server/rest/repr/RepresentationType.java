@@ -159,9 +159,8 @@ public final class RepresentationType
     @Override
     public boolean equals( Object obj )
     {
-        if ( obj instanceof RepresentationType )
+        if ( obj instanceof RepresentationType that )
         {
-            RepresentationType that = (RepresentationType) obj;
             if ( this.valueName != null )
             {
                 if ( valueName.equals( that.valueName ) )

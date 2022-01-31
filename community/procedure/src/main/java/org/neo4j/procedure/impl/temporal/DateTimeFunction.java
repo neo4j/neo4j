@@ -129,10 +129,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         {
             if ( input != null && input.length == 2 )
             {
-                if ( input[0] instanceof IntegralValue && input[1] instanceof IntegralValue )
+                if ( input[0] instanceof IntegralValue seconds && input[1] instanceof IntegralValue nanoseconds )
                 {
-                    IntegralValue seconds = (IntegralValue) input[0];
-                    IntegralValue nanoseconds = (IntegralValue) input[1];
                     return DateTimeValue.ofEpoch(seconds, nanoseconds);
                 }
             }
@@ -173,9 +171,8 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         {
             if ( input != null && input.length == 1 )
             {
-                if ( input[0] instanceof IntegralValue )
+                if ( input[0] instanceof IntegralValue milliseconds )
                 {
-                    IntegralValue milliseconds = (IntegralValue) input[0];
                     return DateTimeValue.ofEpochMillis( milliseconds );
                 }
             }

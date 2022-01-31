@@ -181,9 +181,8 @@ public class Envelope
     @Override
     public boolean equals( Object obj )
     {
-        if ( obj instanceof Envelope )
+        if ( obj instanceof Envelope other )
         {
-            Envelope other = (Envelope) obj;
             if ( this.getDimension() != other.getDimension() )
             {
                 return false;

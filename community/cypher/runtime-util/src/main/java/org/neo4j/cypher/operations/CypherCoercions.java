@@ -305,11 +305,10 @@ public final class CypherCoercions
             }
 
             //slow route, recursively convert the list
-            if ( !(value instanceof SequenceValue) )
+            if ( !(value instanceof SequenceValue listValue) )
             {
                 throw cantCoerce( value, "List" );
             }
-            SequenceValue listValue = (SequenceValue) value;
             Coercer innerCoercer = CONVERTERS.get( innerType.getClass() );
             Neo4jTypes.AnyType nextInner = nextInner( innerType );
             if ( listValue.iterationPreference() == RANDOM_ACCESS )

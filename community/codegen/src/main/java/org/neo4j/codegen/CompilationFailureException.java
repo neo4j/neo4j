@@ -58,9 +58,8 @@ public class CompilationFailureException extends Exception
         for ( Diagnostic<?> diagnostic : diagnostics )
         {
             Object source = diagnostic.getSource();
-            if ( source instanceof JavaFileObject )
+            if ( source instanceof JavaFileObject file )
             {
-                JavaFileObject file = (JavaFileObject) source;
                 if ( file.getKind() == JavaFileObject.Kind.SOURCE )
                 {
                     if ( sources == null )

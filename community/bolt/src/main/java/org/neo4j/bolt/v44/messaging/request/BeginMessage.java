@@ -56,7 +56,7 @@ public class BeginMessage extends org.neo4j.bolt.v4.messaging.BeginMessage
         {
             return true;
         }
-        if ( !(o instanceof BeginMessage) )
+        if ( !(o instanceof BeginMessage that) )
         {
             return false;
         }
@@ -64,7 +64,6 @@ public class BeginMessage extends org.neo4j.bolt.v4.messaging.BeginMessage
         {
             return false;
         }
-        BeginMessage that = (BeginMessage) o;
         return Objects.equals( impersonatedUser, that.impersonatedUser );
     }
 

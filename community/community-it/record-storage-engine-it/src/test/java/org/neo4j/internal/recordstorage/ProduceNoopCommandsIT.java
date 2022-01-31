@@ -261,9 +261,8 @@ class ProduceNoopCommandsIT
     {
         transactionRepresentation.accept( command ->
         {
-            if ( command instanceof Command.BaseCommand )
+            if ( command instanceof Command.BaseCommand baseCommand )
             {
-                Command.BaseCommand baseCommand = (Command.BaseCommand) command;
                 String toString = baseCommand.toString();
                 if ( baseCommand.getBefore().equals( baseCommand.getAfter() ) )
                 {
@@ -280,12 +279,10 @@ class ProduceNoopCommandsIT
         MutableBoolean has = new MutableBoolean();
         transactionRepresentation.accept( command ->
         {
-            if ( command instanceof Command.BaseCommand )
+            if ( command instanceof Command.BaseCommand baseCommand )
             {
-                Command.BaseCommand baseCommand = (Command.BaseCommand) command;
-                if ( baseCommand instanceof Command.PropertyCommand )
+                if ( baseCommand instanceof Command.PropertyCommand propertyCommand )
                 {
-                    Command.PropertyCommand propertyCommand = (Command.PropertyCommand) baseCommand;
                     fixPropertyRecord( propertyCommand.getBefore() );
                     fixPropertyRecord( propertyCommand.getAfter() );
                 }

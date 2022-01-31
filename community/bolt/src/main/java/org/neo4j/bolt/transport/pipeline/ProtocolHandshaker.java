@@ -87,14 +87,13 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     {
         try
         {
-            if ( !(msg instanceof ByteBuf) )
+            if ( !(msg instanceof ByteBuf buf) )
             {
                 // we know it is HTTP as we only have HTTP (for Websocket) and TCP handlers installed.
                 log.warn( "Unsupported connection type: 'HTTP'. Bolt protocol only operates over a TCP connection or WebSocket." );
                 ctx.close();
                 return;
             }
-            ByteBuf buf = (ByteBuf) msg;
 
             assertEncryptedIfRequired();
 

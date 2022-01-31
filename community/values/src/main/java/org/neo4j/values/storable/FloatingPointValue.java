@@ -57,14 +57,12 @@ public abstract class FloatingPointValue extends NumberValue
     @Override
     public final boolean equals( Value other )
     {
-        if ( other instanceof FloatingPointValue )
+        if ( other instanceof FloatingPointValue that )
         {
-            FloatingPointValue that = (FloatingPointValue) other;
             return this.doubleValue() == that.doubleValue();
         }
-        else if ( other instanceof IntegralValue )
+        else if ( other instanceof IntegralValue that )
         {
-            IntegralValue that = (IntegralValue) other;
             return NumberValues.numbersEqual( this.doubleValue(), that.longValue() );
         }
         else

@@ -60,11 +60,10 @@ public abstract class VirtualNodeValue extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( !(other instanceof VirtualNodeValue) )
+        if ( !(other instanceof VirtualNodeValue that) )
         {
             return false;
         }
-        VirtualNodeValue that = (VirtualNodeValue) other;
         return id() == that.id();
     }
 

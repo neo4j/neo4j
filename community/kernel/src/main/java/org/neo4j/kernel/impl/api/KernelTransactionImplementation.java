@@ -991,9 +991,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void thawLocks() throws LocksNotFrozenException
     {
         Locks.Client locks = lockClient;
-        if ( locks instanceof FrozenLockClient )
+        if ( locks instanceof FrozenLockClient frozenLocks )
         {
-            FrozenLockClient frozenLocks = (FrozenLockClient) locks;
             if ( frozenLocks.thaw() )
             {
                 lockClient = frozenLocks.getRealLockClient();

@@ -180,12 +180,11 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     @Override
     public final long until( Temporal endExclusive, TemporalUnit unit )
     {
-        if ( !(endExclusive instanceof TemporalValue) )
+        if ( !(endExclusive instanceof TemporalValue to) )
         {
             throw new InvalidArgumentException( "Can only compute durations between TemporalValues." );
         }
         TemporalValue from = this;
-        TemporalValue to = (TemporalValue) endExclusive;
 
         if ( unit.isTimeBased() )
         {
@@ -310,9 +309,8 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         if ( field == TemporalFields.epochSeconds || field == TemporalFields.epochMillis )
         {
             T temp = temporal();
-            if ( temp instanceof ChronoZonedDateTime )
+            if ( temp instanceof ChronoZonedDateTime zdt )
             {
-                ChronoZonedDateTime zdt = (ChronoZonedDateTime) temp;
                 if ( field == TemporalFields.epochSeconds )
                 {
                     return Values.longValue( zdt.toInstant().toEpochMilli() / 1000 );
@@ -1552,11 +1550,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         @Override
         public void assign( String key, Object valueObj )
         {
-            if ( !(valueObj instanceof String) )
+            if ( !(valueObj instanceof String value) )
             {
                 throw new InvalidArgumentException( String.format( "Cannot assign %s to field %s", valueObj, key ) );
             }
-            String value = (String) valueObj;
             if ( "timezone".equalsIgnoreCase( key ) )
             {
                 if ( timezone == null )

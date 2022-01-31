@@ -512,9 +512,8 @@ public class SchemaCache
 
         void addSchemaRule( SchemaRule rule )
         {
-            if ( rule instanceof ConstraintDescriptor )
+            if ( rule instanceof ConstraintDescriptor constraint )
             {
-                ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
                 constraint = constraintSemantics.readConstraint( constraint );
                 constraintsById.put( constraint.getId(), constraint );
                 constrainsByName.put( constraint.getName(), constraint );

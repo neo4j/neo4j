@@ -232,14 +232,12 @@ class PathValueBuilderTest
         RelationshipScanCursor cursors = mock( RelationshipScanCursor.class );
         for ( AnyValue value : values )
         {
-            if ( value instanceof VirtualNodeValue )
+            if ( value instanceof VirtualNodeValue nodeValue )
             {
-                VirtualNodeValue nodeValue = (VirtualNodeValue) value;
                 when( dbAccess.nodeById( nodeValue.id() ) ).thenReturn( nodeValue );
             }
-            else if ( value instanceof VirtualRelationshipValue )
+            else if ( value instanceof VirtualRelationshipValue relationshipValue )
             {
-                VirtualRelationshipValue relationshipValue = (VirtualRelationshipValue) value;
                 when( dbAccess.relationshipById( relationshipValue.id() ) ).thenReturn( relationshipValue );
             }
             else

@@ -119,11 +119,10 @@ public class ProfilingTracerData implements OperatorProfile
         {
             return true;
         }
-        if ( !(o instanceof OperatorProfile) )
+        if ( !(o instanceof OperatorProfile that) )
         {
             return false;
         }
-        OperatorProfile that = (OperatorProfile) o;
         return this.time() == that.time() &&
                this.dbHits() == that.dbHits() &&
                this.rows() == that.rows() &&

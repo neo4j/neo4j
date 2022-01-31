@@ -67,9 +67,8 @@ public final class UTF8StringValue extends StringValue
     @Override
     public boolean equals( Value value )
     {
-        if ( value instanceof UTF8StringValue )
+        if ( value instanceof UTF8StringValue other )
         {
-            UTF8StringValue other = (UTF8StringValue) value;
             return Arrays.equals( bytes, offset, offset + byteLength, other.bytes, other.offset, other.offset + other.byteLength );
         }
         else
@@ -332,9 +331,8 @@ public final class UTF8StringValue extends StringValue
     @Override
     public TextValue plus( TextValue other )
     {
-        if ( other instanceof UTF8StringValue )
+        if ( other instanceof UTF8StringValue rhs )
         {
-            UTF8StringValue rhs = (UTF8StringValue) other;
             byte[] newBytes = new byte[byteLength + rhs.byteLength];
             System.arraycopy( bytes, offset, newBytes, 0, byteLength );
             System.arraycopy( rhs.bytes, rhs.offset, newBytes, byteLength, rhs.byteLength );
@@ -348,9 +346,8 @@ public final class UTF8StringValue extends StringValue
     public boolean startsWith( TextValue other )
     {
 
-        if ( other instanceof UTF8StringValue )
+        if ( other instanceof UTF8StringValue suffix )
         {
-            UTF8StringValue suffix = (UTF8StringValue) other;
             return startsWith( suffix, 0 );
         }
 
@@ -361,9 +358,8 @@ public final class UTF8StringValue extends StringValue
     public boolean endsWith( TextValue other )
     {
 
-        if ( other instanceof UTF8StringValue )
+        if ( other instanceof UTF8StringValue suffix )
         {
-            UTF8StringValue suffix = (UTF8StringValue) other;
             return startsWith( suffix, byteLength - suffix.byteLength );
         }
 
@@ -375,9 +371,8 @@ public final class UTF8StringValue extends StringValue
     public boolean contains( TextValue other )
     {
 
-        if ( other instanceof UTF8StringValue )
+        if ( other instanceof final UTF8StringValue substring )
         {
-            final UTF8StringValue substring = (UTF8StringValue) other;
             if ( byteLength == 0 )
             {
                 return substring.byteLength == 0;
@@ -497,11 +492,10 @@ public final class UTF8StringValue extends StringValue
     @Override
     public int compareTo( TextValue other )
     {
-        if ( !(other instanceof UTF8StringValue) )
+        if ( !(other instanceof UTF8StringValue otherUTF8) )
         {
             return super.compareTo( other );
         }
-        UTF8StringValue otherUTF8 = (UTF8StringValue) other;
         return byteArrayCompare( bytes, offset, byteLength, otherUTF8.bytes, otherUTF8.offset, otherUTF8.byteLength );
     }
 

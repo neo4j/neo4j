@@ -119,9 +119,8 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
 
         private void processSchemaCommand( Command.Mode commandMode, SchemaRule schemaRule ) throws IOException
         {
-            if ( schemaRule instanceof IndexDescriptor )
+            if ( schemaRule instanceof IndexDescriptor indexRule )
             {
-                IndexDescriptor indexRule = (IndexDescriptor) schemaRule;
                 // Why apply index updates here? Here's the thing... this is a batch applier, which means that
                 // index updates are gathered throughout the batch and applied in the end of the batch.
                 // Assume there are some transactions creating or modifying nodes that may not be covered

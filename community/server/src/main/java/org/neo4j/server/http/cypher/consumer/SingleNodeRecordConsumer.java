@@ -54,9 +54,8 @@ public class SingleNodeRecordConsumer implements BoltResult.RecordConsumer
     @Override
     public void consumeField( AnyValue value ) throws IOException
     {
-        if ( value instanceof NodeValue )
+        if ( value instanceof NodeValue node )
         {
-            NodeValue node = (NodeValue) value;
             node.writeTo( cachingWriter );
         }
     }

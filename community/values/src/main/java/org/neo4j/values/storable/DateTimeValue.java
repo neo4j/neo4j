@@ -291,12 +291,11 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 if ( selectingDateTime )
                 {
                     AnyValue dtField = fields.get( TemporalFields.datetime );
-                    if ( !(dtField instanceof TemporalValue) )
+                    if ( !(dtField instanceof TemporalValue dt) )
                     {
                         throw new InvalidArgumentException(
                                 String.format( "Cannot construct date time from: %s", dtField ) );
                     }
-                    TemporalValue dt = (TemporalValue) dtField;
                     LocalTime timePart = dt.getTimePart( defaultZone ).toLocalTime();
                     ZoneId zoneId = dt.getZoneId( defaultZone );
                     result = ZonedDateTime.of( dt.getDatePart(), timePart, zoneId );
@@ -307,24 +306,22 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     if ( fields.containsKey( TemporalFields.epochSeconds ) )
                     {
                         AnyValue epochField = fields.get( TemporalFields.epochSeconds );
-                        if ( !(epochField instanceof IntegralValue) )
+                        if ( !(epochField instanceof IntegralValue epochSeconds) )
                         {
                             throw new InvalidArgumentException(
                                     String.format( "Cannot construct date time from: %s", epochField ) );
                         }
-                        IntegralValue epochSeconds = (IntegralValue) epochField;
                         result = assertValidArgument( () -> ZonedDateTime
                                 .ofInstant( Instant.ofEpochMilli( epochSeconds.longValue() * 1000 ), timezone() ) );
                     }
                     else
                     {
                         AnyValue epochField = fields.get( TemporalFields.epochMillis );
-                        if ( !(epochField instanceof IntegralValue) )
+                        if ( !(epochField instanceof IntegralValue epochMillis) )
                         {
                             throw new InvalidArgumentException(
                                     String.format( "Cannot construct date time from: %s", epochField ) );
                         }
-                        IntegralValue epochMillis = (IntegralValue) epochField;
                         result = assertValidArgument( () -> ZonedDateTime
                                 .ofInstant( Instant.ofEpochMilli( epochMillis.longValue() ), timezone() ) );
                     }
@@ -338,12 +335,11 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     if ( selectingTime )
                     {
                         AnyValue timeField = fields.get( TemporalFields.time );
-                        if ( !(timeField instanceof TemporalValue) )
+                        if ( !(timeField instanceof TemporalValue t) )
                         {
                             throw new InvalidArgumentException(
                                     String.format( "Cannot construct time from: %s", timeField ) );
                         }
-                        TemporalValue t = (TemporalValue) timeField;
                         time = t.getTimePart( defaultZone ).toLocalTime();
                         zoneId = t.getZoneId( defaultZone );
                         selectingTimeZone = t.supportsTimeZone();
@@ -358,12 +354,11 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     if ( selectingDate )
                     {
                         AnyValue dateField = fields.get( TemporalFields.date );
-                        if ( !(dateField instanceof TemporalValue) )
+                        if ( !(dateField instanceof TemporalValue t) )
                         {
                             throw new InvalidArgumentException(
                                     String.format( "Cannot construct date from: %s", dateField ) );
                         }
-                        TemporalValue t = (TemporalValue) dateField;
                         date = t.getDatePart();
                     }
                     else

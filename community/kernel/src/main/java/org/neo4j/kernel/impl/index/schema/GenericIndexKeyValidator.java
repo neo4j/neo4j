@@ -92,9 +92,8 @@ class GenericIndexKeyValidator implements IndexValueValidator
         if ( value.isSequenceValue() )
         {
             SequenceValue sequenceValue = (SequenceValue) value;
-            if ( sequenceValue instanceof TextArray )
+            if ( sequenceValue instanceof TextArray textArray )
             {
-                TextArray textArray = (TextArray) sequenceValue;
                 int length = 0;
                 for ( int i = 0; i < textArray.length(); i++ )
                 {

@@ -204,9 +204,8 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
     @Override
     public final boolean equals( Object o )
     {
-        if ( o instanceof ConstraintDescriptor )
+        if ( o instanceof ConstraintDescriptor that )
         {
-            ConstraintDescriptor that = (ConstraintDescriptor) o;
             boolean compare = this.type() == that.type() && this.schema().equals( that.schema() );
             if ( compare && that.isIndexBackedConstraint() )
             {

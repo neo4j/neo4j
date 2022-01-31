@@ -50,16 +50,14 @@ final class JoltPathSerializer extends StdSerializer<Path>
         while ( it.hasNext() )
         {
             var entity = it.next();
-            if ( entity instanceof Node )
+            if ( entity instanceof Node node )
             {
-                Node node = (Node) entity;
                 lastNodeId = node.getId();
 
                 generator.writeObject( node );
             }
-            else if ( entity instanceof Relationship )
+            else if ( entity instanceof Relationship rel )
             {
-                Relationship rel = (Relationship) entity;
 
                 if ( rel.getStartNodeId() != lastNodeId )
                 {

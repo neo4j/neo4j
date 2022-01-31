@@ -564,11 +564,10 @@ public abstract class MapValue extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( !(other instanceof MapValue) )
+        if ( !(other instanceof MapValue that) )
         {
             return false;
         }
-        MapValue that = (MapValue) other;
         int size = size();
         if ( size != that.size() )
         {

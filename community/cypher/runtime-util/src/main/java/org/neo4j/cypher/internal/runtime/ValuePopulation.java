@@ -90,9 +90,8 @@ public final class ValuePopulation
                                       NodeCursor nodeCursor,
                                       PropertyCursor propertyCursor )
     {
-        if ( value instanceof NodeEntityWrappingNodeValue )
+        if ( value instanceof NodeEntityWrappingNodeValue wrappingNodeValue )
         {
-            NodeEntityWrappingNodeValue wrappingNodeValue = (NodeEntityWrappingNodeValue) value;
             wrappingNodeValue.populate( nodeCursor, propertyCursor );
             return wrappingNodeValue;
         }
@@ -112,9 +111,8 @@ public final class ValuePopulation
                                               RelationshipScanCursor relCursor,
                                               PropertyCursor propertyCursor )
     {
-        if ( value instanceof RelationshipEntityWrappingValue )
+        if ( value instanceof RelationshipEntityWrappingValue wrappingValue )
         {
-            RelationshipEntityWrappingValue wrappingValue = (RelationshipEntityWrappingValue) value;
             wrappingValue.populate( relCursor, propertyCursor );
             return wrappingValue;
         }

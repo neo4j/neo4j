@@ -96,9 +96,8 @@ class DurationFunction implements CallableUserFunction
             {
                 return DurationValue.parse( (TextValue) input[0] );
             }
-            else if ( input[0] instanceof MapValue )
+            else if ( input[0] instanceof MapValue map )
             {
-                MapValue map = (MapValue) input[0];
                 return DurationValue.build( map );
             }
         }
@@ -167,10 +166,8 @@ class DurationFunction implements CallableUserFunction
             }
             else if ( input.length == 2 )
             {
-                if ( input[0] instanceof TemporalValue && input[1] instanceof TemporalValue )
+                if ( input[0] instanceof TemporalValue from && input[1] instanceof TemporalValue to )
                 {
-                    TemporalValue from = (TemporalValue) input[0];
-                    TemporalValue to = (TemporalValue) input[1];
                     return DurationValue.between( unit, from, to );
                 }
             }

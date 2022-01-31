@@ -124,11 +124,10 @@ public final class IndexConfig
         {
             return true;
         }
-        if ( !(o instanceof IndexConfig) )
+        if ( !(o instanceof IndexConfig that) )
         {
             return false;
         }
-        IndexConfig that = (IndexConfig) o;
         return map.equals( that.map );
     }
 

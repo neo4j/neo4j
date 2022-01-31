@@ -103,9 +103,8 @@ public abstract class Pair<T1, T2>
         {
             return true;
         }
-        if ( obj instanceof Pair )
+        if ( obj instanceof Pair<?,?> that )
         {
-            Pair<?,?> that = (Pair<?,?>) obj;
             return Objects.equals( this.other(), that.other() ) && Objects.equals( this.first(), that.first() );
         }
         return false;

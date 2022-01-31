@@ -36,9 +36,8 @@ public class ObjectToRepresentationConverter
         {
             return getListRepresentation( (Iterable) data );
         }
-        if ( data instanceof Iterator )
+        if ( data instanceof Iterator iterator )
         {
-            Iterator iterator = (Iterator) data;
             return getIteratorRepresentation( iterator );
         }
         if ( data instanceof Map )

@@ -85,13 +85,12 @@ public class BoltProtocolVersion
         {
             return true;
         }
-        else if ( !(o instanceof BoltProtocolVersion) )
+        else if ( !(o instanceof BoltProtocolVersion other) )
         {
             return false;
         }
         else
         {
-            BoltProtocolVersion other = (BoltProtocolVersion) o;
             return this.getMajorVersion() == other.getMajorVersion() && this.getMinorVersion() == other.getMinorVersion();
         }
     }

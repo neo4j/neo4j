@@ -87,9 +87,8 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
     public static boolean isDeletedInCurrentTransaction( Node node )
     {
-        if ( node instanceof NodeEntity )
+        if ( node instanceof NodeEntity proxy )
         {
-            NodeEntity proxy = (NodeEntity) node;
             KernelTransaction ktx = proxy.internalTransaction.kernelTransaction();
             return ktx.dataRead().nodeDeletedInTransaction( proxy.nodeId );
         }

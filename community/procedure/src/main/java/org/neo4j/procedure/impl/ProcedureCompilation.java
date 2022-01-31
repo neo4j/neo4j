@@ -546,9 +546,8 @@ public final class ProcedureCompilation
         {
             return ((ByteArray) input).asObjectCopy();
         }
-        if ( input instanceof SequenceValue )
+        if ( input instanceof SequenceValue list )
         {
-            SequenceValue list = (SequenceValue) input;
             if ( list.iterationPreference() == RANDOM_ACCESS )
             {
                 byte[] bytes = new byte[list.length()];

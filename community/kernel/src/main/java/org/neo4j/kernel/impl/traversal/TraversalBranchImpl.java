@@ -342,13 +342,12 @@ class TraversalBranchImpl implements TraversalBranch
         {
             return true;
         }
-        if ( !( obj instanceof TraversalBranch ) )
+        if ( !(obj instanceof TraversalBranch other) )
         {
             return false;
         }
 
         TraversalBranch branch = this;
-        TraversalBranch other = (TraversalBranch) obj;
         if ( branch.length() != other.length() )
         {
             return false;

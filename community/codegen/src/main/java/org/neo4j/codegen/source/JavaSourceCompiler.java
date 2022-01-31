@@ -37,9 +37,8 @@ interface JavaSourceCompiler
         @Override
         public final void applyTo( Object target )
         {
-            if ( target instanceof Configuration )
+            if ( target instanceof Configuration configuration )
             {
-                Configuration configuration = (Configuration) target;
                 configuration.compiler = this;
                 configure( configuration );
             }

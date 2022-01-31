@@ -189,9 +189,8 @@ public class TypeCheckers
             return converter;
         }
 
-        if ( javaType instanceof ParameterizedType )
+        if ( javaType instanceof ParameterizedType pt )
         {
-            ParameterizedType pt = (ParameterizedType) javaType;
             Type rawType = pt.getRawType();
 
             if ( rawType == List.class )
@@ -222,9 +221,8 @@ public class TypeCheckers
 
     private Type findValidSuperClass( Type type )
     {
-        if ( type instanceof Class<?> )
+        if ( type instanceof Class<?> aClass )
         {
-            Class<?> aClass = (Class<?>) type;
             while ( !javaToNeo.containsKey( aClass ) )
             {
                 aClass = aClass.getSuperclass();

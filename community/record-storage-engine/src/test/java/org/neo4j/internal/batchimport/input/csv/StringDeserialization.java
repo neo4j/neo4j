@@ -56,9 +56,8 @@ public class StringDeserialization implements Deserialization<String>
 
     private void stringify( Object value )
     {
-        if ( value instanceof String )
+        if ( value instanceof String string )
         {
-            String string = (String) value;
             boolean quote = string.indexOf( '.' ) != -1 || string.indexOf( config.quotationCharacter() ) != -1;
             if ( quote )
             {
@@ -83,9 +82,8 @@ public class StringDeserialization implements Deserialization<String>
                 stringify( item );
             }
         }
-        else if ( value instanceof Number )
+        else if ( value instanceof Number number )
         {
-            Number number = (Number) value;
             if ( value instanceof Float )
             {
                 builder.append( number.floatValue() );

@@ -89,9 +89,8 @@ public enum GeometryType
                     byte[] dataBody = new byte[data.length - dataHeader.length];
                     System.arraycopy( data, dataHeader.length, dataBody, 0, dataBody.length );
                     Value dataValue = DynamicArrayStore.getRightArray( dataHeader, dataBody );
-                    if ( dataValue instanceof FloatingPointArray )
+                    if ( dataValue instanceof FloatingPointArray numbers )
                     {
-                        FloatingPointArray numbers = (FloatingPointArray) dataValue;
                         PointValue[] points = new PointValue[numbers.length() / header.dimension];
                         for ( int i = 0; i < points.length; i++ )
                         {

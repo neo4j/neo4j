@@ -75,9 +75,8 @@ public class RouteMessage implements RequestMessage
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof RouteMessage )
+        if ( o instanceof RouteMessage that )
         {
-            RouteMessage that = (RouteMessage) o;
             return Objects.equals( requestContext, that.requestContext ) && Objects.equals( databaseName, that.databaseName )
                     && Objects.equals( this.bookmarks, that.bookmarks );
         }

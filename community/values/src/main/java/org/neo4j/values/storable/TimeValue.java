@@ -220,11 +220,10 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 if ( selectingTime )
                 {
                     AnyValue time = fields.get( TemporalFields.time );
-                    if ( !(time instanceof TemporalValue) )
+                    if ( !(time instanceof TemporalValue t) )
                     {
                         throw new InvalidArgumentException( String.format( "Cannot construct time from: %s", time ) );
                     }
-                    TemporalValue t = (TemporalValue) time;
                     result = t.getTimePart( defaultZone );
                     selectingTimeZone = t.supportsTimeZone();
                 }
@@ -260,7 +259,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             protected TimeValue selectTime(
                     AnyValue temporal )
             {
-                if ( !(temporal instanceof TemporalValue) )
+                if ( !(temporal instanceof TemporalValue v) )
                 {
                     throw new InvalidArgumentException( String.format( "Cannot construct time from: %s", temporal ) );
                 }
@@ -270,7 +269,6 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                     return (TimeValue) temporal;
                 }
 
-                TemporalValue v = (TemporalValue) temporal;
                 OffsetTime time = v.getTimePart( defaultZone );
                 if ( timezone != null )
                 {

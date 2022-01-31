@@ -107,11 +107,10 @@ public class CountsKey
     @Override
     public boolean equals( Object obj )
     {
-        if ( !(obj instanceof CountsKey) )
+        if ( !(obj instanceof CountsKey other) )
         {
             return false;
         }
-        CountsKey other = (CountsKey) obj;
         return type == other.type && first == other.first && second == other.second;
     }
 

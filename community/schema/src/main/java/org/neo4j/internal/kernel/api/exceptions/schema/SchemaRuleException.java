@@ -72,9 +72,8 @@ public class SchemaRuleException extends SchemaKernelException
             throw new AssertionError( "Unknown entity type: " + schema.entityType() );
         }
 
-        if ( schemaThing instanceof ConstraintDescriptor )
+        if ( schemaThing instanceof ConstraintDescriptor constraint )
         {
-            ConstraintDescriptor constraint = (ConstraintDescriptor) schemaThing;
             switch ( constraint.type() )
             {
             case UNIQUE:
@@ -87,9 +86,8 @@ public class SchemaRuleException extends SchemaKernelException
                 throw new AssertionError( "Unknown constraint type: " + constraint.type() );
             }
         }
-        else if ( schemaThing instanceof IndexDescriptor )
+        else if ( schemaThing instanceof IndexDescriptor index )
         {
-            IndexDescriptor index = (IndexDescriptor) schemaThing;
             IndexType indexType = index.getIndexType();
             if ( indexType != IndexType.BTREE )
             {

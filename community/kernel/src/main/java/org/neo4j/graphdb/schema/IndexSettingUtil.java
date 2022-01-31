@@ -244,9 +244,8 @@ public class IndexSettingUtil
         }
 
         // Non primitive arrays
-        if ( value instanceof Number[] )
+        if ( value instanceof final Number[] numberArray )
         {
-            final Number[] numberArray = (Number[]) value;
             final double[] doubleArray = new double[numberArray.length];
             for ( int i = 0; i < numberArray.length; i++ )
             {
@@ -256,9 +255,8 @@ public class IndexSettingUtil
         }
 
         // Collection
-        if ( value instanceof Collection )
+        if ( value instanceof final Collection collection )
         {
-            final Collection collection = (Collection) value;
             final double[] doubleArray = new double[collection.size()];
             final Iterator iterator = collection.iterator();
             for ( int i = 0; iterator.hasNext(); i++ )

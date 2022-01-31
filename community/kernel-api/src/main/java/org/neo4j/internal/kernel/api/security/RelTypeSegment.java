@@ -47,9 +47,8 @@ public class RelTypeSegment implements Segment
             return true;
         }
 
-        if ( obj instanceof RelTypeSegment )
+        if ( obj instanceof RelTypeSegment other )
         {
-            RelTypeSegment other = (RelTypeSegment) obj;
             if ( this.relType == null )
             {
                 return other.relType == null;
@@ -71,9 +70,8 @@ public class RelTypeSegment implements Segment
     @Override
     public boolean satisfies( Segment segment )
     {
-        if ( segment instanceof RelTypeSegment )
+        if ( segment instanceof RelTypeSegment other )
         {
-            var other = (RelTypeSegment) segment;
             return relType == null || relType.equals( other.relType );
         }
         return false;

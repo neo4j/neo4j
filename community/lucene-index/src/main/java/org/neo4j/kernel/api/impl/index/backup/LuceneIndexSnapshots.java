@@ -56,9 +56,8 @@ public final class LuceneIndexSnapshots
     public static ResourceIterator<Path> forIndex( Path indexFolder, IndexWriter indexWriter ) throws IOException
     {
         IndexDeletionPolicy deletionPolicy = indexWriter.getConfig().getIndexDeletionPolicy();
-        if ( deletionPolicy instanceof SnapshotDeletionPolicy )
+        if ( deletionPolicy instanceof SnapshotDeletionPolicy policy )
         {
-            SnapshotDeletionPolicy policy = (SnapshotDeletionPolicy) deletionPolicy;
             return hasCommits( indexWriter )
                    ? new WritableIndexSnapshotFileIterator( indexFolder, policy )
                    : emptyResourceIterator();

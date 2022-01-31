@@ -83,9 +83,8 @@ public abstract class PathValue extends VirtualPathValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other instanceof PathValue )
+        if ( other instanceof PathValue that )
         {
-            PathValue that = (PathValue) other;
             return size() == that.size() &&
                    Arrays.equals( nodes(), that.nodes() ) &&
                    Arrays.equals( relationships(), that.relationships() );
@@ -126,9 +125,8 @@ public abstract class PathValue extends VirtualPathValue
     @Override
     public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( other instanceof PathValue )
+        if ( other instanceof PathValue otherPath )
         {
-            PathValue otherPath = (PathValue) other;
             NodeValue[] nodes = nodes();
             RelationshipValue[] relationships = relationships();
             NodeValue[] otherNodes = otherPath.nodes();

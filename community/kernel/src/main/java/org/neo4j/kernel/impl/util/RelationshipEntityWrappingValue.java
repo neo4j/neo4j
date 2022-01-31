@@ -77,9 +77,8 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
         {
             boolean isDeleted = false;
 
-            if ( relationship instanceof RelationshipEntity )
+            if ( relationship instanceof RelationshipEntity proxy )
             {
-                RelationshipEntity proxy = (RelationshipEntity) relationship;
                 if ( !proxy.initializeData() )
                 {
                     // If the relationship has been deleted since it was found by the query,
@@ -140,9 +139,8 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     {
         try
         {
-            if ( relationship instanceof RelationshipEntity )
+            if ( relationship instanceof RelationshipEntity proxy )
             {
-                RelationshipEntity proxy = (RelationshipEntity) relationship;
                 if ( !proxy.initializeData( relCursor ) )
                 {
                     // When this happens to relationship proxies, we have most likely observed our relationship being deleted by an overlapping committed
@@ -166,9 +164,8 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     {
         try
         {
-            if ( relationship instanceof RelationshipEntity )
+            if ( relationship instanceof RelationshipEntity proxy )
             {
-                RelationshipEntity proxy = (RelationshipEntity) relationship;
                 if ( !proxy.initializeData() )
                 {
                     // When this happens to relationship proxies, we have most likely observed our relationship being deleted by an overlapping committed

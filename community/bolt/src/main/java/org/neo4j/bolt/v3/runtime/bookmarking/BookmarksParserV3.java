@@ -72,9 +72,8 @@ public final class BookmarksParserV3 implements BookmarksParser
         {
             return null;
         }
-        else if ( bookmarksObject instanceof ListValue )
+        else if ( bookmarksObject instanceof ListValue bookmarks )
         {
-            var bookmarks = (ListValue) bookmarksObject;
 
             long maxTxId = ABSENT_BOOKMARK_ID;
             for ( var bookmark : bookmarks )

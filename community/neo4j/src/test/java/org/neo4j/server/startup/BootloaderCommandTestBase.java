@@ -118,9 +118,8 @@ abstract class BootloaderCommandTestBase
         public void testFailed( ExtensionContext context, Throwable cause )
         {
             Optional<Object> maybeInstance = context.getTestInstance();
-            if ( maybeInstance.isPresent() && maybeInstance.get() instanceof BootloaderCommandTestBase )
+            if ( maybeInstance.isPresent() && maybeInstance.get() instanceof BootloaderCommandTestBase instance )
             {
-                BootloaderCommandTestBase instance = (BootloaderCommandTestBase) maybeInstance.get();
                 String output = instance.out.toString();
                 String error = instance.err.toString();
                 if ( StringUtils.isNotEmpty( output ) )

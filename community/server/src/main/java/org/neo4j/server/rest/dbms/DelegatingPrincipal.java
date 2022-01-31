@@ -52,12 +52,11 @@ public class DelegatingPrincipal implements Principal
         {
             return true;
         }
-        if ( !( o instanceof DelegatingPrincipal) )
+        if ( !(o instanceof DelegatingPrincipal that) )
         {
             return false;
         }
 
-        DelegatingPrincipal that = (DelegatingPrincipal) o;
         return username.equals( that.username );
     }
 

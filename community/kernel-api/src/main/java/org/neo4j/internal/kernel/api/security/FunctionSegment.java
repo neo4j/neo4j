@@ -36,9 +36,8 @@ public class FunctionSegment implements Segment
     @Override
     public boolean satisfies( Segment segment )
     {
-        if ( segment instanceof FunctionSegment )
+        if ( segment instanceof FunctionSegment other )
         {
-            var other = (FunctionSegment) segment;
             return function == null || function.equals( other.function );
         }
         return false;

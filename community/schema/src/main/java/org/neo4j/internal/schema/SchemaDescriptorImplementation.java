@@ -330,11 +330,10 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         {
             return true;
         }
-        if ( !(o instanceof SchemaDescriptor) )
+        if ( !(o instanceof SchemaDescriptor that) )
         {
             return false;
         }
-        SchemaDescriptor that = (SchemaDescriptor) o;
         return entityType == that.entityType() && propertySchemaType == that.propertySchemaType() &&
                 Arrays.equals( entityTokens, that.getEntityTokenIds() ) && Arrays.equals( propertyKeyIds, that.getPropertyIds() );
     }

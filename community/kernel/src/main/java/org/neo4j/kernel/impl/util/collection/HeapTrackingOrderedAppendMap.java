@@ -281,9 +281,8 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
         @Override
         public boolean equals( Object o )
         {
-            if ( o instanceof Map.Entry )
+            if ( o instanceof Map.Entry<?,?> that )
             {
-                Map.Entry<?,?> that = (Map.Entry<?,?>) o;
                 return Objects.equals( this.getKey(), that.getKey() ) && Objects.equals( this.getValue(), that.getValue() );
             }
             return false;

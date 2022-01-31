@@ -323,9 +323,8 @@ public class RandomSchema implements Supplier<SchemaRule>
         {
             return false;
         }
-        if ( a instanceof IndexDescriptor )
+        if ( a instanceof IndexDescriptor indexA )
         {
-            IndexDescriptor indexA = (IndexDescriptor) a;
             IndexDescriptor indexB = (IndexDescriptor) b;
             return indexA.getCapability().equals( indexB.getCapability() ) &&
                     indexA.isUnique() == indexB.isUnique() &&

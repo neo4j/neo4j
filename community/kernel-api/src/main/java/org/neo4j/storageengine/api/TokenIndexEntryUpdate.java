@@ -68,11 +68,10 @@ public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
     @Override
     protected boolean valueEquals( IndexEntryUpdate<?> o )
     {
-        if ( !(o instanceof TokenIndexEntryUpdate) )
+        if ( !(o instanceof TokenIndexEntryUpdate<?> that) )
         {
             return false;
         }
-        TokenIndexEntryUpdate<?> that = (TokenIndexEntryUpdate<?>) o;
         if ( !Arrays.equals( before, that.before ) )
         {
             return false;

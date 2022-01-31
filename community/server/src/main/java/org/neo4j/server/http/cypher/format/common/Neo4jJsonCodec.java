@@ -105,20 +105,17 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             writeMap(out, (Map) value );
         }
-        else if ( value instanceof Geometry )
+        else if ( value instanceof Geometry geom )
         {
-            Geometry geom = (Geometry) value;
             Object coordinates = (geom instanceof Point) ? ((Point) geom).getCoordinate() : geom.getCoordinates();
             writeMap( out, genericMap( new LinkedHashMap<>(), "type", geom.getGeometryType(), "coordinates", coordinates, "crs", geom.getCRS() ) );
         }
-        else if ( value instanceof Coordinate )
+        else if ( value instanceof Coordinate coordinate )
         {
-            Coordinate coordinate = (Coordinate) value;
             writeIterator( out, coordinate.getCoordinate().iterator() );
         }
-        else if ( value instanceof CRS )
+        else if ( value instanceof CRS crs )
         {
-            CRS crs = (CRS) value;
             writeMap( out, genericMap( new LinkedHashMap<>(), "srid", crs.getCode(), "name", crs.getType(), "type", "link", "properties",
                     genericMap( new LinkedHashMap<>(), "href", crs.getHref() + "ogcwkt/", "type", "ogcwkt" ) ) );
         }
@@ -283,14 +280,12 @@ public class Neo4jJsonCodec extends ObjectMapper
 
     public void writeMeta( JsonGenerator out, Object value ) throws IOException
     {
-        if ( value instanceof Node )
+        if ( value instanceof Node node )
         {
-            Node node = (Node) value;
             writeNodeOrRelationshipMeta( out, node.getId(), Neo4jJsonMetaType.NODE, isDeleted( node ) );
         }
-        else if ( value instanceof Relationship )
+        else if ( value instanceof Relationship relationship )
         {
-            Relationship relationship = (Relationship) value;
             writeNodeOrRelationshipMeta( out, relationship.getId(), Neo4jJsonMetaType.RELATIONSHIP, isDeleted( relationship ) );
         }
         else if ( value instanceof Path )
@@ -304,9 +299,8 @@ public class Neo4jJsonCodec extends ObjectMapper
                 writeMeta( out, v );
             }
         }
-        else if ( value instanceof Map )
+        else if ( value instanceof Map map )
         {
-            Map map = (Map) value;
             for ( var mapValue : map.values() )
             {
                 writeMeta( out, mapValue );

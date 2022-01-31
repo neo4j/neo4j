@@ -47,7 +47,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
@@ -96,14 +95,12 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.data_collector_max_recent_query_count;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
@@ -339,9 +336,8 @@ public class GlobalModule
                 ( before, after ) -> internalLogProvider.updateLogLevel( after ) );
 
         // If the user log provider comes from us we make sure that it starts with the default log level and listens to updates.
-        if ( userLogProvider instanceof Log4jLogProvider )
+        if ( userLogProvider instanceof Log4jLogProvider provider )
         {
-            Log4jLogProvider provider = (Log4jLogProvider) userLogProvider;
             provider.updateLogLevel( globalConfig.get( store_internal_log_level) );
             globalConfig.addListener( store_internal_log_level,
                     ( before, after ) -> provider.updateLogLevel( after ) );

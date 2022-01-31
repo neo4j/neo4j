@@ -728,9 +728,8 @@ public final class CypherFunctions
     public static AnyValue head( AnyValue container )
     {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( container instanceof SequenceValue )
+        if ( container instanceof SequenceValue sequence )
         {
-            SequenceValue sequence = (SequenceValue) container;
             if ( sequence.length() == 0 )
             {
                 return NO_VALUE;
@@ -766,9 +765,8 @@ public final class CypherFunctions
     public static AnyValue last( AnyValue container )
     {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( container instanceof SequenceValue )
+        if ( container instanceof SequenceValue sequence )
         {
-            SequenceValue sequence = (SequenceValue) container;
             int length = sequence.length();
             if ( length == 0 )
             {
@@ -873,9 +871,8 @@ public final class CypherFunctions
     public static TextValue right( AnyValue original, AnyValue length )
     {
         assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( original instanceof TextValue )
+        if ( original instanceof TextValue asText )
         {
-            TextValue asText = (TextValue) original;
             int len = asInt( length, () -> "Invalid input for length value in function 'right()'" );
             if ( len < 0 )
             {
@@ -894,9 +891,8 @@ public final class CypherFunctions
     {
         assert original != NO_VALUE && separator != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
-        if ( original instanceof TextValue )
+        if ( original instanceof TextValue asText )
         {
-            TextValue asText = (TextValue) original;
             if ( asText.length() == 0 )
             {
                 return VirtualValues.list( EMPTY_STRING );
@@ -924,9 +920,8 @@ public final class CypherFunctions
     public static TextValue substring( AnyValue original, AnyValue start )
     {
         assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( original instanceof TextValue )
+        if ( original instanceof TextValue asText )
         {
-            TextValue asText = (TextValue) original;
 
             return asText.substring( asInt( start, () -> "Invalid input for start value in function 'substring()'" ) );
         }
@@ -939,9 +934,8 @@ public final class CypherFunctions
     public static TextValue substring( AnyValue original, AnyValue start, AnyValue length )
     {
         assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( original instanceof TextValue )
+        if ( original instanceof TextValue asText )
         {
-            TextValue asText = (TextValue) original;
 
             return asText.substring( asInt( start, () -> "Invalid input for start value in function 'substring()'" ),
                                      asInt( length, () -> "Invalid input for length value in function 'substring()'" ) );
@@ -1162,9 +1156,8 @@ public final class CypherFunctions
         {
             return asPoint( access, (VirtualRelationshipValue) in, cursors.relationshipScanCursor(), cursors.propertyCursor() );
         }
-        else if ( in instanceof MapValue )
+        else if ( in instanceof MapValue map )
         {
-            MapValue map = (MapValue) in;
             if ( containsNull( map ) )
             {
                 return NO_VALUE;
@@ -1328,12 +1321,10 @@ public final class CypherFunctions
     public static AnyValue toBooleanList( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(in instanceof ListValue) )
+        if ( !(in instanceof ListValue lv) )
         {
             throw new CypherTypeException( String.format("Invalid input for function 'toBooleanList()': Expected a List, got: %s", in) );
         }
-
-        ListValue lv = (ListValue) in;
 
         return Arrays.stream( lv.asArray() )
                      .map( entry -> entry == NO_VALUE ? NO_VALUE : toBooleanOrNull( entry ) )
@@ -1384,12 +1375,10 @@ public final class CypherFunctions
     public static AnyValue toFloatList( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(in instanceof ListValue) )
+        if ( !(in instanceof ListValue lv) )
         {
             throw new CypherTypeException( String.format("Invalid input for function 'toFloatList()': Expected a List, got: %s", in) );
         }
-
-        ListValue lv = (ListValue) in;
 
         return Arrays.stream( lv.asArray() )
                      .map( entry -> entry == NO_VALUE ? NO_VALUE : toFloatOrNull( entry ) )
@@ -1455,12 +1444,10 @@ public final class CypherFunctions
     public static AnyValue toIntegerList( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(in instanceof ListValue) )
+        if ( !(in instanceof ListValue lv) )
         {
             throw new CypherTypeException( String.format("Invalid input for function 'toIntegerList()': Expected a List, got: %s",in) );
         }
-
-        ListValue lv = (ListValue) in;
 
         return Arrays.stream( lv.asArray() )
                      .map( entry -> entry == NO_VALUE ? NO_VALUE : toIntegerOrNull( entry ) )
@@ -1510,12 +1497,10 @@ public final class CypherFunctions
     public static AnyValue toStringList( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(in instanceof ListValue) )
+        if ( !(in instanceof ListValue lv) )
         {
             throw new CypherTypeException( String.format("Invalid input for function 'toStringList()': Expected a List, got: %s",in) );
         }
-
-        ListValue lv = (ListValue) in;
 
         return Arrays.stream( lv.asArray() )
                      .map( entry -> entry == NO_VALUE ? NO_VALUE : toStringOrNull( entry ) )

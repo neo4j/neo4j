@@ -59,9 +59,8 @@ public class ConnectedState implements BoltStateMachineState
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         assertInitialized();
-        if ( message instanceof HelloMessage )
+        if ( message instanceof HelloMessage helloMessage )
         {
-            HelloMessage helloMessage = (HelloMessage) message;
             String userAgent = helloMessage.userAgent();
             Map<String,Object> authToken = helloMessage.authToken();
             RoutingContext routingContext = helloMessage.routingContext();

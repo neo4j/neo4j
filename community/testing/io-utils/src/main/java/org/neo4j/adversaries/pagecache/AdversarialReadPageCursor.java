@@ -481,9 +481,8 @@ class AdversarialReadPageCursor extends DelegatingPageCursor
         for ( Object o : s.inconsistentReadHistory )
         {
             sb.append( o ).append( '\n' );
-            if ( o instanceof NumberValue )
+            if ( o instanceof NumberValue v )
             {
-                NumberValue v = (NumberValue) o;
                 v.printStackTrace( sb );
             }
         }

@@ -337,10 +337,9 @@ public class ForsetiClient implements Locks.Client
                     // If this is a shared lock:
                     // Given a grace period of tries (to try and not starve readers), grab an update lock and wait
                     // for it to convert to an exclusive lock.
-                    if ( tries > 50 && existingLock instanceof SharedLock )
+                    if ( tries > 50 && existingLock instanceof SharedLock sharedLock )
                     {
                         // Then we should upgrade that lock
-                        SharedLock sharedLock = (SharedLock) existingLock;
                         if ( tryUpgradeSharedToExclusive( tracer, waitEvent, resourceType, lockMap, resourceId,
                                 sharedLock,
                                 waitStartNano ) )
@@ -400,9 +399,8 @@ public class ForsetiClient implements Locks.Client
             ForsetiLockManager.Lock lock;
             if ( (lock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null )
             {
-                if ( lock instanceof SharedLock && getSharedLockCount( resourceType ).containsKey( resourceId ) )
+                if ( lock instanceof SharedLock sharedLock && getSharedLockCount( resourceType ).containsKey( resourceId ) )
                 {
-                    SharedLock sharedLock = (SharedLock) lock;
                     if ( sharedLock.tryAcquireUpdateLock() )
                     {
                         if ( sharedLock.numberOfHolders() == 1 )
@@ -559,9 +557,8 @@ public class ForsetiClient implements Locks.Client
                 {
                     // We are still holding a shared lock, so we will release it to be reused
                     ForsetiLockManager.Lock lock = resourceTypeLocks.get( resourceId );
-                    if ( lock instanceof SharedLock )
+                    if ( lock instanceof SharedLock sharedLock )
                     {
-                        SharedLock sharedLock = (SharedLock) lock;
                         if ( sharedLock.isUpdateLock() )
                         {
                             sharedLock.releaseUpdateLock();

@@ -32,7 +32,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.values.storable.ArrayValue;
@@ -94,9 +93,8 @@ public enum TemporalType
                 @Override
                 public ArrayValue decodeArray( Value dataValue )
                 {
-                    if ( dataValue instanceof LongArray )
+                    if ( dataValue instanceof LongArray numbers )
                     {
-                        LongArray numbers = (LongArray) dataValue;
                         LocalDate[] dates = new LocalDate[numbers.length()];
                         for ( int i = 0; i < dates.length; i++ )
                         {
@@ -136,9 +134,8 @@ public enum TemporalType
                 @Override
                 public ArrayValue decodeArray( Value dataValue )
                 {
-                    if ( dataValue instanceof LongArray )
+                    if ( dataValue instanceof LongArray numbers )
                     {
-                        LongArray numbers = (LongArray) dataValue;
                         LocalTime[] times = new LocalTime[numbers.length()];
                         for ( int i = 0; i < times.length; i++ )
                         {
@@ -181,9 +178,8 @@ public enum TemporalType
                 @Override
                 public ArrayValue decodeArray( Value dataValue )
                 {
-                    if ( dataValue instanceof LongArray )
+                    if ( dataValue instanceof LongArray numbers )
                     {
-                        LongArray numbers = (LongArray) dataValue;
                         LocalDateTime[] dateTimes = new LocalDateTime[numbers.length() / BLOCKS_LOCAL_DATETIME];
                         for ( int i = 0; i < dateTimes.length; i++ )
                         {
@@ -223,9 +219,8 @@ public enum TemporalType
                 @Override
                 public ArrayValue decodeArray( Value dataValue )
                 {
-                    if ( dataValue instanceof LongArray )
+                    if ( dataValue instanceof LongArray numbers )
                     {
-                        LongArray numbers = (LongArray) dataValue;
                         OffsetTime[] times = new OffsetTime[numbers.length() / BLOCKS_TIME];
                         for ( int i = 0; i < times.length; i++ )
                         {
@@ -276,9 +271,8 @@ public enum TemporalType
                 @Override
                 public ArrayValue decodeArray( Value dataValue )
                 {
-                    if ( dataValue instanceof LongArray )
+                    if ( dataValue instanceof LongArray numbers )
                     {
-                        LongArray numbers = (LongArray) dataValue;
                         ZonedDateTime[] dateTimes = new ZonedDateTime[numbers.length() / BLOCKS_DATETIME];
                         for ( int i = 0; i < dateTimes.length; i++ )
                         {
@@ -336,9 +330,8 @@ public enum TemporalType
             @Override
             public ArrayValue decodeArray( Value dataValue )
             {
-                if ( dataValue instanceof LongArray )
+                if ( dataValue instanceof LongArray numbers )
                 {
-                    LongArray numbers = (LongArray) dataValue;
                     DurationValue[] durations = new DurationValue[numbers.length() / BLOCKS_DURATION];
                     for ( int i = 0; i < durations.length; i++ )
                     {
@@ -651,9 +644,8 @@ public enum TemporalType
         {
             data[i * BLOCKS_DATETIME] = dateTimes[i].toEpochSecond();
             data[i * BLOCKS_DATETIME + 1] = dateTimes[i].getNano();
-            if ( dateTimes[i].getZone() instanceof ZoneOffset )
+            if ( dateTimes[i].getZone() instanceof ZoneOffset offset )
             {
-                ZoneOffset offset = (ZoneOffset) dateTimes[i].getZone();
                 int secondOffset = offset.getTotalSeconds();
                 // Set lowest bit to 1 means offset
                 data[i * BLOCKS_DATETIME + 2] = secondOffset << 1 | 1L;

@@ -34,7 +34,6 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -411,9 +410,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 catch ( Exception e )
                 {
                     Throwable root = getRootCause( e );
-                    if ( root instanceof IndexEntryConflictException )
+                    if ( root instanceof IndexEntryConflictException conflict )
                     {
-                        IndexEntryConflictException conflict = (IndexEntryConflictException)root;
                         assertEquals( nodeId1, conflict.getExistingNodeId() );
                         assertEquals( ValueTuple.of( value ), conflict.getPropertyValues() );
                         assertEquals( nodeId2, conflict.getAddedNodeId() );

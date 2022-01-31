@@ -69,11 +69,10 @@ public class ValueIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
     @Override
     protected boolean valueEquals( IndexEntryUpdate<?> o )
     {
-        if ( !(o instanceof ValueIndexEntryUpdate) )
+        if ( !(o instanceof ValueIndexEntryUpdate<?> that) )
         {
             return false;
         }
-        ValueIndexEntryUpdate<?> that = (ValueIndexEntryUpdate<?>) o;
         if ( !Arrays.equals( before, that.before ) )
         {
             return false;

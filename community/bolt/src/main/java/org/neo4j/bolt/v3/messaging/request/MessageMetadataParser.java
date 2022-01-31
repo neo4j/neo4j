@@ -102,9 +102,8 @@ public final class MessageMetadataParser
         {
             return null;
         }
-        else if ( anyValue instanceof MapValue )
+        else if ( anyValue instanceof MapValue mapValue )
         {
-            MapValue mapValue = (MapValue) anyValue;
             TransactionMetadataWriter writer = new TransactionMetadataWriter();
             Map<String,Object> txMeta = new HashMap<>( mapValue.size() );
             mapValue.foreach( ( key, value ) -> txMeta.put( key, writer.valueAsObject( value ) ) );

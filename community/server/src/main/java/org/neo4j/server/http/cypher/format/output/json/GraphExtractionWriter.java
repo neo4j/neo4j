@@ -173,21 +173,18 @@ class GraphExtractionWriter implements ResultDataContentWriter
     {
         for ( Object item : source )
         {
-            if ( item instanceof Node )
+            if ( item instanceof Node node )
             {
-                Node node = (Node) item;
                 addNode( nodes, node.getId(), () -> node );
             }
-            else if ( item instanceof Relationship )
+            else if ( item instanceof Relationship relationship )
             {
-                Relationship relationship = (Relationship) item;
                 relationships.add( relationship );
                 addNode( nodes, relationship.getStartNodeId(), relationship::getStartNode );
                 addNode( nodes, relationship.getEndNodeId(), relationship::getEndNode );
             }
-            if ( item instanceof Path )
+            if ( item instanceof Path path )
             {
-                Path path = (Path) item;
                 for ( Node node : path.nodes() )
                 {
                     addNode( nodes, node.getId(), () -> node );

@@ -892,10 +892,9 @@ public class MuninnPageCache implements PageCache
                     return pageRef;
                 }
             }
-            else if ( current instanceof AtomicInteger )
+            else if ( current instanceof AtomicInteger counter )
             {
                 int pageCount = pages.getPageCount();
-                AtomicInteger counter = (AtomicInteger) current;
                 int pageId = counter.get();
                 if ( pageId < pageCount && counter.compareAndSet( pageId, pageId + 1 ) )
                 {
@@ -907,9 +906,8 @@ public class MuninnPageCache implements PageCache
                     compareAndSetFreelistHead( current, null );
                 }
             }
-            else if ( current instanceof FreePage )
+            else if ( current instanceof FreePage freePage )
             {
-                FreePage freePage = (FreePage) current;
                 if ( freePage == shutdownSignal )
                 {
                     throw new IllegalStateException( "The PageCache has been shut down." );

@@ -27,9 +27,8 @@ public abstract class SourceVisitor implements CodeGeneratorOption
     @Override
     public final void applyTo( Object target )
     {
-        if ( target instanceof Configuration )
+        if ( target instanceof Configuration configuration )
         {
-            Configuration configuration = (Configuration) target;
             configuration.withSourceVisitor( this );
         }
     }

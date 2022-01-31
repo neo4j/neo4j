@@ -87,16 +87,14 @@ public class SchemaNameUtil
         key = hf.updateWithArray( key, entityTokenNames, String::hashCode );
         key = hf.updateWithArray( key, propertyNames, String::hashCode );
 
-        if ( rule instanceof IndexRef<?> )
+        if ( rule instanceof IndexRef<?> indexRef )
         {
-            IndexRef<?> indexRef = (IndexRef<?>) rule;
             key = hf.update( key, indexRef.getIndexType().ordinal() );
             key = hf.update( key, Boolean.hashCode( indexRef.isUnique() ) );
             return String.format( "index_%x", hf.toInt( hf.finalise( key ) ) );
         }
-        if ( rule instanceof ConstraintDescriptor )
+        if ( rule instanceof ConstraintDescriptor constraint )
         {
-            ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
             key = hf.update( key, constraint.type().ordinal() );
             if ( constraint.isIndexBackedConstraint() )
             {

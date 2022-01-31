@@ -69,9 +69,8 @@ public class ListConverter implements Function<String,DefaultParameterValue>
         {
             if ( obj != null )
             {
-                if ( innerType instanceof Class<?> )
+                if ( innerType instanceof Class<?> clazz )
                 {
-                    Class<?> clazz = (Class<?>) innerType;
                     if ( !clazz.isAssignableFrom( obj.getClass() ) )
                     {
                         throw new IllegalArgumentException(

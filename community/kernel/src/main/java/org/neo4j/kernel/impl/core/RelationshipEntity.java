@@ -90,9 +90,8 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
 
     public static boolean isDeletedInCurrentTransaction( Relationship relationship )
     {
-        if ( relationship instanceof RelationshipEntity )
+        if ( relationship instanceof RelationshipEntity proxy )
         {
-            RelationshipEntity proxy = (RelationshipEntity) relationship;
             KernelTransaction ktx = proxy.internalTransaction.kernelTransaction();
             return ktx.dataRead().relationshipDeletedInTransaction( proxy.id );
         }

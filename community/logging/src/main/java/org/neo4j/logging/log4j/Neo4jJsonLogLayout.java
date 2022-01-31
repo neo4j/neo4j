@@ -76,9 +76,8 @@ public class Neo4jJsonLogLayout extends Neo4jLogLayout
         }
 
         Message message = event.getMessage();
-        if ( message instanceof StructureAwareMessage )
+        if ( message instanceof StructureAwareMessage msg )
         {
-            StructureAwareMessage msg = (StructureAwareMessage) message;
             msg.asStructure( new JsonFieldConsumer( buffer ) );
         }
         else  // Normal message

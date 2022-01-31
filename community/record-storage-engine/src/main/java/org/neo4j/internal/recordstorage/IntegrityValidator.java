@@ -91,9 +91,8 @@ class IntegrityValidator
         KernelVersion currentVersion = neoStores.getMetaDataStore().kernelVersion();
         if ( currentVersion.isLessThan( VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
         {
-            if ( schemaRule instanceof IndexDescriptor )
+            if ( schemaRule instanceof IndexDescriptor index )
             {
-                IndexDescriptor index = (IndexDescriptor) schemaRule;
                 if ( index.isTokenIndex() || isBtreeRelationshipPropertyIndex( index ) )
                 {
                     throw new TransactionFailureException( Status.General.UpgradeRequired,
@@ -105,9 +104,8 @@ class IntegrityValidator
         }
         else if ( currentVersion.isLessThan( VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED ) )
         {
-            if ( schemaRule instanceof IndexDescriptor )
+            if ( schemaRule instanceof IndexDescriptor index )
             {
-                IndexDescriptor index = (IndexDescriptor) schemaRule;
                 IndexType indexType = index.getIndexType();
                 if ( isRangePointOrTextIndex( indexType ) )
                 {
@@ -117,9 +115,8 @@ class IntegrityValidator
                             index, VERSION_RANGE_POINT_TEXT_INDEX_TYPES_ARE_INTRODUCED.name(), currentVersion.name() );
                 }
             }
-            else if ( schemaRule instanceof ConstraintDescriptor )
+            else if ( schemaRule instanceof ConstraintDescriptor constraint )
             {
-                ConstraintDescriptor constraint = (ConstraintDescriptor)schemaRule;
                 if ( constraint.isIndexBackedConstraint() && isRangePointOrTextIndex( constraint.asIndexBackedConstraint().indexType() ) )
                 {
                     throw new TransactionFailureException( Status.General.UpgradeRequired,
@@ -130,9 +127,8 @@ class IntegrityValidator
             }
         }
 
-        if ( schemaRule instanceof ConstraintDescriptor )
+        if ( schemaRule instanceof ConstraintDescriptor constraint )
         {
-            ConstraintDescriptor constraint = (ConstraintDescriptor) schemaRule;
             if ( constraint.isIndexBackedConstraint() )
             {
                 long ownedIndex = constraint.asIndexBackedConstraint().ownedIndexId();

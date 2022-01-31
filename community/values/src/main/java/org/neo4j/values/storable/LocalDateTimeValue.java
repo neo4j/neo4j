@@ -198,11 +198,10 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                 if ( selectingDateTime )
                 {
                     AnyValue dtField = fields.get( TemporalFields.datetime );
-                    if ( !(dtField instanceof TemporalValue) )
+                    if ( !(dtField instanceof TemporalValue dt) )
                     {
                         throw new InvalidArgumentException( String.format( "Cannot construct local date time from: %s", dtField ) );
                     }
-                    TemporalValue dt = (TemporalValue) dtField;
                     result = LocalDateTime.of( dt.getDatePart(), dt.getLocalTimePart() );
                 }
                 else if ( selectingTime || selectingDate )
@@ -211,11 +210,10 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     if ( selectingTime )
                     {
                         AnyValue timeField = fields.get( TemporalFields.time );
-                        if ( !(timeField instanceof TemporalValue) )
+                        if ( !(timeField instanceof TemporalValue t) )
                         {
                             throw new InvalidArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
                         }
-                        TemporalValue t = (TemporalValue) timeField;
                         time = t.getLocalTimePart();
                     }
                     else
@@ -226,11 +224,10 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     if ( selectingDate )
                     {
                         AnyValue dateField = fields.get( TemporalFields.date );
-                        if ( !(dateField instanceof TemporalValue) )
+                        if ( !(dateField instanceof TemporalValue t) )
                         {
                             throw new InvalidArgumentException( String.format( "Cannot construct date from: %s", dateField ) );
                         }
-                        TemporalValue t = (TemporalValue) dateField;
                         date = t.getDatePart();
                     }
                     else
@@ -261,9 +258,8 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
 
             private LocalDateTime getLocalDateTimeOf( AnyValue temporal )
             {
-                if ( temporal instanceof TemporalValue )
+                if ( temporal instanceof TemporalValue v )
                 {
-                    TemporalValue v = (TemporalValue) temporal;
                     LocalDate datePart = v.getDatePart();
                     LocalTime timePart = v.getLocalTimePart();
                     return LocalDateTime.of( datePart, timePart );

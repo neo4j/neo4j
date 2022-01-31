@@ -31,9 +31,8 @@ public class UserSegment implements Segment
     @Override
     public boolean satisfies( Segment segment )
     {
-        if ( segment instanceof UserSegment )
+        if ( segment instanceof UserSegment other )
         {
-            var other = (UserSegment) segment;
             return username == null || username.equals( other.username );
         }
         return false;

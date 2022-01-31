@@ -218,12 +218,11 @@ class BidirectionalTraversalBranchPath implements Path
         {
             return true;
         }
-        if ( !(obj instanceof Path) )
+        if ( !(obj instanceof Path other) )
         {
             return false;
         }
 
-        Path other = (Path) obj;
         return relationships().equals( other.relationships() ) && other.startNode().equals( cachedStartNode );
     }
 

@@ -70,9 +70,8 @@ public class DropConstraintFailureException extends SchemaKernelException
         }
 
         Throwable cause = getCause();
-        if ( cause instanceof KernelException )
+        if ( cause instanceof KernelException exception )
         {
-            KernelException exception = (KernelException) cause;
             message += exception.getUserMessage( tokenNameLookup );
         }
         else

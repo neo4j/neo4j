@@ -95,9 +95,8 @@ public final class PkiUtils
             Object pemObject = r.readObject();
             final JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider( PROVIDER );
 
-            if ( pemObject instanceof PEMEncryptedKeyPair ) // -----BEGIN RSA/DSA/EC PRIVATE KEY----- Proc-Type: 4,ENCRYPTED
+            if ( pemObject instanceof final PEMEncryptedKeyPair ckp ) // -----BEGIN RSA/DSA/EC PRIVATE KEY----- Proc-Type: 4,ENCRYPTED
             {
-                final PEMEncryptedKeyPair ckp = (PEMEncryptedKeyPair) pemObject;
                 final PEMDecryptorProvider decProv = new JcePEMDecryptorProviderBuilder().build( passPhrase.toCharArray() );
                 return converter.getKeyPair( ckp.decryptKeyPair( decProv ) ).getPrivate();
             }

@@ -78,14 +78,12 @@ public abstract class IntegralValue extends NumberValue
     @Override
     public final boolean equals( Value other )
     {
-        if ( other instanceof IntegralValue )
+        if ( other instanceof IntegralValue that )
         {
-            IntegralValue that = (IntegralValue) other;
             return this.longValue() == that.longValue();
         }
-        else if ( other instanceof FloatingPointValue )
+        else if ( other instanceof FloatingPointValue that )
         {
-            FloatingPointValue that = (FloatingPointValue) other;
             return NumberValues.numbersEqual( that.doubleValue(), this.longValue() );
         }
         else

@@ -405,9 +405,8 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
             {
                 return true;
             }
-            else if ( obj instanceof Path )
+            else if ( obj instanceof Path other )
             {
-                Path other = (Path) obj;
                 return startNode().equals( other.startNode() ) &&
                        iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
             }

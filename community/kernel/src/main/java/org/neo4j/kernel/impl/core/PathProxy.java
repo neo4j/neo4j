@@ -107,14 +107,12 @@ public class PathProxy implements Path
         {
             return true;
         }
-        if ( obj instanceof PathProxy )
+        if ( obj instanceof PathProxy that )
         {
-            PathProxy that = (PathProxy) obj;
             return Arrays.equals( this.nodes, that.nodes ) && Arrays.equals( this.relationships, that.relationships );
         }
-        else if ( obj instanceof Path )
+        else if ( obj instanceof Path other )
         {
-            Path other = (Path) obj;
             if ( nodes[0] != other.startNode().getId() )
             {
                 return false;

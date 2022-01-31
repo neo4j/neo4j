@@ -260,9 +260,8 @@ public abstract class LogCommandSerialization implements CommandReader
     protected static IOException unknownCommandType( byte commandType, ReadableChannel channel ) throws IOException
     {
         String message = "Unknown command type[" + commandType + "]";
-        if ( channel instanceof PositionAwareChannel )
+        if ( channel instanceof PositionAwareChannel logChannel )
         {
-            PositionAwareChannel logChannel = (PositionAwareChannel) channel;
             message += " near " + logChannel.getCurrentPosition();
         }
         return new IOException( message );

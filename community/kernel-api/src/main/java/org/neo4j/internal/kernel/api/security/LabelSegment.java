@@ -47,9 +47,8 @@ public class LabelSegment implements Segment
             return true;
         }
 
-        if ( obj instanceof LabelSegment )
+        if ( obj instanceof LabelSegment other )
         {
-            LabelSegment other = (LabelSegment) obj;
             if ( this.label == null )
             {
                 return other.label == null;
@@ -71,9 +70,8 @@ public class LabelSegment implements Segment
     @Override
     public boolean satisfies( Segment segment )
     {
-        if ( segment instanceof LabelSegment )
+        if ( segment instanceof LabelSegment other )
         {
-            var other = (LabelSegment) segment;
             return label == null || label.equals( other.label );
         }
         return false;

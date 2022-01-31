@@ -381,9 +381,8 @@ public class FabricExecutor
             var transactionMode = getTransactionMode( fragment.queryType(), graph.toString() );
             Location location = catalogManager
                     .locationOf( ctx.getSessionDatabaseId(), graph, transactionMode.requiresWrite(), routingContext.isServerRoutingEnabled() );
-            if ( location instanceof Location.Local )
+            if ( location instanceof Location.Local local )
             {
-                Location.Local local = (Location.Local) location;
                 FragmentResult input = run( fragment.input(), argument );
                 if ( fragment.executable() )
                 {
@@ -397,9 +396,8 @@ public class FabricExecutor
                     return input;
                 }
             }
-            else if ( location instanceof Location.Remote )
+            else if ( location instanceof Location.Remote remote )
             {
-                Location.Remote remote = (Location.Remote) location;
                 FabricQuery.RemoteQuery remoteQuery = plannerInstance.asRemote( fragment );
                 MapValue fullParams = addParams( parameters, mapAsJavaMap( remoteQuery.extractedLiterals() ) );
 

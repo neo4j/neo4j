@@ -169,9 +169,8 @@ public enum SystemDiagnostics implements DiagnosticsProvider
 
             for ( int level = 0; loader != null; level++ )
             {
-                if ( loader instanceof URLClassLoader )
+                if ( loader instanceof URLClassLoader urls )
                 {
-                    URLClassLoader urls = (URLClassLoader) loader;
                     URL[] classLoaderUrls = urls.getURLs();
                     if ( classLoaderUrls != null )
                     {
@@ -218,9 +217,8 @@ public enum SystemDiagnostics implements DiagnosticsProvider
         {
             for ( Object property : System.getProperties().keySet() )
             {
-                if ( property instanceof String )
+                if ( property instanceof String key )
                 {
-                    String key = (String) property;
                     if ( key.startsWith( "java." ) || key.startsWith( "os." ) || key.endsWith( ".boot.class.path" ) ||
                             key.equals( "line.separator" ) )
                     {

@@ -158,9 +158,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         {
             return select( input[0], defaultZone );
         }
-        else if ( input[0] instanceof MapValue )
+        else if ( input[0] instanceof MapValue map )
         {
-            MapValue map = (MapValue) input[0];
             String timezone = onlyTimezone( map );
             if ( timezone != null )
             {
@@ -258,9 +257,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             {
                 return function.now( clockSupplier.apply( ctx ), null, function.defaultZone );
             }
-            else if ( input.length == 1 && input[0] instanceof TextValue )
+            else if ( input.length == 1 && input[0] instanceof TextValue timezone )
             {
-                TextValue timezone = (TextValue) input[0];
                 return function.now( clockSupplier.apply( ctx ), timezone.stringValue(), function.defaultZone );
             }
             else

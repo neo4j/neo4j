@@ -85,11 +85,10 @@ public abstract class VirtualPathValue extends VirtualValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( !(other instanceof VirtualPathValue) )
+        if ( !(other instanceof VirtualPathValue that) )
         {
             return false;
         }
-        VirtualPathValue that = (VirtualPathValue) other;
         return size() == that.size() &&
                Arrays.equals( nodeIds(), that.nodeIds() ) &&
                Arrays.equals( relationshipIds(), that.relationshipIds() );

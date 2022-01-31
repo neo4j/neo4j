@@ -36,9 +36,8 @@ public class ProcedureSegment implements Segment
     @Override
     public boolean satisfies( Segment segment )
     {
-        if ( segment instanceof ProcedureSegment )
+        if ( segment instanceof ProcedureSegment other )
         {
-            var other = (ProcedureSegment) segment;
             return procedure == null || procedure.equals( other.procedure );
         }
         return false;

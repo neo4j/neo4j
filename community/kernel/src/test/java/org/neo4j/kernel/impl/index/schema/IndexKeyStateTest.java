@@ -44,10 +44,9 @@ import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.string.UTF8;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.ByteArray;
 import org.neo4j.values.storable.ByteValue;
@@ -83,8 +82,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.NO_ENTITY_ID;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.NO_ENTITY_ID;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY_ARRAY;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
@@ -1258,10 +1257,9 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>>
 
     private static void assertTextArraySize( Value value, int actualSizeOfData, int normalArrayOverhead, String typeName )
     {
-        if ( value instanceof TextArray )
+        if ( value instanceof TextArray stringArray )
         {
             int sumOfStrings = 0;
-            TextArray stringArray = (TextArray) value;
             for ( int i = 0; i < stringArray.length(); i++ )
             {
                 String string = stringArray.stringValue( i );

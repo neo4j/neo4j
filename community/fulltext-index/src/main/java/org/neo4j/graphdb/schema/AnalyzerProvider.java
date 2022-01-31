@@ -97,9 +97,8 @@ public abstract class AnalyzerProvider implements NamedService
     public List<String> stopwords()
     {
         Analyzer analyzer = createAnalyzer();
-        if ( analyzer instanceof StopwordAnalyzerBase )
+        if ( analyzer instanceof StopwordAnalyzerBase stopwordAnalyzer )
         {
-            StopwordAnalyzerBase stopwordAnalyzer = (StopwordAnalyzerBase) analyzer;
             CharArraySet stopwords = stopwordAnalyzer.getStopwordSet();
             return stopwords.stream().map( obj -> new String( (char[]) obj ) ).collect( Collectors.toList() );
         }

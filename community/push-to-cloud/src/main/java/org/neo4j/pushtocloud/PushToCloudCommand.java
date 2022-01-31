@@ -436,9 +436,8 @@ public class PushToCloudCommand extends AbstractCommand
         @Override
         public boolean equals( Object obj )
         {
-            if ( obj instanceof Source )
+            if ( obj instanceof Source other )
             {
-                Source other = (Source) obj;
                 return path.equals( other.path ) && size == other.size;
             }
             else

@@ -72,14 +72,13 @@ class ProcedureOutputSignatureCompiler
         }
 
         Type genericReturnType = method.getGenericReturnType();
-        if ( !(genericReturnType instanceof ParameterizedType) )
+        if ( !(genericReturnType instanceof ParameterizedType genType) )
         {
             throw new ProcedureException( Status.Procedure.TypeError,
                     "Procedures must return a Stream of records, where a record is a concrete class%n" +
                             "that you define and not a raw Stream." );
         }
 
-        ParameterizedType genType = (ParameterizedType) genericReturnType;
         Type recordType = genType.getActualTypeArguments()[0];
         if ( recordType instanceof WildcardType )
         {
@@ -87,9 +86,8 @@ class ProcedureOutputSignatureCompiler
                     "Procedures must return a Stream of records, where a record is a concrete class%n" +
                     "that you define and not a Stream<?>." );
         }
-        if ( recordType instanceof ParameterizedType )
+        if ( recordType instanceof ParameterizedType type )
         {
-            ParameterizedType type = (ParameterizedType) recordType;
             throw new ProcedureException( Status.Procedure.TypeError,
                     "Procedures must return a Stream of records, where a record is a concrete class%n" +
                             "that you define and not a parameterized type such as %s.", type );

@@ -543,9 +543,8 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
 
         private static LocalDate getDateOf( org.neo4j.values.AnyValue temporal )
         {
-            if ( temporal instanceof TemporalValue )
+            if ( temporal instanceof TemporalValue v )
             {
-                TemporalValue v = (TemporalValue) temporal;
                 return v.getDatePart();
             }
             throw new InvalidArgumentException( String.format( "Cannot construct date from: %s", temporal ) );

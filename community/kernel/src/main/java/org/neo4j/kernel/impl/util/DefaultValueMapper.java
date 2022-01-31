@@ -173,9 +173,8 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
             {
                 return value.equals( ((CoreAPIPath) obj).value );
             }
-            else if ( obj instanceof Path )
+            else if ( obj instanceof Path other )
             {
-                Path other = (Path) obj;
                 if ( value.nodeIds()[0] != other.startNode().getId() )
                 {
                     return false;

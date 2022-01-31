@@ -139,19 +139,17 @@ public final class ValueUtils
             {
                 return asMapValue( (Map<String,Object>) object, wrapEntities );
             }
-            else if ( object instanceof Iterator<?> )
+            else if ( object instanceof Iterator<?> iterator )
             {
                 ListValueBuilder builder = ListValueBuilder.newListBuilder();
-                Iterator<?> iterator = (Iterator<?>) object;
                 while ( iterator.hasNext() )
                 {
                     builder.add( ValueUtils.of( iterator.next(), wrapEntities ) );
                 }
                 return builder.build();
             }
-            else if ( object instanceof Object[] )
+            else if ( object instanceof Object[] array )
             {
-                Object[] array = (Object[]) object;
                 if ( array.length == 0 )
                 {
                     return VirtualValues.EMPTY_LIST;

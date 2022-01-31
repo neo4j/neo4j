@@ -264,12 +264,11 @@ public class DebugUtil
         @Override
         public boolean equals( Object obj )
         {
-            if ( !( obj instanceof CallStack) )
+            if ( !(obj instanceof CallStack o) )
             {
                 return false;
             }
 
-            CallStack o = (CallStack) obj;
             if ( considerMessage )
             {
                 if ( message == null )

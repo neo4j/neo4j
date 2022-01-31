@@ -182,11 +182,10 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
                     AnyValue time )
             {
 
-                if ( !(time instanceof TemporalValue) )
+                if ( !(time instanceof TemporalValue v) )
                 {
                     throw new InvalidArgumentException( String.format( "Cannot construct local time from: %s", time ) );
                 }
-                TemporalValue v = (TemporalValue) time;
                 LocalTime lt = v.getLocalTimePart();
                 return localTime( lt );
             }

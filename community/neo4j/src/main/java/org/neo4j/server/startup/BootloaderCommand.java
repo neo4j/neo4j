@@ -98,9 +98,8 @@ abstract class BootloaderCommand
             {
                 exception.printStackTrace( ctx.err );
             }
-            if ( exception instanceof BootFailureException )
+            if ( exception instanceof BootFailureException failure )
             {
-                BootFailureException failure = (BootFailureException) exception;
                 return failure.getExitCode();
             }
             return commandLine.getCommandSpec().exitCodeOnExecutionException();
