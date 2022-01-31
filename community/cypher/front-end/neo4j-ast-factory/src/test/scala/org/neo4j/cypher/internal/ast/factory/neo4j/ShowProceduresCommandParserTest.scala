@@ -20,36 +20,45 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.AscSortItem
+import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 
 /* Tests for listing procedures */
-class ShowProceduresCommandParserTest extends JavaccParserAstTestBase[Statement] {
-  implicit val parser: JavaccRule[Statement] = JavaccRule.Statement
+class ShowProceduresCommandParserTest extends AdministrationCommandParserTestBase {
 
   Seq("PROCEDURE", "PROCEDURES").foreach { procKeyword =>
 
     test(s"SHOW $procKeyword") {
-      yields(_ => query(ast.ShowProceduresClause(None, None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowProceduresClause(None, None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE") {
-      yields(_ => query(ast.ShowProceduresClause(Some(ast.CurrentUser), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowProceduresClause(Some(ast.CurrentUser), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT USER") {
-      yields(_ => query(ast.ShowProceduresClause(Some(ast.CurrentUser), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowProceduresClause(Some(ast.CurrentUser), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY user") {
-      yields(_ => query(ast.ShowProceduresClause(Some(ast.User("user")), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowProceduresClause(Some(ast.User("user")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT") {
-      yields(_ => query(ast.ShowProceduresClause(Some(ast.User("CURRENT")), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowProceduresClause(Some(ast.User("CURRENT")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"USE db SHOW $procKeyword") {
-      yields(_ => query(use(varFor("db")), ast.ShowProceduresClause(None, None, hasYield = false)(pos)))
+      assertAst(Query(None, SingleQuery(
+        List(use(Variable("db")(1, 5, 4)), ShowProceduresClause(None, None, hasYield = false)(1, 8, 7)))(1, 8, 7))(1, 8, 7))
     }
 
   }
@@ -57,35 +66,49 @@ class ShowProceduresCommandParserTest extends JavaccParserAstTestBase[Statement]
   // Filtering tests
 
   test("SHOW PROCEDURE WHERE name = 'my.proc'") {
-    yields(_ => query(ast.ShowProceduresClause(None, Some(where(equals(varFor("name"), literalString("my.proc")))), hasYield = false)(pos)))
+    assertAst(query(ShowProceduresClause(None,
+      Some(Where(
+        Equals(
+          Variable("name")(1, 22, 21),
+          StringLiteral("my.proc")(1, 29, 28)
+        )(1, 27, 26))
+        (1, 16, 15)
+      ), hasYield = false)(defaultPos)))
   }
 
   test("SHOW PROCEDURES YIELD description") {
-    yields(_ => query(ast.ShowProceduresClause(None, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("description")))))
+    assertAst(query(ShowProceduresClause(None, None, hasYield = true)(defaultPos),
+      yieldClause(
+        ReturnItems(includeExisting = false, Seq(variableReturnItem("description", (1, 23, 22))))(1, 23, 22)
+      )))
   }
 
   test("SHOW PROCEDURES EXECUTABLE BY user YIELD *") {
-    yields(_ => query(ast.ShowProceduresClause(Some(ast.User("user")), None, hasYield = true)(pos), yieldClause(returnAllItems)))
+    assertAst(query(ast.ShowProceduresClause(Some(ast.User("user")), None, hasYield = true)(defaultPos), yieldClause(returnAllItems)))
   }
 
   test("SHOW PROCEDURES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    yields(_ => query(ast.ShowProceduresClause(None, None, hasYield = true)(pos),
-      yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+    assertAst(query(ShowProceduresClause(None, None, hasYield = true)(defaultPos),
+      yieldClause(returnAllItems((1, 25, 24)),
+        Some(OrderBy(Seq(
+            AscSortItem(Variable("name")(1, 34, 33))((1, 34, 33)))
+        )(1, 25, 24)),
+        Some(skip(2, (1, 39, 38))), Some(limit(5, (1, 46, 45))))
     ))
   }
 
   test("USE db SHOW PROCEDURES YIELD name, description AS pp WHERE pp < 50.0 RETURN name") {
-    yields(_ => query(
+    assertAst(query(
       use(varFor("db")),
       ast.ShowProceduresClause(None, None, hasYield = true)(pos),
       yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("description", "pp")),
         where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
       return_(variableReturnItem("name"))
-    ))
+    ), comparePosition = false)
   }
 
   test("USE db SHOW PROCEDURES EXECUTABLE YIELD name, description AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name") {
-    yields(_ => query(
+    assertAst(query(
       use(varFor("db")),
       ast.ShowProceduresClause(Some(ast.CurrentUser), None, hasYield = true)(pos),
       yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("description", "pp")),
@@ -94,15 +117,24 @@ class ShowProceduresCommandParserTest extends JavaccParserAstTestBase[Statement]
         Some(limit(5)),
         Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
       return_(variableReturnItem("name"))
-    ))
+    ), comparePosition = false)
   }
 
   test("SHOW PROCEDURES YIELD name AS PROCEDURE, mode AS OUTPUT") {
-    yields(_ => query(ast.ShowProceduresClause(None, None, hasYield = true)(pos),
-      yieldClause(returnItems(aliasedReturnItem("name", "PROCEDURE"), aliasedReturnItem("mode", "OUTPUT")))))
+    assertAst(query(ast.ShowProceduresClause(None, None, hasYield = true)(pos),
+      yieldClause(returnItems(aliasedReturnItem("name", "PROCEDURE"), aliasedReturnItem("mode", "OUTPUT")))),
+      comparePosition = false)
   }
 
   // Negative tests
+
+  test("SHOW PROCEDURES YIELD (123 + xyz)") {
+    failsToParse
+  }
+
+  test("SHOW PROCEDURES YIELD (123 + xyz) AS foo") {
+    failsToParse
+  }
 
   test("SHOW PROCEDURES YIELD") {
     failsToParse
@@ -129,7 +161,46 @@ class ShowProceduresCommandParserTest extends JavaccParserAstTestBase[Statement]
   }
 
   test("SHOW EXECUTABLE PROCEDURE") {
-    failsToParse
+    assertFailsWithMessage(testName,
+      """Invalid input 'EXECUTABLE': expected
+        |  "ALL"
+        |  "BTREE"
+        |  "BUILT"
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "CURRENT"
+        |  "DATABASE"
+        |  "DATABASES"
+        |  "DEFAULT"
+        |  "EXIST"
+        |  "EXISTENCE"
+        |  "EXISTS"
+        |  "FULLTEXT"
+        |  "FUNCTION"
+        |  "FUNCTIONS"
+        |  "HOME"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "LOOKUP"
+        |  "NODE"
+        |  "POINT"
+        |  "POPULATED"
+        |  "PRIVILEGE"
+        |  "PRIVILEGES"
+        |  "PROCEDURE"
+        |  "PROCEDURES"
+        |  "PROPERTY"
+        |  "RANGE"
+        |  "REL"
+        |  "RELATIONSHIP"
+        |  "ROLE"
+        |  "ROLES"
+        |  "TEXT"
+        |  "TRANSACTION"
+        |  "TRANSACTIONS"
+        |  "UNIQUE"
+        |  "USER"
+        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
   }
 
   test("SHOW PROCEDURE EXECUTABLE user") {
@@ -141,7 +212,7 @@ class ShowProceduresCommandParserTest extends JavaccParserAstTestBase[Statement]
   }
 
   test("SHOW PROCEDURE EXEC") {
-    failsToParse
+    assertFailsWithMessage(testName, """Invalid input 'EXEC': expected "EXECUTABLE", "WHERE", "YIELD" or <EOF> (line 1, column 16 (offset: 15))""")
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY") {
@@ -181,11 +252,11 @@ class ShowProceduresCommandParserTest extends JavaccParserAstTestBase[Statement]
   }
 
   test("SHOW user PROCEDURE") {
-    failsToParse
+    assertFailsWithMessage(testName, """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))""")
   }
 
   test("SHOW USER user PROCEDURE") {
-    failsToParse
+    assertFailsWithMessage(testName, """Invalid input 'PROCEDURE': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))""")
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY USER user") {
@@ -205,49 +276,49 @@ class ShowProceduresCommandParserTest extends JavaccParserAstTestBase[Statement]
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW PROCEDURES YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix UNWIND range(1,10) as b SHOW PROCEDURES YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix WITH 'n' as n SHOW PROCEDURES YIELD name RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES YIELD a WITH a RETURN a") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES YIELD as UNWIND as as a RETURN a") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES YIELD name SHOW PROCEDURES YIELD name2 RETURN name2") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES RETURN name2 YIELD name2") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
     }
   }
 

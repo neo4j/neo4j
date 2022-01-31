@@ -20,6 +20,11 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AscSortItem
+import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.Skip
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 
 class RoleAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
@@ -32,6 +37,10 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("USE neo4j SHOW ROLES") {
+    yields(ast.ShowRoles(withUsers = false, showAll = true, None))
+  }
+
+  test("USE GRAPH SYSTEM SHOW ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true, None))
   }
 
@@ -70,6 +79,13 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     )))))
   }
 
+  test("SHOW ALL ROLES YIELD return, return RETURN return") {
+    yields(ast.ShowRoles(withUsers = false, showAll = true,
+      Some(Left((yieldClause(returnItems(variableReturnItem("return"), variableReturnItem("return"))),
+      Some(returnClause(returnItems(variableReturnItem("return"))))
+    )))))
+  }
+
   test("SHOW POPULATED ROLES YIELD role WHERE role='PUBLIC' RETURN role") {
     yields(ast.ShowRoles(withUsers = false, showAll = false,
       Some(Left((yieldClause(returnItems(variableReturnItem(roleString)), where = Some(where(equals(varFor(roleString), literalString("PUBLIC"))))),
@@ -87,64 +103,130 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     )))))
   }
 
-  test("SHOW ROLE") {
+  test("SHOW POPULATED ROLES YIELD role ORDER BY role SKIP -1") {
+    yields(_ => ast.ShowRoles(withUsers = false, showAll = false,
+      Some(Left((yieldClause(returnItems(variableReturnItem(roleString)),
+        Some(orderBy(sortItem(varFor(roleString)))),Some(skip(-1))), None))))(pos))
+  }
+
+  test("SHOW POPULATED ROLES YIELD role ORDER BY role LIMIT -1") {
+    yields(_ => ast.ShowRoles(withUsers = false, showAll = false,
+      Some(Left((yieldClause(returnItems(variableReturnItem(roleString)),
+        Some(orderBy(sortItem(varFor(roleString)))),limit = Some(limit(-1))), None))))(pos))
+  }
+
+  test("SHOW POPULATED ROLES YIELD role ORDER BY role SKIP -1*4 + 2") {
     failsToParse
+  }
+
+  test("SHOW ROLE") {
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))")
   }
 
   test("SHOW ALL ROLE") {
-    failsToParse
+    assertFailsWithMessage(testName,
+      """Invalid input 'ROLE': expected
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "FUNCTION"
+        |  "FUNCTIONS"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "PRIVILEGE"
+        |  "PRIVILEGES"
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
   }
 
   test("SHOW POPULATED ROLE") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 16 (offset: 15))")
   }
 
   test("SHOW ROLE role") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 15 (offset: 14))")
   }
 
   test("SHOW ROLE WITH USERS") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'USERS': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))")
   }
 
   test("SHOW ROLES WITH USER") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 17 (offset: 16))")
   }
 
   test("SHOW ROLE WITH USER") {
+    assertFailsWithMessage(testName, "Invalid input 'USER': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))")
+  }
+
+  test("SHOW ROLES YIELD (123 + xyz)") {
+    failsToParse
+  }
+
+  test("SHOW ROLES YIELD (123 + xyz) AS foo") {
     failsToParse
   }
 
   test("SHOW ALL ROLE WITH USERS") {
-    failsToParse
+    assertFailsWithMessage(testName,
+      """Invalid input 'ROLE': expected
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "FUNCTION"
+        |  "FUNCTIONS"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "PRIVILEGE"
+        |  "PRIVILEGES"
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
   }
 
   test("SHOW ALL ROLES WITH USER") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 21 (offset: 20))")
   }
 
   test("SHOW ALL ROLE WITH USER") {
-    failsToParse
+    assertFailsWithMessage(testName,
+      """Invalid input 'ROLE': expected
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "FUNCTION"
+        |  "FUNCTIONS"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "PRIVILEGE"
+        |  "PRIVILEGES"
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
+  }
+
+  test("SHOW ALL ROLES YIELD role RETURN") {
+    assertFailsWithMessage(testName, "Invalid input '': expected \"*\", \"DISTINCT\" or an expression (line 1, column 33 (offset: 32))")
   }
 
   test("SHOW POPULATED ROLE WITH USERS") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 16 (offset: 15))")
   }
 
   test("SHOW POPULATED ROLES WITH USER") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 27 (offset: 26))")
   }
 
   test("SHOW POPULATED ROLE WITH USER") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 16 (offset: 15))")
   }
 
   test("SHOW ROLES WITH USER user") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 17 (offset: 16))")
   }
 
   test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {
-    failsToParse
+    val exceptionMessage =
+      s"""Invalid input ',': expected
+         |  "LIMIT"
+         |  "ORDER"
+         |  "RETURN"
+         |  "SKIP"
+         |  "WHERE"
+         |  <EOF> (line 1, column 29 (offset: 28))""".stripMargin
+    assertFailsWithMessage(testName, exceptionMessage)
   }
 
   //  Creating role
@@ -157,8 +239,8 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.CreateRole(paramFoo, None, ast.IfExistsThrowError))
   }
 
-  test("CREATE ROLE `foo`") {
-    yields(_ => ast.CreateRole(literalFoo, None, ast.IfExistsThrowError)(pos))
+  test("CREATE ROLE `fo!$o`") {
+    yields(_ => ast.CreateRole(literal("fo!$o"), None, ast.IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE ``") {
@@ -222,19 +304,23 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE OR REPLACE ROLE ") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 23 (offset: 22))")
   }
 
   test("CREATE ROLE foo AS COPY OF") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))")
   }
 
   test("CREATE ROLE foo IF NOT EXISTS AS COPY OF") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 41 (offset: 40))")
   }
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 38 (offset: 37))")
+  }
+
+  test("CREATE ROLE foo UNION CREATE ROLE foo2") {
+    assertFailsWithMessage(testName, "Invalid input 'UNION': expected \"AS\", \"IF\" or <EOF> (line 1, column 17 (offset: 16))")
   }
 
   // Renaming role
@@ -280,47 +366,47 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("RENAME ROLE foo TO") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))")
   }
 
   test("RENAME ROLE TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))")
   }
 
   test("RENAME ROLE TO") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))")
   }
 
   test("RENAME ROLE foo SET NAME TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
   }
 
   test("RENAME ROLE foo SET NAME bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
   }
 
   test("ALTER ROLE foo SET NAME bar") {
-    failsToParse
+    assertFailsWithMessage(testName, """Invalid input 'ROLE': expected "ALIAS", "CURRENT", "DATABASE" or "USER" (line 1, column 7 (offset: 6))""")
   }
 
   test("RENAME ROLE foo IF EXIST TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
   }
 
   test("RENAME ROLE foo IF NOT EXISTS TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
   }
 
   test("RENAME ROLE foo TO bar IF EXISTS") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))")
   }
 
   test("RENAME IF EXISTS ROLE foo TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'IF': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
   }
 
   test("RENAME OR REPLACE ROLE foo TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'OR': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
   }
 
   //  Dropping role
@@ -346,7 +432,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("DROP ROLE ") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))")
   }
 
   test("DROP ROLE  IF EXISTS") {
@@ -405,15 +491,19 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
           // Should fail to parse if not following the pattern $command $roleKeyword role(s) $preposition user(s)
 
           test(s"$verb $roleKeyword") {
-            failsToParse
+            val expected = roleKeyword match {
+              case "ROLE" => """Invalid input '': expected "MANAGEMENT", a parameter or an identifier"""
+              case _      => """Invalid input '': expected a parameter or an identifier"""
+            }
+            assertFailsWithMessageStart(testName, expected)
           }
 
           test(s"$verb $roleKeyword foo") {
-            failsToParse
+            assertFailsWithMessageStart(testName, s"""Invalid input '': expected "," or "$preposition"""")
           }
 
           test(s"$verb $roleKeyword foo $preposition") {
-            failsToParse
+            assertFailsWithMessageStart(testName, "Invalid input '': expected a parameter or an identifier")
           }
 
           test(s"$verb $roleKeyword $preposition abc") {
@@ -440,12 +530,6 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
       test(s"REVOKE $roleKeyword foo TO abc") {
         failsToParse
       }
-
-      // ROLES TO USER only have GRANT and REVOKE and not DENY
-
-      test(s"DENY $roleKeyword foo TO abc") {
-        failsToParse
-      }
   }
 
   test(s"GRANT ROLE $$a TO $$x") {
@@ -462,5 +546,24 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test(s"REVOKE ROLES a, $$b, $$c FROM $$x, y, z") {
     yields(ast.RevokeRolesFromUsers(Seq(literal("a"), param("b"), param("c")), Seq(param("x"), literal("y"), literal("z"))))
+  }
+
+  // ROLE[S] TO USER only have GRANT and REVOKE and not DENY
+
+  test(s"DENY ROLE foo TO abc") {
+    assertFailsWithMessageStart(testName, """Invalid input 'foo': expected "MANAGEMENT"""")
+  }
+
+
+  test("DENY ROLES foo TO abc") {
+    assertFailsWithMessageStart(testName,
+      """Invalid input 'ROLES': expected
+        |  "ACCESS"
+        |  "ALL"
+        |  "ALTER"
+        |  "ASSIGN"
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "CREATE"""".stripMargin)
   }
 }

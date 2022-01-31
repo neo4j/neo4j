@@ -20,50 +20,48 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 /* Tests for terminating transactions */
-class TerminateTransactionsCommandParserTest extends JavaccParserAstTestBase[Statement] {
-
-  implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
+class TerminateTransactionsCommandParserTest extends AdministrationCommandParserTestBase {
 
   Seq("TRANSACTION", "TRANSACTIONS").foreach { transactionKeyword =>
 
     test(s"TERMINATE $transactionKeyword") {
-      yields(_ => query(ast.TerminateTransactionsClause(Left(List.empty))(pos)))
+      assertAst(query(ast.TerminateTransactionsClause(Left(List.empty))(defaultPos)))
     }
 
     test(s"TERMINATE $transactionKeyword 'db1-transaction-123'") {
-      yields(_ => query(ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(pos)))
+      assertAst(query(ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(defaultPos)))
     }
 
     test(s"""TERMINATE $transactionKeyword "db1-transaction-123"""") {
-      yields(_ => query(ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(pos)))
+      assertAst(query(ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(defaultPos)))
     }
 
     test(s"TERMINATE $transactionKeyword 'my.db-transaction-123'") {
-      yields(_ => query(ast.TerminateTransactionsClause(Left(List("my.db-transaction-123")))(pos)))
+      assertAst(query(ast.TerminateTransactionsClause(Left(List("my.db-transaction-123")))(pos)), comparePosition = false)
     }
 
     test(s"TERMINATE $transactionKeyword $$param") {
-      yields(_ => query(ast.TerminateTransactionsClause(Right(parameter("param", CTAny)))(pos)))
+      assertAst(query(ast.TerminateTransactionsClause(Right(parameter("param", CTAny)))(pos)), comparePosition = false)
     }
 
     test(s"""TERMINATE $transactionKeyword 'db1 - transaction - 123', "db2-transaction-45a6"""") {
-      yields(_ => query(ast.TerminateTransactionsClause(Left(List("db1 - transaction - 123", "db2-transaction-45a6")))(pos)))
+      assertAst(query(ast.TerminateTransactionsClause(Left(List("db1 - transaction - 123", "db2-transaction-45a6")))(defaultPos)))
     }
 
     test(s"TERMINATE $transactionKeyword 'yield-transaction-123'") {
-      yields(_ => query(ast.TerminateTransactionsClause(Left(List("yield-transaction-123")))(pos)))
+      assertAst(query(ast.TerminateTransactionsClause(Left(List("yield-transaction-123")))(defaultPos)))
     }
 
     test(s"TERMINATE $transactionKeyword 'where-transaction-123'") {
-      yields(_ => query(ast.TerminateTransactionsClause(Left(List("where-transaction-123")))(pos)))
+      assertAst(query(ast.TerminateTransactionsClause(Left(List("where-transaction-123")))(pos)), comparePosition = false)
     }
 
     test(s"USE db TERMINATE $transactionKeyword 'db1-transaction-123'") {
-      yields(_ => query(use(varFor("db")), ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(pos)))
+      assertAst(query(use(varFor("db")), ast.TerminateTransactionsClause(Left(List("db1-transaction-123")))(pos)),
+        comparePosition = false)
     }
 
   }
@@ -171,51 +169,65 @@ class TerminateTransactionsCommandParserTest extends JavaccParserAstTestBase[Sta
   // Invalid clause order
 
   for (prefix <- Seq("USE neo4j", "")) {
+
+    test(s"$prefix TERMINATE TRANSACTIONS WITH * MATCH (n) RETURN n") {
+      // Can't parse WITH after TERMINATE
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+    }
+
     test(s"$prefix TERMINATE TRANSACTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after TERMINATE
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'YIELD': expected")
     }
 
     test(s"$prefix UNWIND range(1,10) as b TERMINATE TRANSACTIONS YIELD * RETURN *") {
       // Can't parse TERMINATE  after UNWIND
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'TERMINATE': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after TERMINATE
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix WITH 'n' as n TERMINATE TRANSACTIONS YIELD name RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'TERMINATE': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c") {
-      failsToParse
+       assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS YIELD a WITH a RETURN a") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'YIELD': expected")
+    }
+
+    test(s"$prefix TERMINATE TRANSACTIONS UNWIND as as a RETURN a") {
+      assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
+    }
+
+    test(s"$prefix TERMINATE TRANSACTIONS TERMINATE TRANSACTIONS YIELD id2 RETURN id2") {
+      assertFailsWithMessageStart(testName, "Invalid input 'TERMINATE': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS YIELD as UNWIND as as a RETURN a") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'YIELD': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS YIELD id TERMINATE TRANSACTIONS YIELD id2 RETURN id2") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'YIELD': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS RETURN id2 YIELD id2") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
     }
   }
 

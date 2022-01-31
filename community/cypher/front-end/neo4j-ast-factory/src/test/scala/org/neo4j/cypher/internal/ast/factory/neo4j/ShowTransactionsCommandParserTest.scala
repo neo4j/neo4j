@@ -20,50 +20,56 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 /* Tests for listing transactions */
-class ShowTransactionsCommandParserTest extends JavaccParserAstTestBase[Statement] {
-
-  implicit val parser: JavaccRule[Statement] = JavaccRule.Statement
+class ShowTransactionsCommandParserTest extends AdministrationCommandParserTestBase {
 
   Seq("TRANSACTION", "TRANSACTIONS").foreach { transactionKeyword =>
 
     test(s"SHOW $transactionKeyword") {
-      yields(_ => query(ast.ShowTransactionsClause(Left(List.empty), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowTransactionsClause(Left(List.empty), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $transactionKeyword 'db1-transaction-123'") {
-      yields(_ => query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"""SHOW $transactionKeyword "db1-transaction-123"""") {
-      yields(_ => query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $transactionKeyword 'my.db-transaction-123'") {
-      yields(_ => query(ast.ShowTransactionsClause(Left(List("my.db-transaction-123")), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowTransactionsClause(Left(List("my.db-transaction-123")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $transactionKeyword $$param") {
-      yields(_ => query(ast.ShowTransactionsClause(Right(parameter("param", CTAny)), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowTransactionsClause(
+        Right(Parameter("param", CTAny)(1, 7 + transactionKeyword.length, 6 + transactionKeyword.length)),
+        None,
+        hasYield = false)
+      (defaultPos)))
     }
 
     test(s"""SHOW $transactionKeyword 'db1 - transaction - 123', "db2-transaction-45a6"""") {
-      yields(_ => query(ast.ShowTransactionsClause(Left(List("db1 - transaction - 123", "db2-transaction-45a6")), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowTransactionsClause(Left(List("db1 - transaction - 123", "db2-transaction-45a6")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $transactionKeyword 'yield-transaction-123'") {
-      yields(_ => query(ast.ShowTransactionsClause(Left(List("yield-transaction-123")), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowTransactionsClause(Left(List("yield-transaction-123")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $transactionKeyword 'where-transaction-123'") {
-      yields(_ => query(ast.ShowTransactionsClause(Left(List("where-transaction-123")), None, hasYield = false)(pos)))
+      assertAst(query(ast.ShowTransactionsClause(Left(List("where-transaction-123")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"USE db SHOW $transactionKeyword") {
-      yields(_ => query(use(varFor("db")), ast.ShowTransactionsClause(Left(List.empty), None, hasYield = false)(pos)))
+      assertAst(query(use(varFor("db")), ast.ShowTransactionsClause(Left(List.empty), None, hasYield = false)(pos)), comparePosition = false)
     }
 
   }
@@ -71,39 +77,52 @@ class ShowTransactionsCommandParserTest extends JavaccParserAstTestBase[Statemen
   // Filtering tests
 
   test("SHOW TRANSACTION WHERE transactionId = 'db1-transaction-123'") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List.empty), Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))), hasYield = false)(pos)))
-  }
+    assertAst(query(
+      ast.ShowTransactionsClause(
+        Left(List.empty),
+        Some(Where(
+          Equals(Variable("transactionId")(1, 24, 23),
+            StringLiteral("db1-transaction-123")(1, 40, 39)
+          )(1, 38, 37)
+        )(1, 18, 17)),
+        hasYield = false)
+      (defaultPos)))  }
 
   test("SHOW TRANSACTIONS YIELD database") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("database")))))
+    assertAst(
+      query(ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("database")))),
+      comparePosition = false)
   }
 
   test("SHOW TRANSACTIONS 'db1-transaction-123', 'db2-transaction-456' YIELD *") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List("db1-transaction-123", "db2-transaction-456")), None, hasYield = true)(pos), yieldClause(returnAllItems)))
+    assertAst(query(ast.ShowTransactionsClause(Left(List("db1-transaction-123", "db2-transaction-456")), None, hasYield = true)(defaultPos), yieldClause(returnAllItems)))
   }
 
   test("SHOW TRANSACTIONS 'db1-transaction-123', 'db2-transaction-456', 'yield' YIELD *") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List("db1-transaction-123", "db2-transaction-456", "yield")), None, hasYield = true)(pos), yieldClause(returnAllItems)))
+    assertAst(query(ast.ShowTransactionsClause(Left(List("db1-transaction-123", "db2-transaction-456", "yield")), None, hasYield = true)(pos),
+      yieldClause(returnAllItems)),
+      comparePosition = false)
   }
 
   test("SHOW TRANSACTIONS YIELD * ORDER BY transactionId SKIP 2 LIMIT 5") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos),
-      yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("transactionId")))), Some(skip(2)), Some(limit(5)))
-    ))
+    assertAst(
+      query(ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos),
+        yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("transactionId")))), Some(skip(2)), Some(limit(5)))),
+      comparePosition = false)
   }
 
   test("USE db SHOW TRANSACTIONS YIELD transactionId, activeLockCount AS pp WHERE pp < 50 RETURN transactionId") {
-    yields(_ => query(
+    assertAst(query(
       use(varFor("db")),
       ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos),
       yieldClause(returnItems(variableReturnItem("transactionId"), aliasedReturnItem("activeLockCount", "pp")),
         where = Some(where(lessThan(varFor("pp"), literalInt(50L))))),
-      return_(variableReturnItem("transactionId"))
-    ))
+      return_(variableReturnItem("transactionId"))),
+      comparePosition = false)
   }
 
   test("USE db SHOW TRANSACTIONS YIELD transactionId, activeLockCount AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50 RETURN transactionId") {
-    yields(_ => query(
+    assertAst(query(
       use(varFor("db")),
       ast.ShowTransactionsClause(Left(List.empty), None, hasYield = true)(pos),
       yieldClause(returnItems(variableReturnItem("transactionId"), aliasedReturnItem("activeLockCount", "pp")),
@@ -111,30 +130,38 @@ class ShowTransactionsCommandParserTest extends JavaccParserAstTestBase[Statemen
         Some(skip(2)),
         Some(limit(5)),
         Some(where(lessThan(varFor("pp"), literalInt(50L))))),
-      return_(variableReturnItem("transactionId"))
-    ))
+      return_(variableReturnItem("transactionId"))),
+      comparePosition = false)
   }
 
   test("SHOW TRANSACTIONS 'db1-transaction-123' YIELD transactionId AS TRANSACTION, database AS OUTPUT") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")), None, hasYield = true)(pos),
-      yieldClause(returnItems(aliasedReturnItem("transactionId", "TRANSACTION"), aliasedReturnItem("database", "OUTPUT")))))
+    assertAst(query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")), None, hasYield = true)(pos),
+      yieldClause(returnItems(aliasedReturnItem("transactionId", "TRANSACTION"), aliasedReturnItem("database", "OUTPUT")))),
+      comparePosition = false)
   }
 
   test("SHOW TRANSACTIONS 'where' YIELD transactionId AS TRANSACTION, database AS OUTPUT") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List("where")), None, hasYield = true)(pos),
-      yieldClause(returnItems(aliasedReturnItem("transactionId", "TRANSACTION"), aliasedReturnItem("database", "OUTPUT")))))
+    assertAst(query(ast.ShowTransactionsClause(Left(List("where")), None, hasYield = true)(pos),
+      yieldClause(returnItems(aliasedReturnItem("transactionId", "TRANSACTION"), aliasedReturnItem("database", "OUTPUT")))),
+      comparePosition = false)
   }
 
   test("SHOW TRANSACTION 'db1-transaction-123' WHERE transactionId = 'db1-transaction-124'") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")), Some(where(equals(varFor("transactionId"), literalString("db1-transaction-124")))), hasYield = false)(pos)))
+    assertAst(query(ast.ShowTransactionsClause(Left(List("db1-transaction-123")),
+      Some(where(equals(varFor("transactionId"), literalString("db1-transaction-124")))), hasYield = false)(pos)),
+      comparePosition = false)
   }
 
   test("SHOW TRANSACTION 'yield' WHERE transactionId = 'where'") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List("yield")), Some(where(equals(varFor("transactionId"), literalString("where")))), hasYield = false)(pos)))
+    assertAst(query(ast.ShowTransactionsClause(Left(List("yield")),
+      Some(where(equals(varFor("transactionId"), literalString("where")))), hasYield = false)(pos)),
+      comparePosition = false)
   }
 
   test("SHOW TRANSACTION 'db1-transaction-123', 'db1-transaction-124' WHERE transactionId IN ['db1-transaction-124', 'db1-transaction-125']") {
-    yields(_ => query(ast.ShowTransactionsClause(Left(List("db1-transaction-123", "db1-transaction-124")), Some(where(in(varFor("transactionId"), listOfString("db1-transaction-124", "db1-transaction-125")))), hasYield = false)(pos)))
+    assertAst(query(ast.ShowTransactionsClause(Left(List("db1-transaction-123", "db1-transaction-124")),
+      Some(where(in(varFor("transactionId"), listOfString("db1-transaction-124", "db1-transaction-125")))), hasYield = false)(pos)),
+      comparePosition = false)
   }
 
   // Negative tests
@@ -175,6 +202,14 @@ class ShowTransactionsCommandParserTest extends JavaccParserAstTestBase[Statemen
     failsToParse
   }
 
+  test("SHOW TRANSACTIONS YIELD (123 + xyz)") {
+    failsToParse
+  }
+
+  test("SHOW TRANSACTIONS YIELD (123 + xyz) AS foo") {
+    failsToParse
+  }
+
   test("SHOW TRANSACTIONS WHERE transactionId = 'db1-transaction-123' YIELD *") {
     failsToParse
   }
@@ -196,7 +231,8 @@ class ShowTransactionsCommandParserTest extends JavaccParserAstTestBase[Statemen
   }
 
   test("SHOW USER user TRANSACTION") {
-    failsToParse
+    assertFailsWithMessage(testName,
+    """Invalid input 'TRANSACTION': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))""".stripMargin)
   }
 
   test("SHOW TRANSACTION EXECUTED BY USER user") {
@@ -217,49 +253,49 @@ class ShowTransactionsCommandParserTest extends JavaccParserAstTestBase[Statemen
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW TRANSACTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix UNWIND range(1,10) as b SHOW TRANSACTIONS YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix WITH 'n' as n SHOW TRANSACTIONS YIELD name RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS YIELD a WITH a RETURN a") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS YIELD as UNWIND as as a RETURN a") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS YIELD id SHOW TRANSACTIONS YIELD id2 RETURN id2") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS RETURN id2 YIELD id2") {
-      failsToParse
+      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
     }
   }
 

@@ -59,6 +59,12 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.ShowUsers(Some(Right(where(and(accessPredicate, matchPredicate))))))
   }
 
+  test("SHOW USERS WHERE user = 'GRANTED' OR action = 'match'") {
+    val accessPredicate = equals(varUser, grantedString)
+    val matchPredicate = equals(varFor(actionString), literalString("match"))
+    yields(ast.ShowUsers(Some(Right(where(or(accessPredicate, matchPredicate))))))
+  }
+
   test("SHOW USERS YIELD user ORDER BY user") {
     val columns = yieldClause(returnItems(variableReturnItem(userString)), Some(orderBy(sortItem(varUser))))
     yields(ast.ShowUsers(Some(Left((columns, None)))))
@@ -103,11 +109,27 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("SHOW USER") {
-    failsToParse
+    val exceptionMessage =
+      s"""Invalid input '': expected
+         |  "DEFINED"
+         |  "PRIVILEGE"
+         |  "PRIVILEGES"
+         |  a parameter
+         |  an identifier (line 1, column 10 (offset: 9))""".stripMargin
+
+    assertFailsWithMessage(testName, exceptionMessage)
   }
 
   test("SHOW USERS YIELD *,blah RETURN user") {
     failsToParse
+  }
+
+  test("SHOW USERS YIELD (123 + xyz)") {
+   failsToParse
+  }
+
+  test("SHOW USERS YIELD (123 + xyz) AS foo") {
+   failsToParse
   }
 
   // Showing current user
@@ -408,7 +430,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STAUS ACTIVE") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'STAUS': expected \"HOME\", \"PASSWORD\" or \"STATUS\" (line 1, column 45 (offset: 44))")
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS IMAGINARY") {
@@ -483,6 +505,24 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+  test("CREATE USER foo SET PASSWORD $password CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {
+    val exceptionMessage =
+      s"""Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 60 (offset: 59))""".stripMargin
+    assertFailsWithMessage(testName, exceptionMessage)
+  }
+
+  test("CREATE USER foo SET PASSWORD $password SET STATUS ACTIVE SET STATUS SUSPENDED") {
+    val exceptionMessage =
+      s"""Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 58 (offset: 57))""".stripMargin
+    assertFailsWithMessage(testName, exceptionMessage)
+  }
+
+  test("CREATE USER foo SET PASSWORD $password SET HOME DATABASE db SET HOME DATABASE db") {
+    val exceptionMessage =
+      s"""Duplicate SET HOME DATABASE clause (line 1, column 61 (offset: 60))""".stripMargin
+    assertFailsWithMessage(testName, exceptionMessage)
+  }
+
     // Renaming role
 
   test("RENAME USER foo TO bar") {
@@ -526,43 +566,43 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("RENAME USER foo TO") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))")
   }
 
   test("RENAME USER TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))")
   }
 
   test("RENAME USER TO") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))")
   }
 
   test("RENAME USER foo SET NAME TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
   }
 
   test("RENAME USER foo SET NAME bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
   }
 
   test("RENAME USER foo IF EXIST TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
   }
 
   test("RENAME USER foo IF NOT EXISTS TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
   }
 
   test("RENAME USER foo TO bar IF EXISTS") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))")
   }
 
   test("RENAME IF EXISTS USER foo TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'IF': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
   }
 
   test("RENAME OR REPLACE USER foo TO bar") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input 'OR': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
   }
 
   test("RENAME USER foo TO bar SET PASSWORD 'secret'") {
@@ -746,7 +786,27 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo SET NAME bar") {
-    failsToParse
+    val exceptionMessage =
+      s"""Invalid input 'NAME': expected
+         |  "ENCRYPTED"
+         |  "HOME"
+         |  "PASSWORD"
+         |  "PLAINTEXT"
+         |  "STATUS" (line 1, column 20 (offset: 19))""".stripMargin
+
+    assertFailsWithMessage(testName, exceptionMessage)
+  }
+
+    test("ALTER USER foo SET PASSWORD 'secret' SET NAME bar") {
+    val exceptionMessage =
+      s"""Invalid input 'NAME': expected
+         |  "ENCRYPTED"
+         |  "HOME"
+         |  "PASSWORD"
+         |  "PLAINTEXT"
+         |  "STATUS" (line 1, column 42 (offset: 41))""".stripMargin
+
+    assertFailsWithMessage(testName, exceptionMessage)
   }
 
   test("ALTER user command finds password literal at correct offset") {
@@ -773,6 +833,22 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     clauses =>
       test(s"ALTER USER foo ${clauses.mkString(" ")}") {
         yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))), ifExists = false))
+      }
+  }
+
+  Seq("SET PASSWORD 'password' CHANGE NOT REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1"
+  ).permutations.foreach {
+    clauses =>
+      test(s"ALTER USER foo ${clauses.mkString(" ")}") {
+        yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(Some(false), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))), ifExists = false))
+      }
+  }
+
+  Seq("SET PASSWORD 'password'", "SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1"
+  ).permutations.foreach {
+    clauses =>
+      test(s"ALTER USER foo ${clauses.mkString(" ")}") {
+        yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))), ifExists = false))
       }
   }
 
@@ -813,7 +889,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
-    failsToParse
+    assertFailsWithMessage(testName, "Duplicate SET PASSWORD clause (line 1, column 40 (offset: 39))")
   }
 
   test("ALTER USER foo SET PASSWORD 'password' ENCRYPTED") {
@@ -874,6 +950,30 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("ALTER USER foo REMOVE DEFAULT DATABASE") {
     failsToParse
+  }
+
+  test("ALTER USER foo SET PASSWORD $password SET PASSWORD 'password'") {
+    val exceptionMessage =
+      s"""Duplicate SET PASSWORD clause (line 1, column 39 (offset: 38))""".stripMargin
+    assertFailsWithMessage(testName, exceptionMessage)
+  }
+
+  test("ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {
+    val exceptionMessage =
+      s"""Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 49 (offset: 48))""".stripMargin
+    assertFailsWithMessage(testName, exceptionMessage)
+  }
+
+  test("ALTER USER foo SET STATUS ACTIVE SET STATUS SUSPENDED") {
+    val exceptionMessage =
+      s"""Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 34 (offset: 33))""".stripMargin
+    assertFailsWithMessage(testName, exceptionMessage)
+  }
+
+  test("ALTER USER foo SET HOME DATABASE db SET HOME DATABASE db") {
+    val exceptionMessage =
+      s"""Duplicate SET HOME DATABASE clause (line 1, column 37 (offset: 36))""".stripMargin
+    assertFailsWithMessage(testName, exceptionMessage)
   }
 
   // Changing own password
