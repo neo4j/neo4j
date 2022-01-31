@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.And
-import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -30,6 +29,8 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 object LabelPredicateNormalizer extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
@@ -42,20 +43,24 @@ object LabelPredicateNormalizer extends MatchPredicateNormalizer {
     case p@NodePattern(Some(_), _, Some(_), _, _)                   => p.copy(labelExpression = None)(p.position)
   }
 
-  private def extractLabelExpressionPredicates(variable: LogicalVariable, e: LabelExpression): BooleanExpression = {
-    e match {
+  private def extractLabelExpressionPredicates(variable: LogicalVariable, e: LabelExpression): Expression = {
+    LabelExpressionRewriter(variable)(e).asInstanceOf[Expression]
+  }
+
+  private case class LabelExpressionRewriter(variable: LogicalVariable) extends Rewriter {
+    val instance: Rewriter = Rewriter.lift {
       case c: LabelExpression.Conjunction => And(
-        extractLabelExpressionPredicates(variable.copyId, c.lhs),
-        extractLabelExpressionPredicates(variable.copyId, c.rhs)
+        c.lhs,
+        c.rhs
       )(c.position)
 
       case d: LabelExpression.Disjunction => Or(
-        extractLabelExpressionPredicates(variable.copyId, d.lhs),
-        extractLabelExpressionPredicates(variable.copyId, d.rhs)
+        d.lhs,
+        d.rhs
       )(d.position)
 
       case n: LabelExpression.Negation => Not(
-        extractLabelExpressionPredicates(variable.copyId, n.e)
+        n.e
       )(n.position)
 
       case n: LabelExpression.Wildcard =>
@@ -67,5 +72,7 @@ object LabelPredicateNormalizer extends MatchPredicateNormalizer {
 
       case n: LabelExpression.Label => HasLabels(variable.copyId, Seq(LabelName(n.label.name)(n.position)))(n.position)
     }
+
+    override def apply(v1: AnyRef): AnyRef = topDown(instance)(v1)
   }
 }
