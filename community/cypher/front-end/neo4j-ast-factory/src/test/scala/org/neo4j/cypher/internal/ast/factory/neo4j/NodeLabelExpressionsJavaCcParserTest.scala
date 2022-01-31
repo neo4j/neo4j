@@ -285,6 +285,36 @@ class NodeLabelExpressionsJavaCcParserTest extends CypherFunSuite with TestName 
     )
   }
 
+
+  test("MATCH (n:%)") {
+    parseNodePatterns(testName) shouldBe Seq(
+      NodePattern(
+        Some(varFor("n")),
+        Seq.empty,
+        Some(labelWildcard),
+        None,
+        None
+      )(pos)
+    )
+  }
+
+  test("MATCH (n:!%&%)") {
+    parseNodePatterns(testName) shouldBe Seq(
+      NodePattern(
+        Some(varFor("n")),
+        Seq.empty,
+        Some(labelConjunction(
+          labelNegation(labelWildcard),
+          labelWildcard)
+        ),
+        None,
+        None
+      )(pos)
+    )
+  }
+
+  // Invalid mixing of syntax
+
   test("MATCH (n:A&:B)") {
     val errorMessage = intercept[SyntaxException] (
       parseNodePatterns(testName)

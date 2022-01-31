@@ -412,7 +412,7 @@ TOKEN [IGNORE_CASE] :
     | < MATCH: "MATCH" >
     | < MERGE: "MERGE" >
     | < MINUS: "-" >
-    | < MODULO: "%" >
+    | < PERCENT: "%" >
     | < NEQ: "!=" >
     | < NEQ2: "<>" >
     | < NAME: "NAME" >
@@ -2368,6 +2368,7 @@ LABEL_EXPRESSION LabelExpression1() :
 {
     (
         <LPAREN> e=LabelExpression4() <RPAREN>
+        | t = <PERCENT> { e = astFactory.labelWildcard( pos ( t ) ); }
         | t=SymbolicNameString() { e = astFactory.labelAtom( pos ( t ), t.image ); }
     )
     {
@@ -2530,7 +2531,7 @@ EXPRESSION Expression5() :
     lhs=Expression4() (
         t=<TIMES> rhs=Expression4() { lhs = astFactory.multiply( pos( t ), lhs, rhs ); }
         | t=<DIVIDE> rhs=Expression4() { lhs = astFactory.divide( pos( t ), lhs, rhs ); }
-        | t=<MODULO> rhs=Expression4() { lhs = astFactory.modulo( pos( t ), lhs, rhs ); }
+        | t=<PERCENT> rhs=Expression4() { lhs = astFactory.modulo( pos( t ), lhs, rhs ); }
     )*
     {
         return lhs;

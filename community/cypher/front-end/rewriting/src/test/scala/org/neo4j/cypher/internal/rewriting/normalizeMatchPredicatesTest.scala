@@ -172,4 +172,8 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
   test("MATCH (n:A&(B|C)) RETURN n") {
     assertRewrite("MATCH (n) WHERE n:A AND (n:B OR n:C) RETURN n")
   }
+
+  test("MATCH (n:%&(B|!%)) RETURN n") {
+    assertRewrite("MATCH (n) WHERE size(labels(n)) > 0 AND (n:B OR NOT(size(labels(n)) > 0)) RETURN n")
+  }
 }

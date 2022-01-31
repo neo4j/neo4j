@@ -386,6 +386,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def labelNegation(e: LabelExpression): LabelExpression = LabelExpression.Negation(e)(pos)
 
+  def labelWildcard: LabelExpression = LabelExpression.Wildcard()(pos)
+
   def labelAtom(name: String): LabelExpression = LabelExpression.Label(LabelOrRelTypeName(name)(pos))(pos)
 
   def ands(expressions: Expression*): Ands = Ands(expressions)(pos)

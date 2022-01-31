@@ -1044,6 +1044,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL labelWildcard( NULL p )
+    {
+        throw new UnsupportedOperationException( "labelWildcard is not a literal" );
+    }
+
+    @Override
     public NULL labelAtom( NULL p, String e )
     {
         throw new UnsupportedOperationException( "labelAtom is not a literal" );

@@ -19,6 +19,9 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -26,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 
 object LabelPredicateNormalizer extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
@@ -53,6 +57,13 @@ object LabelPredicateNormalizer extends MatchPredicateNormalizer {
       case n: LabelExpression.Negation => Not(
         extractLabelExpressionPredicates(variable.copyId, n.e)
       )(n.position)
+
+      case n: LabelExpression.Wildcard =>
+        val size: Expression => FunctionInvocation = FunctionInvocation(FunctionName("size")(n.position), _)(n.position)
+        val labels: Expression => FunctionInvocation = FunctionInvocation(FunctionName("labels")(n.position), _)(n.position)
+        val zero = SignedDecimalIntegerLiteral("0")(n.position)
+
+        GreaterThan(size(labels(variable.copyId)), zero)(n.position)
 
       case n: LabelExpression.Label => HasLabels(variable.copyId, Seq(LabelName(n.label.name)(n.position)))(n.position)
     }

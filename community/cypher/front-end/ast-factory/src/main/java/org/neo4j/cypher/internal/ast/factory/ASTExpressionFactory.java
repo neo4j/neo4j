@@ -89,6 +89,8 @@ public interface ASTExpressionFactory<
 
     LABEL_EXPRESSION labelNegation( POS p, LABEL_EXPRESSION e );
 
+    LABEL_EXPRESSION labelWildcard( POS p );
+
     LABEL_EXPRESSION labelAtom( POS p, String e );
 
     EXPRESSION ands( List<EXPRESSION> exprs );

@@ -1792,6 +1792,8 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def labelNegation(p: InputPosition, e: LabelExpression): LabelExpression = LabelExpression.Negation(e)(p)
 
+  override def labelWildcard(p: InputPosition): LabelExpression = LabelExpression.Wildcard()(p)
+
   override def labelAtom(p: InputPosition, n: String): LabelExpression = LabelExpression.Label(LabelOrRelTypeName(n)(p))(p)
 }
 
