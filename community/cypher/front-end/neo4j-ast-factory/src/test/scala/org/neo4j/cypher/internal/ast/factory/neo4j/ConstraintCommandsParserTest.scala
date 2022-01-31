@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
 /* Tests for creating and dropping constraints */
-class ConstraintCommandsParserTest extends AdministrationCommandParserTestBase {
+class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   Seq("ON", "FOR")
     .foreach { forOrOnString =>

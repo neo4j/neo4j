@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 
 /* Tests for listing procedures */
-class ShowProceduresCommandParserTest extends AdministrationCommandParserTestBase {
+class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   Seq("PROCEDURE", "PROCEDURES").foreach { procKeyword =>
 

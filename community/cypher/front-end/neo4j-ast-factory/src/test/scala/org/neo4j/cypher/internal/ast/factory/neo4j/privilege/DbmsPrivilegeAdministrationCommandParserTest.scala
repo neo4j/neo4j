@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
-class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   def privilegeTests(command: String, preposition: String, privilegeFunc: dbmsPrivilegeFunc): Unit = {
     val offset = command.length + 1

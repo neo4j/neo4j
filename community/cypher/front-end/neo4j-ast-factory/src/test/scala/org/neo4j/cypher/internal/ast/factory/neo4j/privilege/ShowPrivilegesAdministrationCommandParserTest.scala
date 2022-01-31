@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
-import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
-class ShowPrivilegesAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   // Show privileges
 

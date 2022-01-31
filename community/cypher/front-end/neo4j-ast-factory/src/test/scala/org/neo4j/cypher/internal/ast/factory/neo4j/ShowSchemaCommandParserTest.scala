@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.ValidSyntax
 
 /* Tests for listing indexes and constraints */
-class ShowSchemaCommandParserTest extends AdministrationCommandParserTestBase {
+class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   // Show indexes
 

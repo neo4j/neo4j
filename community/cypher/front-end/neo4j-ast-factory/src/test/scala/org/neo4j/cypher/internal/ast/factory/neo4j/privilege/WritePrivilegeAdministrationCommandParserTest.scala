@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.WriteAction
-import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
-class WritePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   Seq(
     ("GRANT", "TO", grantGraphPrivilege: noResourcePrivilegeFunc),

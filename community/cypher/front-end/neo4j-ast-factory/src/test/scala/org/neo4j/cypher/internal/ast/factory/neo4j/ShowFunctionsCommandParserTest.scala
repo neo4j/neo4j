@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ReturnItems
 
 /* Tests for listing functions */
-class ShowFunctionsCommandParserTest extends AdministrationCommandParserTestBase {
+class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   Seq("FUNCTION", "FUNCTIONS").foreach { funcKeyword =>
     Seq(
       ("", ast.AllFunctions),

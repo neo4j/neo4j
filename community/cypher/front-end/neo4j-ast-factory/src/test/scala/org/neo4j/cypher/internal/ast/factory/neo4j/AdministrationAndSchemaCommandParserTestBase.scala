@@ -73,7 +73,7 @@ import scala.language.implicitConversions
 import scala.util.Failure
 import scala.util.Success
 
-class AdministrationCommandParserTestBase extends JavaccParserAstTestBase[ast.Statement] with VerifyAstPositionTestSupport {
+class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBase[ast.Statement] with VerifyAstPositionTestSupport {
 
     implicit protected val parser: JavaccRule[ast.Statement] = JavaccRule.Statements
 

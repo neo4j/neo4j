@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 /* Tests for listing transactions */
-class ShowTransactionsCommandParserTest extends AdministrationCommandParserTestBase {
+class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   Seq("TRANSACTION", "TRANSACTIONS").foreach { transactionKeyword =>
 

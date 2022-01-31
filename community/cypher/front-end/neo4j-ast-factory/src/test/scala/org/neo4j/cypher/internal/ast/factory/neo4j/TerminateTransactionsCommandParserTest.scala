@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 /* Tests for terminating transactions */
-class TerminateTransactionsCommandParserTest extends AdministrationCommandParserTestBase {
+class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   Seq("TRANSACTION", "TRANSACTIONS").foreach { transactionKeyword =>
 

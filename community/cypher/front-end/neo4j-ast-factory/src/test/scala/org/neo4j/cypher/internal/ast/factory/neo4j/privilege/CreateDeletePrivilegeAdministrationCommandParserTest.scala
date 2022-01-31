@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.CreateElementAction
 import org.neo4j.cypher.internal.ast.DeleteElementAction
-import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
-class CreateDeletePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class CreateDeletePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   Seq(
     ("GRANT", "TO", grantGraphPrivilege: noResourcePrivilegeFunc),

@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
 
-class AliasAdministrationCommandJavaCcParserTest extends AdministrationCommandParserTestBase {
+class AliasAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   // CREATE ALIAS
   test("CREATE ALIAS alias FOR DATABASE target") {

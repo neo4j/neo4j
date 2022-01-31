@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 
 import java.util
 
-class UserAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   private val userString = "user"
   private val varUser = varFor(userString)
   private val password = pw("password")

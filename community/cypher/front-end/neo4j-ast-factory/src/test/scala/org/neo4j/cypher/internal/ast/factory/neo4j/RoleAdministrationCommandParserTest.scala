@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 
-class RoleAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   private val roleString = "role"
 
   //  Showing roles

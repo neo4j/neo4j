@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   private val literalFooBar = literal("foo.bar")
 
   // SHOW DATABASE

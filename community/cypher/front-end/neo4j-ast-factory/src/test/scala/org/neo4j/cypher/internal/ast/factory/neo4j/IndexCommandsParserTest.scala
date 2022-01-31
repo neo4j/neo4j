@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
 /* Tests for creating and dropping indexes */
-class IndexCommandsParserTest extends AdministrationCommandParserTestBase {
+class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   // Create node index (old syntax)
 

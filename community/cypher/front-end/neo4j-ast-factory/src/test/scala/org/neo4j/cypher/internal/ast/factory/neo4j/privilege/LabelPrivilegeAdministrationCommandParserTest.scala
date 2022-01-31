@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllLabelResource
 import org.neo4j.cypher.internal.ast.RemoveLabelAction
 import org.neo4j.cypher.internal.ast.SetLabelAction
-import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
-class LabelPrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
+class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   private val labelResource = ast.LabelsResource(Seq("label"))(_)
 
   Seq(
